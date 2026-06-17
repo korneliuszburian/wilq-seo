@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from wilq.connectors.google_auth import (
     GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,
     google_service_account_available,
+    google_service_account_diagnostic,
 )
 from wilq.credentials.runtime import (
     credential_file_names,
@@ -242,7 +243,10 @@ def _missing_credential_groups(definition: ConnectorDefinition) -> list[str]:
 
 def _connector_error(missing: list[str]) -> str | None:
     if "|".join(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES) in missing:
-        return "Google service account credentials are missing or invalid."
+        diagnostic = google_service_account_diagnostic()
+        if diagnostic == "missing_google_service_account_credentials":
+            return "Google service account credentials are missing."
+        return f"Google service account credentials are invalid: {diagnostic}."
     return None
 
 

@@ -30,6 +30,25 @@ def google_service_account_available() -> bool:
     return True
 
 
+def google_service_account_diagnostic() -> str:
+    attempted = False
+    reasons: list[str] = []
+    for raw_value in _service_account_candidates():
+        attempted = True
+        try:
+            _load_service_account_json(raw_value)
+            return "valid_service_account"
+        except GoogleCredentialError as exc:
+            reason = str(exc)
+            if reason not in reasons:
+                reasons.append(reason)
+    if not attempted:
+        return "missing_google_service_account_credentials"
+    if reasons:
+        return _safe_diagnostic_label(reasons[0])
+    return "invalid_google_service_account_credentials"
+
+
 def google_service_account_access_token(scopes: Iterable[str]) -> str:
     info = _service_account_info()
     credentials = service_account.Credentials.from_service_account_info(
@@ -92,5 +111,19 @@ def _load_service_account_json(raw_value: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise GoogleCredentialError("Google service account JSON must be an object.")
     if payload.get("type") != "service_account":
-        raise GoogleCredentialError("Google credentials are not a service account.")
+        credential_type = payload.get("type")
+        if isinstance(credential_type, str) and credential_type:
+            raise GoogleCredentialError(f"google_credentials_type_{credential_type}")
+        raise GoogleCredentialError("google_credentials_type_missing")
     return payload
+
+
+def _safe_diagnostic_label(reason: str) -> str:
+    normalized = reason.strip().lower().replace(" ", "_").replace(".", "")
+    allowed = {
+        "google_service_account_json_could_not_be_parsed",
+        "google_service_account_json_must_be_an_object",
+        "google_credentials_type_authorized_user",
+        "google_credentials_type_missing",
+    }
+    return normalized if normalized in allowed else "invalid_google_service_account_credentials"

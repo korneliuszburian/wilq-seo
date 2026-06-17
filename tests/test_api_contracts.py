@@ -192,7 +192,10 @@ def test_google_first_party_status_requires_valid_service_account(
         assert connector["configured"] is False
         assert connector["status"] == "missing_credentials"
         assert missing_label in connector["missing_credentials"]
-        assert connector["error"] == "Google service account credentials are missing or invalid."
+        assert connector["error"] == (
+            "Google service account credentials are invalid: "
+            "google_credentials_type_authorized_user."
+        )
         assert set(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES).issubset(connector["required_env"])
 
 

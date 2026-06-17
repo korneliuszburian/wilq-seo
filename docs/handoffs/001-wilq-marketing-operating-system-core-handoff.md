@@ -75,6 +75,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
 - Paid Ahrefs live `vendor_read` smoke passed on 2026-06-17: report date `2026-06-16`, `domain_rating=24.0`, `ahrefs_rank=6433882`, `target_source=repo_env`; token and target values were not returned.
+- Merchant Center local credential smoke reached Google with service account `krn-seo-readonly@rekurencja-ads.iam.gserviceaccount.com` and account `5519957373`; connector status is configured, but live `aggregateProductStatuses` returns `401 UNAUTHENTICATED` because the caller does not have access to that Merchant Center account yet.
 - `pip-audit`: no known vulnerabilities found.
 - `detect-secrets`: no findings in scoped source scan.
 
