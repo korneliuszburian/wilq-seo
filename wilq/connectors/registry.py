@@ -127,7 +127,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
     ConnectorDefinition(
         "localo",
         "Localo",
-        ("LOCALO_API_TOKEN",),
+        ("LOCALO_API_TOKEN", "LOCALO_ORGANIZATION_ID"),
         True,
         True,
         ("local_visibility_task", "gbp_post_candidate"),

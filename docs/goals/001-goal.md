@@ -2922,3 +2922,82 @@ Do not build static artifacts instead of an operating system.
 Build the system spine first.
 Then connect the strongest data source.
 Then make Codex and dashboard operate the same truth.
+
+---
+
+## 27. Live Localo MCP state - 2026-06-17
+
+Current verified state:
+
+* Local `.env` contains the required Localo credential names
+  `LOCALO_API_TOKEN` and `LOCALO_ORGANIZATION_ID`; values must remain secret.
+* `LOCALO_ORGANIZATION_ID` is the Localo OAuth Client ID / organization ID.
+* Official Localo documentation describes the MCP server URL as
+  `https://api.localo.com/api/mcp`; OAuth Client ID comes from the Localo
+  organization ID and OAuth Client Secret comes from the created Localo token:
+  <https://docs.localo.com/en/articles/14687216-localo-api-mcp-integration>.
+* Public OAuth discovery is reachable:
+  * protected resource metadata:
+    `https://api.localo.com/.well-known/oauth-protected-resource`
+  * authorization server metadata:
+    `https://api.localo.com/.well-known/oauth-authorization-server`
+  * supported grant: `authorization_code`
+  * supported PKCE method: `S256`
+  * token auth: `client_secret_basic` or `client_secret_post`
+* WILQ live probe after adding Organization ID:
+  * command:
+    `uv run wilq connectors refresh localo --mode vendor_read --reason "Goal 001 Localo MCP OAuth probe after org id"`
+  * run id: `refresh_localo_900117e45f83`
+  * evidence IDs:
+    `ev_connector_localo_status`,
+    `ev_refresh_refresh_localo_900117e45f83`
+  * status: `blocked`
+  * external call attempted: `true`
+  * vendor data collected: `false`
+  * metric summary:
+    `api=localo_mcp_oauth_probe`,
+    `mcp_initialize_status=401`,
+    `authorization_code_supported=1`,
+    `pkce_s256_supported=1`,
+    `access_token_present=0`
+  * exact blocker:
+    `Localo MCP OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN.`
+* WILQ API HTTP proof after restarting the stale API process:
+  * `GET /api/connectors/localo/status` returns
+    `required_env=["LOCALO_API_TOKEN","LOCALO_ORGANIZATION_ID"]`,
+    `configured=true`, `missing_credentials=[]`
+  * `POST /api/connectors/localo/refresh` run id:
+    `refresh_localo_e9f1d7fc78ba`
+  * evidence IDs:
+    `ev_connector_localo_status`,
+    `ev_refresh_refresh_localo_e9f1d7fc78ba`
+  * status: `blocked`
+  * external call attempted: `true`
+  * metric summary:
+    `api=localo_mcp_oauth_probe`,
+    `mcp_initialize_status=401`,
+    `authorization_code_supported=1`,
+    `pkce_s256_supported=1`,
+    `access_token_present=0`
+  * `/api/codex/context` exposes Localo with the same required env names, so
+    dashboard and Codex skills now share the updated API truth.
+
+Implication:
+
+Localo is no longer blocked by missing Organization ID and no longer blocked by
+a missing adapter placeholder. The remaining blocker is a real OAuth completion
+step for WILQ: implement or run Localo `authorization_code` + PKCE flow, persist a
+redacted local token state or `LOCALO_ACCESS_TOKEN`, then rerun `vendor_read` and
+only then allow local visibility recommendations.
+
+Next Localo tasks:
+
+1. Add Localo OAuth helper commands mirroring Google Ads helper style:
+   `uv run wilq localo oauth-url` and `uv run wilq localo oauth-exchange`.
+2. Store only local token material in `.env` or another gitignored local token
+   store; never commit or print token values.
+3. After token exchange, call MCP initialize and `tools/list` through WILQ API.
+4. Persist sanitized Localo facts only: keyword ranking aggregates, visibility
+   movement, competitor gap counts, GBP/local task state and evidence IDs.
+5. Dashboard `/localo` and `wilq-localo-operator` must keep showing the blocker
+   until Localo evidence IDs and source connector facts exist.

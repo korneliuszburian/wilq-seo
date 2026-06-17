@@ -88,6 +88,15 @@ def clear_ahrefs_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
 
 
+def clear_localo_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in (
+        "LOCALO_API_TOKEN",
+        "LOCALO_ORGANIZATION_ID",
+        "LOCALO_ACCESS_TOKEN",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
 def test_health_endpoint() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -147,6 +156,24 @@ def test_google_sheets_is_optional_disabled_current_scope() -> None:
     assert connector["missing_credentials"] == []
     assert connector["health_check"] == "disabled_optional"
     assert connector["error"] == "Connector disabled by current product scope."
+
+
+def test_localo_status_requires_api_token_and_organization_id(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+
+    response = client.get("/api/connectors/localo/status")
+
+    assert response.status_code == 200
+    connector = response.json()
+    assert connector["status"] == "missing_credentials"
+    assert connector["configured"] is False
+    assert connector["required_env"] == ["LOCALO_API_TOKEN", "LOCALO_ORGANIZATION_ID"]
+    assert connector["missing_credentials"] == ["LOCALO_ORGANIZATION_ID"]
 
 
 def test_connector_status_does_not_expose_secret_values(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1064,6 +1091,48 @@ def test_ahrefs_vendor_read_routes_through_refresh_endpoint(
     run = response.json()
     assert run["status"] == "completed"
     assert run["metric_summary"] == {"domain_rating": 90.0, "ahrefs_rank": 1450}
+
+
+def test_localo_vendor_read_routes_through_mcp_probe(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "localo_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_localo_visibility_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.blocked,
+            summary="Localo MCP endpoint reachable; OAuth authorization required.",
+            external_call_attempted=True,
+            vendor_data_collected=False,
+            metric_summary={
+                "api": "localo_mcp_oauth_probe",
+                "mcp_initialize_status": 401,
+                "authorization_code_supported": 1,
+                "pkce_s256_supported": 1,
+                "access_token_present": 0,
+            },
+            errors=["Localo MCP OAuth authorization is incomplete."],
+        ),
+    )
+
+    response = client.post(
+        "/api/connectors/localo/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+
+    assert response.status_code == 200
+    run = response.json()
+    assert run["status"] == "blocked"
+    assert run["external_call_attempted"] is True
+    assert run["vendor_data_collected"] is False
+    assert run["metric_summary"]["api"] == "localo_mcp_oauth_probe"
+    assert run["metric_summary"]["access_token_present"] == 0
 
 
 def test_wordpress_vendor_read_uses_rest_content_inventory(

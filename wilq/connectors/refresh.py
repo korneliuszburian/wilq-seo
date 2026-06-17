@@ -10,6 +10,7 @@ from wilq.connectors.google_merchant_center.client import (
 )
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
+from wilq.connectors.localo.client import refresh_localo_visibility_summary
 from wilq.connectors.registry import get_connector_status
 from wilq.connectors.vendor import VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
@@ -119,6 +120,8 @@ def _refresh_result(
         return refresh_google_sheets_review_surface(request)
     if connector_id == "ahrefs":
         return refresh_ahrefs_domain_rating(request)
+    if connector_id == "localo":
+        return refresh_localo_visibility_summary(request)
     if connector_id in {"wordpress_ekologus", "wordpress_sklep"}:
         return refresh_wordpress_content_inventory(connector_id, request)
     summary = (

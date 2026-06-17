@@ -1,0 +1,1 @@
+"""Localo MCP connector."""
