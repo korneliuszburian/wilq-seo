@@ -75,7 +75,10 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
 - Paid Ahrefs live `vendor_read` smoke passed on 2026-06-17: report date `2026-06-16`, `domain_rating=24.0`, `ahrefs_rank=6433882`, `target_source=repo_env`; token and target values were not returned.
-- Merchant Center local credential smoke reached Google with service account `krn-seo-readonly@rekurencja-ads.iam.gserviceaccount.com` and account `5519957373`; connector status is configured, but live `aggregateProductStatuses` returns `401 UNAUTHENTICATED` because the caller does not have access to that Merchant Center account yet.
+- Google first-party local credentials now use `authorized_user` ADC for `marketing@rekurencja.com` through `GOOGLE_APPLICATION_CREDENTIALS=/home/krn/.config/gcloud/application_default_credentials.json`; service-account JSON remains only a fallback path.
+- Merchant API and Analytics Data API are enabled in OAuth project `rekurencja-seo`, and Merchant account `5519957373` has registered GCP project number `433565033354` via `developerRegistration:registerGcp`.
+- Live Google first-party smokes passed on 2026-06-17: Merchant `aggregateProductStatuses` returned `total_products=10916`, `disapproved_products=16`, `expiring_products=96`, `merchant_action_product_count=1919`; GSC Search Analytics returned `clicks=777`, `impressions=83288`, `average_position=12.2934`; GA4 Analytics Data API returned `active_users=1791`, `sessions=2316`, `screen_page_views=5863`, `event_count=26437`, `engagement_rate=0.502591`.
+- Runtime note: after changing `.env` credentials, restart the API process before HTTP smoke checks. `.env` is loaded into process env at import/startup, and old server processes keep old credential values.
 - `pip-audit`: no known vulnerabilities found.
 - `detect-secrets`: no findings in scoped source scan.
 
@@ -83,7 +86,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
-- Goal 001 is not complete because skills are deferred by policy, Localo/social vendor-read connector adapters are still blocked/not implemented, Google first-party service-account credentials are not valid, and opportunity generation mostly uses connector-status/refresh evidence rather than vendor performance metrics.
+- Goal 001 is not complete because skills are deferred by policy, Localo/social vendor-read connector adapters are still blocked/not implemented, Google Ads OAuth still needs a fresh `adwords` refresh token, and opportunity generation mostly uses connector-status/refresh evidence rather than vendor performance metrics.
 - Live Google Ads `vendor_read` reaches Google's OAuth token endpoint from repo-local `.env`, but the current refresh-token tuple returns `400 invalid_grant`; generate a fresh `adwords`-scoped refresh token before expecting campaign metrics.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 
@@ -128,7 +131,7 @@ API is runnable through:
 uv run uvicorn apps.api.wilq_api.main:app --reload
 ```
 
-FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs, connector refresh runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state and connector refresh-run state. Opportunities are derived from readiness/refresh evidence plus playbook/expert-rule mappings; Google Ads can now persist aggregate read-only vendor metrics when credentials and API access allow it, Merchant Center can persist aggregate product status and issue counts when service-account access allows it, Ahrefs can persist aggregate Site Explorer domain rating/rank metadata when token and target config allow it, and WordPress vendor reads can persist aggregate post/page inventory when site credentials allow it. Google Sheets is disabled for current Ekologus scope and must not block connector readiness.
+FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs, connector refresh runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state and connector refresh-run state. Opportunities are derived from readiness/refresh evidence plus playbook/expert-rule mappings; Google Ads can now persist aggregate read-only vendor metrics when credentials and API access allow it, Merchant Center can persist aggregate product status and issue counts when Google credentials and Merchant developer registration allow it, Ahrefs can persist aggregate Site Explorer domain rating/rank metadata when token and target config allow it, and WordPress vendor reads can persist aggregate post/page inventory when site credentials allow it. Google Sheets is disabled for current Ekologus scope and must not block connector readiness.
 
 ## Next recommended goal
 

@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 
-from wilq.connectors.google_auth import GoogleCredentialError, google_service_account_access_token
+from wilq.connectors.google_auth import GoogleCredentialError, google_access_token
 from wilq.connectors.vendor import VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
@@ -30,7 +30,7 @@ def refresh_merchant_product_status_summary(
         )
 
     try:
-        access_token = google_service_account_access_token([MERCHANT_API_SCOPE])
+        access_token = google_access_token([MERCHANT_API_SCOPE])
     except GoogleCredentialError as exc:
         return VendorReadResult(
             status=ConnectorRefreshStatus.blocked,

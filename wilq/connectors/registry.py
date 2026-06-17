@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from wilq.connectors.google_auth import (
-    GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,
-    google_service_account_available,
-    google_service_account_diagnostic,
+    GOOGLE_CREDENTIAL_ENV_NAMES,
+    google_credentials_available,
+    google_credentials_diagnostic,
 )
 from wilq.credentials.runtime import (
     credential_file_names,
@@ -67,7 +67,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "No direct API cost expected; quota-limited.",
         "Read-only SEO diagnostics.",
         "credential_presence",
-        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
+        (GOOGLE_CREDENTIAL_ENV_NAMES,),
     ),
     ConnectorDefinition(
         "google_analytics_4",
@@ -80,7 +80,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "No direct API cost expected; quota-limited.",
         "Measurement gaps must not be misreported as marketing failures.",
         "credential_presence",
-        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
+        (GOOGLE_CREDENTIAL_ENV_NAMES,),
     ),
     ConnectorDefinition(
         "google_merchant_center",
@@ -93,7 +93,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "No direct API cost expected; quota-limited.",
         "Feed writes can affect product visibility and must preserve factual attributes.",
         "credential_presence",
-        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
+        (GOOGLE_CREDENTIAL_ENV_NAMES,),
     ),
     ConnectorDefinition(
         "google_sheets",
@@ -109,7 +109,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "current Ekologus operator scope unless review-sheet workflows return."
         ),
         "disabled_optional",
-        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
+        (GOOGLE_CREDENTIAL_ENV_NAMES,),
         False,
     ),
     ConnectorDefinition(
@@ -228,8 +228,8 @@ def _required_credential_names(definition: ConnectorDefinition) -> list[str]:
 
 
 def _credential_group_available(group: tuple[str, ...]) -> bool:
-    if group == GOOGLE_SERVICE_ACCOUNT_ENV_NAMES:
-        return google_service_account_available()
+    if group == GOOGLE_CREDENTIAL_ENV_NAMES:
+        return google_credentials_available()
     return any(_credential_available(name) for name in group)
 
 
@@ -242,11 +242,11 @@ def _missing_credential_groups(definition: ConnectorDefinition) -> list[str]:
 
 
 def _connector_error(missing: list[str]) -> str | None:
-    if "|".join(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES) in missing:
-        diagnostic = google_service_account_diagnostic()
-        if diagnostic == "missing_google_service_account_credentials":
-            return "Google service account credentials are missing."
-        return f"Google service account credentials are invalid: {diagnostic}."
+    if "|".join(GOOGLE_CREDENTIAL_ENV_NAMES) in missing:
+        diagnostic = google_credentials_diagnostic()
+        if diagnostic == "missing_google_credentials":
+            return "Google credentials are missing."
+        return f"Google credentials are invalid: {diagnostic}."
     return None
 
 

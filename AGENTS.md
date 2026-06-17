@@ -14,6 +14,8 @@ Dashboard, Codex skills, hooks, workflows, expert rules, opportunities, and acti
 
 Repo-local `.env` is the primary private runtime credential source for this checkout. It is intentionally git-ignored and may contain real local values. The Ekologus access pack is bootstrap/import/fallback material, not the primary API contract. Process env may override `.env`; `.env` may fall back to access-pack values; API responses may expose credential source labels like `repo_env` or `access_pack_env`, but never credential values.
 
+Google first-party read adapters accept local Google credentials via `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_SERVICE_ACCOUNT_JSON`, or `GOOGLE_CREDENTIALS`. The current local path is an Application Default Credentials `authorized_user` file for `marketing@rekurencja.com`; service-account JSON is a legacy/fallback path, not the default. Keep Google OAuth scope, API enablement, and Merchant developer registration state in handoff docs, never in committed secrets.
+
 Use `uv run ...` for Python commands that import the WILQ API. Do not use system `python3` for API smoke checks because optional runtime dependencies are resolved through `uv.lock`.
 
 ## Architecture rules
@@ -130,6 +132,7 @@ Use subagents for parallel investigation.
 Merge findings before implementation.
 Touch only files required by the goal.
 Every changed line must trace to the goal.
+Use Conventional Commits only.
 Use structured schemas before prose.
 Use real API boundaries before prompt cleverness.
 Use dashboard/API/Codex as one product surface.

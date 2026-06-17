@@ -12,7 +12,7 @@ from apps.api.wilq_api.main import app
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
-from wilq.connectors.google_auth import GOOGLE_SERVICE_ACCOUNT_ENV_NAMES
+from wilq.connectors.google_auth import GOOGLE_CREDENTIAL_ENV_NAMES
 from wilq.connectors.google_merchant_center.client import (
     refresh_merchant_product_status_summary,
 )
@@ -170,7 +170,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["api_key"] == "[REDACTED]"
 
 
-def test_google_first_party_status_requires_valid_service_account(
+def test_google_first_party_status_accepts_authorized_user_credentials(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -186,17 +186,14 @@ def test_google_first_party_status_requires_valid_service_account(
 
     assert response.status_code == 200
     connectors = {item["id"]: item for item in response.json()}
-    missing_label = "|".join(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES)
+    missing_label = "|".join(GOOGLE_CREDENTIAL_ENV_NAMES)
     for connector_id in ("google_search_console", "google_analytics_4"):
         connector = connectors[connector_id]
-        assert connector["configured"] is False
-        assert connector["status"] == "missing_credentials"
-        assert missing_label in connector["missing_credentials"]
-        assert connector["error"] == (
-            "Google service account credentials are invalid: "
-            "google_credentials_type_authorized_user."
-        )
-        assert set(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES).issubset(connector["required_env"])
+        assert connector["configured"] is True
+        assert connector["status"] == "configured"
+        assert missing_label not in connector["missing_credentials"]
+        assert connector["error"] is None
+        assert set(GOOGLE_CREDENTIAL_ENV_NAMES).issubset(connector["required_env"])
 
 
 def test_system_status_reports_credential_runtime_without_paths_or_filenames() -> None:
@@ -546,7 +543,7 @@ def test_gsc_vendor_read_uses_search_analytics(
     clear_google_service_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "sc-domain:ekologus.pl")
     monkeypatch.setattr(
-        "wilq.connectors.google_search_console.client.google_service_account_access_token",
+        "wilq.connectors.google_search_console.client.google_access_token",
         lambda scopes: "gsc-access-token",
     )
 
@@ -598,7 +595,7 @@ def test_ga4_vendor_read_uses_run_report(
     clear_google_service_env(monkeypatch)
     monkeypatch.setenv("GA4_PROPERTY_ID", "properties/411974093")
     monkeypatch.setattr(
-        "wilq.connectors.google_analytics_4.client.google_service_account_access_token",
+        "wilq.connectors.google_analytics_4.client.google_access_token",
         lambda scopes: "ga4-access-token",
     )
 
@@ -711,7 +708,7 @@ def test_google_sheets_vendor_read_uses_spreadsheets_get(
     clear_google_service_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID", "sheet-id")
     monkeypatch.setattr(
-        "wilq.connectors.google_sheets.client.google_service_account_access_token",
+        "wilq.connectors.google_sheets.client.google_access_token",
         lambda scopes: "sheets-access-token",
     )
 
@@ -790,7 +787,7 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
     clear_google_service_env(monkeypatch)
     monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "accounts/123456")
     monkeypatch.setattr(
-        "wilq.connectors.google_merchant_center.client.google_service_account_access_token",
+        "wilq.connectors.google_merchant_center.client.google_access_token",
         lambda scopes: "merchant-access-token",
     )
 

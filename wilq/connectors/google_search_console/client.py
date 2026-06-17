@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 import httpx
 
-from wilq.connectors.google_auth import GoogleCredentialError, google_service_account_access_token
+from wilq.connectors.google_auth import GoogleCredentialError, google_access_token
 from wilq.connectors.vendor import VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
@@ -32,7 +32,7 @@ def refresh_search_console_site_summary(
         )
 
     try:
-        access_token = google_service_account_access_token([GSC_READONLY_SCOPE])
+        access_token = google_access_token([GSC_READONLY_SCOPE])
     except GoogleCredentialError as exc:
         return VendorReadResult(
             status=ConnectorRefreshStatus.blocked,
