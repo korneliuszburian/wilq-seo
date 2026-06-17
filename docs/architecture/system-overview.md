@@ -6,7 +6,7 @@ WILQ Marketing Operating System connects one canonical API to a dashboard, Codex
 Dashboard + future Codex skills + hooks
   -> WILQ API
   -> connector registry, evidence registry, expert rules, opportunity engine, actions, audit, local state
-  -> Google Ads, GSC, GA4, Merchant Center, Sheets, Ahrefs, Localo, WordPress, LinkedIn, Facebook
+  -> Google Ads, GSC, GA4, Merchant Center, Ahrefs, Localo, WordPress, LinkedIn, Facebook
 ```
 
 Rules:
@@ -17,6 +17,7 @@ Rules:
 - Expert rules live as structured YAML but are consumed through typed WILQ API endpoints, not by prompt-only logic.
 - Codex runs, workflow runs, connector refresh runs, and audit events persist to local SQLite state with redaction.
 - Repo-local `.env` is the primary private credential source; the Ekologus access pack is import/fallback material.
+- Google Sheets is optional and disabled for the current Ekologus operator scope; it is not a required evidence source.
 - Knowledge playbooks compile into source-lineage cards before reaching Codex context packs.
 - Evidence registry records expose readiness/source/refresh state without secret values.
 - Readiness opportunities may derive from connector-status evidence, connector refresh-run evidence, playbook IDs, and expert-rule IDs. They must not claim vendor performance metrics until vendor refreshes exist.

@@ -19,6 +19,7 @@ from wilq.schemas import (
     ConnectorRefreshRequest,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    ConnectorStatusValue,
     utc_now,
 )
 from wilq.storage.local_state import local_state_store
@@ -38,6 +39,7 @@ def run_connector_refresh(
     result = _refresh_result(
         connector_id=connector_id,
         request=refresh_request,
+        connector_status=connector.status,
         configured=connector.configured,
         missing_credentials=connector.missing_credentials,
     )
@@ -74,9 +76,22 @@ def get_connector_refresh_run(run_id: str) -> ConnectorRefreshRun | None:
 def _refresh_result(
     connector_id: str,
     request: ConnectorRefreshRequest,
+    connector_status: ConnectorStatusValue,
     configured: bool,
     missing_credentials: list[str],
 ) -> VendorReadResult:
+    if connector_status == ConnectorStatusValue.disabled:
+        summary = (
+            f"Connector {connector_id} is disabled by current product scope. "
+            "No external API call was attempted."
+        )
+        return VendorReadResult(
+            status=ConnectorRefreshStatus.completed
+            if request.mode == ConnectorRefreshMode.status_probe
+            else ConnectorRefreshStatus.blocked,
+            summary=summary,
+            errors=[] if request.mode == ConnectorRefreshMode.status_probe else [summary],
+        )
     if request.mode == ConnectorRefreshMode.status_probe:
         return VendorReadResult(
             status=ConnectorRefreshStatus.completed,

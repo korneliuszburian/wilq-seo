@@ -27,6 +27,7 @@ class ConnectorDefinition:
     risk_notes: str
     health_check: str
     required_credential_groups: tuple[tuple[str, ...], ...] = ()
+    enabled: bool = True
 
 
 CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
@@ -102,9 +103,13 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ("export_review_sheet", "import_reviewed_bulk_edits"),
         "Sheets API quotas apply.",
         "No direct API cost expected; quota-limited.",
-        "Sheets is collaboration surface, not source of truth.",
-        "credential_presence",
+        (
+            "Optional collaboration/export surface, not source of truth. Disabled for "
+            "current Ekologus operator scope unless review-sheet workflows return."
+        ),
+        "disabled_optional",
         (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
+        False,
     ),
     ConnectorDefinition(
         "ahrefs",
@@ -243,6 +248,31 @@ def _connector_error(missing: list[str]) -> str | None:
 
 def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
     required_names = _required_credential_names(definition)
+    if not definition.enabled:
+        return ConnectorStatus(
+            id=definition.id,
+            label=definition.label,
+            status=ConnectorStatusValue.disabled,
+            configured=False,
+            missing_credentials=[],
+            available_credential_sources=credential_source_summary(required_names),
+            error="Connector disabled by current product scope.",
+            freshness=FreshnessState(
+                state="missing",
+                notes="Optional connector disabled by current Ekologus operator scope.",
+            ),
+            capabilities=ConnectorCapability(
+                read=definition.read,
+                write=definition.write,
+                operations=list(definition.supported_actions),
+            ),
+            required_env=required_names,
+            supported_actions=list(definition.supported_actions),
+            rate_limit_notes=definition.rate_limit_notes,
+            cost_notes=definition.cost_notes,
+            risk_notes=definition.risk_notes,
+            health_check=definition.health_check,
+        )
     missing = [
         name
         for name in definition.required_env

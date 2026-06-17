@@ -9,7 +9,7 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Root `AGENTS.md` now defines WILQ product philosophy, API-first rules, evidence rules, MCP rules, skill creation timing, security rules, quality gates and forbidden behavior.
 - FastAPI WILQ API spine exists with health, system status, connectors, connector refresh runs, dashboard command center, opportunities, actions, expert rules, knowledge, Codex context/runs and workflows endpoints.
 - Pydantic schemas exist for connectors, connector refresh runs, evidence, metrics, opportunities, actions, audit events, Codex runs and knowledge cards.
-- Connector registry includes Google Ads, GSC, GA4, Merchant Center, Google Sheets, Ahrefs, Localo, WordPress, LinkedIn, Facebook and OpenAI/Codex.
+- Connector registry includes Google Ads, GSC, GA4, Merchant Center, Ahrefs, Localo, WordPress, LinkedIn, Facebook and OpenAI/Codex. Google Sheets remains documented as an optional disabled collaboration/export surface, not a required evidence source.
 - Action validation now checks evidence, connector, mode, risk and payload action type.
 - React/TanStack Query dashboard shell exists with required operating routes, route tests, API-backed cards, detail panels, payload preview and audit section.
 - Shared Zod schema package exists and the dashboard API client parses API responses at runtime.
@@ -26,7 +26,7 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Dashboard knowledge routes render compiled cards and playbooks through shared Zod validation.
 - Evidence registry APIs expose connector-status evidence without secret values.
 - Connector refresh APIs create durable `status_probe` and read-only `vendor_read` runs with redacted evidence IDs and no invented vendor metrics.
-- Google Ads, Google Search Console, GA4, Google Merchant Center, Google Sheets, Ahrefs and both WordPress sites have first read-only `vendor_read` adapters that persist aggregate metrics/inventory only.
+- Google Ads, Google Search Console, GA4, Google Merchant Center, Ahrefs and both WordPress sites have first read-only `vendor_read` adapters that persist aggregate metrics/inventory only. Google Sheets has a read adapter but is disabled by current product scope.
 - Opportunities are now derived from connector readiness evidence plus playbook/expert-rule mappings, not fixed demo opportunity rows.
 - Workflow, model runtime, credential runtime, MCP, quality, security and source-registry docs exist.
 - Codex hooks exist for SessionStart and Stop; they fail open and restrict API URL targets to local/allowed hosts.
@@ -82,7 +82,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
-- Goal 001 is not complete because skills are deferred by policy, several vendor-read connector adapters are still blocked/not implemented, and opportunity generation mostly uses connector-status/refresh evidence rather than vendor performance metrics.
+- Goal 001 is not complete because skills are deferred by policy, Localo/social vendor-read connector adapters are still blocked/not implemented, Google first-party service-account credentials are not valid, and opportunity generation mostly uses connector-status/refresh evidence rather than vendor performance metrics.
 - Live Google Ads `vendor_read` reaches Google's OAuth token endpoint from repo-local `.env`, but the current refresh-token tuple returns `400 invalid_grant`; generate a fresh `adwords`-scoped refresh token before expecting campaign metrics.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 
@@ -127,7 +127,7 @@ API is runnable through:
 uv run uvicorn apps.api.wilq_api.main:app --reload
 ```
 
-FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs, connector refresh runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state and connector refresh-run state. Opportunities are derived from readiness/refresh evidence plus playbook/expert-rule mappings; Google Ads can now persist aggregate read-only vendor metrics when credentials and API access allow it, Merchant Center can persist aggregate product status and issue counts when service-account access allows it, Google Sheets can persist aggregate review-surface metadata when service-account access allows it, Ahrefs can persist aggregate Site Explorer domain rating/rank metadata when token and target config allow it, and WordPress vendor reads can persist aggregate post/page inventory when site credentials allow it.
+FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs, connector refresh runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state and connector refresh-run state. Opportunities are derived from readiness/refresh evidence plus playbook/expert-rule mappings; Google Ads can now persist aggregate read-only vendor metrics when credentials and API access allow it, Merchant Center can persist aggregate product status and issue counts when service-account access allows it, Ahrefs can persist aggregate Site Explorer domain rating/rank metadata when token and target config allow it, and WordPress vendor reads can persist aggregate post/page inventory when site credentials allow it. Google Sheets is disabled for current Ekologus scope and must not block connector readiness.
 
 ## Next recommended goal
 
