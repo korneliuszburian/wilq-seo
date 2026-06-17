@@ -252,11 +252,18 @@ def _merchant_feed_items(
     merchant_facts = [
         fact for fact in facts if fact.source_connector == "google_merchant_center"
     ]
-    issue_groups = _group_facts(
+    merchant_issue_facts = [
         fact
         for fact in merchant_facts
         if fact.name == "issue_product_count"
         and {"severity", "resolution"}.issubset(fact.dimensions)
+    ]
+    if any(fact.dimensions.get("issue_type") for fact in merchant_issue_facts):
+        merchant_issue_facts = [
+            fact for fact in merchant_issue_facts if fact.dimensions.get("issue_type")
+        ]
+    issue_groups = _group_facts(
+        merchant_issue_facts
     )
     product_groups = _group_facts(
         fact
@@ -266,15 +273,20 @@ def _merchant_feed_items(
         and "country" in fact.dimensions
     )
     items: list[TacticalQueueItem] = []
-    for index, ((severity, resolution, country), group_facts) in enumerate(
+    for index, ((severity, resolution, issue_type, country), group_facts) in enumerate(
         issue_groups.items(),
         start=1,
     ):
         product_count = _numeric_fact(group_facts, "issue_product_count")
+        issue_title = _dimension_value(group_facts, "issue_title")
+        affected_attribute = _dimension_value(group_facts, "affected_attribute")
         items.append(
             TacticalQueueItem(
-                id=f"tq_merchant_issue_{_stable_slug(country)}_{_stable_slug(severity)}",
-                title=f"Merchant: {severity} / {resolution} / {country}",
+                id=(
+                    f"tq_merchant_issue_{_stable_slug(country)}_"
+                    f"{_stable_slug(severity)}_{_stable_slug(issue_type)}"
+                ),
+                title=f"Merchant: {severity} / {issue_type} / {country}",
                 domain=OpportunityDomain.merchant,
                 intent="merchant_feed_triage",
                 priority=_merchant_issue_priority(severity, product_count, index),
@@ -286,10 +298,13 @@ def _merchant_feed_items(
                     "country": country,
                     "severity": severity,
                     "resolution": resolution,
+                    "issue_type": issue_type,
+                    **({"issue_title": issue_title} if issue_title else {}),
+                    **({"affected_attribute": affected_attribute} if affected_attribute else {}),
                 },
                 diagnosis=(
                     f"Merchant Center pokazuje {product_count or 0} produktów w issue "
-                    f"{severity}/{resolution} dla kraju {country}."
+                    f"{severity}/{issue_type}/{resolution} dla kraju {country}."
                 ),
                 next_step=(
                     "Przygotuj review feed issue queue i payload preview. Nie zmieniaj "
@@ -354,6 +369,7 @@ def _fact_group_key(fact: MetricFact) -> tuple[str, ...] | None:
         return (
             fact.dimensions.get("severity", ""),
             fact.dimensions.get("resolution", ""),
+            fact.dimensions.get("issue_type", "unknown_issue"),
             fact.dimensions.get("country", ""),
         )
     if fact.source_connector == "google_merchant_center":
@@ -369,6 +385,14 @@ def _numeric_fact(facts: list[MetricFact], name: str) -> float | int | None:
     if fact is None or not isinstance(fact.value, int | float):
         return None
     return fact.value
+
+
+def _dimension_value(facts: list[MetricFact], name: str) -> str | None:
+    for fact in facts:
+        value = fact.dimensions.get(name)
+        if value:
+            return value
+    return None
 
 
 def _wordpress_content_index(facts: list[MetricFact]) -> WordPressContentIndex:

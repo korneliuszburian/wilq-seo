@@ -116,10 +116,10 @@ def _summarize_aggregate_product_statuses(
         reporting_context = status.get("reportingContext")
         if isinstance(reporting_context, str) and reporting_context:
             reporting_contexts.add(reporting_context)
-        stats = status.get("stats", {})
+        stats = status.get("stats") or status.get("statistics") or {}
         if not isinstance(stats, dict):
             stats = {}
-        status_active_count = _int_metric(stats.get("activeCount"))
+        status_active_count = _int_metric(stats.get("activeCount") or stats.get("approvedCount"))
         status_pending_count = _int_metric(stats.get("pendingCount"))
         status_disapproved_count = _int_metric(stats.get("disapprovedCount"))
         status_expiring_count = _int_metric(stats.get("expiringCount"))
@@ -141,14 +141,14 @@ def _summarize_aggregate_product_statuses(
                     VendorMetricFact("expiring_products", status_expiring_count, status_dimensions),
                 ]
             )
-        issues = status.get("itemLevelIssues", [])
+        issues = status.get("itemLevelIssues") or status.get("issues") or []
         if not isinstance(issues, list):
             continue
         for issue in issues:
             if not isinstance(issue, dict):
                 continue
             issue_count += 1
-            product_count = _int_metric(issue.get("productCount"))
+            product_count = _int_metric(issue.get("productCount") or issue.get("numProducts"))
             issue_dimensions = status_dimensions | _issue_dimensions(issue)
             if issue_dimensions:
                 metric_facts.append(
@@ -230,7 +230,7 @@ def _int_metric(value: Any) -> int:
 
 def _status_dimensions(status: dict[str, Any]) -> dict[str, str]:
     dimensions: dict[str, str] = {}
-    country = status.get("country")
+    country = status.get("country") or status.get("countryCode")
     if isinstance(country, str) and country:
         dimensions["country"] = country
     reporting_context = status.get("reportingContext")
@@ -247,4 +247,24 @@ def _issue_dimensions(issue: dict[str, Any]) -> dict[str, str]:
     resolution = issue.get("resolution")
     if isinstance(resolution, str) and resolution:
         dimensions["resolution"] = resolution
+    issue_type = issue.get("issueType") or issue.get("type") or issue.get("code")
+    if isinstance(issue_type, str) and issue_type:
+        dimensions["issue_type"] = _safe_dimension_text(issue_type)
+    title = issue.get("title")
+    if isinstance(title, str) and title:
+        dimensions["issue_title"] = _safe_dimension_text(title)
+    category = issue.get("category")
+    if isinstance(category, str) and category:
+        dimensions["issue_category"] = _safe_dimension_text(category)
+    attribute = issue.get("attribute")
+    if isinstance(attribute, str) and attribute:
+        dimensions["affected_attribute"] = _safe_dimension_text(attribute)
+    destination = issue.get("destination")
+    if isinstance(destination, str) and destination:
+        dimensions["destination"] = _safe_dimension_text(destination)
     return dimensions
+
+
+def _safe_dimension_text(value: str) -> str:
+    normalized = " ".join(value.split())
+    return normalized[:120]

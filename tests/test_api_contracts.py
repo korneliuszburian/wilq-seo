@@ -235,6 +235,9 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
                     "country": "PL",
                     "severity": "DISAPPROVED",
                     "resolution": "MERCHANT_ACTION",
+                    "issue_type": "missing_image",
+                    "issue_title": "Missing image",
+                    "affected_attribute": "image_link",
                 },
             ),
             VendorMetricFact(
@@ -716,6 +719,12 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     ga4_items = [item for item in queue["items"] if item["intent"] == "landing_page_quality"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in ga4_items)
     assert all("wordpress_match_confidence" in item["dimensions"] for item in ga4_items)
+    merchant_items = [item for item in queue["items"] if item["intent"] == "merchant_feed_triage"]
+    assert any(item["dimensions"].get("issue_type") == "missing_image" for item in merchant_items)
+    assert any(
+        item["dimensions"].get("affected_attribute") == "image_link"
+        for item in merchant_items
+    )
     for item in queue["items"]:
         assert item["dimensions"]
         assert item["evidence_ids"]
@@ -1300,12 +1309,17 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
                             {
                                 "severity": "DISAPPROVED",
                                 "resolution": "MERCHANT_ACTION",
-                                "productCount": "2",
+                                "issueType": "missing_image",
+                                "title": "Missing image",
+                                "attribute": "image_link",
+                                "numProducts": "2",
                             },
                             {
                                 "severity": "NOT_IMPACTED",
                                 "resolution": "PENDING_PROCESSING",
                                 "productCount": "1",
+                                "issueType": "pending_review",
+                                "title": "Pending review",
                             },
                         ],
                     },
@@ -1322,6 +1336,7 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
                             {
                                 "severity": "DEMOTED",
                                 "resolution": "MERCHANT_ACTION",
+                                "issueType": "limited_performance",
                                 "productCount": "1",
                             }
                         ],
@@ -1370,6 +1385,9 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
         "reporting_context": "SHOPPING_ADS",
         "severity": "DISAPPROVED",
         "resolution": "MERCHANT_ACTION",
+        "issue_type": "missing_image",
+        "issue_title": "Missing image",
+        "affected_attribute": "image_link",
     }
 
 

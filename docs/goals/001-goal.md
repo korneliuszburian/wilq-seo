@@ -5067,3 +5067,142 @@ Remaining next work:
    diagnostics. Current live failure is `oauth_error=deleted_client`.
 6. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
+---
+
+## 44. Merchant issue detail enrichment - 2026-06-18
+
+Implemented the next Merchant usefulness slice from section 43.
+
+What changed:
+
+* Merchant Center adapter now enriches `issue_product_count` facts with safe
+  issue details when the API returns them:
+  * `issue_type`,
+  * `issue_title`,
+  * `issue_category`,
+  * `affected_attribute`,
+  * `destination`.
+* Adapter supports both previously observed and newer aggregate status field
+  shapes:
+  * `stats` or `statistics`,
+  * `activeCount` or `approvedCount`,
+  * `itemLevelIssues` or `issues`,
+  * `productCount` or `numProducts`,
+  * `issueType`, `type` or `code`.
+* Long text dimensions are normalized and truncated to `120` characters.
+* The adapter still does not persist raw product IDs, sample products, raw
+  response bodies, product titles, product URLs, account auth values or
+  credential paths.
+* Merchant tactical queue now groups issue items by `issue_type`, not only by
+  severity/resolution/country.
+* Merchant tactical queue dimensions now expose safe issue details such as
+  `issue_type`, `issue_title` and `affected_attribute`.
+* If enriched issue facts exist, the queue ignores older `issue_product_count`
+  rows without `issue_type`, preventing stale `unknown_issue` cards from
+  displacing useful live issue cards.
+
+Live Merchant proof:
+
+```text
+POST /api/connectors/google_merchant_center/refresh
+status completed
+id refresh_google_merchant_center_a3ef2f66703f
+summary Merchant Center vendor read completed through aggregateProductStatuses. Products: 10900.
+item_level_issue_count 15
+merchant_action_issue_count 15
+total_products 10900
+```
+
+Live enriched issue facts:
+
+```json
+[
+  {
+    "value": 23,
+    "dimensions": {
+      "affected_attribute": "n:availability",
+      "country": "PL",
+      "issue_type": "availability_updated",
+      "reporting_context": "FREE_LISTINGS",
+      "resolution": "MERCHANT_ACTION",
+      "severity": "NOT_IMPACTED"
+    }
+  },
+  {
+    "value": 446,
+    "dimensions": {
+      "affected_attribute": "n:unit_pricing_measure",
+      "country": "PL",
+      "issue_type": "missing_potentially_required_attribute",
+      "reporting_context": "SHOPPING_ADS",
+      "resolution": "MERCHANT_ACTION",
+      "severity": "NOT_IMPACTED"
+    }
+  }
+]
+```
+
+Live tactical queue proof:
+
+```text
+GET /api/marketing/tactical-queue
+merchant_items 4
+unknown_issue 0
+sample issue types:
+- availability_updated / affected_attribute=n:availability
+- missing_potentially_required_attribute / affected_attribute=n:certification
+- image_too_small_for_high_resolution / affected_attribute=n:image_link
+```
+
+Current interpretation:
+
+* Merchant route is now materially more useful for the marketer: WILQ can point
+  to the kind of feed issue and affected attribute instead of saying only
+  `NOT_IMPACTED/MERCHANT_ACTION`.
+* These are still diagnostic/read-only facts. WILQ must not claim that a product
+  was fixed, approval restored or revenue recovered until a future validated
+  ActionObject and audit event prove it.
+
+Verification:
+
+```bash
+uv run ruff check wilq/connectors/google_merchant_center/client.py wilq/briefing/tactical_queue.py tests/test_api_contracts.py
+uv run mypy wilq/connectors/google_merchant_center/client.py wilq/briefing/tactical_queue.py
+uv run pytest tests/test_api_contracts.py -q
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Focused API contract tests: `53 passed`.
+* Full Python tests through quality/verify: `70 passed`.
+* Dashboard unit tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+* `scripts/quality.sh`: passed.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Remaining next work:
+
+1. Add production canonical/source URL mapping for content:
+   * production sitemap fetch if a public production source is available,
+   * configured host alias mapping from `ekologus.dev.proudsite.pl` to
+     `www.ekologus.pl` only when the path exists in sitemap evidence,
+   * confidence labels in dashboard copy so path fallback is visibly weaker
+     than exact URL evidence.
+2. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+3. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+4. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+5. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.
