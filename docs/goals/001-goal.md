@@ -391,7 +391,7 @@ Current implementation slice completed after `7a5ced6`:
 * Committed and pushed:
   * `7db8b91 fix(connectors): expose sanitized google ads oauth errors`
 
-Current active slice after `7db8b91`:
+Current implementation slice completed after `7db8b91`:
 
 * Product outcome: make the Google Ads OAuth repair flow operator-safe, repo-local and repeatable, so the user does not need to manually inspect or paste credential values.
 * Implemented:
@@ -411,6 +411,18 @@ Current active slice after `7db8b91`:
   * Run `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"`.
 * Known limitation:
   * Project `Owner` can manage APIs/IAM/OAuth clients, but cannot bypass Google user-consent OAuth for `marketing@rekurencja.com`. A fresh user-approved `adwords` refresh token is still required before live Google Ads metrics can be collected.
+* Committed and pushed:
+  * `0190062 feat(cli): add google ads oauth repair helper`
+
+Current active slice after `0190062`:
+
+* Product outcome: finish Google Ads OAuth setup with `marketing@rekurencja.com`, then prove live Google Ads evidence through WILQ API before building Ads Doctor usefulness.
+* Operator action required:
+  * Use the helper flow above to approve Google Ads access and write a fresh local `GOOGLE_ADS_REFRESH_TOKEN` to `.env`.
+* Codex action immediately after token repair:
+  * Run `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"`.
+  * If live data succeeds, persist the run/evidence IDs in this goal and move to Ads Doctor live metric/action-candidate implementation.
+  * If it fails, record only sanitized HTTP/OAuth/API status labels and continue from the concrete blocker.
 
 Known external/product blockers:
 
