@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ GSC Content Doctor"
+  short_description: "GSC-driven SEO content triage"
+  default_prompt: "Use $wilq-gsc-content-doctor to turn Search Console evidence into content actions."

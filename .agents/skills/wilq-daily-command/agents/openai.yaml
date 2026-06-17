@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ Daily Command"
+  short_description: "Daily WILQ API operating brief"
+  default_prompt: "Use $wilq-daily-command to fetch WILQ API context and return today's evidence-backed operating actions."

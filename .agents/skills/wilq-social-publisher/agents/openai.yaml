@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ Social Publisher"
+  short_description: "Social post action workflow"
+  default_prompt: "Use $wilq-social-publisher to prepare social publishing action objects from WILQ evidence."

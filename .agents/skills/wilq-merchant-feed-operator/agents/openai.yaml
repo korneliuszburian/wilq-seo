@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ Merchant Feed Operator"
+  short_description: "Merchant feed issue workflow"
+  default_prompt: "Use $wilq-merchant-feed-operator to inspect Merchant Center evidence and feed action candidates."

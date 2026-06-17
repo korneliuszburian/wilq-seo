@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ Content Strategist"
+  short_description: "Evidence-backed content planning"
+  default_prompt: "Use $wilq-content-strategist to plan content work from WILQ API evidence and inventory."

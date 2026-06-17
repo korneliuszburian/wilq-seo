@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ Localo Operator"
+  short_description: "Local visibility operator workflow"
+  default_prompt: "Use $wilq-localo-operator to inspect Localo readiness and local visibility action candidates."

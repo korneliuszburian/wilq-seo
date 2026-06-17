@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ GA4 Analyst"
+  short_description: "GA4 behavior diagnostics workflow"
+  default_prompt: "Use $wilq-ga4-analyst to analyze GA4 evidence and surface behavior diagnostics."

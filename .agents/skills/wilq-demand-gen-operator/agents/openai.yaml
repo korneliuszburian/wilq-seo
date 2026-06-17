@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ Demand Gen Operator"
+  short_description: "Demand Gen migration workflow"
+  default_prompt: "Use $wilq-demand-gen-operator to inspect Demand Gen readiness and migration action candidates."

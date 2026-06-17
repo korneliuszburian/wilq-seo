@@ -1,0 +1,4 @@
+interface:
+  display_name: "WILQ Campaign Builder"
+  short_description: "Campaign action builder workflow"
+  default_prompt: "Use $wilq-campaign-builder to draft campaign action candidates through WILQ API validation."
