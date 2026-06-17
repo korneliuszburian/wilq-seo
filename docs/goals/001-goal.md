@@ -4660,13 +4660,123 @@ Remaining next work:
    * landing-page quality diagnostics,
    * Merchant feed issue triage,
    * source/medium and campaign traffic quality review.
-2. Add social draft candidates after LinkedIn/Facebook evidence or explicit
-   permission blockers are exposed as useful route evidence.
-3. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+2. Add Localo route-specific eval after Localo MCP/readiness exposes useful
    local evidence instead of only OAuth/missing-token blockers.
-4. Fix Google Ads OAuth client state before claiming live Ads performance
+3. Fix Google Ads OAuth client state before claiming live Ads performance
    diagnostics. Current live failure is `oauth_error=deleted_client`.
-5. Add apply-confirm UI only after the ActionObject model supports explicit
+4. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.
+
+---
+
+## 45. Social draft ActionObjects - 2026-06-18
+
+Implemented the social preparation slice from section 44.
+
+What changed:
+
+* WILQ now exposes prepare-only social ActionObjects:
+  * `act_prepare_linkedin_social_drafts`,
+  * `act_prepare_facebook_social_drafts`.
+* These actions are not publishers and not schedulers. They exist to prepare
+  Polish, review-safe draft directions from WILQ evidence.
+* Candidate inputs are built from existing WILQ metric facts only:
+  * Google Search Console clicks/impressions,
+  * Merchant Center issue/product facts,
+  * WordPress inventory facts,
+  * GA4 active-user facts.
+* Each candidate input carries:
+  * `source_connector`,
+  * `metric_name`,
+  * `value`,
+  * `dimensions`,
+  * `evidence_id`.
+* The actions explicitly carry social connector blocker evidence:
+  * `ev_connector_linkedin_status`,
+  * `ev_connector_facebook_status`.
+* Payload constraints require:
+  * `use_only_wilq_evidence`,
+  * `write_in_polish`,
+  * `no_performance_claims_without_source_metric`,
+  * `no_publishing_without_connector_credentials`,
+  * `require_human_review_before_apply`.
+* Blocked claims include ROAS, revenue, conversion uplift and product fixes
+  unless those claims are backed by explicit WILQ evidence.
+* Existing Merchant, GA4 and content prepare actions now keep `evidence_ids`
+  aligned with the actual metrics shown on the ActionObject card. This keeps
+  `/api/actions` evidence references valid and less noisy.
+
+Live API proof on a fresh local instance:
+
+```text
+GET /api/actions
+found act_prepare_linkedin_social_drafts
+connector linkedin
+domain social
+mode prepare
+candidate_inputs 8
+validate valid
+apply_status 409
+
+found act_prepare_facebook_social_drafts
+connector facebook
+domain social
+mode prepare
+candidate_inputs 8
+validate valid
+apply_status 409
+```
+
+Sample evidence-backed metrics attached to each social draft action:
+
+```text
+google_search_console clicks
+google_search_console impressions
+google_merchant_center issue_product_count
+wordpress_ekologus content_object_seen
+google_analytics_4 active_users
+```
+
+Current interpretation:
+
+* The marketer can now see social as a real WILQ route instead of a blank
+  placeholder: WILQ can prepare review-safe LinkedIn/Facebook draft directions
+  from real GSC/Merchant/WordPress/GA4 evidence.
+* Publishing remains correctly blocked because LinkedIn/Facebook credentials are
+  still missing. This is a product feature, not a gap to hide.
+* WILQ still must not claim social performance, revenue impact, conversion lift
+  or that Merchant/product fixes were applied unless a future connector refresh
+  and validated ActionObject prove it.
+
+Verification:
+
+```bash
+uv run ruff check wilq/actions/service.py tests/test_api_contracts.py
+uv run mypy wilq/actions/service.py
+uv run pytest tests/test_api_contracts.py -q
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Focused API contract tests: `53 passed`.
+* Fresh local API proof on `127.0.0.1:8010`: both social draft actions present,
+  validation returns `valid`, apply returns `409`.
+
+Remaining next work:
+
+1. Add production canonical/source URL mapping for content:
+   * production sitemap fetch if a public production source is available,
+   * configured host alias mapping from `ekologus.dev.proudsite.pl` to
+     `www.ekologus.pl` only when the path exists in sitemap evidence,
+   * confidence labels in dashboard copy so path fallback is visibly weaker
+     than exact URL evidence.
+2. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+3. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+4. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
 
 ---

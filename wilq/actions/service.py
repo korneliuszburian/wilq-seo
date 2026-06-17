@@ -80,6 +80,14 @@ def seed_static_actions() -> dict[str, ActionObject]:
 
 
 _STATIC_ACTIONS = seed_static_actions()
+ACTION_METRIC_CONNECTORS = (
+    "google_merchant_center",
+    "google_analytics_4",
+    "google_search_console",
+    "wordpress_ekologus",
+    "ahrefs",
+)
+ACTION_METRIC_FACT_LIMIT = 120
 
 
 def list_actions() -> list[ActionObject]:
@@ -92,16 +100,13 @@ def get_action(action_id: str) -> ActionObject | None:
 
 
 def seed_metric_action_candidates() -> dict[str, ActionObject]:
-    facts = [
-        fact
-        for fact in metric_store().list_metric_facts(limit=120)
-        if not _is_probe_only_fact(fact)
-    ]
+    facts = _action_metric_facts()
     by_connector = _facts_by_connector(facts)
     actions: dict[str, ActionObject] = {}
 
     merchant_facts = by_connector.get("google_merchant_center", [])
     if merchant_facts:
+        merchant_action_metrics = merchant_facts[:8]
         action = ActionObject(
             id="act_review_merchant_feed_issues",
             title="Przygotuj kolejkę przeglądu feedu Merchant Center",
@@ -110,8 +115,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             mode=ActionMode.prepare,
             risk=ActionRisk.medium,
             status=ActionStatus.needs_validation,
-            evidence_ids=_unique(fact.evidence_id for fact in merchant_facts),
-            metrics=merchant_facts[:8],
+            evidence_ids=_unique(fact.evidence_id for fact in merchant_action_metrics),
+            metrics=merchant_action_metrics,
             human_diagnosis=(
                 "Merchant Center ma realne metryki produktu/feedu w WILQ API. "
                 f"{_metric_sentence(merchant_facts)}. To uzasadnia kolejkę review, "
@@ -142,6 +147,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
 
     ga4_facts = by_connector.get("google_analytics_4", [])
     if ga4_facts:
+        ga4_action_metrics = ga4_facts[:8]
         action = ActionObject(
             id="act_review_ga4_tracking_quality",
             title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
@@ -150,8 +156,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             mode=ActionMode.prepare,
             risk=ActionRisk.low,
             status=ActionStatus.needs_validation,
-            evidence_ids=_unique(fact.evidence_id for fact in ga4_facts),
-            metrics=ga4_facts[:8],
+            evidence_ids=_unique(fact.evidence_id for fact in ga4_action_metrics),
+            metrics=ga4_action_metrics,
             human_diagnosis=(
                 "GA4 zwraca realne metryki ruchu, ale bieżący brief nie ma jeszcze "
                 f"dowodu konwersji ani ścieżki landing page. {_metric_sentence(ga4_facts)}."
@@ -184,7 +190,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         content_action_metrics = _prioritize_action_metrics(
             content_facts,
             required_names={"content_object_count", "clicks", "domain_rating"},
-        )
+        )[:10]
         action = ActionObject(
             id="act_prepare_content_refresh_queue",
             title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
@@ -193,8 +199,8 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             mode=ActionMode.prepare,
             risk=ActionRisk.medium,
             status=ActionStatus.needs_validation,
-            evidence_ids=_unique(fact.evidence_id for fact in content_facts),
-            metrics=content_action_metrics[:10],
+            evidence_ids=_unique(fact.evidence_id for fact in content_action_metrics),
+            metrics=content_action_metrics,
             human_diagnosis=(
                 "WordPress inventory istnieje w WILQ API i można go zestawić z GSC/Ahrefs, "
                 "żeby planować refresh zamiast duplikować treści. "
@@ -223,7 +229,122 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         )
         actions[action.id] = action
 
+    social_facts = [
+        *by_connector.get("google_search_console", []),
+        *by_connector.get("google_merchant_center", []),
+        *by_connector.get("wordpress_ekologus", []),
+        *by_connector.get("google_analytics_4", []),
+    ]
+    if social_facts:
+        actions.update(_social_draft_actions(social_facts))
+
     return actions
+
+
+def _action_metric_facts() -> list[MetricFact]:
+    facts: list[MetricFact] = []
+    for connector_id in ACTION_METRIC_CONNECTORS:
+        facts.extend(
+            fact
+            for fact in metric_store().list_metric_facts(
+                connector_id=connector_id,
+                limit=ACTION_METRIC_FACT_LIMIT,
+            )
+            if not _is_probe_only_fact(fact)
+        )
+    return facts
+
+
+def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObject]:
+    actions: dict[str, ActionObject] = {}
+    social_metrics = _prioritize_action_metrics(
+        social_facts,
+        required_names={
+            "clicks",
+            "impressions",
+            "issue_product_count",
+            "active_users",
+            "content_object_seen",
+        },
+    )[:10]
+    evidence_ids = _unique(
+        [
+            *[fact.evidence_id for fact in social_metrics],
+            connector_evidence_id("linkedin"),
+            connector_evidence_id("facebook"),
+        ]
+    )
+    common_payload = {
+        "mode": "prepare_only",
+        "source_connectors": _unique(fact.source_connector for fact in social_facts),
+        "source_metric_names": _unique(fact.name for fact in social_facts),
+        "draft_constraints": [
+            "use_only_wilq_evidence",
+            "write_in_polish",
+            "no_performance_claims_without_source_metric",
+            "no_publishing_without_connector_credentials",
+            "require_human_review_before_apply",
+        ],
+        "candidate_inputs": _social_candidate_inputs(social_metrics),
+        "blocked_claims": ["ROAS", "revenue", "conversion uplift", "product fix applied"],
+        "destructive": False,
+    }
+    for connector_id, action_type, title in (
+        (
+            "linkedin",
+            "linkedin_post_candidate",
+            "Przygotuj kandydaty postów LinkedIn z dowodów WILQ",
+        ),
+        (
+            "facebook",
+            "facebook_post_candidate",
+            "Przygotuj kandydaty postów Facebook z dowodów WILQ",
+        ),
+    ):
+        action = ActionObject(
+            id=f"act_prepare_{connector_id}_social_drafts",
+            title=title,
+            domain=OpportunityDomain.social,
+            connector=connector_id,
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=evidence_ids,
+            metrics=social_metrics,
+            human_diagnosis=(
+                "WILQ ma realne dane GSC/GA4/Merchant/WordPress, które można "
+                "przełożyć na review-safe kierunki postów. Brak uprawnień social "
+                "blokuje publikację, ale nie blokuje przygotowania briefu do oceny."
+            ),
+            recommended_reason=(
+                "Na /social-publisher pokaż tylko kandydaty draftów z evidence IDs. "
+                "Nie publikuj, nie planuj wysyłki i nie dopisuj claimów bez metryk."
+            ),
+            payload={
+                **common_payload,
+                "action_type": action_type,
+                "connector": connector_id,
+            },
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+    return actions
+
+
+def _social_candidate_inputs(facts: list[MetricFact]) -> list[dict[str, object]]:
+    inputs: list[dict[str, object]] = []
+    for fact in facts[:8]:
+        inputs.append(
+            {
+                "source_connector": fact.source_connector,
+                "metric_name": fact.name,
+                "value": fact.value,
+                "dimensions": fact.dimensions,
+                "evidence_id": fact.evidence_id,
+            }
+        )
+    return inputs
 
 
 def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:

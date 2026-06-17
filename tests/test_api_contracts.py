@@ -542,6 +542,16 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             "action_type": "wordpress_content_refresh",
             "metric_names": {"content_object_count", "clicks", "domain_rating"},
         },
+        "act_prepare_linkedin_social_drafts": {
+            "connector": "linkedin",
+            "action_type": "linkedin_post_candidate",
+            "metric_names": {"clicks", "impressions", "issue_product_count"},
+        },
+        "act_prepare_facebook_social_drafts": {
+            "connector": "facebook",
+            "action_type": "facebook_post_candidate",
+            "metric_names": {"clicks", "impressions", "issue_product_count"},
+        },
     }
 
     for action_id, expected in expected_actions.items():
@@ -553,6 +563,15 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         assert action["payload"]["mode"] == "prepare_only"
         assert action["payload"]["destructive"] is False
         assert action["evidence_ids"]
+        if action_id.startswith("act_prepare_") and "social_drafts" in action_id:
+            assert action["domain"] == "social"
+            assert action["payload"]["candidate_inputs"]
+            assert "no_publishing_without_connector_credentials" in action["payload"][
+                "draft_constraints"
+            ]
+            assert {"ev_connector_linkedin_status", "ev_connector_facebook_status"}.issubset(
+                set(action["evidence_ids"])
+            )
         metric_names = {str(metric["name"]) for metric in action["metrics"]}
         assert metric_names.issuperset(expected["metric_names"])
         assert "prepare" in json.dumps(action["payload"])
@@ -568,6 +587,8 @@ def test_metric_backed_prepare_actions_validate_without_apply(
         "act_review_merchant_feed_issues",
         "act_review_ga4_tracking_quality",
         "act_prepare_content_refresh_queue",
+        "act_prepare_linkedin_social_drafts",
+        "act_prepare_facebook_social_drafts",
     ):
         validate_response = client.post(f"/api/actions/{action_id}/validate")
         assert validate_response.status_code == 200
