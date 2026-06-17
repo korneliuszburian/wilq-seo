@@ -1,3 +1,43 @@
+## 0. Live progress and recovery contract
+
+Canonical active goal/progress file: `docs/goals/001-goal.md`.
+
+Every Codex session working on WILQ must read this file first after context loss,
+conversation compaction, restart, branch switch or any confusing handoff. Do not
+reconstruct the goal from chat memory when this file is available.
+
+This file must be updated continuously while Goal 001 is open:
+
+* Before starting a non-trivial slice, make sure the continuation ledger states
+  the intended product outcome, touched API/dashboard/skill surfaces, expected
+  proof commands and known blockers.
+* After completing and committing a slice, move shipped work into the completed
+  checkpoint/foundation list and replace stale next tasks with the next real
+  blocker.
+* If context may run out, leave enough progress detail here for a fresh Codex
+  session to resume without reading old chat logs.
+* Never mark Goal 001 complete from vibes, green narrow tests or scaffolded
+  contracts. Completion requires current evidence that the actual marketer-facing
+  product works.
+
+Final Goal 001 product acceptance:
+
+* Tomorrow's Ekologus marketer can open the local dashboard and/or Codex
+  Desktop/CLI and see one connected WILQ operating system, not disconnected
+  prompt packs, placeholder routes or static reports.
+* Codex skills, dashboard, hooks, workflows, expert rules, opportunities,
+  actions, metrics and evidence must all use the same WILQ API contracts.
+* Real vendor metrics and source facts must be shown where connectors are live.
+  Where OAuth, API access, quota, permissions or unsupported writes block live
+  data, the API, dashboard and skills must say that explicitly in Polish without
+  inventing values.
+* Every marketing recommendation must include source connectors, evidence IDs,
+  metric facts or explicit missing-evidence blockers, a human diagnosis, risk,
+  and the next safe ActionObject path.
+* The intended product shape and scope from `docs/infra/001.md` remains binding:
+  Ads, GSC/SEO, GA4, Merchant, Ahrefs, Localo, WordPress/content, social,
+  knowledge, Codex runs and audited API actions are one operating system.
+
 Zrealizuj wszystkie zadania krok po kroku.
 
 Stwórz repo przy pomocy 'gh' w 'korneliuszburian' (mój github nickname) -> prywatne, skonfiguruj .gitignore i wszystkie najważniejsze elementy, następnie idź do przodu.
