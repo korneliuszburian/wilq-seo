@@ -469,6 +469,8 @@ Current implementation slice completed after `9226581`:
   * Live Google Ads metrics still require the user-approved OAuth consent flow
     for `marketing@rekurencja.com`; do not fake Ads performance metrics while
     `oauth_error=invalid_grant` remains current.
+* Committed and pushed:
+  * `77636b7 feat(actions): surface google ads oauth repair workflow`
 
 ## 0B. 8-hour demo push operating plan
 
