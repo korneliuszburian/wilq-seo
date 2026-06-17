@@ -4205,3 +4205,104 @@ Remaining next work:
    permission blockers are exposed as useful route evidence.
 4. Add Localo route-specific eval after Localo MCP/readiness exposes useful
    local evidence instead of only OAuth/missing-token blockers.
+
+---
+
+## 37. Dashboard ActionObject focus panels - 2026-06-17
+
+Implemented the second remaining item from section 36.
+
+What changed:
+
+* `BriefWorkflowSurface` now fetches both:
+  * `GET /api/marketing/brief`,
+  * `GET /api/actions`.
+* Workflow routes now render an `ActionObject focus` section whenever the route
+  has action IDs in the MarketingBrief.
+* The action focus cards show:
+  * action title,
+  * connector and mode,
+  * validation status,
+  * action status,
+  * risk,
+  * human diagnosis,
+  * linked ActionObject ID,
+  * linked evidence IDs,
+  * metric facts,
+  * payload preview,
+  * explicit Polish prepare-only apply blocker.
+* `/merchant`, `/ga4` and `/content-planner` now surface the prepare-only
+  ActionObjects created in section 36 directly in the marketer workflow view,
+  not only on `/actions`.
+* The route-specific safety copy remains visible under the action focus panel,
+  so the marketer sees both the candidate and the gate before clicking detail.
+
+Dashboard proof:
+
+* `/merchant` shows:
+  * `ActionObject focus`,
+  * `Przygotuj kolejkę przeglądu feedu Merchant Center`,
+  * `Apply zablokowany`,
+  * payload preview with `merchant_feed_issue`.
+* `/ga4` shows:
+  * `Sprawdź jakość pomiaru GA4 przed oceną kampanii`,
+  * GA4 metric facts.
+* `/content-planner` shows:
+  * `Przygotuj kolejkę odświeżenia treści ekologus.pl`,
+  * content inventory and GSC metric facts.
+
+Verification:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+pnpm --filter @wilq/dashboard build
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Dashboard unit route tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+  * Merchant e2e now asserts the ActionObject focus panel, prepare-only blocker
+    and `merchant_feed_issue` payload preview.
+* Dashboard production build: passed.
+* `scripts/quality.sh`: passed.
+  * Python tests: `67 passed`.
+  * Dashboard Vitest: `12 passed`.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports:
+  * Python tests: `67 passed`.
+  * dashboard Vitest: `12 passed`.
+  * security: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+* No test servers remained on `8765`, `8875` or `5373`.
+
+Remaining next work:
+
+1. Extend `MetricFact` and dashboard route panels with dimensions, freshness
+   windows and period deltas so the marketer sees concrete change, not only
+   route-level counts.
+2. Add an actual validation UI flow for ActionObjects:
+   `POST /api/actions/{action_id}/validate`, validation result display and
+   query invalidation, still no apply by default.
+3. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+4. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.

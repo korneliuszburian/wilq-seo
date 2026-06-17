@@ -542,6 +542,59 @@ function ActionQueue({ actions }: { actions: ActionObject[] }) {
   );
 }
 
+function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
+  if (actions.length === 0) {
+    return (
+      <BlockerNotice message="Brak ActionObject dla tego workflow. WILQ może pokazać evidence, ale nie powinien sugerować wykonania bez payload preview." />
+    );
+  }
+
+  return (
+    <section>
+      <SectionHeading title="ActionObject focus" />
+      <div className="grid gap-3 xl:grid-cols-2">
+        {actions.map((action) => (
+          <article key={action.id} className="rounded-md border border-line bg-white p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">{action.title}</h3>
+                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                  {action.connector} / {action.mode}
+                </p>
+              </div>
+              <StatusBadge value={action.validation_status} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge value={action.status} />
+              <StatusBadge value={action.risk} />
+            </div>
+            {action.mode !== "apply" ? (
+              <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-wait">
+                Apply zablokowany: ten ActionObject jest prepare-only. Najpierw walidacja,
+                payload preview i jawna zgoda operatora.
+              </div>
+            ) : null}
+            <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+              <LinkedTraceLine label="ActionObject" values={[action.id]} kind="actions" />
+              <LinkedTraceLine label="Evidence" values={action.evidence_ids} kind="evidence" />
+            </div>
+            {action.metrics.length > 0 ? <MetricFactChips facts={action.metrics.slice(0, 5)} /> : null}
+            <div className="mt-3">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-normal text-slate-500">
+                Payload preview
+              </div>
+              <pre className="max-h-56 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
+                {JSON.stringify(action.payload, null, 2)}
+              </pre>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ConnectorBlockers({ connectors }: { connectors: ConnectorStatus[] }) {
   const blockers = connectors.filter(
     (connector) => connector.status !== "configured" || connector.freshness.state !== "fresh"
@@ -1009,12 +1062,23 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
     queryKey: ["marketing-brief"],
     queryFn: getMarketingBrief
   });
+  const actions = useQuery({
+    queryKey: ["actions"],
+    queryFn: getActions
+  });
 
-  if (marketingBrief.isLoading) return <LoadingBand />;
+  if (marketingBrief.isLoading || actions.isLoading) return <LoadingBand />;
   if (marketingBrief.error || !marketingBrief.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
         <BlockerNotice message={`Nie udało się odczytać /api/marketing/brief. ${config.title} nie może pokazać rekomendacji bez WILQ API.`} />
+      </main>
+    );
+  }
+  if (actions.error || !actions.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message={`Nie udało się odczytać /api/actions. ${config.title} nie może pokazać payload preview ani walidacji ActionObject.`} />
       </main>
     );
   }
@@ -1029,6 +1093,8 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
   const metricFacts = brief.top_metric_facts.filter((fact) =>
     config.connectorIds.includes(fact.source_connector)
   );
+  const routeActionIds = uniqueValues(routeItems.flatMap((item) => item.action_ids));
+  const routeActions = actions.data.filter((action) => routeActionIds.includes(action.id));
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -1057,6 +1123,8 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
             </div>
           </section>
         )}
+
+        {routeActionIds.length > 0 ? <ActionObjectFocus actions={routeActions} /> : null}
 
         <section className="rounded-md border border-line bg-white p-4">
           <div className="mb-3 flex items-start gap-3">

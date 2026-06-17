@@ -52,6 +52,104 @@ const actions = [
     recommended_reason: "OAuth repair unlocks reads.",
     payload: { action_type: "repair_google_ads_oauth" },
     audit_events: []
+  },
+  {
+    id: "act_review_merchant_feed_issues",
+    title: "Przygotuj kolejkę przeglądu feedu Merchant Center",
+    domain: "merchant",
+    connector: "google_merchant_center",
+    mode: "prepare",
+    risk: "medium",
+    status: "needs_validation",
+    evidence_ids: ["ev_refresh_merchant_feed"],
+    metrics: [
+      {
+        name: "merchant_disapproved_product_count",
+        value: 3,
+        period: "connector_refresh",
+        source_connector: "google_merchant_center",
+        evidence_id: "ev_refresh_merchant_feed",
+        unit: null
+      }
+    ],
+    validation_status: "not_validated",
+    human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ API.",
+    recommended_reason: "Przygotuj feed issue queue z payload preview.",
+    payload: {
+      action_type: "merchant_feed_issue",
+      connector: "google_merchant_center",
+      mode: "prepare_only",
+      destructive: false
+    },
+    audit_events: []
+  },
+  {
+    id: "act_review_ga4_tracking_quality",
+    title: "Sprawdź jakość pomiaru GA4 przed oceną kampanii",
+    domain: "ga4",
+    connector: "google_analytics_4",
+    mode: "prepare",
+    risk: "low",
+    status: "needs_validation",
+    evidence_ids: ["ev_refresh_ga4"],
+    metrics: [
+      {
+        name: "active_users",
+        value: 20,
+        period: "connector_refresh",
+        source_connector: "google_analytics_4",
+        evidence_id: "ev_refresh_ga4",
+        unit: null
+      }
+    ],
+    validation_status: "not_validated",
+    human_diagnosis: "GA4 zwraca realne metryki ruchu, ale bez dowodu konwersji.",
+    recommended_reason: "Przygotuj tracking-gap review.",
+    payload: {
+      action_type: "ga4_tracking_gap",
+      connector: "google_analytics_4",
+      mode: "prepare_only",
+      destructive: false
+    },
+    audit_events: []
+  },
+  {
+    id: "act_prepare_content_refresh_queue",
+    title: "Przygotuj kolejkę odświeżenia treści ekologus.pl",
+    domain: "content",
+    connector: "wordpress_ekologus",
+    mode: "prepare",
+    risk: "medium",
+    status: "needs_validation",
+    evidence_ids: ["ev_refresh_wordpress_inventory", "ev_refresh_gsc"],
+    metrics: [
+      {
+        name: "content_object_count",
+        value: 16,
+        period: "connector_refresh",
+        source_connector: "wordpress_ekologus",
+        evidence_id: "ev_refresh_wordpress_inventory",
+        unit: null
+      },
+      {
+        name: "clicks",
+        value: 12,
+        period: "connector_refresh",
+        source_connector: "google_search_console",
+        evidence_id: "ev_refresh_gsc",
+        unit: null
+      }
+    ],
+    validation_status: "not_validated",
+    human_diagnosis: "WordPress inventory można zestawić z GSC przed tworzeniem nowych tematów.",
+    recommended_reason: "Przygotuj queue refresh/create/merge/block.",
+    payload: {
+      action_type: "wordpress_content_refresh",
+      connector: "wordpress_ekologus",
+      mode: "prepare_only",
+      destructive: false
+    },
+    audit_events: []
   }
 ];
 
@@ -238,7 +336,7 @@ const marketingBrief = {
           source_connectors: ["google_merchant_center"],
           evidence_ids: ["ev_refresh_merchant_feed"],
           metric_facts: [metricFacts[1]],
-          action_ids: ["act_review_merchant_feed"],
+          action_ids: ["act_review_merchant_feed_issues"],
           summary: "WILQ widzi Merchant metric facts i kieruje operatora do walidacji feedu.",
           next_step: "Otwórz payload preview dla action candidate przed zmianą feedu.",
           risk: "medium",
@@ -252,7 +350,7 @@ const marketingBrief = {
           source_connectors: ["google_analytics_4"],
           evidence_ids: ["ev_refresh_ga4"],
           metric_facts: [metricFacts[2]],
-          action_ids: [],
+          action_ids: ["act_review_ga4_tracking_quality"],
           summary: "WILQ ma GA4 metric facts i może ocenić jakość ruchu po odświeżeniu.",
           next_step: "Porównaj engagement i konwersje z kampaniami.",
           risk: "low",
@@ -266,7 +364,7 @@ const marketingBrief = {
           source_connectors: ["google_search_console"],
           evidence_ids: ["ev_refresh_gsc"],
           metric_facts: [metricFacts[3]],
-          action_ids: [],
+          action_ids: ["act_prepare_content_refresh_queue"],
           summary: "WILQ ma GSC clicks i może zbudować kolejkę content opportunities.",
           next_step: "Połącz query/page evidence z WordPress inventory.",
           risk: "low",
@@ -277,7 +375,12 @@ const marketingBrief = {
   ],
   top_metric_facts: metricFacts,
   evidence_ids: ["ev_refresh_wordpress_inventory"],
-  action_ids: ["act_1"],
+  action_ids: [
+    "act_1",
+    "act_review_merchant_feed_issues",
+    "act_review_ga4_tracking_quality",
+    "act_prepare_content_refresh_queue"
+  ],
   blocker_count: 1,
   recommendation_count: 1
 };
@@ -469,7 +572,7 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Ads Doctor" })).toBeInTheDocument()
     );
     expect(screen.getByText("Ads Focus")).toBeInTheDocument();
-    expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
+    expect(screen.getAllByText("Odnow Google Ads OAuth refresh token").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "act_1" })[0]).toHaveAttribute(
       "href",
       "/actions/act_1"
@@ -507,9 +610,14 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/payload preview/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ActionObject/).length).toBeGreaterThan(0);
+    expect(screen.getByText("ActionObject focus")).toBeInTheDocument();
     expect(
-      screen.getAllByRole("link", { name: "act_review_merchant_feed" })[0]
-    ).toHaveAttribute("href", "/actions/act_review_merchant_feed");
+      screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Apply zablokowany/)).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" })[0]
+    ).toHaveAttribute("href", "/actions/act_review_merchant_feed_issues");
     expect(
       screen.getAllByRole("link", { name: "ev_refresh_merchant_feed" })[0]
     ).toHaveAttribute("href", "/evidence/ev_refresh_merchant_feed");
@@ -520,6 +628,9 @@ describe("WILQ dashboard", () => {
     await waitFor(() => expect(screen.getByRole("heading", { name: "GA4" })).toBeInTheDocument());
     expect(screen.getByText("GA4 Quality Focus")).toBeInTheDocument();
     expect(screen.getByText("GA4: sprawdź jakość ruchu na landing pages")).toBeInTheDocument();
+    expect(
+      screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
+    ).toBeInTheDocument();
     expect(screen.getAllByText("active_users: 20").length).toBeGreaterThan(0);
 
     cleanup();
@@ -564,6 +675,9 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Content Growth Focus")).toBeInTheDocument();
     expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
+    expect(
+      screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
+    ).toBeInTheDocument();
   });
 
   it("evidence detail route renders source trace from linked evidence id", async () => {
