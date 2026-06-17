@@ -3624,3 +3624,77 @@ Remaining next work:
    and feed issue queue from `MarketingBrief`.
 2. Add `MarketingBrief` evidence/action detail links in dashboard.
 3. Add validation call proof for `act_configure_google_ads_env` without apply.
+
+---
+
+## 32. Merchant dashboard route grounded in MarketingBrief - 2026-06-17
+
+Implemented the first follow-up from section 31.
+
+What changed:
+
+* `/merchant` is no longer only the generic operating registry surface.
+* The route reads `GET /api/marketing/brief` through the same typed frontend API
+  used by Command Center.
+* The route filters brief items and metric facts for Merchant Center connectors:
+  `google_merchant_center` and `merchant_center`.
+* The route renders:
+  * Merchant-specific recommendation count.
+  * Merchant blocker count.
+  * Merchant metric fact count.
+  * feed/product focus cards from `MarketingBrief`.
+  * evidence IDs, source connectors and action IDs.
+  * an explicit read-only safety gate:
+    feed changes require payload preview, ActionObject validation and audit
+    event before any write path.
+* Empty Merchant evidence now renders an honest blocker instead of fake feed
+  advice.
+* Added a dashboard unit test proving `/merchant` renders Merchant brief focus,
+  Merchant evidence ID and the payload-preview/ActionObject safety language.
+
+Verification:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+pnpm --filter @wilq/dashboard build
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+scripts/eval_marketing_brief.sh --api-base http://127.0.0.1:8000
+```
+
+Results:
+
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Dashboard unit route tests: `9 passed`.
+* Dashboard production build: passed.
+* Playwright live API-backed smoke: `3 passed`.
+* MarketingBrief deterministic eval:
+
+```json
+{
+  "action_ids": ["act_configure_google_ads_env"],
+  "api_base": "http://127.0.0.1:8000",
+  "blocker_count": 5,
+  "evidence_count": 17,
+  "item_count": 15,
+  "language": "pl-PL",
+  "recommendation_count": 3,
+  "section_ids": [
+    "what_we_know",
+    "what_blocks_us",
+    "safe_next_actions",
+    "recommended_focus"
+  ]
+}
+```
+
+Remaining next work:
+
+1. Add `MarketingBrief` evidence/action detail links in dashboard.
+2. Add validation call proof for `act_configure_google_ads_env` without apply.
+3. Repeat the route-specific grounding pattern for `/ads-doctor`, `/ga4`,
+   `/seo-gsc`, `/content-planner`, `/localo` and `/social-publisher`, so each
+   route answers the marketer's actual workflow instead of showing generic
+   registries.

@@ -859,6 +859,104 @@ function CommandCenter() {
   );
 }
 
+const merchantConnectorIds = ["google_merchant_center", "merchant_center"];
+
+function MerchantSurface() {
+  const marketingBrief = useQuery({
+    queryKey: ["marketing-brief"],
+    queryFn: getMarketingBrief
+  });
+
+  if (marketingBrief.isLoading) return <LoadingBand />;
+  if (marketingBrief.error || !marketingBrief.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/marketing/brief. Merchant nie może pokazać rekomendacji bez WILQ API." />
+      </main>
+    );
+  }
+
+  const brief = marketingBrief.data;
+  const allItems = brief.sections.flatMap((section) => section.items);
+  const merchantItems = allItems
+    .filter((item) => itemTouchesMerchant(item))
+    .sort((left, right) => right.priority - left.priority);
+  const merchantRecommendations = merchantItems.filter((item) => item.kind === "recommendation");
+  const merchantBlockers = merchantItems.filter((item) => item.kind === "blocker");
+  const merchantMetricFacts = brief.top_metric_facts.filter((fact) =>
+    merchantConnectorIds.includes(fact.source_connector)
+  );
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Merchant Center</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli
+            brakuje evidence z Merchant Center albo zweryfikowanego ActionObject.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Rekomendacje" value={merchantRecommendations.length} />
+          <MetricTile label="Blockery" value={merchantBlockers.length} />
+          <MetricTile label="Metric facts" value={merchantMetricFacts.length} />
+        </div>
+      </div>
+
+      <div className="grid gap-6">
+        {merchantItems.length === 0 ? (
+          <BlockerNotice message="Brak Merchant evidence w /api/marketing/brief. Uruchom read-only refresh Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu." />
+        ) : (
+          <section>
+            <SectionHeading title="Feed/Product Focus" />
+            <div className="grid gap-3 xl:grid-cols-2">
+              {merchantItems.map((item) => (
+                <MarketingBriefCard key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="rounded-md border border-line bg-white p-4">
+          <div className="mb-3 flex items-start gap-3">
+            <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+              <ShieldAlert aria-hidden="true" size={18} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+                Safety Gate
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                Zmiana feedu wymaga payload preview, walidacji ActionObject i audit eventu. Ten
+                ekran jest read-only, dopóki WILQ API nie wystawi poprawnego action candidate.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+            <TraceLine label="Evidence" values={uniqueValues(merchantItems.flatMap((item) => item.evidence_ids))} />
+            <TraceLine label="Źródła" values={uniqueValues(merchantItems.flatMap((item) => item.source_connectors))} />
+            <TraceLine label="Akcje" values={uniqueValues(merchantItems.flatMap((item) => item.action_ids))} />
+          </div>
+          {merchantMetricFacts.length > 0 ? <MetricFactChips facts={merchantMetricFacts.slice(0, 6)} /> : null}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function itemTouchesMerchant(item: MarketingBriefItem) {
+  return (
+    item.source_connectors.some((connector) => merchantConnectorIds.includes(connector)) ||
+    item.id.includes("merchant") ||
+    item.title.toLowerCase().includes("merchant")
+  );
+}
+
+function uniqueValues(values: string[]) {
+  return Array.from(new Set(values));
+}
+
 function GenericSurface({ routeName }: { routeName: string }) {
   const connectors = useQuery({ queryKey: ["connectors"], queryFn: getConnectors });
   const connectorRefreshRuns = useQuery({
@@ -1168,7 +1266,7 @@ const generatedRoutes = operatingRoutes.map((path) =>
   createRoute({
     getParentRoute: () => rootRoute,
     path,
-    component: () => <GenericSurface routeName={path} />
+    component: () => (path === "/merchant" ? <MerchantSurface /> : <GenericSurface routeName={path} />)
   })
 );
 

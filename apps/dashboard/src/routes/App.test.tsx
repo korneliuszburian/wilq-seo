@@ -96,6 +96,14 @@ const metricFacts = [
     source_connector: "wordpress_ekologus",
     evidence_id: "ev_refresh_wordpress_inventory",
     unit: null
+  },
+  {
+    name: "merchant_disapproved_product_count",
+    value: 3,
+    period: "connector_refresh",
+    source_connector: "google_merchant_center",
+    evidence_id: "ev_refresh_merchant_feed",
+    unit: null
   }
 ];
 
@@ -151,7 +159,22 @@ const marketingBrief = {
       id: "recommended_focus",
       title: "Rekomendowany fokus",
       description: "Priorytety.",
-      items: []
+      items: [
+        {
+          id: "brief_focus_merchant_feed",
+          title: "Merchant Center: zacznij od feed/product issues",
+          kind: "recommendation",
+          priority: 87,
+          source_connectors: ["google_merchant_center"],
+          evidence_ids: ["ev_refresh_merchant_feed"],
+          metric_facts: [metricFacts[1]],
+          action_ids: ["act_review_merchant_feed"],
+          summary: "WILQ widzi Merchant metric facts i kieruje operatora do walidacji feedu.",
+          next_step: "Otwórz payload preview dla action candidate przed zmianą feedu.",
+          risk: "medium",
+          blocker_reason: null
+        }
+      ]
     }
   ],
   top_metric_facts: metricFacts,
@@ -366,5 +389,18 @@ describe("WILQ dashboard", () => {
     await waitFor(() => expect(screen.getByText("Knowledge Cards")).toBeInTheDocument());
     expect(screen.getAllByText("Google Ads search diagnostics").length).toBeGreaterThan(0);
     expect(screen.getByText("Machine-Readable Playbooks")).toBeInTheDocument();
+  });
+
+  it("merchant route renders WILQ marketing brief feed focus", async () => {
+    renderApp("/merchant");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Merchant Center" })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Merchant Center: zacznij od feed/product issues")).toBeInTheDocument();
+    expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/payload preview/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ActionObject/).length).toBeGreaterThan(0);
   });
 });
