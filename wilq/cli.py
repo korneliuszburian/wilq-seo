@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Annotated, Any
 
 import typer
 
 from wilq.codex.runtime_status import codex_runtime_status
+from wilq.connectors.google_ads.oauth import (
+    DEFAULT_REDIRECT_URI,
+    exchange_google_ads_oauth_code,
+    google_ads_oauth_authorization_url,
+)
 from wilq.connectors.refresh import run_connector_refresh
 from wilq.connectors.registry import list_connector_statuses
 from wilq.credentials.runtime import credential_runtime_status
@@ -20,9 +26,11 @@ app = typer.Typer(help="WILQ local operator CLI for API-backed runtime checks.")
 connectors_app = typer.Typer(help="Connector readiness and refresh commands.")
 metrics_app = typer.Typer(help="DuckDB analytics metric store commands.")
 jobs_app = typer.Typer(help="Local job orchestration commands.")
+google_ads_app = typer.Typer(help="Google Ads OAuth and operator setup commands.")
 app.add_typer(connectors_app, name="connectors")
 app.add_typer(metrics_app, name="metrics")
 app.add_typer(jobs_app, name="jobs")
+app.add_typer(google_ads_app, name="google-ads")
 
 
 @app.command()
@@ -111,6 +119,61 @@ def jobs_run(
 def jobs_runs() -> None:
     """Print persisted local job runs."""
     _print_json([run.model_dump(mode="json") for run in list_job_runs()])
+
+
+@google_ads_app.command("oauth-url")
+def google_ads_oauth_url(
+    redirect_uri: Annotated[
+        str,
+        typer.Option("--redirect-uri", help="Loopback redirect URI configured for OAuth."),
+    ] = DEFAULT_REDIRECT_URI,
+    client_secret_file: Annotated[
+        Path | None,
+        typer.Option("--client-secret-file", help="OAuth desktop client JSON path."),
+    ] = None,
+) -> None:
+    """Print a Google Ads OAuth consent URL without secret values."""
+    _print_json(
+        google_ads_oauth_authorization_url(
+            redirect_uri=redirect_uri,
+            client_secret_file=client_secret_file,
+        )
+    )
+
+
+@google_ads_app.command("oauth-exchange")
+def google_ads_oauth_exchange(
+    redirect_url: Annotated[
+        str | None,
+        typer.Option("--redirect-url", help="Final localhost redirect URL containing ?code=."),
+    ] = None,
+    code: Annotated[
+        str | None,
+        typer.Option("--code", help="OAuth authorization code if copied separately."),
+    ] = None,
+    redirect_uri: Annotated[
+        str,
+        typer.Option("--redirect-uri", help="Same redirect URI used by oauth-url."),
+    ] = DEFAULT_REDIRECT_URI,
+    write_env: Annotated[
+        bool,
+        typer.Option("--write-env", help="Write GOOGLE_ADS_REFRESH_TOKEN to local .env."),
+    ] = False,
+    client_secret_file: Annotated[
+        Path | None,
+        typer.Option("--client-secret-file", help="OAuth desktop client JSON path."),
+    ] = None,
+) -> None:
+    """Exchange Google Ads OAuth code and optionally update local .env."""
+    _print_json(
+        exchange_google_ads_oauth_code(
+            code=code,
+            redirect_url=redirect_url,
+            redirect_uri=redirect_uri,
+            write_env=write_env,
+            client_secret_file=client_secret_file,
+        )
+    )
 
 
 def _print_json(payload: Any) -> None:

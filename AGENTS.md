@@ -102,6 +102,22 @@ scripts/verify.sh
 - Redaction must preserve audit identifiers such as evidence IDs, action IDs, workflow IDs, job IDs and connector refresh run IDs. Redact secret values, not product traceability.
 - `scripts/verify.sh` is the final local gate for this repo. It intentionally uses WILQ API, skill smokes, CLI smokes and dashboard build as one product surface.
 
+## Local credential paths
+
+These paths are documented for operator recovery only. Never commit file contents,
+credential values, token prefixes, JSON bodies, or copied OAuth redirect codes.
+
+- Repo-local private env: `.env`
+- Optional env override: `WILQ_ENV_FILE`
+- Access-pack fallback path: `/home/krn/ekologus-access-pack-20260617-120758`
+- Local WILQ private directory: `/home/krn/.local/wilq`
+- Google Ads OAuth desktop client JSON: `/home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json`
+- Google Ads OAuth helper module: `wilq/connectors/google_ads/oauth.py`
+- Google Ads OAuth helper commands:
+  - `uv run wilq google-ads oauth-url --client-secret-file /home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json`
+  - `uv run wilq google-ads oauth-exchange --client-secret-file /home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json --redirect-url '<final localhost URL>' --write-env`
+- Google Ads live proof command after OAuth repair: `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"`
+
 ## Testing instructions
 
 Run the narrow test for changed surfaces first, then the full quality gate:

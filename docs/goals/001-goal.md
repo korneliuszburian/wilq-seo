@@ -388,6 +388,29 @@ Current implementation slice completed after `7a5ced6`:
 * Current blocker after diagnostics:
   * The local Google Ads credential tuple is present, but the refresh token is invalid for the `adwords` scope. The next human/API setup action is to generate or update a fresh `adwords`-scoped refresh token in the local `.env`; Codex must not claim live Ads metrics until the next `google_ads vendor_read` succeeds.
   * If the token is updated, immediately rerun `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"` and then continue to live Ads evidence/Ads Doctor usefulness.
+* Committed and pushed:
+  * `7db8b91 fix(connectors): expose sanitized google ads oauth errors`
+
+Current active slice after `7db8b91`:
+
+* Product outcome: make the Google Ads OAuth repair flow operator-safe, repo-local and repeatable, so the user does not need to manually inspect or paste credential values.
+* Implemented:
+  * `uv run wilq google-ads oauth-url` generates a Google Ads consent URL from the repo-local credential source using `https://www.googleapis.com/auth/adwords`, `access_type=offline` and `prompt=consent`.
+  * `uv run wilq google-ads oauth-exchange --redirect-url '<final localhost URL>' --write-env` exchanges the OAuth code and writes `GOOGLE_ADS_REFRESH_TOKEN` into the local `.env` without printing the token.
+  * The helper uses the same WILQ credential runtime as the connector; `.env` remains the primary local private credential source.
+* Verified so far:
+  * `uv run ruff check wilq/connectors/google_ads/oauth.py wilq/cli.py tests/test_google_ads_oauth_cli.py` passed.
+  * `uv run mypy wilq/connectors/google_ads/oauth.py wilq/cli.py` passed.
+  * `uv run pytest tests/test_google_ads_oauth_cli.py tests/test_metric_store_and_cli.py -q` passed: 8/8 tests.
+  * `uv run wilq google-ads oauth-url --client-secret-file /home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json | jq '{scope, redirect_uri, secrets_redacted, client_secret_file_used, has_authorization_url: has("authorization_url")}'` confirmed the real local OAuth client JSON can generate an `adwords` consent URL without printing the URL/client ID in the transcript.
+* Operator flow to unblock live Ads data:
+  * Run `uv run wilq google-ads oauth-url --client-secret-file /home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json`.
+  * Open `authorization_url` as `marketing@rekurencja.com` and approve Google Ads access.
+  * Copy the final `http://127.0.0.1:8085/oauth2callback?...code=...` URL from the browser.
+  * Run `uv run wilq google-ads oauth-exchange --client-secret-file /home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json --redirect-url '<copied URL>' --write-env`.
+  * Run `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"`.
+* Known limitation:
+  * Project `Owner` can manage APIs/IAM/OAuth clients, but cannot bypass Google user-consent OAuth for `marketing@rekurencja.com`. A fresh user-approved `adwords` refresh token is still required before live Google Ads metrics can be collected.
 
 Known external/product blockers:
 
@@ -422,6 +445,7 @@ Completed foundation that should not be reimplemented:
 * Command Center now exposes the first marketer-facing operating surface pattern: Polish decision sections, ActionObject candidates, local metric facts, connector blockers, evidence IDs and explicit readiness-only warnings.
 * Command Center operating-surface slice was committed and pushed as `159d783 feat(dashboard): add marketer command center surface`.
 * Google Ads OAuth diagnostics now expose sanitized HTTP/OAuth labels without leaking raw vendor response bodies or credential material.
+* Google Ads OAuth repair helper now exists in the WILQ CLI and can write a fresh refresh token to local `.env` without printing it.
 
 Product scope that must not be simplified away:
 
@@ -451,7 +475,7 @@ Unfinished blockers to keep carrying forward:
 
 Next implementation queue:
 
-1. Google Ads OAuth setup/data slice: once the local `.env` has a fresh `adwords`-scoped refresh token, prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence, metric facts and evidence IDs.
+1. Google Ads OAuth setup/data slice: run the helper flow with `marketing@rekurencja.com`; once the local `.env` has a fresh `adwords`-scoped refresh token, prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence, metric facts and evidence IDs.
 2. Ads Doctor usefulness slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
 3. Content Planner usefulness slice: expose a real content decision queue from GSC, GA4, Ahrefs, WordPress inventory, Merchant/product context and knowledge cards: refresh, merge, create, avoid-duplicate, social adaptation and evidence-backed briefs.
 4. Skill/eval upgrade slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments`, `wilq-demand-gen-operator`, `wilq-gsc-content-doctor`, `wilq-content-strategist`, `wilq-ahrefs-gap-finder`, `wilq-localo-operator` and `wilq-social-publisher` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
