@@ -37,7 +37,7 @@ def test_google_ads_oauth_url_can_use_client_secret_file(tmp_path: Path) -> None
             {
                 "installed": {
                     "client_id": "client-id-from-file",
-                    "client_secret": "client-secret-from-file",
+                    "client_secret": "client-secret-from-file",  # pragma: allowlist secret
                 }
             }
         ),
@@ -64,7 +64,7 @@ def test_google_ads_oauth_exchange_writes_env_without_printing_token(
         '\n'.join(
             [
                 'GOOGLE_ADS_CLIENT_ID="client-id-test"',
-                'GOOGLE_ADS_CLIENT_SECRET="client-secret-test"',
+                'GOOGLE_ADS_CLIENT_SECRET="client-secret-test"',  # pragma: allowlist secret
                 'GOOGLE_ADS_REFRESH_TOKEN="old-refresh-token"',
             ]
         )
@@ -129,7 +129,7 @@ def test_google_ads_oauth_url_cli_accepts_client_secret_file(tmp_path: Path) -> 
             {
                 "installed": {
                     "client_id": "client-id-from-file",
-                    "client_secret": "client-secret-from-file",
+                    "client_secret": "client-secret-from-file",  # pragma: allowlist secret
                 }
             }
         ),

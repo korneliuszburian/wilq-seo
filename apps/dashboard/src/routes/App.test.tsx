@@ -39,7 +39,7 @@ const opportunities = [
 const actions = [
   {
     id: "act_1",
-    title: "Configure Google Ads local .env",
+    title: "Odnow Google Ads OAuth refresh token",
     domain: "google_ads",
     connector: "google_ads",
     mode: "prepare",
@@ -48,9 +48,9 @@ const actions = [
     evidence_ids: ["ev_1"],
     metrics: [],
     validation_status: "not_validated",
-    human_diagnosis: "Google Ads connector cannot produce real metrics.",
-    recommended_reason: "Credential setup unlocks reads.",
-    payload: { action_type: "configure_connector" },
+    human_diagnosis: "Google Ads refresh token returns oauth_error=invalid_grant.",
+    recommended_reason: "OAuth repair unlocks reads.",
+    payload: { action_type: "repair_google_ads_oauth" },
     audit_events: []
   }
 ];
@@ -279,7 +279,7 @@ describe("WILQ dashboard", () => {
     renderApp("/actions/act_1");
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Configure Google Ads local .env" })
+        screen.getByRole("heading", { name: "Odnow Google Ads OAuth refresh token" })
       ).toBeInTheDocument()
     );
   });

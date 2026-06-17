@@ -4,7 +4,7 @@ from typing import Any
 
 from wilq.connectors.registry import get_connector_status
 
-INTERNAL_ACTION_TYPES = {"configure_connector"}
+INTERNAL_ACTION_TYPES = {"configure_connector", "repair_google_ads_oauth"}
 
 
 def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[str]:
@@ -24,6 +24,15 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         required_env = payload.get("required_env")
         if action_type == "configure_connector" and not isinstance(required_env, list):
             errors.append("configure_connector payload requires required_env list.")
+        if action_type == "repair_google_ads_oauth":
+            if connector_id != "google_ads":
+                errors.append("repair_google_ads_oauth is only valid for google_ads.")
+            if payload.get("oauth_scope") != "https://www.googleapis.com/auth/adwords":
+                errors.append("repair_google_ads_oauth requires the Google Ads adwords scope.")
+            if not isinstance(payload.get("oauth_client_json_path"), str):
+                errors.append("repair_google_ads_oauth requires oauth_client_json_path.")
+            if not isinstance(payload.get("helper_commands"), list):
+                errors.append("repair_google_ads_oauth requires helper_commands list.")
         return errors
 
     if connector is None:

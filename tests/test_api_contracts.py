@@ -315,6 +315,23 @@ def test_action_apply_requires_validation(
     assert audit_response.json()[0]["event_type"] == "apply_blocked"
 
 
+def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
+    response = client.get("/api/actions/act_configure_google_ads_env")
+    assert response.status_code == 200
+    action = response.json()
+    serialized = json.dumps(action)
+
+    assert action["title"] == "Odnow Google Ads OAuth refresh token"
+    assert action["payload"]["action_type"] == "repair_google_ads_oauth"
+    assert action["payload"]["oauth_scope"] == "https://www.googleapis.com/auth/adwords"
+    assert "oauth_error=invalid_grant" in action["human_diagnosis"]
+    assert "client_secret" in action["payload"]["oauth_client_json_path"]
+    assert "GOOGLE_ADS_REFRESH_TOKEN" in action["payload"]["required_env"]
+    assert "ya29." not in serialized
+    assert "refresh-token" not in serialized.lower()
+    assert "client-secret-test" not in serialized
+
+
 def test_action_validation_rejects_unsupported_payload_action_type() -> None:
     action = ActionObject(
         id="bad_payload",

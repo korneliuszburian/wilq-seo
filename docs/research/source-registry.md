@@ -21,6 +21,7 @@ Last checked: 2026-06-17.
 | Google Ads responsive search ads | Google Ads | RSA validation | Ads expert rules | `wilq/expert/ads/responsive_search_ads.yaml` |
 | Official Google Ads MCP server | Google Ads MCP | Read-only MCP bridge to Google Ads API; Python/stdio; OAuth or service-account auth | Future Ads Doctor adapter inspiration, not product brain | `docs/architecture/mcp-policy.md`, `.agents/skills/wilq-ads-doctor/references/output-contract.md` |
 | BDOS.ai | Product inspiration | AI operating-system pattern for Google Ads specialists and PPC teams | Ads Doctor and WILQ command-center product inspiration; WILQ remains API/evidence-first | `docs/architecture/system-overview.md` |
+| BDOS-class WILQ operating-system bar | Product architecture | Capability matrix across Ads, Merchant, GA4, GSC, Ahrefs, Localo, WordPress and social | Reject connector-dashboard slop; require evidence, tactics, safety and ActionObjects before UI polish | `docs/architecture/bdos-class-wilq-operating-system.md` |
 | Google Search Console Search Analytics | SEO | Query/page CTR and position data | GSC opportunities | `wilq/expert/seo/gsc_opportunities.yaml` |
 | Ahrefs API v3 | SEO | Gap and competitor data | Ahrefs connector boundary | `docs/architecture/connector-registry.md` |
 | Localo API/MCP integration | Local SEO | Local visibility connector | Localo connector boundary | `docs/architecture/connector-registry.md` |

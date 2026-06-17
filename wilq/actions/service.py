@@ -18,7 +18,7 @@ from wilq.schemas import (
 def seed_actions() -> dict[str, ActionObject]:
     action = ActionObject(
         id="act_configure_google_ads_env",
-        title="Configure Google Ads local .env",
+        title="Odnow Google Ads OAuth refresh token",
         domain=OpportunityDomain.google_ads,
         connector="google_ads",
         mode=ActionMode.prepare,
@@ -26,16 +26,40 @@ def seed_actions() -> dict[str, ActionObject]:
         status=ActionStatus.needs_validation,
         evidence_ids=[connector_evidence_id("google_ads")],
         human_diagnosis=(
-            "Google Ads connector cannot produce real metrics until credentials are available."
+            "Google Ads credentials are present, but the current refresh token is rejected "
+            "by Google's OAuth endpoint with oauth_error=invalid_grant for the adwords scope."
         ),
         recommended_reason=(
-            "Local .env credential setup unlocks real search-term, campaign "
-            "and recommendation reads."
+            "A fresh marketing@rekurencja.com consent flow is required before WILQ can "
+            "collect real Google Ads campaign, search-term and recommendation evidence."
         ),
         payload={
-            "action_type": "configure_connector",
+            "action_type": "repair_google_ads_oauth",
             "connector": "google_ads",
             "credential_source": "repo_env",
+            "oauth_client_json_path": (
+                "/home/krn/.local/wilq/"
+                "client_secret_504856024095-"
+                "0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json"
+            ),
+            "oauth_scope": "https://www.googleapis.com/auth/adwords",
+            "helper_commands": [
+                (
+                    "uv run wilq google-ads oauth-url --client-secret-file "
+                    "/home/krn/.local/wilq/client_secret_504856024095-"
+                    "0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json"
+                ),
+                (
+                    "uv run wilq google-ads oauth-exchange --client-secret-file "
+                    "/home/krn/.local/wilq/client_secret_504856024095-"
+                    "0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json "
+                    "--redirect-url '<final localhost URL>' --write-env"
+                ),
+                (
+                    "uv run wilq connectors refresh google_ads --mode vendor_read "
+                    '--reason "Goal 001 Google Ads live data proof"'
+                ),
+            ],
             "required_env": [
                 "GOOGLE_ADS_DEVELOPER_TOKEN",
                 "GOOGLE_ADS_CLIENT_ID",

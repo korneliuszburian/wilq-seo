@@ -45,7 +45,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/actions/act_configure_google_ads_env");
 
     await expect(
-      page.getByRole("heading", { name: "Configure Google Ads local .env" })
+      page.getByRole("heading", { name: "Odnow Google Ads OAuth refresh token" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Evidence And Diagnosis" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Payload Preview" })).toBeVisible();

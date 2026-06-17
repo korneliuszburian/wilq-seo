@@ -25,6 +25,10 @@ Final Goal 001 product acceptance:
 * Tomorrow's Ekologus marketer can open the local dashboard and/or Codex
   Desktop/CLI and see one connected WILQ operating system, not disconnected
   prompt packs, placeholder routes or static reports.
+* `docs/architecture/bdos-class-wilq-operating-system.md` is a mandatory
+  product bar for every future slice. Read it together with this goal and
+  `docs/infra/001.md`; reject any implementation that becomes a connector
+  dashboard, generic AI report or UI slop instead of evidence-backed tactics.
 * Codex skills, dashboard, hooks, workflows, expert rules, opportunities,
   actions, metrics and evidence must all use the same WILQ API contracts.
 * Real vendor metrics and source facts must be shown where connectors are live.
@@ -424,6 +428,290 @@ Current active slice after `0190062`:
   * If live data succeeds, persist the run/evidence IDs in this goal and move to Ads Doctor live metric/action-candidate implementation.
   * If it fails, record only sanitized HTTP/OAuth/API status labels and continue from the concrete blocker.
 
+Current implementation slice completed after `9226581`:
+
+* Product outcome: prevent the demo and future work from drifting into generic
+  connector-dashboard slop; make BDOS-class capability/safety/tactical
+  expectations binding; show the Google Ads blocker as a precise OAuth repair
+  ActionObject rather than generic `.env` setup.
+* Implemented:
+  * `docs/architecture/bdos-class-wilq-operating-system.md` with cross-surface
+    capability matrix for Ads, Merchant, GA4, GSC, Ahrefs, Localo, WordPress and
+    social.
+  * Goal-level 8-hour demo plan, 50-task workboard, recovery packet, continuous
+    logging rule and prompt/task patterns.
+  * Source registry entry for the BDOS-class WILQ operating-system bar.
+  * `act_configure_google_ads_env` now titles and explains the real blocker:
+    `Odnow Google Ads OAuth refresh token` with payload
+    `repair_google_ads_oauth`, `oauth_scope=https://www.googleapis.com/auth/adwords`,
+    helper commands and OAuth client JSON path, without credential values.
+  * Dashboard unit/e2e expectations now use the OAuth repair action title.
+* Official docs checked during this slice:
+  * OpenAI Codex manual fetched to `/tmp/openai-docs-cache/codex-manual.md`;
+    relevant sections read: Agent Skills, Non-interactive mode, Subagents and
+    AGENTS.md.
+  * Google Ads API docs checked for GAQL, mutate and partial-failure concepts.
+  * ReAct and Self-RAG papers checked for API/action-grounded reasoning and
+    retrieval/critique principles.
+* Verified:
+  * `uv run ruff check wilq/actions/service.py wilq/actions/payloads.py tests/test_api_contracts.py tests/test_google_ads_oauth_cli.py` passed.
+  * `uv run mypy wilq/actions/service.py wilq/actions/payloads.py` passed.
+  * `uv run pytest tests/test_api_contracts.py tests/test_google_ads_oauth_cli.py -q` passed: 50/50 tests.
+  * `pnpm --filter @wilq/dashboard exec vitest run --pool forks --poolOptions.forks.singleFork --maxWorkers=1 --minWorkers=1` passed: 8/8 tests.
+  * `pnpm --filter @wilq/dashboard test:e2e` passed: 3/3 tests.
+  * `pnpm --filter @wilq/dashboard lint` passed.
+  * `pnpm --filter @wilq/dashboard typecheck` passed.
+  * `scripts/security.sh` passed; semgrep unavailable is reported by the script.
+  * Live API proof at `http://127.0.0.1:8000/api/actions/act_configure_google_ads_env`
+    returns title `Odnow Google Ads OAuth refresh token`, action type
+    `repair_google_ads_oauth`, `adwords` scope and three helper commands.
+* Remaining blocker:
+  * Live Google Ads metrics still require the user-approved OAuth consent flow
+    for `marketing@rekurencja.com`; do not fake Ads performance metrics while
+    `oauth_error=invalid_grant` remains current.
+
+## 0B. 8-hour demo push operating plan
+
+User expectation: within the next working block, produce a strong demo that can
+be shown to the Polish marketer. This does not mean fake metrics. It means WILQ
+must visibly condense real available data, honest blockers and expert rules into
+real next actions across the marketing system.
+
+Demo product bar:
+
+* The marketer is Polish. Demo labels, explanations, action reasons and Codex
+  outputs must be Polish with Polish diacritics.
+* The demo must show WILQ as `Codex + API + dashboard + skills`, not a static
+  dashboard, report or prompt pack.
+* The demo must show real metrics where connectors can read them today.
+* Where a connector is blocked, the demo must show the exact blocker and the
+  next safe repair action.
+* Every recommendation-like item must show evidence IDs, source connectors,
+  metric facts or explicit missing-evidence blockers.
+* No fixture/seed data may be described as real Ekologus performance.
+* BDOS-class bar from `docs/architecture/bdos-class-wilq-operating-system.md`
+  is binding: diagnostics, tactics, safety, preview, validation and audit.
+* Structured JSON outputs are an internal eval/automation guard, not the demo
+  experience. The marketer-facing product should show Polish tactical briefs,
+  ranked decisions, evidence links, metric facts, blockers and safe next
+  actions. Do not optimize for JSON shape when a useful marketing diagnosis is
+  missing.
+
+Codex/skills/subagents usage in the demo:
+
+* Skills are workflow wrappers over WILQ API, not prompt repositories. Use them
+  to answer marketer questions in Polish after the API has evidence.
+* Subagents are for parallel read-heavy analysis only: evidence audit, Ads
+  rules review, content/inventory review, Polish UX review and safety/action
+  review. The main agent merges their findings into one implementation plan.
+* Non-interactive `codex exec` is used as proof that Codex can consume WILQ API
+  context and produce a Polish tactical brief without inventing metrics.
+* Structured schemas are useful only for eval assertions and machine checks:
+  `api_used`, `language=pl-PL`, `evidence_ids`, `source_connectors`,
+  `blocked_reason`, `action_candidates`. The real demo output is the dashboard
+  and human-readable Polish operator brief.
+
+Required prompt patterns:
+
+* Daily Command prompt: "Przygotuj dzisiejszy brief operacyjny WILQ dla
+  Ekologus. Użyj WILQ API. Pokaż: 3 najważniejsze ruchy, evidence IDs, source
+  connectors, blockery, ActionObjects i jeden najbezpieczniejszy następny krok.
+  Nie wymyślaj metryk."
+* Ads Doctor prompt: "Sprawdź Google Ads. Jeśli OAuth/live Ads evidence jest
+  zablokowane, pokaż dokładny blocker i repair ActionObject. Jeśli evidence
+  istnieje, wskaż wasted spend/search terms/negative keywords tylko z metryk."
+* Content Planner prompt: "Z dostępnych GSC/GA4/Ahrefs/WordPress/Merchant
+  evidence zbuduj kolejkę: odśwież, połącz, utwórz, nie duplikuj. Każda pozycja
+  ma mieć evidence IDs i powód biznesowy."
+* Merchant prompt: "Sprawdź product/feed health. Nie proponuj zmian feedu bez
+  product evidence i payload preview. Pokaż disapprovals/expiring/issues albo
+  dokładny blocker."
+
+Minimum morning demo surfaces:
+
+1. **Command Center**: Polish daily operating board with:
+   * live connector summary,
+   * top blockers,
+   * evidence IDs,
+   * metric facts,
+   * ActionObject candidates,
+   * explicit "not performance evidence yet" labels where only readiness exists.
+2. **Ads Doctor**:
+   * if Google Ads OAuth is repaired: campaign/search-term/recommendation metric
+     facts and evidence-backed wasted-spend/next-action diagnostics;
+   * if OAuth remains blocked: exact `oauth_error=invalid_grant` state,
+     OAuth repair ActionObject, helper commands and no fake Ads metrics.
+3. **Merchant / product feed**:
+   * product/feed status or exact Merchant blocker,
+   * product/feed action queue shape,
+   * no product recommendation without product evidence.
+4. **GA4 / GSC / content planner**:
+   * use available Google first-party credentials to collect page/query/landing
+     behavior where possible;
+   * convert available evidence into refresh/create/merge/blocker queues;
+   * cite WordPress/content inventory where used.
+5. **Codex skill proof**:
+   * at least one non-interactive Codex eval against live WILQ API context for
+     Ads/Command Center style output;
+   * output must be Polish, cite API evidence, and block unsupported claims.
+6. **Action safety proof**:
+   * show payload preview,
+   * validation state,
+   * risk,
+   * audit event behavior for blocked apply path,
+   * no destructive writes.
+
+8-hour slice order:
+
+1. **0-1h: lock product bar and current blocker truth**
+   * finish and commit the Google Ads OAuth blocker ActionObject surface;
+   * keep `docs/architecture/bdos-class-wilq-operating-system.md` linked from
+     this goal and source registry;
+   * verify API returns `repair_google_ads_oauth`, not generic `.env missing`.
+2. **1-2h: collect what can be live without waiting for Ads OAuth**
+   * run/read Google first-party connectors that are currently configured:
+     GSC, GA4, Merchant;
+   * persist metric facts/evidence IDs or exact sanitized blockers.
+3. **2-3h: create marketer view models**
+   * add API view models for Command Center/Ads/Merchant/Content queues if
+     current generic endpoints are not enough;
+   * no dashboard-only business logic.
+4. **3-4h: Polish dashboard demo pass**
+   * replace generic route filler on the highest-value demo routes;
+   * show evidence, metric facts, blockers and next actions in Polish.
+5. **4-5h: Codex skill/eval pass**
+   * upgrade the relevant skill prompts/contracts only after API evidence exists;
+   * run non-interactive Codex evals for Polish output and no invented metrics.
+6. **5-6h: action safety pass**
+   * validate prepare/dry-run/preview/blocked apply surfaces;
+   * ensure ActionObjects and audit events are visible.
+7. **6-7h: proof and hardening**
+   * run targeted backend/frontend tests, security checks and browser proof;
+   * fix any stale process/runtime mismatch instead of papering over it.
+8. **7-8h: demo script and handoff**
+   * write a short Polish demo walkthrough with exact URLs, commands, evidence
+     IDs, known blockers and what the marketer should see;
+   * update this goal with completed checkpoints and remaining blockers.
+
+If Google Ads OAuth consent arrives during the 8-hour push:
+
+* immediately run `uv run wilq google-ads oauth-exchange ... --write-env`;
+* run `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"`;
+* prioritize live Ads Doctor evidence over further docs.
+
+If Google Ads OAuth consent does not arrive:
+
+* do not block the demo;
+* demo the exact OAuth blocker and repair ActionObject;
+* shift live-data effort to GSC, GA4, Merchant, WordPress and content planner;
+* keep Ads recommendations blocked until live Ads evidence exists.
+
+Detailed 8-hour workboard:
+
+### Data acquisition tasks
+
+1. `google_ads`: prove live OAuth or persist `oauth_error=invalid_grant` blocker
+   with repair ActionObject.
+2. `google_ads`: after OAuth, collect campaign last-7-days metric facts:
+   cost, clicks, impressions, conversions if available, evidence IDs.
+3. `google_ads`: add search-term read contract for spend/waste/negative
+   keyword candidates.
+4. `google_ads`: add recommendation read contract for optimization score
+   context and accept/reject review candidates.
+5. `google_ads`: add change-event read contract for "what changed and when".
+6. `google_ads`: add budget/impression-share read contract for budget cap and
+   scaling diagnostics.
+7. `google_ads`: define PMax/Demand Gen unsupported/blocked reporting notes so
+   dashboard does not apply Search assumptions.
+8. `google_merchant_center`: collect product/feed status or exact blocker:
+   product count, disapprovals, expiring products, issue counts.
+9. `google_merchant_center`: define product/feed action candidate shape for
+   supplemental-feed-safe changes.
+10. `google_analytics_4`: collect landing/source/campaign behavior facts:
+    sessions, engagement, key events/conversions where available.
+11. `google_search_console`: collect query/page facts:
+    clicks, impressions, CTR, average position and freshness.
+12. `wordpress_ekologus` and `wordpress_sklep`: collect content/product
+    inventory: URLs, titles, types, freshness, existing targets.
+13. `ahrefs`: collect competitor/domain/content gap facts or exact paid/API
+    blocker.
+14. `localo`: collect local visibility facts or exact Localo/MCP blocker.
+15. `linkedin` and `facebook`: keep publish permissions blocked unless
+    credentials exist; social may prepare only evidence-backed drafts.
+
+### API/view-model tasks
+
+16. Add/extend `ads_diagnostics` view model: source runs, metric facts,
+    evidence IDs, blockers, opportunities, ActionObjects.
+17. Add/extend `merchant_health` view model: feed/product facts, issues,
+    product evidence and action candidates.
+18. Add/extend `content_decision_queue` view model: refresh, merge, create,
+    avoid-duplicate, social adaptation.
+19. Add/extend `command_center` prioritization so it ranks business decisions,
+    not connector order.
+20. Keep every view model typed and covered by backend tests before dashboard
+    uses it.
+
+### Dashboard demo tasks
+
+21. Command Center shows top Polish daily moves with evidence/action links.
+22. Ads Doctor shows OAuth blocker or live Ads diagnostics, not generic cards.
+23. Merchant route shows feed/product status or exact blocker.
+24. GA4/GSC/content route shows content decision queue from real evidence.
+25. Action detail route shows payload preview, validation, risk and audit.
+26. Metric facts surface shows source connector and evidence ID for every fact.
+27. Blocker cards show repair command/action, not vague "missing data".
+
+### Codex skill and subagent tasks
+
+28. `wilq-daily-command`: produce Polish marketer brief from WILQ API with
+    evidence IDs and one safest next step.
+29. `wilq-ads-doctor`: block Ads recommendations until live Ads evidence exists;
+    after OAuth, diagnose wasted spend/search terms/recommendations.
+30. `wilq-merchant-feed-operator`: inspect Merchant evidence and prepare safe
+    feed/product candidates only with product evidence.
+31. `wilq-ga4-analyst`: diagnose campaign/landing quality and measurement gaps.
+32. `wilq-gsc-content-doctor`: turn query/page data into content decisions.
+33. `wilq-content-strategist`: merge GSC/GA4/Ahrefs/WordPress/Merchant evidence
+    into content and social tactics.
+34. Subagent: Evidence Auditor checks whether every dashboard/skill claim has
+    source connector and evidence ID.
+35. Subagent: Ads Rules Reviewer checks BDOS-class Ads logic, GAQL/read models,
+    safety and write blockers.
+36. Subagent: Polish UX Reviewer checks labels and operator text for Polish,
+    clarity and marketer usefulness.
+37. Subagent: Safety Reviewer checks ActionObject lifecycle, secrets,
+    destructive writes and audit behavior.
+38. Main agent merges subagent summaries into this goal before implementation
+    decisions; subagents do not create conflicting architecture.
+
+### Prompt/task patterns to run
+
+39. Daily brief: "Przygotuj 3 najważniejsze ruchy na dziś dla marketera
+    Ekologus. Użyj WILQ API, evidence IDs i ActionObjects. Nie wymyślaj metryk."
+40. Ads blocker: "Czy WILQ może dziś diagnozować wasted spend w Google Ads?
+    Jeśli nie, pokaż dokładny blocker, repair ActionObject i następny krok."
+41. Content tactic: "Z dostępnych GSC/GA4/WordPress evidence wskaż jedną stronę
+    do odświeżenia, jedną do połączenia albo powiedz, czego brakuje."
+42. Merchant tactic: "Czy są product/feed problemy wpływające na reklamy?
+    Podaj evidence albo blocker; nie proponuj zmian feedu bez payload preview."
+43. Safety proof: "Pokaż dlaczego żadna akcja write nie może być wykonana bez
+    walidacji, preview, confirm i audytu."
+
+### Demo acceptance tasks
+
+44. Browser proof for Command Center and action detail.
+45. API proof for `/api/codex/context-pack`, `/api/actions`,
+    connector refresh runs and metric facts.
+46. Non-interactive Codex proof for at least Daily Command plus one vertical
+    skill relevant to available live evidence.
+47. `scripts/security.sh` passes or has documented semgrep/tool availability.
+48. Targeted backend/frontend tests pass for changed surfaces.
+49. `scripts/verify.sh` passes before claiming the demo is ready, unless a
+    long-running external blocker is explicitly recorded with process status.
+50. Polish demo handoff exists with URLs, commands, evidence IDs, blockers and
+    the exact story to show the marketer.
+
 Known external/product blockers:
 
 * Google Ads `vendor_read` reaches Google's OAuth token endpoint, but the current refresh-token tuple returns `400 invalid_grant` for `adwords`; treat this as an external OAuth/token issue.
@@ -438,11 +726,50 @@ Use this section first after conversation compaction, resume, or a fresh Codex r
 Maintenance rule:
 
 * Keep exactly one active goal file while Goal 001 is open: `docs/goals/001-goal.md`.
+* Before implementation work, read `docs/architecture/bdos-class-wilq-operating-system.md`
+  and keep its BDOS-class capability matrix, safety model and slop rejection
+  checklist binding for the slice.
 * When a task is completed and committed, move it into the completed foundation list or checkpoint summary.
 * Do not leave stale "next" tasks that were already shipped; replace them with the next real blocker.
 * Keep unfinished blockers visible until verified evidence proves them complete.
 * Every new task should include the required product outcome, the API/dashboard/skill surfaces affected, expected proof commands and the known blocker state.
 * Write task descriptions so a future agent can resume after context loss without reading old chat logs.
+
+Context recovery packet after any compaction/restart:
+
+1. Read `AGENTS.md` for project identity, Polish marketer rules, local paths,
+   credential path names, security constraints and development commands.
+2. Read this file, `docs/goals/001-goal.md`, especially sections `0`,
+   `0B`, `Continuation ledger`, `Unfinished blockers` and `Next implementation
+   queue`.
+3. Read `docs/architecture/bdos-class-wilq-operating-system.md` before
+   implementing dashboard/API/skill work.
+4. Read `docs/infra/001.md` for original product scope if there is any doubt
+   whether a feature belongs to WILQ.
+5. Read `docs/research/source-registry.md` to find supporting docs/papers and
+   avoid repeating research.
+6. Read `docs/research/codex-noninteractive-skill-evals-research.md` before
+   changing skill evals or non-interactive Codex flows.
+7. Read `docs/architecture/codex-runtime.md` before changing skills, MCP,
+   hooks or Codex runtime assumptions.
+8. Read `docs/architecture/google-ads-capability-pack.md`,
+   `docs/architecture/merchant-center-and-feed.md`,
+   `docs/architecture/ga4-diagnostics.md` and
+   `docs/architecture/custom-segments-from-search-terms.md` for vertical
+   implementation details.
+
+Continuous logging requirement:
+
+* Every non-trivial slice must append a checkpoint in this goal before commit:
+  product outcome, changed surfaces, evidence IDs/run IDs if available,
+  commands run, tests passed/failed, remaining blocker and next action.
+* Never leave "current active slice" stale after pushing a commit.
+* If a command is interrupted, record whether it was intentionally interrupted,
+  whether any process was left running and what was cleaned up.
+* If live vendor data is unavailable, record the exact sanitized blocker label
+  and the next repair action; do not downgrade it to generic "not configured".
+* When research changes the plan, record the source and the resulting product
+  decision in this file or a linked architecture/research document.
 
 Completed foundation that should not be reimplemented:
 
