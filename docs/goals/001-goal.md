@@ -298,6 +298,22 @@ Completed foundation that should not be reimplemented:
 * Dashboard routes exist and are API-backed through TanStack Query/Zod, but they are not yet marketer-useful final surfaces.
 * Playwright real-browser dashboard/API smoke exists to prove browser route/API/CORS health and must stay in `scripts/verify.sh`.
 
+Product scope that must not be simplified away:
+
+* WILQ is not an Ads-only tool and not a connector dashboard. The finished operating loop must cover Ads, GSC/SEO, GA4, Merchant, Ahrefs, Localo, WordPress/content inventory, LinkedIn/Facebook social publishing, knowledge cards, Codex runs and audited ActionObjects.
+* The marketer-facing loop is: collect vendor evidence -> normalize metric facts and knowledge cards -> run expert rules -> create opportunities -> prepare validated action candidates -> show them in Command Center/dashboard -> let Codex skills operate on the same API evidence -> audit every write path.
+* Command Center must eventually answer, in Polish, the actual daily questions: what burns budget, what can win traffic, what content to rewrite/create/merge, what local/social move is ready, which API action can be safely prepared, and which blocker prevents action.
+* Ads Doctor is only the first vertical proof because Google Ads has the highest immediate business leverage. It must establish the reusable pattern for all other surfaces, not replace them.
+* Content work is first-class: GSC query/page evidence, GA4 landing diagnostics, Ahrefs gaps, WordPress inventory, Merchant product context and knowledge cards must feed Content Planner and content/social ActionObjects.
+* Social Publisher is first-class but permission-gated: LinkedIn/Facebook post candidates must use evidence-backed claims and remain prepare-only until permissions, validation and audit support are live.
+* Localo/local visibility is first-class but connector-gated: local ranking/GBP recommendations must show explicit blockers until Localo evidence exists.
+
+Current Codex skill/API truth:
+
+* `wilq-daily-command` is the only Goal 001 skill described as functionally wired today; it must call `POST /api/codex/context-pack` before producing a daily brief.
+* The other WILQ skills are production-shaped API operator contracts and smoke-tested against `/api/codex/context-pack`, but they are not yet proof of rich domain usefulness. Do not describe them as fully useful or complete until their domain API evidence, diagnostic endpoints, action candidates and targeted eval cases exist.
+* Every skill upgrade must follow the same sequence: implement or expose the API evidence first, add diagnostic/action contracts second, then update the skill and non-interactive Codex eval. Do not move business logic into prompts to compensate for missing API data.
+
 Unfinished blockers to keep carrying forward:
 
 1. Google Ads OAuth: current refresh-token tuple returns `400 invalid_grant` for `adwords`; get a fresh scoped token before claiming live Ads metrics.
@@ -310,11 +326,12 @@ Unfinished blockers to keep carrying forward:
 
 Next implementation queue:
 
-1. Draft or create Goal 002 only after confirming `main` is clean and `scripts/verify.sh` still passes. Goal 002 should focus on Google Ads Connector and Ads Doctor usefulness.
-2. Goal 002 first slice: resolve Google Ads OAuth `invalid_grant` with a fresh `adwords`-scoped refresh token, then prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence.
-3. Goal 002 dashboard slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
-4. Goal 002 skill/eval slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments` and `wilq-demand-gen-operator` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
-5. After Ads Doctor is useful, promote the same metric-view pattern to GSC/SEO, GA4, Merchant, Ahrefs, Localo, content and social surfaces.
+1. Product operating-surface slice: replace generic dashboard filler with the first ActionObject-centered Command Center sections: money leaks, traffic wins, content moves, local/social blockers, ready action candidates, connector freshness and evidence IDs. If a section lacks evidence, show a Polish blocker instead of placeholder copy.
+2. Google Ads data slice: resolve Google Ads OAuth `invalid_grant` with a fresh `adwords`-scoped refresh token, then prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence.
+3. Ads Doctor usefulness slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
+4. Content Planner usefulness slice: expose a real content decision queue from GSC, GA4, Ahrefs, WordPress inventory, Merchant/product context and knowledge cards: refresh, merge, create, avoid-duplicate, social adaptation and evidence-backed briefs.
+5. Skill/eval upgrade slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments`, `wilq-demand-gen-operator`, `wilq-gsc-content-doctor`, `wilq-content-strategist`, `wilq-ahrefs-gap-finder`, `wilq-localo-operator` and `wilq-social-publisher` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
+6. After Ads Doctor and Content Planner are useful, promote the same metric-view/action-candidate pattern to GA4, Merchant, Ahrefs, Localo and social surfaces.
 
 Goal 002 draft acceptance notes:
 
