@@ -3544,3 +3544,83 @@ Remaining next work:
    and feed issue queue from `MarketingBrief`.
 3. Add `MarketingBrief` evidence/action detail links in dashboard.
 4. Add validation call proof for `act_configure_google_ads_env` without apply.
+
+---
+
+## 31. Deterministic MarketingBrief evaluator - 2026-06-17
+
+Implemented the next follow-up from section 30:
+
+* Added `scripts/eval_marketing_brief.sh`.
+* The script uses `uv run python`, not global `python3`.
+* It checks:
+  * `/api/health`
+  * `/api/marketing/brief`
+  * `language=pl-PL`
+  * required sections:
+    `what_we_know`, `what_blocks_us`, `safe_next_actions`,
+    `recommended_focus`
+  * non-empty brief items
+  * non-empty `evidence_ids`
+  * presence of `act_configure_google_ads_env`
+  * every item has `source_connectors`
+  * every item has `evidence_ids`
+  * recommendation items are evidence-backed
+  * Polish diacritics exist in operator-facing text
+  * no obvious secret-like markers are present
+* `scripts/verify.sh` now runs this evaluator against its temporary skill API
+  before running skill smoke scripts.
+
+Live deterministic proof:
+
+```txt
+scripts/eval_marketing_brief.sh --api-base http://127.0.0.1:8000
+```
+
+Output summary:
+
+```json
+{
+  "action_ids": ["act_configure_google_ads_env"],
+  "api_base": "http://127.0.0.1:8000",
+  "blocker_count": 5,
+  "evidence_count": 16,
+  "item_count": 15,
+  "language": "pl-PL",
+  "recommendation_count": 3,
+  "section_ids": [
+    "what_we_know",
+    "what_blocks_us",
+    "safe_next_actions",
+    "recommended_focus"
+  ]
+}
+```
+
+Verification run:
+
+* `bash -n scripts/eval_marketing_brief.sh scripts/verify.sh`: passed.
+* `uv run pytest tests/test_api_contracts.py::test_marketing_brief_aggregates_metric_facts_and_blockers tests/test_api_contracts.py::test_codex_context_pack_embeds_marketing_brief_contract -q`: passed.
+* `scripts/verify.sh` passed lint, typecheck, unit tests, security,
+  detect-secrets, API smoke, skill structure smoke and skill API smoke.
+* `scripts/verify.sh` was manually interrupted during dashboard Playwright
+  startup because Playwright started the test API on `8875` but did not start
+  dashboard port `5373` in reasonable time.
+* Equivalent dashboard proof was run explicitly against already-running local
+  servers:
+
+```bash
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+pnpm --filter @wilq/dashboard build
+```
+
+* Result: Playwright `3 passed`; dashboard production build passed.
+* After cleanup only normal local servers remained:
+  `127.0.0.1:8000` and `127.0.0.1:5173`.
+
+Remaining next work:
+
+1. Upgrade dashboard `/merchant` route to show the same Merchant recommendation
+   and feed issue queue from `MarketingBrief`.
+2. Add `MarketingBrief` evidence/action detail links in dashboard.
+3. Add validation call proof for `act_configure_google_ads_env` without apply.
