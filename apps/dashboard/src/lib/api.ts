@@ -4,13 +4,15 @@ import {
   ConnectorStatusSchema,
   ExpertRuleSchema,
   OpportunitySchema,
+  WorkflowRunSchema,
   WorkflowSchema,
   type ActionObject,
   type CommandCenterResponse,
   type ConnectorStatus,
   type ExpertRule,
   type Opportunity,
-  type Workflow
+  type Workflow,
+  type WorkflowRun
 } from "@wilq/shared-schemas";
 import { z } from "zod";
 
@@ -44,6 +46,10 @@ export function getWorkflows(): Promise<Workflow[]> {
   return apiGet("/api/workflows", z.array(WorkflowSchema));
 }
 
+export function getWorkflowRuns(): Promise<WorkflowRun[]> {
+  return apiGet("/api/workflow-runs", z.array(WorkflowRunSchema));
+}
+
 export function getExpertRules(): Promise<ExpertRule[]> {
   return apiGet("/api/expert/rules", z.array(ExpertRuleSchema));
 }
@@ -54,5 +60,6 @@ export type {
   ConnectorStatus,
   ExpertRule,
   Opportunity,
-  Workflow
+  Workflow,
+  WorkflowRun
 };

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +22,7 @@ from wilq.expert.rules import (
 from wilq.knowledge.cards import seed_cards
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
+    AuditEvent,
     CodexRun,
     CommandCenterResponse,
     ConnectorStatus,
@@ -32,6 +34,8 @@ from wilq.schemas import (
     utc_now,
 )
 from wilq.security.redaction import redact_mapping
+from wilq.storage.local_state import local_state_store
+from wilq.workflows.models import WorkflowRun, WorkflowRunCreateRequest
 from wilq.workflows.registry import list_workflows
 
 app = FastAPI(title="WILQ Marketing API", version="0.1.0")
@@ -42,8 +46,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-CODEX_RUNS: list[CodexRun] = []
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
 
@@ -121,6 +123,7 @@ def system_status() -> dict[str, Any]:
             "connector_summary": connector_summary(connectors).model_dump(),
             "access_pack": access_pack_status(detailed=False),
             "codex_runtime": codex_runtime_status(),
+            "local_state": local_state_store().status(),
             "opportunity_types": list(OPPORTUNITY_TYPES),
         }
     )
@@ -220,9 +223,15 @@ def apply_action_endpoint(action_id: str) -> dict[str, Any]:
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = apply_action(action)
+    local_state_store().save_audit_event(result.audit_event)
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
     return result.model_dump(mode="json")
+
+
+@app.get("/api/audit/events", response_model=list[AuditEvent])
+def audit_events(action_id: str | None = None) -> list[AuditEvent]:
+    return local_state_store().list_audit_events(action_id=action_id)
 
 
 @app.get("/api/knowledge/cards")
@@ -284,16 +293,40 @@ def codex_context_pack(request: ContextPackRequest) -> dict[str, Any]:
 
 @app.post("/api/codex/runs", response_model=CodexRun)
 def create_codex_run(run: CodexRun) -> CodexRun:
-    redacted = CodexRun.model_validate(redact_mapping(run.model_dump(mode="json")))
-    CODEX_RUNS.append(redacted)
-    return redacted
+    return local_state_store().save_codex_run(run)
 
 
 @app.get("/api/codex/runs", response_model=list[CodexRun])
 def codex_runs() -> list[CodexRun]:
-    return CODEX_RUNS
+    return local_state_store().list_codex_runs()
 
 
 @app.get("/api/workflows")
 def workflows() -> list[dict[str, Any]]:
     return [workflow.model_dump(mode="json") for workflow in list_workflows()]
+
+
+@app.post("/api/workflows/{workflow_id}/runs", response_model=WorkflowRun)
+def create_workflow_run(workflow_id: str, request: WorkflowRunCreateRequest) -> WorkflowRun:
+    if workflow_id not in {workflow.id for workflow in list_workflows()}:
+        raise HTTPException(status_code=404, detail=f"Unknown workflow: {workflow_id}")
+    run = WorkflowRun(
+        id=request.id or f"run_{workflow_id}_{uuid4().hex[:10]}",
+        workflow_id=workflow_id,
+        status="queued",
+        input=request.input,
+    )
+    return local_state_store().save_workflow_run(run)
+
+
+@app.get("/api/workflow-runs", response_model=list[WorkflowRun])
+def workflow_runs() -> list[WorkflowRun]:
+    return local_state_store().list_workflow_runs()
+
+
+@app.get("/api/workflow-runs/{run_id}", response_model=WorkflowRun)
+def workflow_run_detail(run_id: str) -> WorkflowRun:
+    run = local_state_store().get_workflow_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail=f"Unknown workflow run: {run_id}")
+    return run

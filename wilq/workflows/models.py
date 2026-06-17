@@ -43,6 +43,11 @@ class WorkflowRun(BaseModel):
     output: WorkflowOutput = Field(default_factory=WorkflowOutput)
 
 
+class WorkflowRunCreateRequest(BaseModel):
+    id: str | None = None
+    input: WorkflowInput = Field(default_factory=WorkflowInput)
+
+
 class WorkflowEvidence(BaseModel):
     workflow_run_id: str
     evidence_ids: list[str] = Field(default_factory=list)

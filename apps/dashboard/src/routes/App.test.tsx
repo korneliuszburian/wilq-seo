@@ -71,6 +71,18 @@ const expertRules = [
   }
 ];
 
+const workflowRuns = [
+  {
+    id: "run_daily_command_test",
+    workflow_id: "daily_command",
+    status: "queued",
+    started_at: "2026-06-17T10:00:00Z",
+    completed_at: null,
+    input: { connector_ids: [], parameters: {} },
+    output: { evidence_ids: [], action_ids: [], errors: [] }
+  }
+];
+
 function mockFetch() {
   vi.stubGlobal(
     "fetch",
@@ -96,6 +108,7 @@ function mockFetch() {
           Response.json([{ id: "daily_command", label: "Daily Command", description: "Runs." }])
         );
       }
+      if (url.endsWith("/api/workflow-runs")) return Promise.resolve(Response.json(workflowRuns));
       return Promise.resolve(Response.json({}));
     })
   );
@@ -156,5 +169,12 @@ describe("WILQ dashboard", () => {
     render(<App />);
     await waitFor(() => expect(screen.getByText("Expert Rules")).toBeInTheDocument());
     expect(screen.getByText("Search term analysis")).toBeInTheDocument();
+  });
+
+  it("workflow route renders persisted workflow runs", async () => {
+    window.history.pushState({}, "", "/workflows");
+    render(<App />);
+    await waitFor(() => expect(screen.getByText("Workflow Runs")).toBeInTheDocument());
+    expect(screen.getByText("run_daily_command_test")).toBeInTheDocument();
   });
 });

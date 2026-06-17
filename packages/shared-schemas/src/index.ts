@@ -124,6 +124,27 @@ export const WorkflowSchema = z.object({
   description: z.string()
 });
 
+export const WorkflowInputSchema = z.object({
+  connector_ids: z.array(z.string()),
+  parameters: z.record(z.unknown())
+});
+
+export const WorkflowOutputSchema = z.object({
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  errors: z.array(z.string())
+});
+
+export const WorkflowRunSchema = z.object({
+  id: z.string(),
+  workflow_id: z.string(),
+  status: z.enum(["queued", "running", "completed", "failed", "blocked"]),
+  started_at: z.string(),
+  completed_at: z.string().nullable().optional(),
+  input: WorkflowInputSchema,
+  output: WorkflowOutputSchema
+});
+
 export const ContextPackResponseSchema = z.object({
   current_product_rules: z.array(z.string()),
   available_connectors: z.array(z.string()),
@@ -141,6 +162,7 @@ export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
+export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;
 export type ExpertRule = z.infer<typeof ExpertRuleSchema>;
 export type ExpertRuleSummary = z.infer<typeof ExpertRuleSummarySchema>;

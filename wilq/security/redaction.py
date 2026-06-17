@@ -8,6 +8,20 @@ SECRET_KEY_RE = re.compile(r"(token|secret|password|credential|api[_-]?key|clien
 SECRET_VALUE_RE = re.compile(
     r"(gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+|[A-Za-z0-9_-]{32,})"
 )
+SAFE_IDENTIFIER_KEYS = {
+    "id",
+    "action_id",
+    "action_ids",
+    "connector",
+    "connector_ids",
+    "evidence_id",
+    "evidence_ids",
+    "source_connector",
+    "source_connectors",
+    "source_id",
+    "workflow_id",
+    "workflow_run_id",
+}
 
 
 def is_secret_key(key: str) -> bool:
@@ -31,7 +45,9 @@ def redact_value(value: Any) -> Any:
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:
     redacted: dict[str, Any] = {}
     for key, value in data.items():
-        if is_secret_key(key):
+        if key in SAFE_IDENTIFIER_KEYS:
+            redacted[key] = value
+        elif is_secret_key(key):
             redacted[key] = "[REDACTED]" if value else value
         else:
             redacted[key] = redact_value(value)

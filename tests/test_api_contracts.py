@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -66,7 +67,11 @@ def test_system_status_does_not_expose_access_pack_paths_or_filenames() -> None:
     assert "manifest_files" not in access_pack
 
 
-def test_codex_run_redacts_token_like_error_values() -> None:
+def test_codex_run_redacts_token_like_error_values(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "codex_state.sqlite3"))
     response = client.post(
         "/api/codex/runs",
         json={
@@ -80,6 +85,11 @@ def test_codex_run_redacts_token_like_error_values() -> None:
     serialized = json.dumps(response.json())
     assert "sk-testsecretvalue1234567890" not in serialized
     assert "[REDACTED]" in serialized
+    list_response = client.get("/api/codex/runs")
+    assert list_response.status_code == 200
+    listed = json.dumps(list_response.json())
+    assert "codex_redaction_test" in listed
+    assert "sk-testsecretvalue1234567890" not in listed
 
 
 def test_api_is_local_only_by_default() -> None:
@@ -135,10 +145,19 @@ def test_action_requires_evidence_id() -> None:
         )
 
 
-def test_action_apply_requires_validation() -> None:
+def test_action_apply_requires_validation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "audit_state.sqlite3"))
     response = client.post("/api/actions/act_configure_google_ads_access_pack/apply")
     assert response.status_code == 409
     assert "validated before apply" in json.dumps(response.json())
+    audit_response = client.get(
+        "/api/audit/events?action_id=act_configure_google_ads_access_pack"
+    )
+    assert audit_response.status_code == 200
+    assert audit_response.json()[0]["event_type"] == "apply_blocked"
 
 
 def test_action_validation_rejects_unsupported_payload_action_type() -> None:
@@ -218,3 +237,47 @@ def test_codex_context_pack_includes_expert_rule_summaries() -> None:
     rule_ids = {rule["id"] for rule in data["expert_rule_summaries"]}
     assert "ads_principles_v1" in rule_ids
     assert data["expert_capabilities"]
+
+
+def test_workflow_run_persists_to_local_state_with_redaction(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "workflow_state.sqlite3"))
+    response = client.post(
+        "/api/workflows/daily_command/runs",
+        json={
+            "id": "run_daily_command_contract",
+            "input": {
+                "connector_ids": ["google_ads"],
+                "parameters": {
+                    "api_key": "sk-workflowsecretvalue1234567890",  # pragma: allowlist secret
+                },
+            },
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "run_daily_command_contract"
+    assert data["status"] == "queued"
+    assert data["input"]["parameters"]["api_key"] == "[REDACTED]"
+
+    detail_response = client.get("/api/workflow-runs/run_daily_command_contract")
+    assert detail_response.status_code == 200
+    assert detail_response.json()["input"]["parameters"]["api_key"] == "[REDACTED]"
+
+    list_response = client.get("/api/workflow-runs")
+    assert list_response.status_code == 200
+    assert [item["id"] for item in list_response.json()] == ["run_daily_command_contract"]
+
+
+def test_system_status_reports_local_state_without_path(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "status_state.sqlite3"))
+    response = client.get("/api/system/status")
+    assert response.status_code == 200
+    local_state = response.json()["local_state"]
+    assert local_state["backend"] == "sqlite"
+    assert "path" not in local_state

@@ -17,8 +17,10 @@ import {
   getConnectors,
   getExpertRules,
   getOpportunities,
+  getWorkflowRuns,
   getWorkflows,
-  Opportunity
+  Opportunity,
+  WorkflowRun
 } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { Shell } from "../components/Shell";
@@ -180,6 +182,33 @@ function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
   );
 }
 
+function WorkflowRunList({ runs }: { runs: WorkflowRun[] }) {
+  if (runs.length === 0) {
+    return <p className="text-sm text-slate-600">No persisted workflow runs yet.</p>;
+  }
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {runs.map((run) => (
+        <article key={run.id} className="rounded-md border border-line bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{run.workflow_id.replaceAll("_", " ")}</h3>
+              <p className="mt-1 break-words text-xs text-slate-500">{run.id}</p>
+            </div>
+            <StatusBadge value={run.status} />
+          </div>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600">
+            <div>Evidence: {run.output.evidence_ids.length}</div>
+            <div>Actions: {run.output.action_ids.length}</div>
+            <div>Errors: {run.output.errors.length}</div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
@@ -228,12 +257,22 @@ function GenericSurface({ routeName }: { routeName: string }) {
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
   const workflows = useQuery({ queryKey: ["workflows"], queryFn: getWorkflows });
+  const workflowRuns = useQuery({ queryKey: ["workflow-runs"], queryFn: getWorkflowRuns });
   const expertRules = useQuery({ queryKey: ["expert-rules"], queryFn: getExpertRules });
+  const isWorkflowRoute = routeName.startsWith("/workflows");
+  const isWorkflowLoading = isWorkflowRoute && (workflows.isLoading || workflowRuns.isLoading);
+  const hasWorkflowError = isWorkflowRoute && (workflows.error || workflowRuns.error);
 
-  if (connectors.isLoading || opportunities.isLoading || actions.isLoading || expertRules.isLoading) {
+  if (
+    connectors.isLoading ||
+    opportunities.isLoading ||
+    actions.isLoading ||
+    expertRules.isLoading ||
+    isWorkflowLoading
+  ) {
     return <LoadingBand />;
   }
-  if (connectors.error || opportunities.error || actions.error || expertRules.error) {
+  if (connectors.error || opportunities.error || actions.error || expertRules.error || hasWorkflowError) {
     return <ErrorState />;
   }
 
@@ -256,18 +295,24 @@ function GenericSurface({ routeName }: { routeName: string }) {
         <FileJson aria-hidden="true" className="text-action" size={28} />
       </div>
       <div className="grid gap-6">
-        {routeName.startsWith("/workflows") ? (
-          <section>
-            <SectionHeading title="Workflow Registry" />
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {(workflows.data ?? []).map((workflow) => (
-                <article key={workflow.id} className="rounded-md border border-line bg-white p-4">
-                  <h3 className="text-sm font-semibold">{workflow.label}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">{workflow.description}</p>
-                </article>
-              ))}
-            </div>
-          </section>
+        {isWorkflowRoute ? (
+          <>
+            <section>
+              <SectionHeading title="Workflow Registry" />
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {(workflows.data ?? []).map((workflow) => (
+                  <article key={workflow.id} className="rounded-md border border-line bg-white p-4">
+                    <h3 className="text-sm font-semibold">{workflow.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{workflow.description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+            <section>
+              <SectionHeading title="Workflow Runs" />
+              <WorkflowRunList runs={workflowRuns.data ?? []} />
+            </section>
+          </>
         ) : null}
         <section>
           <SectionHeading title="Opportunities" />
@@ -446,6 +491,11 @@ const actionsRoute = createRoute({
   path: "/actions",
   component: () => <GenericSurface routeName="/actions" />
 });
+const workflowsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/workflows",
+  component: () => <GenericSurface routeName="/workflows" />
+});
 const actionDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/actions/$actionId",
@@ -471,6 +521,7 @@ const routeTree = rootRoute.addChildren([
   opportunitiesRoute,
   opportunityDetailRoute,
   actionsRoute,
+  workflowsRoute,
   actionDetailRoute,
   workflowDetailRoute,
   ...generatedRoutes
