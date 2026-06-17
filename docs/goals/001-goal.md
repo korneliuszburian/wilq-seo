@@ -3001,3 +3001,392 @@ Next Localo tasks:
    movement, competitor gap counts, GBP/local task state and evidence IDs.
 5. Dashboard `/localo` and `wilq-localo-operator` must keep showing the blocker
    until Localo evidence IDs and source connector facts exist.
+
+---
+
+## 28. One-hour research expansion - product intelligence backlog
+
+This section is a live research-and-execution map. Keep updating it whenever a
+source, paper, pattern, metric, prompt, workflow or implementation detail can
+increase WILQ quality for a Polish non-programmer marketer using Codex
+Desktop/CLI plus the WILQ dashboard.
+
+The product target remains:
+
+```txt
+WILQ = Polish marketer-friendly operating system for Ekologus.
+Codex = operator/runtime.
+WILQ API = factual spine.
+Dashboard = same truth in UI.
+Skills/subagents = reusable workflows over API, not prompt dumps.
+Every recommendation = source connector + evidence ID + metric facts or blocker.
+```
+
+### 28A. Research sources to carry forward
+
+Primary platform/API sources:
+
+| Source | URL | Why it matters for WILQ |
+| --- | --- | --- |
+| OpenAI Codex manual - Agent Skills | `/tmp/openai-docs-cache/codex-manual.md`, lines 6626-6773 | Skills are focused reusable workflows with progressive disclosure. WILQ skills must stay small and endpoint-backed. |
+| OpenAI Codex manual - Non-interactive mode | `/tmp/openai-docs-cache/codex-manual.md`, lines 8168-8531 | `codex exec` is the eval runner for Polish skill outputs, schema checks and API grounding. |
+| OpenAI Codex manual - Subagents | `/tmp/openai-docs-cache/codex-manual.md`, lines 9851-9942 and 11487-11649 | Use subagents for parallel read-heavy analysis, not conflicting broad writes. |
+| OpenAI Codex manual - AGENTS.md | `/tmp/openai-docs-cache/codex-manual.md`, lines 6864-6995 | Recovery/context rules belong in AGENTS.md and this goal; nested guidance can override. |
+| Google Ads API introduction | <https://developers.google.com/google-ads/api/docs/get-started/introduction> | Google Ads API is the interface for large/complex account management; WILQ should use it for diagnostics and safe mutations. |
+| Google Ads Query Language | <https://developers.google.com/google-ads/api/docs/query/overview> | GAQL is the reporting spine for campaigns, search terms, assets, spend, ROAS, changes and recommendation context. |
+| Google Ads recommendations | <https://developers.google.com/google-ads/api/docs/recommendations> | Optimization score/recommendations can seed opportunity detection, but WILQ must re-rank by Ekologus evidence and risk. |
+| Google Ads partial failures | <https://developers.google.com/google-ads/api/docs/best-practices/partial-failures> | Mutations must support partial failure handling and clear preview/confirm/audit behavior. |
+| Google Ads search term view | <https://developers.google.com/google-ads/api/fields/v24/search_term_view> | Search-term waste, n-grams and negative keyword candidates require this resource where available. |
+| Google Ads Keyword Planner ideas | <https://developers.google.com/google-ads/api/docs/keyword-planning/generate-keyword-ideas> | Keyword/segment/content expansion should use historical metrics, competition and seed URL/keyword ideas. |
+| Google Ads Change Event | <https://developers.google.com/google-ads/api/docs/change-event> | Client explanations and audit history need who/what/when change facts for the last 30 days. |
+| Google Search Console Search Analytics API | <https://developers.google.com/webmaster-tools/v1/searchanalytics/query> | SEO/content decisions need clicks, impressions, CTR, position, query/page/device/country dimensions. |
+| GA4 Data API overview | <https://developers.google.com/analytics/devguides/reporting/data/v1> | GA4 behavior, engagement, events, conversions and landing-page quality must come from `runReport`/batch reports. |
+| Merchant API products | <https://developers.google.com/merchant/api/reference/rest/products_v1beta/accounts.products> | Product status, issues and feed facts drive merchant/feed action candidates. |
+| Merchant products/issues guide | <https://developers.google.com/merchant/api/guides/products/list-products-data-issues> | Product issue extraction is required before feed/title/description recommendations. |
+| Merchant title best practices | <https://support.google.com/merchants/answer/6324415?hl=en> | Feed title recommendations must front-load important product details and use product-relevant keywords. |
+| Merchant product data specification | <https://support.google.com/merchants/answer/7052112?hl=en> | Generated feed attributes must avoid promo text, caps/gimmicks and mismatch with landing page. |
+| Google SEO starter guide | <https://developers.google.com/search/docs/fundamentals/seo-starter-guide> | Content Planner must focus on useful site improvements, not SEO theater. |
+| Google helpful content guidance | <https://developers.google.com/search/docs/fundamentals/creating-helpful-content> | Content scoring must ask whether content is helpful, reliable and people-first. |
+| Google Ads responsive search ads best practices | <https://support.google.com/google-ads/answer/6167122?hl=en> | Ads copy generation should target unique, high-quality RSA assets, not one generic headline. |
+| Google Ads Performance Max overview | <https://support.google.com/google-ads/answer/10724817?hl=en> | PMax is cross-channel; WILQ must avoid pretending channel/source truth exists unless evidence supports it. |
+| Google Ads PMax asset groups API | <https://developers.google.com/google-ads/api/performance-max/asset-groups> | Asset group/asset readiness diagnostics need API-level structure. |
+| Localo API/MCP integration | <https://docs.localo.com/en/articles/14687216-localo-api-mcp-integration> | Local visibility requires Localo MCP OAuth; current blocker is missing `LOCALO_ACCESS_TOKEN`. |
+| BDOS.ai product reference | <https://bdos.ai/> | WILQ benchmark: diagnostics, safe changes, account workflows, expert knowledge and dry_run/preview/confirm. |
+
+AI/prompting/eval research sources:
+
+| Source | URL | WILQ takeaway |
+| --- | --- | --- |
+| ReAct | <https://arxiv.org/abs/2210.03629> | Interleave reasoning with API actions; WILQ must fetch evidence before claims. |
+| Toolformer | <https://arxiv.org/abs/2302.04761> | Tool use should be learned/selected when helpful; WILQ skills should declare when to call which endpoint. |
+| Chain-of-Thought | <https://arxiv.org/abs/2201.11903> | Internal reasoning helps hard tasks, but final marketer output should be concise and evidence-backed, not raw chain-of-thought. |
+| Tree of Thoughts | <https://arxiv.org/abs/2305.10601> | Use multi-path exploration for high-risk planning: budget moves, content strategy, campaign architecture. |
+| Reflexion | <https://arxiv.org/abs/2303.11366> | Store failed eval/blocker lessons as skill/reference updates and regression cases. |
+| CRITIC | <https://arxiv.org/abs/2305.11738> | Self-correction must use tools: WILQ API, schema validator, tests, source links and live metric checks. |
+| Self-RAG | <https://arxiv.org/abs/2310.11511> | Retrieve only needed evidence; critique sufficiency before recommending. |
+| RAGAS | <https://arxiv.org/abs/2309.15217> | Evaluate context relevance, faithfulness and answer quality separately. |
+| ARES | <https://arxiv.org/abs/2311.09476> | Build synthetic + small human-checked eval sets for knowledge-card retrieval and recommendations. |
+| G-Eval | <https://arxiv.org/abs/2303.16634> | LLM judge may score Polish usefulness/style after deterministic evidence checks, never before. |
+| DSPy | <https://arxiv.org/abs/2310.03714> | Treat prompts/skills as modules optimized against metrics, not hand-tuned magic strings. |
+| The Prompt Report | <https://arxiv.org/abs/2406.06608> | Use explicit task/data/output boundaries, delimiters and taxonomies; avoid vague superprompts. |
+
+Marketing science / strategy sources:
+
+| Source | URL | WILQ takeaway |
+| --- | --- | --- |
+| Ehrenberg-Bass / How Brands Grow | <https://marketingscience.info/learn-with-us/books> | Add evidence-based brand growth heuristics: penetration, mental/physical availability, light buyers. |
+| Ehrenberg-Bass Laws of Growth Analysis | <https://marketingscience.info/learn-with-us/commercial-research/laws-of-growth-analysis> | If market/customer data becomes available, evaluate buyer behavior and loyalty patterns before strategy claims. |
+| Cialdini influence principles | <https://www.influenceatwork.com/7-principles-of-persuasion/> | Copywriting heuristics can inform assets, but must be adapted ethically and validated against landing-page truth. |
+| Jobs-to-Be-Done / Competing Against Luck | <https://www.hbs.edu/faculty/Pages/item.aspx?num=51754> | Content and ad assets should map to customer jobs, anxieties, switching triggers and purchase context. |
+
+### 28B. Knowledge compiler design
+
+Do not stuff books, docs, webinars or API pages into long prompts. Condense
+them into versioned knowledge cards first.
+
+Required card fields:
+
+```yaml
+id: stable_card_id
+card_type: api_capability|ads_rule|content_rule|feed_rule|copywriting_rule|decision_matrix|safety_rule|playbook_step
+title: concise Polish title for operator display
+source_url_or_path: canonical URL/path
+source_lineage:
+  - exact section/page/document reference
+freshness:
+  checked_at: ISO-8601
+  likely_stable: true|false
+confidence: high|medium|low
+applies_to:
+  connectors: []
+  workflows: []
+  opportunity_types: []
+  action_types: []
+requires_evidence:
+  - metric_fact
+  - evidence_id
+  - source_connector
+rule:
+  condition: machine-readable condition or pseudo-query
+  action: diagnostic/recommendation/action candidate
+  blocker: when rule must not fire
+polish_operator_copy:
+  finding_template: Polish sentence with placeholders
+  action_template: Polish next-step sentence with placeholders
+eval_cases:
+  positive: []
+  negative: []
+```
+
+Compiler pipeline:
+
+1. Ingest source only from approved registry: official docs, verified API
+   outputs, expert playbooks, user-approved notes, client data, research papers.
+2. Extract atomic claims: one rule or fact per card.
+3. Attach source lineage and freshness.
+4. Map the card to connector facts and ActionObject types.
+5. Generate positive/negative eval cases.
+6. Reject cards that cannot declare required evidence or blocker conditions.
+7. Publish summaries to `/api/knowledge/cards` and Codex context packs.
+8. Use cards in skills/dashboard only through API, not direct markdown scraping.
+
+Quality gates:
+
+* No card without source lineage.
+* No action rule without blocker condition.
+* No marketing recommendation card without `requires_evidence`.
+* No external best-practice card can override current Ekologus metrics.
+* LLM-generated copy rules must preserve product/landing-page truth.
+
+### 28C. What WILQ must collect and why
+
+| Area | Facts to collect | What marketer gets | Blocker behavior |
+| --- | --- | --- | --- |
+| Google Ads account health | spend, conversions, CPA/ROAS, budget lost, impression share, bid strategy, campaign status, learning/limited status, recommendations, change history | Polish “co pali pieniądze / co można skalować / co jest zablokowane” queue | If Ads OAuth blocked, show `invalid_grant` repair ActionObject and block Ads claims. |
+| Search terms | query, campaign/ad group, match type, cost, conversions, CPA/ROAS, n-grams, conflict with good terms | Negative keyword candidates, custom segment seeds, content gap seeds | If unavailable, say which GAQL resource/scope blocks it. |
+| PMax / Shopping | products, listing groups, asset groups, product status, spend/revenue by item/category if Ads available | Product bucketing, feed issue queue, title rewrite candidates, PMax hygiene | Never infer PMax channel split unless source supports it. |
+| Merchant Center | total/active/expiring/disapproved/pending products, item issues, countries, destinations | Feed priority queue: fix now / monitor / ignore | No feed edit without preview payload and source product ID. |
+| GA4 | sessions, active users, engagement, events/conversions, landing pages, acquisition, ecommerce if available | Landing-page and conversion-quality diagnostics | Separate tracking gap from performance problem. |
+| GSC | clicks, impressions, CTR, avg position by page/query/device/country/date | SEO refresh/create/merge queue, CTR rewrite queue | Do not recommend SEO action without page/query evidence. |
+| Ahrefs | DR, backlink/referring domain facts, competitor/keyword gaps if available | Authority/gap context, backlink/content priorities | Avoid competitor claims without Ahrefs evidence. |
+| WordPress | page/post/product content inventory, modified dates, slugs, titles, meta where available | Stale page queue, duplicate/merge candidates, draft action candidates | No publishing without ActionObject validation. |
+| Localo / GBP | local rankings, competitor visibility, task status, GBP post opportunities | Local visibility actions and local content queue | Current blocker: missing `LOCALO_ACCESS_TOKEN`; show exact blocker. |
+| Social | page/org auth, existing post inventory/performance if available | Draft-ready LinkedIn/Facebook candidates from evidence | Publishing stays blocked without permission and review. |
+| Knowledge base | best-practice cards, client facts, voice/tone, product/service cards | Consistent Polish recommendations and asset drafts | Unknown claims become questions/blockers. |
+
+### 28D. Workflow and prompt patterns
+
+Prompts are operational contracts, not product truth. They must call WILQ API,
+return Polish operator output, cite evidence IDs and block unsupported claims.
+
+Daily command prompt pattern:
+
+```txt
+Cel: przygotuj dzisiejszy brief dla marketera Ekologus.
+Dane: pobierz /api/codex/context-pack dla wilq-daily-command.
+Zasady:
+- Nie wymyślaj metryk.
+- Każdy insight ma evidence_id i source_connector.
+- Jeśli Ads/Localo/social są zablokowane, pokaż konkretny blocker i repair action.
+Wynik po polsku:
+1. Najważniejsze decyzje na dziś.
+2. Co jest realnym ryzykiem.
+3. Co można zrobić bezpiecznie teraz.
+4. Co jest zablokowane i dlaczego.
+5. Jakie ActionObjecty można przygotować.
+```
+
+Ads Doctor prompt pattern:
+
+```txt
+Cel: znajdź realne problemy Google Ads, ale tylko z WILQ API.
+Najpierw sprawdź connector google_ads i ostatnie refresh runs.
+Jeśli brak live Ads evidence, odpowiedz blockerem.
+Jeśli evidence istnieje:
+- policz money leaks,
+- wykryj search-term waste,
+- wykryj missing geo / broad match / budget limited / tracking gap,
+- przypisz severity HIGH/MEDIUM/LOW,
+- zaproponuj ActionObject dry_run, nie wykonanie.
+Każda rekomendacja: metryka, okres, evidence_id, ryzyko, następny krok.
+```
+
+Content Planner prompt pattern:
+
+```txt
+Cel: wskazać co pisać, odświeżyć, połączyć lub zostawić.
+Źródła: GSC + GA4 + Ahrefs + WordPress inventory + knowledge cards.
+Reguły:
+- Nie proponuj tematu bez query/page evidence lub knowledge-card source.
+- Oddziel szybki CTR/title/meta fix od nowego contentu.
+- Jeżeli strona ma ruch, nie proponuj merge bez dowodu kanibalizacji.
+Wynik: kolejka create/refresh/merge/block z polskim uzasadnieniem i evidence.
+```
+
+Merchant/feed prompt pattern:
+
+```txt
+Cel: wykryć feed/product issues i kandydatów do zmian produktowych.
+Źródła: Merchant Center + Ads product performance + GA4 ecommerce, jeśli dostępne.
+Reguły:
+- Disapproval/expiring/pending/product issue ma pierwszeństwo przed copywritingiem.
+- Tytuł/description rewrite musi zachować zgodność z landing page i Merchant spec.
+- Nie zmieniaj primary feed; przygotuj preview/supplemental-feed candidate.
+Wynik: priorytety issue, liczba produktów, wpływ, payload preview, blocker.
+```
+
+Client-answer prompt pattern:
+
+```txt
+Cel: odpowiedzieć klientowi "co się stało?" w 2 minuty.
+Źródła: Ads, GA4, GSC, Merchant, Change Event, audit log.
+Reguły:
+- Najpierw timeline i fakty.
+- Oddziel sezonowość, tracking, budżet, feed, landing page i zmiany ręczne.
+- Jeśli przyczyna nie jest udowodniona, powiedz "najbardziej prawdopodobne" i
+  pokaż brakujące dane.
+Wynik: krótka polska odpowiedź do klienta + techniczny appendix dla operatora.
+```
+
+Structured outputs:
+
+* Use JSON schema only for evals, automation handoffs and internal CI checks.
+* Do not force dashboard/operator UX into JSON.
+* Required eval fields stay minimal:
+  `language`, `api_used`, `evidence_ids`, `source_connectors`,
+  `recommendations`, `blockers`, `unsafe_claims`, `action_objects`.
+
+### 28E. Subagent map for WILQ work
+
+Use subagents only when explicitly useful and mostly read-heavy:
+
+| Subagent | Reads | Output | Must not |
+| --- | --- | --- | --- |
+| Evidence auditor | API responses, metric store, refresh runs, evidence registry | Missing/weak evidence list by workflow | Invent metrics or edit code. |
+| Ads rules reviewer | Google Ads docs, expert rules, Ads evidence | Rule gaps, GAQL fields, risk conditions | Create mutations. |
+| Content strategist reviewer | GSC/GA4/Ahrefs/WP facts, content cards | Create/refresh/merge/block queue | Invent topics. |
+| Feed/Merchant reviewer | Merchant API facts, product issues, product spec | Feed issue priority and safe payload needs | Modify feed. |
+| Polish UX reviewer | Dashboard copy, skill outputs | Non-Polish/sloppy wording, unclear operator actions | Change API contracts alone. |
+| Safety/action reviewer | ActionObject schemas, audit logs, security docs | Unsafe write paths, missing validation/audit | Approve destructive actions. |
+| Evals reviewer | codex exec results, smoke scripts, schemas | Regression cases and failing skill behaviors | Treat LLM judge as source of truth. |
+
+The main agent must merge findings into one plan before implementation.
+
+### 28F. Eval strategy for “does this help a marketer?”
+
+Deterministic checks first:
+
+* Output is Polish and includes Polish diacritics where natural.
+* `api_used=true` for every skill that claims metrics.
+* Every recommendation has evidence ID, source connector, period and metric fact.
+* Blockers are explicit when connector data is unavailable.
+* No write action appears without validated ActionObject.
+* No secret values or raw credential paths in output.
+* Dashboard and skill use the same API endpoint/view model.
+
+Marketing usefulness checks:
+
+* The output answers one concrete operator question, not a generic dashboard
+  description.
+* It ranks actions by impact/risk/effort.
+* It separates “fix now”, “monitor”, “needs data”, and “do not act”.
+* It explains why the action matters in business language.
+* It gives the next command/API route/dashboard place to continue.
+* It is short enough for a marketer to use without reading developer docs.
+
+LLM-as-judge checks are allowed only after deterministic checks:
+
+* Polish clarity score.
+* Tactical usefulness score.
+* “Would a PPC/content specialist know what to do next?” score.
+* Hallucination suspicion score.
+* Missing evidence criticism.
+
+Regression dataset to build:
+
+1. Ads OAuth blocked: must show repair path, no Ads recommendation.
+2. Search terms available with one high-cost no-conversion n-gram: propose
+   negative keyword candidate with cross-check.
+3. GSC high impressions / low CTR page: propose title/meta refresh candidate.
+4. GSC position 8-15 query cluster: propose content expansion, not technical SEO.
+5. Merchant 84 expiring products: show feed freshness queue.
+6. Merchant disapproved products 0: must not claim disapproval issue.
+7. GA4 low engagement landing page with traffic: diagnose landing-page quality.
+8. WordPress stale shop pages: propose review/refresh queue.
+9. Localo missing access token: show OAuth blocker.
+10. Social missing credentials: keep publishing blocked.
+
+### 28G. Implementation backlog from this research
+
+Data/API spine:
+
+1. Add `MarketingBrief` API view model that aggregates metric facts, freshness,
+   blockers, opportunities and ActionObjects into one Polish operator response.
+2. Add `MetricFact` dimensions for period, entity type, entity ID, source URL,
+   severity and freshness so dashboard cards can cite real facts.
+3. Add Google Ads live read adapters after OAuth is fixed:
+   campaign summary, search terms, recommendations, change event, keyword ideas.
+4. Add GAQL validator/autofix helper before any Ads Doctor GAQL generation:
+   field-in-select rule, unsupported syntax checks, date range validation,
+   resource compatibility checks.
+5. Add Ads safety limits:
+   no destructive deletes, budget increase max threshold, dry_run required,
+   preview required, confirm required.
+6. Add Merchant product issue detail adapter, not only aggregate status.
+7. Add Merchant title/description candidate model with landing-page truth check.
+8. Add GA4 landing page and ecommerce report adapters.
+9. Add GSC query/page/device/country breakdown adapters.
+10. Add WordPress inventory detail fields: title, slug, modified date, status,
+    content length, excerpt/meta if available.
+11. Add Localo OAuth helper and MCP `tools/list` probe.
+12. Add social connector blockers and draft-only action model.
+
+Dashboard:
+
+13. Replace command-center placeholder sections with real `MarketingBrief`
+    cards.
+14. Add first-viewport Polish “co zrobić teraz” section.
+15. Add evidence drawer for each recommendation.
+16. Add blocker drawer with repair commands/actions.
+17. Add metric freshness badges.
+18. Add action preview drawer: payload, risk, validation, audit status.
+19. Add Ads Doctor route that shows either OAuth blocker or live Ads issues.
+20. Add Content Planner route with create/refresh/merge/block queues.
+21. Add Merchant route with product status and feed issue queue.
+22. Add Localo route showing OAuth blocker until token exists.
+23. Add Knowledge route that shows source cards and playbooks, not raw docs.
+24. Add “demo mode” banner only if data is fixture/mock; live data must not be
+    labeled as demo.
+
+Skills/Codex:
+
+25. Upgrade `wilq-daily-command` to call `MarketingBrief`.
+26. Upgrade `wilq-ads-doctor` only after Ads live evidence exists.
+27. Upgrade `wilq-content-strategist` to consume GSC/GA4/Ahrefs/WP facts.
+28. Upgrade `wilq-merchant-feed-operator` to consume Merchant issue details.
+29. Add deterministic smoke scripts for each upgraded skill.
+30. Add non-interactive Codex eval cases from 28F.
+31. Add failure memories/regression cases when Codex invents a metric or skips
+    a blocker.
+32. Add Polish UX eval that rejects English operator-facing output.
+
+Knowledge:
+
+33. Convert Google Ads API/recommendations docs into capability cards.
+34. Convert Merchant title/product spec docs into feed rule cards.
+35. Convert SEO starter/helpful content docs into content rule cards.
+36. Convert ReAct/Self-RAG/CRITIC/RAGAS into system behavior cards.
+37. Convert BDOS reference into product bar cards.
+38. Convert marketing science sources into strategy heuristic cards with
+    confidence labels and evidence requirements.
+39. Add source freshness checker for volatile docs.
+40. Add source registry tests so every card points to an approved source.
+
+Evals/QA:
+
+41. Add `scripts/eval_marketing_brief.sh`.
+42. Add dashboard e2e for “not placeholder”: at least one live metric card,
+    one evidence ID and one blocker must render.
+43. Add API contract test: no opportunity without evidence/blocker.
+44. Add redaction test for Localo OAuth metadata/token paths.
+45. Add test that disabled/missing connector cards never become recommendations.
+46. Add action validation test for budget mutation thresholds.
+47. Add GAQL validation tests with common invalid queries.
+48. Add content queue tests using real-shaped GSC/WordPress fixtures.
+49. Add Merchant feed payload preview tests.
+50. Add final `scripts/verify.sh` integration once surfaces are wired.
+
+Demo acceptance:
+
+51. A Polish marketer opens dashboard and sees real metrics from current
+    available connectors: GSC, GA4, Merchant, Ahrefs, WordPress.
+52. Google Ads shows exact OAuth blocker and repair ActionObject until fixed.
+53. Localo shows exact `LOCALO_ACCESS_TOKEN` blocker until OAuth helper runs.
+54. At least five recommendations or blockers cite evidence IDs.
+55. At least one safe ActionObject validates but does not apply without confirm.
+56. At least one Codex skill returns the same facts as dashboard.
+57. Non-interactive Codex eval proves Polish output and API grounding.
+58. No static report or one-off artifact is required to demonstrate value.
+59. Handoff lists live URLs, commands, evidence IDs, known blockers and next
+    slices.
+60. Worktree is clean and commits are Conventional Commits.
