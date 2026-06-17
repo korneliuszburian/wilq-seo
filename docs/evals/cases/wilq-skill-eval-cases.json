@@ -15,13 +15,18 @@
   },
   {
     "skill": "wilq-ads-doctor",
+    "surface_path": "/ads-doctor",
     "task_pl": "Sprawdź gotowość Google Ads i powiedz, czy można wiarygodnie diagnozować wasted spend, search terms i negative keywords bez wymyślania metryk.",
-    "expected_connectors": ["google_ads"]
+    "expected_connectors": ["google_ads"],
+    "expected_terms_pl": ["Ads Doctor", "OAuth", "spend"],
+    "expected_action_ids": ["act_configure_google_ads_env"]
   },
   {
     "skill": "wilq-gsc-content-doctor",
+    "surface_path": "/seo-gsc",
     "task_pl": "Na podstawie dostępnego GSC evidence wskaż jedną bezpieczną diagnozę SEO/content i co marketer ma zrobić dalej.",
-    "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"]
+    "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
+    "expected_terms_pl": ["SEO / GSC", "GSC", "treści"]
   },
   {
     "skill": "wilq-ahrefs-gap-finder",
@@ -35,6 +40,7 @@
   },
   {
     "skill": "wilq-content-strategist",
+    "surface_path": "/content-planner",
     "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników.",
     "expected_connectors": [
       "google_search_console",
@@ -42,7 +48,14 @@
       "ahrefs",
       "wordpress_ekologus",
       "wordpress_sklep"
-    ]
+    ],
+    "required_source_connectors": [
+      "google_search_console",
+      "google_analytics_4",
+      "ahrefs",
+      "wordpress_ekologus"
+    ],
+    "expected_terms_pl": ["Content Planner", "WordPress", "GSC"]
   },
   {
     "skill": "wilq-social-publisher",
@@ -66,12 +79,16 @@
   },
   {
     "skill": "wilq-ga4-analyst",
+    "surface_path": "/ga4",
     "task_pl": "Zrób krótką diagnozę GA4 behavior/conversion readiness z evidence IDs i wskaż, co jest blockerem albo następnym krokiem.",
-    "expected_connectors": ["google_analytics_4"]
+    "expected_connectors": ["google_analytics_4"],
+    "expected_terms_pl": ["GA4", "active_users"]
   },
   {
     "skill": "wilq-merchant-feed-operator",
+    "surface_path": "/merchant",
     "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczny kandydat działania bez zmiany danych produktu.",
-    "expected_connectors": ["google_merchant_center"]
+    "expected_connectors": ["google_merchant_center"],
+    "expected_terms_pl": ["Merchant Center", "feed", "product"]
   }
 ]

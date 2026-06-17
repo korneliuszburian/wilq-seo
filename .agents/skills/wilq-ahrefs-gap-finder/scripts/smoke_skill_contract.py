@@ -51,6 +51,25 @@ def main() -> int:
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
+    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
+    brief_items = [
+        {
+            "id": item.get("id"),
+            "title": item.get("title"),
+            "kind": item.get("kind"),
+            "source_connectors": item.get("source_connectors", []),
+            "evidence_ids": item.get("evidence_ids", []),
+            "action_ids": item.get("action_ids", []),
+            "metric_facts": item.get("metric_facts", []),
+        }
+        for section in brief.get("sections", [])
+        for item in section.get("items", [])
+        if any(
+            connector in REQUIRED_CONNECTORS
+            for connector in item.get("source_connectors", [])
+        )
+    ][:8]
+
     connector_results = []
     for connector in REQUIRED_CONNECTORS:
         quoted = urllib.parse.quote(connector, safe="")
@@ -76,9 +95,25 @@ def main() -> int:
                 "api_base": args.api_base,
                 "health": health.get("status"),
                 "required_connectors": connector_results,
+                "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "evidence_ids": [
+                    item.get("id")
+                    for item in (pack.get("evidence_summaries") or [])
+                    if item.get("id")
+                ][:20],
+                "opportunity_ids": [
+                    item.get("id")
+                    for item in (pack.get("top_opportunities") or [])
+                    if item.get("id")
+                ][:20],
+                "action_ids": [
+                    item.get("id")
+                    for item in (pack.get("active_action_objects") or [])
+                    if item.get("id")
+                ][:20],
             },
             indent=2,
             sort_keys=True,

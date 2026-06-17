@@ -3900,3 +3900,148 @@ Remaining next work:
 3. Add more precise ActionObject candidates beyond the OAuth repair path:
    content brief candidates, feed review candidates, GA4 tracking-gap candidates
    and social draft candidates, all prepare-only with evidence IDs.
+
+---
+
+## 35. Route-specific Codex skill evals - 2026-06-17
+
+Implemented the first remaining item from section 34.
+
+What changed:
+
+* `docs/evals/cases/wilq-skill-eval-cases.json` now contains route-specific
+  eval metadata for:
+  * `wilq-ads-doctor` -> `/ads-doctor`,
+  * `wilq-ga4-analyst` -> `/ga4`,
+  * `wilq-gsc-content-doctor` -> `/seo-gsc`,
+  * `wilq-merchant-feed-operator` -> `/merchant`,
+  * `wilq-content-strategist` -> `/content-planner`.
+* `scripts/codex_skill_eval.sh` now validates that non-interactive Codex
+  output includes:
+  * the route marker,
+  * expected Polish workflow terms,
+  * expected source connectors,
+  * expected ActionObject IDs when the API exposes them.
+* `wilq-ads-doctor` now specifically proves the Google Ads blocker/action path
+  by requiring `act_configure_google_ads_env`.
+* The WILQ skill smoke scripts now fetch `GET /api/marketing/brief` and expose
+  `brief_items`, `evidence_ids`, `opportunity_ids` and `action_ids` to Codex.
+  This gives Codex route-relevant API evidence instead of only counts.
+* Skill docs now include `GET /api/marketing/brief` in the allowed endpoint
+  list so evals and operator runs do not depend on an undocumented API call.
+* Added `tests/test_codex_skill_eval_cases.py` so route-specific eval metadata,
+  harness validators and smoke-script MarketingBrief access are covered by
+  Python tests.
+* The content strategist eval separates connector readiness from source
+  attribution:
+  * `wordpress_sklep` remains an expected connector/readiness surface,
+  * it is not forced into final source attribution until route-specific
+    evidence exists for it.
+
+Non-interactive Codex eval proof:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-route/routes-20260617T211715Z/wilq-ads-doctor \
+scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-route/routes-20260617T211715Z/wilq-ga4-analyst \
+scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-route/routes-20260617T211715Z/wilq-gsc-content-doctor \
+scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-route/routes-20260617T211715Z/wilq-merchant-feed-operator \
+scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-route/routes-20260617T211715Z/wilq-content-strategist-rerun \
+scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Eval results:
+
+* `wilq-ads-doctor`: passed.
+  * Route: `/ads-doctor`.
+  * Source connector: `google_ads`.
+  * Evidence count: `3`.
+  * Action candidate: `act_configure_google_ads_env`.
+  * Correctly blocked Ads recommendations until OAuth is repaired.
+* `wilq-ga4-analyst`: passed.
+  * Route: `/ga4`.
+  * Source connector: `google_analytics_4`.
+  * Evidence count: `1`.
+  * Uses `active_users = 20` from API evidence and blocks conversion claims
+    without conversion evidence.
+* `wilq-gsc-content-doctor`: passed.
+  * Route: `/seo-gsc`.
+  * Source connectors: `google_search_console`, `wordpress_ekologus`,
+    `wordpress_sklep`.
+  * Evidence count: `3`.
+  * Avoids choosing a concrete page/query until WILQ exposes page/query
+    evidence.
+* `wilq-merchant-feed-operator`: passed.
+  * Route: `/merchant`.
+  * Source connector: `google_merchant_center`.
+  * Evidence count: `1`.
+  * Keeps Merchant work prepare-only without a validated ActionObject.
+* `wilq-content-strategist`: passed.
+  * Route: `/content-planner`.
+  * Source connectors: `google_search_console`, `google_analytics_4`,
+    `ahrefs`, `wordpress_ekologus`, `wordpress_sklep`.
+  * Evidence count: `5`.
+  * Recommends refreshing existing WordPress content before inventing new
+    topics.
+
+Verification:
+
+```bash
+bash -n scripts/codex_skill_eval.sh
+uv run python -m json.tool docs/evals/cases/wilq-skill-eval-cases.json >/dev/null
+uv run ruff check tests/test_codex_skill_eval_cases.py
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Shell syntax: passed.
+* Eval case JSON syntax: passed.
+* New eval metadata tests: `3 passed`.
+* `scripts/quality.sh`: passed.
+  * Python tests: `64 passed`.
+  * Dashboard Vitest: `12 passed`.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports:
+  * Python tests: `64 passed`.
+  * dashboard Vitest: `12 passed`.
+  * security: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+* No test servers remained on `8765`, `8875` or `5373`.
+
+Remaining next work:
+
+1. Add richer API ActionObject candidates beyond the OAuth repair path:
+   content brief candidates, feed review candidates, GA4 tracking-gap
+   candidates and social draft candidates, all prepare-only with evidence IDs.
+2. Extend `MetricFact` and dashboard route panels with dimensions, freshness
+   windows and period deltas so the marketer sees concrete change, not only
+   route-level counts.
+3. Add Localo/social route-specific evals after Localo MCP/readiness and social
+   evidence surfaces expose useful route evidence instead of missing-access
+   blockers.

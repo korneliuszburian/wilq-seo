@@ -115,6 +115,9 @@ cases_path, skill, api_base = sys.argv[1], sys.argv[2], sys.argv[3]
 cases = {case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())}
 case = cases[skill]
 connectors = ", ".join(f"`{connector}`" for connector in case["expected_connectors"])
+surface_path = case.get("surface_path")
+expected_terms = case.get("expected_terms_pl", [])
+expected_action_ids = case.get("expected_action_ids", [])
 is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
@@ -124,10 +127,32 @@ api_instruction = (
     if is_daily_command
     else "Najpierw sprawdź API i context-pack właściwy dla skillu."
 )
+surface_instruction = (
+    f"\n<surface>\nOceniany dashboard workflow route: {surface_path}. "
+    "Finalny JSON musi odzwierciedlać ten route w `notes`, `operator_next_step`, "
+    "rekomendacjach albo kandydatach działań.\n</surface>\n"
+    if surface_path
+    else ""
+)
+expected_terms_instruction = (
+    "\n<expected_terms>\nW finalnym JSON uwzględnij te marker terms, jeżeli są zgodne "
+    f"z WILQ evidence: {', '.join(expected_terms)}.\n</expected_terms>\n"
+    if expected_terms
+    else ""
+)
+expected_actions_instruction = (
+    "\n<expected_action_ids>\nJeżeli WILQ API zwraca te ActionObject IDs, uwzględnij je "
+    f"w `action_candidates`: {', '.join(expected_action_ids)}.\n</expected_action_ids>\n"
+    if expected_action_ids
+    else ""
+)
 print(f"""<task>
 Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
 Zadanie: {case["task_pl"]}
 </task>
+{surface_instruction}
+{expected_terms_instruction}
+{expected_actions_instruction}
 
 <api>
 WILQ API base: {api_base}
@@ -154,7 +179,11 @@ Oczekiwane connector surfaces: {connectors}
 </smoke_command>
 
 <interpretation>
-Smoke script output jest dowodem działania skill/API path. Jeżeli script podaje tylko liczniki, nie wymyślaj brakujących evidence IDs. W takiej sytuacji zostaw `recommendations` puste albo ustaw blocker/notes z uczciwym ograniczeniem.
+Smoke script output jest dowodem działania skill/API path. `brief_items` są
+route-specific wycinkiem z /api/marketing/brief i są najmocniejszym dowodem dla
+ocenianego workflow. Jeżeli script podaje tylko liczniki, nie wymyślaj
+brakujących evidence IDs. W takiej sytuacji zostaw `recommendations` puste albo
+ustaw blocker/notes z uczciwym ograniczeniem.
 </interpretation>
 
 <required_final_json>
@@ -197,13 +226,16 @@ PY
     exit 1
   fi
 
-  uv run python - "$result_file" "$skill" "$api_base" <<'PY'
+  uv run python - "$result_file" "$skill" "$api_base" "$cases_file" <<'PY'
 import json
 import re
 import sys
 
-path, expected_skill, api_base = sys.argv[1], sys.argv[2], sys.argv[3]
+path, expected_skill, api_base, cases_path = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 data = json.loads(open(path, encoding="utf-8").read())
+case = {
+    case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())
+}[expected_skill]
 errors = []
 
 if data.get("skill") != expected_skill:
@@ -228,8 +260,32 @@ if int(data.get("operator_usefulness_score", 0)) < 3:
 texts = [data.get("operator_next_step", ""), data.get("notes", "")]
 texts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
 texts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
-if not re.search(r"[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]", " ".join(texts)):
+combined_text = " ".join(texts)
+combined_json_text = json.dumps(data, ensure_ascii=False)
+if not re.search(r"[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]", combined_text):
     errors.append("no Polish diacritics found in operator-facing JSON values")
+
+surface_path = case.get("surface_path")
+if surface_path and surface_path not in combined_json_text:
+    errors.append(f"surface_path marker missing from final JSON: {surface_path}")
+
+for term in case.get("expected_terms_pl", []):
+    if term.lower() not in combined_json_text.lower():
+        errors.append(f"expected route term missing from final JSON: {term}")
+
+result_connector_text = " ".join(
+    [
+        *data.get("source_connectors", []),
+        *[
+            connector
+            for recommendation in data.get("recommendations", [])
+            for connector in recommendation.get("source_connectors", [])
+        ],
+    ]
+)
+for connector in case.get("required_source_connectors", case.get("expected_connectors", [])):
+    if connector not in result_connector_text:
+        errors.append(f"expected connector missing from source connectors: {connector}")
 
 for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
     if not recommendation.get("blocked_reason"):
@@ -242,6 +298,11 @@ for idx, action in enumerate(data.get("action_candidates", []), start=1):
     state = action.get("validation_state")
     if state == "validated" and not action.get("action_id"):
         errors.append(f"action candidate {idx} is validated without action_id")
+
+action_ids = {action.get("action_id") for action in data.get("action_candidates", [])}
+for action_id in case.get("expected_action_ids", []):
+    if action_id not in action_ids:
+        errors.append(f"expected action_id missing from action_candidates: {action_id}")
 
 if errors:
     raise SystemExit("; ".join(errors))

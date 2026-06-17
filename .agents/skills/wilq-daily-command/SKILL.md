@@ -26,6 +26,7 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 - `GET /api/system/status`
 - `GET /api/marketing/brief`
 - `POST /api/codex/context-pack`
+- `GET /api/marketing/brief`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `GET /api/connectors/{connector}/refresh-runs`
