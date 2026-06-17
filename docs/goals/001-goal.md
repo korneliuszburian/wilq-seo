@@ -38,6 +38,30 @@ Final Goal 001 product acceptance:
   Ads, GSC/SEO, GA4, Merchant, Ahrefs, Localo, WordPress/content, social,
   knowledge, Codex runs and audited API actions are one operating system.
 
+Required marketer-proof gates:
+
+* Real metric audit: collect and show current source facts for pages, products,
+  campaigns, queries, landing pages, feed/product state and connector freshness
+  wherever credentials/API access allow it. Do not use fixture/seed data as
+  proof of marketer usefulness.
+* Real pages/products proof: WordPress and Merchant/Product-related surfaces
+  must show actual inventory, freshness and evidence IDs before Content Planner
+  or product/feed recommendations are considered useful.
+* Non-interactive Codex proof: run `codex exec` evals for every upgraded WILQ
+  skill against live WILQ API context. Evals must prove API use, Polish output
+  with Polish diacritics, evidence IDs/source connectors, ActionObject
+  validation behavior and no invented metrics.
+* Dashboard proof: Playwright/browser proof must show that the marketer can see
+  the same real metrics, evidence, blockers and action candidates in the
+  dashboard, not only in Codex output.
+* API consistency proof: the dashboard, Codex context packs, skill eval outputs,
+  opportunities and actions must all reference the same evidence IDs and source
+  connectors for the same recommendation.
+* Human usefulness proof: a final walkthrough must answer concrete marketer
+  questions: what burns budget, what can gain traffic, what content/product
+  work is next, what social/local move is blocked or ready, and what can be
+  safely prepared through an ActionObject.
+
 Zrealizuj wszystkie zadania krok po kroku.
 
 Stwórz repo przy pomocy 'gh' w 'korneliuszburian' (mój github nickname) -> prywatne, skonfiguruj .gitignore i wszystkie najważniejsze elementy, następnie idź do przodu.
