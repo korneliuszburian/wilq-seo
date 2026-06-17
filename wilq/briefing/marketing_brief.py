@@ -43,7 +43,7 @@ CONNECTOR_LABELS = {
 def build_marketing_brief() -> MarketingBrief:
     connectors = list_connector_statuses()
     refresh_runs = list_connector_refresh_runs()
-    metric_facts = metric_store().list_metric_facts(limit=24)
+    metric_facts = metric_store().list_metric_facts(limit=200)
     actions = list_actions()
     latest_runs = _latest_run_by_connector(refresh_runs)
 
@@ -89,7 +89,7 @@ def build_marketing_brief() -> MarketingBrief:
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector_summary=_connector_summary(connectors),
         sections=sections,
-        top_metric_facts=metric_facts[:12],
+        top_metric_facts=_representative_metric_facts(metric_facts, limit=12),
         evidence_ids=evidence_ids,
         action_ids=action_ids,
         blocker_count=len(blocker_items),
@@ -128,8 +128,9 @@ def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
 
     items: list[MarketingBriefItem] = []
     for index, (connector_id, facts) in enumerate(grouped.items(), start=1):
-        headline = _metric_headline(connector_id, facts)
-        evidence_ids = _unique(fact.evidence_id for fact in facts)
+        prioritized_facts = _prioritize_dimension_facts(facts)
+        headline = _metric_headline(connector_id, prioritized_facts)
+        evidence_ids = _unique(fact.evidence_id for fact in prioritized_facts)
         items.append(
             MarketingBriefItem(
                 id=f"brief_metric_{connector_id}",
@@ -138,13 +139,43 @@ def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
                 priority=min(20 + index, 39),
                 source_connectors=[connector_id],
                 evidence_ids=evidence_ids,
-                metric_facts=facts[:6],
-                summary=_metric_summary(connector_id, facts),
+                metric_facts=prioritized_facts[:6],
+                summary=_metric_summary(connector_id, prioritized_facts),
                 next_step=_metric_next_step(connector_id),
                 risk=ActionRisk.low,
             )
         )
     return sorted(items, key=lambda item: item.priority)
+
+
+def _representative_metric_facts(metric_facts: list[MetricFact], limit: int) -> list[MetricFact]:
+    prioritized_facts = _prioritize_dimension_facts(metric_facts)
+    selected: list[MetricFact] = []
+    seen_connectors: set[str] = set()
+    for fact in prioritized_facts:
+        if _is_probe_only_fact(fact) or fact.source_connector in seen_connectors:
+            continue
+        selected.append(fact)
+        seen_connectors.add(fact.source_connector)
+        if len(selected) >= limit:
+            return selected
+    for fact in prioritized_facts:
+        if _is_probe_only_fact(fact) or fact in selected:
+            continue
+        selected.append(fact)
+        if len(selected) >= limit:
+            return selected
+    return selected
+
+
+def _prioritize_dimension_facts(metric_facts: list[MetricFact]) -> list[MetricFact]:
+    return sorted(
+        metric_facts,
+        key=lambda fact: (
+            0 if fact.dimensions else 1,
+            0 if fact.name not in {"api", "connector_id"} else 1,
+        ),
+    )
 
 
 def _blocker_items(
@@ -220,7 +251,7 @@ def _recommendation_items(
         facts_by_connector[fact.source_connector].append(fact)
 
     if "google_merchant_center" in facts_by_connector:
-        merchant_facts = facts_by_connector["google_merchant_center"]
+        merchant_facts = _prioritize_dimension_facts(facts_by_connector["google_merchant_center"])
         items.append(
             MarketingBriefItem(
                 id="brief_focus_merchant_feed",
@@ -240,7 +271,7 @@ def _recommendation_items(
         )
 
     if "google_search_console" in facts_by_connector:
-        gsc_facts = facts_by_connector["google_search_console"]
+        gsc_facts = _prioritize_dimension_facts(facts_by_connector["google_search_console"])
         items.append(
             MarketingBriefItem(
                 id="brief_focus_gsc_content",

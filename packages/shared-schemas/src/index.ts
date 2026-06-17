@@ -20,6 +20,7 @@ export const MetricFactSchema = z.object({
   period: z.string(),
   source_connector: z.string(),
   evidence_id: z.string(),
+  dimensions: z.record(z.string()).optional().default({}),
   unit: z.string().nullable().optional(),
   collected_at: z.string().nullable().optional(),
   previous_value: z.union([z.string(), z.number()]).nullable().optional(),

@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 import httpx
 
-from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -73,7 +73,11 @@ def refresh_wordpress_content_inventory(
     client = http_client or httpx.Client(timeout=30)
     try:
         try:
-            metric_summary = _fetch_content_inventory(client, connector_id, credentials)
+            metric_summary, metric_facts = _fetch_content_inventory(
+                client,
+                connector_id,
+                credentials,
+            )
         except httpx.HTTPStatusError as exc:
             return _http_failure_result(connector_id, exc)
         except httpx.HTTPError as exc:
@@ -91,6 +95,7 @@ def refresh_wordpress_content_inventory(
         external_call_attempted=True,
         vendor_data_collected=True,
         metric_summary=metric_summary,
+        metric_facts=metric_facts,
     )
 
 
@@ -134,7 +139,7 @@ def _fetch_content_inventory(
     client: httpx.Client,
     connector_id: str,
     credentials: WordPressCredentials,
-) -> dict[str, float | int | str]:
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
     summaries: dict[str, dict[str, int | str]] = {}
     content_object_count = 0
@@ -162,7 +167,19 @@ def _fetch_content_inventory(
         "latest_post_modified_gmt": str(summaries["posts"]["latest_modified_gmt"]),
         "latest_page_modified_gmt": str(summaries["pages"]["latest_modified_gmt"]),
     }
-    return metric_summary
+    metric_facts = [
+        VendorMetricFact(
+            name="content_object_count",
+            value=int(summary["total"]),
+            dimensions={
+                "connector_id": connector_id,
+                "site_kind": credentials.site_kind,
+                "content_type": content_type,
+            },
+        )
+        for content_type, summary in summaries.items()
+    ]
+    return metric_summary, metric_facts
 
 
 def _fetch_content_type_summary(

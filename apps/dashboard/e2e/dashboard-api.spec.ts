@@ -20,6 +20,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toBeVisible();
+    await expect(page.getByText(/Wymiar:/).first()).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Google Ads connector ready for first search-term refresh" }).first()
     ).toBeVisible();
@@ -45,8 +47,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "GA4 Quality Focus" })).toBeVisible();
-    await expect(page.getByText(/GA4: active_users =/)).toBeVisible();
-    await expect(page.getByText(/delta:/).first()).toBeVisible();
+    await expect(page.getByText(/active_users:/).first()).toBeVisible();
+    await expect(page.getByText(/landing_page=/).first()).toBeVisible();
     await expect(page.getByText(/odświeżone/).first()).toBeVisible();
 
     await page.goto("/seo-gsc");

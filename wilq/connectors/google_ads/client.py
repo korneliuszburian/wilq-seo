@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -32,6 +32,7 @@ GOOGLE_ADS_CREDENTIAL_NAMES = {
 CAMPAIGN_SUMMARY_QUERY = """
 SELECT
   campaign.id,
+  campaign.name,
   metrics.clicks,
   metrics.impressions,
   metrics.cost_micros
@@ -74,7 +75,11 @@ def refresh_google_ads_campaign_summary(
             return _transport_failure_result("OAuth token refresh", exc)
 
         try:
-            metric_summary = _fetch_campaign_summary(client, credentials, access_token)
+            metric_summary, metric_facts = _fetch_campaign_summary(
+                client,
+                credentials,
+                access_token,
+            )
         except httpx.HTTPStatusError as exc:
             return _http_failure_result("searchStream", exc)
         except httpx.HTTPError as exc:
@@ -92,6 +97,7 @@ def refresh_google_ads_campaign_summary(
         external_call_attempted=True,
         vendor_data_collected=True,
         metric_summary=metric_summary,
+        metric_facts=metric_facts,
     )
 
 
@@ -191,7 +197,7 @@ def _fetch_campaign_summary(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
     access_token: str,
-) -> dict[str, float | int | str]:
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     customer_id = credentials["customer_id"]
     response = client.post(
         f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
@@ -208,24 +214,43 @@ def _fetch_campaign_summary(
     return _summarize_search_stream_response(response.json())
 
 
-def _summarize_search_stream_response(payload: Any) -> dict[str, float | int | str]:
+def _summarize_search_stream_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     rows = _search_stream_rows(payload)
     clicks = 0
     impressions = 0
     cost_micros = 0
+    metric_facts: list[VendorMetricFact] = []
     for row in rows:
         metrics = row.get("metrics", {})
-        clicks += _int_metric(metrics.get("clicks"))
-        impressions += _int_metric(metrics.get("impressions"))
-        cost_micros += _int_metric(metrics.get("costMicros", metrics.get("cost_micros")))
-    return {
-        "api_version": GOOGLE_ADS_API_VERSION,
-        "query": "campaign_last_7_days",
-        "row_count": len(rows),
-        "clicks": clicks,
-        "impressions": impressions,
-        "cost_micros": cost_micros,
-    }
+        row_clicks = _int_metric(metrics.get("clicks"))
+        row_impressions = _int_metric(metrics.get("impressions"))
+        row_cost_micros = _int_metric(metrics.get("costMicros", metrics.get("cost_micros")))
+        clicks += row_clicks
+        impressions += row_impressions
+        cost_micros += row_cost_micros
+        campaign = row.get("campaign", {})
+        dimensions = _campaign_dimensions(campaign)
+        if dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact("clicks", row_clicks, dimensions),
+                    VendorMetricFact("impressions", row_impressions, dimensions),
+                    VendorMetricFact("cost_micros", row_cost_micros, dimensions),
+                ]
+            )
+    return (
+        {
+            "api_version": GOOGLE_ADS_API_VERSION,
+            "query": "campaign_last_7_days",
+            "row_count": len(rows),
+            "clicks": clicks,
+            "impressions": impressions,
+            "cost_micros": cost_micros,
+        },
+        metric_facts,
+    )
 
 
 def _search_stream_rows(payload: Any) -> list[dict[str, Any]]:
@@ -252,3 +277,16 @@ def _int_metric(value: Any) -> int:
     if isinstance(value, str) and value.isdigit():
         return int(value)
     return 0
+
+
+def _campaign_dimensions(campaign: Any) -> dict[str, str]:
+    if not isinstance(campaign, dict):
+        return {}
+    dimensions: dict[str, str] = {}
+    campaign_id = campaign.get("id")
+    if campaign_id is not None:
+        dimensions["campaign_id"] = str(campaign_id)
+    campaign_name = campaign.get("name")
+    if isinstance(campaign_name, str) and campaign_name:
+        dimensions["campaign_name"] = campaign_name
+    return dimensions

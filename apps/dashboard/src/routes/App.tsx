@@ -720,6 +720,12 @@ function MetricInventory({
   isLoading: boolean;
   isError: boolean;
 }) {
+  const visibleFacts = [...facts].sort((a, b) => {
+    const aDimensions = Object.keys(a.dimensions ?? {}).length;
+    const bDimensions = Object.keys(b.dimensions ?? {}).length;
+    return bDimensions - aDimensions;
+  });
+
   return (
     <section>
       <div className="mb-3 flex items-start gap-3">
@@ -751,7 +757,7 @@ function MetricInventory({
             <MetricTile label="Refresh runs" value={status?.refresh_run_count ?? 0} />
           </div>
           <div className="grid gap-2 md:grid-cols-2">
-            {facts.slice(0, 8).map((fact, index) => (
+            {visibleFacts.slice(0, 8).map((fact, index) => (
               <div key={`${fact.evidence_id}-${fact.name}-${index}`} className="rounded border border-line p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-medium">{fact.name}</span>
@@ -760,6 +766,11 @@ function MetricInventory({
                 <div className="mt-2 text-xs text-slate-600">
                   {fact.source_connector} / {fact.period}
                 </div>
+                {Object.keys(fact.dimensions ?? {}).length > 0 ? (
+                  <div className="mt-1 text-xs text-slate-600">
+                    Wymiar: {formatMetricDimensions(fact)}
+                  </div>
+                ) : null}
                 <div className="mt-1 text-xs text-slate-600">
                   {formatMetricDelta(fact)} / {fact.freshness_label ?? fact.freshness_state ?? "unknown"}
                 </div>
@@ -784,6 +795,7 @@ function MetricFactChips({ facts }: { facts: MetricFact[] }) {
           className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
         >
           {fact.name}: {formatMetricFactValue(fact)}
+          {Object.keys(fact.dimensions ?? {}).length > 0 ? ` / ${formatMetricDimensions(fact)}` : ""}
           {fact.delta !== null && fact.delta !== undefined ? ` (${formatMetricDelta(fact)})` : ""}
           {fact.freshness_label ? ` / ${fact.freshness_label}` : ""}
         </span>
@@ -864,6 +876,12 @@ function formatMetricDelta(fact: MetricFact) {
       ? ""
       : ` (${sign}${fact.delta_percent.toFixed(1)}%)`;
   return `delta: ${sign}${fact.delta}${percent}`;
+}
+
+function formatMetricDimensions(fact: MetricFact) {
+  return Object.entries(fact.dimensions ?? {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join(", ");
 }
 
 function MarketingBriefPanel({
@@ -963,8 +981,8 @@ function CommandCenter() {
     queryFn: getMarketingBrief
   });
   const metricFacts = useQuery({
-    queryKey: ["metric-facts", 24],
-    queryFn: () => getMetricFacts(24)
+    queryKey: ["metric-facts", 80],
+    queryFn: () => getMetricFacts(80)
   });
   const metricStoreStatus = useQuery({
     queryKey: ["metric-store-status"],

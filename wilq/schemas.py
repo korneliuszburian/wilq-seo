@@ -146,6 +146,7 @@ class MetricFact(BaseModel):
     period: str
     source_connector: str
     evidence_id: str
+    dimensions: dict[str, str] = Field(default_factory=dict)
     unit: str | None = None
     collected_at: datetime | None = None
     previous_value: float | int | str | None = None

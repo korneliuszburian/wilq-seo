@@ -701,12 +701,14 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         assert request.headers["login-customer-id"] == "9998887777"
         assert request.headers["authorization"] == "Bearer ya29.mocktoken"
         assert "FROM campaign" in request.content.decode()
+        assert "campaign.name" in request.content.decode()
         return httpx.Response(
             200,
             json=[
                 {
                     "results": [
                         {
+                            "campaign": {"id": "101", "name": "Brand Search"},
                             "metrics": {
                                 "clicks": "2",
                                 "impressions": "10",
@@ -714,6 +716,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                             }
                         },
                         {
+                            "campaign": {"id": "102", "name": "PMax Feed"},
                             "metrics": {
                                 "clicks": "1",
                                 "impressions": "5",
@@ -737,6 +740,12 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["clicks"] == 3
     assert result.metric_summary["impressions"] == 15
     assert result.metric_summary["cost_micros"] == 4000000
+    assert result.metric_facts[0].dimensions == {
+        "campaign_id": "101",
+        "campaign_name": "Brand Search",
+    }
+    assert result.metric_facts[0].name == "clicks"
+    assert result.metric_facts[0].value == 2
     serialized = json.dumps(result.metric_summary)
     assert "developer-token-test" not in serialized
     assert "refresh-token-test" not in serialized
@@ -864,7 +873,8 @@ def test_gsc_vendor_read_uses_search_analytics(
         )
         assert request.headers["authorization"] == "Bearer gsc-access-token"
         body = json.loads(request.content.decode())
-        assert body["rowLimit"] == 1
+        assert body["dimensions"] == ["query", "page"]
+        assert body["rowLimit"] == 10
         assert "startDate" in body
         assert "endDate" in body
         return httpx.Response(
@@ -872,6 +882,7 @@ def test_gsc_vendor_read_uses_search_analytics(
             json={
                 "rows": [
                     {
+                        "keys": ["odpady przemysłowe", "https://ekologus.pl/oferta/"],
                         "clicks": 12,
                         "impressions": 120,
                         "ctr": 0.1,
@@ -894,6 +905,12 @@ def test_gsc_vendor_read_uses_search_analytics(
     assert result.metric_summary["impressions"] == 120
     assert result.metric_summary["ctr"] == 0.1
     assert result.metric_summary["average_position"] == 4.5
+    assert result.metric_facts[0].name == "clicks"
+    assert result.metric_facts[0].value == 12
+    assert result.metric_facts[0].dimensions == {
+        "query": "odpady przemysłowe",
+        "page": "https://ekologus.pl/oferta/",
+    }
 
 
 def test_ga4_vendor_read_uses_run_report(
@@ -920,9 +937,20 @@ def test_ga4_vendor_read_uses_run_report(
             "eventCount",
             "engagementRate",
         ]
+        assert [dimension["name"] for dimension in body["dimensions"]] == [
+            "landingPagePlusQueryString",
+            "sessionSourceMedium",
+            "sessionCampaignName",
+        ]
+        assert body["limit"] == "10"
         return httpx.Response(
             200,
             json={
+                "dimensionHeaders": [
+                    {"name": "landingPagePlusQueryString"},
+                    {"name": "sessionSourceMedium"},
+                    {"name": "sessionCampaignName"},
+                ],
                 "metricHeaders": [
                     {"name": "activeUsers"},
                     {"name": "sessions"},
@@ -932,6 +960,11 @@ def test_ga4_vendor_read_uses_run_report(
                 ],
                 "rows": [
                     {
+                        "dimensionValues": [
+                            {"value": "/oferta/"},
+                            {"value": "google / cpc"},
+                            {"value": "PMax odpady"},
+                        ],
                         "metricValues": [
                             {"value": "20"},
                             {"value": "30"},
@@ -958,6 +991,13 @@ def test_ga4_vendor_read_uses_run_report(
     assert result.metric_summary["screen_page_views"] == 50
     assert result.metric_summary["event_count"] == 75
     assert result.metric_summary["engagement_rate"] == 0.62
+    assert result.metric_facts[0].name == "active_users"
+    assert result.metric_facts[0].value == 20
+    assert result.metric_facts[0].dimensions == {
+        "landing_page": "/oferta/",
+        "source_medium": "google / cpc",
+        "campaign_name": "PMax odpady",
+    }
 
 
 def test_google_first_party_vendor_reads_route_through_refresh_endpoint(
@@ -1181,6 +1221,20 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
         "warning_issue_count": 1,
         "next_page_present": 1,
     }
+    assert result.metric_facts[0].name == "active_products"
+    assert result.metric_facts[0].value == 8
+    assert result.metric_facts[0].dimensions == {
+        "country": "PL",
+        "reporting_context": "SHOPPING_ADS",
+    }
+    issue_fact = next(fact for fact in result.metric_facts if fact.name == "issue_product_count")
+    assert issue_fact.value == 2
+    assert issue_fact.dimensions == {
+        "country": "PL",
+        "reporting_context": "SHOPPING_ADS",
+        "severity": "DISAPPROVED",
+        "resolution": "MERCHANT_ACTION",
+    }
 
 
 def test_merchant_vendor_read_routes_through_refresh_endpoint(
@@ -1380,6 +1434,13 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "latest_modified_gmt": "2026-06-16T10:00:00",
         "latest_post_modified_gmt": "2026-06-15T10:00:00",
         "latest_page_modified_gmt": "2026-06-16T10:00:00",
+    }
+    assert result.metric_facts[0].name == "content_object_count"
+    assert result.metric_facts[0].value == 12
+    assert result.metric_facts[0].dimensions == {
+        "connector_id": "wordpress_ekologus",
+        "site_kind": "primary",
+        "content_type": "posts",
     }
 
 

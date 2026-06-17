@@ -65,7 +65,7 @@ def run_connector_refresh(
         errors=result.errors,
     )
     saved_run = local_state_store().save_connector_refresh_run(run)
-    metric_store().save_connector_refresh_metrics(saved_run)
+    metric_store().save_connector_refresh_metrics(saved_run, detailed_facts=result.metric_facts)
     return saved_run
 
 

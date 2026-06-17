@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from wilq.connectors.google_auth import GoogleCredentialError, google_access_token
-from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -41,7 +41,11 @@ def refresh_merchant_product_status_summary(
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     try:
-        metric_summary = _fetch_product_status_summary(client, account_id, access_token)
+        metric_summary, metric_facts = _fetch_product_status_summary(
+            client,
+            account_id,
+            access_token,
+        )
     except httpx.HTTPStatusError as exc:
         return _http_failure_result(exc)
     except httpx.HTTPError as exc:
@@ -59,6 +63,7 @@ def refresh_merchant_product_status_summary(
         external_call_attempted=True,
         vendor_data_collected=True,
         metric_summary=metric_summary,
+        metric_facts=metric_facts,
     )
 
 
@@ -73,7 +78,7 @@ def _fetch_product_status_summary(
     client: httpx.Client,
     account_id: str,
     access_token: str,
-) -> dict[str, float | int | str]:
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     response = client.get(
         f"{MERCHANT_ISSUE_RESOLUTION_BASE}/accounts/{account_id}/aggregateProductStatuses",
         headers={"Authorization": f"Bearer {access_token}"},
@@ -83,7 +88,9 @@ def _fetch_product_status_summary(
     return _summarize_aggregate_product_statuses(response.json())
 
 
-def _summarize_aggregate_product_statuses(payload: Any) -> dict[str, float | int | str]:
+def _summarize_aggregate_product_statuses(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     statuses = payload.get("aggregateProductStatuses", []) if isinstance(payload, dict) else []
     if not isinstance(statuses, list):
         statuses = []
@@ -99,6 +106,7 @@ def _summarize_aggregate_product_statuses(payload: Any) -> dict[str, float | int
     warning_issue_count = 0
     countries: set[str] = set()
     reporting_contexts: set[str] = set()
+    metric_facts: list[VendorMetricFact] = []
     for status in statuses:
         if not isinstance(status, dict):
             continue
@@ -111,10 +119,28 @@ def _summarize_aggregate_product_statuses(payload: Any) -> dict[str, float | int
         stats = status.get("stats", {})
         if not isinstance(stats, dict):
             stats = {}
-        active_count += _int_metric(stats.get("activeCount"))
-        pending_count += _int_metric(stats.get("pendingCount"))
-        disapproved_count += _int_metric(stats.get("disapprovedCount"))
-        expiring_count += _int_metric(stats.get("expiringCount"))
+        status_active_count = _int_metric(stats.get("activeCount"))
+        status_pending_count = _int_metric(stats.get("pendingCount"))
+        status_disapproved_count = _int_metric(stats.get("disapprovedCount"))
+        status_expiring_count = _int_metric(stats.get("expiringCount"))
+        active_count += status_active_count
+        pending_count += status_pending_count
+        disapproved_count += status_disapproved_count
+        expiring_count += status_expiring_count
+        status_dimensions = _status_dimensions(status)
+        if status_dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact("active_products", status_active_count, status_dimensions),
+                    VendorMetricFact("pending_products", status_pending_count, status_dimensions),
+                    VendorMetricFact(
+                        "disapproved_products",
+                        status_disapproved_count,
+                        status_dimensions,
+                    ),
+                    VendorMetricFact("expiring_products", status_expiring_count, status_dimensions),
+                ]
+            )
         issues = status.get("itemLevelIssues", [])
         if not isinstance(issues, list):
             continue
@@ -123,6 +149,15 @@ def _summarize_aggregate_product_statuses(payload: Any) -> dict[str, float | int
                 continue
             issue_count += 1
             product_count = _int_metric(issue.get("productCount"))
+            issue_dimensions = status_dimensions | _issue_dimensions(issue)
+            if issue_dimensions:
+                metric_facts.append(
+                    VendorMetricFact(
+                        "issue_product_count",
+                        product_count,
+                        issue_dimensions,
+                    )
+                )
             if issue.get("resolution") == "MERCHANT_ACTION":
                 merchant_action_issue_count += 1
                 merchant_action_product_count += product_count
@@ -134,24 +169,27 @@ def _summarize_aggregate_product_statuses(payload: Any) -> dict[str, float | int
             elif severity == "NOT_IMPACTED":
                 warning_issue_count += 1
     total_products = active_count + pending_count + disapproved_count + expiring_count
-    return {
-        "api": "merchant_aggregate_product_statuses",
-        "status_group_count": len([status for status in statuses if isinstance(status, dict)]),
-        "country_count": len(countries),
-        "reporting_context_count": len(reporting_contexts),
-        "active_products": active_count,
-        "pending_products": pending_count,
-        "disapproved_products": disapproved_count,
-        "expiring_products": expiring_count,
-        "total_products": total_products,
-        "item_level_issue_count": issue_count,
-        "merchant_action_issue_count": merchant_action_issue_count,
-        "merchant_action_product_count": merchant_action_product_count,
-        "disapproved_issue_count": disapproved_issue_count,
-        "demoted_issue_count": demoted_issue_count,
-        "warning_issue_count": warning_issue_count,
-        "next_page_present": 1 if _next_page_present(payload) else 0,
-    }
+    return (
+        {
+            "api": "merchant_aggregate_product_statuses",
+            "status_group_count": len([status for status in statuses if isinstance(status, dict)]),
+            "country_count": len(countries),
+            "reporting_context_count": len(reporting_contexts),
+            "active_products": active_count,
+            "pending_products": pending_count,
+            "disapproved_products": disapproved_count,
+            "expiring_products": expiring_count,
+            "total_products": total_products,
+            "item_level_issue_count": issue_count,
+            "merchant_action_issue_count": merchant_action_issue_count,
+            "merchant_action_product_count": merchant_action_product_count,
+            "disapproved_issue_count": disapproved_issue_count,
+            "demoted_issue_count": demoted_issue_count,
+            "warning_issue_count": warning_issue_count,
+            "next_page_present": 1 if _next_page_present(payload) else 0,
+        },
+        metric_facts,
+    )
 
 
 def _next_page_present(payload: Any) -> bool:
@@ -188,3 +226,25 @@ def _int_metric(value: Any) -> int:
     if isinstance(value, str) and value.isdigit():
         return int(value)
     return 0
+
+
+def _status_dimensions(status: dict[str, Any]) -> dict[str, str]:
+    dimensions: dict[str, str] = {}
+    country = status.get("country")
+    if isinstance(country, str) and country:
+        dimensions["country"] = country
+    reporting_context = status.get("reportingContext")
+    if isinstance(reporting_context, str) and reporting_context:
+        dimensions["reporting_context"] = reporting_context
+    return dimensions
+
+
+def _issue_dimensions(issue: dict[str, Any]) -> dict[str, str]:
+    dimensions: dict[str, str] = {}
+    severity = issue.get("severity")
+    if isinstance(severity, str) and severity:
+        dimensions["severity"] = severity
+    resolution = issue.get("resolution")
+    if isinstance(resolution, str) and resolution:
+        dimensions["resolution"] = resolution
+    return dimensions

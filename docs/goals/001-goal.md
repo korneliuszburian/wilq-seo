@@ -4511,3 +4511,160 @@ Remaining next work:
    local evidence instead of only OAuth/missing-token blockers.
 4. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
+
+---
+
+## 40. Dimensioned metric facts - 2026-06-18
+
+Implemented the first remaining item from section 39.
+
+What changed:
+
+* Added `VendorMetricFact` as the sanitized read-adapter output for
+  non-aggregate metric facts.
+* `MetricFact` now exposes `dimensions: dict[str, str]`.
+* DuckDB metric store now persists:
+  * `period`,
+  * `unit`,
+  * `dimensions_json`.
+* DuckDB migration preserves the existing local metric table and upgrades the
+  primary key from `(run_id, metric_name)` to
+  `(run_id, metric_name, dimensions_json)`.
+* Delta/freshness calculations now partition by
+  `(connector_id, metric_name, dimensions_json)`, so campaign/page/product-like
+  facts do not get mixed with aggregate facts.
+* Duplicate numeric facts with the same run, metric and dimensions are summed.
+  This is required for Merchant Center issue counts where the API may return
+  several issue rows with the same severity/resolution dimensions.
+* Read-only adapters now emit dimensioned facts where the vendor response
+  actually contains useful dimensions:
+  * Google Ads: `campaign_id`, `campaign_name`.
+  * GA4: `landing_page`, `source_medium`, `campaign_name`.
+  * Google Search Console: `query`, `page`.
+  * Merchant Center: `country`, `reporting_context`, `severity`, `resolution`.
+  * WordPress: `connector_id`, `site_kind`, `content_type`.
+* Dashboard shared schemas and API client parse `dimensions`.
+* Dashboard metric chips and metric inventory display dimensions as `Wymiar:`
+  and prefer dimensioned facts in the visible inventory.
+* MarketingBrief now reads enough metric facts to keep important connectors
+  represented after skill/API smoke runs add fresh aggregate facts.
+* MarketingBrief now prefers dimensioned facts over aggregates in connector
+  metric items, recommendation items and top metric facts.
+* Playwright live API smoke now proves:
+  * Command Center renders dimensioned metric facts.
+  * GA4 route shows `active_users` with `landing_page`.
+  * GSC route stays populated from real GSC facts after wider metric reads.
+
+Live API proof after read-only refreshes:
+
+```text
+dimension_fact_count 114
+ga4_gsc_dimension_fact_count 90
+gsc_dimension_fact_count 40
+```
+
+Example live facts:
+
+```json
+{
+  "source_connector": "google_analytics_4",
+  "name": "active_users",
+  "value": 44,
+  "dimensions": {
+    "campaign_name": "(organic)",
+    "landing_page": "/magazynowanie-odpadow-wg-nowych-przepisow/",
+    "source_medium": "google / organic"
+  },
+  "evidence_id": "ev_refresh_refresh_google_analytics_4_681b6bcefc85"
+}
+```
+
+```json
+{
+  "source_connector": "google_search_console",
+  "name": "average_position",
+  "value": 1.605642256902761,
+  "dimensions": {
+    "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+    "query": "zielony ład co to"
+  },
+  "evidence_id": "ev_refresh_refresh_google_search_console_554550c44ec7"
+}
+```
+
+```json
+{
+  "source_connector": "google_merchant_center",
+  "name": "active_products",
+  "value": 2705,
+  "dimensions": {
+    "country": "PL",
+    "reporting_context": "SHOPPING_ADS"
+  },
+  "evidence_id": "ev_refresh_refresh_google_merchant_center_1363bc3d8d8d"
+}
+```
+
+Live read-only refresh notes:
+
+* `google_search_console`: completed, rows `10`.
+* `google_analytics_4`: completed, rows `10`.
+* `google_merchant_center`: completed, products `10900`.
+* `wordpress_ekologus`: completed, objects `16`.
+* `wordpress_sklep`: completed, objects `11`.
+* `google_ads`: still blocked by external OAuth client state:
+  `oauth_error=deleted_client`. Treat this as an external Google OAuth client
+  issue, not a missing `.env` or WILQ API issue.
+
+Verification:
+
+```bash
+uv run ruff check wilq/connectors/vendor.py wilq/connectors/refresh.py wilq/storage/metric_store.py wilq/connectors/google_ads/client.py wilq/connectors/google_search_console/client.py wilq/connectors/google_analytics_4/client.py wilq/connectors/google_merchant_center/client.py wilq/connectors/wordpress/client.py wilq/schemas.py tests/test_metric_store_and_cli.py tests/test_api_contracts.py
+uv run mypy wilq/connectors/vendor.py wilq/connectors/refresh.py wilq/storage/metric_store.py wilq/connectors/google_ads/client.py wilq/connectors/google_search_console/client.py wilq/connectors/google_analytics_4/client.py wilq/connectors/google_merchant_center/client.py wilq/connectors/wordpress/client.py wilq/schemas.py
+uv run pytest tests/test_metric_store_and_cli.py tests/test_api_contracts.py -q
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Targeted metric/API tests: `59 passed`.
+* Full Python tests through quality/verify: `69 passed`.
+* Dashboard unit tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+* `scripts/quality.sh`: passed.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+
+Remaining next work:
+
+1. Use dimensioned GA4/GSC/Merchant/WordPress facts to generate marketer-useful
+   route-level tactical queues:
+   * content refresh/create/merge/block,
+   * landing-page quality diagnostics,
+   * Merchant feed issue triage,
+   * source/medium and campaign traffic quality review.
+2. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+3. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+4. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+5. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.

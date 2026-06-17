@@ -7,7 +7,7 @@ from urllib.parse import quote
 import httpx
 
 from wilq.connectors.google_auth import GoogleCredentialError, google_access_token
-from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.credentials.runtime import variable_value
 from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
@@ -43,7 +43,7 @@ def refresh_search_console_site_summary(
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
     try:
-        metric_summary = _fetch_site_summary(client, site_url, access_token)
+        metric_summary, metric_facts = _fetch_site_summary(client, site_url, access_token)
     except httpx.HTTPStatusError as exc:
         return _http_failure_result(exc)
     except httpx.HTTPError as exc:
@@ -61,6 +61,7 @@ def refresh_search_console_site_summary(
         external_call_attempted=True,
         vendor_data_collected=True,
         metric_summary=metric_summary,
+        metric_facts=metric_facts,
     )
 
 
@@ -68,7 +69,7 @@ def _fetch_site_summary(
     client: httpx.Client,
     site_url: str,
     access_token: str,
-) -> dict[str, float | int | str]:
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     date_start, date_end = _default_date_range()
     response = client.post(
         f"{GSC_API_BASE}/sites/{quote(site_url, safe='')}/searchAnalytics/query",
@@ -76,7 +77,8 @@ def _fetch_site_summary(
         json={
             "startDate": date_start,
             "endDate": date_end,
-            "rowLimit": 1,
+            "dimensions": ["query", "page"],
+            "rowLimit": 10,
         },
     )
     response.raise_for_status()
@@ -98,7 +100,7 @@ def _summarize_search_analytics_response(
     *,
     date_start: str,
     date_end: str,
-) -> dict[str, float | int | str]:
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     rows = payload.get("rows", []) if isinstance(payload, dict) else []
     if not isinstance(rows, list):
         rows = []
@@ -106,25 +108,43 @@ def _summarize_search_analytics_response(
     impressions = 0
     weighted_position = 0.0
     ctr_values: list[float] = []
+    metric_facts: list[VendorMetricFact] = []
     for row in rows:
         if not isinstance(row, dict):
             continue
         row_clicks = _int_metric(row.get("clicks"))
         row_impressions = _int_metric(row.get("impressions"))
+        row_ctr = _float_metric(row.get("ctr"))
+        row_position = _float_metric(row.get("position"))
         clicks += row_clicks
         impressions += row_impressions
-        weighted_position += _float_metric(row.get("position")) * row_impressions
-        ctr_values.append(_float_metric(row.get("ctr")))
-    return {
-        "api": "search_console_search_analytics",
-        "date_start": date_start,
-        "date_end": date_end,
-        "row_count": len([row for row in rows if isinstance(row, dict)]),
-        "clicks": clicks,
-        "impressions": impressions,
-        "ctr": round(clicks / impressions, 6) if impressions else _average(ctr_values),
-        "average_position": round(weighted_position / impressions, 4) if impressions else 0.0,
-    }
+        weighted_position += row_position * row_impressions
+        ctr_values.append(row_ctr)
+        dimensions = _search_dimensions(row)
+        if dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact("clicks", row_clicks, dimensions),
+                    VendorMetricFact("impressions", row_impressions, dimensions),
+                    VendorMetricFact("ctr", row_ctr, dimensions),
+                    VendorMetricFact("average_position", row_position, dimensions),
+                ]
+            )
+    return (
+        {
+            "api": "search_console_search_analytics",
+            "date_start": date_start,
+            "date_end": date_end,
+            "row_count": len([row for row in rows if isinstance(row, dict)]),
+            "clicks": clicks,
+            "impressions": impressions,
+            "ctr": round(clicks / impressions, 6) if impressions else _average(ctr_values),
+            "average_position": round(weighted_position / impressions, 4)
+            if impressions
+            else 0.0,
+        },
+        metric_facts,
+    )
 
 
 def _http_failure_result(exc: httpx.HTTPStatusError) -> VendorReadResult:
@@ -171,3 +191,15 @@ def _average(values: list[float]) -> float:
     if not values:
         return 0.0
     return round(sum(values) / len(values), 6)
+
+
+def _search_dimensions(row: dict[str, Any]) -> dict[str, str]:
+    keys = row.get("keys", [])
+    if not isinstance(keys, list):
+        return {}
+    dimensions: dict[str, str] = {}
+    if len(keys) > 0 and isinstance(keys[0], str) and keys[0]:
+        dimensions["query"] = keys[0]
+    if len(keys) > 1 and isinstance(keys[1], str) and keys[1]:
+        dimensions["page"] = keys[1]
+    return dimensions

@@ -11,7 +11,7 @@ from typer.testing import CliRunner
 
 from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
-from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.evidence.registry import get_evidence
 from wilq.schemas import (
     ConnectorRefreshMode,
@@ -111,6 +111,7 @@ def test_metrics_api_exposes_metric_store_status_and_facts(
             "period": "connector_refresh",
             "source_connector": "ahrefs",
             "evidence_id": refresh_response.json()["evidence_ids"][-1],
+            "dimensions": {},
             "unit": None,
             "collected_at": refresh_response.json()["completed_at"],
             "previous_value": None,
@@ -177,6 +178,47 @@ def test_metric_store_exposes_previous_value_delta_and_freshness(
     assert traffic_source.previous_value == "organic"
     assert traffic_source.delta is None
     assert traffic_source.trend == "unknown"
+
+
+def test_connector_refresh_persists_detailed_metric_facts_with_dimensions(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    monkeypatch.setenv("AHREFS_API_TOKEN", "configured")
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_ahrefs_domain_rating",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Ahrefs domain rating completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"domain_rating": 24.0},
+            metric_facts=[
+                VendorMetricFact(
+                    name="referring_domains",
+                    value=12,
+                    dimensions={"competitor_domain": "example.pl", "market": "PL"},
+                )
+            ],
+        ),
+    )
+
+    response = client.post(
+        "/api/connectors/ahrefs/refresh",
+        json={"mode": "vendor_read", "reason": "dimension contract test"},
+    )
+
+    assert response.status_code == 200
+    facts = metric_store().list_metric_facts(connector_id="ahrefs")
+    detailed = next(fact for fact in facts if fact.name == "referring_domains")
+    assert detailed.value == 12
+    assert detailed.dimensions == {"competitor_domain": "example.pl", "market": "PL"}
+    assert detailed.period == "connector_refresh"
+    assert detailed.evidence_id == response.json()["evidence_ids"][-1]
 
 
 def test_metric_fact_evidence_ids_are_resolvable_without_refresh_run_state(

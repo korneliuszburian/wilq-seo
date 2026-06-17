@@ -35,7 +35,11 @@ import { z } from "zod";
 
 const API_BASE = import.meta.env.VITE_WILQ_API_BASE_URL ?? "http://127.0.0.1:8000";
 
-async function apiGet<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+type ApiSchema<T> = {
+  parse: (data: unknown) => T;
+};
+
+async function apiGet<T>(path: string, schema: ApiSchema<T>): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`);
   if (!response.ok) {
     throw new Error(`API request failed: ${path}`);
@@ -43,7 +47,7 @@ async function apiGet<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   return schema.parse(await response.json());
 }
 
-async function apiPost<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+async function apiPost<T>(path: string, schema: ApiSchema<T>): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, { method: "POST" });
   if (!response.ok) {
     throw new Error(`API request failed: ${path}`);

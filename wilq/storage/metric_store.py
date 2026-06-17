@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import time
 from datetime import UTC, datetime
@@ -8,6 +9,7 @@ from typing import Any, Literal, cast
 
 import duckdb
 
+from wilq.connectors.vendor import VendorMetricFact
 from wilq.schemas import ConnectorRefreshRun, MetricFact
 
 DEFAULT_METRIC_DB = Path(".local-lab/state/wilq.duckdb")
@@ -52,10 +54,16 @@ class DuckDbMetricStore:
             "refresh_run_count": int(row[2]),
         }
 
-    def save_connector_refresh_metrics(self, run: ConnectorRefreshRun) -> int:
-        if not run.metric_summary:
+    def save_connector_refresh_metrics(
+        self,
+        run: ConnectorRefreshRun,
+        detailed_facts: list[VendorMetricFact] | None = None,
+    ) -> int:
+        if not run.metric_summary and not detailed_facts:
             return 0
         rows = [_metric_row(run, name, value) for name, value in run.metric_summary.items()]
+        rows.extend(_detailed_metric_row(run, fact) for fact in detailed_facts or [])
+        rows = _deduplicate_metric_rows(rows)
         with self._connect() as connection:
             connection.execute("DELETE FROM connector_metric_facts WHERE run_id = ?", [run.id])
             connection.executemany(
@@ -67,12 +75,15 @@ class DuckDbMetricStore:
                   metric_value_double,
                   metric_value_text,
                   value_kind,
+                  period,
+                  unit,
+                  dimensions_json,
                   mode,
                   status,
                   collected_at,
                   evidence_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 rows,
             )
@@ -94,16 +105,19 @@ class DuckDbMetricStore:
               connector_id,
               evidence_id,
               collected_at,
+              period,
+              unit,
+              dimensions_json,
               LAG(metric_value_double) OVER (
-                PARTITION BY connector_id, metric_name
+                PARTITION BY connector_id, metric_name, dimensions_json
                 ORDER BY collected_at ASC
               ) AS previous_metric_value_double,
               LAG(metric_value_text) OVER (
-                PARTITION BY connector_id, metric_name
+                PARTITION BY connector_id, metric_name, dimensions_json
                 ORDER BY collected_at ASC
               ) AS previous_metric_value_text,
               LAG(value_kind) OVER (
-                PARTITION BY connector_id, metric_name
+                PARTITION BY connector_id, metric_name, dimensions_json
                 ORDER BY collected_at ASC
               ) AS previous_value_kind
             FROM connector_metric_facts
@@ -116,6 +130,9 @@ class DuckDbMetricStore:
               connector_id,
               evidence_id,
               collected_at,
+              period,
+              unit,
+              dimensions_json,
               previous_metric_value_double,
               previous_metric_value_text,
               previous_value_kind
@@ -138,6 +155,7 @@ class DuckDbMetricStore:
         return connection
 
     def _ensure_schema(self, connection: duckdb.DuckDBPyConnection) -> None:
+        self._migrate_schema(connection)
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS connector_metric_facts (
@@ -147,14 +165,81 @@ class DuckDbMetricStore:
               metric_value_double DOUBLE,
               metric_value_text VARCHAR,
               value_kind VARCHAR NOT NULL,
+              period VARCHAR NOT NULL,
+              unit VARCHAR,
+              dimensions_json VARCHAR NOT NULL,
               mode VARCHAR NOT NULL,
               status VARCHAR NOT NULL,
               collected_at TIMESTAMP NOT NULL,
               evidence_id VARCHAR NOT NULL,
-              PRIMARY KEY (run_id, metric_name)
+              PRIMARY KEY (run_id, metric_name, dimensions_json)
             )
             """
         )
+
+    def _migrate_schema(self, connection: duckdb.DuckDBPyConnection) -> None:
+        if not _table_exists(connection, "connector_metric_facts"):
+            return
+        columns = _table_columns(connection, "connector_metric_facts")
+        required_columns = {"period", "unit", "dimensions_json"}
+        if required_columns.issubset(columns):
+            return
+        connection.execute(
+            """
+            CREATE TABLE connector_metric_facts_v2 (
+              run_id VARCHAR NOT NULL,
+              connector_id VARCHAR NOT NULL,
+              metric_name VARCHAR NOT NULL,
+              metric_value_double DOUBLE,
+              metric_value_text VARCHAR,
+              value_kind VARCHAR NOT NULL,
+              period VARCHAR NOT NULL,
+              unit VARCHAR,
+              dimensions_json VARCHAR NOT NULL,
+              mode VARCHAR NOT NULL,
+              status VARCHAR NOT NULL,
+              collected_at TIMESTAMP NOT NULL,
+              evidence_id VARCHAR NOT NULL,
+              PRIMARY KEY (run_id, metric_name, dimensions_json)
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO connector_metric_facts_v2 (
+              run_id,
+              connector_id,
+              metric_name,
+              metric_value_double,
+              metric_value_text,
+              value_kind,
+              period,
+              unit,
+              dimensions_json,
+              mode,
+              status,
+              collected_at,
+              evidence_id
+            )
+            SELECT
+              run_id,
+              connector_id,
+              metric_name,
+              metric_value_double,
+              metric_value_text,
+              value_kind,
+              'connector_refresh',
+              NULL,
+              '{}',
+              mode,
+              status,
+              collected_at,
+              evidence_id
+            FROM connector_metric_facts
+            """
+        )
+        connection.execute("DROP TABLE connector_metric_facts")
+        connection.execute("ALTER TABLE connector_metric_facts_v2 RENAME TO connector_metric_facts")
 
 
 def _connect_with_retry(path: Path) -> duckdb.DuckDBPyConnection:
@@ -170,11 +255,74 @@ def _connect_with_retry(path: Path) -> duckdb.DuckDBPyConnection:
     raise RuntimeError("DuckDB connection retry exhausted") from last_error
 
 
+def _table_exists(connection: duckdb.DuckDBPyConnection, table_name: str) -> bool:
+    row = connection.execute(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = ?",
+        [table_name],
+    ).fetchone()
+    return bool(row and row[0])
+
+
+def _table_columns(connection: duckdb.DuckDBPyConnection, table_name: str) -> set[str]:
+    rows = connection.execute(f"PRAGMA table_info('{table_name}')").fetchall()
+    return {cast(str, row[1]) for row in rows}
+
+
+MetricRow = tuple[
+    str,
+    str,
+    str,
+    float | None,
+    str | None,
+    str,
+    str,
+    str | None,
+    str,
+    str,
+    str,
+    str,
+    str,
+]
+
+
 def _metric_row(
     run: ConnectorRefreshRun,
     name: str,
     value: float | int | str,
-) -> tuple[str, str, str, float | None, str | None, str, str, str, str, str]:
+) -> MetricRow:
+    return _metric_row_from_parts(
+        run=run,
+        name=name,
+        value=value,
+        period="connector_refresh",
+        unit=None,
+        dimensions={},
+    )
+
+
+def _detailed_metric_row(
+    run: ConnectorRefreshRun,
+    fact: VendorMetricFact,
+) -> MetricRow:
+    return _metric_row_from_parts(
+        run=run,
+        name=fact.name,
+        value=fact.value,
+        period=fact.period,
+        unit=fact.unit,
+        dimensions=fact.dimensions,
+    )
+
+
+def _metric_row_from_parts(
+    *,
+    run: ConnectorRefreshRun,
+    name: str,
+    value: float | int | str,
+    period: str,
+    unit: str | None,
+    dimensions: dict[str, str],
+) -> MetricRow:
     numeric_value: float | None = None
     text_value: str | None = None
     if isinstance(value, bool):
@@ -195,6 +343,9 @@ def _metric_row(
         numeric_value,
         text_value,
         value_kind,
+        period,
+        unit,
+        _dimensions_json(dimensions),
         run.mode.value,
         run.status.value,
         collected_at,
@@ -205,19 +356,21 @@ def _metric_row(
 def _metric_fact_from_row(row: tuple[Any, ...]) -> MetricFact:
     value_kind = cast(str, row[3])
     value = _metric_value(value_kind, row[1], row[2])
-    previous_value_kind = cast(str | None, row[9])
+    previous_value_kind = cast(str | None, row[12])
     previous_value: float | int | str | None = None
     if previous_value_kind:
-        previous_value = _metric_value(previous_value_kind, row[7], row[8])
+        previous_value = _metric_value(previous_value_kind, row[10], row[11])
     delta, delta_percent, trend = _metric_delta(value, previous_value)
     collected_at = _coerce_datetime(row[6])
     freshness_state, freshness_label = _metric_freshness(collected_at)
     return MetricFact(
         name=cast(str, row[0]),
         value=value,
-        period="connector_refresh",
+        period=cast(str, row[7]),
         source_connector=cast(str, row[4]),
         evidence_id=cast(str, row[5]),
+        dimensions=_parse_dimensions(cast(str, row[9])),
+        unit=cast(str | None, row[8]),
         collected_at=collected_at,
         previous_value=previous_value,
         delta=delta,
@@ -226,6 +379,44 @@ def _metric_fact_from_row(row: tuple[Any, ...]) -> MetricFact:
         freshness_state=freshness_state,
         freshness_label=freshness_label,
     )
+
+
+def _dimensions_json(dimensions: dict[str, str]) -> str:
+    cleaned = {
+        str(key): str(value)
+        for key, value in dimensions.items()
+        if str(key).strip() and str(value).strip()
+    }
+    return json.dumps(cleaned, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+
+
+def _parse_dimensions(value: str) -> dict[str, str]:
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    return {str(key): str(item) for key, item in parsed.items() if item is not None}
+
+
+def _deduplicate_metric_rows(rows: list[MetricRow]) -> list[MetricRow]:
+    deduplicated: dict[tuple[str, str, str], MetricRow] = {}
+    for row in rows:
+        key = (row[0], row[2], row[8])
+        existing = deduplicated.get(key)
+        if existing is None:
+            deduplicated[key] = row
+            continue
+        existing_numeric = existing[3]
+        current_numeric = row[3]
+        if existing_numeric is not None and current_numeric is not None:
+            deduplicated[key] = existing[:3] + (
+                existing_numeric + current_numeric,
+            ) + existing[4:]
+        else:
+            deduplicated[key] = row
+    return list(deduplicated.values())
 
 
 def _metric_value(value_kind: str, numeric_value: Any, text_value: Any) -> float | int | str:
