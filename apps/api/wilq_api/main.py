@@ -19,7 +19,12 @@ from wilq.expert.rules import (
     list_expert_rule_summaries,
     list_expert_rules,
 )
-from wilq.knowledge.cards import seed_cards
+from wilq.knowledge.compilers.playbook_compiler import (
+    compile_playbook_cards,
+    condense_playbooks,
+    get_playbook,
+    list_playbooks,
+)
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
     AuditEvent,
@@ -30,6 +35,9 @@ from wilq.schemas import (
     ExpertCapability,
     ExpertRule,
     ExpertRuleSummary,
+    KnowledgeCard,
+    KnowledgeCompilerResult,
+    MarketingPlaybook,
     Opportunity,
     utc_now,
 )
@@ -97,7 +105,9 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
             opportunity.model_dump(mode="json") for opportunity in opportunities[:max_opportunities]
         ],
         "active_action_objects": [action.model_dump(mode="json") for action in list_actions()],
-        "knowledge_card_summaries": [card.model_dump(mode="json") for card in seed_cards()],
+        "knowledge_card_summaries": [
+            card.model_dump(mode="json") for card in compile_playbook_cards()
+        ],
         "expert_rule_summaries": [
             rule.model_dump(mode="json") for rule in list_expert_rule_summaries(limit=12)
         ],
@@ -234,15 +244,15 @@ def audit_events(action_id: str | None = None) -> list[AuditEvent]:
     return local_state_store().list_audit_events(action_id=action_id)
 
 
-@app.get("/api/knowledge/cards")
-def knowledge_cards() -> list[dict[str, Any]]:
-    return [card.model_dump(mode="json") for card in seed_cards()]
+@app.get("/api/knowledge/cards", response_model=list[KnowledgeCard])
+def knowledge_cards() -> list[KnowledgeCard]:
+    return compile_playbook_cards()
 
 
 @app.get("/api/knowledge/search")
 def knowledge_search(q: str = "") -> list[dict[str, Any]]:
     query = q.lower()
-    cards = seed_cards()
+    cards = compile_playbook_cards()
     if query:
         cards = [
             card for card in cards if query in card.title.lower() or query in card.summary.lower()
@@ -250,9 +260,22 @@ def knowledge_search(q: str = "") -> list[dict[str, Any]]:
     return [card.model_dump(mode="json") for card in cards]
 
 
-@app.post("/api/knowledge/condense")
-def knowledge_condense() -> dict[str, Any]:
-    return {"status": "queued", "rule": "Condense source material into cards before Codex context."}
+@app.get("/api/knowledge/playbooks", response_model=list[MarketingPlaybook])
+def knowledge_playbooks() -> list[MarketingPlaybook]:
+    return list(list_playbooks())
+
+
+@app.get("/api/knowledge/playbooks/{playbook_id}", response_model=MarketingPlaybook)
+def knowledge_playbook_detail(playbook_id: str) -> MarketingPlaybook:
+    playbook = get_playbook(playbook_id)
+    if playbook is None:
+        raise HTTPException(status_code=404, detail=f"Unknown playbook: {playbook_id}")
+    return playbook
+
+
+@app.post("/api/knowledge/condense", response_model=KnowledgeCompilerResult)
+def knowledge_condense() -> KnowledgeCompilerResult:
+    return condense_playbooks()
 
 
 @app.get("/api/expert/rules", response_model=list[ExpertRule])

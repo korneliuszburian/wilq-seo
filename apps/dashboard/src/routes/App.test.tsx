@@ -83,6 +83,40 @@ const workflowRuns = [
   }
 ];
 
+const knowledgeCards = [
+  {
+    id: "card_google_ads_search_playbook",
+    card_type: "ads_pattern_card",
+    title: "Google Ads search diagnostics",
+    summary: "Use real search-term metrics before recommendations.",
+    source_type: "marketing_playbook",
+    source_id: "google_ads_search_playbook",
+    source_url_or_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml",
+    extracted_at: "2026-06-17T10:00:00Z",
+    confidence: 0.86,
+    last_seen_at: "2026-06-17T10:00:00Z",
+    source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"]
+  }
+];
+
+const playbooks = [
+  {
+    id: "google_ads_search_playbook",
+    family: "google_ads_search_playbook",
+    title: "Google Ads search diagnostics",
+    card_type: "ads_pattern_card",
+    source_anchors: ["Google Ads search terms"],
+    required_evidence: ["search_terms", "evidence_ids"],
+    maps_to_opportunity_types: ["google_ads_waste"],
+    maps_to_action_types: ["prepare_negative_keywords"],
+    expert_rule_ids: ["ads_search_terms_v1"],
+    compact_playbook: "Use real search-term metrics before recommendations.",
+    refusal_rules: ["Refuse to classify search intent without evidence."],
+    output_contract: "Evidence-backed search-term opportunity.",
+    source_path: "wilq/knowledge/playbooks/marketing_playbooks.yaml"
+  }
+];
+
 function mockFetch() {
   vi.stubGlobal(
     "fetch",
@@ -109,6 +143,8 @@ function mockFetch() {
         );
       }
       if (url.endsWith("/api/workflow-runs")) return Promise.resolve(Response.json(workflowRuns));
+      if (url.endsWith("/api/knowledge/cards")) return Promise.resolve(Response.json(knowledgeCards));
+      if (url.endsWith("/api/knowledge/playbooks")) return Promise.resolve(Response.json(playbooks));
       return Promise.resolve(Response.json({}));
     })
   );
@@ -176,5 +212,13 @@ describe("WILQ dashboard", () => {
     render(<App />);
     await waitFor(() => expect(screen.getByText("Workflow Runs")).toBeInTheDocument());
     expect(screen.getByText("run_daily_command_test")).toBeInTheDocument();
+  });
+
+  it("knowledge route renders compiled cards and playbooks", async () => {
+    window.history.pushState({}, "", "/knowledge");
+    render(<App />);
+    await waitFor(() => expect(screen.getByText("Knowledge Cards")).toBeInTheDocument());
+    expect(screen.getAllByText("Google Ads search diagnostics").length).toBeGreaterThan(0);
+    expect(screen.getByText("Machine-Readable Playbooks")).toBeInTheDocument();
   });
 });

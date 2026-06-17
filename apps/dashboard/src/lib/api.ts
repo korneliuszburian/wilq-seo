@@ -3,6 +3,8 @@ import {
   CommandCenterResponseSchema,
   ConnectorStatusSchema,
   ExpertRuleSchema,
+  KnowledgeCardSchema,
+  MarketingPlaybookSchema,
   OpportunitySchema,
   WorkflowRunSchema,
   WorkflowSchema,
@@ -10,6 +12,8 @@ import {
   type CommandCenterResponse,
   type ConnectorStatus,
   type ExpertRule,
+  type KnowledgeCard,
+  type MarketingPlaybook,
   type Opportunity,
   type Workflow,
   type WorkflowRun
@@ -54,11 +58,21 @@ export function getExpertRules(): Promise<ExpertRule[]> {
   return apiGet("/api/expert/rules", z.array(ExpertRuleSchema));
 }
 
+export function getKnowledgeCards(): Promise<KnowledgeCard[]> {
+  return apiGet("/api/knowledge/cards", z.array(KnowledgeCardSchema));
+}
+
+export function getKnowledgePlaybooks(): Promise<MarketingPlaybook[]> {
+  return apiGet("/api/knowledge/playbooks", z.array(MarketingPlaybookSchema));
+}
+
 export type {
   ActionObject,
   CommandCenterResponse,
   ConnectorStatus,
   ExpertRule,
+  KnowledgeCard,
+  MarketingPlaybook,
   Opportunity,
   Workflow,
   WorkflowRun

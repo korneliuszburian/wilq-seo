@@ -1,5 +1,17 @@
 # Marketing Expert Playbooks
 
+Machine-readable playbooks live in:
+
+```txt
+wilq/knowledge/playbooks/marketing_playbooks.yaml
+```
+
+The compiler lives in:
+
+```txt
+wilq/knowledge/compilers/playbook_compiler.py
+```
+
 Playbook families:
 
 - google_ads_search_playbook
@@ -24,3 +36,16 @@ Rules:
 - Avoid generic marketing advice.
 - Keep playbooks machine-readable.
 
+API surface:
+
+- `GET /api/knowledge/playbooks`
+- `GET /api/knowledge/playbooks/{playbook_id}`
+- `GET /api/knowledge/cards`
+- `POST /api/knowledge/condense`
+
+Compiler behavior:
+
+- produces compact `KnowledgeCard` records before Codex context packs,
+- preserves `source_type`, `source_id`, `source_url_or_path` and `source_lineage`,
+- keeps playbook cards evidence-gated,
+- does not produce Ekologus performance claims without connector evidence.

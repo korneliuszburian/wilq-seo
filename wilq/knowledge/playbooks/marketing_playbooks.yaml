@@ -1,0 +1,358 @@
+playbooks:
+  - id: google_ads_search_playbook
+    family: google_ads_search_playbook
+    title: Google Ads search diagnostics
+    card_type: ads_pattern_card
+    source_anchors:
+      - Google Ads search terms
+      - Google Ads API diagnostics
+    required_evidence:
+      - search_terms
+      - campaign_ids
+      - metrics
+      - evidence_ids
+    maps_to_opportunity_types:
+      - google_ads_waste
+      - google_ads_negative_keywords
+      - content_brief_candidate
+    maps_to_action_types:
+      - prepare_negative_keywords
+      - content_brief_candidate
+      - custom_segment_candidate
+    expert_rule_ids:
+      - ads_search_terms_v1
+      - ads_diagnostics_v1
+    compact_playbook: Use real search-term metrics to separate waste, content candidates and audience candidates. Never recommend negatives, content or segment terms without evidence IDs and campaign scope.
+    refusal_rules:
+      - Refuse to classify search intent without search-term evidence.
+      - Refuse to recommend spend changes from connector status alone.
+    output_contract: Evidence-backed search-term opportunity and optional ActionObject IDs.
+
+  - id: google_ads_demand_gen_playbook
+    family: google_ads_demand_gen_playbook
+    title: Demand Gen readiness
+    card_type: ads_pattern_card
+    source_anchors:
+      - Google Ads Demand Gen
+      - Display to Demand Gen migration
+    required_evidence:
+      - display_campaigns
+      - assets
+      - audiences
+      - goals
+      - evidence_ids
+    maps_to_opportunity_types:
+      - display_to_demand_gen_migration_candidates
+      - demand_gen_asset_readiness
+    maps_to_action_types:
+      - prepare_demand_gen_migration_plan
+      - prepare_demand_gen_campaign
+    expert_rule_ids:
+      - ads_demand_gen_v1
+    compact_playbook: Check migration candidates, asset readiness, goals and audience state before preparing Demand Gen actions. AI enhancement changes must stay explicit.
+    refusal_rules:
+      - Refuse to infer migration readiness without campaign and asset evidence.
+      - Refuse to silently enable AI enhancements.
+    output_contract: Demand Gen readiness opportunity with evidence and action payload preview.
+
+  - id: google_ads_pmax_playbook
+    family: google_ads_pmax_playbook
+    title: PMax and retail readiness
+    card_type: campaign_card
+    source_anchors:
+      - Google Ads PMax channels
+      - Merchant API
+    required_evidence:
+      - campaign_channel_state
+      - asset_groups
+      - merchant_feed_status
+      - evidence_ids
+    maps_to_opportunity_types:
+      - pmax_retail_readiness_gap
+      - shopping_campaign_candidate
+    maps_to_action_types:
+      - ads_pmax_asset_review
+      - ads_merchant_review
+    expert_rule_ids:
+      - ads_capability_pack_v1
+      - merchant_feed_rules_v1
+    compact_playbook: Connect PMax recommendations to Merchant/feed health and asset evidence before suggesting retail campaign changes.
+    refusal_rules:
+      - Refuse to optimize products without product/feed diagnostics.
+      - Refuse to treat Google recommendations as automatically business-fit.
+    output_contract: Retail readiness opportunity mapped to feed and campaign action candidates.
+
+  - id: google_ads_negative_keywords_playbook
+    family: google_ads_negative_keywords_playbook
+    title: Negative keyword review
+    card_type: negative_keyword_pattern_card
+    source_anchors:
+      - Google Ads negative keywords
+      - Google Ads search terms
+    required_evidence:
+      - search_terms
+      - spend
+      - conversions
+      - match_type
+      - evidence_ids
+    maps_to_opportunity_types:
+      - google_ads_negative_keywords
+      - google_ads_waste
+    maps_to_action_types:
+      - prepare_negative_keywords
+    expert_rule_ids:
+      - ads_negative_keywords_v1
+      - ads_search_terms_v1
+    compact_playbook: Prepare negatives only when real search terms show waste, conversion absence and safe campaign scope. Preserve brand and high-intent terms for human review.
+    refusal_rules:
+      - Refuse negative keyword actions without evidence IDs.
+      - Refuse broad negatives that can block valuable intent without review.
+    output_contract: Validated negative keyword ActionObjects with search-term evidence.
+
+  - id: google_ads_custom_segments_playbook
+    family: google_ads_custom_segments_playbook
+    title: Custom segments from search evidence
+    card_type: keyword_cluster_card
+    source_anchors:
+      - Google Ads custom segments
+      - Keyword Planner
+    required_evidence:
+      - search_terms
+      - keyword_planner_enrichment
+      - campaign_context
+      - evidence_ids
+    maps_to_opportunity_types:
+      - custom_segment_candidate
+    maps_to_action_types:
+      - prepare_custom_segment
+      - apply_custom_segment_targeting
+    expert_rule_ids:
+      - ads_custom_segments_v1
+      - ads_keyword_planner_v1
+    compact_playbook: Build segment candidates from real search terms and Keyword Planner enrichment. Keep rejected low-intent or invented terms visible.
+    refusal_rules:
+      - Refuse invented audience terms.
+      - Refuse segment payloads without source search terms.
+    output_contract: Custom segment candidate with evidence, rejected terms and validation notes.
+
+  - id: gsc_seo_content_playbook
+    family: gsc_seo_content_playbook
+    title: GSC SEO and content opportunities
+    card_type: content_card
+    source_anchors:
+      - Google Search Console Search Analytics
+      - WordPress content inventory
+    required_evidence:
+      - query_page_metrics
+      - clicks
+      - impressions
+      - ctr
+      - position
+      - evidence_ids
+    maps_to_opportunity_types:
+      - gsc_ctr_opportunity
+      - gsc_content_decay
+      - gsc_cannibalization
+    maps_to_action_types:
+      - content_refresh
+      - title_meta_revision
+      - internal_link_candidate
+    expert_rule_ids:
+      - seo_gsc_opportunities_v1
+      - seo_query_page_matrix_v1
+    compact_playbook: Use query/page evidence to decide refresh, merge, internal link or no-op. Check existing content before recommending new pages.
+    refusal_rules:
+      - Refuse new content if an existing page satisfies the intent.
+      - Refuse CTR or decay diagnosis without GSC evidence.
+    output_contract: SEO opportunity with query/page evidence and content action candidate.
+
+  - id: ahrefs_content_gap_playbook
+    family: ahrefs_content_gap_playbook
+    title: Ahrefs competitor and content gaps
+    card_type: competitor_card
+    source_anchors:
+      - Ahrefs API v3
+      - Site Explorer
+    required_evidence:
+      - competitor_domains
+      - keyword_gaps
+      - pages
+      - evidence_ids
+    maps_to_opportunity_types:
+      - ahrefs_content_gap
+      - ahrefs_competitor_gap
+      - ahrefs_backlink_gap
+    maps_to_action_types:
+      - content_brief_candidate
+      - internal_link_candidate
+    expert_rule_ids:
+      - content_brief_rules_v1
+    compact_playbook: Turn competitor and content-gap evidence into briefs only after checking Ekologus content inventory and source lineage.
+    refusal_rules:
+      - Refuse generic competitor advice without Ahrefs evidence.
+      - Refuse backlink recommendations without source URLs.
+    output_contract: Content gap opportunity with competitor evidence and brief action.
+
+  - id: localo_local_seo_playbook
+    family: localo_local_seo_playbook
+    title: Localo local visibility
+    card_type: local_visibility_card
+    source_anchors:
+      - Localo API/MCP
+      - Google Business Profile visibility
+    required_evidence:
+      - local_rankings
+      - competitors
+      - reviews
+      - evidence_ids
+    maps_to_opportunity_types:
+      - localo_visibility_drop
+    maps_to_action_types:
+      - local_visibility_task
+      - review_response_candidate
+    expert_rule_ids:
+      - local_visibility_v1
+      - local_reviews_v1
+    compact_playbook: Diagnose local ranking drops, competitor gaps and review tasks from Localo/GBP evidence before suggesting public-facing changes.
+    refusal_rules:
+      - Refuse GBP write suggestions without review evidence.
+      - Refuse local ranking diagnosis without location and competitor context.
+    output_contract: Local visibility task or review-response candidate with source IDs.
+
+  - id: ga4_behavior_diagnostics_playbook
+    family: ga4_behavior_diagnostics_playbook
+    title: GA4 behavior diagnostics
+    card_type: campaign_card
+    source_anchors:
+      - GA4 Data API
+      - Ads/GSC landing behavior
+    required_evidence:
+      - events
+      - conversions
+      - landing_pages
+      - source_medium
+      - evidence_ids
+    maps_to_opportunity_types:
+      - ga4_landing_page_issue
+      - ga4_campaign_quality_issue
+      - ga4_tracking_gap
+    maps_to_action_types:
+      - ga4_tracking_gap
+      - ga4_landing_page_issue
+    expert_rule_ids:
+      - ga4_diagnostics_v1
+    compact_playbook: Separate measurement gaps from marketing problems by connecting acquisition data to engagement and conversion evidence.
+    refusal_rules:
+      - Refuse conversion-quality claims without GA4 evidence.
+      - Refuse to blame campaigns when tracking is missing.
+    output_contract: GA4 diagnostic opportunity with measurement or landing-page action.
+
+  - id: merchant_feed_optimization_playbook
+    family: merchant_feed_optimization_playbook
+    title: Merchant feed optimization
+    card_type: service_card
+    source_anchors:
+      - Merchant API
+      - Product feed diagnostics
+    required_evidence:
+      - merchant_account
+      - feed_status
+      - product_status
+      - product_data
+      - evidence_ids
+    maps_to_opportunity_types:
+      - merchant_feed_issue
+      - merchant_product_title_rewrite
+      - merchant_product_description_rewrite
+    maps_to_action_types:
+      - merchant_feed_issue
+      - merchant_product_title_rewrite
+      - merchant_product_description_rewrite
+    expert_rule_ids:
+      - merchant_feed_rules_v1
+      - merchant_product_diagnostics_v1
+    compact_playbook: Prepare feed and product copy actions only from product data and diagnostics. Preserve factual attributes and validate before apply.
+    refusal_rules:
+      - Refuse product claims not present in product data.
+      - Refuse feed writes without validation and audit.
+    output_contract: Merchant feed or product optimization ActionObject with product evidence.
+
+  - id: linkedin_content_playbook
+    family: linkedin_content_playbook
+    title: LinkedIn content publishing
+    card_type: social_pattern_card
+    source_anchors:
+      - LinkedIn Posts API
+      - WILQ source content
+    required_evidence:
+      - organization_id
+      - source_content
+      - platform_permission_state
+      - evidence_ids
+    maps_to_opportunity_types:
+      - social_post_candidate
+    maps_to_action_types:
+      - linkedin_post_candidate
+    expert_rule_ids:
+      - linkedin_rules_v1
+      - content_social_limits_v1
+    compact_playbook: Prepare organization post candidates from source content and permission state. Publishing requires connector permission and human review.
+    refusal_rules:
+      - Refuse public post claims without source content.
+      - Refuse publishing without organization permissions.
+    output_contract: LinkedIn post ActionObject with evidence and payload preview.
+
+  - id: facebook_content_playbook
+    family: facebook_content_playbook
+    title: Facebook Page publishing
+    card_type: social_pattern_card
+    source_anchors:
+      - Facebook Pages API
+      - WILQ source content
+    required_evidence:
+      - page_id
+      - source_content
+      - page_permission_state
+      - evidence_ids
+    maps_to_opportunity_types:
+      - social_post_candidate
+    maps_to_action_types:
+      - facebook_post_candidate
+    expert_rule_ids:
+      - facebook_rules_v1
+      - content_social_limits_v1
+    compact_playbook: Prepare Facebook Page post candidates from source-grounded content and page permission state. Keep publishing as a validated action.
+    refusal_rules:
+      - Refuse Page posts without source content and Page ID.
+      - Refuse unsupported promotional claims.
+    output_contract: Facebook post ActionObject with evidence and payload preview.
+
+  - id: wordpress_content_refresh_playbook
+    family: wordpress_content_refresh_playbook
+    title: WordPress content refresh
+    card_type: content_card
+    source_anchors:
+      - WordPress REST API
+      - GSC query/page dimensions
+    required_evidence:
+      - content_inventory
+      - target_page
+      - query_page_metrics
+      - evidence_ids
+    maps_to_opportunity_types:
+      - wordpress_content_refresh
+      - wordpress_duplicate_content_risk
+      - content_brief_candidate
+    maps_to_action_types:
+      - refresh_existing_content
+      - merge_candidate
+      - new_content_brief
+    expert_rule_ids:
+      - content_duplication_rules_v1
+      - content_brief_rules_v1
+      - seo_query_page_matrix_v1
+    compact_playbook: Prefer refreshing or merging existing WordPress content when inventory proves a suitable page exists. New briefs require proof no suitable page exists.
+    refusal_rules:
+      - Refuse duplicate content creation without inventory evidence.
+      - Refuse content edits without source lineage.
+    output_contract: WordPress content action candidate with inventory and source evidence.

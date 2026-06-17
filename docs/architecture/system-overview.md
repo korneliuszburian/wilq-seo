@@ -16,6 +16,7 @@ Rules:
 - Skills are operator workflows created after the API endpoints they call exist.
 - Expert rules live as structured YAML but are consumed through typed WILQ API endpoints, not by prompt-only logic.
 - Codex runs, workflow runs, and audit events persist to local SQLite state with redaction.
+- Knowledge playbooks compile into source-lineage cards before reaching Codex context packs.
 - Seed data is allowed only when labeled as non-real.
 - No evidence ID means no recommendation.
 
@@ -30,3 +31,9 @@ Local-state API surface:
 - `/api/codex/runs`: persisted Codex run records.
 - `/api/workflow-runs`: persisted workflow run records.
 - `/api/audit/events`: persisted audit events, optionally filtered by action ID.
+
+Knowledge API surface:
+
+- `/api/knowledge/playbooks`: machine-readable playbook contracts.
+- `/api/knowledge/cards`: compact compiled cards with lineage.
+- `/api/knowledge/condense`: deterministic playbook-to-card compilation.

@@ -26,6 +26,7 @@ Last checked: 2026-06-17.
 | Lost in the Middle | Retrieval | Long context can hide facts | compact context packs | `docs/research/retrieval-and-knowledge-patterns.md` |
 | Self-RAG | Retrieval | Retrieval and critique loops | future evals | `docs/research/retrieval-and-knowledge-patterns.md` |
 | RAGAS | Evaluation | Retrieval quality metrics | future evals | `docs/research/retrieval-and-knowledge-patterns.md` |
+| WILQ marketing playbooks | Knowledge | Source-grounded operator playbooks | compiled knowledge cards before Codex context | `wilq/knowledge/playbooks/marketing_playbooks.yaml` |
 | Ruff | Quality | Python lint | `scripts/lint.sh` | `docs/architecture/quality-gates.md` |
 | mypy | Quality | Python types | `scripts/typecheck.sh` | `docs/architecture/quality-gates.md` |
 | pre-commit | Quality | local checks | `.pre-commit-config.yaml` | `docs/architecture/quality-gates.md` |

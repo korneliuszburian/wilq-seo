@@ -230,6 +230,29 @@ class KnowledgeCard(BaseModel):
     source_lineage: list[str] = Field(default_factory=list)
 
 
+class MarketingPlaybook(BaseModel):
+    id: str
+    family: str
+    title: str
+    card_type: str
+    source_anchors: list[str] = Field(min_length=1)
+    required_evidence: list[str] = Field(min_length=1)
+    maps_to_opportunity_types: list[str] = Field(min_length=1)
+    maps_to_action_types: list[str] = Field(min_length=1)
+    expert_rule_ids: list[str] = Field(default_factory=list)
+    compact_playbook: str = Field(min_length=1)
+    refusal_rules: list[str] = Field(default_factory=list)
+    output_contract: str = Field(min_length=1)
+    source_path: str
+
+
+class KnowledgeCompilerResult(BaseModel):
+    status: Literal["completed", "failed"]
+    generated_at: datetime = Field(default_factory=utc_now)
+    card_count: int
+    cards: list[KnowledgeCard]
+
+
 class ExpertRule(BaseModel):
     id: str
     name: str

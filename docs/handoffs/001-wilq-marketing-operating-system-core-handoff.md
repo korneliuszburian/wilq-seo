@@ -20,6 +20,10 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Local SQLite state persists Codex runs, workflow runs and audit events through `wilq/storage/local_state.py`.
 - Workflow run APIs exist at `/api/workflows/{workflow_id}/runs` and `/api/workflow-runs`.
 - Dashboard workflow routes render persisted workflow-run state through shared Zod validation.
+- Machine-readable marketing playbooks exist in `wilq/knowledge/playbooks/marketing_playbooks.yaml`.
+- `wilq/knowledge/compilers/playbook_compiler.py` compiles playbooks into lineage-preserving `KnowledgeCard` records.
+- Knowledge APIs expose playbooks, compiled cards and deterministic condensation results.
+- Dashboard knowledge routes render compiled cards and playbooks through shared Zod validation.
 - Workflow, model runtime, access-pack, MCP, quality, security and source-registry docs exist.
 - Codex hooks exist for SessionStart and Stop; they fail open and restrict API URL targets to local/allowed hosts.
 - `.agents/skills/` intentionally contains only `.gitkeep`.
@@ -60,8 +64,8 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - `scripts/quality.sh`: passed.
 - `scripts/security.sh`: passed.
 - `scripts/verify.sh`: passed.
-- Backend tests: 18 passed.
-- Dashboard tests: 7 passed.
+- Backend tests: 21 passed.
+- Dashboard tests: 8 passed.
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
 - `pip-audit`: no known vulnerabilities found.
@@ -71,7 +75,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
-- Goal 001 is not complete because skills are deferred, connector/opportunity state is still seed/in-memory, expert rules are not yet used to generate real connector-derived opportunities, knowledge compiler is still seed-card level and real connectors do not call vendor APIs yet.
+- Goal 001 is not complete because skills are deferred, connector/opportunity state is still seed/in-memory, expert rules are not yet used to generate real connector-derived opportunities and real connectors do not call vendor APIs yet.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 
 ## Connector status
@@ -113,7 +117,7 @@ API is runnable through:
 uv run uvicorn apps.api.wilq_api.main:app --reload
 ```
 
-FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs and audit events persist to local SQLite state; connector/opportunity state is still seed/in-memory for Goal 001 foundation.
+FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Connector/opportunity state is still seed/in-memory for Goal 001 foundation.
 
 ## Next recommended goal
 

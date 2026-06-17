@@ -239,6 +239,62 @@ def test_codex_context_pack_includes_expert_rule_summaries() -> None:
     assert data["expert_capabilities"]
 
 
+def test_knowledge_playbooks_are_machine_readable_and_evidence_gated() -> None:
+    response = client.get("/api/knowledge/playbooks")
+    assert response.status_code == 200
+    playbooks = response.json()
+    families = {playbook["family"] for playbook in playbooks}
+    assert {
+        "google_ads_search_playbook",
+        "google_ads_demand_gen_playbook",
+        "google_ads_pmax_playbook",
+        "google_ads_negative_keywords_playbook",
+        "google_ads_custom_segments_playbook",
+        "gsc_seo_content_playbook",
+        "ahrefs_content_gap_playbook",
+        "localo_local_seo_playbook",
+        "ga4_behavior_diagnostics_playbook",
+        "merchant_feed_optimization_playbook",
+        "linkedin_content_playbook",
+        "facebook_content_playbook",
+        "wordpress_content_refresh_playbook",
+    }.issubset(families)
+    assert all("evidence_ids" in playbook["required_evidence"] for playbook in playbooks)
+    assert all(playbook["maps_to_opportunity_types"] for playbook in playbooks)
+    assert all(playbook["maps_to_action_types"] for playbook in playbooks)
+
+
+def test_knowledge_compiler_produces_lineage_preserving_card_types() -> None:
+    response = client.post("/api/knowledge/condense")
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "completed"
+    card_types = {card["card_type"] for card in result["cards"]}
+    assert {
+        "service_card",
+        "content_card",
+        "keyword_cluster_card",
+        "campaign_card",
+        "voice_rule",
+        "ads_pattern_card",
+        "negative_keyword_pattern_card",
+        "competitor_card",
+        "local_visibility_card",
+        "social_pattern_card",
+    }.issubset(card_types)
+    assert all(card["source_lineage"] for card in result["cards"])
+    assert all(card["source_url_or_path"] for card in result["cards"])
+
+
+def test_codex_context_pack_includes_compiled_knowledge_cards() -> None:
+    response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
+    assert response.status_code == 200
+    data = response.json()
+    card_ids = {card["id"] for card in data["knowledge_card_summaries"]}
+    assert "card_google_ads_search_playbook" in card_ids
+    assert "card_goal_001_rules" in card_ids
+
+
 def test_workflow_run_persists_to_local_state_with_redaction(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

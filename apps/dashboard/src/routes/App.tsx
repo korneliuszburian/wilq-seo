@@ -16,9 +16,13 @@ import {
   getCommandCenter,
   getConnectors,
   getExpertRules,
+  getKnowledgeCards,
+  getKnowledgePlaybooks,
   getOpportunities,
   getWorkflowRuns,
   getWorkflows,
+  KnowledgeCard,
+  MarketingPlaybook,
   Opportunity,
   WorkflowRun
 } from "../lib/api";
@@ -209,6 +213,56 @@ function WorkflowRunList({ runs }: { runs: WorkflowRun[] }) {
   );
 }
 
+function KnowledgeCardList({ cards }: { cards: KnowledgeCard[] }) {
+  if (cards.length === 0) {
+    return <p className="text-sm text-slate-600">No compiled knowledge cards yet.</p>;
+  }
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-2">
+      {cards.map((card) => (
+        <article key={card.id} className="rounded-md border border-line bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{card.title}</h3>
+              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                {card.card_type} / {card.source_type}
+              </p>
+            </div>
+            <StatusBadge value={`confidence ${Math.round(card.confidence * 100)}%`} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">{card.summary}</p>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600">
+            <div>Source: {card.source_url_or_path}</div>
+            <div>Lineage: {card.source_lineage.slice(0, 4).join(", ")}</div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function PlaybookList({ playbooks }: { playbooks: MarketingPlaybook[] }) {
+  if (playbooks.length === 0) {
+    return <p className="text-sm text-slate-600">No machine-readable playbooks yet.</p>;
+  }
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-2">
+      {playbooks.map((playbook) => (
+        <article key={playbook.id} className="rounded-md border border-line bg-white p-4">
+          <h3 className="text-sm font-semibold">{playbook.title}</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{playbook.output_contract}</p>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+            <div>Evidence: {playbook.required_evidence.slice(0, 4).join(", ")}</div>
+            <div>Actions: {playbook.maps_to_action_types.slice(0, 3).join(", ")}</div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
@@ -259,20 +313,41 @@ function GenericSurface({ routeName }: { routeName: string }) {
   const workflows = useQuery({ queryKey: ["workflows"], queryFn: getWorkflows });
   const workflowRuns = useQuery({ queryKey: ["workflow-runs"], queryFn: getWorkflowRuns });
   const expertRules = useQuery({ queryKey: ["expert-rules"], queryFn: getExpertRules });
+  const isKnowledgeRoute = routeName.startsWith("/knowledge");
+  const knowledgeCards = useQuery({
+    queryKey: ["knowledge-cards"],
+    queryFn: getKnowledgeCards,
+    enabled: isKnowledgeRoute
+  });
+  const playbooks = useQuery({
+    queryKey: ["knowledge-playbooks"],
+    queryFn: getKnowledgePlaybooks,
+    enabled: isKnowledgeRoute
+  });
   const isWorkflowRoute = routeName.startsWith("/workflows");
   const isWorkflowLoading = isWorkflowRoute && (workflows.isLoading || workflowRuns.isLoading);
   const hasWorkflowError = isWorkflowRoute && (workflows.error || workflowRuns.error);
+  const isKnowledgeLoading = isKnowledgeRoute && (knowledgeCards.isLoading || playbooks.isLoading);
+  const hasKnowledgeError = isKnowledgeRoute && (knowledgeCards.error || playbooks.error);
 
   if (
     connectors.isLoading ||
     opportunities.isLoading ||
     actions.isLoading ||
     expertRules.isLoading ||
-    isWorkflowLoading
+    isWorkflowLoading ||
+    isKnowledgeLoading
   ) {
     return <LoadingBand />;
   }
-  if (connectors.error || opportunities.error || actions.error || expertRules.error || hasWorkflowError) {
+  if (
+    connectors.error ||
+    opportunities.error ||
+    actions.error ||
+    expertRules.error ||
+    hasWorkflowError ||
+    hasKnowledgeError
+  ) {
     return <ErrorState />;
   }
 
@@ -311,6 +386,18 @@ function GenericSurface({ routeName }: { routeName: string }) {
             <section>
               <SectionHeading title="Workflow Runs" />
               <WorkflowRunList runs={workflowRuns.data ?? []} />
+            </section>
+          </>
+        ) : null}
+        {isKnowledgeRoute ? (
+          <>
+            <section>
+              <SectionHeading title="Knowledge Cards" />
+              <KnowledgeCardList cards={knowledgeCards.data ?? []} />
+            </section>
+            <section>
+              <SectionHeading title="Machine-Readable Playbooks" />
+              <PlaybookList playbooks={playbooks.data ?? []} />
             </section>
           </>
         ) : null}
