@@ -16,8 +16,23 @@ else
 fi
 
 if uv run --extra dev detect-secrets --version >/dev/null 2>&1; then
+  detect_secrets_output="$(mktemp)"
+  trap 'rm -f "${detect_secrets_output:-}"' EXIT
   uv run --extra dev detect-secrets scan . \
-    --exclude-files '(^|/)(node_modules|\.venv|dist|\.git|coverage|htmlcov)/|pnpm-lock\.yaml'
+    --exclude-files '(^|/)(node_modules|\.venv|dist|\.git|coverage|htmlcov)/|pnpm-lock\.yaml' \
+    > "$detect_secrets_output"
+  uv run python - "$detect_secrets_output" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text())
+results = payload.get("results", {})
+if results:
+    print(json.dumps({"results": results}, indent=2))
+    raise SystemExit("detect-secrets found potential findings")
+print(json.dumps({"results": {}}))
+PY
 else
   echo "Skipping detect-secrets: command unavailable."
 fi

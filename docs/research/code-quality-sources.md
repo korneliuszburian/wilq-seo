@@ -8,10 +8,9 @@ Quality tooling sources and affected decisions:
 - Bandit: Python security checks.
 - pip-audit: dependency vulnerability checks.
 - Semgrep: broader static security checks where available.
-- detect-secrets: committed secret prevention.
+- detect-secrets scans committed sensitive-value leaks.
 - TypeScript: frontend type safety.
 - ESLint: frontend lint.
 - Vitest: component and route tests.
 - Playwright: future runnable dashboard smoke.
 - Zod: future frontend runtime validation for API boundaries.
-
