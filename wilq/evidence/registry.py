@@ -3,6 +3,7 @@ from __future__ import annotations
 from wilq.connectors.registry import list_connector_statuses
 from wilq.schemas import ConnectorRefreshRun, Evidence, FreshnessState
 from wilq.storage.local_state import local_state_store
+from wilq.storage.metric_store import metric_store
 
 
 def connector_evidence_id(connector_id: str) -> str:
@@ -33,7 +34,13 @@ def list_evidence() -> list[Evidence]:
     refresh_evidence = [
         _refresh_run_evidence(run) for run in local_state_store().list_connector_refresh_runs()
     ]
-    return [*connector_evidence, *refresh_evidence]
+    known_evidence_ids = {evidence.id for evidence in [*connector_evidence, *refresh_evidence]}
+    metric_evidence = [
+        evidence
+        for evidence in _metric_fact_evidence()
+        if evidence.id not in known_evidence_ids
+    ]
+    return [*connector_evidence, *refresh_evidence, *metric_evidence]
 
 
 def get_evidence(evidence_id: str) -> Evidence | None:
@@ -74,3 +81,37 @@ def _refresh_run_evidence(run: ConnectorRefreshRun) -> Evidence:
         summary=run.summary,
         raw_ref=f"connector_refresh_runs:{run.id}",
     )
+
+
+def _metric_fact_evidence() -> list[Evidence]:
+    facts_by_evidence_id: dict[str, list[str]] = {}
+    connector_by_evidence_id: dict[str, str] = {}
+    for fact in metric_store().list_metric_facts(limit=500):
+        facts_by_evidence_id.setdefault(fact.evidence_id, []).append(fact.name)
+        connector_by_evidence_id.setdefault(fact.evidence_id, fact.source_connector)
+
+    evidence_items: list[Evidence] = []
+    for evidence_id, fact_names in sorted(facts_by_evidence_id.items()):
+        unique_fact_names = sorted(set(fact_names))
+        source_connector = connector_by_evidence_id[evidence_id]
+        evidence_items.append(
+            Evidence(
+                id=evidence_id,
+                source_connector=source_connector,
+                source_type="metric_fact_store",
+                source_id=evidence_id,
+                freshness=FreshnessState(
+                    state="unknown",
+                    notes=(
+                        "Metric fact evidence is retained in DuckDB, but the original "
+                        "connector refresh run is not present in local state."
+                    ),
+                ),
+                summary=(
+                    f"Metric fact evidence for connector {source_connector}: "
+                    f"{', '.join(unique_fact_names[:8])}."
+                ),
+                raw_ref=f"metric_facts:{evidence_id}",
+            )
+        )
+    return evidence_items

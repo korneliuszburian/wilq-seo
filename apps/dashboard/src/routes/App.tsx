@@ -9,6 +9,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Link,
   RouterProvider,
   useParams
 } from "@tanstack/react-router";
@@ -675,6 +676,38 @@ function TraceLine({
   );
 }
 
+function LinkedTraceLine({
+  label,
+  values,
+  kind,
+  empty = "brak"
+}: {
+  label: string;
+  values: string[];
+  kind: "actions" | "evidence";
+  empty?: string;
+}) {
+  return (
+    <div className="break-words">
+      {label}:{" "}
+      {values.length > 0
+        ? values.map((value, index) => (
+            <span key={value}>
+              {index > 0 ? ", " : ""}
+              <Link
+                to={kind === "actions" ? "/actions/$actionId" : "/evidence/$evidenceId"}
+                params={kind === "actions" ? { actionId: value } : { evidenceId: value }}
+                className="font-medium text-action underline-offset-2 hover:underline"
+              >
+                {value}
+              </Link>
+            </span>
+          ))
+        : empty}
+    </div>
+  );
+}
+
 function BlockerNotice({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-2 rounded-md border border-wait/30 bg-wait/10 p-4 text-sm leading-6 text-wait">
@@ -767,9 +800,9 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <TraceLine label="Evidence" values={item.evidence_ids} />
+        <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={item.source_connectors} />
-        <TraceLine label="Akcje" values={item.action_ids} empty="brak" />
+        <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
       </div>
       {item.metric_facts.length > 0 ? <MetricFactChips facts={item.metric_facts.slice(0, 4)} /> : null}
     </article>
@@ -1108,14 +1141,15 @@ function routeExpertDomains(routeName: string): string[] {
   return [];
 }
 
-function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflows" }) {
+function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflows" | "evidence" }) {
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
-  const id = params.actionId ?? params.opportunityId ?? params.workflowId ?? "";
+  const id = params.actionId ?? params.opportunityId ?? params.workflowId ?? params.evidenceId ?? "";
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
+  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
 
-  if (actions.isLoading || opportunities.isLoading) return <LoadingBand />;
-  if (actions.error || opportunities.error) return <ErrorState />;
+  if (actions.isLoading || opportunities.isLoading || evidence.isLoading) return <LoadingBand />;
+  if (actions.error || opportunities.error || evidence.error) return <ErrorState />;
 
   if (kind === "actions") {
     const action = (actions.data ?? []).find((item) => item.id === id);
@@ -1124,6 +1158,10 @@ function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflow
   if (kind === "opportunities") {
     const opportunity = (opportunities.data ?? []).find((item) => item.id === id);
     if (opportunity) return <OpportunityDetail opportunity={opportunity} />;
+  }
+  if (kind === "evidence") {
+    const evidenceItem = (evidence.data ?? []).find((item) => item.id === id);
+    if (evidenceItem) return <EvidenceDetail evidence={evidenceItem} />;
   }
   return <GenericSurface routeName={`/${kind}/${id}`} />;
 }
@@ -1140,7 +1178,9 @@ function ActionDetail({ action }: { action: ActionObject }) {
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Evidence And Diagnosis" />
         <p className="text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
-        <div className="mt-4 text-xs text-slate-600">Evidence: {action.evidence_ids.join(", ")}</div>
+        <div className="mt-4 text-xs text-slate-600">
+          <LinkedTraceLine label="Evidence" values={action.evidence_ids} kind="evidence" />
+        </div>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Payload Preview" />
@@ -1162,6 +1202,31 @@ function ActionDetail({ action }: { action: ActionObject }) {
             ))}
           </div>
         )}
+      </section>
+    </main>
+  );
+}
+
+function EvidenceDetail({ evidence }: { evidence: Evidence }) {
+  return (
+    <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
+      <h1 className="break-words text-2xl font-semibold tracking-normal">{evidence.id}</h1>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <StatusBadge value={evidence.source_connector} />
+        <StatusBadge value={evidence.source_type} />
+        <StatusBadge value={evidence.freshness.state} />
+      </div>
+      <section className="mt-6 rounded-md border border-line bg-white p-4">
+        <SectionHeading title="Evidence Summary" />
+        <p className="text-sm leading-6 text-slate-700">{evidence.summary}</p>
+        <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+          <div>Source connector: {evidence.source_connector}</div>
+          <div>Source type: {evidence.source_type}</div>
+          <div>Source ID: {evidence.source_id}</div>
+          <div>Collected at: {evidence.collected_at}</div>
+          <div>Freshness: {evidence.freshness.state}</div>
+          <div>Raw ref: {evidence.raw_ref ?? "brak"}</div>
+        </div>
       </section>
     </main>
   );
@@ -1261,6 +1326,11 @@ const workflowDetailRoute = createRoute({
   path: "/workflows/$workflowId",
   component: () => <DetailSurface kind="workflows" />
 });
+const evidenceDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/evidence/$evidenceId",
+  component: () => <DetailSurface kind="evidence" />
+});
 
 const generatedRoutes = operatingRoutes.map((path) =>
   createRoute({
@@ -1279,6 +1349,7 @@ const routeTree = rootRoute.addChildren([
   workflowsRoute,
   actionDetailRoute,
   workflowDetailRoute,
+  evidenceDetailRoute,
   ...generatedRoutes
 ]);
 

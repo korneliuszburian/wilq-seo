@@ -65,6 +65,16 @@ const evidence = [
     freshness: { state: "missing" },
     summary: "Connector google_ads is missing credential names.",
     raw_ref: null
+  },
+  {
+    id: "ev_refresh_merchant_feed",
+    source_connector: "google_merchant_center",
+    source_type: "connector_refresh",
+    source_id: "refresh_merchant_feed",
+    collected_at: "2026-06-17T10:00:00Z",
+    freshness: { state: "fresh" },
+    summary: "Merchant Center feed diagnostics collected sanitized product issue counters.",
+    raw_ref: null
   }
 ];
 
@@ -402,5 +412,24 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/payload preview/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ActionObject/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("link", { name: "act_review_merchant_feed" })
+    ).toHaveAttribute("href", "/actions/act_review_merchant_feed");
+    expect(
+      screen.getAllByRole("link", { name: "ev_refresh_merchant_feed" })[0]
+    ).toHaveAttribute("href", "/evidence/ev_refresh_merchant_feed");
+  });
+
+  it("evidence detail route renders source trace from linked evidence id", async () => {
+    renderApp("/evidence/ev_refresh_merchant_feed");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "ev_refresh_merchant_feed" })
+      ).toBeInTheDocument()
+    );
+    expect(
+      screen.getByText("Merchant Center feed diagnostics collected sanitized product issue counters.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Source connector: google_merchant_center")).toBeInTheDocument();
   });
 });

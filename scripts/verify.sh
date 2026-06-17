@@ -82,6 +82,7 @@ if ! curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null 2>&1; then
 fi
 curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null
 scripts/eval_marketing_brief.sh --api-base "$skill_api_base" >/dev/null
+API_BASE="$skill_api_base" scripts/eval_action_validation.sh >/dev/null
 uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base "$skill_api_base" >/dev/null
 for skill_script in .agents/skills/wilq-*/scripts/smoke_skill_contract.py; do
   uv run python "$skill_script" --api-base "$skill_api_base" >/dev/null

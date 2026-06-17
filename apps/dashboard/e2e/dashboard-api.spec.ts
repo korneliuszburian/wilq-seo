@@ -51,4 +51,23 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Payload Preview" })).toBeVisible();
     await expect(page.getByText("Evidence: ev_connector_google_ads_status")).toBeVisible();
   });
+
+  test("merchant route renders live MarketingBrief evidence links", async ({ page }) => {
+    await page.goto("/merchant");
+
+    await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Feed/Product Focus" })).toBeVisible();
+    await expect(
+      page.getByText("Merchant Center: zacznij od feed/product issues")
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Safety Gate" })).toBeVisible();
+
+    const evidenceLink = page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first();
+    await expect(evidenceLink).toBeVisible();
+    await evidenceLink.click();
+    await expect(
+      page.getByRole("heading", { name: /ev_refresh_refresh_google_merchant_center/ })
+    ).toBeVisible();
+    await expect(page.getByText("Source connector: google_merchant_center")).toBeVisible();
+  });
 });

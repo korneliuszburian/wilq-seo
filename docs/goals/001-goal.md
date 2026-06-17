@@ -3698,3 +3698,115 @@ Remaining next work:
    `/seo-gsc`, `/content-planner`, `/localo` and `/social-publisher`, so each
    route answers the marketer's actual workflow instead of showing generic
    registries.
+
+---
+
+## 33. Evidence trace links and ActionObject validation proof - 2026-06-17
+
+Implemented the next two follow-ups from section 32.
+
+What changed:
+
+* `MarketingBriefCard` now renders evidence IDs as links to
+  `/evidence/{evidence_id}`.
+* `MarketingBriefCard` now renders action IDs as links to
+  `/actions/{action_id}`.
+* Added dashboard evidence detail route:
+  `/evidence/{evidence_id}`.
+* Action detail evidence IDs now link to the evidence detail route instead of
+  staying as dead text.
+* Merchant Playwright smoke now opens `/merchant`, verifies the live
+  `MarketingBrief` feed/product focus and clicks a Merchant evidence link into
+  the evidence detail route.
+* Added `scripts/eval_action_validation.sh`.
+  * It calls `POST /api/actions/act_configure_google_ads_env/validate`.
+  * It proves `valid=true`.
+  * It proves evidence IDs are preserved.
+  * It proves no apply was attempted.
+  * It proves validation does not create audit events.
+* `scripts/verify.sh` now runs the action validation evaluator against its
+  temporary skill API.
+* Fixed an evidence integrity gap:
+  metric facts stored in DuckDB can outlive the original local-state refresh
+  run. `wilq.evidence.registry` now exposes fallback `metric_fact_store`
+  evidence records, so `MarketingBrief` evidence IDs remain resolvable instead
+  of linking to a missing detail route.
+* Added backend regression coverage for detached metric fact evidence IDs.
+
+Live proof:
+
+```bash
+curl -fsS http://127.0.0.1:8000/api/evidence/ev_refresh_refresh_google_merchant_center_b023e79c42e2
+```
+
+Returned a resolvable evidence record:
+
+```txt
+source_type=metric_fact_store
+source_connector=google_merchant_center
+raw_ref=metric_facts:ev_refresh_refresh_google_merchant_center_b023e79c42e2
+```
+
+Action validation proof:
+
+```json
+{
+  "action_id": "act_configure_google_ads_env",
+  "after_status": "ready",
+  "api_base": "http://127.0.0.1:8000",
+  "apply_attempted": false,
+  "audit_events_after": 0,
+  "audit_events_before": 0,
+  "evidence_ids": ["ev_connector_google_ads_status"],
+  "valid": true,
+  "validation_status": "valid"
+}
+```
+
+Verification:
+
+```bash
+uv run ruff check wilq/evidence/registry.py tests/test_metric_store_and_cli.py
+uv run mypy wilq/evidence/registry.py
+uv run pytest tests/test_metric_store_and_cli.py -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+scripts/eval_action_validation.sh
+scripts/eval_marketing_brief.sh --api-base http://127.0.0.1:8000
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Targeted metric store/evidence tests: `5 passed`.
+* Dashboard route tests: `10 passed`.
+* `scripts/quality.sh`: passed, including `61 passed` Python tests and
+  dashboard Vitest.
+* `scripts/security.sh`: passed; semgrep unavailable and still documented by
+  the script.
+* Full `scripts/verify.sh` with live ports:
+  * API smoke: passed.
+  * Skill structure smoke: passed.
+  * Skill API smoke: passed.
+  * Playwright live API-backed smoke: `4 passed`.
+  * Dashboard production build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+* No test servers remained on `8765`, `8875` or `5373`.
+
+Remaining next work:
+
+1. Repeat route-specific grounding for `/ads-doctor`, `/ga4`, `/seo-gsc`,
+   `/content-planner`, `/localo` and `/social-publisher`.
+2. Add real dashboard panels for Ads/GA4/GSC/content route questions:
+   what metric changed, what evidence proves it, what safe ActionObject can be
+   prepared, and what is blocked.
+3. Add Codex skill eval cases for the newly grounded routes so non-interactive
+   Codex proves Polish, evidence-backed usefulness across more than the daily
+   command.

@@ -11,7 +11,8 @@ from typer.testing import CliRunner
 from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
 from wilq.connectors.vendor import VendorReadResult
-from wilq.schemas import ConnectorRefreshStatus
+from wilq.evidence.registry import get_evidence
+from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus
 from wilq.storage.metric_store import _connect_with_retry, metric_store
 
 client = TestClient(app)
@@ -107,6 +108,33 @@ def test_metrics_api_exposes_metric_store_status_and_facts(
             "unit": None,
         }
     ]
+
+
+def test_metric_fact_evidence_ids_are_resolvable_without_refresh_run_state(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+
+    run = ConnectorRefreshRun(
+        id="refresh_google_merchant_center_detached",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_google_merchant_center_detached"],
+        metric_summary={"active_products": 12, "disapproved_products": 3},
+        summary="Detached Merchant metric facts retained in DuckDB.",
+    )
+    metric_store().save_connector_refresh_metrics(run)
+
+    evidence = get_evidence("ev_refresh_refresh_google_merchant_center_detached")
+
+    assert evidence is not None
+    assert evidence.source_connector == "google_merchant_center"
+    assert evidence.source_type == "metric_fact_store"
+    assert "active_products" in evidence.summary
+    assert evidence.raw_ref == "metric_facts:ev_refresh_refresh_google_merchant_center_detached"
 
 
 def test_wilq_cli_status_and_metrics_list_do_not_print_secret_values(
