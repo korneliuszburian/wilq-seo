@@ -7,8 +7,8 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Private GitHub repo target was created: `korneliuszburian/wilq-seo`.
 - `docs/goals/001-goal.md` was created from the active goal.
 - Root `AGENTS.md` now defines WILQ product philosophy, API-first rules, evidence rules, MCP rules, skill creation timing, security rules, quality gates and forbidden behavior.
-- FastAPI WILQ API spine exists with health, system status, connectors, dashboard command center, opportunities, actions, expert rules, knowledge, Codex context/runs and workflows endpoints.
-- Pydantic schemas exist for connectors, evidence, metrics, opportunities, actions, audit events, Codex runs and knowledge cards.
+- FastAPI WILQ API spine exists with health, system status, connectors, connector refresh runs, dashboard command center, opportunities, actions, expert rules, knowledge, Codex context/runs and workflows endpoints.
+- Pydantic schemas exist for connectors, connector refresh runs, evidence, metrics, opportunities, actions, audit events, Codex runs and knowledge cards.
 - Connector registry includes Google Ads, GSC, GA4, Merchant Center, Google Sheets, Ahrefs, Localo, WordPress, LinkedIn, Facebook and OpenAI/Codex.
 - Action validation now checks evidence, connector, mode, risk and payload action type.
 - React/TanStack Query dashboard shell exists with required operating routes, route tests, API-backed cards, detail panels, payload preview and audit section.
@@ -17,7 +17,7 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Expert rules are loaded through typed Pydantic contracts and exposed at `/api/expert/rules`, `/api/expert/rule-summaries` and `/api/expert/capabilities`.
 - Codex context packs include expert rule summaries and Ads capability definitions so future skills can use API-provided rule contracts.
 - Dashboard operating routes render expert-rule cards from `/api/expert/rules` through shared Zod validation.
-- Local SQLite state persists Codex runs, workflow runs and audit events through `wilq/storage/local_state.py`.
+- Local SQLite state persists Codex runs, workflow runs, connector refresh runs and audit events through `wilq/storage/local_state.py`.
 - Workflow run APIs exist at `/api/workflows/{workflow_id}/runs` and `/api/workflow-runs`.
 - Dashboard workflow routes render persisted workflow-run state through shared Zod validation.
 - Machine-readable marketing playbooks exist in `wilq/knowledge/playbooks/marketing_playbooks.yaml`.
@@ -25,6 +25,7 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Knowledge APIs expose playbooks, compiled cards and deterministic condensation results.
 - Dashboard knowledge routes render compiled cards and playbooks through shared Zod validation.
 - Evidence registry APIs expose connector-status evidence without secret values.
+- Connector refresh APIs create durable `status_probe` or blocked `vendor_read` runs with redacted evidence IDs and no invented vendor metrics.
 - Opportunities are now derived from connector readiness evidence plus playbook/expert-rule mappings, not fixed demo opportunity rows.
 - Workflow, model runtime, access-pack, MCP, quality, security and source-registry docs exist.
 - Codex hooks exist for SessionStart and Stop; they fail open and restrict API URL targets to local/allowed hosts.
@@ -68,7 +69,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - `scripts/quality.sh`: passed.
 - `scripts/security.sh`: passed.
 - `scripts/verify.sh`: passed.
-- Backend tests: 24 passed.
+- Backend tests: 25 passed.
 - Dashboard tests: 8 passed.
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
@@ -79,7 +80,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
-- Goal 001 is not complete because skills are deferred by policy, real connectors still do not call vendor APIs, and opportunity generation uses connector-status evidence/rule mappings rather than vendor performance metrics.
+- Goal 001 is not complete because skills are deferred by policy, vendor-read connector adapters are still blocked/not implemented, and opportunity generation uses connector-status/refresh evidence rather than vendor performance metrics.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 
 ## Connector status
@@ -121,7 +122,7 @@ API is runnable through:
 uv run uvicorn apps.api.wilq_api.main:app --reload
 ```
 
-FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state. Opportunities are derived from that readiness evidence plus playbook/expert-rule mappings, not from vendor performance metrics yet.
+FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs, connector refresh runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state and connector refresh-run state. Opportunities are derived from readiness/refresh evidence plus playbook/expert-rule mappings, not from vendor performance metrics yet.
 
 ## Next recommended goal
 

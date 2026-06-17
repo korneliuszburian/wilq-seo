@@ -36,6 +36,23 @@ export const EvidenceSchema = z.object({
   raw_ref: z.string().nullable().optional()
 });
 
+export const ConnectorRefreshRunSchema = z.object({
+  id: z.string(),
+  connector_id: z.string(),
+  mode: z.enum(["status_probe", "vendor_read"]),
+  status: z.enum(["completed", "blocked", "failed"]),
+  started_at: z.string(),
+  completed_at: z.string().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  missing_credentials: z.array(z.string()),
+  checked_credentials: z.array(z.string()),
+  external_call_attempted: z.boolean(),
+  vendor_data_collected: z.boolean(),
+  summary: z.string(),
+  errors: z.array(z.string()),
+  redacted: z.boolean()
+});
+
 export const OpportunitySchema = z.object({
   id: z.string(),
   type: z.string(),
@@ -204,6 +221,7 @@ export const ContextPackResponseSchema = z.object({
   connector_status: z.array(ConnectorStatusSchema),
   top_opportunities: z.array(OpportunitySchema),
   active_action_objects: z.array(ActionObjectSchema),
+  connector_refresh_runs: z.array(ConnectorRefreshRunSchema),
   evidence_summaries: z.array(EvidenceSchema),
   knowledge_card_summaries: z.array(KnowledgeCardSchema),
   expert_rule_summaries: z.array(ExpertRuleSummarySchema),
@@ -213,6 +231,7 @@ export const ContextPackResponseSchema = z.object({
 
 export type ConnectorStatus = z.infer<typeof ConnectorStatusSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
+export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;

@@ -10,11 +10,13 @@ import { AlertCircle, CheckCircle2, FileJson, RefreshCw } from "lucide-react";
 
 import {
   ActionObject,
+  ConnectorRefreshRun,
   ConnectorStatus,
   Evidence,
   ExpertRule,
   getActions,
   getCommandCenter,
+  getConnectorRefreshRuns,
   getConnectors,
   getEvidence,
   getExpertRules,
@@ -148,6 +150,35 @@ function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
             <StatusBadge value={evidence.freshness.state} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{evidence.summary}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] }) {
+  if (runs.length === 0) {
+    return <p className="text-sm text-slate-600">No connector refresh runs yet.</p>;
+  }
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-2">
+      {runs.map((run) => (
+        <article key={run.id} className="rounded-md border border-line bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{run.connector_id}</h3>
+              <p className="mt-1 break-words text-xs text-slate-500">{run.id}</p>
+            </div>
+            <StatusBadge value={run.status} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">{run.summary}</p>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+            <div>Mode: {run.mode}</div>
+            <div>Vendor data: {run.vendor_data_collected ? "yes" : "no"}</div>
+            <div>External call: {run.external_call_attempted ? "yes" : "no"}</div>
+            <div>Evidence: {run.evidence_ids.join(", ")}</div>
+          </div>
         </article>
       ))}
     </div>
@@ -337,6 +368,10 @@ function CommandCenter() {
 
 function GenericSurface({ routeName }: { routeName: string }) {
   const connectors = useQuery({ queryKey: ["connectors"], queryFn: getConnectors });
+  const connectorRefreshRuns = useQuery({
+    queryKey: ["connector-refresh-runs"],
+    queryFn: getConnectorRefreshRuns
+  });
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
   const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
@@ -362,6 +397,7 @@ function GenericSurface({ routeName }: { routeName: string }) {
 
   if (
     connectors.isLoading ||
+    connectorRefreshRuns.isLoading ||
     opportunities.isLoading ||
     actions.isLoading ||
     evidence.isLoading ||
@@ -373,6 +409,7 @@ function GenericSurface({ routeName }: { routeName: string }) {
   }
   if (
     connectors.error ||
+    connectorRefreshRuns.error ||
     opportunities.error ||
     actions.error ||
     evidence.error ||
@@ -440,6 +477,10 @@ function GenericSurface({ routeName }: { routeName: string }) {
         <section>
           <SectionHeading title="Evidence Registry" />
           <EvidenceList evidenceItems={(evidence.data ?? []).slice(0, 8)} />
+        </section>
+        <section>
+          <SectionHeading title="Connector Refresh Runs" />
+          <ConnectorRefreshRunList runs={(connectorRefreshRuns.data ?? []).slice(0, 8)} />
         </section>
         <section>
           <SectionHeading title="Actions" />

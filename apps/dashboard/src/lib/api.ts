@@ -1,6 +1,7 @@
 import {
   ActionObjectSchema,
   CommandCenterResponseSchema,
+  ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   EvidenceSchema,
   ExpertRuleSchema,
@@ -11,6 +12,7 @@ import {
   WorkflowSchema,
   type ActionObject,
   type CommandCenterResponse,
+  type ConnectorRefreshRun,
   type ConnectorStatus,
   type Evidence,
   type ExpertRule,
@@ -38,6 +40,10 @@ export function getCommandCenter(): Promise<CommandCenterResponse> {
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
   return apiGet("/api/connectors", z.array(ConnectorStatusSchema));
+}
+
+export function getConnectorRefreshRuns(): Promise<ConnectorRefreshRun[]> {
+  return apiGet("/api/connectors/refresh-runs", z.array(ConnectorRefreshRunSchema));
 }
 
 export function getOpportunities(): Promise<Opportunity[]> {
@@ -75,6 +81,7 @@ export function getKnowledgePlaybooks(): Promise<MarketingPlaybook[]> {
 export type {
   ActionObject,
   CommandCenterResponse,
+  ConnectorRefreshRun,
   ConnectorStatus,
   Evidence,
   ExpertRule,

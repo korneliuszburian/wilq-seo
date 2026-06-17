@@ -8,7 +8,7 @@ from typing import Any, cast
 
 from pydantic import BaseModel
 
-from wilq.schemas import AuditEvent, CodexRun
+from wilq.schemas import AuditEvent, CodexRun, ConnectorRefreshRun
 from wilq.security.redaction import redact_mapping
 from wilq.workflows.models import WorkflowRun
 
@@ -42,6 +42,9 @@ class LocalStateStore:
             ),
             "audit_events": self._count_with_query(
                 "SELECT COUNT(*) AS count FROM audit_events"
+            ),
+            "connector_refresh_runs": self._count_with_query(
+                "SELECT COUNT(*) AS count FROM connector_refresh_runs"
             ),
         }
 
@@ -110,6 +113,69 @@ class LocalStateStore:
             return None
         return _model_from_json(WorkflowRun, cast(str, row["payload_json"]))
 
+    def save_connector_refresh_run(self, run: ConnectorRefreshRun) -> ConnectorRefreshRun:
+        redacted = ConnectorRefreshRun.model_validate(redact_mapping(run.model_dump(mode="json")))
+        payload_json = _model_json(redacted)
+        updated_at = redacted.completed_at or redacted.started_at
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO connector_refresh_runs (
+                  id, connector_id, status, updated_at, payload_json
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  connector_id = excluded.connector_id,
+                  status = excluded.status,
+                  updated_at = excluded.updated_at,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    redacted.id,
+                    redacted.connector_id,
+                    redacted.status,
+                    updated_at.isoformat(),
+                    payload_json,
+                ),
+            )
+        return redacted
+
+    def list_connector_refresh_runs(
+        self,
+        connector_id: str | None = None,
+    ) -> list[ConnectorRefreshRun]:
+        with self._connect() as connection:
+            if connector_id is None:
+                rows = connection.execute(
+                    """
+                    SELECT payload_json FROM connector_refresh_runs
+                    ORDER BY updated_at DESC, id DESC
+                    """
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT payload_json FROM connector_refresh_runs
+                    WHERE connector_id = ?
+                    ORDER BY updated_at DESC, id DESC
+                    """,
+                    (connector_id,),
+                ).fetchall()
+        return [
+            _model_from_json(ConnectorRefreshRun, cast(str, row["payload_json"]))
+            for row in rows
+        ]
+
+    def get_connector_refresh_run(self, run_id: str) -> ConnectorRefreshRun | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM connector_refresh_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return _model_from_json(ConnectorRefreshRun, cast(str, row["payload_json"]))
+
     def save_audit_event(self, event: AuditEvent) -> AuditEvent:
         redacted = AuditEvent.model_validate(redact_mapping(event.model_dump(mode="json")))
         payload_json = _model_json(redacted)
@@ -177,6 +243,14 @@ class LocalStateStore:
               id TEXT PRIMARY KEY,
               action_id TEXT,
               created_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS connector_refresh_runs (
+              id TEXT PRIMARY KEY,
+              connector_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
             );
             """

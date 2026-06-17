@@ -66,6 +66,25 @@ const evidence = [
   }
 ];
 
+const connectorRefreshRuns = [
+  {
+    id: "refresh_google_ads_test",
+    connector_id: "google_ads",
+    mode: "status_probe",
+    status: "completed",
+    started_at: "2026-06-17T10:00:00Z",
+    completed_at: "2026-06-17T10:00:01Z",
+    evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
+    missing_credentials: [],
+    checked_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
+    external_call_attempted: false,
+    vendor_data_collected: false,
+    summary: "Connector google_ads status probe completed.",
+    errors: [],
+    redacted: true
+  }
+];
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -152,6 +171,9 @@ function mockFetch() {
       if (url.endsWith("/api/opportunities")) return Promise.resolve(Response.json(opportunities));
       if (url.endsWith("/api/actions")) return Promise.resolve(Response.json(actions));
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
+      if (url.endsWith("/api/connectors/refresh-runs")) {
+        return Promise.resolve(Response.json(connectorRefreshRuns));
+      }
       if (url.endsWith("/api/expert/rules")) return Promise.resolve(Response.json(expertRules));
       if (url.endsWith("/api/workflows")) {
         return Promise.resolve(
@@ -215,6 +237,7 @@ describe("WILQ dashboard", () => {
     render(<App />);
     await waitFor(() => expect(screen.getAllByText("Missing credentials").length).toBeGreaterThan(0));
     expect(screen.getByText("Evidence Registry")).toBeInTheDocument();
+    expect(screen.getByText("Connector Refresh Runs")).toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {

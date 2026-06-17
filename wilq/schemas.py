@@ -22,6 +22,17 @@ class ConnectorStatusValue(StrEnum):
     disabled = "disabled"
 
 
+class ConnectorRefreshMode(StrEnum):
+    status_probe = "status_probe"
+    vendor_read = "vendor_read"
+
+
+class ConnectorRefreshStatus(StrEnum):
+    completed = "completed"
+    blocked = "blocked"
+    failed = "failed"
+
+
 class ActionMode(StrEnum):
     suggest = "suggest"
     prepare = "prepare"
@@ -103,6 +114,28 @@ class Evidence(BaseModel):
     freshness: FreshnessState
     summary: str
     raw_ref: str | None = None
+
+
+class ConnectorRefreshRequest(BaseModel):
+    mode: ConnectorRefreshMode = ConnectorRefreshMode.status_probe
+    reason: str | None = None
+
+
+class ConnectorRefreshRun(BaseModel):
+    id: str
+    connector_id: str
+    mode: ConnectorRefreshMode
+    status: ConnectorRefreshStatus
+    started_at: datetime = Field(default_factory=utc_now)
+    completed_at: datetime | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    missing_credentials: list[str] = Field(default_factory=list)
+    checked_credentials: list[str] = Field(default_factory=list)
+    external_call_attempted: bool = False
+    vendor_data_collected: bool = False
+    summary: str
+    errors: list[str] = Field(default_factory=list)
+    redacted: bool = True
 
 
 class MetricFact(BaseModel):

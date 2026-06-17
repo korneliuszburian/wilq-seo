@@ -15,10 +15,10 @@ Rules:
 - MCP servers are adapters.
 - Skills are operator workflows created after the API endpoints they call exist.
 - Expert rules live as structured YAML but are consumed through typed WILQ API endpoints, not by prompt-only logic.
-- Codex runs, workflow runs, and audit events persist to local SQLite state with redaction.
+- Codex runs, workflow runs, connector refresh runs, and audit events persist to local SQLite state with redaction.
 - Knowledge playbooks compile into source-lineage cards before reaching Codex context packs.
-- Evidence registry records expose readiness/source state without secret values.
-- Readiness opportunities may derive from connector-status evidence, playbook IDs, and expert-rule IDs. They must not claim vendor performance metrics until vendor refreshes exist.
+- Evidence registry records expose readiness/source/refresh state without secret values.
+- Readiness opportunities may derive from connector-status evidence, connector refresh-run evidence, playbook IDs, and expert-rule IDs. They must not claim vendor performance metrics until vendor refreshes exist.
 - Seed data is allowed only when labeled as non-real.
 - No evidence ID means no recommendation.
 
@@ -32,6 +32,7 @@ Local-state API surface:
 
 - `/api/codex/runs`: persisted Codex run records.
 - `/api/workflow-runs`: persisted workflow run records.
+- `/api/connectors/refresh-runs`: persisted connector refresh run records.
 - `/api/audit/events`: persisted audit events, optionally filtered by action ID.
 
 Knowledge API surface:
@@ -42,5 +43,5 @@ Knowledge API surface:
 
 Evidence API surface:
 
-- `/api/evidence`: connector-status evidence records, with freshness and redacted summaries.
+- `/api/evidence`: connector-status and connector-refresh evidence records, with freshness and redacted summaries.
 - `/api/evidence/{evidence_id}`: one evidence record by ID.
