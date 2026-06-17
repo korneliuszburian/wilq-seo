@@ -12,6 +12,7 @@ import {
   MetricFactSchema,
   MetricStoreStatusSchema,
   OpportunitySchema,
+  TacticalQueueResponseSchema,
   WorkflowRunSchema,
   WorkflowSchema,
   type ActionObject,
@@ -28,6 +29,7 @@ import {
   type MetricFact,
   type MetricStoreStatus,
   type Opportunity,
+  type TacticalQueueResponse,
   type Workflow,
   type WorkflowRun
 } from "@wilq/shared-schemas";
@@ -61,6 +63,10 @@ export function getCommandCenter(): Promise<CommandCenterResponse> {
 
 export function getMarketingBrief(): Promise<MarketingBrief> {
   return apiGet("/api/marketing/brief", MarketingBriefSchema);
+}
+
+export function getTacticalQueue(): Promise<TacticalQueueResponse> {
+  return apiGet("/api/marketing/tactical-queue", TacticalQueueResponseSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -130,6 +136,7 @@ export type {
   MetricFact,
   MetricStoreStatus,
   Opportunity,
+  TacticalQueueResponse,
   Workflow,
   WorkflowRun
 };

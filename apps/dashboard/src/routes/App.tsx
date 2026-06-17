@@ -52,6 +52,7 @@ import {
   getMetricFacts,
   getMetricStoreStatus,
   getOpportunities,
+  getTacticalQueue,
   validateAction,
   getWorkflowRuns,
   getWorkflows,
@@ -62,6 +63,7 @@ import {
   MetricFact,
   MetricStoreStatus,
   Opportunity,
+  TacticalQueueResponse,
   WorkflowRun
 } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
@@ -971,6 +973,103 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
   );
 }
 
+type TacticalQueueItem = TacticalQueueResponse["items"][number];
+
+function TacticalQueuePanel({
+  queue,
+  connectorIds,
+  limit = 8,
+  title = "Kolejka taktyczna WILQ",
+  isLoading,
+  isError
+}: {
+  queue?: TacticalQueueResponse;
+  connectorIds?: string[];
+  limit?: number;
+  title?: string;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  if (isError) {
+    return (
+      <BlockerNotice message="Nie udało się odczytać /api/marketing/tactical-queue. Dashboard nie może udawać kolejki działań." />
+    );
+  }
+  if (isLoading || !queue) {
+    return (
+      <div className="rounded-md border border-line bg-white p-4 text-sm text-slate-600">
+        Ładowanie kolejki taktycznej...
+      </div>
+    );
+  }
+
+  const items = queue.items
+    .filter((item) =>
+      connectorIds
+        ? item.source_connectors.some((connector) => connectorIds.includes(connector))
+        : true
+    )
+    .slice(0, limit);
+
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <ClipboardCheck aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            {title}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">{queue.strict_instruction}</p>
+        </div>
+      </div>
+      {items.length === 0 ? (
+        <BlockerNotice message="Brak taktyk dla tej trasy. Potrzebne są wymiarowe metric facts z WILQ API." />
+      ) : (
+        <div className="grid gap-3 xl:grid-cols-2">
+          {items.map((item) => (
+            <TacticalQueueCard key={item.id} item={item} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{item.title}</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {item.intent} / priority {item.priority}
+          </p>
+        </div>
+        <StatusBadge value={item.risk} />
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
+      <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+        <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
+        <TraceLine label="Źródła" values={item.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
+        <TraceLine label="Blokady claimów" values={item.blocked_claims} />
+      </div>
+      {Object.keys(item.dimensions).length > 0 ? (
+        <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-700">
+          Wymiar:{" "}
+          {Object.entries(item.dimensions)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(", ")}
+        </div>
+      ) : null}
+      {item.metric_facts.length > 0 ? <MetricFactChips facts={item.metric_facts.slice(0, 4)} /> : null}
+    </article>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
@@ -987,6 +1086,10 @@ function CommandCenter() {
   const metricStoreStatus = useQuery({
     queryKey: ["metric-store-status"],
     queryFn: getMetricStoreStatus
+  });
+  const tacticalQueue = useQuery({
+    queryKey: ["tactical-queue"],
+    queryFn: getTacticalQueue
   });
 
   if (isLoading) return <LoadingBand />;
@@ -1040,6 +1143,12 @@ function CommandCenter() {
         ))}
 
         <ActionQueue actions={data.active_actions} />
+
+        <TacticalQueuePanel
+          queue={tacticalQueue.data}
+          isLoading={tacticalQueue.isLoading}
+          isError={Boolean(tacticalQueue.error)}
+        />
 
         <MetricInventory
           facts={metricFacts.data ?? []}
@@ -1175,8 +1284,12 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
     queryKey: ["actions"],
     queryFn: getActions
   });
+  const tacticalQueue = useQuery({
+    queryKey: ["tactical-queue"],
+    queryFn: getTacticalQueue
+  });
 
-  if (marketingBrief.isLoading || actions.isLoading) return <LoadingBand />;
+  if (marketingBrief.isLoading || actions.isLoading || tacticalQueue.isLoading) return <LoadingBand />;
   if (marketingBrief.error || !marketingBrief.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -1234,6 +1347,15 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
         )}
 
         {routeActionIds.length > 0 ? <ActionObjectFocus actions={routeActions} /> : null}
+
+        <TacticalQueuePanel
+          queue={tacticalQueue.data}
+          connectorIds={config.connectorIds}
+          limit={6}
+          title="Taktyki z WILQ API"
+          isLoading={tacticalQueue.isLoading}
+          isError={Boolean(tacticalQueue.error)}
+        />
 
         <section className="rounded-md border border-line bg-white p-4">
           <div className="mb-3 flex items-start gap-3">

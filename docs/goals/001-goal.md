@@ -4668,3 +4668,136 @@ Remaining next work:
    diagnostics. Current live failure is `oauth_error=deleted_client`.
 5. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
+
+---
+
+## 41. Tactical queue from dimensioned facts - 2026-06-18
+
+Implemented the first remaining item from section 40.
+
+What changed:
+
+* Added a typed marketer-facing tactical queue contract:
+  * `TacticalQueueItem`,
+  * `TacticalQueueResponse`.
+* Added `GET /api/marketing/tactical-queue`.
+* Added `tactical_queue` to `POST /api/codex/context-pack`, so Codex skills
+  and dashboard routes consume the same API contract.
+* Added `wilq/briefing/tactical_queue.py`, which builds read-only tactical
+  items from dimensioned metric facts.
+* Tactical queue items include:
+  * Polish diagnosis,
+  * concrete next step,
+  * dimensions,
+  * metric facts,
+  * evidence IDs,
+  * source connectors,
+  * blocked claims,
+  * related ActionObject IDs.
+* Current supported tactical intents:
+  * `content_refresh`,
+  * `content_create`,
+  * `content_merge`,
+  * `content_block`,
+  * `landing_page_quality`,
+  * `merchant_feed_triage`,
+  * `traffic_quality_review`.
+* Current source mappings:
+  * GSC `query` + `page` facts -> content refresh/create/block queue.
+  * GA4 `landing_page` + `source_medium` + `campaign_name` facts -> landing
+    quality and traffic quality queue.
+  * Merchant `country`, `reporting_context`, `severity`, `resolution` facts ->
+    feed issue/status triage queue.
+* Dashboard now fetches `/api/marketing/tactical-queue`.
+* Command Center renders `Kolejka taktyczna WILQ`.
+* Route-level surfaces render filtered `Taktyki z WILQ API` for GA4/GSC/Merchant
+  and other relevant connector groups.
+* The queue remains read-only. It does not execute writes and blocks claims such
+  as conversion uplift, ROAS, revenue, product fixes or approval restoration
+  unless future evidence/action contracts prove them.
+
+Live API proof:
+
+```text
+GET /api/marketing/tactical-queue
+items 24
+evidence 4
+actions ['act_prepare_content_refresh_queue', 'act_review_ga4_tracking_quality', 'act_review_merchant_feed_issues']
+connector distribution {'google_search_console': 10, 'google_analytics_4': 10, 'google_merchant_center': 4}
+intent distribution {'content_refresh': 10, 'traffic_quality_review': 8, 'merchant_feed_triage': 4, 'landing_page_quality': 2}
+```
+
+Example live queue item:
+
+```json
+{
+  "id": "tq_gsc_https_www_ekologus_pl_europejski_zielony_lad_co__zielony_ład_co_to",
+  "intent": "content_refresh",
+  "title": "GSC: zielony ład co to -> https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+  "dimensions": {
+    "query": "zielony ład co to",
+    "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+  },
+  "evidence_ids": ["ev_refresh_refresh_google_search_console_554550c44ec7"]
+}
+```
+
+Context pack proof:
+
+```text
+tactical_queue in /api/codex/context-pack: True
+items: 24
+language: pl-PL
+```
+
+Verification:
+
+```bash
+uv run ruff check wilq/briefing/tactical_queue.py apps/api/wilq_api/main.py wilq/schemas.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/tactical_queue.py apps/api/wilq_api/main.py wilq/schemas.py
+uv run pytest tests/test_api_contracts.py -q
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* API contract tests: `53 passed`.
+* Full Python tests through quality/verify: `70 passed`.
+* Dashboard unit tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+* `scripts/quality.sh`: passed.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+
+Remaining next work:
+
+1. Make tactical queue more useful by joining GSC pages with WordPress inventory
+   and GA4 landing facts, so content items can distinguish refresh/create/merge
+   with stronger evidence instead of only GSC query/page evidence.
+2. Add Merchant issue reason/detail enrichment if the Merchant adapter exposes
+   safe issue identifiers or reason labels without raw product dumps.
+3. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+4. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+5. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+6. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.

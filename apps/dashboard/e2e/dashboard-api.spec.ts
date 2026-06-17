@@ -21,6 +21,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kolejka taktyczna WILQ" })).toBeVisible();
     await expect(page.getByText(/Wymiar:/).first()).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Google Ads connector ready for first search-term refresh" }).first()
@@ -47,6 +48,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "GA4 Quality Focus" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Taktyki z WILQ API" })).toBeVisible();
     await expect(page.getByText(/active_users:/).first()).toBeVisible();
     await expect(page.getByText(/landing_page=/).first()).toBeVisible();
     await expect(page.getByText(/odświeżone/).first()).toBeVisible();

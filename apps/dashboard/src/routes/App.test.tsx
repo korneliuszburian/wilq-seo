@@ -413,6 +413,55 @@ const marketingBrief = {
   recommendation_count: 1
 };
 
+const tacticalQueue = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  items: [
+    {
+      id: "tq_ga4_landing",
+      title: "GA4: /oferta/ / google / cpc",
+      domain: "ga4",
+      intent: "landing_page_quality",
+      priority: 25,
+      risk: "low",
+      source_connectors: ["google_analytics_4"],
+      evidence_ids: ["ev_refresh_ga4"],
+      metric_facts: [metricFacts[2]],
+      dimensions: {
+        landing_page: "/oferta/",
+        source_medium: "google / cpc",
+        campaign_name: "Ekologus Ogólna"
+      },
+      diagnosis: "Landing /oferta/ ma active_users=20 i wymaga sprawdzenia jakości ruchu.",
+      next_step: "Sprawdź message match, CTA i tracking przed oceną kampanii.",
+      blocked_claims: ["conversion rate", "ROAS"],
+      action_ids: ["act_review_ga4_tracking_quality"]
+    },
+    {
+      id: "tq_gsc_content",
+      title: "GSC: zielony ład -> /europejski-zielony-lad-co-to-takiego/",
+      domain: "gsc_seo",
+      intent: "content_refresh",
+      priority: 26,
+      risk: "low",
+      source_connectors: ["google_search_console"],
+      evidence_ids: ["ev_refresh_gsc"],
+      metric_facts: [metricFacts[3]],
+      dimensions: {
+        query: "zielony ład",
+        page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+      },
+      diagnosis: "Query zielony ład ma GSC evidence i prowadzi do istniejącej strony.",
+      next_step: "Przygotuj refresh istniejącej strony i sprawdź duplikaty w WordPress.",
+      blocked_claims: ["conversion uplift", "revenue impact"],
+      action_ids: ["act_prepare_content_refresh_queue"]
+    }
+  ],
+  evidence_ids: ["ev_refresh_ga4", "ev_refresh_gsc"],
+  action_ids: ["act_review_ga4_tracking_quality", "act_prepare_content_refresh_queue"]
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -507,6 +556,9 @@ function mockFetch() {
       if (url.endsWith("/api/marketing/brief")) {
         return Promise.resolve(Response.json(marketingBrief));
       }
+      if (url.endsWith("/api/marketing/tactical-queue")) {
+        return Promise.resolve(Response.json(tacticalQueue));
+      }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
       if (url.endsWith("/api/metrics/status")) return Promise.resolve(Response.json(metricStoreStatus));
@@ -583,6 +635,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
     expect(screen.getByText("Budżet i ryzyko wydatków")).toBeInTheDocument();
     expect(screen.getByText("Kandydaci działań API")).toBeInTheDocument();
+    expect(screen.getByText("Kolejka taktyczna WILQ")).toBeInTheDocument();
+    expect(screen.getByText("GA4: /oferta/ / google / cpc")).toBeInTheDocument();
   });
 
   it("connector status renders", async () => {
@@ -676,6 +730,8 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
+    expect(screen.getByText("Taktyki z WILQ API")).toBeInTheDocument();
+    expect(screen.getByText("GA4: /oferta/ / google / cpc")).toBeInTheDocument();
     expect(screen.getAllByText(/active_users: 20/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/delta: \+10/).length).toBeGreaterThan(0);
 

@@ -397,6 +397,47 @@ class MarketingBrief(BaseModel):
     recommendation_count: int = 0
 
 
+class TacticalQueueItem(BaseModel):
+    id: str
+    title: str
+    domain: OpportunityDomain
+    intent: Literal[
+        "content_refresh",
+        "content_create",
+        "content_merge",
+        "content_block",
+        "landing_page_quality",
+        "merchant_feed_triage",
+        "traffic_quality_review",
+    ]
+    priority: int = Field(ge=1, le=100)
+    risk: ActionRisk = ActionRisk.low
+    source_connectors: list[str] = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    dimensions: dict[str, str] = Field(default_factory=dict)
+    diagnosis: str
+    next_step: str
+    blocked_claims: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+
+    @field_validator("source_connectors", "evidence_ids")
+    @classmethod
+    def require_nonblank_items(cls, value: list[str]) -> list[str]:
+        if any(not item.strip() for item in value):
+            raise ValueError("Tactical queue trace IDs must not be blank")
+        return value
+
+
+class TacticalQueueResponse(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    language: Literal["pl-PL"] = "pl-PL"
+    strict_instruction: str
+    items: list[TacticalQueueItem] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+
+
 class CommandCenterResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     strict_instruction: str

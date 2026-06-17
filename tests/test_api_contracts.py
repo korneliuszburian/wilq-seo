@@ -18,7 +18,7 @@ from wilq.connectors.google_merchant_center.client import (
 )
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
-from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.schemas import (
     ActionMode,
@@ -148,8 +148,92 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
             summary="Ahrefs action candidate metric seed.",
         ),
     ]
+    detailed_facts_by_run = {
+        "refresh_google_search_console_action_test": [
+            VendorMetricFact(
+                name="clicks",
+                value=12,
+                dimensions={
+                    "query": "zielony ład",
+                    "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+                },
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=120,
+                dimensions={
+                    "query": "zielony ład",
+                    "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+                },
+            ),
+            VendorMetricFact(
+                name="ctr",
+                value=0.1,
+                dimensions={
+                    "query": "zielony ład",
+                    "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+                },
+            ),
+            VendorMetricFact(
+                name="average_position",
+                value=2.1,
+                dimensions={
+                    "query": "zielony ład",
+                    "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+                },
+            ),
+        ],
+        "refresh_google_analytics_4_action_test": [
+            VendorMetricFact(
+                name="active_users",
+                value=41,
+                dimensions={
+                    "landing_page": "/europejski-zielony-lad-co-to-takiego/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+            VendorMetricFact(
+                name="sessions",
+                value=54,
+                dimensions={
+                    "landing_page": "/europejski-zielony-lad-co-to-takiego/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+            VendorMetricFact(
+                name="engagement_rate",
+                value=0.12,
+                dimensions={
+                    "landing_page": "/europejski-zielony-lad-co-to-takiego/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+        ],
+        "refresh_google_merchant_center_action_test": [
+            VendorMetricFact(
+                name="issue_product_count",
+                value=3,
+                dimensions={
+                    "country": "PL",
+                    "severity": "DISAPPROVED",
+                    "resolution": "MERCHANT_ACTION",
+                },
+            ),
+            VendorMetricFact(
+                name="expiring_products",
+                value=2,
+                dimensions={"country": "PL", "reporting_context": "SHOPPING_ADS"},
+            ),
+        ],
+    }
     for run in runs:
-        metric_store().save_connector_refresh_metrics(run)
+        metric_store().save_connector_refresh_metrics(
+            run,
+            detailed_facts=detailed_facts_by_run.get(run.id),
+        )
 
 
 def test_health_endpoint() -> None:
@@ -587,6 +671,33 @@ def test_marketing_brief_exposes_metric_backed_prepare_actions(
         assert item["evidence_ids"]
         assert item["metric_facts"]
         assert item["risk"] in {"low", "medium"}
+
+
+def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    response = client.get("/api/marketing/tactical-queue")
+
+    assert response.status_code == 200
+    queue = response.json()
+    assert queue["language"] == "pl-PL"
+    assert queue["items"]
+    intents = {item["intent"] for item in queue["items"]}
+    assert "content_refresh" in intents
+    assert "landing_page_quality" in intents
+    assert "merchant_feed_triage" in intents
+    assert queue["evidence_ids"]
+    assert queue["action_ids"]
+    for item in queue["items"]:
+        assert item["dimensions"]
+        assert item["evidence_ids"]
+        assert item["source_connectors"]
+        assert item["metric_facts"]
+        assert item["blocked_claims"]
+        assert item["next_step"]
 
 
 def test_evidence_registry_exposes_connector_status_without_secret_values(
@@ -1536,6 +1647,8 @@ def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
     assert [section["id"] for section in context_brief["sections"]] == [
         section["id"] for section in brief["sections"]
     ]
+    assert context_response.json()["tactical_queue"]["language"] == "pl-PL"
+    assert "items" in context_response.json()["tactical_queue"]
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

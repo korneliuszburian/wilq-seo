@@ -167,6 +167,40 @@ export const MarketingBriefSchema = z.object({
   recommendation_count: z.number()
 });
 
+export const TacticalQueueItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  domain: z.string(),
+  intent: z.enum([
+    "content_refresh",
+    "content_create",
+    "content_merge",
+    "content_block",
+    "landing_page_quality",
+    "merchant_feed_triage",
+    "traffic_quality_review"
+  ]),
+  priority: z.number(),
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  dimensions: z.record(z.string()).optional().default({}),
+  diagnosis: z.string(),
+  next_step: z.string(),
+  blocked_claims: z.array(z.string()),
+  action_ids: z.array(z.string())
+});
+
+export const TacticalQueueResponseSchema = z.object({
+  generated_at: z.string().nullable().optional(),
+  language: z.literal("pl-PL"),
+  strict_instruction: z.string(),
+  items: z.array(TacticalQueueItemSchema),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string())
+});
+
 export const ExpertRuleSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -291,6 +325,7 @@ export const ContextPackResponseSchema = z.object({
   expert_rule_summaries: z.array(ExpertRuleSummarySchema),
   expert_capabilities: z.array(ExpertCapabilitySchema),
   marketing_brief: MarketingBriefSchema,
+  tactical_queue: TacticalQueueResponseSchema,
   strict_instruction: z.string()
 });
 
@@ -306,6 +341,8 @@ export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type MarketingBrief = z.infer<typeof MarketingBriefSchema>;
 export type MarketingBriefItem = z.infer<typeof MarketingBriefItemSchema>;
 export type MarketingBriefSection = z.infer<typeof MarketingBriefSectionSchema>;
+export type TacticalQueueItem = z.infer<typeof TacticalQueueItemSchema>;
+export type TacticalQueueResponse = z.infer<typeof TacticalQueueResponseSchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
 export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;
