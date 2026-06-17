@@ -228,12 +228,49 @@ To jest akurat ważne, bo inaczej Codex zrobi nam po czasie “skille” jako wi
 
 # Goal 001 — WILQ Marketing Operating System for Ekologus
 
-Status: planned
+Status: in progress, foundation verified; Goal 001 is not complete yet.
 Owner: Lead Architect / Codex Lead
 Primary executor: Codex Desktop/CLI
 Primary user: WILQ, marketer
 Client scope: Ekologus only
 Target repository file: `docs/goals/001-goal.md`
+
+---
+
+## Current checkpoint — 2026-06-17
+
+Canonical goal state:
+
+* `docs/goals/001-goal.md` is the only goal file to keep in the repository.
+* The duplicate numbered goal file was identical and was removed.
+* Existing repo instructions, handoff docs and source registry references point to `docs/goals/001-goal.md`.
+
+Already committed to `origin/main`:
+
+* `d300bc3 feat(skills): add WILQ operator skill contracts`
+* `4e31126 feat(evals): add Codex skill eval harness`
+
+Verified foundation already present:
+
+* WILQ FastAPI spine, dashboard shell, connector registry, action model, expert rules, knowledge compiler, local SQLite state, hooks, docs and handoff exist.
+* 12 WILQ operator skills live under `.agents/skills/wilq-*`.
+* `scripts/codex_skill_eval.sh` uses `codex exec` non-interactive mode with schema output.
+* 12/12 Goal 001 skills passed the baseline non-interactive Codex eval with `api_used=true`, `language=pl-PL`, Polish diacritics and JSON schema validation.
+* WILQ API is reachable locally; current connector summary is 12 total connectors, 9 configured and 2 missing credentials.
+
+Current implementation slice completed and verified in this checkpoint:
+
+* DuckDB-backed metric store for redacted connector refresh metric facts.
+* `/api/metrics` and `/api/metrics/status` API endpoints.
+* Typer local operator CLI exposed as `uv run wilq`.
+* Tests covering metric persistence, metric API and CLI secret redaction.
+* Python packaging now installs the project as editable through hatchling so the `wilq` console script is available through `uv run wilq`.
+
+Known external/product blockers:
+
+* Google Ads `vendor_read` reaches Google's OAuth token endpoint, but the current refresh-token tuple returns `400 invalid_grant` for `adwords`; treat this as an external OAuth/token issue.
+* Localo and social vendor-read adapters are not fully live yet.
+* Baseline Codex skill evals are still smoke-level proofs; richer evidence-ID scenarios are needed before claiming full marketing recommendation quality for every skill.
 
 ---
 
