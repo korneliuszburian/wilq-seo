@@ -14,6 +14,7 @@ from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summa
 from wilq.connectors.google_auth import GOOGLE_SERVICE_ACCOUNT_ENV_NAMES
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.vendor import VendorReadResult
+from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.schemas import (
     ActionMode,
     ActionObject,
@@ -51,6 +52,18 @@ def clear_google_service_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "GOOGLE_SEARCH_CONSOLE_SITE_URL",
         "GSC_SITE_URL",
         "GA4_PROPERTY_ID",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
+def clear_wordpress_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in (
+        "WORDPRESS_EKOLOGUS_URL",
+        "WORDPRESS_EKOLOGUS_USERNAME",
+        "WORDPRESS_EKOLOGUS_APP_PASSWORD",
+        "WORDPRESS_SKLEP_URL",
+        "WORDPRESS_SKLEP_USERNAME",
+        "WORDPRESS_SKLEP_APP_PASSWORD",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -632,6 +645,94 @@ def test_google_first_party_vendor_reads_route_through_refresh_endpoint(
     assert ga4_response.status_code == 200
     assert gsc_response.json()["metric_summary"] == {"clicks": 12, "impressions": 120}
     assert ga4_response.json()["metric_summary"] == {"active_users": 20, "sessions": 30}
+
+
+def test_wordpress_vendor_read_uses_rest_content_inventory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_wordpress_env(monkeypatch)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "ekologus.test"
+        assert request.headers["authorization"].startswith("Basic ")
+        assert request.url.params["per_page"] == "1"
+        assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt"
+        if request.url.path == "/wp-json/wp/v2/posts":
+            return httpx.Response(
+                200,
+                headers={"X-WP-Total": "12"},
+                json=[{"id": 1, "status": "publish", "modified_gmt": "2026-06-15T10:00:00"}],
+            )
+        if request.url.path == "/wp-json/wp/v2/pages":
+            return httpx.Response(
+                200,
+                headers={"X-WP-Total": "4"},
+                json=[{"id": 2, "status": "publish", "modified_gmt": "2026-06-16T10:00:00"}],
+            )
+        return httpx.Response(404)
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary == {
+        "api": "wordpress_rest_content_inventory",
+        "connector_id": "wordpress_ekologus",
+        "site_kind": "primary",
+        "content_object_count": 16,
+        "posts_total": 12,
+        "pages_total": 4,
+        "latest_modified_gmt": "2026-06-16T10:00:00",
+        "latest_post_modified_gmt": "2026-06-15T10:00:00",
+        "latest_page_modified_gmt": "2026-06-16T10:00:00",
+    }
+
+
+def test_wordpress_vendor_read_routes_through_refresh_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "wordpress_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_wordpress_env(monkeypatch)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_wordpress_content_inventory",
+        lambda connector_id, request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="WordPress inventory completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"content_object_count": 16, "posts_total": 12, "pages_total": 4},
+        ),
+    )
+
+    response = client.post(
+        "/api/connectors/wordpress_ekologus/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+
+    assert response.status_code == 200
+    run = response.json()
+    assert run["status"] == "completed"
+    assert run["metric_summary"] == {
+        "content_object_count": 16,
+        "posts_total": 12,
+        "pages_total": 4,
+    }
 
 
 def test_expert_rules_are_loaded_from_structured_files() -> None:

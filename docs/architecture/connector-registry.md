@@ -26,6 +26,7 @@ Connector refreshes are durable API runs:
 - Google Ads `vendor_read` uses OAuth refresh-token auth and `googleAds:searchStream` to persist only aggregate campaign metrics.
 - Google Search Console `vendor_read` uses Search Analytics to persist aggregate site clicks, impressions, CTR and position.
 - GA4 `vendor_read` uses Analytics Data API `runReport` to persist aggregate behavior metrics.
+- WordPress `vendor_read` uses the REST API for `ekologus.pl` and `sklep.ekologus.pl` content inventory, persisting only aggregate post/page counts and latest modification timestamps.
 - Every refresh run records evidence IDs, checked credential names, missing credential names, external-call status, vendor-data status, metric summary, summary and errors.
 - Refresh runs must not expose secret values, access-pack paths or raw credential files.
 
