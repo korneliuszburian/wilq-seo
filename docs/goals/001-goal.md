@@ -266,12 +266,54 @@ Current implementation slice completed and verified in this checkpoint:
 * Tests covering metric persistence, metric API and CLI secret redaction.
 * Python packaging now installs the project as editable through hatchling so the `wilq` console script is available through `uv run wilq`.
 * APScheduler-backed local job definitions, manual job run API/CLI, and redacted persisted job-run state for connector refresh orchestration.
+* Playwright real-browser dashboard/API smoke wired into `scripts/verify.sh` using system Google Chrome.
 
 Known external/product blockers:
 
 * Google Ads `vendor_read` reaches Google's OAuth token endpoint, but the current refresh-token tuple returns `400 invalid_grant` for `adwords`; treat this as an external OAuth/token issue.
 * Localo and social vendor-read adapters are not fully live yet.
 * Baseline Codex skill evals are still smoke-level proofs; richer evidence-ID scenarios are needed before claiming full marketing recommendation quality for every skill.
+* The dashboard is still an API-backed operating shell, not a marketer-useful final dashboard. It proves routes, contracts, evidence/action rendering and connector honesty, but most views still need real metric cards, diagnostic tables and decision queues before WILQ can use them for daily marketing work.
+
+## Continuation ledger for context loss
+
+Use this section first after conversation compaction, resume, or a fresh Codex run. The current worktree is always authoritative; verify it before trusting this ledger.
+
+Maintenance rule:
+
+* Keep exactly one active goal file while Goal 001 is open: `docs/goals/001-goal.md`.
+* When a task is completed and committed, move it into the completed foundation list or checkpoint summary.
+* Do not leave stale "next" tasks that were already shipped; replace them with the next real blocker.
+* Keep unfinished blockers visible until verified evidence proves them complete.
+* Every new task should include the required product outcome, the API/dashboard/skill surfaces affected, expected proof commands and the known blocker state.
+* Write task descriptions so a future agent can resume after context loss without reading old chat logs.
+
+Completed foundation that should not be reimplemented:
+
+* Repository, private GitHub setup, root instructions, source registry, architecture docs, quality scripts and handoff exist.
+* WILQ API spine, typed schemas, connector registry, action model, expert rules, opportunities, evidence registry, knowledge compiler and local state exist.
+* Access-pack/bootstrap handling and secret-redaction rules exist; `.env` remains local and git-ignored.
+* DuckDB metric store, Typer CLI and APScheduler-backed manual job orchestration exist and are covered by tests.
+* 12 WILQ operator skills exist under `.agents/skills`; baseline non-interactive Codex evals passed as smoke-level proofs.
+* Dashboard routes exist and are API-backed through TanStack Query/Zod, but they are not yet marketer-useful final surfaces.
+* Playwright real-browser dashboard/API smoke exists to prove browser route/API/CORS health and must stay in `scripts/verify.sh`.
+
+Unfinished blockers to keep carrying forward:
+
+1. Google Ads OAuth: current refresh-token tuple returns `400 invalid_grant` for `adwords`; get a fresh scoped token before claiming live Ads metrics.
+2. Ads Doctor usefulness: replace generic readiness cards with live Google Ads metrics, diagnostic tables, evidence IDs, action candidates and Polish marketer labels.
+3. Dashboard usefulness across routes: every operating route needs real metric cards, diagnostic queues, freshness, evidence IDs and explicit blockers when data is unavailable.
+4. Localo and social vendor reads: current adapters are not fully live; keep blockers honest instead of pretending publishing/local metrics exist.
+5. Skill eval depth: baseline skill evals prove API use, Polish output and schema compliance, but not rich evidence-ID recommendation quality for every skill.
+6. Opportunity quality: many opportunities still come from connector readiness/refresh evidence rather than vendor performance data.
+7. Runtime hardening: API is local-only but has no production authentication; do not expose beyond localhost/trusted tunnel.
+
+Next implementation queue:
+
+1. Finish and commit the Playwright/CORS/dashboard-smoke slice.
+2. Create or update Goal 002 only after Goal 001 foundation is committed cleanly. Goal 002 should focus on Google Ads Connector and Ads Doctor usefulness.
+3. In Goal 002, start with Google Ads OAuth refresh, then Ads Doctor live metrics and Polish dashboard labels.
+4. After Ads Doctor is useful, promote the same pattern to GSC/SEO, GA4, Merchant, Ahrefs, Localo, content and social surfaces.
 
 ---
 
@@ -1123,6 +1165,17 @@ Dashboard rules:
 * Must not include fake “final” metrics.
 * Must not hardcode marketing insight text disconnected from API.
 
+Dashboard usefulness acceptance:
+
+* A route is not marketer-useful just because it renders.
+* Each final operating route must show real API-backed metrics that help a Polish marketer decide what to do next.
+* Ads views must show spend, waste, search terms, recommendation, quality, impression-share, scaling, custom-segment and Demand Gen readiness diagnostics when the connectors can provide them.
+* SEO/GSC views must show query/page clicks, impressions, CTR, average position, decay, near-top opportunities and cannibalization evidence.
+* GA4 views must show engagement, sessions, landing-page quality, source/medium quality and conversion/event availability.
+* Merchant views must show product counts, disapprovals, expiring products, issue counts, feed/data-source state and product-ad readiness.
+* Content, social and Localo views must show inventory, blockers, evidence IDs, freshness and action candidates instead of generic route filler.
+* If live metrics are unavailable, the view must say exactly which connector, credential, OAuth scope, API enablement or vendor-read adapter is blocking them.
+
 Initial Command Center sections:
 
 ```txt
@@ -1577,6 +1630,7 @@ Stop only when all are true:
 * Expert rules foundation exists as structured files.
 * Opportunity engine foundation exists.
 * Dashboard skeleton renders planned routes or has a runnable frontend skeleton.
+* Dashboard limitations are documented honestly; a rendered shell must not be described as a final marketer-useful dashboard until real metric views and diagnostic queues exist.
 * Codex hooks exist.
 * Skills folders exist.
 * `wilq-daily-command` is wired to WILQ API if API can run.

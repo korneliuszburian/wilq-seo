@@ -1,7 +1,8 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { App } from "./App";
+import { App, createWilqQueryClient, createWilqRouter } from "./App";
 
 const connectors = [
   {
@@ -191,18 +192,37 @@ function mockFetch() {
 }
 
 describe("WILQ dashboard", () => {
+  let testQueryClient: QueryClient;
+
   beforeEach(() => {
     mockFetch();
+    testQueryClient = createWilqQueryClient({
+      defaultOptions: {
+        queries: {
+          gcTime: Infinity,
+          retry: false
+        }
+      }
+    });
   });
 
   afterEach(() => {
     cleanup();
+    testQueryClient.clear();
     vi.unstubAllGlobals();
   });
 
+  function renderApp(path: string) {
+    return render(
+      <App
+        appRouter={createWilqRouter({ initialPath: path, defaultPendingMinMs: 0 })}
+        client={testQueryClient}
+      />
+    );
+  }
+
   it("command center renders", async () => {
-    window.history.pushState({}, "", "/command-center");
-    render(<App />);
+    renderApp("/command-center");
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument()
     );
@@ -210,23 +230,20 @@ describe("WILQ dashboard", () => {
   });
 
   it("connector status renders", async () => {
-    window.history.pushState({}, "", "/command-center");
-    render(<App />);
+    renderApp("/command-center");
     await waitFor(() => expect(screen.getByText("Google Ads")).toBeInTheDocument());
     expect(screen.getByText("GOOGLE_ADS_DEVELOPER_TOKEN")).toBeInTheDocument();
   });
 
   it("opportunities route renders", async () => {
-    window.history.pushState({}, "", "/opportunities");
-    render(<App />);
+    renderApp("/opportunities");
     await waitFor(() =>
       expect(screen.getByText("Google Ads diagnostics blocked until credentials are configured")).toBeInTheDocument()
     );
   });
 
   it("action detail route renders", async () => {
-    window.history.pushState({}, "", "/actions/act_1");
-    render(<App />);
+    renderApp("/actions/act_1");
     await waitFor(() =>
       expect(
         screen.getByRole("heading", { name: "Configure Google Ads local .env" })
@@ -235,30 +252,26 @@ describe("WILQ dashboard", () => {
   });
 
   it("missing connector state renders", async () => {
-    window.history.pushState({}, "", "/ads-doctor");
-    render(<App />);
+    renderApp("/ads-doctor");
     await waitFor(() => expect(screen.getAllByText("Missing credentials").length).toBeGreaterThan(0));
     expect(screen.getByText("Evidence Registry")).toBeInTheDocument();
     expect(screen.getByText("Connector Refresh Runs")).toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {
-    window.history.pushState({}, "", "/ads-doctor/search-terms");
-    render(<App />);
+    renderApp("/ads-doctor/search-terms");
     await waitFor(() => expect(screen.getByText("Expert Rules")).toBeInTheDocument());
     expect(screen.getByText("Search term analysis")).toBeInTheDocument();
   });
 
   it("workflow route renders persisted workflow runs", async () => {
-    window.history.pushState({}, "", "/workflows");
-    render(<App />);
+    renderApp("/workflows");
     await waitFor(() => expect(screen.getByText("Workflow Runs")).toBeInTheDocument());
     expect(screen.getByText("run_daily_command_test")).toBeInTheDocument();
   });
 
   it("knowledge route renders compiled cards and playbooks", async () => {
-    window.history.pushState({}, "", "/knowledge");
-    render(<App />);
+    renderApp("/knowledge");
     await waitFor(() => expect(screen.getByText("Knowledge Cards")).toBeInTheDocument());
     expect(screen.getAllByText("Google Ads search diagnostics").length).toBeGreaterThan(0);
     expect(screen.getByText("Machine-Readable Playbooks")).toBeInTheDocument();

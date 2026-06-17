@@ -29,6 +29,7 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Connector refresh APIs create durable `status_probe` and read-only `vendor_read` runs with redacted evidence IDs and no invented vendor metrics.
 - Connector refresh metric summaries are persisted as redacted facts in a local DuckDB metric store, exposed through `/api/metrics/status` and `/api/metrics`.
 - Local Typer CLI entrypoint `uv run wilq` exposes runtime status, connector status/refresh, metric store status/list and job orchestration commands without printing secret values. The project is installed as an editable hatchling package so the console script is available through `uv run`.
+- Playwright real-browser e2e smoke runs the dashboard against a temporary WILQ API and Vite server through `pnpm --filter @wilq/dashboard test:e2e`; `scripts/verify.sh` includes this before the dashboard production build.
 - Google Ads, Google Search Console, GA4, Google Merchant Center, Ahrefs and both WordPress sites have first read-only `vendor_read` adapters that persist aggregate metrics/inventory only. Google Sheets has a read adapter but is disabled by current product scope.
 - Opportunities are now derived from connector readiness evidence plus playbook/expert-rule mappings, not fixed demo opportunity rows.
 - Workflow, model runtime, credential runtime, MCP, quality, security and source-registry docs exist.
@@ -57,6 +58,7 @@ uv run wilq jobs run connector_status_probe_all --reason "operator smoke"
 uv run pytest tests/test_jobs_scheduler.py tests/test_metric_store_and_cli.py -q
 uv run ruff check wilq/jobs wilq/storage/local_state.py wilq/cli.py apps/api/wilq_api/main.py tests/test_jobs_scheduler.py
 uv run mypy wilq/jobs wilq/storage/local_state.py wilq/cli.py apps/api/wilq_api/main.py
+pnpm --filter @wilq/dashboard test:e2e
 uv run --extra dev ruff check .
 uv run --extra dev mypy .
 pnpm install
@@ -84,12 +86,13 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - `scripts/quality.sh`: passed.
 - `scripts/security.sh`: passed.
 - `scripts/verify.sh`: passed.
-- Backend tests: 45 passed.
+- Backend tests: 48 passed.
 - Metric store and CLI tests: 3 passed.
 - Job scheduler/API/CLI tests: 2 passed.
 - Narrow ruff and mypy checks for metric store, CLI, connector refresh and API surfaces passed.
 - Narrow ruff and mypy checks for job scheduler, local state, CLI and API surfaces passed.
 - Dashboard tests: 8 passed.
+- Dashboard Playwright e2e smoke: 3 passed.
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
 - Paid Ahrefs live `vendor_read` smoke passed on 2026-06-17: report date `2026-06-16`, `domain_rating=24.0`, `ahrefs_rank=6433882`, `target_source=repo_env`; token and target values were not returned.
@@ -110,6 +113,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
 - Goal 001 is not complete because Localo/social vendor-read connector adapters are still blocked/not implemented, Google Ads OAuth still needs a fresh `adwords` refresh token, and opportunity generation mostly uses connector-status/refresh evidence rather than vendor performance metrics.
+- Dashboard routes are still foundation surfaces. They are not yet enough for a marketer because most views lack live metric cards, diagnostic tables and prioritized decision queues.
 - Live Google Ads `vendor_read` reaches Google's OAuth token endpoint from repo-local `.env`, but the current refresh-token tuple returns `400 invalid_grant`; generate a fresh `adwords`-scoped refresh token before expecting campaign metrics.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 - Baseline Codex skill evals are smoke-level proofs. Several skills correctly return `blocked=true` because current smoke scripts expose readiness/counts rather than concrete evidence IDs for final marketing recommendations. This is expected and safer than inventing metrics.
@@ -146,7 +150,9 @@ Quality is green for the current foundation. Security is green with Semgrep skip
 
 ## Dashboard status
 
-Dashboard is React/TypeScript with TanStack Query and Zod runtime parsing. It builds and tests successfully. It uses seed API state labeled as non-real, not final Ekologus metrics.
+Dashboard is React/TypeScript with TanStack Query and Zod runtime parsing. It builds and tests successfully. It uses API-backed state and labels seed/non-real state honestly.
+
+Important limitation: the current dashboard is still an operating shell, not a marketer-useful final dashboard. It proves API contracts, connector/evidence/action rendering, CORS and browser route health. It does not yet provide enough real diagnostic metric views for WILQ's daily work. Goal 002 should turn Ads Doctor into the first genuinely useful route with live Google Ads metrics, Polish labels, diagnostic tables, evidence IDs, action candidates and clear blockers when OAuth/vendor reads fail.
 
 ## API status
 
@@ -162,4 +168,4 @@ FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs,
 
 Goal 002 — Google Ads Connector and Ads Doctor
 
-Before Goal 002, expand only the skills whose underlying WILQ API endpoints are live enough to validate. Next strongest move is Google Ads OAuth refresh plus Ads Doctor live vendor metrics.
+Before Goal 002, expand only the skills whose underlying WILQ API endpoints are live enough to validate. Next strongest move is Google Ads OAuth refresh plus Ads Doctor live vendor metrics. Goal 002 should make the first dashboard route genuinely useful for a Polish marketer, not just routed and API-backed.

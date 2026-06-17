@@ -65,10 +65,25 @@ from wilq.storage.metric_store import metric_store
 from wilq.workflows.models import WorkflowRun, WorkflowRunCreateRequest
 from wilq.workflows.registry import list_workflows
 
+DEFAULT_CORS_ORIGINS = (
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5373",
+    "http://127.0.0.1:5373",
+)
+
+
+def cors_origins() -> list[str]:
+    configured = os.getenv("WILQ_CORS_ORIGINS")
+    if not configured:
+        return list(DEFAULT_CORS_ORIGINS)
+    return [origin.strip() for origin in configured.split(",") if origin.strip()]
+
+
 app = FastAPI(title="WILQ Marketing API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=cors_origins(),
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

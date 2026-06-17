@@ -12,6 +12,9 @@ from wilq.cli import app as cli_app
 
 client = TestClient(app)
 
+FAKE_JOBS_API_SECRET = "sk-jobs-api-redaction-test"  # pragma: allowlist secret
+FAKE_JOBS_CLI_SECRET = "sk-jobs-cli-redaction-test"  # pragma: allowlist secret
+
 
 def test_jobs_api_runs_connector_status_probe_without_secret_values(
     monkeypatch: pytest.MonkeyPatch,
@@ -20,7 +23,7 @@ def test_jobs_api_runs_connector_status_probe_without_secret_values(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "state.sqlite3"))
     monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
-    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", "jobs_api_secretvalue1234567890")
+    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", FAKE_JOBS_API_SECRET)
 
     status_response = client.get("/api/jobs/status")
     assert status_response.status_code == 200
@@ -44,7 +47,7 @@ def test_jobs_api_runs_connector_status_probe_without_secret_values(
     assert run["status"] == "completed"
     assert len(run["connector_refresh_run_ids"]) >= 10
     assert "[REDACTED]" not in run["connector_refresh_run_ids"]
-    assert "jobs_api_secretvalue1234567890" not in run_response.text
+    assert FAKE_JOBS_API_SECRET not in run_response.text
 
     runs_response = client.get("/api/job-runs")
     assert runs_response.status_code == 200
@@ -62,7 +65,7 @@ def test_wilq_cli_jobs_run_persists_redacted_job_state(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "state.sqlite3"))
     monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
-    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", "jobs_cli_secretvalue1234567890")
+    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", FAKE_JOBS_CLI_SECRET)
     runner = CliRunner()
 
     status_result = runner.invoke(cli_app, ["jobs", "status"])
@@ -79,7 +82,7 @@ def test_wilq_cli_jobs_run_persists_redacted_job_state(
     assert run["job_id"] == "connector_status_probe_all"
     assert run["status"] == "completed"
     assert "[REDACTED]" not in run["connector_refresh_run_ids"]
-    assert "jobs_cli_secretvalue1234567890" not in run_result.stdout
+    assert FAKE_JOBS_CLI_SECRET not in run_result.stdout
 
     runs_result = runner.invoke(cli_app, ["jobs", "runs"])
     assert runs_result.exit_code == 0

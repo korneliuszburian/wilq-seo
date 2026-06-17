@@ -81,14 +81,15 @@ if ! curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null 2>&1; then
   done
 fi
 curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null
-python3 .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base "$skill_api_base" >/dev/null
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base "$skill_api_base" >/dev/null
 for skill_script in .agents/skills/wilq-*/scripts/smoke_skill_contract.py; do
-  python3 "$skill_script" --api-base "$skill_api_base" >/dev/null
+  uv run python "$skill_script" --api-base "$skill_api_base" >/dev/null
 done
 echo "Skill API smoke passed"
 
 if [ -d apps/dashboard/node_modules ]; then
+  pnpm --filter @wilq/dashboard test:e2e
   pnpm --filter @wilq/dashboard build
 else
-  echo "Skipping dashboard build: node_modules missing. Run pnpm install."
+  echo "Skipping dashboard e2e/build: node_modules missing. Run pnpm install."
 fi

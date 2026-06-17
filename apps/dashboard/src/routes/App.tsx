@@ -1,5 +1,11 @@
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+  type QueryClientConfig
+} from "@tanstack/react-query";
+import {
+  createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
@@ -33,7 +39,11 @@ import {
 import { StatusBadge } from "../components/StatusBadge";
 import { Shell } from "../components/Shell";
 
-const queryClient = new QueryClient();
+export function createWilqQueryClient(config?: QueryClientConfig): QueryClient {
+  return new QueryClient(config);
+}
+
+export const queryClient = createWilqQueryClient();
 
 const operatingRoutes = [
   "/ads-doctor",
@@ -701,7 +711,23 @@ const routeTree = rootRoute.addChildren([
   ...generatedRoutes
 ]);
 
-export const router = createRouter({ routeTree });
+export function createWilqRouter({
+  initialPath,
+  defaultPendingMinMs
+}: {
+  initialPath?: string;
+  defaultPendingMinMs?: number;
+} = {}) {
+  return createRouter({
+    routeTree,
+    ...(initialPath
+      ? { history: createMemoryHistory({ initialEntries: [initialPath] }) }
+      : {}),
+    ...(defaultPendingMinMs === undefined ? {} : { defaultPendingMinMs })
+  });
+}
+
+export const router = createWilqRouter();
 
 declare module "@tanstack/react-router" {
   interface Register {
@@ -709,10 +735,16 @@ declare module "@tanstack/react-router" {
   }
 }
 
-export function App() {
+export function App({
+  client = queryClient,
+  appRouter = router
+}: {
+  client?: QueryClient;
+  appRouter?: typeof router;
+}) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+    <QueryClientProvider client={client}>
+      <RouterProvider router={appRouter} />
     </QueryClientProvider>
   );
 }

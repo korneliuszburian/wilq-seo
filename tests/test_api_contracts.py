@@ -94,6 +94,19 @@ def test_health_endpoint() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_local_dashboard_e2e_origin_is_allowed_by_cors() -> None:
+    response = client.options(
+        "/api/health",
+        headers={
+            "Origin": "http://127.0.0.1:5373",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5373"
+
+
 def test_root_endpoint_points_to_api_entrypoints() -> None:
     response = client.get("/")
     assert response.status_code == 200
