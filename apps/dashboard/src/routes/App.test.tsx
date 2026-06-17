@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -484,6 +484,19 @@ function mockFetch() {
       if (url.endsWith("/api/metrics/status")) return Promise.resolve(Response.json(metricStoreStatus));
       if (url.endsWith("/api/opportunities")) return Promise.resolve(Response.json(opportunities));
       if (url.endsWith("/api/actions")) return Promise.resolve(Response.json(actions));
+      if (url.includes("/api/actions/") && url.endsWith("/validate")) {
+        const actionId = url.split("/api/actions/")[1]?.replace("/validate", "") ?? "unknown";
+        return Promise.resolve(
+          Response.json({
+            action_id: actionId,
+            valid: true,
+            status: "valid",
+            errors: [],
+            warnings: [],
+            checked_at: "2026-06-17T10:00:00Z"
+          })
+        );
+      }
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
       if (url.endsWith("/api/connectors/refresh-runs")) {
         return Promise.resolve(Response.json(connectorRefreshRuns));
@@ -615,6 +628,10 @@ describe("WILQ dashboard", () => {
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
     ).toBeInTheDocument();
     expect(screen.getByText(/Apply zablokowany/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
+    await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
+    expect(screen.getByText("valid")).toBeInTheDocument();
+    expect(screen.getByText("Błędy: brak")).toBeInTheDocument();
     expect(
       screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" })[0]
     ).toHaveAttribute("href", "/actions/act_review_merchant_feed_issues");

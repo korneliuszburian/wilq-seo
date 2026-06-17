@@ -109,6 +109,15 @@ export const ActionObjectSchema = z.object({
   audit_events: z.array(AuditEventSchema)
 });
 
+export const ActionValidationResultSchema = z.object({
+  action_id: z.string(),
+  valid: z.boolean(),
+  status: z.enum(["valid", "invalid"]),
+  errors: z.array(z.string()),
+  warnings: z.array(z.string()),
+  checked_at: z.string()
+});
+
 export const ConnectorSummarySchema = z.object({
   total: z.number(),
   configured: z.number(),
@@ -284,6 +293,7 @@ export type Evidence = z.infer<typeof EvidenceSchema>;
 export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
+export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type MarketingBrief = z.infer<typeof MarketingBriefSchema>;
 export type MarketingBriefItem = z.infer<typeof MarketingBriefItemSchema>;

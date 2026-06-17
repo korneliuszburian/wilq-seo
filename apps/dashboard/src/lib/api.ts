@@ -1,5 +1,6 @@
 import {
   ActionObjectSchema,
+  ActionValidationResultSchema,
   CommandCenterResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
@@ -14,6 +15,7 @@ import {
   WorkflowRunSchema,
   WorkflowSchema,
   type ActionObject,
+  type ActionValidationResult,
   type CommandCenterResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
@@ -35,6 +37,14 @@ const API_BASE = import.meta.env.VITE_WILQ_API_BASE_URL ?? "http://127.0.0.1:800
 
 async function apiGet<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`);
+  if (!response.ok) {
+    throw new Error(`API request failed: ${path}`);
+  }
+  return schema.parse(await response.json());
+}
+
+async function apiPost<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, { method: "POST" });
   if (!response.ok) {
     throw new Error(`API request failed: ${path}`);
   }
@@ -73,6 +83,10 @@ export function getActions(): Promise<ActionObject[]> {
   return apiGet("/api/actions", z.array(ActionObjectSchema));
 }
 
+export function validateAction(actionId: string): Promise<ActionValidationResult> {
+  return apiPost(`/api/actions/${actionId}/validate`, ActionValidationResultSchema);
+}
+
 export function getEvidence(): Promise<Evidence[]> {
   return apiGet("/api/evidence", z.array(EvidenceSchema));
 }
@@ -99,6 +113,7 @@ export function getKnowledgePlaybooks(): Promise<MarketingPlaybook[]> {
 
 export type {
   ActionObject,
+  ActionValidationResult,
   CommandCenterResponse,
   ConnectorRefreshRun,
   ConnectorStatus,

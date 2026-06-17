@@ -4306,3 +4306,95 @@ Remaining next work:
    permission blockers are exposed as useful route evidence.
 4. Add Localo route-specific eval after Localo MCP/readiness exposes useful
    local evidence instead of only OAuth/missing-token blockers.
+
+---
+
+## 38. Dashboard ActionObject validation flow - 2026-06-17
+
+Implemented the second remaining item from section 37.
+
+What changed:
+
+* Shared schemas now include `ActionValidationResultSchema`.
+* Dashboard API client now exposes:
+  * `validateAction(actionId)`,
+  * typed parsing of `POST /api/actions/{action_id}/validate`.
+* `ActionObject focus` cards now show:
+  * a `Waliduj` button,
+  * a Polish explanation that validation does not apply/write,
+  * pending state,
+  * validation result,
+  * validation errors,
+  * validation warnings.
+* `/actions/{action_id}` detail now uses the same validation controls as
+  workflow route cards.
+* Successful validation invalidates:
+  * `actions`,
+  * `marketing-brief`.
+* No apply button was added. Apply remains blocked unless the action model and
+  explicit operator consent support it.
+
+Dashboard/browser proof:
+
+* `/merchant` now supports the full safe preview loop:
+  * evidence-backed MarketingBrief item,
+  * `ActionObject focus`,
+  * payload preview,
+  * prepare-only apply blocker,
+  * click `Waliduj`,
+  * display `Wynik: valid`.
+* Playwright now performs the validation click against the live WILQ API.
+
+Verification:
+
+```bash
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Shared schema typecheck: passed.
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Dashboard unit route tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+  * Merchant e2e clicks `Waliduj` and sees `Wynik: valid`.
+* `scripts/quality.sh`: passed.
+  * Python tests: `67 passed`.
+  * Dashboard Vitest: `12 passed`.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports:
+  * Python tests: `67 passed`.
+  * dashboard Vitest: `12 passed`.
+  * security: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+* No test servers remained on `8765`, `8875` or `5373`.
+
+Remaining next work:
+
+1. Extend `MetricFact` and dashboard route panels with dimensions, freshness
+   windows and period deltas so the marketer sees concrete change, not only
+   route-level counts.
+2. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+3. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+4. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.

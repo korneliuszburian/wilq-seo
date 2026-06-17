@@ -79,6 +79,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByText(/Apply zablokowany/)).toBeVisible();
     await expect(page.getByText(/"action_type": "merchant_feed_issue"/)).toBeVisible();
+    await page.getByRole("button", { name: "Waliduj" }).first().click();
+    await expect(page.getByText("Wynik:")).toBeVisible();
+    await expect(page.getByText("valid").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Safety Gate" })).toBeVisible();
 
     const evidenceLink = page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first();

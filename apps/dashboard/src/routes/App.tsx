@@ -1,7 +1,9 @@
 import {
   QueryClient,
   QueryClientProvider,
+  useMutation,
   useQuery,
+  useQueryClient,
   type QueryClientConfig
 } from "@tanstack/react-query";
 import {
@@ -33,6 +35,7 @@ import {
 
 import {
   ActionObject,
+  ActionValidationResult,
   ConnectorRefreshRun,
   ConnectorStatus,
   Evidence,
@@ -49,6 +52,7 @@ import {
   getMetricFacts,
   getMetricStoreStatus,
   getOpportunities,
+  validateAction,
   getWorkflowRuns,
   getWorkflows,
   KnowledgeCard,
@@ -580,6 +584,7 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
               <LinkedTraceLine label="Evidence" values={action.evidence_ids} kind="evidence" />
             </div>
             {action.metrics.length > 0 ? <MetricFactChips facts={action.metrics.slice(0, 5)} /> : null}
+            <ActionValidationControls action={action} />
             <div className="mt-3">
               <div className="mb-1 text-xs font-semibold uppercase tracking-normal text-slate-500">
                 Payload preview
@@ -592,6 +597,75 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
         ))}
       </div>
     </section>
+  );
+}
+
+function ActionValidationControls({ action }: { action: ActionObject }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () => validateAction(action.id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+  const validation = mutation.data;
+
+  return (
+    <div className="mt-3 rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-600">
+            Walidacja ActionObject
+          </div>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            Walidacja sprawdza payload, connector, evidence IDs i tryb działania. Nie wykonuje
+            apply.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => mutation.mutate()}
+          disabled={mutation.isPending}
+          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {mutation.isPending ? (
+            <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
+          ) : (
+            <CheckCircle2 aria-hidden="true" size={15} />
+          )}
+          {mutation.isPending ? "Waliduję" : "Waliduj"}
+        </button>
+      </div>
+      <ActionValidationResultPanel
+        validation={validation}
+        error={mutation.error instanceof Error ? mutation.error.message : null}
+      />
+    </div>
+  );
+}
+
+function ActionValidationResultPanel({
+  validation,
+  error
+}: {
+  validation?: ActionValidationResult;
+  error: string | null;
+}) {
+  if (error) {
+    return <div className="mt-3 text-xs leading-5 text-risk">Błąd walidacji: {error}</div>;
+  }
+  if (!validation) {
+    return null;
+  }
+  return (
+    <div className="mt-3 grid gap-2 text-xs text-slate-700">
+      <div>
+        Wynik: <span className="font-semibold">{validation.valid ? "valid" : "invalid"}</span>
+      </div>
+      <TraceLine label="Błędy" values={validation.errors} empty="brak" />
+      <TraceLine label="Ostrzeżenia" values={validation.warnings} empty="brak" />
+    </div>
   );
 }
 
@@ -1364,6 +1438,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
         <div className="mt-4 text-xs text-slate-600">
           <LinkedTraceLine label="Evidence" values={action.evidence_ids} kind="evidence" />
         </div>
+        <ActionValidationControls action={action} />
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Payload Preview" />
