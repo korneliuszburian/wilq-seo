@@ -1,0 +1,77 @@
+[
+  {
+    "skill": "wilq-daily-command",
+    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus: status connectorów, najważniejsze opportunity/action IDs, blokery i jeden najbezpieczniejszy następny krok.",
+    "expected_connectors": [
+      "google_ads",
+      "google_search_console",
+      "google_analytics_4",
+      "google_merchant_center",
+      "ahrefs",
+      "localo",
+      "wordpress_ekologus",
+      "wordpress_sklep"
+    ]
+  },
+  {
+    "skill": "wilq-ads-doctor",
+    "task_pl": "Sprawdź gotowość Google Ads i powiedz, czy można wiarygodnie diagnozować wasted spend, search terms i negative keywords bez wymyślania metryk.",
+    "expected_connectors": ["google_ads"]
+  },
+  {
+    "skill": "wilq-gsc-content-doctor",
+    "task_pl": "Na podstawie dostępnego GSC evidence wskaż jedną bezpieczną diagnozę SEO/content i co marketer ma zrobić dalej.",
+    "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"]
+  },
+  {
+    "skill": "wilq-ahrefs-gap-finder",
+    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. Jeżeli nie, zwróć uczciwy blocker.",
+    "expected_connectors": ["ahrefs"]
+  },
+  {
+    "skill": "wilq-localo-operator",
+    "task_pl": "Oceń gotowość workflow Localo/local visibility i nie twierdź, że masz metryki Localo, jeżeli WILQ API ich nie zwraca.",
+    "expected_connectors": ["localo"]
+  },
+  {
+    "skill": "wilq-content-strategist",
+    "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników.",
+    "expected_connectors": [
+      "google_search_console",
+      "google_analytics_4",
+      "ahrefs",
+      "wordpress_ekologus",
+      "wordpress_sklep"
+    ]
+  },
+  {
+    "skill": "wilq-social-publisher",
+    "task_pl": "Przygotuj review-safe kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",
+    "expected_connectors": ["linkedin", "facebook"]
+  },
+  {
+    "skill": "wilq-campaign-builder",
+    "task_pl": "Oceń, czy można przygotować kandydat kampanii lub payload preview. Nie proponuj apply bez validated ActionObject.",
+    "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"]
+  },
+  {
+    "skill": "wilq-custom-segments",
+    "task_pl": "Sprawdź, czy można zaproponować custom segment candidates z realnych source terms i evidence. Nie wymyślaj audience terms.",
+    "expected_connectors": ["google_ads", "google_search_console"]
+  },
+  {
+    "skill": "wilq-demand-gen-operator",
+    "task_pl": "Oceń Demand Gen readiness i asset/traffic-quality blockers tylko z WILQ evidence oraz action validation gates.",
+    "expected_connectors": ["google_ads", "google_analytics_4", "google_merchant_center"]
+  },
+  {
+    "skill": "wilq-ga4-analyst",
+    "task_pl": "Zrób krótką diagnozę GA4 behavior/conversion readiness z evidence IDs i wskaż, co jest blockerem albo następnym krokiem.",
+    "expected_connectors": ["google_analytics_4"]
+  },
+  {
+    "skill": "wilq-merchant-feed-operator",
+    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczny kandydat działania bez zmiany danych produktu.",
+    "expected_connectors": ["google_merchant_center"]
+  }
+]

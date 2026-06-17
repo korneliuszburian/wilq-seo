@@ -2,6 +2,8 @@
 
 WILQ Marketing Operating System connects one canonical API to a dashboard, Codex runtime, connector registry, expert rules, workflows, knowledge cards, opportunities, and action objects.
 
+Product inspiration: WILQ should feel like an AI operating system for Ads/SEO/local/content work, with BDOS.ai as a strong Google Ads operating-system reference point. The implementation rule is stricter than a chat-first ads assistant: WILQ decisions must come from WILQ API evidence, typed action contracts, validation and audit, not from model memory or tool prose.
+
 ```txt
 Dashboard + future Codex skills + hooks
   -> WILQ API

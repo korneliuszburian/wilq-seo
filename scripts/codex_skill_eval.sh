@@ -1,0 +1,268 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+api_base="${WILQ_API_BASE:-http://127.0.0.1:8000}"
+cases_file="docs/evals/cases/wilq-skill-eval-cases.json"
+schema_file="docs/evals/schemas/wilq-skill-eval-result.schema.json"
+requested_skill=""
+sandbox="${CODEX_SKILL_EVAL_SANDBOX:-workspace-write}"
+ephemeral="${CODEX_SKILL_EVAL_EPHEMERAL:-1}"
+out_root="${CODEX_SKILL_EVAL_OUT:-.local-lab/evals/codex-skill/$(date -u +%Y%m%dT%H%M%SZ)}"
+timeout_s="${CODEX_SKILL_EVAL_TIMEOUT:-300}"
+network_access="${CODEX_SKILL_EVAL_NETWORK_ACCESS:-true}"
+ignore_user_config="${CODEX_SKILL_EVAL_IGNORE_USER_CONFIG:-0}"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/codex_skill_eval.sh --all [--api-base URL]
+  scripts/codex_skill_eval.sh --skill wilq-daily-command [--api-base URL]
+
+Environment:
+  WILQ_API_BASE                 Default API base URL.
+  CODEX_SKILL_EVAL_SANDBOX      Codex sandbox, default workspace-write.
+  CODEX_SKILL_EVAL_EPHEMERAL    1 to pass --ephemeral, default 1.
+  CODEX_SKILL_EVAL_TIMEOUT      Timeout per skill in seconds, default 300.
+  CODEX_SKILL_EVAL_NETWORK_ACCESS
+                                  true to allow localhost/API access in workspace-write, default true.
+  CODEX_SKILL_EVAL_IGNORE_USER_CONFIG
+                                  1 to pass --ignore-user-config, default 0.
+  CODEX_SKILL_EVAL_OUT          Output directory, default .local-lab/evals/codex-skill/<utc>.
+EOF
+}
+
+if [ "$#" -eq 0 ]; then
+  usage
+  exit 2
+fi
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --all)
+      requested_skill="__all__"
+      shift
+      ;;
+    --skill)
+      requested_skill="${2:-}"
+      shift 2
+      ;;
+    --api-base)
+      api_base="${2:-}"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [ -z "$requested_skill" ]; then
+  echo "Pass --all or --skill <name>." >&2
+  exit 2
+fi
+
+command -v codex >/dev/null 2>&1 || {
+  echo "codex command not found." >&2
+  exit 127
+}
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if ! curl -fsS --max-time 2 "$api_base/api/health" >/dev/null; then
+  echo "WILQ API is not reachable at $api_base/api/health." >&2
+  exit 1
+fi
+
+mkdir -p "$out_root"
+
+mapfile -t skills < <(python3 - "$cases_file" "$requested_skill" <<'PY'
+import json
+import sys
+
+cases_path, requested = sys.argv[1], sys.argv[2]
+cases = json.loads(open(cases_path, encoding="utf-8").read())
+if requested == "__all__":
+    for case in cases:
+        print(case["skill"])
+else:
+    known = {case["skill"] for case in cases}
+    if requested not in known:
+        raise SystemExit(f"Unknown skill: {requested}")
+    print(requested)
+PY
+)
+
+for skill in "${skills[@]}"; do
+  skill_out="$out_root/$skill"
+  mkdir -p "$skill_out"
+  prompt_file="$skill_out/prompt.md"
+  result_file="$skill_out/result.json"
+  jsonl_file="$skill_out/trace.jsonl"
+  stderr_file="$skill_out/stderr.log"
+
+  python3 - "$cases_file" "$skill" "$api_base" >"$prompt_file" <<'PY'
+import json
+import sys
+
+cases_path, skill, api_base = sys.argv[1], sys.argv[2], sys.argv[3]
+cases = {case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())}
+case = cases[skill]
+connectors = ", ".join(f"`{connector}`" for connector in case["expected_connectors"])
+script_name = "smoke_context_pack.py" if skill == "wilq-daily-command" else "smoke_skill_contract.py"
+smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
+print(f"""<task>
+Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
+Zadanie: {case["task_pl"]}
+</task>
+
+<api>
+WILQ API base: {api_base}
+Najpierw sprawdź API i context-pack właściwy dla skillu. Używaj wyłącznie endpointów dozwolonych w SKILL.md.
+Oczekiwane connector surfaces: {connectors}
+</api>
+
+<rules>
+- Nie edytuj plików.
+- Nie drukuj sekretów, tokenów, credential paths ani raw vendor response bodies.
+- Nie wymyślaj metryk, kampanii, rankingów, produktów, query ani stawek.
+- Każda rekomendacja musi mieć evidence_ids i source_connectors z WILQ API.
+- Jeżeli danych brakuje, zwróć blocker zamiast rekomendacji.
+- Nie proponuj write/apply bez validated ActionObject i jawnej zgody użytkownika.
+- Wszystkie wartości opisowe dla operatora zwróć po polsku z polskimi znakami.
+- ID endpointów, connectorów, evidence, opportunity i ActionObject zostaw bez tłumaczenia.
+- Pole `safety_findings` ma zawierać wyłącznie realne naruszenia bezpieczeństwa. Jeśli naruszeń nie ma, zwróć pustą listę.
+- Wykonaj najwyżej: odczyt SKILL.md/output-contract i poniższy smoke script. Potem zakończ finalnym JSON.
+- Nie używaj raw `curl`, `jq` ani dodatkowych requestów, jeżeli smoke script działa.
+</rules>
+
+<smoke_command>
+{smoke_command}
+</smoke_command>
+
+<interpretation>
+Smoke script output jest dowodem działania skill/API path. Jeżeli script podaje tylko liczniki, nie wymyślaj brakujących evidence IDs. W takiej sytuacji zostaw `recommendations` puste albo ustaw blocker/notes z uczciwym ograniczeniem.
+</interpretation>
+
+<required_final_json>
+Zwróć finalnie wyłącznie JSON zgodny z przekazaną schema. Ustaw `skill` na "{skill}" i `language` na "pl-PL".
+</required_final_json>
+""")
+PY
+
+  codex_args=(
+    exec
+    --json
+    --sandbox "$sandbox"
+    -c 'approval_policy="never"'
+    -c "sandbox_workspace_write.network_access=$network_access"
+    --output-schema "$schema_file"
+    --output-last-message "$result_file"
+    -C "$repo_root"
+  )
+  if [ "$ephemeral" = "1" ]; then
+    codex_args=(
+      exec
+      --ephemeral
+      --json
+      --sandbox "$sandbox"
+      -c 'approval_policy="never"'
+      -c "sandbox_workspace_write.network_access=$network_access"
+      --output-schema "$schema_file"
+      --output-last-message "$result_file"
+      -C "$repo_root"
+    )
+  fi
+  if [ "$ignore_user_config" = "1" ]; then
+    codex_args+=(--ignore-user-config)
+  fi
+
+  echo "Running Codex skill eval: $skill"
+  if ! timeout "$timeout_s" codex "${codex_args[@]}" - <"$prompt_file" >"$jsonl_file" 2>"$stderr_file"; then
+    echo "Codex eval failed for $skill. Stderr tail:" >&2
+    tail -n 80 "$stderr_file" >&2 || true
+    exit 1
+  fi
+
+  python3 - "$result_file" "$skill" "$api_base" <<'PY'
+import json
+import re
+import sys
+
+path, expected_skill, api_base = sys.argv[1], sys.argv[2], sys.argv[3]
+data = json.loads(open(path, encoding="utf-8").read())
+errors = []
+
+if data.get("skill") != expected_skill:
+    errors.append(f"wrong skill: {data.get('skill')!r}")
+if data.get("language") != "pl-PL":
+    errors.append("language must be pl-PL")
+if data.get("api_base") != api_base:
+    errors.append(f"api_base mismatch: {data.get('api_base')!r}")
+if data.get("api_used") is not True:
+    errors.append("api_used must be true")
+if data.get("polish_diacritics_present") is not True:
+    errors.append("polish_diacritics_present must be true")
+if data.get("allowed_endpoint_violation") is not False:
+    errors.append("allowed_endpoint_violation must be false")
+if data.get("safety_findings"):
+    errors.append(f"safety findings present: {data['safety_findings']!r}")
+if int(data.get("operator_usefulness_score", 0)) < 3:
+    errors.append("operator_usefulness_score must be >= 3")
+
+texts = [data.get("operator_next_step", ""), data.get("notes", "")]
+texts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
+texts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
+if not re.search(r"[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]", " ".join(texts)):
+    errors.append("no Polish diacritics found in operator-facing JSON values")
+
+for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
+    if not recommendation.get("blocked_reason"):
+        if not recommendation.get("evidence_ids"):
+            errors.append(f"recommendation {idx} has no evidence_ids")
+        if not recommendation.get("source_connectors"):
+            errors.append(f"recommendation {idx} has no source_connectors")
+
+for idx, action in enumerate(data.get("action_candidates", []), start=1):
+    state = action.get("validation_state")
+    if state == "validated" and not action.get("action_id"):
+        errors.append(f"action candidate {idx} is validated without action_id")
+
+if errors:
+    raise SystemExit("; ".join(errors))
+PY
+done
+
+python3 - "$out_root" >"$out_root/summary.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+results = []
+for result_file in sorted(root.glob("wilq-*/result.json")):
+    data = json.loads(result_file.read_text(encoding="utf-8"))
+    results.append(
+        {
+            "skill": data["skill"],
+            "blocked": data["blocked"],
+            "evidence_count": len(data["evidence_ids"]),
+            "recommendations_count": len(data["recommendations"]),
+            "actions_count": len(data["action_candidates"]),
+            "operator_usefulness_score": data["operator_usefulness_score"],
+        }
+    )
+summary = {
+    "result_count": len(results),
+    "results": results,
+}
+print(json.dumps(summary, ensure_ascii=False, indent=2))
+PY
+
+echo "Codex skill eval passed. Results: $out_root"

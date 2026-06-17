@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WILQ Codex Skill Eval Result",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "skill": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string",
+      "const": "pl-PL"
+    },
+    "polish_diacritics_present": {
+      "type": "boolean"
+    },
+    "api_used": {
+      "type": "boolean"
+    },
+    "api_base": {
+      "type": "string"
+    },
+    "allowed_endpoint_violation": {
+      "type": "boolean"
+    },
+    "source_connectors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "opportunity_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "label_pl": {
+            "type": "string"
+          },
+          "source_connectors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "blocked_reason": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "label_pl",
+          "source_connectors",
+          "evidence_ids",
+          "confidence",
+          "blocked_reason"
+        ]
+      }
+    },
+    "action_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "label_pl": {
+            "type": "string"
+          },
+          "action_id": {
+            "type": ["string", "null"]
+          },
+          "validation_state": {
+            "type": "string",
+            "enum": ["none", "missing", "pending_validation", "validated", "failed", "blocked"]
+          },
+          "blocked_reason": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": [
+          "label_pl",
+          "action_id",
+          "validation_state",
+          "blocked_reason"
+        ]
+      }
+    },
+    "blocked": {
+      "type": "boolean"
+    },
+    "blocked_reason": {
+      "type": ["string", "null"]
+    },
+    "safety_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "operator_next_step": {
+      "type": "string"
+    },
+    "operator_usefulness_score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "skill",
+    "language",
+    "polish_diacritics_present",
+    "api_used",
+    "api_base",
+    "allowed_endpoint_violation",
+    "source_connectors",
+    "evidence_ids",
+    "opportunity_ids",
+    "recommendations",
+    "action_candidates",
+    "blocked",
+    "blocked_reason",
+    "safety_findings",
+    "operator_next_step",
+    "operator_usefulness_score",
+    "notes"
+  ]
+}

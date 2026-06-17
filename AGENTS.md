@@ -12,6 +12,8 @@ Build an API-first marketing operating system, not a prompt pack, static report 
 
 Dashboard, Codex skills, hooks, workflows, expert rules, opportunities, and action execution must use the same WILQ API contracts. Codex may reason and operate, but it must not invent metrics.
 
+The Ekologus marketer is a Polish operator. Operator-facing Codex skill responses, dashboard labels intended for the marketer, handoff summaries and action explanations should be written in Polish with Polish diacritics. Keep API endpoint paths, schema fields, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs and enum values unchanged.
+
 Repo-local `.env` is the primary private runtime credential source for this checkout. It is intentionally git-ignored and may contain real local values. The Ekologus access pack is bootstrap/import/fallback material, not the primary API contract. Process env may override `.env`; `.env` may fall back to access-pack values; API responses may expose credential source labels like `repo_env` or `access_pack_env`, but never credential values.
 
 Google first-party read adapters accept local Google credentials via `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_SERVICE_ACCOUNT_JSON`, or `GOOGLE_CREDENTIALS`. The current local path is an Application Default Credentials `authorized_user` file for `marketing@rekurencja.com`; service-account JSON is a legacy/fallback path, not the default. Keep Google OAuth scope, API enablement, and Merchant developer registration state in handoff docs, never in committed secrets.
@@ -42,7 +44,9 @@ The dashboard must call WILQ API through typed frontend boundaries. It must show
 
 Use `$skill-creator` for new skills and major skill updates. Skills must be small operator workflows over WILQ API, not prompt dumps. Long knowledge goes to `references/`, deterministic helpers go to `scripts/`, and every skill must define trigger, allowed endpoints, evidence requirements, output contract, safety rules and smoke test.
 
-Create or update WILQ skills only after the API endpoints, context-pack contract, connector status contract, and action validation path they call are implemented. The policy is active from the beginning; the skill folders are created near the end of Goal 001 when the API can support them.
+Create or update WILQ skills only after the API endpoints, context-pack contract, connector status contract, and action validation path they call are implemented. Goal 001 skills now live under `.agents/skills/`: `wilq-daily-command` is wired to WILQ API, while the remaining WILQ operator skills are production-shaped stubs with endpoint, evidence, output and smoke-test contracts.
+
+Every WILQ skill must be testable through deterministic smoke scripts and non-interactive Codex evals. Use `scripts/codex_skill_eval.sh` for `codex exec` schema-output checks. Local API evals need network-enabled sandboxing, so the harness defaults to `workspace-write` with network access and a prompt-level no-edit rule. Use `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1` when global MCP/user config causes unrelated transport failures.
 
 ## Skill creation rules
 
@@ -67,6 +71,8 @@ Do not stuff everything into long prompts. Condense source material into canonic
 ## Quality gates
 
 Quality gates are mandatory from the first goal and must catch realistic failures: invalid schemas, missing evidence IDs, unsafe write actions, secret leaks, type errors, broken API contracts, broken dashboard routes, and invalid Codex outputs.
+
+Skill quality gates must also catch non-Polish operator output, missing Polish diacritics, recommendations without evidence IDs/source connectors, unsafe ActionObject handling and Codex non-interactive runs that cannot reach the WILQ API.
 
 ## Security rules
 
