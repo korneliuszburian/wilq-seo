@@ -12,6 +12,12 @@ from wilq.access_pack.manifest import access_pack_status
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
+from wilq.expert.rules import (
+    get_expert_rule,
+    list_expert_capabilities,
+    list_expert_rule_summaries,
+    list_expert_rules,
+)
 from wilq.knowledge.cards import seed_cards
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
@@ -19,6 +25,9 @@ from wilq.schemas import (
     CommandCenterResponse,
     ConnectorStatus,
     ConnectorSummary,
+    ExpertCapability,
+    ExpertRule,
+    ExpertRuleSummary,
     Opportunity,
     utc_now,
 )
@@ -87,6 +96,12 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         ],
         "active_action_objects": [action.model_dump(mode="json") for action in list_actions()],
         "knowledge_card_summaries": [card.model_dump(mode="json") for card in seed_cards()],
+        "expert_rule_summaries": [
+            rule.model_dump(mode="json") for rule in list_expert_rule_summaries(limit=12)
+        ],
+        "expert_capabilities": [
+            capability.model_dump(mode="json") for capability in list_expert_capabilities()
+        ],
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
     return redact_mapping(pack)
@@ -229,6 +244,32 @@ def knowledge_search(q: str = "") -> list[dict[str, Any]]:
 @app.post("/api/knowledge/condense")
 def knowledge_condense() -> dict[str, Any]:
     return {"status": "queued", "rule": "Condense source material into cards before Codex context."}
+
+
+@app.get("/api/expert/rules", response_model=list[ExpertRule])
+def expert_rules(domain: str | None = None) -> list[ExpertRule]:
+    rules = list(list_expert_rules())
+    if domain is not None:
+        rules = [rule for rule in rules if rule.domain == domain]
+    return rules
+
+
+@app.get("/api/expert/rules/{rule_id}", response_model=ExpertRule)
+def expert_rule_detail(rule_id: str) -> ExpertRule:
+    rule = get_expert_rule(rule_id)
+    if rule is None:
+        raise HTTPException(status_code=404, detail=f"Unknown expert rule: {rule_id}")
+    return rule
+
+
+@app.get("/api/expert/rule-summaries", response_model=list[ExpertRuleSummary])
+def expert_rule_summaries() -> list[ExpertRuleSummary]:
+    return list_expert_rule_summaries()
+
+
+@app.get("/api/expert/capabilities", response_model=list[ExpertCapability])
+def expert_capabilities() -> list[ExpertCapability]:
+    return list_expert_capabilities()
 
 
 @app.get("/api/codex/context")

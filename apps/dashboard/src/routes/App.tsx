@@ -11,9 +11,11 @@ import { AlertCircle, CheckCircle2, FileJson, RefreshCw } from "lucide-react";
 import {
   ActionObject,
   ConnectorStatus,
+  ExpertRule,
   getActions,
   getCommandCenter,
   getConnectors,
+  getExpertRules,
   getOpportunities,
   getWorkflows,
   Opportunity
@@ -149,6 +151,35 @@ function ActionList({ actions }: { actions: ActionObject[] }) {
   );
 }
 
+function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
+  if (rules.length === 0) {
+    return <p className="text-sm text-slate-600">No expert rules mapped to this surface yet.</p>;
+  }
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-2">
+      {rules.map((rule) => (
+        <article key={rule.id} className="rounded-md border border-line bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{rule.name}</h3>
+              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                {rule.domain} / v{rule.version}
+              </p>
+            </div>
+            {rule.requires_evidence ? <StatusBadge value="evidence required" /> : null}
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">{rule.output_contract}</p>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+            <div>Anchor: {rule.source_anchor}</div>
+            <div>Actions: {rule.recommended_actions.slice(0, 3).join(", ") || "none"}</div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
@@ -197,15 +228,21 @@ function GenericSurface({ routeName }: { routeName: string }) {
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
   const workflows = useQuery({ queryKey: ["workflows"], queryFn: getWorkflows });
+  const expertRules = useQuery({ queryKey: ["expert-rules"], queryFn: getExpertRules });
 
-  if (connectors.isLoading || opportunities.isLoading || actions.isLoading) return <LoadingBand />;
-  if (connectors.error || opportunities.error || actions.error) return <ErrorState />;
+  if (connectors.isLoading || opportunities.isLoading || actions.isLoading || expertRules.isLoading) {
+    return <LoadingBand />;
+  }
+  if (connectors.error || opportunities.error || actions.error || expertRules.error) {
+    return <ErrorState />;
+  }
 
   const title = routeName
     .replace(/^\//, "")
     .replaceAll("/", " / ")
     .replaceAll("-", " ")
     .replace(/\b\w/g, (match) => match.toUpperCase());
+  const mappedRules = expertRulesForRoute(routeName, expertRules.data ?? []).slice(0, 6);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -241,12 +278,34 @@ function GenericSurface({ routeName }: { routeName: string }) {
           <ActionList actions={actions.data ?? []} />
         </section>
         <section>
+          <SectionHeading title="Expert Rules" />
+          <ExpertRuleList rules={mappedRules} />
+        </section>
+        <section>
           <SectionHeading title="Connector Status" />
           <ConnectorGrid connectors={connectors.data ?? []} />
         </section>
       </div>
     </main>
   );
+}
+
+function expertRulesForRoute(routeName: string, rules: ExpertRule[]): ExpertRule[] {
+  const domains = routeExpertDomains(routeName);
+  if (domains.length === 0) return rules;
+  return rules.filter((rule) => domains.includes(rule.domain));
+}
+
+function routeExpertDomains(routeName: string): string[] {
+  if (routeName.includes("ads-doctor")) return ["ads", "analytics", "merchant"];
+  if (routeName.includes("seo-gsc")) return ["seo", "analytics", "content"];
+  if (routeName.includes("ahrefs")) return ["seo", "content"];
+  if (routeName.includes("localo")) return ["local"];
+  if (routeName.includes("merchant")) return ["merchant", "ads"];
+  if (routeName.includes("content")) return ["content", "seo"];
+  if (routeName.includes("social")) return ["social", "content"];
+  if (routeName.includes("ga4")) return ["analytics"];
+  return [];
 }
 
 function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflows" }) {

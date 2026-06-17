@@ -7,13 +7,16 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Private GitHub repo target was created: `korneliuszburian/wilq-seo`.
 - `docs/goals/001-goal.md` was created from the active goal.
 - Root `AGENTS.md` now defines WILQ product philosophy, API-first rules, evidence rules, MCP rules, skill creation timing, security rules, quality gates and forbidden behavior.
-- FastAPI WILQ API spine exists with health, system status, connectors, dashboard command center, opportunities, actions, knowledge, Codex context/runs and workflows endpoints.
+- FastAPI WILQ API spine exists with health, system status, connectors, dashboard command center, opportunities, actions, expert rules, knowledge, Codex context/runs and workflows endpoints.
 - Pydantic schemas exist for connectors, evidence, metrics, opportunities, actions, audit events, Codex runs and knowledge cards.
 - Connector registry includes Google Ads, GSC, GA4, Merchant Center, Google Sheets, Ahrefs, Localo, WordPress, LinkedIn, Facebook and OpenAI/Codex.
 - Action validation now checks evidence, connector, mode, risk and payload action type.
 - React/TanStack Query dashboard shell exists with required operating routes, route tests, API-backed cards, detail panels, payload preview and audit section.
 - Shared Zod schema package exists and the dashboard API client parses API responses at runtime.
 - Expert YAML foundations exist for Ads, SEO, content, local, social, GA4 and merchant/feed rules.
+- Expert rules are loaded through typed Pydantic contracts and exposed at `/api/expert/rules`, `/api/expert/rule-summaries` and `/api/expert/capabilities`.
+- Codex context packs include expert rule summaries and Ads capability definitions so future skills can use API-provided rule contracts.
+- Dashboard operating routes render expert-rule cards from `/api/expert/rules` through shared Zod validation.
 - Workflow, model runtime, access-pack, MCP, quality, security and source-registry docs exist.
 - Codex hooks exist for SessionStart and Stop; they fail open and restrict API URL targets to local/allowed hosts.
 - `.agents/skills/` intentionally contains only `.gitkeep`.
@@ -54,8 +57,8 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - `scripts/quality.sh`: passed.
 - `scripts/security.sh`: passed.
 - `scripts/verify.sh`: passed.
-- Backend tests: 13 passed.
-- Dashboard tests: 5 passed.
+- Backend tests: 16 passed.
+- Dashboard tests: 6 passed.
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
 - `pip-audit`: no known vulnerabilities found.
@@ -65,7 +68,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
-- Goal 001 is not complete because skills are deferred, persistence is not implemented, expert rules are not yet evaluated by code, knowledge compiler is still seed-card level and real connectors do not call vendor APIs yet.
+- Goal 001 is not complete because skills are deferred, persistence is not implemented, expert rules are not yet used to generate real connector-derived opportunities, knowledge compiler is still seed-card level and real connectors do not call vendor APIs yet.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 
 ## Connector status
@@ -114,4 +117,3 @@ FastAPI OpenAPI docs are available when the API runs. API state is in memory for
 Goal 002 — Google Ads Connector and Ads Doctor
 
 Before Goal 002, create `wilq-daily-command` with `$skill-creator` only after the current context-pack and validation endpoints are treated as stable enough for a skill smoke test.
-

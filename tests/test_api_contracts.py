@@ -174,6 +174,29 @@ def test_command_center_returns_valid_shape() -> None:
     assert "todays_moves" in data["sections"]
 
 
+def test_expert_rules_are_loaded_from_structured_files() -> None:
+    response = client.get("/api/expert/rules")
+    assert response.status_code == 200
+    rules = response.json()
+    rule_ids = {rule["id"] for rule in rules}
+    assert "ads_search_terms_v1" in rule_ids
+    search_terms_rule = next(rule for rule in rules if rule["id"] == "ads_search_terms_v1")
+    assert search_terms_rule["domain"] == "ads"
+    assert search_terms_rule["requires_evidence"] is True
+    assert "evidence_ids" in search_terms_rule["required_inputs"]
+    assert search_terms_rule["source_path"].startswith("wilq/expert/")
+
+
+def test_expert_capabilities_are_available_through_api() -> None:
+    response = client.get("/api/expert/capabilities")
+    assert response.status_code == 200
+    capabilities = response.json()
+    capability_ids = {capability["id"] for capability in capabilities}
+    assert "ads_daily_check" in capability_ids
+    assert "ads_custom_segments" in capability_ids
+    assert all(capability["requires_evidence"] for capability in capabilities)
+
+
 def test_codex_context_pack_contains_no_metric_invention_instruction(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -186,3 +209,12 @@ def test_codex_context_pack_contains_no_metric_invention_instruction(
     serialized = json.dumps(response.json())
     assert "must not invent metrics" in serialized
     assert "sk-supersecretvalue1234567890" not in serialized
+
+
+def test_codex_context_pack_includes_expert_rule_summaries() -> None:
+    response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
+    assert response.status_code == 200
+    data = response.json()
+    rule_ids = {rule["id"] for rule in data["expert_rule_summaries"]}
+    assert "ads_principles_v1" in rule_ids
+    assert data["expert_capabilities"]

@@ -71,6 +71,44 @@ export const ConnectorSummarySchema = z.object({
   missing_credentials: z.number()
 });
 
+export const ExpertRuleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  domain: z.string(),
+  version: z.number(),
+  source_anchor: z.string(),
+  source_path: z.string(),
+  when_to_use: z.string().nullable().optional(),
+  required_inputs: z.array(z.string()),
+  diagnostic_logic: z.array(z.string()),
+  recommended_actions: z.array(z.string()),
+  risk_notes: z.string().nullable().optional(),
+  output_contract: z.string(),
+  capabilities: z.array(z.string()),
+  required_mapping: z.array(z.string()),
+  requires_evidence: z.boolean()
+});
+
+export const ExpertRuleSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  domain: z.string(),
+  source_anchor: z.string(),
+  required_inputs: z.array(z.string()),
+  recommended_actions: z.array(z.string()),
+  output_contract: z.string(),
+  requires_evidence: z.boolean()
+});
+
+export const ExpertCapabilitySchema = z.object({
+  id: z.string(),
+  domain: z.string(),
+  source_rule_id: z.string(),
+  required_mapping: z.array(z.string()),
+  output_contract: z.string(),
+  requires_evidence: z.boolean()
+});
+
 export const CommandCenterResponseSchema = z.object({
   strict_instruction: z.string(),
   connector_summary: ConnectorSummarySchema,
@@ -93,6 +131,8 @@ export const ContextPackResponseSchema = z.object({
   top_opportunities: z.array(OpportunitySchema),
   active_action_objects: z.array(ActionObjectSchema),
   knowledge_card_summaries: z.array(z.record(z.unknown())),
+  expert_rule_summaries: z.array(ExpertRuleSummarySchema),
+  expert_capabilities: z.array(ExpertCapabilitySchema),
   strict_instruction: z.string()
 });
 
@@ -102,3 +142,6 @@ export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;
+export type ExpertRule = z.infer<typeof ExpertRuleSchema>;
+export type ExpertRuleSummary = z.infer<typeof ExpertRuleSummarySchema>;
+export type ExpertCapability = z.infer<typeof ExpertCapabilitySchema>;

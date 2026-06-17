@@ -230,6 +230,44 @@ class KnowledgeCard(BaseModel):
     source_lineage: list[str] = Field(default_factory=list)
 
 
+class ExpertRule(BaseModel):
+    id: str
+    name: str
+    domain: str
+    version: int
+    source_anchor: str
+    source_path: str
+    when_to_use: str | None = None
+    required_inputs: list[str] = Field(default_factory=list)
+    diagnostic_logic: list[str] = Field(default_factory=list)
+    recommended_actions: list[str] = Field(default_factory=list)
+    risk_notes: str | None = None
+    output_contract: str
+    capabilities: list[str] = Field(default_factory=list)
+    required_mapping: list[str] = Field(default_factory=list)
+    requires_evidence: bool = True
+
+
+class ExpertRuleSummary(BaseModel):
+    id: str
+    name: str
+    domain: str
+    source_anchor: str
+    required_inputs: list[str] = Field(default_factory=list)
+    recommended_actions: list[str] = Field(default_factory=list)
+    output_contract: str
+    requires_evidence: bool = True
+
+
+class ExpertCapability(BaseModel):
+    id: str
+    domain: str
+    source_rule_id: str
+    required_mapping: list[str] = Field(default_factory=list)
+    output_contract: str
+    requires_evidence: bool = True
+
+
 class ServiceCard(KnowledgeCard):
     card_type: Literal["service_card"] = "service_card"
 

@@ -36,7 +36,7 @@ Last checked: 2026-06-17.
 | TypeScript | Frontend | static checks | dashboard typecheck | `apps/dashboard/tsconfig.json` |
 | Vitest | Frontend | route tests | dashboard tests | `apps/dashboard/src/routes/App.test.tsx` |
 | Playwright | Frontend | future e2e smoke | planned gate | `docs/architecture/quality-gates.md` |
-| Zod | Frontend | runtime validation at API boundaries | planned shared schemas | `packages/shared-schemas` |
+| Zod | Frontend | runtime validation at API boundaries | shared API response schemas | `packages/shared-schemas` |
 | TanStack Query | Frontend | API server-state cache | dashboard API calls | `apps/dashboard/src/lib/api.ts` |
 | Demand Gen migration | Google Ads | Display migration readiness | Demand Gen architecture | `docs/architecture/demand-gen-migration.md` |
 | Custom audiences and Keyword Planner | Google Ads | Segment workflow | custom-segments architecture | `docs/architecture/custom-segments-from-search-terms.md` |
@@ -45,4 +45,3 @@ Last checked: 2026-06-17.
 | Google Sheets API | Collaboration | export/import surface | Sheets architecture | `docs/architecture/google-sheets-operator-surface.md` |
 | OWASP LLM | Security | prompt injection and agent risk | threat model | `docs/security/agentic-threat-model.md` |
 | NIST AI RMF | Risk | AI risk management | model runtime policy | `docs/architecture/model-runtime-policy.md` |
-

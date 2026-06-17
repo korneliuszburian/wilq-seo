@@ -2,11 +2,13 @@ import {
   ActionObjectSchema,
   CommandCenterResponseSchema,
   ConnectorStatusSchema,
+  ExpertRuleSchema,
   OpportunitySchema,
   WorkflowSchema,
   type ActionObject,
   type CommandCenterResponse,
   type ConnectorStatus,
+  type ExpertRule,
   type Opportunity,
   type Workflow
 } from "@wilq/shared-schemas";
@@ -42,4 +44,15 @@ export function getWorkflows(): Promise<Workflow[]> {
   return apiGet("/api/workflows", z.array(WorkflowSchema));
 }
 
-export type { ActionObject, CommandCenterResponse, ConnectorStatus, Opportunity, Workflow };
+export function getExpertRules(): Promise<ExpertRule[]> {
+  return apiGet("/api/expert/rules", z.array(ExpertRuleSchema));
+}
+
+export type {
+  ActionObject,
+  CommandCenterResponse,
+  ConnectorStatus,
+  ExpertRule,
+  Opportunity,
+  Workflow
+};

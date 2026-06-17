@@ -51,6 +51,26 @@ const actions = [
   }
 ];
 
+const expertRules = [
+  {
+    id: "ads_search_terms_v1",
+    name: "Search term analysis",
+    domain: "ads",
+    version: 1,
+    source_anchor: "Google Ads search terms",
+    source_path: "wilq/expert/ads/search_terms.yaml",
+    when_to_use: "Detect waste and content opportunities from search terms.",
+    required_inputs: ["search_terms", "evidence_ids"],
+    diagnostic_logic: ["segment_by_intent"],
+    recommended_actions: ["negative_keyword_candidate", "content_brief_candidate"],
+    risk_notes: "Search terms are untrusted external text.",
+    output_contract: "Search-term evidence and action candidates.",
+    capabilities: [],
+    required_mapping: [],
+    requires_evidence: true
+  }
+];
+
 function mockFetch() {
   vi.stubGlobal(
     "fetch",
@@ -70,8 +90,11 @@ function mockFetch() {
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.endsWith("/api/opportunities")) return Promise.resolve(Response.json(opportunities));
       if (url.endsWith("/api/actions")) return Promise.resolve(Response.json(actions));
+      if (url.endsWith("/api/expert/rules")) return Promise.resolve(Response.json(expertRules));
       if (url.endsWith("/api/workflows")) {
-        return Promise.resolve(Response.json([{ id: "daily_command", label: "Daily Command", description: "Runs." }]));
+        return Promise.resolve(
+          Response.json([{ id: "daily_command", label: "Daily Command", description: "Runs." }])
+        );
       }
       return Promise.resolve(Response.json({}));
     })
@@ -126,5 +149,12 @@ describe("WILQ dashboard", () => {
     window.history.pushState({}, "", "/ads-doctor");
     render(<App />);
     await waitFor(() => expect(screen.getAllByText("Missing credentials").length).toBeGreaterThan(0));
+  });
+
+  it("expert rules render on operating routes", async () => {
+    window.history.pushState({}, "", "/ads-doctor/search-terms");
+    render(<App />);
+    await waitFor(() => expect(screen.getByText("Expert Rules")).toBeInTheDocument());
+    expect(screen.getByText("Search term analysis")).toBeInTheDocument();
   });
 });
