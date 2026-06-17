@@ -93,6 +93,7 @@ class ConnectorStatus(BaseModel):
     status: ConnectorStatusValue
     configured: bool
     missing_credentials: list[str] = Field(default_factory=list)
+    available_credential_sources: list[str] = Field(default_factory=list)
     error: str | None = None
     last_success_at: datetime | None = None
     freshness: FreshnessState
@@ -133,6 +134,7 @@ class ConnectorRefreshRun(BaseModel):
     checked_credentials: list[str] = Field(default_factory=list)
     external_call_attempted: bool = False
     vendor_data_collected: bool = False
+    metric_summary: dict[str, float | int | str] = Field(default_factory=dict)
     summary: str
     errors: list[str] = Field(default_factory=list)
     redacted: bool = True

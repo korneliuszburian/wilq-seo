@@ -17,8 +17,8 @@ from wilq.schemas import (
 
 def seed_actions() -> dict[str, ActionObject]:
     action = ActionObject(
-        id="act_configure_google_ads_access_pack",
-        title="Configure Google Ads access pack",
+        id="act_configure_google_ads_env",
+        title="Configure Google Ads local .env",
         domain=OpportunityDomain.google_ads,
         connector="google_ads",
         mode=ActionMode.prepare,
@@ -29,16 +29,19 @@ def seed_actions() -> dict[str, ActionObject]:
             "Google Ads connector cannot produce real metrics until credentials are available."
         ),
         recommended_reason=(
-            "Credential setup unlocks real search-term, campaign and recommendation reads."
+            "Local .env credential setup unlocks real search-term, campaign "
+            "and recommendation reads."
         ),
         payload={
             "action_type": "configure_connector",
             "connector": "google_ads",
+            "credential_source": "repo_env",
             "required_env": [
                 "GOOGLE_ADS_DEVELOPER_TOKEN",
                 "GOOGLE_ADS_CLIENT_ID",
                 "GOOGLE_ADS_CLIENT_SECRET",
                 "GOOGLE_ADS_REFRESH_TOKEN",
+                "GOOGLE_ADS_CUSTOMER_ID",
                 "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
             ],
         },

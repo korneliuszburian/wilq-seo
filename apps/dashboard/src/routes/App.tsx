@@ -91,6 +91,11 @@ function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] }) {
                 Configured
               </div>
             )}
+            {connector.available_credential_sources.length > 0 ? (
+              <div className="mt-2 break-words text-slate-500">
+                Source: {connector.available_credential_sources.join(", ")}
+              </div>
+            ) : null}
           </div>
         </article>
       ))}
@@ -179,6 +184,11 @@ function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] }) {
             <div>External call: {run.external_call_attempted ? "yes" : "no"}</div>
             <div>Evidence: {run.evidence_ids.join(", ")}</div>
           </div>
+          {Object.keys(run.metric_summary).length > 0 ? (
+            <pre className="mt-3 max-h-32 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
+              {JSON.stringify(run.metric_summary, null, 2)}
+            </pre>
+          ) : null}
         </article>
       ))}
     </div>

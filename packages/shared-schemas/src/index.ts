@@ -6,6 +6,7 @@ export const ConnectorStatusSchema = z.object({
   status: z.string(),
   configured: z.boolean(),
   missing_credentials: z.array(z.string()),
+  available_credential_sources: z.array(z.string()),
   freshness: z.object({
     state: z.string(),
     notes: z.string().nullable().optional()
@@ -48,6 +49,7 @@ export const ConnectorRefreshRunSchema = z.object({
   checked_credentials: z.array(z.string()),
   external_call_attempted: z.boolean(),
   vendor_data_collected: z.boolean(),
+  metric_summary: z.record(z.union([z.string(), z.number()])),
   summary: z.string(),
   errors: z.array(z.string()),
   redacted: z.boolean()

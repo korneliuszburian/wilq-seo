@@ -10,6 +10,7 @@ const connectors = [
     status: "missing_credentials",
     configured: false,
     missing_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
+    available_credential_sources: [],
     freshness: { state: "missing" },
     supported_actions: []
   }
@@ -37,7 +38,7 @@ const opportunities = [
 const actions = [
   {
     id: "act_1",
-    title: "Configure Google Ads access pack",
+    title: "Configure Google Ads local .env",
     domain: "google_ads",
     connector: "google_ads",
     mode: "prepare",
@@ -79,6 +80,7 @@ const connectorRefreshRuns = [
     checked_credentials: ["GOOGLE_ADS_DEVELOPER_TOKEN"],
     external_call_attempted: false,
     vendor_data_collected: false,
+    metric_summary: {},
     summary: "Connector google_ads status probe completed.",
     errors: [],
     redacted: true
@@ -227,7 +229,7 @@ describe("WILQ dashboard", () => {
     render(<App />);
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Configure Google Ads access pack" })
+        screen.getByRole("heading", { name: "Configure Google Ads local .env" })
       ).toBeInTheDocument()
     );
   });

@@ -3,21 +3,41 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
+from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
+from wilq.connectors.vendor import VendorReadResult
 from wilq.schemas import (
     ActionMode,
     ActionObject,
     ActionRisk,
     ActionStatus,
+    ConnectorRefreshMode,
+    ConnectorRefreshRequest,
+    ConnectorRefreshStatus,
     Opportunity,
     OpportunityDomain,
 )
 
 client = TestClient(app)
+
+GOOGLE_ADS_TEST_ENV = (
+    "GOOGLE_ADS_DEVELOPER_TOKEN",
+    "GOOGLE_ADS_CLIENT_ID",
+    "GOOGLE_ADS_CLIENT_SECRET",
+    "GOOGLE_ADS_REFRESH_TOKEN",
+    "GOOGLE_ADS_CUSTOMER_ID",
+    "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
+)
+
+
+def clear_google_ads_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.delenv(key, raising=False)
 
 
 def test_health_endpoint() -> None:
@@ -58,13 +78,17 @@ def test_connector_status_does_not_expose_secret_values(monkeypatch: pytest.Monk
     assert "GOOGLE_ADS_DEVELOPER_TOKEN" in serialized
 
 
-def test_system_status_does_not_expose_access_pack_paths_or_filenames() -> None:
+def test_system_status_reports_credential_runtime_without_paths_or_filenames() -> None:
     response = client.get("/api/system/status")
     assert response.status_code == 200
-    access_pack = response.json()["access_pack"]
-    assert "path" not in access_pack
-    assert "credential_files_present" not in access_pack
-    assert "manifest_files" not in access_pack
+    data = response.json()
+    assert "access_pack" not in data
+    credential_runtime = data["credential_runtime"]
+    assert credential_runtime["secrets_redacted"] is True
+    assert "repo_env_path" not in credential_runtime
+    assert "access_pack_path" not in credential_runtime
+    assert "credential_files_present" not in credential_runtime
+    assert "manifest_files" not in credential_runtime
 
 
 def test_codex_run_redacts_token_like_error_values(
@@ -150,11 +174,11 @@ def test_action_apply_requires_validation(
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "audit_state.sqlite3"))
-    response = client.post("/api/actions/act_configure_google_ads_access_pack/apply")
+    response = client.post("/api/actions/act_configure_google_ads_env/apply")
     assert response.status_code == 409
     assert "validated before apply" in json.dumps(response.json())
     audit_response = client.get(
-        "/api/audit/events?action_id=act_configure_google_ads_access_pack"
+        "/api/audit/events?action_id=act_configure_google_ads_env"
     )
     assert audit_response.status_code == 200
     assert audit_response.json()[0]["event_type"] == "apply_blocked"
@@ -238,13 +262,7 @@ def test_connector_refresh_run_persists_redacted_evidence(
 ) -> None:
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "refresh_state.sqlite3"))
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
-    for key in (
-        "GOOGLE_ADS_CLIENT_ID",
-        "GOOGLE_ADS_CLIENT_SECRET",
-        "GOOGLE_ADS_REFRESH_TOKEN",
-        "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
-    ):
-        monkeypatch.delenv(key, raising=False)
+    clear_google_ads_env(monkeypatch)
     monkeypatch.setenv(
         "GOOGLE_ADS_DEVELOPER_TOKEN",
         "gho_refreshsecretvalue1234567890",  # pragma: allowlist secret
@@ -275,6 +293,123 @@ def test_connector_refresh_run_persists_redacted_evidence(
     assert f"ev_refresh_{run['id']}" in evidence_ids
     serialized_evidence = json.dumps(evidence_response.json())
     assert "gho_refreshsecretvalue1234567890" not in serialized_evidence
+
+    context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
+    assert context_response.status_code == 200
+    context_runs = {item["id"] for item in context_response.json()["connector_refresh_runs"]}
+    assert run["id"] in context_runs
+
+
+def test_google_ads_vendor_read_uses_oauth_and_search_stream(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", "developer-token-test")
+    monkeypatch.setenv("GOOGLE_ADS_CLIENT_ID", "client-id-test")
+    monkeypatch.setenv(
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "client-secret-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv(
+        "GOOGLE_ADS_REFRESH_TOKEN",
+        "refresh-token-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv("GOOGLE_ADS_CUSTOMER_ID", "123-456-7890")
+    monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "999-888-7777")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "oauth2.googleapis.com":
+            assert "grant_type=refresh_token" in request.content.decode()
+            return httpx.Response(200, json={"access_token": "ya29.mocktoken"})
+        assert request.url.host == "googleads.googleapis.com"
+        assert request.url.path == "/v24/customers/1234567890/googleAds:searchStream"
+        assert request.headers["developer-token"] == "developer-token-test"
+        assert request.headers["login-customer-id"] == "9998887777"
+        assert request.headers["authorization"] == "Bearer ya29.mocktoken"
+        assert "FROM campaign" in request.content.decode()
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "results": [
+                        {
+                            "metrics": {
+                                "clicks": "2",
+                                "impressions": "10",
+                                "costMicros": "3000000",
+                            }
+                        },
+                        {
+                            "metrics": {
+                                "clicks": "1",
+                                "impressions": "5",
+                                "costMicros": "1000000",
+                            }
+                        },
+                    ]
+                }
+            ],
+        )
+
+    result = refresh_google_ads_campaign_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary["row_count"] == 2
+    assert result.metric_summary["clicks"] == 3
+    assert result.metric_summary["impressions"] == 15
+    assert result.metric_summary["cost_micros"] == 4000000
+    serialized = json.dumps(result.metric_summary)
+    assert "developer-token-test" not in serialized
+    assert "refresh-token-test" not in serialized
+
+
+def test_google_ads_vendor_read_endpoint_persists_metric_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "refresh_success_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.setenv(key, f"{key.lower()}_test")
+
+    def fake_refresh(request: ConnectorRefreshRequest) -> VendorReadResult:
+        assert request.mode == ConnectorRefreshMode.vendor_read
+        return VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Google Ads vendor read completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"row_count": 2, "clicks": 3},
+        )
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
+        fake_refresh,
+    )
+
+    response = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+    assert response.status_code == 200
+    run = response.json()
+    assert run["connector_id"] == "google_ads"
+    assert run["status"] == "completed"
+    assert run["external_call_attempted"] is True
+    assert run["vendor_data_collected"] is True
+    assert run["metric_summary"] == {"row_count": 2, "clicks": 3}
+
+    list_response = client.get("/api/connectors/refresh-runs")
+    assert list_response.status_code == 200
+    assert list_response.json()[0]["metric_summary"] == {"row_count": 2, "clicks": 3}
 
     context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert context_response.status_code == 200

@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from wilq.access_pack.manifest import access_pack_status
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.refresh import (
@@ -18,6 +17,7 @@ from wilq.connectors.refresh import (
     run_connector_refresh,
 )
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
+from wilq.credentials.runtime import credential_runtime_status
 from wilq.evidence.registry import get_evidence, list_evidence
 from wilq.expert.rules import (
     get_expert_rule,
@@ -144,7 +144,7 @@ def system_status() -> dict[str, Any]:
         {
             "generated_at": utc_now().isoformat(),
             "connector_summary": connector_summary(connectors).model_dump(),
-            "access_pack": access_pack_status(detailed=False),
+            "credential_runtime": credential_runtime_status(detailed=False),
             "codex_runtime": codex_runtime_status(),
             "local_state": local_state_store().status(),
             "opportunity_types": list(OPPORTUNITY_TYPES),

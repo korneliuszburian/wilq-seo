@@ -22,8 +22,9 @@ Each connector exposes ID, label, status, configured state, missing credential n
 Connector refreshes are durable API runs:
 
 - `status_probe` records local connector readiness from credential-name presence and never calls a vendor API.
-- `vendor_read` is allowed as a contract shape, but remains blocked until a connector adapter exists and required credential names are configured.
-- Every refresh run records evidence IDs, checked credential names, missing credential names, external-call status, vendor-data status, summary and errors.
+- `vendor_read` runs a read-only vendor adapter when one exists and required credential names are configured.
+- Google Ads `vendor_read` uses OAuth refresh-token auth and `googleAds:searchStream` to persist only aggregate campaign metrics.
+- Every refresh run records evidence IDs, checked credential names, missing credential names, external-call status, vendor-data status, metric summary, summary and errors.
 - Refresh runs must not expose secret values, access-pack paths or raw credential files.
 
 Implementation:

@@ -68,7 +68,7 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
             "ads_negative_keywords_v1",
             "ads_diagnostics_v1",
         ),
-        action_ids=("act_configure_google_ads_access_pack",),
+        action_ids=("act_configure_google_ads_env",),
     ),
     OpportunityBlueprint(
         connector_id="google_search_console",

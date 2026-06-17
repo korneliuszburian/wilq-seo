@@ -16,6 +16,7 @@ Rules:
 - Skills are operator workflows created after the API endpoints they call exist.
 - Expert rules live as structured YAML but are consumed through typed WILQ API endpoints, not by prompt-only logic.
 - Codex runs, workflow runs, connector refresh runs, and audit events persist to local SQLite state with redaction.
+- Repo-local `.env` is the primary private credential source; the Ekologus access pack is import/fallback material.
 - Knowledge playbooks compile into source-lineage cards before reaching Codex context packs.
 - Evidence registry records expose readiness/source/refresh state without secret values.
 - Readiness opportunities may derive from connector-status evidence, connector refresh-run evidence, playbook IDs, and expert-rule IDs. They must not claim vendor performance metrics until vendor refreshes exist.

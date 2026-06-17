@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from wilq.access_pack.manifest import credential_file_names, variable_available
+from wilq.credentials.runtime import (
+    credential_file_names,
+    credential_source_summary,
+    variable_available,
+)
 from wilq.schemas import ConnectorCapability, ConnectorStatus, ConnectorStatusValue, FreshnessState
 
 
@@ -29,6 +33,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "GOOGLE_ADS_CLIENT_ID",
             "GOOGLE_ADS_CLIENT_SECRET",
             "GOOGLE_ADS_REFRESH_TOKEN",
+            "GOOGLE_ADS_CUSTOMER_ID",
             "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
         ),
         True,
@@ -209,6 +214,7 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
         else ConnectorStatusValue.missing_credentials,
         configured=configured,
         missing_credentials=missing,
+        available_credential_sources=credential_source_summary(definition.required_env),
         error=None,
         freshness=FreshnessState(
             state="unknown" if configured else "missing",
