@@ -46,6 +46,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "GA4 Quality Focus" })).toBeVisible();
     await expect(page.getByText(/GA4: active_users =/)).toBeVisible();
+    await expect(page.getByText(/delta:/).first()).toBeVisible();
+    await expect(page.getByText(/odświeżone/).first()).toBeVisible();
 
     await page.goto("/seo-gsc");
 

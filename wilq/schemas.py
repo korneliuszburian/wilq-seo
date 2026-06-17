@@ -147,6 +147,13 @@ class MetricFact(BaseModel):
     source_connector: str
     evidence_id: str
     unit: str | None = None
+    collected_at: datetime | None = None
+    previous_value: float | int | str | None = None
+    delta: float | int | None = None
+    delta_percent: float | None = None
+    trend: Literal["up", "down", "flat", "unknown"] = "unknown"
+    freshness_state: Literal["fresh", "stale", "unknown"] = "unknown"
+    freshness_label: str | None = None
 
 
 class Opportunity(BaseModel):

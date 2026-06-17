@@ -203,7 +203,14 @@ const metricFacts = [
     period: "connector_refresh",
     source_connector: "wordpress_ekologus",
     evidence_id: "ev_refresh_wordpress_inventory",
-    unit: null
+    unit: null,
+    collected_at: "2026-06-17T10:00:00Z",
+    previous_value: 14,
+    delta: 2,
+    delta_percent: 14.2857,
+    trend: "up",
+    freshness_state: "fresh",
+    freshness_label: "odświeżone mniej niż godzinę temu"
   },
   {
     name: "merchant_disapproved_product_count",
@@ -211,7 +218,14 @@ const metricFacts = [
     period: "connector_refresh",
     source_connector: "google_merchant_center",
     evidence_id: "ev_refresh_merchant_feed",
-    unit: null
+    unit: null,
+    collected_at: "2026-06-17T10:00:00Z",
+    previous_value: 4,
+    delta: -1,
+    delta_percent: -25,
+    trend: "down",
+    freshness_state: "fresh",
+    freshness_label: "odświeżone mniej niż godzinę temu"
   },
   {
     name: "active_users",
@@ -219,7 +233,14 @@ const metricFacts = [
     period: "connector_refresh",
     source_connector: "google_analytics_4",
     evidence_id: "ev_refresh_ga4",
-    unit: null
+    unit: null,
+    collected_at: "2026-06-17T10:00:00Z",
+    previous_value: 10,
+    delta: 10,
+    delta_percent: 100,
+    trend: "up",
+    freshness_state: "fresh",
+    freshness_label: "odświeżone mniej niż godzinę temu"
   },
   {
     name: "clicks",
@@ -227,7 +248,14 @@ const metricFacts = [
     period: "connector_refresh",
     source_connector: "google_search_console",
     evidence_id: "ev_refresh_gsc",
-    unit: null
+    unit: null,
+    collected_at: "2026-06-17T10:00:00Z",
+    previous_value: 12,
+    delta: 0,
+    delta_percent: 0,
+    trend: "flat",
+    freshness_state: "fresh",
+    freshness_label: "odświeżone mniej niż godzinę temu"
   }
 ];
 
@@ -648,7 +676,8 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
-    expect(screen.getAllByText("active_users: 20").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/active_users: 20/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/delta: \+10/).length).toBeGreaterThan(0);
 
     cleanup();
     testQueryClient.clear();
@@ -660,7 +689,7 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Search Console Content Focus")).toBeInTheDocument();
     expect(screen.getByText("GSC: przełóż widoczność na kolejkę treści")).toBeInTheDocument();
-    expect(screen.getAllByText("clicks: 12").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/clicks: 12/).length).toBeGreaterThan(0);
   });
 
   it("localo social and content routes render workflow-specific blockers or focus", async () => {

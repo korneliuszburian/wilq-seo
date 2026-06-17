@@ -20,7 +20,14 @@ export const MetricFactSchema = z.object({
   period: z.string(),
   source_connector: z.string(),
   evidence_id: z.string(),
-  unit: z.string().nullable().optional()
+  unit: z.string().nullable().optional(),
+  collected_at: z.string().nullable().optional(),
+  previous_value: z.union([z.string(), z.number()]).nullable().optional(),
+  delta: z.number().nullable().optional(),
+  delta_percent: z.number().nullable().optional(),
+  trend: z.enum(["up", "down", "flat", "unknown"]).optional(),
+  freshness_state: z.enum(["fresh", "stale", "unknown"]).optional(),
+  freshness_label: z.string().nullable().optional()
 });
 
 export const MetricStoreStatusSchema = z.object({

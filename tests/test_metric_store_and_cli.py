@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import duckdb
@@ -12,7 +13,12 @@ from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
 from wilq.connectors.vendor import VendorReadResult
 from wilq.evidence.registry import get_evidence
-from wilq.schemas import ConnectorRefreshMode, ConnectorRefreshRun, ConnectorRefreshStatus
+from wilq.schemas import (
+    ConnectorRefreshMode,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
+    MetricFact,
+)
 from wilq.storage.metric_store import _connect_with_retry, metric_store
 
 client = TestClient(app)
@@ -106,8 +112,71 @@ def test_metrics_api_exposes_metric_store_status_and_facts(
             "source_connector": "ahrefs",
             "evidence_id": refresh_response.json()["evidence_ids"][-1],
             "unit": None,
+            "collected_at": refresh_response.json()["completed_at"],
+            "previous_value": None,
+            "delta": None,
+            "delta_percent": None,
+            "trend": "unknown",
+            "freshness_state": "fresh",
+            "freshness_label": "odświeżone mniej niż godzinę temu",
         }
     ]
+
+
+def test_metric_store_exposes_previous_value_delta_and_freshness(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    older = datetime.now(UTC) - timedelta(hours=2)
+    newer = datetime.now(UTC) - timedelta(minutes=5)
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_ga4_delta_old",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=older,
+            completed_at=older,
+            evidence_ids=["ev_refresh_refresh_ga4_delta_old"],
+            metric_summary={"active_users": 10, "traffic_source": "organic"},
+            summary="Older GA4 metric facts.",
+        )
+    )
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_ga4_delta_new",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=newer,
+            completed_at=newer,
+            evidence_ids=["ev_refresh_refresh_ga4_delta_new"],
+            metric_summary={"active_users": 15, "traffic_source": "organic"},
+            summary="Newer GA4 metric facts.",
+        )
+    )
+
+    facts = metric_store().list_metric_facts(connector_id="google_analytics_4")
+    latest_facts_by_name: dict[str, MetricFact] = {}
+    for fact in facts:
+        latest_facts_by_name.setdefault(fact.name, fact)
+
+    active_users = latest_facts_by_name["active_users"]
+    assert active_users.value == 15
+    assert active_users.previous_value == 10
+    assert active_users.delta == 5
+    assert active_users.delta_percent == 50
+    assert active_users.trend == "up"
+    assert active_users.freshness_state == "fresh"
+    assert active_users.freshness_label == "odświeżone mniej niż godzinę temu"
+    assert active_users.collected_at is not None
+
+    traffic_source = latest_facts_by_name["traffic_source"]
+    assert traffic_source.value == "organic"
+    assert traffic_source.previous_value == "organic"
+    assert traffic_source.delta is None
+    assert traffic_source.trend == "unknown"
 
 
 def test_metric_fact_evidence_ids_are_resolvable_without_refresh_run_state(

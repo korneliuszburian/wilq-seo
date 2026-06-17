@@ -4398,3 +4398,116 @@ Remaining next work:
    local evidence instead of only OAuth/missing-token blockers.
 4. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
+
+---
+
+## 39. MetricFact freshness and deltas - 2026-06-18
+
+Implemented the first remaining item from section 38.
+
+What changed:
+
+* `MetricFact` remains backward-compatible and now also exposes:
+  * `collected_at`,
+  * `previous_value`,
+  * `delta`,
+  * `delta_percent`,
+  * `trend`,
+  * `freshness_state`,
+  * `freshness_label`.
+* DuckDB metric store now computes previous values with a window function over
+  `(connector_id, metric_name)` ordered by `collected_at`.
+* Numeric metric facts now expose a delta/trend versus the previous refresh of
+  the same connector metric.
+* Text metric facts expose `previous_value` but keep `delta=null` and
+  `trend=unknown`.
+* Freshness is derived from the metric collection timestamp:
+  * `fresh` for facts collected within 24h,
+  * `stale` after 24h,
+  * `unknown` when no timestamp exists.
+* Shared Zod schemas now parse the new fields.
+* Dashboard metric chips and metric inventory rows now show:
+  * current value,
+  * delta,
+  * delta percent where possible,
+  * freshness label.
+* Playwright proof now checks that GA4 workflow shows `delta:` and
+  `odświeżone` from live WILQ API metric facts.
+
+Live API proof after API restart:
+
+```json
+{
+  "name": "active_users",
+  "value": 20,
+  "period": "connector_refresh",
+  "source_connector": "google_analytics_4",
+  "previous_value": 20,
+  "delta": 0,
+  "delta_percent": 0.0,
+  "trend": "flat",
+  "freshness_state": "fresh",
+  "freshness_label": "odświeżone mniej niż godzinę temu"
+}
+```
+
+Verification:
+
+```bash
+uv run ruff check wilq/storage/metric_store.py wilq/schemas.py tests/test_metric_store_and_cli.py
+uv run mypy wilq/storage/metric_store.py wilq/schemas.py tests/test_metric_store_and_cli.py
+uv run pytest tests/test_metric_store_and_cli.py -q
+uv run pytest tests/test_api_contracts.py -q
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+scripts/eval_marketing_brief.sh --api-base http://127.0.0.1:8000
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Metric store targeted tests: `6 passed`.
+* API contract tests: `52 passed`.
+* Dashboard unit route tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+  * GA4 e2e checks metric delta and freshness text.
+* MarketingBrief deterministic eval: passed.
+  * language: `pl-PL`,
+  * item count: `18`,
+  * evidence count: `44`,
+  * action IDs: `4`.
+* `scripts/quality.sh`: passed.
+  * Python tests: `68 passed`.
+  * Dashboard Vitest: `12 passed`.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports:
+  * Python tests: `68 passed`.
+  * dashboard Vitest: `12 passed`.
+  * security: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+* No test servers remained on `8765`, `8875` or `5373`.
+
+Remaining next work:
+
+1. Add real metric dimensions where source adapters can provide them:
+   landing page, query, product, campaign, source/medium, content object.
+2. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+3. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+4. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.

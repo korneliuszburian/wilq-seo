@@ -760,6 +760,9 @@ function MetricInventory({
                 <div className="mt-2 text-xs text-slate-600">
                   {fact.source_connector} / {fact.period}
                 </div>
+                <div className="mt-1 text-xs text-slate-600">
+                  {formatMetricDelta(fact)} / {fact.freshness_label ?? fact.freshness_state ?? "unknown"}
+                </div>
                 <div className="mt-1 break-words text-xs text-slate-500">
                   Evidence: {fact.evidence_id}
                 </div>
@@ -781,6 +784,8 @@ function MetricFactChips({ facts }: { facts: MetricFact[] }) {
           className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
         >
           {fact.name}: {formatMetricFactValue(fact)}
+          {fact.delta !== null && fact.delta !== undefined ? ` (${formatMetricDelta(fact)})` : ""}
+          {fact.freshness_label ? ` / ${fact.freshness_label}` : ""}
         </span>
       ))}
     </div>
@@ -847,6 +852,18 @@ function BlockerNotice({ message }: { message: string }) {
 function formatMetricFactValue(fact: MetricFact) {
   const suffix = fact.unit ? ` ${fact.unit}` : "";
   return `${fact.value}${suffix}`;
+}
+
+function formatMetricDelta(fact: MetricFact) {
+  if (fact.delta === null || fact.delta === undefined || !fact.trend || fact.trend === "unknown") {
+    return "delta: brak";
+  }
+  const sign = fact.delta > 0 ? "+" : "";
+  const percent =
+    fact.delta_percent === null || fact.delta_percent === undefined
+      ? ""
+      : ` (${sign}${fact.delta_percent.toFixed(1)}%)`;
+  return `delta: ${sign}${fact.delta}${percent}`;
 }
 
 function MarketingBriefPanel({
