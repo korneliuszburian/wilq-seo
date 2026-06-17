@@ -13,6 +13,7 @@ from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summar
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
 from wilq.connectors.google_auth import GOOGLE_SERVICE_ACCOUNT_ENV_NAMES
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
+from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
 from wilq.connectors.vendor import VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.schemas import (
@@ -52,6 +53,8 @@ def clear_google_service_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "GOOGLE_SEARCH_CONSOLE_SITE_URL",
         "GSC_SITE_URL",
         "GA4_PROPERTY_ID",
+        "GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID",
+        "GOOGLE_SHEETS_SPREADSHEET_ID",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -645,6 +648,97 @@ def test_google_first_party_vendor_reads_route_through_refresh_endpoint(
     assert ga4_response.status_code == 200
     assert gsc_response.json()["metric_summary"] == {"clicks": 12, "impressions": 120}
     assert ga4_response.json()["metric_summary"] == {"active_users": 20, "sessions": 30}
+
+
+def test_google_sheets_vendor_read_uses_spreadsheets_get(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID", "sheet-id")
+    monkeypatch.setattr(
+        "wilq.connectors.google_sheets.client.google_service_account_access_token",
+        lambda scopes: "sheets-access-token",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "sheets.googleapis.com"
+        assert request.url.path == "/v4/spreadsheets/sheet-id"
+        assert request.headers["authorization"] == "Bearer sheets-access-token"
+        assert "sheets(properties(" in request.url.params["fields"]
+        assert request.url.params["includeGridData"] == "false"
+        return httpx.Response(
+            200,
+            json={
+                "sheets": [
+                    {
+                        "properties": {
+                            "sheetId": 1,
+                            "gridProperties": {"rowCount": 100, "columnCount": 8},
+                        }
+                    },
+                    {
+                        "properties": {
+                            "sheetId": 2,
+                            "gridProperties": {"rowCount": 20, "columnCount": 4},
+                        }
+                    },
+                ]
+            },
+        )
+
+    result = refresh_google_sheets_review_surface(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary == {
+        "api": "google_sheets_spreadsheets_get",
+        "spreadsheet_configured": 1,
+        "sheet_count": 2,
+        "total_grid_rows": 120,
+        "total_grid_columns": 12,
+        "max_grid_rows": 100,
+        "max_grid_columns": 8,
+    }
+
+
+def test_google_sheets_vendor_read_routes_through_refresh_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "sheets_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID", "sheet-id")
+    service_account_json = tmp_path / "sa.json"
+    service_account_json.write_text('{"type":"service_account"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(service_account_json))
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_google_sheets_review_surface",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Google Sheets metadata completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"sheet_count": 2, "total_grid_rows": 120},
+        ),
+    )
+
+    response = client.post(
+        "/api/connectors/google_sheets/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+
+    assert response.status_code == 200
+    run = response.json()
+    assert run["status"] == "completed"
+    assert run["metric_summary"] == {"sheet_count": 2, "total_grid_rows": 120}
 
 
 def test_wordpress_vendor_read_uses_rest_content_inventory(

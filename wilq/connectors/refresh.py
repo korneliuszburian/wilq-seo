@@ -5,6 +5,7 @@ from uuid import uuid4
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
+from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
 from wilq.connectors.registry import get_connector_status
 from wilq.connectors.vendor import VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
@@ -90,6 +91,8 @@ def _refresh_result(
         return refresh_search_console_site_summary(request)
     if connector_id == "google_analytics_4":
         return refresh_ga4_behavior_summary(request)
+    if connector_id == "google_sheets":
+        return refresh_google_sheets_review_surface(request)
     if connector_id in {"wordpress_ekologus", "wordpress_sklep"}:
         return refresh_wordpress_content_inventory(connector_id, request)
     summary = (
