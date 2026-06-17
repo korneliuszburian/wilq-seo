@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from typing import Literal
+from urllib.parse import urlparse
 
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -15,6 +16,15 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 TACTICAL_QUEUE_LIMIT = 24
+TACTICAL_QUEUE_DOMAIN_FLOOR = 4
+TACTICAL_QUEUE_SOURCE_CONNECTORS = (
+    "google_search_console",
+    "google_analytics_4",
+    "google_merchant_center",
+    "wordpress_ekologus",
+    "wordpress_sklep",
+)
+TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT = 300
 TacticalIntent = Literal[
     "content_refresh",
     "content_create",
@@ -29,17 +39,19 @@ TacticalIntent = Literal[
 def build_tactical_queue() -> TacticalQueueResponse:
     facts = [
         fact
-        for fact in metric_store().list_metric_facts(limit=500)
+        for fact in _tactical_metric_facts()
         if fact.dimensions and not _is_probe_only_fact(fact)
     ]
     actions = list_actions()
     action_ids_by_connector = _action_ids_by_connector(actions)
+    wordpress_index = _wordpress_content_index(facts)
+    gsc_page_counts = _gsc_page_counts(facts)
     items = [
-        *_gsc_content_items(facts, action_ids_by_connector),
-        *_ga4_quality_items(facts, action_ids_by_connector),
+        *_gsc_content_items(facts, action_ids_by_connector, wordpress_index, gsc_page_counts),
+        *_ga4_quality_items(facts, action_ids_by_connector, wordpress_index),
         *_merchant_feed_items(facts, action_ids_by_connector),
     ]
-    items = sorted(items, key=lambda item: item.priority)[:TACTICAL_QUEUE_LIMIT]
+    items = _balanced_tactical_items(items, limit=TACTICAL_QUEUE_LIMIT)
     return TacticalQueueResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         items=items,
@@ -48,9 +60,47 @@ def build_tactical_queue() -> TacticalQueueResponse:
     )
 
 
+def _tactical_metric_facts() -> list[MetricFact]:
+    facts: list[MetricFact] = []
+    for connector_id in TACTICAL_QUEUE_SOURCE_CONNECTORS:
+        facts.extend(
+            metric_store().list_metric_facts(
+                connector_id=connector_id,
+                limit=TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT,
+            )
+        )
+    return facts
+
+
+def _balanced_tactical_items(
+    items: list[TacticalQueueItem],
+    *,
+    limit: int,
+) -> list[TacticalQueueItem]:
+    sorted_items = sorted(items, key=_tactical_sort_key)
+    selected: list[TacticalQueueItem] = []
+    for domain in _unique(item.domain.value for item in sorted_items):
+        domain_items = [item for item in sorted_items if item.domain.value == domain]
+        for item in domain_items[:TACTICAL_QUEUE_DOMAIN_FLOOR]:
+            if item not in selected:
+                selected.append(item)
+    for item in sorted_items:
+        if len(selected) >= limit:
+            break
+        if item not in selected:
+            selected.append(item)
+    return sorted(selected, key=_tactical_sort_key)[:limit]
+
+
+def _tactical_sort_key(item: TacticalQueueItem) -> tuple[int, str]:
+    return (item.priority, item.id)
+
+
 def _gsc_content_items(
     facts: list[MetricFact],
     action_ids_by_connector: dict[str, list[str]],
+    wordpress_index: dict[str, MetricFact],
+    gsc_page_counts: dict[str, int],
 ) -> list[TacticalQueueItem]:
     grouped = _group_facts(
         fact
@@ -64,8 +114,20 @@ def _gsc_content_items(
         impressions = _numeric_fact(group_facts, "impressions")
         ctr = _numeric_fact(group_facts, "ctr")
         position = _numeric_fact(group_facts, "average_position")
-        intent = _content_intent(clicks, impressions, ctr, position)
+        wordpress_fact = _find_wordpress_fact(wordpress_index, page)
+        intent = _content_intent(
+            clicks,
+            impressions,
+            ctr,
+            position,
+            wordpress_fact=wordpress_fact,
+            page_query_count=gsc_page_counts.get(_normalize_url_key(page), 1),
+        )
         priority = _content_priority(intent, impressions, position, index)
+        item_facts = [*group_facts[:6], *([wordpress_fact] if wordpress_fact else [])]
+        source_connectors = ["google_search_console"]
+        if wordpress_fact:
+            source_connectors.append(wordpress_fact.source_connector)
         items.append(
             TacticalQueueItem(
                 id=f"tq_gsc_{_stable_slug(page)}_{_stable_slug(query)}",
@@ -74,11 +136,24 @@ def _gsc_content_items(
                 intent=intent,
                 priority=priority,
                 risk=ActionRisk.low,
-                source_connectors=["google_search_console"],
-                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
-                metric_facts=group_facts[:6],
-                dimensions={"query": query, "page": page},
-                diagnosis=_gsc_diagnosis(query, page, clicks, impressions, ctr, position),
+                source_connectors=source_connectors,
+                evidence_ids=_unique(fact.evidence_id for fact in item_facts),
+                metric_facts=item_facts,
+                dimensions={
+                    "query": query,
+                    "page": page,
+                    **_wordpress_match_dimensions(wordpress_fact),
+                    "gsc_page_query_count": str(gsc_page_counts.get(_normalize_url_key(page), 1)),
+                },
+                diagnosis=_gsc_diagnosis(
+                    query,
+                    page,
+                    clicks,
+                    impressions,
+                    ctr,
+                    position,
+                    wordpress_fact=wordpress_fact,
+                ),
                 next_step=_content_next_step(intent),
                 blocked_claims=["lead quality", "conversion uplift", "revenue impact"],
                 action_ids=action_ids_by_connector.get("wordpress_ekologus", []),
@@ -90,6 +165,7 @@ def _gsc_content_items(
 def _ga4_quality_items(
     facts: list[MetricFact],
     action_ids_by_connector: dict[str, list[str]],
+    wordpress_index: dict[str, MetricFact],
 ) -> list[TacticalQueueItem]:
     grouped = _group_facts(
         fact
@@ -105,12 +181,17 @@ def _ga4_quality_items(
         active_users = _numeric_fact(group_facts, "active_users")
         sessions = _numeric_fact(group_facts, "sessions")
         engagement_rate = _numeric_fact(group_facts, "engagement_rate")
+        wordpress_fact = _find_wordpress_fact(wordpress_index, landing_page)
         intent: TacticalIntent = (
             "landing_page_quality"
             if engagement_rate is not None and engagement_rate < 0.2
             else "traffic_quality_review"
         )
         priority = _ga4_priority(active_users, engagement_rate, index)
+        item_facts = [*group_facts[:6], *([wordpress_fact] if wordpress_fact else [])]
+        source_connectors = ["google_analytics_4"]
+        if wordpress_fact:
+            source_connectors.append(wordpress_fact.source_connector)
         items.append(
             TacticalQueueItem(
                 id=f"tq_ga4_{_stable_slug(landing_page)}_{_stable_slug(source_medium)}",
@@ -119,13 +200,14 @@ def _ga4_quality_items(
                 intent=intent,
                 priority=priority,
                 risk=ActionRisk.low,
-                source_connectors=["google_analytics_4"],
-                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
-                metric_facts=group_facts[:6],
+                source_connectors=source_connectors,
+                evidence_ids=_unique(fact.evidence_id for fact in item_facts),
+                metric_facts=item_facts,
                 dimensions={
                     "landing_page": landing_page,
                     "source_medium": source_medium,
                     "campaign_name": campaign_name,
+                    **_wordpress_match_dimensions(wordpress_fact),
                 },
                 diagnosis=_ga4_diagnosis(
                     landing_page,
@@ -134,6 +216,7 @@ def _ga4_quality_items(
                     active_users,
                     sessions,
                     engagement_rate,
+                    wordpress_fact=wordpress_fact,
                 ),
                 next_step=(
                     "Sprawdź landing page, message match i tracking. Nie oceniaj kampanii "
@@ -272,12 +355,69 @@ def _numeric_fact(facts: list[MetricFact], name: str) -> float | int | None:
     return fact.value
 
 
+def _wordpress_content_index(facts: list[MetricFact]) -> dict[str, MetricFact]:
+    index: dict[str, MetricFact] = {}
+    for fact in facts:
+        if not fact.source_connector.startswith("wordpress"):
+            continue
+        if fact.name != "content_object_seen":
+            continue
+        content_url = fact.dimensions.get("content_url")
+        if not content_url:
+            continue
+        _set_wordpress_index(index, _normalize_url_key(content_url), fact)
+        path_key = _normalize_path_key(content_url)
+        if path_key != "/":
+            _set_wordpress_index(index, path_key, fact)
+    return index
+
+
+def _find_wordpress_fact(index: dict[str, MetricFact], page_or_path: str) -> MetricFact | None:
+    full_match = index.get(_normalize_url_key(page_or_path))
+    if full_match:
+        return full_match
+    path_key = _normalize_path_key(page_or_path)
+    if path_key == "/":
+        return None
+    return index.get(path_key)
+
+
+def _set_wordpress_index(
+    index: dict[str, MetricFact],
+    key: str,
+    fact: MetricFact,
+) -> None:
+    current = index.get(key)
+    if current is None or fact.source_connector == "wordpress_ekologus":
+        index[key] = fact
+
+
+def _gsc_page_counts(facts: list[MetricFact]) -> dict[str, int]:
+    queries_by_page: dict[str, set[str]] = {}
+    for fact in facts:
+        if fact.source_connector != "google_search_console":
+            continue
+        page = fact.dimensions.get("page")
+        query = fact.dimensions.get("query")
+        if not page or not query:
+            continue
+        queries_by_page.setdefault(_normalize_url_key(page), set()).add(query)
+    return {page: len(queries) for page, queries in queries_by_page.items()}
+
+
 def _content_intent(
     clicks: float | int | None,
     impressions: float | int | None,
     ctr: float | int | None,
     position: float | int | None,
+    *,
+    wordpress_fact: MetricFact | None,
+    page_query_count: int,
 ) -> TacticalIntent:
+    if wordpress_fact is None:
+        return "content_create"
+    if page_query_count >= 3:
+        return "content_merge"
     if (
         impressions
         and impressions >= 100
@@ -338,10 +478,14 @@ def _gsc_diagnosis(
     impressions: float | int | None,
     ctr: float | int | None,
     position: float | int | None,
+    *,
+    wordpress_fact: MetricFact | None,
 ) -> str:
+    wordpress_note = _wordpress_match_note(wordpress_fact)
     return (
         f"Query `{query}` prowadzi do `{page}`. GSC facts: clicks={clicks or 0}, "
-        f"impressions={impressions or 0}, ctr={ctr or 0}, average_position={position or 0}."
+        f"impressions={impressions or 0}, ctr={ctr or 0}, average_position={position or 0}. "
+        f"{wordpress_note}"
     )
 
 
@@ -352,11 +496,14 @@ def _ga4_diagnosis(
     active_users: float | int | None,
     sessions: float | int | None,
     engagement_rate: float | int | None,
+    *,
+    wordpress_fact: MetricFact | None,
 ) -> str:
+    wordpress_note = _wordpress_match_note(wordpress_fact)
     return (
         f"Landing `{landing_page}` z `{source_medium}` i kampanii `{campaign_name}` ma "
         f"active_users={active_users or 0}, sessions={sessions or 0}, "
-        f"engagement_rate={engagement_rate or 0}."
+        f"engagement_rate={engagement_rate or 0}. {wordpress_note}"
     )
 
 
@@ -371,6 +518,31 @@ def _content_next_step(intent: TacticalIntent) -> str:
     if intent == "content_merge":
         return "Sprawdź overlap intencji i przygotuj merge plan z redirect/audit checklist."
     return "Przygotuj refresh istniejącej strony: tytuł, H1/H2, sekcje brakujące i CTA."
+
+
+def _wordpress_match_dimensions(wordpress_fact: MetricFact | None) -> dict[str, str]:
+    if wordpress_fact is None:
+        return {"wordpress_match": "missing"}
+    dimensions = wordpress_fact.dimensions
+    return {
+        "wordpress_match": "found",
+        "wordpress_connector": wordpress_fact.source_connector,
+        "wordpress_content_type": dimensions.get("content_type", ""),
+        "wordpress_status": dimensions.get("status", ""),
+        "wordpress_content_url": dimensions.get("content_url", ""),
+        "wordpress_modified_gmt": dimensions.get("modified_gmt", ""),
+    }
+
+
+def _wordpress_match_note(wordpress_fact: MetricFact | None) -> str:
+    if wordpress_fact is None:
+        return "WordPress inventory nie potwierdza istniejącej strony w ostatnim odczycie."
+    dimensions = wordpress_fact.dimensions
+    return (
+        "WordPress inventory potwierdza istniejący obiekt "
+        f"{dimensions.get('content_type', 'content')} "
+        f"status={dimensions.get('status', 'unknown')}."
+    )
 
 
 def _action_ids_by_connector(actions: Iterable[object]) -> dict[str, list[str]]:
@@ -397,6 +569,28 @@ def _stable_slug(value: str) -> str:
     normalized = "".join(character if character.isalnum() else "_" for character in value.lower())
     compact = "_".join(part for part in normalized.split("_") if part)
     return (compact or "unknown")[:48]
+
+
+def _normalize_url_key(value: str) -> str:
+    parsed = urlparse(value)
+    if parsed.netloc:
+        path = parsed.path or "/"
+        return f"{parsed.netloc.lower()}{_normalize_path_only(path)}"
+    return _normalize_path_key(value)
+
+
+def _normalize_path_key(value: str) -> str:
+    parsed = urlparse(value)
+    return _normalize_path_only(parsed.path or value)
+
+
+def _normalize_path_only(value: str) -> str:
+    path = value.strip() or "/"
+    if not path.startswith("/"):
+        path = f"/{path}"
+    if path != "/" and path.endswith("/"):
+        path = path.rstrip("/")
+    return path.lower()
 
 
 def _unique(items: Iterable[str]) -> list[str]:

@@ -4801,3 +4801,148 @@ Remaining next work:
    diagnostics. Current live failure is `oauth_error=deleted_client`.
 6. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
+
+---
+
+## 42. WordPress URL inventory join and queue stability - 2026-06-18
+
+Implemented the first remaining item from section 41, with an important live
+data correction.
+
+What changed:
+
+* WordPress vendor reads now collect sanitized URL inventory facts:
+  * `content_object_seen`,
+  * `connector_id`,
+  * `site_kind`,
+  * `content_type`,
+  * `object_id`,
+  * `content_url`,
+  * `status`,
+  * `modified_gmt`.
+* WordPress reads request up to `100` objects per content type through REST and
+  still persist only redacted operational facts. They do not store titles,
+  bodies, raw response dumps, credential paths or auth values.
+* Tactical queue now joins GSC `page` and GA4 `landing_page` items against
+  WordPress URL inventory.
+* Queue item dimensions now expose:
+  * `wordpress_match`,
+  * `wordpress_connector`,
+  * `wordpress_content_type`,
+  * `wordpress_status`,
+  * `wordpress_content_url`,
+  * `wordpress_modified_gmt`,
+  * `gsc_page_query_count` for GSC content items.
+* Content intent now uses WordPress evidence:
+  * no WordPress match -> `content_create`,
+  * WordPress match plus many GSC queries -> `content_merge`,
+  * WordPress match plus weak CTR/position -> `content_refresh`,
+  * weak demand -> `content_block`.
+* Fixed a false-positive URL join found in live proof:
+  * `https://www.ekologus.pl/` must not match `https://sklep.ekologus.pl/`.
+  * root `/` does not use cross-domain path fallback.
+  * non-root paths may still match across dev/prod domains so staged WordPress
+    URLs can map to Search Console/GA4 production paths.
+* Tactical queue no longer depends on the global latest `500` facts window.
+  It reads per source connector, so recent WordPress/Localo probe facts cannot
+  push GSC/GA4/Merchant evidence out of the queue.
+* Tactical queue now keeps route usefulness by selecting a balanced queue:
+  up to `4` strongest items per domain first, then global priority fill to the
+  `24` item limit. This keeps `/ga4`, `/seo-gsc` and `/merchant` useful even
+  when one source dominates priority.
+* DuckDB metric listing now has stable tie-breakers:
+  `dimensions_json` and `evidence_id`. This fixed a verify failure where
+  `/api/marketing/brief` and `/api/codex/context-pack` could differ only by
+  nondeterministic evidence ID ordering.
+* The content refresh ActionObject metric sample now preserves required
+  representative facts such as `content_object_count`, `clicks` and
+  `domain_rating` even after many detailed URL facts exist.
+
+Live API proof after the fix:
+
+```text
+GET /api/marketing/tactical-queue
+items 24
+domains {'gsc_seo': 10, 'ga4': 10, 'merchant': 4}
+intents {'content_create': 10, 'landing_page_quality': 2, 'merchant_feed_triage': 4, 'traffic_quality_review': 8}
+wordpress_found 0
+homepage https://www.ekologus.pl/ -> wordpress_match=missing, wordpress_connector=null
+```
+
+WordPress live refresh proof:
+
+```text
+wordpress_ekologus completed refresh_wordpress_ekologus_4648cab8f7bf
+summary: WordPress vendor read completed through REST content inventory.
+objects: 16
+
+wordpress_sklep completed refresh_wordpress_sklep_2fad66a8612f
+summary: WordPress vendor read completed through REST content inventory.
+objects: 11
+```
+
+Important data limitation found:
+
+* Current WordPress REST inventory has `25` distinct WordPress paths across the
+  primary and shop sites.
+* Current GSC/GA4 metric facts have `0` non-root path matches against that
+  inventory.
+* Therefore the live queue correctly marks current GSC/GA4 content items as
+  `wordpress_match=missing`. This is not a prompt failure. It means WILQ needs
+  better URL inventory/canonical mapping before it can confidently classify
+  those items as refresh/merge instead of create.
+* The next content slice should add a deeper WordPress URL source:
+  pagination beyond the latest REST page if needed, sitemap/canonical URL
+  ingestion, or explicit dev/prod URL mapping rules. Until then, WILQ must not
+  claim an existing WordPress page unless the evidence confirms it.
+
+Verification:
+
+```bash
+uv run ruff check wilq/connectors/wordpress/client.py wilq/briefing/tactical_queue.py wilq/actions/service.py wilq/storage/metric_store.py tests/test_api_contracts.py
+uv run mypy wilq/connectors/wordpress/client.py wilq/briefing/tactical_queue.py wilq/actions/service.py wilq/storage/metric_store.py
+uv run pytest tests/test_api_contracts.py tests/test_metric_store_and_cli.py -q
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Focused API/metric tests: `60 passed`.
+* Full Python tests through quality/verify: `70 passed`.
+* Dashboard unit tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+* `scripts/quality.sh`: passed.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+
+Remaining next work:
+
+1. Add deeper URL inventory/canonical mapping for content:
+   * WordPress pagination or sitemap source,
+   * staged-dev to production URL mapping rules,
+   * explicit confidence labels for exact URL vs path fallback.
+2. Add Merchant issue reason/detail enrichment if the Merchant adapter exposes
+   safe issue identifiers or reason labels without raw product dumps.
+3. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+4. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+5. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+6. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.

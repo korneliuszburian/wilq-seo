@@ -212,6 +212,21 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
                 },
             ),
         ],
+        "refresh_wordpress_ekologus_action_test": [
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "site_kind": "primary",
+                    "content_type": "pages",
+                    "object_id": "42",
+                    "content_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+                    "status": "publish",
+                    "modified_gmt": "2026-06-15T10:00:00",
+                },
+            )
+        ],
         "refresh_google_merchant_center_action_test": [
             VendorMetricFact(
                 name="issue_product_count",
@@ -691,6 +706,11 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert "merchant_feed_triage" in intents
     assert queue["evidence_ids"]
     assert queue["action_ids"]
+    content_items = [item for item in queue["items"] if item["intent"] == "content_refresh"]
+    assert any(item["dimensions"]["wordpress_match"] == "found" for item in content_items)
+    assert any("wordpress_ekologus" in item["source_connectors"] for item in content_items)
+    ga4_items = [item for item in queue["items"] if item["intent"] == "landing_page_quality"]
+    assert any(item["dimensions"]["wordpress_match"] == "found" for item in ga4_items)
     for item in queue["items"]:
         assert item["dimensions"]
         assert item["evidence_ids"]
@@ -1510,19 +1530,33 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "ekologus.test"
         assert request.headers["authorization"].startswith("Basic ")
-        assert request.url.params["per_page"] == "1"
-        assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt"
+        assert request.url.params["per_page"] == "100"
+        assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug"
         if request.url.path == "/wp-json/wp/v2/posts":
             return httpx.Response(
                 200,
                 headers={"X-WP-Total": "12"},
-                json=[{"id": 1, "status": "publish", "modified_gmt": "2026-06-15T10:00:00"}],
+                json=[
+                    {
+                        "id": 1,
+                        "status": "publish",
+                        "modified_gmt": "2026-06-15T10:00:00",
+                        "link": "https://ekologus.test/blog/remediacja/",
+                    }
+                ],
             )
         if request.url.path == "/wp-json/wp/v2/pages":
             return httpx.Response(
                 200,
                 headers={"X-WP-Total": "4"},
-                json=[{"id": 2, "status": "publish", "modified_gmt": "2026-06-16T10:00:00"}],
+                json=[
+                    {
+                        "id": 2,
+                        "status": "publish",
+                        "modified_gmt": "2026-06-16T10:00:00",
+                        "link": "https://ekologus.test/oferta/",
+                    }
+                ],
             )
         return httpx.Response(404)
 
@@ -1552,6 +1586,19 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "connector_id": "wordpress_ekologus",
         "site_kind": "primary",
         "content_type": "posts",
+    }
+    content_url_fact = next(
+        fact for fact in result.metric_facts if fact.name == "content_object_seen"
+    )
+    assert content_url_fact.value == 1
+    assert content_url_fact.dimensions == {
+        "connector_id": "wordpress_ekologus",
+        "site_kind": "primary",
+        "content_type": "posts",
+        "object_id": "1",
+        "content_url": "https://ekologus.test/blog/remediacja/",
+        "status": "publish",
+        "modified_gmt": "2026-06-15T10:00:00",
     }
 
 

@@ -110,15 +110,15 @@ class DuckDbMetricStore:
               dimensions_json,
               LAG(metric_value_double) OVER (
                 PARTITION BY connector_id, metric_name, dimensions_json
-                ORDER BY collected_at ASC
+                ORDER BY collected_at ASC, evidence_id ASC
               ) AS previous_metric_value_double,
               LAG(metric_value_text) OVER (
                 PARTITION BY connector_id, metric_name, dimensions_json
-                ORDER BY collected_at ASC
+                ORDER BY collected_at ASC, evidence_id ASC
               ) AS previous_metric_value_text,
               LAG(value_kind) OVER (
                 PARTITION BY connector_id, metric_name, dimensions_json
-                ORDER BY collected_at ASC
+                ORDER BY collected_at ASC, evidence_id ASC
               ) AS previous_value_kind
             FROM connector_metric_facts
             )
@@ -142,7 +142,15 @@ class DuckDbMetricStore:
         if connector_id:
             query += " WHERE connector_id = ?"
             params.append(connector_id)
-        query += " ORDER BY collected_at DESC, connector_id ASC, metric_name ASC LIMIT ?"
+        query += """
+            ORDER BY
+              collected_at DESC,
+              connector_id ASC,
+              metric_name ASC,
+              dimensions_json ASC,
+              evidence_id ASC
+            LIMIT ?
+        """
         params.append(bounded_limit)
         with self._connect() as connection:
             rows = connection.execute(query, params).fetchall()

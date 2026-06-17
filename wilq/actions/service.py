@@ -181,6 +181,10 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         *by_connector.get("ahrefs", []),
     ]
     if content_facts and by_connector.get("wordpress_ekologus"):
+        content_action_metrics = _prioritize_action_metrics(
+            content_facts,
+            required_names={"content_object_count", "clicks", "domain_rating"},
+        )
         action = ActionObject(
             id="act_prepare_content_refresh_queue",
             title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
@@ -190,7 +194,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             risk=ActionRisk.medium,
             status=ActionStatus.needs_validation,
             evidence_ids=_unique(fact.evidence_id for fact in content_facts),
-            metrics=content_facts[:10],
+            metrics=content_action_metrics[:10],
             human_diagnosis=(
                 "WordPress inventory istnieje w WILQ API i można go zestawić z GSC/Ahrefs, "
                 "żeby planować refresh zamiast duplikować treści. "
@@ -232,6 +236,23 @@ def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
 def _metric_sentence(facts: list[MetricFact]) -> str:
     sample = ", ".join(f"{fact.name}={fact.value}" for fact in facts[:4])
     return f"Najważniejsze fakty: {sample}"
+
+
+def _prioritize_action_metrics(
+    facts: list[MetricFact],
+    *,
+    required_names: set[str],
+) -> list[MetricFact]:
+    required: list[MetricFact] = []
+    remaining: list[MetricFact] = []
+    seen_required: set[str] = set()
+    for fact in facts:
+        if fact.name in required_names and fact.name not in seen_required:
+            required.append(fact)
+            seen_required.add(fact.name)
+        else:
+            remaining.append(fact)
+    return [*required, *remaining]
 
 
 def _is_probe_only_fact(fact: MetricFact) -> bool:

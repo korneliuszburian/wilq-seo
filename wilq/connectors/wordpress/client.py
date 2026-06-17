@@ -31,7 +31,8 @@ WORDPRESS_CONNECTORS = {
 }
 
 WORDPRESS_CONTENT_TYPES = ("posts", "pages")
-WORDPRESS_READ_FIELDS = "id,status,modified_gmt,date_gmt"
+WORDPRESS_CONTENT_PER_PAGE = 100
+WORDPRESS_READ_FIELDS = "id,status,modified_gmt,date_gmt,link,slug"
 
 
 @dataclass(frozen=True)
@@ -141,7 +142,7 @@ def _fetch_content_inventory(
     credentials: WordPressCredentials,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     auth = httpx.BasicAuth(credentials.username or "", credentials.application_auth or "")
-    summaries: dict[str, dict[str, int | str]] = {}
+    summaries: dict[str, dict[str, int | str | list[dict[str, str]]]] = {}
     content_object_count = 0
     latest_modified_values: list[str] = []
     for content_type in WORDPRESS_CONTENT_TYPES:
@@ -152,7 +153,7 @@ def _fetch_content_inventory(
             auth,
         )
         summaries[content_type] = summary
-        content_object_count += int(summary["total"])
+        content_object_count += _summary_total(summary)
         latest = summary["latest_modified_gmt"]
         if isinstance(latest, str) and latest:
             latest_modified_values.append(latest)
@@ -161,8 +162,8 @@ def _fetch_content_inventory(
         "connector_id": connector_id,
         "site_kind": credentials.site_kind,
         "content_object_count": content_object_count,
-        "posts_total": int(summaries["posts"]["total"]),
-        "pages_total": int(summaries["pages"]["total"]),
+        "posts_total": _summary_total(summaries["posts"]),
+        "pages_total": _summary_total(summaries["pages"]),
         "latest_modified_gmt": max(latest_modified_values) if latest_modified_values else "",
         "latest_post_modified_gmt": str(summaries["posts"]["latest_modified_gmt"]),
         "latest_page_modified_gmt": str(summaries["pages"]["latest_modified_gmt"]),
@@ -170,7 +171,7 @@ def _fetch_content_inventory(
     metric_facts = [
         VendorMetricFact(
             name="content_object_count",
-            value=int(summary["total"]),
+            value=_summary_total(summary),
             dimensions={
                 "connector_id": connector_id,
                 "site_kind": credentials.site_kind,
@@ -179,6 +180,26 @@ def _fetch_content_inventory(
         )
         for content_type, summary in summaries.items()
     ]
+    for content_type, summary in summaries.items():
+        objects = summary["objects"]
+        if not isinstance(objects, list):
+            continue
+        for item in objects:
+            metric_facts.append(
+                VendorMetricFact(
+                    name="content_object_seen",
+                    value=1,
+                    dimensions={
+                        "connector_id": connector_id,
+                        "site_kind": credentials.site_kind,
+                        "content_type": content_type,
+                        "object_id": item.get("object_id", ""),
+                        "content_url": item.get("content_url", ""),
+                        "status": item.get("status", ""),
+                        "modified_gmt": item.get("modified_gmt", ""),
+                    },
+                )
+            )
     return metric_summary, metric_facts
 
 
@@ -187,12 +208,12 @@ def _fetch_content_type_summary(
     base_url: str,
     content_type: str,
     auth: httpx.BasicAuth,
-) -> dict[str, int | str]:
+) -> dict[str, int | str | list[dict[str, str]]]:
     response = client.get(
         urljoin(base_url, f"wp-json/wp/v2/{content_type}"),
         auth=auth,
         params={
-            "per_page": 1,
+            "per_page": WORDPRESS_CONTENT_PER_PAGE,
             "orderby": "modified",
             "order": "desc",
             "_fields": WORDPRESS_READ_FIELDS,
@@ -202,6 +223,7 @@ def _fetch_content_type_summary(
     return {
         "total": _header_int(response.headers.get("X-WP-Total")),
         "latest_modified_gmt": _latest_modified(response.json()),
+        "objects": _content_objects(response.json()),
     }
 
 
@@ -233,6 +255,11 @@ def _header_int(value: str | None) -> int:
         return 0
 
 
+def _summary_total(summary: dict[str, int | str | list[dict[str, str]]]) -> int:
+    total = summary["total"]
+    return total if isinstance(total, int) else 0
+
+
 def _latest_modified(payload: Any) -> str:
     if not isinstance(payload, list):
         return ""
@@ -243,3 +270,27 @@ def _latest_modified(payload: Any) -> str:
         if isinstance(modified, str):
             return modified
     return ""
+
+
+def _content_objects(payload: Any) -> list[dict[str, str]]:
+    if not isinstance(payload, list):
+        return []
+    objects: list[dict[str, str]] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        content_url = item.get("link")
+        if not isinstance(content_url, str) or not content_url:
+            continue
+        object_id = item.get("id")
+        modified = item.get("modified_gmt") or item.get("date_gmt")
+        status = item.get("status")
+        objects.append(
+            {
+                "object_id": str(object_id) if object_id is not None else "",
+                "content_url": content_url,
+                "status": status if isinstance(status, str) else "",
+                "modified_gmt": modified if isinstance(modified, str) else "",
+            }
+        )
+    return objects
