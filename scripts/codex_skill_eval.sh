@@ -82,7 +82,7 @@ fi
 
 mkdir -p "$out_root"
 
-mapfile -t skills < <(python3 - "$cases_file" "$requested_skill" <<'PY'
+mapfile -t skills < <(uv run python - "$cases_file" "$requested_skill" <<'PY'
 import json
 import sys
 
@@ -107,7 +107,7 @@ for skill in "${skills[@]}"; do
   jsonl_file="$skill_out/trace.jsonl"
   stderr_file="$skill_out/stderr.log"
 
-  python3 - "$cases_file" "$skill" "$api_base" >"$prompt_file" <<'PY'
+  uv run python - "$cases_file" "$skill" "$api_base" >"$prompt_file" <<'PY'
 import json
 import sys
 
@@ -115,8 +115,15 @@ cases_path, skill, api_base = sys.argv[1], sys.argv[2], sys.argv[3]
 cases = {case["skill"]: case for case in json.loads(open(cases_path, encoding="utf-8").read())}
 case = cases[skill]
 connectors = ", ".join(f"`{connector}`" for connector in case["expected_connectors"])
-script_name = "smoke_context_pack.py" if skill == "wilq-daily-command" else "smoke_skill_contract.py"
+is_daily_command = skill == "wilq-daily-command"
+script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
+api_instruction = (
+    "Najpierw sprawdź API, pobierz /api/marketing/brief przez smoke script i "
+    "potwierdź zgodność marketing_brief w context-packu."
+    if is_daily_command
+    else "Najpierw sprawdź API i context-pack właściwy dla skillu."
+)
 print(f"""<task>
 Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
 Zadanie: {case["task_pl"]}
@@ -124,7 +131,7 @@ Zadanie: {case["task_pl"]}
 
 <api>
 WILQ API base: {api_base}
-Najpierw sprawdź API i context-pack właściwy dla skillu. Używaj wyłącznie endpointów dozwolonych w SKILL.md.
+{api_instruction} Używaj wyłącznie endpointów dozwolonych w SKILL.md.
 Oczekiwane connector surfaces: {connectors}
 </api>
 
@@ -190,7 +197,7 @@ PY
     exit 1
   fi
 
-  python3 - "$result_file" "$skill" "$api_base" <<'PY'
+  uv run python - "$result_file" "$skill" "$api_base" <<'PY'
 import json
 import re
 import sys
@@ -207,6 +214,8 @@ if data.get("api_base") != api_base:
     errors.append(f"api_base mismatch: {data.get('api_base')!r}")
 if data.get("api_used") is not True:
     errors.append("api_used must be true")
+if expected_skill == "wilq-daily-command" and not data.get("evidence_ids"):
+    errors.append("wilq-daily-command must return evidence_ids from MarketingBrief")
 if data.get("polish_diacritics_present") is not True:
     errors.append("polish_diacritics_present must be true")
 if data.get("allowed_endpoint_violation") is not False:
@@ -239,7 +248,7 @@ if errors:
 PY
 done
 
-python3 - "$out_root" >"$out_root/summary.json" <<'PY'
+uv run python - "$out_root" >"$out_root/summary.json" <<'PY'
 import json
 import sys
 from pathlib import Path

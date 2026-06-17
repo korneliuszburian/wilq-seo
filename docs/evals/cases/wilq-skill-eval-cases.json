@@ -1,7 +1,7 @@
 [
   {
     "skill": "wilq-daily-command",
-    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus: status connectorów, najważniejsze opportunity/action IDs, blokery i jeden najbezpieczniejszy następny krok.",
+    "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/marketing/brief i marketing_brief z context-packu: realne metryki, evidence IDs, blockery, ActionObject IDs i jeden najbezpieczniejszy następny krok.",
     "expected_connectors": [
       "google_ads",
       "google_search_console",

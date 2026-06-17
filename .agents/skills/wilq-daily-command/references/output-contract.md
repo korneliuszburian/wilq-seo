@@ -8,7 +8,18 @@ Expected outcome: A concise operating brief with source connector status, eviden
 
 ## Required API Context
 
-Fetch `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` before producing marketing analysis. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
+Fetch `GET /api/marketing/brief` before producing marketing analysis. This is
+the canonical daily brief view model used by dashboard and Codex skills.
+
+Then fetch `POST /api/codex/context-pack` with
+`{"skill":"wilq-daily-command"}` for wider context: connector status,
+refresh runs, evidence summaries, opportunities, ActionObjects, expert rules
+and knowledge cards. The embedded `marketing_brief` in the context pack must
+match `GET /api/marketing/brief` for language, section IDs, blocker count,
+recommendation count, evidence IDs and action IDs.
+
+Use `GET /api/connectors/{connector}/status` for each required connector when
+readiness matters.
 
 Required connectors:
 
@@ -29,7 +40,7 @@ Polish language contract: respond to the Ekologus marketer in Polish with Polish
 
 
 1. `Status`: API reachability, connector readiness and known blockers.
-2. `Dowody`: evidence IDs, connector IDs, freshness notes and metric summaries from WILQ API only.
+2. `Dowody`: evidence IDs, connector IDs, freshness notes and metric summaries from `MarketingBrief`/WILQ API only.
 3. `Diagnoza`: what the evidence supports, with uncertainty if the evidence is aggregate, stale or incomplete.
 4. `Kandydaci działań`: opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
 5. `Walidacja`: result or required call to `POST /api/actions/{action_id}/validate` before apply/execution.

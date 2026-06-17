@@ -12,16 +12,19 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 ## Workflow
 
 1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` before summarizing metrics, opportunities or action candidates.
-4. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-5. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-6. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+2. Run `uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
+3. Call `GET /api/marketing/brief` first. This is the canonical daily operator view model for Polish marketer output.
+4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` to get wider evidence, opportunities, actions, expert rules and knowledge cards.
+5. The `marketing_brief` embedded in the context pack must agree with `GET /api/marketing/brief` on `language`, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
+6. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
+7. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
+8. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
 
 ## Allowed API Endpoints
 
 - `GET /api/health`
 - `GET /api/system/status`
+- `GET /api/marketing/brief`
 - `POST /api/codex/context-pack`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
@@ -67,4 +70,4 @@ Polish language contract: produce all operator-facing responses in Polish with P
 
 ## Goal 001 Status
 
-This is fully wired in Goal 001: use the smoke script or direct API call before producing a daily brief.
+This is fully wired in Goal 001 through `GET /api/marketing/brief` and `POST /api/codex/context-pack`. Use the smoke script before claiming the skill path works.

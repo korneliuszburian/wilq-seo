@@ -1309,6 +1309,26 @@ def test_codex_context_pack_contains_no_metric_invention_instruction(
     assert "sk-supersecretvalue1234567890" not in serialized
 
 
+def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
+    brief_response = client.get("/api/marketing/brief")
+    assert brief_response.status_code == 200
+    brief = brief_response.json()
+
+    context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
+    assert context_response.status_code == 200
+    context_brief = context_response.json()["marketing_brief"]
+
+    assert context_brief["language"] == "pl-PL"
+    assert context_brief["language"] == brief["language"]
+    assert context_brief["blocker_count"] == brief["blocker_count"]
+    assert context_brief["recommendation_count"] == brief["recommendation_count"]
+    assert context_brief["evidence_ids"] == brief["evidence_ids"]
+    assert context_brief["action_ids"] == brief["action_ids"]
+    assert [section["id"] for section in context_brief["sections"]] == [
+        section["id"] for section in brief["sections"]
+    ]
+
+
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:
     response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert response.status_code == 200

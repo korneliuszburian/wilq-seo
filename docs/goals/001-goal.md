@@ -3448,3 +3448,99 @@ Remaining follow-up:
    type, entity ID, severity and freshness.
 4. Replace more dashboard sections with the brief view model instead of
    opportunity-readiness placeholders.
+
+---
+
+## 30. Daily Command MarketingBrief wiring - 2026-06-17
+
+Implemented the next follow-up from section 29:
+
+* `wilq-daily-command` now declares `GET /api/marketing/brief` as the canonical
+  daily operator view model.
+* The skill still fetches `POST /api/codex/context-pack`, but only as the wider
+  context layer. The embedded `marketing_brief` must match
+  `/api/marketing/brief`.
+* `smoke_context_pack.py` now validates:
+  * API health
+  * `/api/marketing/brief`
+  * `marketing_brief` embedded in context-pack
+  * `language=pl-PL`
+  * required brief sections:
+    `what_we_know`, `what_blocks_us`, `safe_next_actions`,
+    `recommended_focus`
+  * blocker/recommendation counts
+  * non-empty evidence IDs
+  * presence of `act_configure_google_ads_env`
+  * agreement between direct brief and context-pack brief
+* Smoke output now includes compact `brief_items`, so non-interactive Codex can
+  return real evidence-backed recommendations without making extra requests.
+* `scripts/codex_skill_eval.sh` now uses `uv run python` instead of global
+  `python3` for helper Python calls.
+* `scripts/codex_skill_eval.sh` now fails `wilq-daily-command` if final
+  `evidence_ids` are empty.
+
+Live smoke proof:
+
+```txt
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+health=ok
+marketing_brief_language=pl-PL
+marketing_brief_blocker_count=5
+marketing_brief_recommendation_count=3
+brief_evidence_count=16
+brief_action_ids=["act_configure_google_ads_env"]
+brief_items include:
+- WordPress ekologus.pl: content_object_count = 16
+- Ahrefs: ahrefs_rank = 1450
+- Google Ads OAuth blocker: oauth_error=invalid_grant
+- Merchant Center: zacznij od feed/product issues
+```
+
+Non-interactive Codex eval proof:
+
+```txt
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=420 \
+  scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Result path:
+
+```txt
+.local-lab/evals/codex-skill/20260617T202555Z
+```
+
+Summary:
+
+```json
+{
+  "skill": "wilq-daily-command",
+  "blocked": false,
+  "evidence_count": 5,
+  "recommendations_count": 1,
+  "actions_count": 1,
+  "operator_usefulness_score": 4
+}
+```
+
+Final eval behavior:
+
+* `language=pl-PL`
+* `polish_diacritics_present=true`
+* `api_used=true`
+* `allowed_endpoint_violation=false`
+* recommendation:
+  `Najbezpieczniejszy następny krok: otwórz kolejkę feed/product issues w Merchant Center i przygotuj wyłącznie payload preview, bez apply/write.`
+* recommendation evidence:
+  `ev_refresh_refresh_google_merchant_center_94937b1d93be`
+* action candidate:
+  `act_configure_google_ads_env`
+* Google Ads remains explicitly blocked until OAuth is renewed.
+
+Remaining next work:
+
+1. Add `scripts/eval_marketing_brief.sh` as a fast deterministic evaluator
+   independent of full Codex eval.
+2. Upgrade dashboard `/merchant` route to show the same Merchant recommendation
+   and feed issue queue from `MarketingBrief`.
+3. Add `MarketingBrief` evidence/action detail links in dashboard.
+4. Add validation call proof for `act_configure_google_ads_env` without apply.
