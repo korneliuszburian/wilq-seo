@@ -366,26 +366,28 @@ Current implementation slice completed and verified after `23a3260`:
   * `159d783 feat(dashboard): add marketer command center surface`
 * If resuming after context loss: do not reimplement or recommit this slice. Verify the current worktree first, then continue with the Google Ads data slice.
 
-Current active slice as of 2026-06-17 19:13 Europe/Warsaw:
+Current implementation slice completed after `7a5ced6`:
 
 * Product outcome: make the Google Ads blocker actionable and then turn live Ads data into the first real Ads Doctor proof surface. Do not claim Ads performance insight until WILQ has live Google Ads evidence IDs and metric facts.
-* Current proof:
+* Initial proof:
   * `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads data slice current-state proof"` reached Google's OAuth token endpoint with all required credential names present.
   * The refresh failed as a redacted WILQ connector run: `refresh_google_ads_46316753e85f`.
   * Evidence IDs recorded by the API: `ev_connector_google_ads_status`, `ev_refresh_refresh_google_ads_46316753e85f`.
   * External call was attempted; vendor data was not collected; metric summary was empty.
-  * Current exposed failure text is only `Google Ads OAuth token refresh HTTP 400.`
-* Immediate implementation requirement:
-  * Improve Google Ads OAuth failure diagnostics without leaking secrets: parse safe OAuth error labels such as `invalid_grant` from JSON error bodies, expose only sanitized labels/status codes in refresh errors, and add tests proving no secret/raw body leak.
-  * Keep `.env` values, token prefixes, client IDs, credential JSON bodies and raw vendor responses out of logs, docs and API responses.
-  * After diagnostics are in place, rerun `google_ads vendor_read`. If the sanitized label remains `invalid_grant`, the next human action is to generate/update a fresh `adwords`-scoped refresh token in the local `.env`; Codex must not pretend it can mint that token without OAuth consent.
-* Expected proof commands for this slice:
-  * `uv run pytest tests/test_api_contracts.py -q` or a narrower Google Ads connector test once added.
-  * `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads sanitized OAuth diagnostic proof"`.
-  * `GOMAXPROCS=1 scripts/verify.sh` before commit if the slice touches shared API/dashboard contracts.
-* Commit target:
-  * `fix(connectors): expose sanitized google ads oauth errors` if only diagnostics are changed.
-  * `feat(connectors): add live google ads evidence collection` only after successful live data collection exists.
+  * Before this slice, exposed failure text was only `Google Ads OAuth token refresh HTTP 400.`
+* Implemented:
+  * Google Ads HTTP failures now parse and expose only safe OAuth/API labels such as `oauth_error=invalid_grant`, `api_status=PERMISSION_DENIED` and numeric `api_code`.
+  * Raw `error_description`, `message`, vendor response bodies, credential values, token prefixes, client IDs and credential JSON bodies remain excluded from connector summaries/errors.
+  * A Google Ads connector test proves `invalid_grant` is exposed while raw OAuth detail, refresh token and client secret are not leaked.
+* Verified:
+  * `uv run ruff check wilq/connectors/google_ads/client.py tests/test_api_contracts.py` passed.
+  * `uv run mypy wilq/connectors/google_ads/client.py` passed.
+  * `uv run pytest tests/test_api_contracts.py -q` passed: 44/44 tests.
+  * `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads sanitized OAuth diagnostic proof"` created redacted run `refresh_google_ads_9e5da536ca71`.
+  * The live refresh exposed `Google Ads OAuth token refresh HTTP 400 (oauth_error=invalid_grant).`, attempted the external OAuth call, collected no vendor data and stored no metrics.
+* Current blocker after diagnostics:
+  * The local Google Ads credential tuple is present, but the refresh token is invalid for the `adwords` scope. The next human/API setup action is to generate or update a fresh `adwords`-scoped refresh token in the local `.env`; Codex must not claim live Ads metrics until the next `google_ads vendor_read` succeeds.
+  * If the token is updated, immediately rerun `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"` and then continue to live Ads evidence/Ads Doctor usefulness.
 
 Known external/product blockers:
 
@@ -419,6 +421,7 @@ Completed foundation that should not be reimplemented:
 * Goal recovery/acceptance gates are now explicit at the top of this file: keep this file current, prove real metrics/pages/products, prove Codex non-interactive behavior, prove dashboard/browser usefulness and preserve `docs/infra/001.md` scope.
 * Command Center now exposes the first marketer-facing operating surface pattern: Polish decision sections, ActionObject candidates, local metric facts, connector blockers, evidence IDs and explicit readiness-only warnings.
 * Command Center operating-surface slice was committed and pushed as `159d783 feat(dashboard): add marketer command center surface`.
+* Google Ads OAuth diagnostics now expose sanitized HTTP/OAuth labels without leaking raw vendor response bodies or credential material.
 
 Product scope that must not be simplified away:
 
@@ -448,12 +451,11 @@ Unfinished blockers to keep carrying forward:
 
 Next implementation queue:
 
-1. Google Ads OAuth diagnostic slice: expose sanitized OAuth error labels/status codes from failed token refreshes, with tests proving no secret/raw-response leakage.
-2. Google Ads data slice: once OAuth is fixed with a fresh `adwords`-scoped refresh token, prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence, metric facts and evidence IDs.
-3. Ads Doctor usefulness slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
-4. Content Planner usefulness slice: expose a real content decision queue from GSC, GA4, Ahrefs, WordPress inventory, Merchant/product context and knowledge cards: refresh, merge, create, avoid-duplicate, social adaptation and evidence-backed briefs.
-5. Skill/eval upgrade slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments`, `wilq-demand-gen-operator`, `wilq-gsc-content-doctor`, `wilq-content-strategist`, `wilq-ahrefs-gap-finder`, `wilq-localo-operator` and `wilq-social-publisher` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
-6. After Ads Doctor and Content Planner are useful, promote the same metric-view/action-candidate pattern to GA4, Merchant, Ahrefs, Localo and social surfaces.
+1. Google Ads OAuth setup/data slice: once the local `.env` has a fresh `adwords`-scoped refresh token, prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence, metric facts and evidence IDs.
+2. Ads Doctor usefulness slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
+3. Content Planner usefulness slice: expose a real content decision queue from GSC, GA4, Ahrefs, WordPress inventory, Merchant/product context and knowledge cards: refresh, merge, create, avoid-duplicate, social adaptation and evidence-backed briefs.
+4. Skill/eval upgrade slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments`, `wilq-demand-gen-operator`, `wilq-gsc-content-doctor`, `wilq-content-strategist`, `wilq-ahrefs-gap-finder`, `wilq-localo-operator` and `wilq-social-publisher` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
+5. After Ads Doctor and Content Planner are useful, promote the same metric-view/action-candidate pattern to GA4, Merchant, Ahrefs, Localo and social surfaces.
 
 Goal 002 draft acceptance notes:
 

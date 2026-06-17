@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -12,6 +13,7 @@ from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 GOOGLE_ADS_API_VERSION = "v24"
 OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
 GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords"
+SAFE_ERROR_LABEL = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 
 
 def _google_ads_env_name(*parts: str) -> str:
@@ -95,11 +97,13 @@ def refresh_google_ads_campaign_summary(
 
 def _http_failure_result(operation: str, exc: httpx.HTTPStatusError) -> VendorReadResult:
     status_code = exc.response.status_code
+    detail = _sanitized_http_error_detail(exc.response)
+    detail_suffix = f" ({detail})" if detail else ""
     return VendorReadResult(
         status=ConnectorRefreshStatus.failed,
-        summary=f"Google Ads {operation} failed with HTTP {status_code}.",
+        summary=f"Google Ads {operation} failed with HTTP {status_code}{detail_suffix}.",
         external_call_attempted=True,
-        errors=[f"Google Ads {operation} HTTP {status_code}."],
+        errors=[f"Google Ads {operation} HTTP {status_code}{detail_suffix}."],
     )
 
 
@@ -110,6 +114,36 @@ def _transport_failure_result(operation: str, exc: httpx.HTTPError) -> VendorRea
         external_call_attempted=True,
         errors=[f"Google Ads {operation} {type(exc).__name__}."],
     )
+
+
+def _sanitized_http_error_detail(response: httpx.Response) -> str | None:
+    try:
+        payload = response.json()
+    except ValueError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+
+    error = payload.get("error")
+    details: list[str] = []
+    if isinstance(error, str):
+        _append_safe_detail(details, "oauth_error", error)
+    elif isinstance(error, dict):
+        code = error.get("code")
+        status = error.get("status")
+        if isinstance(code, int):
+            details.append(f"api_code={code}")
+        if isinstance(status, str):
+            _append_safe_detail(details, "api_status", status)
+
+    if not details:
+        return None
+    return ", ".join(details)
+
+
+def _append_safe_detail(details: list[str], name: str, value: str) -> None:
+    if SAFE_ERROR_LABEL.fullmatch(value):
+        details.append(f"{name}={value}")
 
 
 def _google_ads_credentials() -> dict[str, str | None]:

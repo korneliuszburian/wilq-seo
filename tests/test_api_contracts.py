@@ -501,6 +501,61 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert "refresh-token-test" not in serialized
 
 
+def test_google_ads_vendor_read_reports_sanitized_oauth_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", "developer-token-test")
+    monkeypatch.setenv("GOOGLE_ADS_CLIENT_ID", "client-id-test")
+    monkeypatch.setenv(
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "client-secret-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv(
+        "GOOGLE_ADS_REFRESH_TOKEN",
+        "refresh-token-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv("GOOGLE_ADS_CUSTOMER_ID", "123-456-7890")
+    monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "999-888-7777")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "oauth2.googleapis.com"
+        return httpx.Response(
+            400,
+            json={
+                "error": "invalid_grant",
+                "error_description": (
+                    "Raw OAuth detail mentioning refresh-token-test and client-secret-test."
+                ),
+            },
+            request=request,
+        )
+
+    result = refresh_google_ads_campaign_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    serialized = json.dumps(
+        {
+            "summary": result.summary,
+            "errors": result.errors,
+            "metric_summary": result.metric_summary,
+        }
+    )
+    assert result.status == ConnectorRefreshStatus.failed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is False
+    assert result.metric_summary == {}
+    assert "oauth_error=invalid_grant" in serialized
+    assert "error_description" not in serialized
+    assert "Raw OAuth detail" not in serialized
+    assert "refresh-token-test" not in serialized
+    assert "client-secret-test" not in serialized
+
+
 def test_google_ads_vendor_read_endpoint_persists_metric_summary(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
