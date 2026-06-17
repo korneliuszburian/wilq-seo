@@ -310,10 +310,20 @@ Unfinished blockers to keep carrying forward:
 
 Next implementation queue:
 
-1. Finish and commit the Playwright/CORS/dashboard-smoke slice.
-2. Create or update Goal 002 only after Goal 001 foundation is committed cleanly. Goal 002 should focus on Google Ads Connector and Ads Doctor usefulness.
-3. In Goal 002, start with Google Ads OAuth refresh, then Ads Doctor live metrics and Polish dashboard labels.
-4. After Ads Doctor is useful, promote the same pattern to GSC/SEO, GA4, Merchant, Ahrefs, Localo, content and social surfaces.
+1. Draft or create Goal 002 only after confirming `main` is clean and `scripts/verify.sh` still passes. Goal 002 should focus on Google Ads Connector and Ads Doctor usefulness.
+2. Goal 002 first slice: resolve Google Ads OAuth `invalid_grant` with a fresh `adwords`-scoped refresh token, then prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence.
+3. Goal 002 dashboard slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
+4. Goal 002 skill/eval slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments` and `wilq-demand-gen-operator` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
+5. After Ads Doctor is useful, promote the same metric-view pattern to GSC/SEO, GA4, Merchant, Ahrefs, Localo, content and social surfaces.
+
+Goal 002 draft acceptance notes:
+
+* Product outcome: WILQ can open Ads Doctor and immediately see which Google Ads work matters, why it matters, what evidence supports it and what safe action can be prepared next.
+* API surfaces: connector refresh runs, metric facts, evidence registry, opportunities, actions, Ads capability definitions and context packs must all describe the same Ads truth.
+* Dashboard surfaces: `/ads-doctor`, `/ads-doctor/search-terms`, `/ads-doctor/custom-segments`, `/ads-doctor/demand-gen`, `/ads-doctor/recommendations`, `/actions/:id`.
+* Skill surfaces: `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments`, `wilq-demand-gen-operator`.
+* Proof commands: `uv run wilq connectors refresh google_ads --mode vendor_read`, targeted Ads tests, `pnpm --filter @wilq/dashboard test:e2e`, `scripts/quality.sh`, `scripts/security.sh`, `scripts/verify.sh`, and targeted Codex skill evals once live Ads evidence exists.
+* Blocker language: if OAuth, API quota, account access or unsupported Ads write capability blocks a metric/action, the API, dashboard and skills must all say that explicitly without printing credential values.
 
 ---
 

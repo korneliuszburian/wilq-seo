@@ -168,4 +168,4 @@ FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs,
 
 Goal 002 — Google Ads Connector and Ads Doctor
 
-Before Goal 002, expand only the skills whose underlying WILQ API endpoints are live enough to validate. Next strongest move is Google Ads OAuth refresh plus Ads Doctor live vendor metrics. Goal 002 should make the first dashboard route genuinely useful for a Polish marketer, not just routed and API-backed.
+Before Goal 002, confirm `main` is clean and `scripts/verify.sh` still passes. Then start with Google Ads OAuth refresh, live `google_ads vendor_read` evidence, and Ads Doctor live metric views. Goal 002 should make the first dashboard route genuinely useful for a Polish marketer, not just routed and API-backed.
