@@ -1,0 +1,11 @@
+id: content_brief_rules_v1
+name: Content brief rules
+version: 1
+source_anchor: SEO and content playbooks
+when_to_use: Prepare landing, article, product or social briefs.
+required_inputs: [keyword_cluster, existing_content, source_documents, evidence_ids]
+diagnostic_logic: [map_intent_to_format, require_source_lineage]
+recommended_actions: [content_brief_candidate]
+risk_notes: Briefs are not publish actions.
+output_contract: Brief ActionObject.
+

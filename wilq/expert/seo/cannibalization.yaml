@@ -1,0 +1,11 @@
+id: seo_cannibalization_v1
+name: Cannibalization
+version: 1
+source_anchor: GSC query/page dimensions
+when_to_use: Detect multiple pages competing for the same query intent.
+required_inputs: [query_page_matrix, content_inventory, evidence_ids]
+diagnostic_logic: [detect_multiple_pages_same_intent, choose_refresh_merge_or_noop]
+recommended_actions: [merge_candidate, internal_link_fix]
+risk_notes: Do not merge or redirect without explicit write support.
+output_contract: Cannibalization opportunities.
+

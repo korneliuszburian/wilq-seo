@@ -1,0 +1,11 @@
+id: merchant_feed_rules_v1
+name: Merchant feed rules
+version: 1
+source_anchor: Merchant API
+when_to_use: Diagnose product feed health and data source status.
+required_inputs: [merchant_account, feed_status, product_status, evidence_ids]
+diagnostic_logic: [detect_missing_required_fields, detect_disapprovals]
+recommended_actions: [merchant_feed_issue, product_attribute_gap]
+risk_notes: Feed writes can affect product visibility.
+output_contract: Merchant feed ActionObjects.
+

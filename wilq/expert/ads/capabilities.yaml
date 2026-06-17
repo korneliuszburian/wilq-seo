@@ -1,0 +1,43 @@
+id: ads_capability_pack_v1
+name: Google Ads capability pack
+version: 1
+source_anchor: BDOS-class workflows represented through WILQ API
+capabilities:
+  - ads_daily_check
+  - ads_monthly_review
+  - ads_changes_review
+  - ads_search_terms_ngram
+  - ads_negative_keywords
+  - ads_keyword_research
+  - ads_custom_segments
+  - ads_create_custom_segments_from_search_terms
+  - ads_demand_gen_migration_readiness
+  - ads_demand_gen_campaign_builder
+  - ads_audience_targeting
+  - ads_scaling_candidates
+  - ads_budget_cap_diagnostics
+  - ads_impression_share_diagnostics
+  - ads_holiday_impact_diagnostics
+  - ads_seasonality_adjustments
+  - ads_recommendations_review
+  - ads_quality_score_diagnostics
+  - ads_rsa_generation_and_validation
+  - ads_campaign_builder
+  - ads_pmax_channels
+  - ads_pmax_asset_review
+  - ads_merchant_review
+  - ads_feed_optimize
+  - ads_bucketing
+  - ads_ga4_data_analyst
+required_mapping:
+  - required_connector_inputs
+  - required_evidence
+  - metrics
+  - diagnosis_logic
+  - action_object_types
+  - risk_level
+  - write_capability
+  - api_limitations
+  - validation_checks
+output_contract: Capability definitions consumed by API, dashboard and future skills.
+

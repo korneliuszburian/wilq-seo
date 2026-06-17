@@ -1,0 +1,117 @@
+# Goal 001 Handoff — WILQ Marketing Operating System Core
+
+Status: in progress, foundation verified. Goal 001 is not complete yet.
+
+## What was built
+
+- Private GitHub repo target was created: `korneliuszburian/wilq-seo`.
+- `docs/goals/001-goal.md` was created from the active goal.
+- Root `AGENTS.md` now defines WILQ product philosophy, API-first rules, evidence rules, MCP rules, skill creation timing, security rules, quality gates and forbidden behavior.
+- FastAPI WILQ API spine exists with health, system status, connectors, dashboard command center, opportunities, actions, knowledge, Codex context/runs and workflows endpoints.
+- Pydantic schemas exist for connectors, evidence, metrics, opportunities, actions, audit events, Codex runs and knowledge cards.
+- Connector registry includes Google Ads, GSC, GA4, Merchant Center, Google Sheets, Ahrefs, Localo, WordPress, LinkedIn, Facebook and OpenAI/Codex.
+- Action validation now checks evidence, connector, mode, risk and payload action type.
+- React/TanStack Query dashboard shell exists with required operating routes, route tests, API-backed cards, detail panels, payload preview and audit section.
+- Shared Zod schema package exists and the dashboard API client parses API responses at runtime.
+- Expert YAML foundations exist for Ads, SEO, content, local, social, GA4 and merchant/feed rules.
+- Workflow, model runtime, access-pack, MCP, quality, security and source-registry docs exist.
+- Codex hooks exist for SessionStart and Stop; they fail open and restrict API URL targets to local/allowed hosts.
+- `.agents/skills/` intentionally contains only `.gitkeep`.
+
+## Skill status
+
+Skills were intentionally not created yet. The goal files now include an execution clarification:
+
+```txt
+Skill policy first, skill folders later.
+Create WILQ skills only after the API endpoints, context-pack contract,
+connector status contract and action validation path they call are implemented
+and testable.
+```
+
+Next skill should be `wilq-daily-command`, created with `$skill-creator`, after the API contracts stay stable.
+
+## Commands run
+
+```bash
+uv run --extra dev pytest
+uv run --extra dev ruff check .
+uv run --extra dev mypy .
+pnpm install
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test
+pnpm --filter @wilq/dashboard build
+scripts/quality.sh
+scripts/security.sh
+scripts/verify.sh
+scripts/access_pack_check.sh
+scripts/access_pack_manifest.sh
+gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaultBranchRef
+```
+
+## What passed
+
+- `scripts/quality.sh`: passed.
+- `scripts/security.sh`: passed.
+- `scripts/verify.sh`: passed.
+- Backend tests: 13 passed.
+- Dashboard tests: 5 passed.
+- Dashboard build: passed.
+- API smoke inside `scripts/verify.sh`: passed.
+- `pip-audit`: no known vulnerabilities found.
+- `detect-secrets`: no findings in scoped source scan.
+
+## What failed or remains limited
+
+- Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
+- FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
+- Goal 001 is not complete because skills are deferred, persistence is not implemented, expert rules are not yet evaluated by code, knowledge compiler is still seed-card level and real connectors do not call vendor APIs yet.
+- API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
+
+## Connector status
+
+Access-pack safe check:
+
+```txt
+exists=True
+env_file_present=True
+env_key_count=24
+credential_file_count=3
+manifest_file_count=7
+secrets_redacted=true
+```
+
+Connector status is generated from env/key presence and does not print values.
+
+## Quality gate status
+
+Quality is green for the current foundation. Security is green with Semgrep skipped because the command is unavailable.
+
+## Codex runtime status
+
+- `AGENTS.md` exists.
+- `.codex/hooks.json` exists.
+- `.codex/mcp-notes.md` exists.
+- `.codex/agents/` contains read-only agent notes.
+- `.agents/skills/` is intentionally empty except `.gitkeep`.
+
+## Dashboard status
+
+Dashboard is React/TypeScript with TanStack Query and Zod runtime parsing. It builds and tests successfully. It uses seed API state labeled as non-real, not final Ekologus metrics.
+
+## API status
+
+API is runnable through:
+
+```bash
+uv run uvicorn apps.api.wilq_api.main:app --reload
+```
+
+FastAPI OpenAPI docs are available when the API runs. API state is in memory for Goal 001 foundation.
+
+## Next recommended goal
+
+Goal 002 — Google Ads Connector and Ads Doctor
+
+Before Goal 002, create `wilq-daily-command` with `$skill-creator` only after the current context-pack and validation endpoints are treated as stable enough for a skill smoke test.
+

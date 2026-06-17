@@ -1,0 +1,11 @@
+id: seo_query_page_matrix_v1
+name: Query page matrix
+version: 1
+source_anchor: GSC query and page dimensions
+when_to_use: Map queries to pages before recommending content changes.
+required_inputs: [query, page, date_range, device, evidence_ids]
+diagnostic_logic: [group_by_page_intent, flag_query_page_mismatch]
+recommended_actions: [refresh_existing_page, avoid_duplicate_page]
+risk_notes: Do not create duplicate content when a target page already exists.
+output_contract: Query-page matrix evidence.
+

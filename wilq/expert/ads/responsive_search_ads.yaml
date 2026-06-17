@@ -1,0 +1,11 @@
+id: ads_rsa_v1
+name: Responsive search ads validation
+version: 1
+source_anchor: Google Ads responsive search ads
+when_to_use: Evaluate or prepare RSA assets.
+required_inputs: [ad_assets, landing_page, campaign_context, evidence_ids]
+diagnostic_logic: [check_asset_coverage, check_claims_against_sources, validate_character_limits]
+recommended_actions: [prepare_rsa_asset_revision]
+risk_notes: Ad copy must not invent claims, guarantees or unsupported offers.
+output_contract: RSA action candidates with evidence IDs.
+

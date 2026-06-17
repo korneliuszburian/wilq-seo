@@ -1,0 +1,11 @@
+id: merchant_product_diagnostics_v1
+name: Product diagnostics
+version: 1
+source_anchor: Merchant product diagnostics
+when_to_use: Identify weak product titles, descriptions and category gaps.
+required_inputs: [product_data, diagnostics, evidence_ids]
+diagnostic_logic: [preserve_factual_attributes, flag_title_description_gaps]
+recommended_actions: [merchant_product_title_rewrite, merchant_product_description_rewrite]
+risk_notes: Product copy must not invent attributes.
+output_contract: Product feed optimization actions.
+

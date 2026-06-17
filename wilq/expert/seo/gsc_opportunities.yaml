@@ -1,0 +1,11 @@
+id: seo_gsc_opportunities_v1
+name: GSC opportunities
+version: 1
+source_anchor: Google Search Console Search Analytics
+when_to_use: Find CTR, near-top, decay and query/page opportunities.
+required_inputs: [query_page_metrics, clicks, impressions, ctr, position, evidence_ids]
+diagnostic_logic: [detect_ctr_gap, detect_near_top, detect_decay]
+recommended_actions: [content_refresh, title_meta_revision, internal_link_candidate]
+risk_notes: GSC clicks are not full business value without GA4 behavior.
+output_contract: SEO opportunities with evidence IDs.
+

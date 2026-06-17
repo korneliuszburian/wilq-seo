@@ -1,0 +1,50 @@
+[project]
+name = "wilq-seo"
+version = "0.1.0"
+description = "WILQ Marketing Operating System foundation for Ekologus"
+requires-python = ">=3.12"
+dependencies = [
+  "apscheduler>=3.10.4",
+  "duckdb>=1.1.3",
+  "fastapi>=0.115.6",
+  "httpx>=0.28.1",
+  "pydantic>=2.10.4",
+  "python-dotenv>=1.0.1",
+  "sqlmodel>=0.0.22",
+  "typer>=0.15.1",
+  "uvicorn>=0.34.0",
+  "pyyaml>=6.0.2"
+]
+
+[project.optional-dependencies]
+dev = [
+  "bandit>=1.8.0",
+  "detect-secrets>=1.5.0",
+  "mypy>=1.14.1",
+  "pip-audit>=2.7.3",
+  "pytest>=8.3.4",
+  "pytest-cov>=6.0.0",
+  "ruff>=0.8.4"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+packages = ["wilq", "apps.api.wilq_api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["."]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "apps/dashboard/node_modules"]

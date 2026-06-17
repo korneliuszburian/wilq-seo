@@ -1,0 +1,11 @@
+id: ads_seasonality_v1
+name: Seasonality diagnostics
+version: 1
+source_anchor: Google Ads seasonality adjustments
+when_to_use: Detect holiday or demand shifts affecting performance.
+required_inputs: [date_range_metrics, campaign_history, evidence_ids]
+diagnostic_logic: [compare_periods, annotate_known_events]
+recommended_actions: [seasonality_adjustment_candidate]
+risk_notes: Do not overfit short-term noise.
+output_contract: Seasonality opportunities with confidence notes.
+

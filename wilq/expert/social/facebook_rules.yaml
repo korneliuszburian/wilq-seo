@@ -1,0 +1,11 @@
+id: facebook_rules_v1
+name: Facebook Page posts
+version: 1
+source_anchor: Facebook Pages API
+when_to_use: Prepare Facebook Page post candidates.
+required_inputs: [page_id, source_content, evidence_ids]
+diagnostic_logic: [check_permission_state, validate_post_claims]
+recommended_actions: [facebook_post_candidate]
+risk_notes: Requires Page access token and human review.
+output_contract: Facebook ActionObject.
+

@@ -1,0 +1,11 @@
+id: linkedin_rules_v1
+name: LinkedIn organization posts
+version: 1
+source_anchor: LinkedIn Posts API
+when_to_use: Prepare LinkedIn organization post candidates.
+required_inputs: [organization_id, source_content, evidence_ids]
+diagnostic_logic: [check_permission_state, validate_post_claims]
+recommended_actions: [linkedin_post_candidate]
+risk_notes: Requires organization role and publishing permission.
+output_contract: LinkedIn ActionObject.
+

@@ -1,0 +1,11 @@
+id: ads_impression_share_v1
+name: Impression share diagnostics
+version: 1
+source_anchor: Google Ads impression share metrics
+when_to_use: Diagnose budget cap, rank loss and scaling candidates.
+required_inputs: [impression_share_metrics, budget, bids, evidence_ids]
+diagnostic_logic: [separate_budget_loss_from_rank_loss, flag_scaling_candidates]
+recommended_actions: [budget_cap_diagnostics, scaling_candidate]
+risk_notes: Spend increases require explicit validated action support.
+output_contract: Scaling and budget opportunities.
+

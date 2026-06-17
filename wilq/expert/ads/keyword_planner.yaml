@@ -1,0 +1,11 @@
+id: ads_keyword_planner_v1
+name: Keyword Planner enrichment
+version: 1
+source_anchor: Google Ads Keyword Planner
+when_to_use: Enrich search-term clusters with ideas, historical metrics and forecasts.
+required_inputs: [seed_terms, geo, language, evidence_ids]
+diagnostic_logic: [validate_forecast_context, compare_volume_and_intent]
+recommended_actions: [keyword_research_candidate, custom_segment_candidate]
+risk_notes: Forecasts are estimates and must be labeled as such.
+output_contract: Enriched keyword cluster cards.
+

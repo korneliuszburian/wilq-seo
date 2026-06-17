@@ -1,0 +1,11 @@
+id: ads_recommendations_v1
+name: Google Ads recommendations review
+version: 1
+source_anchor: Google Ads Recommendations API
+when_to_use: Review Google-provided recommendations before applying.
+required_inputs: [recommendation_id, recommendation_type, optimization_score, evidence_ids]
+diagnostic_logic: [classify_business_fit, require_human_review_for_write]
+recommended_actions: [accept_recommendation_candidate, dismiss_recommendation_candidate]
+risk_notes: Google recommendations are inputs, not automatically trusted strategy.
+output_contract: Reviewed recommendation ActionObjects.
+

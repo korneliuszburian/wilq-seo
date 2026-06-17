@@ -1,0 +1,11 @@
+id: ads_experiments_v1
+name: Ads experiments
+version: 1
+source_anchor: Google Ads experiments
+when_to_use: Represent campaign tests and controlled changes.
+required_inputs: [hypothesis, baseline_metrics, target_campaign, evidence_ids]
+diagnostic_logic: [require_success_metric, require_rollback_note]
+recommended_actions: [prepare_experiment_plan]
+risk_notes: Experiments must avoid destructive uncontrolled writes.
+output_contract: Experiment action candidates.
+

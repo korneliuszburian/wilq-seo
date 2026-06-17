@@ -1,0 +1,11 @@
+id: ga4_diagnostics_v1
+name: GA4 behavior diagnostics
+version: 1
+source_anchor: GA4 Data API
+when_to_use: Enrich Ads, SEO and content diagnosis with on-site behavior.
+required_inputs: [ga4_property, events, conversions, landing_pages, evidence_ids]
+diagnostic_logic: [separate_tracking_gap_from_marketing_issue, compare_engagement_by_source]
+recommended_actions: [ga4_tracking_gap, ga4_landing_page_issue, ga4_campaign_quality_issue]
+risk_notes: Missing conversion setup is a measurement issue.
+output_contract: GA4 opportunities and measurement actions.
+

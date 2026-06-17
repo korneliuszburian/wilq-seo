@@ -1,0 +1,11 @@
+id: ads_diagnostics_v1
+name: Google Ads diagnostics
+version: 1
+source_anchor: Google Ads API diagnostics
+when_to_use: Diagnose campaign, ad group, keyword, search term and asset issues.
+required_inputs: [google_ads_metrics, evidence_ids]
+diagnostic_logic: [compare_cost_conversion_intent, flag_missing_or_stale_metrics]
+recommended_actions: [ads_daily_check, ads_recommendations_review]
+risk_notes: Never infer account performance without connector evidence.
+output_contract: Evidence-backed Ads opportunities.
+

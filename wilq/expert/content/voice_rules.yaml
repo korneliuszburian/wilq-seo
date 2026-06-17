@@ -1,0 +1,11 @@
+id: content_voice_rules_v1
+name: Ekologus voice rules
+version: 1
+source_anchor: WILQ knowledge cards and source documents
+when_to_use: Draft or revise content from source-grounded facts.
+required_inputs: [source_documents, content_card, evidence_ids]
+diagnostic_logic: [preserve_factual_claims, avoid_unsupported_guarantees]
+recommended_actions: [content_revision_candidate]
+risk_notes: Do not invent product or service claims.
+output_contract: Source-grounded content ActionObjects.
+

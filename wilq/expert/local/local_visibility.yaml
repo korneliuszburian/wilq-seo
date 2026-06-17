@@ -1,0 +1,11 @@
+id: local_visibility_v1
+name: Local visibility diagnostics
+version: 1
+source_anchor: Localo API/MCP
+when_to_use: Diagnose local rankings and GBP visibility.
+required_inputs: [local_rankings, competitors, evidence_ids]
+diagnostic_logic: [detect_visibility_drop, compare_competitors]
+recommended_actions: [local_visibility_task]
+risk_notes: GBP writes require review and audit.
+output_contract: Local visibility opportunities.
+

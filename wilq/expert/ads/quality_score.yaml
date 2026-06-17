@@ -1,0 +1,11 @@
+id: ads_quality_score_v1
+name: Quality score diagnostics
+version: 1
+source_anchor: Google Ads quality score diagnostics
+when_to_use: Explain low quality score, ad relevance, expected CTR or landing page issues.
+required_inputs: [quality_score_components, keyword, ad, landing_page, evidence_ids]
+diagnostic_logic: [map_component_to_cause, require_landing_page_evidence]
+recommended_actions: [landing_page_alignment, rsa_revision, keyword_structure_review]
+risk_notes: Do not claim causality without component evidence.
+output_contract: Quality score opportunities.
+

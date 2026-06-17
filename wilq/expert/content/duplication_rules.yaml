@@ -1,0 +1,11 @@
+id: content_duplication_rules_v1
+name: Duplication rules
+version: 1
+source_anchor: WordPress content inventory
+when_to_use: Prevent duplicate pages, posts and product content.
+required_inputs: [content_inventory, target_keyword_or_topic, evidence_ids]
+diagnostic_logic: [match_existing_pages, classify_refresh_merge_create]
+recommended_actions: [refresh_existing_content, merge_candidate, new_content_brief]
+risk_notes: New content requires proof no suitable page exists.
+output_contract: Content planning decision.
+

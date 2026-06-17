@@ -1,0 +1,11 @@
+id: ads_scaling_candidates_v1
+name: Scaling candidates
+version: 1
+source_anchor: Google Ads performance scaling
+when_to_use: Find campaigns with evidence-backed room to scale.
+required_inputs: [conversion_metrics, impression_share, budget, evidence_ids]
+diagnostic_logic: [require_conversion_quality, detect_budget_or_volume_ceiling]
+recommended_actions: [prepare_budget_or_targeting_scale_test]
+risk_notes: Scaling without GA4 behavior context is limited confidence.
+output_contract: Scaling opportunities and test ActionObjects.
+

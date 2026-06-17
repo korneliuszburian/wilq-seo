@@ -1,0 +1,15 @@
+id: ads_principles_v1
+name: Google Ads operating principles
+version: 1
+source_anchor: Google Ads API and WILQ Goal 001
+when_to_use: Baseline for all Google Ads diagnostics.
+required_inputs: [connector_status, evidence_ids, campaign_or_account_context]
+diagnostic_logic:
+  - require_real_google_ads_evidence
+  - classify_recommendation_by_cost_intent_risk
+recommended_actions:
+  - create_action_object_before_write
+  - validate_payload_before_apply
+risk_notes: Paid media changes can affect spend and lead quality.
+output_contract: Opportunity plus optional ActionObject IDs.
+

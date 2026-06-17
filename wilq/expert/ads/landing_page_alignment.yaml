@@ -1,0 +1,11 @@
+id: ads_landing_page_alignment_v1
+name: Landing page alignment
+version: 1
+source_anchor: Google Ads landing page diagnostics
+when_to_use: Detect mismatch between query, ad, and landing page.
+required_inputs: [query, ad_asset, landing_page_content, metrics, evidence_ids]
+diagnostic_logic: [compare_intent_to_page, flag_missing_service_match]
+recommended_actions: [landing_page_refresh, content_brief_candidate]
+risk_notes: Landing diagnosis must use real page/content evidence.
+output_contract: Landing mismatch opportunities.
+

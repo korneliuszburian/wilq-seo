@@ -1,0 +1,11 @@
+id: content_social_limits_v1
+name: Social limits
+version: 1
+source_anchor: LinkedIn and Facebook publishing docs
+when_to_use: Prepare social post candidates.
+required_inputs: [source_content, platform, evidence_ids]
+diagnostic_logic: [validate_platform_length, preserve_claims]
+recommended_actions: [social_post_candidate]
+risk_notes: Publishing requires connector permission and validation.
+output_contract: Social action candidate.
+

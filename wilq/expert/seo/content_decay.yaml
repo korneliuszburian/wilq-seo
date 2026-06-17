@@ -1,0 +1,11 @@
+id: seo_content_decay_v1
+name: Content decay
+version: 1
+source_anchor: GSC historical performance
+when_to_use: Detect pages losing clicks/impressions over time.
+required_inputs: [page_history, comparison_periods, evidence_ids]
+diagnostic_logic: [compare_period_delta, require_existing_content_card]
+recommended_actions: [content_refresh]
+risk_notes: Seasonality and tracking changes must be separated from decay.
+output_contract: Content refresh opportunities.
+
