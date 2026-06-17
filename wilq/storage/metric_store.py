@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from pathlib import Path
 from typing import Any, cast
 
@@ -9,6 +10,8 @@ import duckdb
 from wilq.schemas import ConnectorRefreshRun, MetricFact
 
 DEFAULT_METRIC_DB = Path(".local-lab/state/wilq.duckdb")
+DUCKDB_CONNECT_ATTEMPTS = 5
+DUCKDB_CONNECT_RETRY_SECONDS = 0.2
 
 
 def metric_store_path() -> Path:
@@ -103,7 +106,7 @@ class DuckDbMetricStore:
 
     def _connect(self) -> duckdb.DuckDBPyConnection:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        connection = duckdb.connect(str(self.path))
+        connection = _connect_with_retry(self.path)
         self._ensure_schema(connection)
         return connection
 
@@ -125,6 +128,19 @@ class DuckDbMetricStore:
             )
             """
         )
+
+
+def _connect_with_retry(path: Path) -> duckdb.DuckDBPyConnection:
+    last_error: Exception | None = None
+    for attempt in range(DUCKDB_CONNECT_ATTEMPTS):
+        try:
+            return duckdb.connect(str(path))
+        except duckdb.IOException as exc:
+            last_error = exc
+            if "Conflicting lock" not in str(exc) or attempt == DUCKDB_CONNECT_ATTEMPTS - 1:
+                raise
+            time.sleep(DUCKDB_CONNECT_RETRY_SECONDS * (attempt + 1))
+    raise RuntimeError("DuckDB connection retry exhausted") from last_error
 
 
 def _metric_row(

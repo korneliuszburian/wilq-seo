@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import duckdb
 import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
@@ -11,7 +12,7 @@ from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
 from wilq.connectors.vendor import VendorReadResult
 from wilq.schemas import ConnectorRefreshStatus
-from wilq.storage.metric_store import metric_store
+from wilq.storage.metric_store import _connect_with_retry, metric_store
 
 client = TestClient(app)
 
@@ -126,3 +127,27 @@ def test_wilq_cli_status_and_metrics_list_do_not_print_secret_values(
     metrics_result = runner.invoke(cli_app, ["metrics", "list", "--limit", "5"])
     assert metrics_result.exit_code == 0
     assert json.loads(metrics_result.stdout) == []
+
+
+def test_metric_store_retries_duckdb_conflicting_lock(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    calls = 0
+    original_connect = duckdb.connect
+
+    def flaky_connect(path: str) -> duckdb.DuckDBPyConnection:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise duckdb.IOException("IO Error: Conflicting lock is held by another process")
+        return original_connect(path)
+
+    monkeypatch.setattr("wilq.storage.metric_store.duckdb.connect", flaky_connect)
+    monkeypatch.setattr("wilq.storage.metric_store.DUCKDB_CONNECT_RETRY_SECONDS", 0)
+
+    connection = _connect_with_retry(tmp_path / "metrics.duckdb")
+    try:
+        assert calls == 2
+    finally:
+        connection.close()
