@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
+from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
 from wilq.connectors.google_merchant_center.client import (
@@ -98,6 +99,8 @@ def _refresh_result(
         return refresh_merchant_product_status_summary(request)
     if connector_id == "google_sheets":
         return refresh_google_sheets_review_surface(request)
+    if connector_id == "ahrefs":
+        return refresh_ahrefs_domain_rating(request)
     if connector_id in {"wordpress_ekologus", "wordpress_sklep"}:
         return refresh_wordpress_content_inventory(connector_id, request)
     summary = (

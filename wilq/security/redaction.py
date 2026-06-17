@@ -10,6 +10,7 @@ SECRET_VALUE_RE = re.compile(
 )
 ENV_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]+$")
 SAFE_IDENTIFIER_KEYS = {
+    "api",
     "id",
     "action_id",
     "action_ids",

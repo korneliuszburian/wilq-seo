@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
+from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
 from wilq.connectors.google_auth import GOOGLE_SERVICE_ACCOUNT_ENV_NAMES
@@ -76,6 +77,17 @@ def clear_wordpress_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(key, raising=False)
 
 
+def clear_ahrefs_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in (
+        "AHREFS_API_TOKEN",
+        "AHREFS_API_KEY",
+        "AHREFS_TARGET",
+        "WORDPRESS_EKOLOGUS_URL",
+        "MIS_PRIMARY_SITE_URL",
+    ):
+        monkeypatch.delenv(key, raising=False)
+
+
 def test_health_endpoint() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -128,19 +140,23 @@ def test_connector_status_does_not_expose_secret_values(monkeypatch: pytest.Monk
 def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     redacted = redact_mapping(
         {
+            "api": "ahrefs_site_explorer_domain_rating",
             "summary": (
                 "Vendor read blocked by missing credential names: "
                 "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
             ),
             "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
+            "api_key": "sk-testsecretvalue1234567890",  # pragma: allowlist secret
         }
     )
 
+    assert redacted["api"] == "ahrefs_site_explorer_domain_rating"
     assert redacted["summary"] == (
         "Vendor read blocked by missing credential names: "
         "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
     )
     assert redacted["error"] == "[REDACTED]"
+    assert redacted["api_key"] == "[REDACTED]"
 
 
 def test_google_first_party_status_requires_valid_service_account(
@@ -891,6 +907,79 @@ def test_merchant_vendor_read_routes_through_refresh_endpoint(
     run = response.json()
     assert run["status"] == "completed"
     assert run["metric_summary"] == {"active_products": 12, "disapproved_products": 3}
+
+
+def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    monkeypatch.setenv("AHREFS_TARGET", "https://www.ekologus.pl/oferta")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "api.ahrefs.com"
+        assert request.url.path == "/v3/site-explorer/domain-rating"
+        assert request.headers["authorization"] == "Bearer ahrefs-token-test"
+        assert request.headers["accept"] == "application/json"
+        assert request.url.params["target"] == "ekologus.pl"
+        assert len(request.url.params["date"]) == 10
+        assert request.url.params["output"] == "json"
+        return httpx.Response(
+            200,
+            json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
+        )
+
+    result = refresh_ahrefs_domain_rating(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary == {
+        "api": "ahrefs_site_explorer_domain_rating",
+        "date": result.metric_summary["date"],
+        "target_source": "process_env",
+        "domain_rating": 90.0,
+        "ahrefs_rank": 1450,
+    }
+    serialized = json.dumps(result.metric_summary)
+    assert "ahrefs-token-test" not in serialized
+    assert "ekologus.pl" not in serialized
+
+
+def test_ahrefs_vendor_read_routes_through_refresh_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_ahrefs_domain_rating",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Ahrefs domain rating completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"domain_rating": 90.0, "ahrefs_rank": 1450},
+        ),
+    )
+
+    response = client.post(
+        "/api/connectors/ahrefs/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+
+    assert response.status_code == 200
+    run = response.json()
+    assert run["status"] == "completed"
+    assert run["metric_summary"] == {"domain_rating": 90.0, "ahrefs_rank": 1450}
 
 
 def test_wordpress_vendor_read_uses_rest_content_inventory(
