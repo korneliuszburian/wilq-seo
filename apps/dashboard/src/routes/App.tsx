@@ -892,9 +892,119 @@ function CommandCenter() {
   );
 }
 
-const merchantConnectorIds = ["google_merchant_center", "merchant_center"];
+type BriefSurfaceConfig = {
+  title: string;
+  description: string;
+  focusTitle: string;
+  emptyMessage: string;
+  safetyTitle: string;
+  safetyText: string;
+  connectorIds: string[];
+  textNeedles: string[];
+};
 
-function MerchantSurface() {
+const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
+  "/ads-doctor": {
+    title: "Ads Doctor",
+    description:
+      "Widok Google Ads oparty o WILQ MarketingBrief. Najpierw pokazuje OAuth/blockery, evidence i ActionObject, dopiero potem diagnozę spendu.",
+    focusTitle: "Ads Focus",
+    emptyMessage:
+      "Brak Google Ads evidence w /api/marketing/brief. WILQ nie pokaże spend/campaign rekomendacji bez odczytu Ads API.",
+    safetyTitle: "Spend Safety Gate",
+    safetyText:
+      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają payload preview, walidacji ActionObject i audytu. Do czasu naprawy OAuth widok pokazuje blocker, nie performance claims.",
+    connectorIds: ["google_ads"],
+    textNeedles: []
+  },
+  "/ga4": {
+    title: "GA4",
+    description:
+      "Widok analityki zachowania i konwersji oparty o WILQ MarketingBrief. Pokazuje tylko metryki GA4 z evidence IDs.",
+    focusTitle: "GA4 Quality Focus",
+    emptyMessage:
+      "Brak GA4 evidence w /api/marketing/brief. Uruchom read-only refresh GA4, zanim WILQ oceni landing pages albo jakość ruchu.",
+    safetyTitle: "Analytics Safety Gate",
+    safetyText:
+      "GA4 służy do diagnozy jakości ruchu i tracking gaps. WILQ nie traktuje braku danych jako spadku marketingowego bez evidence.",
+    connectorIds: ["google_analytics_4"],
+    textNeedles: []
+  },
+  "/seo-gsc": {
+    title: "SEO / GSC",
+    description:
+      "Widok SEO oparty o GSC evidence z WILQ MarketingBrief. Ma prowadzić do kolejki treści, nie do zgadywania tematów.",
+    focusTitle: "Search Console Content Focus",
+    emptyMessage:
+      "Brak GSC evidence w /api/marketing/brief. Uruchom read-only refresh Search Console przed rekomendacją treści.",
+    safetyTitle: "SEO Evidence Gate",
+    safetyText:
+      "Rekomendacje contentowe wymagają query/page evidence, źródła i jasnego następnego kroku. Bez CTR/impressions/clicks WILQ pokazuje blocker.",
+    connectorIds: ["google_search_console"],
+    textNeedles: []
+  },
+  "/localo": {
+    title: "Localo",
+    description:
+      "Widok lokalnej widoczności oparty o WILQ readiness i przyszłe Localo MCP evidence. Aktualnie pokazuje blocker OAuth, jeśli brakuje dostępu.",
+    focusTitle: "Local Visibility Focus",
+    emptyMessage:
+      "Brak Localo evidence w /api/marketing/brief. WILQ nie pokaże lokalnych rankingów ani GBP rekomendacji bez Localo access token.",
+    safetyTitle: "Local Visibility Safety Gate",
+    safetyText:
+      "GBP posty i lokalne działania wymagają evidence, payload preview, walidacji ActionObject i audytu. Brak LOCALO_ACCESS_TOKEN jest blockerem, nie metryką.",
+    connectorIds: ["localo"],
+    textNeedles: []
+  },
+  "/social-publisher": {
+    title: "Social Publisher",
+    description:
+      "Widok publikacji social oparty o WILQ evidence i permission state. Przy brakach LinkedIn/Facebook pokazuje blockery, nie gotowe posty.",
+    focusTitle: "Social Publishing Focus",
+    emptyMessage:
+      "Brak social evidence w /api/marketing/brief. Skonfiguruj LinkedIn/Facebook credentials przed przygotowaniem post candidates.",
+    safetyTitle: "Publishing Safety Gate",
+    safetyText:
+      "Posty LinkedIn/Facebook muszą bazować na evidence-backed claims i pozostać prepare-only, dopóki permission state, payload preview i audit nie są gotowe.",
+    connectorIds: ["linkedin", "facebook"],
+    textNeedles: []
+  },
+  "/content-planner": {
+    title: "Content Planner",
+    description:
+      "Widok planowania treści łączy GSC, GA4, Ahrefs, WordPress i Merchant evidence w jedną kolejkę działań dla polskiego marketera.",
+    focusTitle: "Content Growth Focus",
+    emptyMessage:
+      "Brak content evidence w /api/marketing/brief. WILQ potrzebuje GSC/GA4/Ahrefs/WordPress inventory przed planem treści.",
+    safetyTitle: "Content Safety Gate",
+    safetyText:
+      "Briefy, rewrites i drafty wymagają źródeł, evidence IDs i zgodności z realną ofertą. WILQ nie generuje claimów bez pokrycia w danych.",
+    connectorIds: [
+      "google_search_console",
+      "google_analytics_4",
+      "ahrefs",
+      "wordpress_ekologus",
+      "wordpress_sklep",
+      "google_merchant_center"
+    ],
+    textNeedles: ["content", "treści", "wordpress", "gsc", "ahrefs", "merchant"]
+  },
+  "/merchant": {
+    title: "Merchant Center",
+    description:
+      "Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli brakuje evidence z Merchant Center albo zweryfikowanego ActionObject.",
+    focusTitle: "Feed/Product Focus",
+    emptyMessage:
+      "Brak Merchant evidence w /api/marketing/brief. Uruchom read-only refresh Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",
+    safetyTitle: "Feed Safety Gate",
+    safetyText:
+      "Zmiana feedu wymaga payload preview, walidacji ActionObject i audit eventu. Ten ekran jest read-only, dopóki WILQ API nie wystawi poprawnego action candidate.",
+    connectorIds: ["google_merchant_center", "merchant_center"],
+    textNeedles: []
+  }
+};
+
+function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
   const marketingBrief = useQuery({
     queryKey: ["marketing-brief"],
     queryFn: getMarketingBrief
@@ -904,47 +1014,44 @@ function MerchantSurface() {
   if (marketingBrief.error || !marketingBrief.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/marketing/brief. Merchant nie może pokazać rekomendacji bez WILQ API." />
+        <BlockerNotice message={`Nie udało się odczytać /api/marketing/brief. ${config.title} nie może pokazać rekomendacji bez WILQ API.`} />
       </main>
     );
   }
 
   const brief = marketingBrief.data;
   const allItems = brief.sections.flatMap((section) => section.items);
-  const merchantItems = allItems
-    .filter((item) => itemTouchesMerchant(item))
+  const routeItems = allItems
+    .filter((item) => itemMatchesBriefSurface(item, config))
     .sort((left, right) => right.priority - left.priority);
-  const merchantRecommendations = merchantItems.filter((item) => item.kind === "recommendation");
-  const merchantBlockers = merchantItems.filter((item) => item.kind === "blocker");
-  const merchantMetricFacts = brief.top_metric_facts.filter((fact) =>
-    merchantConnectorIds.includes(fact.source_connector)
+  const recommendations = routeItems.filter((item) => item.kind === "recommendation");
+  const blockers = routeItems.filter((item) => item.kind === "blocker");
+  const metricFacts = brief.top_metric_facts.filter((fact) =>
+    config.connectorIds.includes(fact.source_connector)
   );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Merchant Center</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli
-            brakuje evidence z Merchant Center albo zweryfikowanego ActionObject.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-normal">{config.title}</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">{config.description}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Rekomendacje" value={merchantRecommendations.length} />
-          <MetricTile label="Blockery" value={merchantBlockers.length} />
-          <MetricTile label="Metric facts" value={merchantMetricFacts.length} />
+          <MetricTile label="Rekomendacje" value={recommendations.length} />
+          <MetricTile label="Blockery" value={blockers.length} />
+          <MetricTile label="Metric facts" value={metricFacts.length} />
         </div>
       </div>
 
       <div className="grid gap-6">
-        {merchantItems.length === 0 ? (
-          <BlockerNotice message="Brak Merchant evidence w /api/marketing/brief. Uruchom read-only refresh Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu." />
+        {routeItems.length === 0 ? (
+          <BlockerNotice message={config.emptyMessage} />
         ) : (
           <section>
-            <SectionHeading title="Feed/Product Focus" />
+            <SectionHeading title={config.focusTitle} />
             <div className="grid gap-3 xl:grid-cols-2">
-              {merchantItems.map((item) => (
+              {routeItems.map((item) => (
                 <MarketingBriefCard key={item.id} item={item} />
               ))}
             </div>
@@ -958,31 +1065,39 @@ function MerchantSurface() {
             </div>
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-                Safety Gate
+                {config.safetyTitle}
               </h2>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Zmiana feedu wymaga payload preview, walidacji ActionObject i audit eventu. Ten
-                ekran jest read-only, dopóki WILQ API nie wystawi poprawnego action candidate.
-              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{config.safetyText}</p>
             </div>
           </div>
           <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <TraceLine label="Evidence" values={uniqueValues(merchantItems.flatMap((item) => item.evidence_ids))} />
-            <TraceLine label="Źródła" values={uniqueValues(merchantItems.flatMap((item) => item.source_connectors))} />
-            <TraceLine label="Akcje" values={uniqueValues(merchantItems.flatMap((item) => item.action_ids))} />
+            <LinkedTraceLine
+              label="Evidence"
+              values={uniqueValues(routeItems.flatMap((item) => item.evidence_ids))}
+              kind="evidence"
+            />
+            <TraceLine
+              label="Źródła"
+              values={uniqueValues(routeItems.flatMap((item) => item.source_connectors))}
+            />
+            <LinkedTraceLine
+              label="Akcje"
+              values={uniqueValues(routeItems.flatMap((item) => item.action_ids))}
+              kind="actions"
+            />
           </div>
-          {merchantMetricFacts.length > 0 ? <MetricFactChips facts={merchantMetricFacts.slice(0, 6)} /> : null}
+          {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 6)} /> : null}
         </section>
       </div>
     </main>
   );
 }
 
-function itemTouchesMerchant(item: MarketingBriefItem) {
+function itemMatchesBriefSurface(item: MarketingBriefItem, config: BriefSurfaceConfig) {
+  const searchable = `${item.id} ${item.title} ${item.summary} ${item.next_step}`.toLowerCase();
   return (
-    item.source_connectors.some((connector) => merchantConnectorIds.includes(connector)) ||
-    item.id.includes("merchant") ||
-    item.title.toLowerCase().includes("merchant")
+    item.source_connectors.some((connector) => config.connectorIds.includes(connector)) ||
+    config.textNeedles.some((needle) => searchable.includes(needle))
   );
 }
 
@@ -1336,7 +1451,14 @@ const generatedRoutes = operatingRoutes.map((path) =>
   createRoute({
     getParentRoute: () => rootRoute,
     path,
-    component: () => (path === "/merchant" ? <MerchantSurface /> : <GenericSurface routeName={path} />)
+    component: () => {
+      const briefConfig = briefSurfaceConfigs[path];
+      return briefConfig ? (
+        <BriefWorkflowSurface config={briefConfig} />
+      ) : (
+        <GenericSurface routeName={path} />
+      );
+    }
   })
 );
 

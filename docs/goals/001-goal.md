@@ -3810,3 +3810,93 @@ Remaining next work:
 3. Add Codex skill eval cases for the newly grounded routes so non-interactive
    Codex proves Polish, evidence-backed usefulness across more than the daily
    command.
+
+---
+
+## 34. Route-specific MarketingBrief surfaces - 2026-06-17
+
+Implemented the first remaining item from section 33.
+
+What changed:
+
+* Replaced the one-off Merchant dashboard surface with a reusable
+  `BriefWorkflowSurface`.
+* The following routes now read `GET /api/marketing/brief` directly and render
+  workflow-specific Polish operating views instead of generic registries:
+  * `/ads-doctor`
+  * `/ga4`
+  * `/seo-gsc`
+  * `/content-planner`
+  * `/localo`
+  * `/social-publisher`
+  * `/merchant`
+* Each configured route renders:
+  * workflow-specific title and description,
+  * recommendation count,
+  * blocker count,
+  * metric fact count,
+  * filtered `MarketingBrief` cards,
+  * linked evidence IDs,
+  * linked ActionObject IDs,
+  * workflow-specific safety gate text.
+* `/ads-doctor` now shows the real Google Ads OAuth blocker/action path from
+  `MarketingBrief` instead of pretending Ads performance can be diagnosed while
+  OAuth is still blocked.
+* `/ga4` now shows GA4 metric-backed workflow focus.
+* `/seo-gsc` now shows Search Console content focus.
+* `/localo` and `/social-publisher` now show honest blockers when access is
+  missing instead of generic connector tables.
+* `/content-planner` now aggregates content-relevant WILQ sources:
+  GSC, GA4, Ahrefs, WordPress and Merchant evidence.
+
+Verification:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+pnpm --filter @wilq/dashboard build
+scripts/eval_marketing_brief.sh --api-base http://127.0.0.1:8000
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Dashboard unit route tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+  * Command Center still renders API-backed sections.
+  * Ads Doctor shows OAuth action focus from `MarketingBrief`.
+  * GA4 and GSC show metric-backed workflow focus.
+  * Action detail still shows validation/evidence/payload preview.
+  * Merchant still opens live evidence detail from a `MarketingBrief` evidence
+    link.
+* Dashboard production build: passed.
+* MarketingBrief deterministic eval: passed.
+* Full `scripts/verify.sh` with live ports:
+  * Python tests: `61 passed`.
+  * dashboard Vitest: `12 passed`.
+  * security: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+* No test servers remained on `8765`, `8875` or `5373`.
+
+Remaining next work:
+
+1. Add route-specific Codex non-interactive eval cases for Ads Doctor, GA4,
+   GSC, Merchant and Content Planner.
+2. Add dashboard panels that show route-specific metric deltas and freshness
+   windows once `MetricFact` gains dimensions/period comparison metadata.
+3. Add more precise ActionObject candidates beyond the OAuth repair path:
+   content brief candidates, feed review candidates, GA4 tracking-gap candidates
+   and social draft candidates, all prepare-only with evidence IDs.

@@ -114,6 +114,22 @@ const metricFacts = [
     source_connector: "google_merchant_center",
     evidence_id: "ev_refresh_merchant_feed",
     unit: null
+  },
+  {
+    name: "active_users",
+    value: 20,
+    period: "connector_refresh",
+    source_connector: "google_analytics_4",
+    evidence_id: "ev_refresh_ga4",
+    unit: null
+  },
+  {
+    name: "clicks",
+    value: 12,
+    period: "connector_refresh",
+    source_connector: "google_search_console",
+    evidence_id: "ev_refresh_gsc",
+    unit: null
   }
 ];
 
@@ -157,13 +173,57 @@ const marketingBrief = {
       id: "what_blocks_us",
       title: "Co blokuje decyzje",
       description: "Blockery.",
-      items: []
+      items: [
+        {
+          id: "brief_blocker_localo",
+          title: "Localo: brakuje LOCALO_ACCESS_TOKEN",
+          kind: "blocker",
+          priority: 90,
+          source_connectors: ["localo"],
+          evidence_ids: ["ev_connector_localo_status"],
+          metric_facts: [],
+          action_ids: [],
+          summary: "Localo MCP OAuth authorization is incomplete.",
+          next_step: "Dokończ OAuth i odśwież local visibility evidence.",
+          risk: "medium",
+          blocker_reason: "missing LOCALO_ACCESS_TOKEN"
+        },
+        {
+          id: "brief_blocker_linkedin",
+          title: "LinkedIn: brakuje organizacji i access tokena",
+          kind: "blocker",
+          priority: 80,
+          source_connectors: ["linkedin"],
+          evidence_ids: ["ev_connector_linkedin_status"],
+          metric_facts: [],
+          action_ids: [],
+          summary: "LinkedIn publishing evidence is blocked by missing organization access.",
+          next_step: "Skonfiguruj LinkedIn credentials przed post candidates.",
+          risk: "medium",
+          blocker_reason: "missing LinkedIn credentials"
+        }
+      ]
     },
     {
       id: "safe_next_actions",
       title: "Bezpieczne następne kroki",
       description: "ActionObjects.",
-      items: []
+      items: [
+        {
+          id: "brief_action_act_1",
+          title: "Odnow Google Ads OAuth refresh token",
+          kind: "action",
+          priority: 80,
+          source_connectors: ["google_ads"],
+          evidence_ids: ["ev_1"],
+          metric_facts: [],
+          action_ids: ["act_1"],
+          summary: "Google Ads jest zablokowany przez OAuth, zanim WILQ oceni spend.",
+          next_step: "Zweryfikuj ActionObject i odśwież OAuth.",
+          risk: "low",
+          blocker_reason: null
+        }
+      ]
     },
     {
       id: "recommended_focus",
@@ -182,6 +242,34 @@ const marketingBrief = {
           summary: "WILQ widzi Merchant metric facts i kieruje operatora do walidacji feedu.",
           next_step: "Otwórz payload preview dla action candidate przed zmianą feedu.",
           risk: "medium",
+          blocker_reason: null
+        },
+        {
+          id: "brief_focus_ga4_quality",
+          title: "GA4: sprawdź jakość ruchu na landing pages",
+          kind: "recommendation",
+          priority: 75,
+          source_connectors: ["google_analytics_4"],
+          evidence_ids: ["ev_refresh_ga4"],
+          metric_facts: [metricFacts[2]],
+          action_ids: [],
+          summary: "WILQ ma GA4 metric facts i może ocenić jakość ruchu po odświeżeniu.",
+          next_step: "Porównaj engagement i konwersje z kampaniami.",
+          risk: "low",
+          blocker_reason: null
+        },
+        {
+          id: "brief_focus_gsc_content",
+          title: "GSC: przełóż widoczność na kolejkę treści",
+          kind: "recommendation",
+          priority: 74,
+          source_connectors: ["google_search_console"],
+          evidence_ids: ["ev_refresh_gsc"],
+          metric_facts: [metricFacts[3]],
+          action_ids: [],
+          summary: "WILQ ma GSC clicks i może zbudować kolejkę content opportunities.",
+          next_step: "Połącz query/page evidence z WordPress inventory.",
+          risk: "low",
           blocker_reason: null
         }
       ]
@@ -375,11 +463,18 @@ describe("WILQ dashboard", () => {
     );
   });
 
-  it("missing connector state renders", async () => {
+  it("ads doctor route renders OAuth action focus from marketing brief", async () => {
     renderApp("/ads-doctor");
-    await waitFor(() => expect(screen.getAllByText("Missing credentials").length).toBeGreaterThan(0));
-    expect(screen.getByText("Evidence Registry")).toBeInTheDocument();
-    expect(screen.getByText("Connector Refresh Runs")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Ads Doctor" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("Ads Focus")).toBeInTheDocument();
+    expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "act_1" })[0]).toHaveAttribute(
+      "href",
+      "/actions/act_1"
+    );
+    expect(screen.getByText("Spend Safety Gate")).toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {
@@ -413,11 +508,62 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/payload preview/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ActionObject/).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", { name: "act_review_merchant_feed" })
+      screen.getAllByRole("link", { name: "act_review_merchant_feed" })[0]
     ).toHaveAttribute("href", "/actions/act_review_merchant_feed");
     expect(
       screen.getAllByRole("link", { name: "ev_refresh_merchant_feed" })[0]
     ).toHaveAttribute("href", "/evidence/ev_refresh_merchant_feed");
+  });
+
+  it("ga4 and gsc routes render workflow-specific brief focus", async () => {
+    renderApp("/ga4");
+    await waitFor(() => expect(screen.getByRole("heading", { name: "GA4" })).toBeInTheDocument());
+    expect(screen.getByText("GA4 Quality Focus")).toBeInTheDocument();
+    expect(screen.getByText("GA4: sprawdź jakość ruchu na landing pages")).toBeInTheDocument();
+    expect(screen.getAllByText("active_users: 20").length).toBeGreaterThan(0);
+
+    cleanup();
+    testQueryClient.clear();
+    mockFetch();
+
+    renderApp("/seo-gsc");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "SEO / GSC" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("Search Console Content Focus")).toBeInTheDocument();
+    expect(screen.getByText("GSC: przełóż widoczność na kolejkę treści")).toBeInTheDocument();
+    expect(screen.getAllByText("clicks: 12").length).toBeGreaterThan(0);
+  });
+
+  it("localo social and content routes render workflow-specific blockers or focus", async () => {
+    renderApp("/localo");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("Local Visibility Focus")).toBeInTheDocument();
+    expect(screen.getByText("Localo: brakuje LOCALO_ACCESS_TOKEN")).toBeInTheDocument();
+
+    cleanup();
+    testQueryClient.clear();
+    mockFetch();
+
+    renderApp("/social-publisher");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Social Publisher" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("Social Publishing Focus")).toBeInTheDocument();
+    expect(screen.getByText("LinkedIn: brakuje organizacji i access tokena")).toBeInTheDocument();
+
+    cleanup();
+    testQueryClient.clear();
+    mockFetch();
+
+    renderApp("/content-planner");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Content Planner" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("Content Growth Focus")).toBeInTheDocument();
+    expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
   });
 
   it("evidence detail route renders source trace from linked evidence id", async () => {

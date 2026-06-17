@@ -30,15 +30,28 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     expect(apiResponses.every((entry) => entry.startsWith("200 "))).toBe(true);
   });
 
-  test("operating routes expose evidence, actions and missing credentials", async ({ page }) => {
+  test("ads doctor route exposes OAuth action focus from MarketingBrief", async ({ page }) => {
     await page.goto("/ads-doctor");
 
     await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Evidence Registry" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Connector Refresh Runs" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Actions" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Connector Status" })).toBeVisible();
-    await expect(page.getByText("Missing credentials").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ads Focus" })).toBeVisible();
+    await expect(page.getByText("Google Ads: najpierw napraw OAuth, potem diagnozuj spend")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Spend Safety Gate" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "act_configure_google_ads_env" }).first()).toBeVisible();
+  });
+
+  test("ga4 and gsc routes expose metric-backed workflow focus", async ({ page }) => {
+    await page.goto("/ga4");
+
+    await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "GA4 Quality Focus" })).toBeVisible();
+    await expect(page.getByText(/GA4: active_users =/)).toBeVisible();
+
+    await page.goto("/seo-gsc");
+
+    await expect(page.getByRole("heading", { name: "SEO / GSC" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Search Console Content Focus" })).toBeVisible();
+    await expect(page.getByText("GSC: przełóż widoczność na kolejkę treści")).toBeVisible();
   });
 
   test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
