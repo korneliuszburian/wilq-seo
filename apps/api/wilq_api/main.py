@@ -47,11 +47,13 @@ from wilq.schemas import (
     KnowledgeCard,
     KnowledgeCompilerResult,
     MarketingPlaybook,
+    MetricFact,
     Opportunity,
     utc_now,
 )
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import local_state_store
+from wilq.storage.metric_store import metric_store
 from wilq.workflows.models import WorkflowRun, WorkflowRunCreateRequest
 from wilq.workflows.registry import list_workflows
 
@@ -160,6 +162,7 @@ def system_status() -> dict[str, Any]:
             "credential_runtime": credential_runtime_status(detailed=False),
             "codex_runtime": codex_runtime_status(),
             "local_state": local_state_store().status(),
+            "metric_store": metric_store().status(),
             "opportunity_types": list(OPPORTUNITY_TYPES),
         }
     )
@@ -271,6 +274,16 @@ def evidence_detail(evidence_id: str) -> Evidence:
     if evidence is None:
         raise HTTPException(status_code=404, detail=f"Unknown evidence: {evidence_id}")
     return evidence
+
+
+@app.get("/api/metrics", response_model=list[MetricFact])
+def metric_facts(connector_id: str | None = None, limit: int = 100) -> list[MetricFact]:
+    return metric_store().list_metric_facts(connector_id=connector_id, limit=limit)
+
+
+@app.get("/api/metrics/status")
+def metric_store_status() -> dict[str, Any]:
+    return metric_store().status()
 
 
 @app.get("/api/actions/{action_id}")

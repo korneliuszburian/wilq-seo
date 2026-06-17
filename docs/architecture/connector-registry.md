@@ -31,6 +31,7 @@ Connector refreshes are durable API runs:
 - Ahrefs `vendor_read` uses Site Explorer `domain-rating` to persist only aggregate domain rating and Ahrefs rank metadata for the configured target.
 - WordPress `vendor_read` uses the REST API for `ekologus.pl` and `sklep.ekologus.pl` content inventory, persisting only aggregate post/page counts and latest modification timestamps.
 - Every refresh run records evidence IDs, checked credential names, missing credential names, external-call status, vendor-data status, metric summary, summary and errors.
+- Redacted scalar `metric_summary` values are also written to the local DuckDB metric store as connector metric facts. The metric store is analytical state, not a raw vendor response cache.
 - Refresh runs must not expose secret values, access-pack paths or raw credential files.
 
 Implementation:
@@ -45,6 +46,8 @@ Implementation:
 - `GET /api/connectors/{connector}/refresh-runs`
 - `GET /api/evidence`
 - `GET /api/evidence/{evidence_id}`
+- `GET /api/metrics/status`
+- `GET /api/metrics`
 
 Missing credentials are product state. They must not be hidden, and values must never be returned.
 

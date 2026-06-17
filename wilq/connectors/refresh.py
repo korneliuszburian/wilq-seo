@@ -23,6 +23,7 @@ from wilq.schemas import (
     utc_now,
 )
 from wilq.storage.local_state import local_state_store
+from wilq.storage.metric_store import metric_store
 
 
 def run_connector_refresh(
@@ -62,7 +63,9 @@ def run_connector_refresh(
         summary=result.summary,
         errors=result.errors,
     )
-    return local_state_store().save_connector_refresh_run(run)
+    saved_run = local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(saved_run)
+    return saved_run
 
 
 def list_connector_refresh_runs(connector_id: str | None = None) -> list[ConnectorRefreshRun]:

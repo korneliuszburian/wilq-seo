@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
 [project]
 name = "wilq-seo"
 version = "0.1.0"
@@ -16,6 +20,12 @@ dependencies = [
   "uvicorn>=0.34.0",
   "pyyaml>=6.0.2"
 ]
+
+[project.scripts]
+wilq = "wilq.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["apps", "wilq"]
 
 [project.optional-dependencies]
 dev = [

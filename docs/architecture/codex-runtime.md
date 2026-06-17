@@ -17,6 +17,7 @@ Repo runtime surfaces:
 - `.codex/hooks.json` declares SessionStart and Stop hooks.
 - `.codex/hooks/` contains hook scripts that avoid secret printing.
 - `.agents/skills/` contains Goal 001 repo-scoped WILQ skills created with `$skill-creator`.
+- `uv run wilq` exposes a local Typer CLI for API-backed runtime checks without printing secret values.
 - `wilq-daily-command` is wired to WILQ API through `POST /api/codex/context-pack` and `scripts/smoke_context_pack.py`.
 - Other WILQ skills are production-shaped stubs with `SKILL.md`, `references/output-contract.md`, `scripts/smoke_skill_contract.py`, allowed endpoint lists, evidence requirements, output contracts and safety rules.
 
@@ -51,6 +52,18 @@ python3 .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-ba
 python3 .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
 scripts/verify.sh
 ```
+
+Local operator CLI:
+
+```bash
+uv run wilq status
+uv run wilq connectors status
+uv run wilq connectors refresh ahrefs --mode vendor_read --reason "operator smoke"
+uv run wilq metrics status
+uv run wilq metrics list --connector-id ahrefs --limit 20
+```
+
+CLI output is JSON and must keep credential values, token prefixes, credential paths and raw vendor responses out of stdout.
 
 Non-interactive Codex skill evals:
 

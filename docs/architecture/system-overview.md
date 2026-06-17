@@ -7,7 +7,7 @@ Product inspiration: WILQ should feel like an AI operating system for Ads/SEO/lo
 ```txt
 Dashboard + future Codex skills + hooks
   -> WILQ API
-  -> connector registry, evidence registry, expert rules, opportunity engine, actions, audit, local state
+  -> connector registry, evidence registry, metric store, expert rules, opportunity engine, actions, audit, local state
   -> Google Ads, GSC, GA4, Merchant Center, Ahrefs, Localo, WordPress, LinkedIn, Facebook
 ```
 
@@ -18,6 +18,7 @@ Rules:
 - Skills are operator workflows created after the API endpoints they call exist.
 - Expert rules live as structured YAML but are consumed through typed WILQ API endpoints, not by prompt-only logic.
 - Codex runs, workflow runs, connector refresh runs, and audit events persist to local SQLite state with redaction.
+- Redacted connector refresh metric summaries also persist to a local DuckDB metric store for analytical reads.
 - Repo-local `.env` is the primary private credential source; the Ekologus access pack is import/fallback material.
 - Google Sheets is optional and disabled for the current Ekologus operator scope; it is not a required evidence source.
 - Knowledge playbooks compile into source-lineage cards before reaching Codex context packs.
@@ -38,6 +39,11 @@ Local-state API surface:
 - `/api/workflow-runs`: persisted workflow run records.
 - `/api/connectors/refresh-runs`: persisted connector refresh run records.
 - `/api/audit/events`: persisted audit events, optionally filtered by action ID.
+
+Metric API surface:
+
+- `/api/metrics/status`: local DuckDB metric store status, row counts and backend metadata.
+- `/api/metrics`: redacted connector metric facts with optional connector filtering.
 
 Knowledge API surface:
 
