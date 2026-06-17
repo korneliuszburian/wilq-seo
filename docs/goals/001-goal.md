@@ -361,8 +361,31 @@ Current implementation slice completed and verified after `23a3260`:
   * stale `agent-browser`/headless Chrome/Codex/MCP/dev-server processes were removed;
   * old supersearch/Qdrant/crawl/redis containers were stopped;
   * WordPress/Sawaryn Docker containers on `80/443/3306` were intentionally left running;
-  * after cleanup, WILQ standard dev ports `8000/5173` were not left running unless restarted explicitly.
-* If resuming after context loss: this slice should be committed as the next Conventional Commit and pushed before starting the Google Ads data slice.
+  * WILQ standard dev ports were then restarted for operator work: API on `http://127.0.0.1:8000` and dashboard on `http://127.0.0.1:5173`.
+* Committed and pushed:
+  * `159d783 feat(dashboard): add marketer command center surface`
+* If resuming after context loss: do not reimplement or recommit this slice. Verify the current worktree first, then continue with the Google Ads data slice.
+
+Current active slice as of 2026-06-17 19:13 Europe/Warsaw:
+
+* Product outcome: make the Google Ads blocker actionable and then turn live Ads data into the first real Ads Doctor proof surface. Do not claim Ads performance insight until WILQ has live Google Ads evidence IDs and metric facts.
+* Current proof:
+  * `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads data slice current-state proof"` reached Google's OAuth token endpoint with all required credential names present.
+  * The refresh failed as a redacted WILQ connector run: `refresh_google_ads_46316753e85f`.
+  * Evidence IDs recorded by the API: `ev_connector_google_ads_status`, `ev_refresh_refresh_google_ads_46316753e85f`.
+  * External call was attempted; vendor data was not collected; metric summary was empty.
+  * Current exposed failure text is only `Google Ads OAuth token refresh HTTP 400.`
+* Immediate implementation requirement:
+  * Improve Google Ads OAuth failure diagnostics without leaking secrets: parse safe OAuth error labels such as `invalid_grant` from JSON error bodies, expose only sanitized labels/status codes in refresh errors, and add tests proving no secret/raw body leak.
+  * Keep `.env` values, token prefixes, client IDs, credential JSON bodies and raw vendor responses out of logs, docs and API responses.
+  * After diagnostics are in place, rerun `google_ads vendor_read`. If the sanitized label remains `invalid_grant`, the next human action is to generate/update a fresh `adwords`-scoped refresh token in the local `.env`; Codex must not pretend it can mint that token without OAuth consent.
+* Expected proof commands for this slice:
+  * `uv run pytest tests/test_api_contracts.py -q` or a narrower Google Ads connector test once added.
+  * `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads sanitized OAuth diagnostic proof"`.
+  * `GOMAXPROCS=1 scripts/verify.sh` before commit if the slice touches shared API/dashboard contracts.
+* Commit target:
+  * `fix(connectors): expose sanitized google ads oauth errors` if only diagnostics are changed.
+  * `feat(connectors): add live google ads evidence collection` only after successful live data collection exists.
 
 Known external/product blockers:
 
@@ -395,6 +418,7 @@ Completed foundation that should not be reimplemented:
 * Playwright real-browser dashboard/API smoke exists to prove browser route/API/CORS health and must stay in `scripts/verify.sh`.
 * Goal recovery/acceptance gates are now explicit at the top of this file: keep this file current, prove real metrics/pages/products, prove Codex non-interactive behavior, prove dashboard/browser usefulness and preserve `docs/infra/001.md` scope.
 * Command Center now exposes the first marketer-facing operating surface pattern: Polish decision sections, ActionObject candidates, local metric facts, connector blockers, evidence IDs and explicit readiness-only warnings.
+* Command Center operating-surface slice was committed and pushed as `159d783 feat(dashboard): add marketer command center surface`.
 
 Product scope that must not be simplified away:
 
@@ -424,13 +448,12 @@ Unfinished blockers to keep carrying forward:
 
 Next implementation queue:
 
-1. Commit and push the completed Command Center operating-surface slice if the worktree still contains those changes.
-2. Restart local WILQ API/dashboard on standard ports and provide the operator URL. Preferred defaults: `uv run uvicorn apps.api.wilq_api.main:app --reload` on `127.0.0.1:8000` and `pnpm --filter @wilq/dashboard dev` on `127.0.0.1:5173`.
-3. Google Ads data slice: resolve Google Ads OAuth `invalid_grant` with a fresh `adwords`-scoped refresh token, then prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence.
-4. Ads Doctor usefulness slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
-5. Content Planner usefulness slice: expose a real content decision queue from GSC, GA4, Ahrefs, WordPress inventory, Merchant/product context and knowledge cards: refresh, merge, create, avoid-duplicate, social adaptation and evidence-backed briefs.
-6. Skill/eval upgrade slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments`, `wilq-demand-gen-operator`, `wilq-gsc-content-doctor`, `wilq-content-strategist`, `wilq-ahrefs-gap-finder`, `wilq-localo-operator` and `wilq-social-publisher` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
-7. After Ads Doctor and Content Planner are useful, promote the same metric-view/action-candidate pattern to GA4, Merchant, Ahrefs, Localo and social surfaces.
+1. Google Ads OAuth diagnostic slice: expose sanitized OAuth error labels/status codes from failed token refreshes, with tests proving no secret/raw-response leakage.
+2. Google Ads data slice: once OAuth is fixed with a fresh `adwords`-scoped refresh token, prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence, metric facts and evidence IDs.
+3. Ads Doctor usefulness slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.
+4. Content Planner usefulness slice: expose a real content decision queue from GSC, GA4, Ahrefs, WordPress inventory, Merchant/product context and knowledge cards: refresh, merge, create, avoid-duplicate, social adaptation and evidence-backed briefs.
+5. Skill/eval upgrade slice: upgrade `wilq-ads-doctor`, `wilq-campaign-builder`, `wilq-custom-segments`, `wilq-demand-gen-operator`, `wilq-gsc-content-doctor`, `wilq-content-strategist`, `wilq-ahrefs-gap-finder`, `wilq-localo-operator` and `wilq-social-publisher` only after their WILQ API endpoints expose the evidence they need; evals must prove no invented metrics and Polish output.
+6. After Ads Doctor and Content Planner are useful, promote the same metric-view/action-candidate pattern to GA4, Merchant, Ahrefs, Localo and social surfaces.
 
 Goal 002 draft acceptance notes:
 
