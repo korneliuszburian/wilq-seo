@@ -3390,3 +3390,61 @@ Demo acceptance:
 59. Handoff lists live URLs, commands, evidence IDs, known blockers and next
     slices.
 60. Worktree is clean and commits are Conventional Commits.
+
+---
+
+## 29. MarketingBrief API slice - 2026-06-17
+
+Implemented first API/dashboard bridge from the research backlog:
+
+* New API contract:
+  * `GET /api/marketing/brief`
+  * Pydantic models:
+    `MarketingBrief`, `MarketingBriefSection`, `MarketingBriefItem`
+  * Shared Zod schema:
+    `MarketingBriefSchema`, `MarketingBriefSectionSchema`,
+    `MarketingBriefItemSchema`
+* Codex context pack now includes `marketing_brief`, so Codex skills and
+  dashboard can read the same operating truth.
+* Dashboard Command Center now renders a first-screen Polish panel:
+  `Dzisiejszy brief WILQ`.
+* Brief sections:
+  * `what_we_know`: real metric facts from DuckDB connector refreshes
+  * `what_blocks_us`: concrete connector/OAuth/adapter blockers
+  * `safe_next_actions`: current ActionObjects
+  * `recommended_focus`: evidence-backed focus areas or explicit blockers
+* Probe-only Localo OAuth facts are not treated as marketing metrics. They stay
+  represented through blocker/evidence state.
+
+Live proof after API restart:
+
+```txt
+GET /api/marketing/brief
+language=pl-PL
+blocker_count=5
+recommendation_count=3
+what_we_know_first="WordPress ekologus.pl: content_object_count = 16"
+what_we_know_first_evidence=ev_refresh_refresh_wordpress_ekologus_6b3aaaedc70d
+what_blocks_us_first="Google Ads: Google Ads OAuth token refresh HTTP 400 (oauth_error=invalid_grant)."
+```
+
+Verification commands run:
+
+```bash
+uv run ruff check wilq/briefing/marketing_brief.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/marketing_brief.py apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py::test_marketing_brief_aggregates_metric_facts_and_blockers -q
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test
+```
+
+Remaining follow-up:
+
+1. Upgrade `wilq-daily-command` to call `/api/marketing/brief`.
+2. Add non-interactive Codex eval that proves the skill returns the same
+   evidence IDs and blocker counts as `/api/marketing/brief`.
+3. Extend `MarketingBriefItem` when `MetricFact` gains dimensions like entity
+   type, entity ID, severity and freshness.
+4. Replace more dashboard sections with the brief view model instead of
+   opportunity-readiness placeholders.

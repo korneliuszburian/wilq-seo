@@ -354,6 +354,41 @@ class ConnectorSummary(BaseModel):
     missing_credentials: int
 
 
+class MarketingBriefItem(BaseModel):
+    id: str
+    title: str
+    kind: Literal["metric", "blocker", "action", "recommendation"]
+    priority: int = Field(ge=1, le=100)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    summary: str
+    next_step: str
+    risk: ActionRisk = ActionRisk.low
+    blocker_reason: str | None = None
+
+
+class MarketingBriefSection(BaseModel):
+    id: str
+    title: str
+    description: str
+    items: list[MarketingBriefItem] = Field(default_factory=list)
+
+
+class MarketingBrief(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    language: Literal["pl-PL"] = "pl-PL"
+    strict_instruction: str
+    connector_summary: ConnectorSummary
+    sections: list[MarketingBriefSection]
+    top_metric_facts: list[MetricFact] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocker_count: int = 0
+    recommendation_count: int = 0
+
+
 class CommandCenterResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     strict_instruction: str

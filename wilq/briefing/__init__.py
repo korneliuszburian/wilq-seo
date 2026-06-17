@@ -1,0 +1,1 @@
+"""Marketing brief view models."""

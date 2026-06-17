@@ -1,0 +1,380 @@
+from __future__ import annotations
+
+from collections import defaultdict
+from collections.abc import Iterable
+
+from wilq.actions.service import list_actions
+from wilq.connectors.refresh import list_connector_refresh_runs
+from wilq.connectors.registry import list_connector_statuses
+from wilq.evidence.registry import connector_evidence_id
+from wilq.schemas import (
+    ActionObject,
+    ActionRisk,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
+    ConnectorStatus,
+    ConnectorSummary,
+    MarketingBrief,
+    MarketingBriefItem,
+    MarketingBriefSection,
+    MetricFact,
+)
+from wilq.storage.metric_store import metric_store
+
+STRICT_BRIEF_INSTRUCTION = (
+    "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
+    "nie domysł marketingowy."
+)
+
+CONNECTOR_LABELS = {
+    "google_ads": "Google Ads",
+    "google_search_console": "Google Search Console",
+    "google_analytics_4": "GA4",
+    "google_merchant_center": "Merchant Center",
+    "ahrefs": "Ahrefs",
+    "localo": "Localo",
+    "wordpress_ekologus": "WordPress ekologus.pl",
+    "wordpress_sklep": "WordPress sklep.ekologus.pl",
+    "linkedin": "LinkedIn",
+    "facebook": "Facebook",
+}
+
+
+def build_marketing_brief() -> MarketingBrief:
+    connectors = list_connector_statuses()
+    refresh_runs = list_connector_refresh_runs()
+    metric_facts = metric_store().list_metric_facts(limit=24)
+    actions = list_actions()
+    latest_runs = _latest_run_by_connector(refresh_runs)
+
+    business_metric_facts = [fact for fact in metric_facts if not _is_probe_only_fact(fact)]
+    metric_items = _metric_items(business_metric_facts)
+    blocker_items = _blocker_items(connectors, latest_runs)
+    action_items = _action_items(actions)
+    recommendation_items = _recommendation_items(business_metric_facts, blocker_items)
+    sections = [
+        MarketingBriefSection(
+            id="what_we_know",
+            title="Co wiemy z realnych danych",
+            description="Najświeższe metryki zapisane przez read-only connector refresh.",
+            items=metric_items,
+        ),
+        MarketingBriefSection(
+            id="what_blocks_us",
+            title="Co blokuje decyzje",
+            description="Braki danych, OAuth, uprawnienia lub niedokończone adaptery.",
+            items=blocker_items,
+        ),
+        MarketingBriefSection(
+            id="safe_next_actions",
+            title="Bezpieczne następne kroki",
+            description="ActionObjecty i działania przygotowawcze bez wykonywania zmian.",
+            items=action_items,
+        ),
+        MarketingBriefSection(
+            id="recommended_focus",
+            title="Rekomendowany fokus",
+            description="Priorytety oparte o dostępne metryki albo jawne blockery.",
+            items=recommendation_items,
+        ),
+    ]
+    evidence_ids = _unique(
+        evidence_id
+        for section in sections
+        for item in section.items
+        for evidence_id in item.evidence_ids
+    )
+    action_ids = _unique(action.id for action in actions)
+    return MarketingBrief(
+        strict_instruction=STRICT_BRIEF_INSTRUCTION,
+        connector_summary=_connector_summary(connectors),
+        sections=sections,
+        top_metric_facts=metric_facts[:12],
+        evidence_ids=evidence_ids,
+        action_ids=action_ids,
+        blocker_count=len(blocker_items),
+        recommendation_count=len(recommendation_items),
+    )
+
+
+def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
+    return ConnectorSummary(
+        total=len(connectors),
+        configured=sum(1 for connector in connectors if connector.configured),
+        missing_credentials=sum(1 for connector in connectors if connector.missing_credentials),
+    )
+
+
+def _latest_run_by_connector(
+    refresh_runs: list[ConnectorRefreshRun],
+) -> dict[str, ConnectorRefreshRun]:
+    latest: dict[str, ConnectorRefreshRun] = {}
+    for run in refresh_runs:
+        current = latest.get(run.connector_id)
+        run_time = run.completed_at or run.started_at
+        if current is None:
+            latest[run.connector_id] = run
+            continue
+        current_time = current.completed_at or current.started_at
+        if run_time > current_time:
+            latest[run.connector_id] = run
+    return latest
+
+
+def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
+    grouped: dict[str, list[MetricFact]] = defaultdict(list)
+    for fact in metric_facts:
+        grouped[fact.source_connector].append(fact)
+
+    items: list[MarketingBriefItem] = []
+    for index, (connector_id, facts) in enumerate(grouped.items(), start=1):
+        headline = _metric_headline(connector_id, facts)
+        evidence_ids = _unique(fact.evidence_id for fact in facts)
+        items.append(
+            MarketingBriefItem(
+                id=f"brief_metric_{connector_id}",
+                title=headline,
+                kind="metric",
+                priority=min(20 + index, 39),
+                source_connectors=[connector_id],
+                evidence_ids=evidence_ids,
+                metric_facts=facts[:6],
+                summary=_metric_summary(connector_id, facts),
+                next_step=_metric_next_step(connector_id),
+                risk=ActionRisk.low,
+            )
+        )
+    return sorted(items, key=lambda item: item.priority)
+
+
+def _blocker_items(
+    connectors: list[ConnectorStatus],
+    latest_runs: dict[str, ConnectorRefreshRun],
+) -> list[MarketingBriefItem]:
+    blockers: list[MarketingBriefItem] = []
+    for connector in connectors:
+        latest_run = latest_runs.get(connector.id)
+        has_blocked_run = latest_run is not None and latest_run.status in {
+            ConnectorRefreshStatus.blocked,
+            ConnectorRefreshStatus.failed,
+        }
+        has_readiness_blocker = bool(connector.missing_credentials) or not connector.configured
+        if not has_blocked_run and not has_readiness_blocker:
+            continue
+
+        reason = _blocker_reason(connector, latest_run)
+        evidence_ids = (
+            latest_run.evidence_ids if latest_run else [connector_evidence_id(connector.id)]
+        )
+        priority = 1 if connector.id == "google_ads" else 5
+        if connector.id == "localo":
+            priority = 6
+        risk = (
+            ActionRisk.medium if connector.id in {"google_ads", "localo"} else ActionRisk.low
+        )
+        blockers.append(
+            MarketingBriefItem(
+                id=f"brief_blocker_{connector.id}",
+                title=f"{_connector_label(connector.id)}: {reason}",
+                kind="blocker",
+                priority=priority,
+                source_connectors=[connector.id],
+                evidence_ids=evidence_ids,
+                summary=_blocker_summary(connector, latest_run, reason),
+                next_step=_blocker_next_step(connector.id, reason),
+                risk=risk,
+                blocker_reason=reason,
+            )
+        )
+    return sorted(blockers, key=lambda item: item.priority)
+
+
+def _action_items(actions: list[ActionObject]) -> list[MarketingBriefItem]:
+    items: list[MarketingBriefItem] = []
+    for index, action in enumerate(actions, start=1):
+        items.append(
+            MarketingBriefItem(
+                id=f"brief_action_{action.id}",
+                title=action.title,
+                kind="action",
+                priority=min(40 + index, 59),
+                source_connectors=[action.connector],
+                evidence_ids=action.evidence_ids,
+                action_ids=[action.id],
+                metric_facts=action.metrics,
+                summary=action.human_diagnosis,
+                next_step=action.recommended_reason,
+                risk=action.risk,
+            )
+        )
+    return items
+
+
+def _recommendation_items(
+    metric_facts: list[MetricFact],
+    blocker_items: list[MarketingBriefItem],
+) -> list[MarketingBriefItem]:
+    items: list[MarketingBriefItem] = []
+    facts_by_connector: dict[str, list[MetricFact]] = defaultdict(list)
+    for fact in metric_facts:
+        facts_by_connector[fact.source_connector].append(fact)
+
+    if "google_merchant_center" in facts_by_connector:
+        merchant_facts = facts_by_connector["google_merchant_center"]
+        items.append(
+            MarketingBriefItem(
+                id="brief_focus_merchant_feed",
+                title="Merchant Center: zacznij od feed/product issues",
+                kind="recommendation",
+                priority=60,
+                source_connectors=["google_merchant_center"],
+                evidence_ids=_unique(fact.evidence_id for fact in merchant_facts),
+                metric_facts=merchant_facts[:6],
+                summary=(
+                    "Merchant ma realne metryki produktów i issue counts. To jest "
+                    "najbardziej operacyjny obszar do kolejki fix/monitor bez Ads OAuth."
+                ),
+                next_step="Otwórz /merchant i przygotuj feed issue queue z payload preview.",
+                risk=ActionRisk.medium,
+            )
+        )
+
+    if "google_search_console" in facts_by_connector:
+        gsc_facts = facts_by_connector["google_search_console"]
+        items.append(
+            MarketingBriefItem(
+                id="brief_focus_gsc_content",
+                title="GSC: przełóż widoczność na kolejkę treści",
+                kind="recommendation",
+                priority=62,
+                source_connectors=["google_search_console"],
+                evidence_ids=_unique(fact.evidence_id for fact in gsc_facts),
+                metric_facts=gsc_facts[:6],
+                summary=(
+                    "GSC ma kliknięcia, impressions, CTR i pozycję. Następny krok to "
+                    "query/page breakdown, nie ogólny content brainstorming."
+                ),
+                next_step="Zbuduj Content Planner queue: refresh/create/merge/block.",
+                risk=ActionRisk.low,
+            )
+        )
+
+    if any(item.source_connectors == ["google_ads"] for item in blocker_items):
+        google_ads_blocker = next(
+            item for item in blocker_items if item.source_connectors == ["google_ads"]
+        )
+        items.append(
+            MarketingBriefItem(
+                id="brief_focus_google_ads_blocker",
+                title="Google Ads: najpierw napraw OAuth, potem diagnozuj spend",
+                kind="recommendation",
+                priority=61,
+                source_connectors=["google_ads"],
+                evidence_ids=google_ads_blocker.evidence_ids,
+                summary=(
+                    "WILQ nie może uczciwie diagnozować wasted spend bez live Ads evidence. "
+                    "Obecny stan musi być pokazany jako blocker, nie rekomendacja."
+                ),
+                next_step="Użyj ActionObject `act_configure_google_ads_env` i helperów OAuth.",
+                risk=ActionRisk.medium,
+                blocker_reason=google_ads_blocker.blocker_reason,
+            )
+        )
+    return sorted(items, key=lambda item: item.priority)
+
+
+def _metric_headline(connector_id: str, facts: list[MetricFact]) -> str:
+    interesting = [fact for fact in facts if fact.name not in {"api", "connector_id"}]
+    if not interesting:
+        return f"{_connector_label(connector_id)}: zapisano metric facts"
+    first = interesting[0]
+    return f"{_connector_label(connector_id)}: {first.name} = {_format_value(first)}"
+
+
+def _metric_summary(connector_id: str, facts: list[MetricFact]) -> str:
+    sample = ", ".join(f"{fact.name}={_format_value(fact)}" for fact in facts[:4])
+    return (
+        f"WILQ ma realne metric facts z connectora {_connector_label(connector_id)}: "
+        f"{sample}. Każda metryka ma evidence ID."
+    )
+
+
+def _metric_next_step(connector_id: str) -> str:
+    if connector_id == "google_merchant_center":
+        return "Rozbij Merchant issues na produkty i przygotuj kolejkę feed fix/monitor."
+    if connector_id == "google_search_console":
+        return "Pobierz query/page breakdown i zbuduj kolejkę content refresh/create."
+    if connector_id == "google_analytics_4":
+        return "Rozbij GA4 po landing page i źródle ruchu, zanim ocenimy jakość kampanii."
+    if connector_id.startswith("wordpress"):
+        return "Połącz inventory z GSC/GA4 i oznacz strony stale/refresh/merge/block."
+    if connector_id == "ahrefs":
+        return "Użyj Ahrefs jako kontekstu authority/gap, nie jako samodzielnej rekomendacji."
+    return "Użyj tych faktów w odpowiednim workflow i nie rozszerzaj ich poza evidence."
+
+
+def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None) -> str:
+    if run and run.errors:
+        return run.errors[0]
+    if run and run.summary:
+        return run.summary
+    if connector.missing_credentials:
+        return f"brakuje: {', '.join(connector.missing_credentials)}"
+    if not connector.configured:
+        return "connector nie jest skonfigurowany"
+    return "ostatni refresh nie zebrał danych vendor"
+
+
+def _blocker_summary(
+    connector: ConnectorStatus,
+    run: ConnectorRefreshRun | None,
+    reason: str,
+) -> str:
+    if run:
+        return (
+            f"Ostatni refresh {run.id} zakończył się statusem {run.status}. "
+            f"Powód: {reason}"
+        )
+    return f"{_connector_label(connector.id)} nie może dostarczyć evidence. Powód: {reason}"
+
+
+def _blocker_next_step(connector_id: str, reason: str) -> str:
+    if connector_id == "google_ads":
+        return "Odśwież Google Ads OAuth przez ActionObject i nie pokazuj Ads rekomendacji."
+    if connector_id == "localo" and "LOCALO_ACCESS_TOKEN" in reason:
+        return "Dodaj Localo OAuth helper i uzyskaj lokalny LOCALO_ACCESS_TOKEN."
+    if connector_id == "localo":
+        return "Dokończ Localo MCP OAuth i dopiero potem pokazuj local visibility facts."
+    return "Uzupełnij wskazany blocker albo zostaw tę rekomendację zablokowaną."
+
+
+def _format_value(fact: MetricFact) -> str:
+    suffix = f" {fact.unit}" if fact.unit else ""
+    return f"{fact.value}{suffix}"
+
+
+def _is_probe_only_fact(fact: MetricFact) -> bool:
+    if (
+        fact.source_connector == "localo"
+        and fact.name == "api"
+        and fact.value == "localo_mcp_oauth_probe"
+    ):
+        return True
+    return fact.source_connector == "localo" and fact.name in {
+        "access_token_present",
+        "authorization_code_supported",
+        "pkce_s256_supported",
+        "mcp_initialize_status",
+    }
+
+
+def _connector_label(connector_id: str) -> str:
+    return CONNECTOR_LABELS.get(connector_id, connector_id)
+
+
+def _unique(items: Iterable[str]) -> list[str]:
+    unique_items: list[str] = []
+    for item in items:
+        if item and item not in unique_items:
+            unique_items.append(item)
+    return unique_items

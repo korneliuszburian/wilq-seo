@@ -6,6 +6,7 @@ import {
   EvidenceSchema,
   ExpertRuleSchema,
   KnowledgeCardSchema,
+  MarketingBriefSchema,
   MarketingPlaybookSchema,
   MetricFactSchema,
   MetricStoreStatusSchema,
@@ -19,6 +20,8 @@ import {
   type Evidence,
   type ExpertRule,
   type KnowledgeCard,
+  type MarketingBrief,
+  type MarketingBriefItem,
   type MarketingPlaybook,
   type MetricFact,
   type MetricStoreStatus,
@@ -40,6 +43,10 @@ async function apiGet<T>(path: string, schema: z.ZodType<T>): Promise<T> {
 
 export function getCommandCenter(): Promise<CommandCenterResponse> {
   return apiGet("/api/dashboard/command-center", CommandCenterResponseSchema);
+}
+
+export function getMarketingBrief(): Promise<MarketingBrief> {
+  return apiGet("/api/marketing/brief", MarketingBriefSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -98,6 +105,8 @@ export type {
   Evidence,
   ExpertRule,
   KnowledgeCard,
+  MarketingBrief,
+  MarketingBriefItem,
   MarketingPlaybook,
   MetricFact,
   MetricStoreStatus,

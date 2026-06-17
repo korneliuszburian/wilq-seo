@@ -392,6 +392,55 @@ def test_command_center_returns_valid_shape() -> None:
     assert "todays_moves" in data["sections"]
 
 
+def test_marketing_brief_aggregates_metric_facts_and_blockers(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "brief_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "brief_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_ahrefs_domain_rating",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Ahrefs domain rating completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"domain_rating": 24.0, "ahrefs_rank": 6433882},
+        ),
+    )
+
+    refresh_response = client.post(
+        "/api/connectors/ahrefs/refresh",
+        json={"mode": "vendor_read", "reason": "marketing brief contract test"},
+    )
+    assert refresh_response.status_code == 200
+
+    response = client.get("/api/marketing/brief")
+
+    assert response.status_code == 200
+    brief = response.json()
+    assert brief["language"] == "pl-PL"
+    assert "metryki" in brief["strict_instruction"].lower()
+    sections = {section["id"]: section for section in brief["sections"]}
+    metric_items = sections["what_we_know"]["items"]
+    assert any(item["source_connectors"] == ["ahrefs"] for item in metric_items)
+    ahrefs_item = next(item for item in metric_items if item["source_connectors"] == ["ahrefs"])
+    assert ahrefs_item["evidence_ids"] == refresh_response.json()["evidence_ids"][-1:]
+    assert ahrefs_item["metric_facts"]
+    blocker_items = sections["what_blocks_us"]["items"]
+    assert any(item["source_connectors"] == ["google_ads"] for item in blocker_items)
+    assert all(
+        item["kind"] in {"metric", "blocker", "action", "recommendation"}
+        for section in sections.values()
+        for item in section["items"]
+    )
+
+
 def test_evidence_registry_exposes_connector_status_without_secret_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

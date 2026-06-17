@@ -115,6 +115,41 @@ export const ConnectorSummarySchema = z.object({
   missing_credentials: z.number()
 });
 
+export const MarketingBriefItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  kind: z.enum(["metric", "blocker", "action", "recommendation"]),
+  priority: z.number(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  summary: z.string(),
+  next_step: z.string(),
+  risk: z.string(),
+  blocker_reason: z.string().nullable().optional()
+});
+
+export const MarketingBriefSectionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  items: z.array(MarketingBriefItemSchema)
+});
+
+export const MarketingBriefSchema = z.object({
+  generated_at: z.string().nullable().optional(),
+  language: z.literal("pl-PL"),
+  strict_instruction: z.string(),
+  connector_summary: ConnectorSummarySchema,
+  sections: z.array(MarketingBriefSectionSchema),
+  top_metric_facts: z.array(MetricFactSchema),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocker_count: z.number(),
+  recommendation_count: z.number()
+});
+
 export const ExpertRuleSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -238,6 +273,7 @@ export const ContextPackResponseSchema = z.object({
   knowledge_card_summaries: z.array(KnowledgeCardSchema),
   expert_rule_summaries: z.array(ExpertRuleSummarySchema),
   expert_capabilities: z.array(ExpertCapabilitySchema),
+  marketing_brief: MarketingBriefSchema,
   strict_instruction: z.string()
 });
 
@@ -249,6 +285,9 @@ export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
+export type MarketingBrief = z.infer<typeof MarketingBriefSchema>;
+export type MarketingBriefItem = z.infer<typeof MarketingBriefItemSchema>;
+export type MarketingBriefSection = z.infer<typeof MarketingBriefSectionSchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
 export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;

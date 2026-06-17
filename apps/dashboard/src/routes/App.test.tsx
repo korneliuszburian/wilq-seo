@@ -108,6 +108,59 @@ const metricStoreStatus = {
   refresh_run_count: 1
 };
 
+const marketingBrief = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  connector_summary: { total: 1, configured: 0, missing_credentials: 1 },
+  sections: [
+    {
+      id: "what_we_know",
+      title: "Co wiemy z realnych danych",
+      description: "Metric facts.",
+      items: [
+        {
+          id: "brief_metric_wordpress",
+          title: "WordPress: content_object_count = 16",
+          kind: "metric",
+          priority: 21,
+          source_connectors: ["wordpress_ekologus"],
+          evidence_ids: ["ev_refresh_wordpress_inventory"],
+          metric_facts: metricFacts,
+          action_ids: [],
+          summary: "WILQ ma realne metric facts z connectora WordPress.",
+          next_step: "Połącz inventory z GSC/GA4.",
+          risk: "low",
+          blocker_reason: null
+        }
+      ]
+    },
+    {
+      id: "what_blocks_us",
+      title: "Co blokuje decyzje",
+      description: "Blockery.",
+      items: []
+    },
+    {
+      id: "safe_next_actions",
+      title: "Bezpieczne następne kroki",
+      description: "ActionObjects.",
+      items: []
+    },
+    {
+      id: "recommended_focus",
+      title: "Rekomendowany fokus",
+      description: "Priorytety.",
+      items: []
+    }
+  ],
+  top_metric_facts: metricFacts,
+  evidence_ids: ["ev_refresh_wordpress_inventory"],
+  action_ids: ["act_1"],
+  blocker_count: 1,
+  recommendation_count: 1
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -199,6 +252,9 @@ function mockFetch() {
           })
         );
       }
+      if (url.endsWith("/api/marketing/brief")) {
+        return Promise.resolve(Response.json(marketingBrief));
+      }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
       if (url.endsWith("/api/metrics/status")) return Promise.resolve(Response.json(metricStoreStatus));
@@ -258,6 +314,8 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument()
     );
     expect(screen.getByText("Priorytety dnia")).toBeInTheDocument();
+    expect(screen.getByText("Dzisiejszy brief WILQ")).toBeInTheDocument();
+    expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
     expect(screen.getByText("Budżet i ryzyko wydatków")).toBeInTheDocument();
     expect(screen.getByText("Kandydaci działań API")).toBeInTheDocument();
   });

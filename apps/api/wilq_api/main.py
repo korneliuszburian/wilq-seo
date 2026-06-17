@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
+from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.refresh import (
     get_connector_refresh_run,
@@ -54,6 +55,7 @@ from wilq.schemas import (
     ExpertRuleSummary,
     KnowledgeCard,
     KnowledgeCompilerResult,
+    MarketingBrief,
     MarketingPlaybook,
     MetricFact,
     Opportunity,
@@ -152,6 +154,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "expert_capabilities": [
             capability.model_dump(mode="json") for capability in list_expert_capabilities()
         ],
+        "marketing_brief": build_marketing_brief().model_dump(mode="json"),
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
     return redact_mapping(pack)
@@ -262,6 +265,11 @@ def command_center() -> CommandCenterResponse:
         connector_health=connectors,
         codex_operator_status=codex_runtime_status(),
     )
+
+
+@app.get("/api/marketing/brief", response_model=MarketingBrief)
+def marketing_brief() -> MarketingBrief:
+    return build_marketing_brief()
 
 
 @app.get("/api/opportunities", response_model=list[Opportunity])

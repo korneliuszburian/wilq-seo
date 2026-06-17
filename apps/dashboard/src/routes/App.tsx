@@ -44,12 +44,15 @@ import {
   getExpertRules,
   getKnowledgeCards,
   getKnowledgePlaybooks,
+  getMarketingBrief,
   getMetricFacts,
   getMetricStoreStatus,
   getOpportunities,
   getWorkflowRuns,
   getWorkflows,
   KnowledgeCard,
+  MarketingBrief,
+  MarketingBriefItem,
   MarketingPlaybook,
   MetricFact,
   MetricStoreStatus,
@@ -686,10 +689,101 @@ function formatMetricFactValue(fact: MetricFact) {
   return `${fact.value}${suffix}`;
 }
 
+function MarketingBriefPanel({
+  brief,
+  isLoading,
+  isError
+}: {
+  brief?: MarketingBrief;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  if (isError) {
+    return (
+      <BlockerNotice message="Nie udało się odczytać /api/marketing/brief. Command Center nie może udawać briefu." />
+    );
+  }
+  if (isLoading || !brief) {
+    return (
+      <div className="rounded-md border border-line bg-white p-4 text-sm text-slate-600">
+        Ładowanie dzisiejszego briefu WILQ...
+      </div>
+    );
+  }
+
+  const visibleItems = brief.sections.flatMap((section) => section.items).slice(0, 6);
+
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <ClipboardCheck aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Dzisiejszy brief WILQ
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">{brief.strict_instruction}</p>
+        </div>
+      </div>
+      <div className="rounded-md border border-line bg-white p-4">
+        <div className="mb-4 grid gap-3 text-sm sm:grid-cols-4">
+          <MetricTile label="Rekomendacje" value={brief.recommendation_count} />
+          <MetricTile label="Blockery" value={brief.blocker_count} />
+          <MetricTile label="Evidence IDs" value={brief.evidence_ids.length} />
+          <MetricTile label="ActionObjects" value={brief.action_ids.length} />
+        </div>
+        {visibleItems.length === 0 ? (
+          <BlockerNotice message="Brief nie ma jeszcze itemów. Uruchom read-only vendor_read dla skonfigurowanych connectorów." />
+        ) : (
+          <div className="grid gap-3 xl:grid-cols-2">
+            {visibleItems.map((item) => (
+              <MarketingBriefCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
+  return (
+    <article className="rounded-md border border-line p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{item.title}</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {item.kind} / priority {item.priority}
+          </p>
+        </div>
+        <StatusBadge value={item.risk} />
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">{item.summary}</p>
+      <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>
+      {item.blocker_reason ? (
+        <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
+          Blocker: {item.blocker_reason}
+        </div>
+      ) : null}
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+        <TraceLine label="Evidence" values={item.evidence_ids} />
+        <TraceLine label="Źródła" values={item.source_connectors} />
+        <TraceLine label="Akcje" values={item.action_ids} empty="brak" />
+      </div>
+      {item.metric_facts.length > 0 ? <MetricFactChips facts={item.metric_facts.slice(0, 4)} /> : null}
+    </article>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
     queryFn: getCommandCenter
+  });
+  const marketingBrief = useQuery({
+    queryKey: ["marketing-brief"],
+    queryFn: getMarketingBrief
   });
   const metricFacts = useQuery({
     queryKey: ["metric-facts", 24],
@@ -718,6 +812,12 @@ function CommandCenter() {
       </div>
 
       <div className="grid gap-8">
+        <MarketingBriefPanel
+          brief={marketingBrief.data}
+          isLoading={marketingBrief.isLoading}
+          isError={Boolean(marketingBrief.error)}
+        />
+
         <section>
           <div className="mb-3 flex items-start gap-3">
             <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
