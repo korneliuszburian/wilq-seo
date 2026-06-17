@@ -26,7 +26,7 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Dashboard knowledge routes render compiled cards and playbooks through shared Zod validation.
 - Evidence registry APIs expose connector-status evidence without secret values.
 - Connector refresh APIs create durable `status_probe` and read-only `vendor_read` runs with redacted evidence IDs and no invented vendor metrics.
-- Google Ads `vendor_read` has a first adapter for OAuth refresh-token auth plus aggregate campaign `searchStream` metrics.
+- Google Ads, Google Search Console and GA4 have first read-only `vendor_read` adapters that persist aggregate metrics only.
 - Opportunities are now derived from connector readiness evidence plus playbook/expert-rule mappings, not fixed demo opportunity rows.
 - Workflow, model runtime, credential runtime, MCP, quality, security and source-registry docs exist.
 - Codex hooks exist for SessionStart and Stop; they fail open and restrict API URL targets to local/allowed hosts.
@@ -70,7 +70,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - `scripts/quality.sh`: passed.
 - `scripts/security.sh`: passed.
 - `scripts/verify.sh`: passed.
-- Backend tests: 27 passed.
+- Backend tests: 30 passed.
 - Dashboard tests: 8 passed.
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
@@ -81,7 +81,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
-- Goal 001 is not complete because skills are deferred by policy, most vendor-read connector adapters are still blocked/not implemented, and opportunity generation mostly uses connector-status/refresh evidence rather than vendor performance metrics.
+- Goal 001 is not complete because skills are deferred by policy, several vendor-read connector adapters are still blocked/not implemented, and opportunity generation mostly uses connector-status/refresh evidence rather than vendor performance metrics.
 - Live Google Ads `vendor_read` reaches Google's OAuth token endpoint from repo-local `.env`, but the current refresh-token tuple returns `400 invalid_grant`; generate a fresh `adwords`-scoped refresh token before expecting campaign metrics.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 

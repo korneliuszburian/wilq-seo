@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from wilq.connectors.google_auth import (
+    GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,
+    google_service_account_available,
+)
 from wilq.credentials.runtime import (
     credential_file_names,
     credential_source_summary,
@@ -22,6 +26,7 @@ class ConnectorDefinition:
     cost_notes: str
     risk_notes: str
     health_check: str
+    required_credential_groups: tuple[tuple[str, ...], ...] = ()
 
 
 CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
@@ -52,7 +57,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
     ConnectorDefinition(
         "google_search_console",
         "Google Search Console",
-        ("GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_SEARCH_CONSOLE_SITE_URL"),
+        ("GOOGLE_SEARCH_CONSOLE_SITE_URL",),
         True,
         False,
         ("gsc_content_opportunity",),
@@ -60,11 +65,12 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "No direct API cost expected; quota-limited.",
         "Read-only SEO diagnostics.",
         "credential_presence",
+        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
     ),
     ConnectorDefinition(
         "google_analytics_4",
         "Google Analytics 4",
-        ("GOOGLE_APPLICATION_CREDENTIALS", "GA4_PROPERTY_ID"),
+        ("GA4_PROPERTY_ID",),
         True,
         False,
         ("ga4_landing_page_issue", "ga4_tracking_gap"),
@@ -72,11 +78,12 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "No direct API cost expected; quota-limited.",
         "Measurement gaps must not be misreported as marketing failures.",
         "credential_presence",
+        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
     ),
     ConnectorDefinition(
         "google_merchant_center",
         "Google Merchant Center",
-        ("GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID"),
+        ("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID",),
         True,
         True,
         ("merchant_feed_issue", "product_feed_edit_candidate"),
@@ -84,11 +91,12 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "No direct API cost expected; quota-limited.",
         "Feed writes can affect product visibility and must preserve factual attributes.",
         "credential_presence",
+        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
     ),
     ConnectorDefinition(
         "google_sheets",
         "Google Sheets",
-        ("GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID"),
+        ("GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID",),
         True,
         True,
         ("export_review_sheet", "import_reviewed_bulk_edits"),
@@ -96,6 +104,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         "No direct API cost expected; quota-limited.",
         "Sheets is collaboration surface, not source of truth.",
         "credential_presence",
+        (GOOGLE_SERVICE_ACCOUNT_ENV_NAMES,),
     ),
     ConnectorDefinition(
         "ahrefs",
@@ -203,8 +212,42 @@ def _credential_available(name: str) -> bool:
     return False
 
 
+def _required_credential_names(definition: ConnectorDefinition) -> list[str]:
+    names = list(definition.required_env)
+    for group in definition.required_credential_groups:
+        for name in group:
+            if name not in names:
+                names.append(name)
+    return names
+
+
+def _credential_group_available(group: tuple[str, ...]) -> bool:
+    if group == GOOGLE_SERVICE_ACCOUNT_ENV_NAMES:
+        return google_service_account_available()
+    return any(_credential_available(name) for name in group)
+
+
+def _missing_credential_groups(definition: ConnectorDefinition) -> list[str]:
+    missing: list[str] = []
+    for group in definition.required_credential_groups:
+        if not _credential_group_available(group):
+            missing.append("|".join(group))
+    return missing
+
+
+def _connector_error(missing: list[str]) -> str | None:
+    if "|".join(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES) in missing:
+        return "Google service account credentials are missing or invalid."
+    return None
+
+
 def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
-    missing = [name for name in definition.required_env if not _credential_available(name)]
+    required_names = _required_credential_names(definition)
+    missing = [
+        name
+        for name in definition.required_env
+        if not _credential_available(name)
+    ] + _missing_credential_groups(definition)
     configured = not missing
     return ConnectorStatus(
         id=definition.id,
@@ -214,8 +257,8 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
         else ConnectorStatusValue.missing_credentials,
         configured=configured,
         missing_credentials=missing,
-        available_credential_sources=credential_source_summary(definition.required_env),
-        error=None,
+        available_credential_sources=credential_source_summary(required_names),
+        error=_connector_error(missing),
         freshness=FreshnessState(
             state="unknown" if configured else "missing",
             notes="Credential presence only; no external API call was made.",
@@ -225,7 +268,7 @@ def connector_status(definition: ConnectorDefinition) -> ConnectorStatus:
             write=definition.write,
             operations=list(definition.supported_actions),
         ),
-        required_env=list(definition.required_env),
+        required_env=required_names,
         supported_actions=list(definition.supported_actions),
         rate_limit_notes=definition.rate_limit_notes,
         cost_notes=definition.cost_notes,

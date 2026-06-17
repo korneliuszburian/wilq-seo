@@ -4,7 +4,7 @@ set -euo pipefail
 scripts/quality.sh
 scripts/security.sh
 
-python3 - <<'PY'
+uv run python - <<'PY'
 from fastapi.testclient import TestClient
 from apps.api.wilq_api.main import app
 
@@ -20,4 +20,3 @@ if [ -d apps/dashboard/node_modules ]; then
 else
   echo "Skipping dashboard build: node_modules missing. Run pnpm install."
 fi
-

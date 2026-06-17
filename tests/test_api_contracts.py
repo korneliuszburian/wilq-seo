@@ -10,6 +10,9 @@ from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
+from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
+from wilq.connectors.google_auth import GOOGLE_SERVICE_ACCOUNT_ENV_NAMES
+from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.vendor import VendorReadResult
 from wilq.schemas import (
     ActionMode,
@@ -37,6 +40,18 @@ GOOGLE_ADS_TEST_ENV = (
 
 def clear_google_ads_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.delenv(key, raising=False)
+
+
+def clear_google_service_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for key in (
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "GOOGLE_SERVICE_ACCOUNT_JSON",
+        "GOOGLE_CREDENTIALS",
+        "GOOGLE_SEARCH_CONSOLE_SITE_URL",
+        "GSC_SITE_URL",
+        "GA4_PROPERTY_ID",
+    ):
         monkeypatch.delenv(key, raising=False)
 
 
@@ -76,6 +91,32 @@ def test_connector_status_does_not_expose_secret_values(monkeypatch: pytest.Monk
     serialized = json.dumps(response.json())
     assert "gho_supersecretvalue1234567890" not in serialized
     assert "GOOGLE_ADS_DEVELOPER_TOKEN" in serialized
+
+
+def test_google_first_party_status_requires_valid_service_account(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    oauth_json = tmp_path / "oauth-client.json"
+    oauth_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(oauth_json))
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "sc-domain:ekologus.pl")
+    monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
+
+    response = client.get("/api/connectors")
+
+    assert response.status_code == 200
+    connectors = {item["id"]: item for item in response.json()}
+    missing_label = "|".join(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES)
+    for connector_id in ("google_search_console", "google_analytics_4"):
+        connector = connectors[connector_id]
+        assert connector["configured"] is False
+        assert connector["status"] == "missing_credentials"
+        assert missing_label in connector["missing_credentials"]
+        assert connector["error"] == "Google service account credentials are missing or invalid."
+        assert set(GOOGLE_SERVICE_ACCOUNT_ENV_NAMES).issubset(connector["required_env"])
 
 
 def test_system_status_reports_credential_runtime_without_paths_or_filenames() -> None:
@@ -415,6 +456,171 @@ def test_google_ads_vendor_read_endpoint_persists_metric_summary(
     assert context_response.status_code == 200
     context_runs = {item["id"] for item in context_response.json()["connector_refresh_runs"]}
     assert run["id"] in context_runs
+
+
+def test_gsc_vendor_read_uses_search_analytics(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "sc-domain:ekologus.pl")
+    monkeypatch.setattr(
+        "wilq.connectors.google_search_console.client.google_service_account_access_token",
+        lambda scopes: "gsc-access-token",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "searchconsole.googleapis.com"
+        assert (
+            request.url.path
+            == "/webmasters/v3/sites/sc-domain:ekologus.pl/searchAnalytics/query"
+        )
+        assert request.headers["authorization"] == "Bearer gsc-access-token"
+        body = json.loads(request.content.decode())
+        assert body["rowLimit"] == 1
+        assert "startDate" in body
+        assert "endDate" in body
+        return httpx.Response(
+            200,
+            json={
+                "rows": [
+                    {
+                        "clicks": 12,
+                        "impressions": 120,
+                        "ctr": 0.1,
+                        "position": 4.5,
+                    }
+                ]
+            },
+        )
+
+    result = refresh_search_console_site_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary["row_count"] == 1
+    assert result.metric_summary["clicks"] == 12
+    assert result.metric_summary["impressions"] == 120
+    assert result.metric_summary["ctr"] == 0.1
+    assert result.metric_summary["average_position"] == 4.5
+
+
+def test_ga4_vendor_read_uses_run_report(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GA4_PROPERTY_ID", "properties/411974093")
+    monkeypatch.setattr(
+        "wilq.connectors.google_analytics_4.client.google_service_account_access_token",
+        lambda scopes: "ga4-access-token",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "analyticsdata.googleapis.com"
+        assert request.url.path == "/v1beta/properties/411974093:runReport"
+        assert request.headers["authorization"] == "Bearer ga4-access-token"
+        body = json.loads(request.content.decode())
+        assert [metric["name"] for metric in body["metrics"]] == [
+            "activeUsers",
+            "sessions",
+            "screenPageViews",
+            "eventCount",
+            "engagementRate",
+        ]
+        return httpx.Response(
+            200,
+            json={
+                "metricHeaders": [
+                    {"name": "activeUsers"},
+                    {"name": "sessions"},
+                    {"name": "screenPageViews"},
+                    {"name": "eventCount"},
+                    {"name": "engagementRate"},
+                ],
+                "rows": [
+                    {
+                        "metricValues": [
+                            {"value": "20"},
+                            {"value": "30"},
+                            {"value": "50"},
+                            {"value": "75"},
+                            {"value": "0.62"},
+                        ]
+                    }
+                ],
+            },
+        )
+
+    result = refresh_ga4_behavior_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary["row_count"] == 1
+    assert result.metric_summary["active_users"] == 20
+    assert result.metric_summary["sessions"] == 30
+    assert result.metric_summary["screen_page_views"] == 50
+    assert result.metric_summary["event_count"] == 75
+    assert result.metric_summary["engagement_rate"] == 0.62
+
+
+def test_google_first_party_vendor_reads_route_through_refresh_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "google_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "sc-domain:ekologus.pl")
+    monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
+    service_account_json = tmp_path / "sa.json"
+    service_account_json.write_text('{"type":"service_account"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(service_account_json))
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_search_console_site_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="GSC read completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"clicks": 12, "impressions": 120},
+        ),
+    )
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_ga4_behavior_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="GA4 read completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"active_users": 20, "sessions": 30},
+        ),
+    )
+
+    gsc_response = client.post(
+        "/api/connectors/google_search_console/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+    ga4_response = client.post(
+        "/api/connectors/google_analytics_4/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+
+    assert gsc_response.status_code == 200
+    assert ga4_response.status_code == 200
+    assert gsc_response.json()["metric_summary"] == {"clicks": 12, "impressions": 120}
+    assert ga4_response.json()["metric_summary"] == {"active_users": 20, "sessions": 30}
 
 
 def test_expert_rules_are_loaded_from_structured_files() -> None:

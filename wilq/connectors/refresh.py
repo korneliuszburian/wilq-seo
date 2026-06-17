@@ -3,6 +3,8 @@ from __future__ import annotations
 from uuid import uuid4
 
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
+from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
+from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.registry import get_connector_status
 from wilq.connectors.vendor import VendorReadResult
 from wilq.evidence.registry import connector_evidence_id, refresh_run_evidence_id
@@ -83,6 +85,10 @@ def _refresh_result(
         )
     if connector_id == "google_ads":
         return refresh_google_ads_campaign_summary(request)
+    if connector_id == "google_search_console":
+        return refresh_search_console_site_summary(request)
+    if connector_id == "google_analytics_4":
+        return refresh_ga4_behavior_summary(request)
     summary = (
         f"Vendor read adapter for connector {connector_id} is not implemented yet. "
         "No external API call was attempted."
