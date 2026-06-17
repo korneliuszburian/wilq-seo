@@ -337,7 +337,7 @@ Current implementation slice completed and verified in this checkpoint:
 * APScheduler-backed local job definitions, manual job run API/CLI, and redacted persisted job-run state for connector refresh orchestration.
 * Playwright real-browser dashboard/API smoke wired into `scripts/verify.sh` using system Google Chrome.
 
-Current active WIP slice after `23a3260`:
+Current implementation slice completed and verified after `23a3260`:
 
 * Product outcome: move Command Center away from generic connector/status filler toward the first ActionObject-centered operating surface for a Polish marketer.
 * Touched files:
@@ -346,25 +346,23 @@ Current active WIP slice after `23a3260`:
   * `apps/dashboard/src/routes/App.tsx`
   * `apps/dashboard/src/routes/App.test.tsx`
   * `apps/dashboard/e2e/dashboard-api.spec.ts`
-* Implemented but not yet committed:
+* Implemented:
   * typed frontend access for `/api/metrics` and `/api/metrics/status`;
   * Polish Command Center sections for priorities, money leaks, traffic wins, content rewrite/create, local visibility, social queue, ActionObject candidates, local metric facts and connector blockers;
   * readiness-only cards explicitly say they are not performance recommendations until `vendor_read` evidence exists;
   * Playwright smoke expectations updated for the new operating-surface headings.
-* Verified in the current worktree:
+* Verified:
   * `GOMAXPROCS=1 pnpm --filter @wilq/dashboard exec vitest run --pool forks --poolOptions.forks.singleFork --maxWorkers=1 --minWorkers=1` passed: 8/8 tests.
   * `pnpm --filter @wilq/dashboard lint` passed after Playwright test-result race was cleared.
   * `pnpm --filter @wilq/dashboard typecheck` passed.
   * `GOMAXPROCS=1 pnpm --filter @wilq/dashboard test:e2e` passed: 3/3 tests, when API and Vite were pre-started on `127.0.0.1:8875` and `127.0.0.1:5373`.
-* Not yet verified for this WIP:
-  * `scripts/quality.sh`, `scripts/security.sh` and `scripts/verify.sh` still need to be rerun after the dashboard WIP is committed or immediately before commit.
-  * `pnpm --filter @wilq/dashboard build` still needs to be rerun after the dashboard WIP.
+  * `GOMAXPROCS=1 scripts/verify.sh` passed end-to-end after this slice, including lint, typecheck, 48 backend tests, frontend unit tests, security checks, API smoke, skill smoke, Playwright e2e 3/3 and dashboard production build.
 * Runtime cleanup performed during this slice:
   * stale `agent-browser`/headless Chrome/Codex/MCP/dev-server processes were removed;
   * old supersearch/Qdrant/crawl/redis containers were stopped;
   * WordPress/Sawaryn Docker containers on `80/443/3306` were intentionally left running;
   * after cleanup, WILQ standard dev ports `8000/5173` were not left running unless restarted explicitly.
-* If resuming after context loss: inspect the worktree first, then finish verification, update this ledger, commit with Conventional Commit, push, and only then claim the slice as shipped.
+* If resuming after context loss: this slice should be committed as the next Conventional Commit and pushed before starting the Google Ads data slice.
 
 Known external/product blockers:
 
@@ -396,6 +394,7 @@ Completed foundation that should not be reimplemented:
 * Dashboard routes exist and are API-backed through TanStack Query/Zod, but they are not yet marketer-useful final surfaces.
 * Playwright real-browser dashboard/API smoke exists to prove browser route/API/CORS health and must stay in `scripts/verify.sh`.
 * Goal recovery/acceptance gates are now explicit at the top of this file: keep this file current, prove real metrics/pages/products, prove Codex non-interactive behavior, prove dashboard/browser usefulness and preserve `docs/infra/001.md` scope.
+* Command Center now exposes the first marketer-facing operating surface pattern: Polish decision sections, ActionObject candidates, local metric facts, connector blockers, evidence IDs and explicit readiness-only warnings.
 
 Product scope that must not be simplified away:
 
@@ -425,7 +424,7 @@ Unfinished blockers to keep carrying forward:
 
 Next implementation queue:
 
-1. Finish the active Command Center WIP: rerun required quality gates, update this ledger from WIP to completed, commit and push.
+1. Commit and push the completed Command Center operating-surface slice if the worktree still contains those changes.
 2. Restart local WILQ API/dashboard on standard ports and provide the operator URL. Preferred defaults: `uv run uvicorn apps.api.wilq_api.main:app --reload` on `127.0.0.1:8000` and `pnpm --filter @wilq/dashboard dev` on `127.0.0.1:5173`.
 3. Google Ads data slice: resolve Google Ads OAuth `invalid_grant` with a fresh `adwords`-scoped refresh token, then prove a live `google_ads vendor_read` returns sanitized campaign/search-term/recommendation evidence.
 4. Ads Doctor usefulness slice: turn `/ads-doctor` from a generic API-backed route into the first genuinely useful Polish marketer surface with live spend/waste/search-term/recommendation/quality diagnostics, evidence IDs, freshness and action candidates.

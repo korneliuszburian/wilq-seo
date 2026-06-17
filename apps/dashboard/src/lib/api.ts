@@ -7,6 +7,8 @@ import {
   ExpertRuleSchema,
   KnowledgeCardSchema,
   MarketingPlaybookSchema,
+  MetricFactSchema,
+  MetricStoreStatusSchema,
   OpportunitySchema,
   WorkflowRunSchema,
   WorkflowSchema,
@@ -18,6 +20,8 @@ import {
   type ExpertRule,
   type KnowledgeCard,
   type MarketingPlaybook,
+  type MetricFact,
+  type MetricStoreStatus,
   type Opportunity,
   type Workflow,
   type WorkflowRun
@@ -44,6 +48,14 @@ export function getConnectors(): Promise<ConnectorStatus[]> {
 
 export function getConnectorRefreshRuns(): Promise<ConnectorRefreshRun[]> {
   return apiGet("/api/connectors/refresh-runs", z.array(ConnectorRefreshRunSchema));
+}
+
+export function getMetricFacts(limit = 24): Promise<MetricFact[]> {
+  return apiGet(`/api/metrics?limit=${limit}`, z.array(MetricFactSchema));
+}
+
+export function getMetricStoreStatus(): Promise<MetricStoreStatus> {
+  return apiGet("/api/metrics/status", MetricStoreStatusSchema);
 }
 
 export function getOpportunities(): Promise<Opportunity[]> {
@@ -87,6 +99,8 @@ export type {
   ExpertRule,
   KnowledgeCard,
   MarketingPlaybook,
+  MetricFact,
+  MetricStoreStatus,
   Opportunity,
   Workflow,
   WorkflowRun

@@ -16,10 +16,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(
       page.getByText("No WILQ API evidence means no marketing recommendation.")
     ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Today's Moves" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Connector Health" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Active Actions" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Google Ads", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Google Ads connector ready for first search-term refresh" }).first()
+    ).toBeVisible();
 
     await expect
       .poll(() => apiResponses.includes("200 /api/dashboard/command-center"))

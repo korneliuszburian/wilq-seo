@@ -23,6 +23,15 @@ export const MetricFactSchema = z.object({
   unit: z.string().nullable().optional()
 });
 
+export const MetricStoreStatusSchema = z.object({
+  backend: z.string(),
+  enabled: z.boolean(),
+  path_configured: z.boolean(),
+  metric_fact_count: z.number(),
+  connector_count: z.number(),
+  refresh_run_count: z.number()
+});
+
 export const EvidenceSchema = z.object({
   id: z.string(),
   source_connector: z.string(),
@@ -182,6 +191,7 @@ export const KnowledgeCompilerResultSchema = z.object({
 });
 
 export const CommandCenterResponseSchema = z.object({
+  generated_at: z.string().nullable().optional(),
   strict_instruction: z.string(),
   connector_summary: ConnectorSummarySchema,
   sections: z.record(z.array(OpportunitySchema)),
@@ -232,6 +242,8 @@ export const ContextPackResponseSchema = z.object({
 });
 
 export type ConnectorStatus = z.infer<typeof ConnectorStatusSchema>;
+export type MetricFact = z.infer<typeof MetricFactSchema>;
+export type MetricStoreStatus = z.infer<typeof MetricStoreStatusSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;

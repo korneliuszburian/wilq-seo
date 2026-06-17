@@ -88,6 +88,26 @@ const connectorRefreshRuns = [
   }
 ];
 
+const metricFacts = [
+  {
+    name: "content_object_count",
+    value: 16,
+    period: "connector_refresh",
+    source_connector: "wordpress_ekologus",
+    evidence_id: "ev_refresh_wordpress_inventory",
+    unit: null
+  }
+];
+
+const metricStoreStatus = {
+  backend: "duckdb",
+  enabled: true,
+  path_configured: false,
+  metric_fact_count: 1,
+  connector_count: 1,
+  refresh_run_count: 1
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -161,9 +181,18 @@ function mockFetch() {
       if (url.endsWith("/api/dashboard/command-center")) {
         return Promise.resolve(
           Response.json({
+            generated_at: "2026-06-17T10:00:00Z",
             strict_instruction: "No WILQ API evidence means no marketing recommendation.",
             connector_summary: { total: 1, configured: 0, missing_credentials: 1 },
-            sections: { todays_moves: opportunities },
+            sections: {
+              todays_moves: opportunities,
+              money_leaks: opportunities,
+              traffic_wins: [],
+              content_to_rewrite: [],
+              content_to_create: [],
+              local_visibility_moves: [],
+              social_queue: []
+            },
             active_actions: actions,
             connector_health: connectors,
             codex_operator_status: {}
@@ -171,6 +200,8 @@ function mockFetch() {
         );
       }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
+      if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
+      if (url.endsWith("/api/metrics/status")) return Promise.resolve(Response.json(metricStoreStatus));
       if (url.endsWith("/api/opportunities")) return Promise.resolve(Response.json(opportunities));
       if (url.endsWith("/api/actions")) return Promise.resolve(Response.json(actions));
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
@@ -226,13 +257,15 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Today's Moves")).toBeInTheDocument();
+    expect(screen.getByText("Priorytety dnia")).toBeInTheDocument();
+    expect(screen.getByText("Budżet i ryzyko wydatków")).toBeInTheDocument();
+    expect(screen.getByText("Kandydaci działań API")).toBeInTheDocument();
   });
 
   it("connector status renders", async () => {
     renderApp("/command-center");
     await waitFor(() => expect(screen.getByText("Google Ads")).toBeInTheDocument());
-    expect(screen.getByText("GOOGLE_ADS_DEVELOPER_TOKEN")).toBeInTheDocument();
+    expect(screen.getByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).toBeInTheDocument();
   });
 
   it("opportunities route renders", async () => {

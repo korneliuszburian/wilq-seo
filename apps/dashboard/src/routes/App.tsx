@@ -12,7 +12,23 @@ import {
   RouterProvider,
   useParams
 } from "@tanstack/react-router";
-import { AlertCircle, CheckCircle2, FileJson, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  ClipboardCheck,
+  Database,
+  FileJson,
+  FileText,
+  MapPin,
+  Megaphone,
+  RefreshCw,
+  Search,
+  ShieldAlert,
+  WalletCards,
+  type LucideIcon
+} from "lucide-react";
 
 import {
   ActionObject,
@@ -28,11 +44,15 @@ import {
   getExpertRules,
   getKnowledgeCards,
   getKnowledgePlaybooks,
+  getMetricFacts,
+  getMetricStoreStatus,
   getOpportunities,
   getWorkflowRuns,
   getWorkflows,
   KnowledgeCard,
   MarketingPlaybook,
+  MetricFact,
+  MetricStoreStatus,
   Opportunity,
   WorkflowRun
 } from "../lib/api";
@@ -343,16 +363,345 @@ function PlaybookList({ playbooks }: { playbooks: MarketingPlaybook[] }) {
   );
 }
 
+type OperatingDecisionSection = {
+  key: string;
+  title: string;
+  description: string;
+  emptyMessage: string;
+  icon: LucideIcon;
+};
+
+const operatingDecisionSections: OperatingDecisionSection[] = [
+  {
+    key: "money_leaks",
+    title: "Budżet i ryzyko wydatków",
+    description: "Ads, Merchant i kampanie, które mogą palić budżet albo wymagają świeżych danych.",
+    emptyMessage: "Brak potwierdzonych money leaks. WILQ potrzebuje live Ads/Merchant evidence.",
+    icon: WalletCards
+  },
+  {
+    key: "traffic_wins",
+    title: "Szanse na ruch",
+    description: "GSC, GA4 i SEO okazje, które mogą podnieść wartościowy ruch.",
+    emptyMessage: "Brak potwierdzonych traffic wins. Uruchom read-only refresh GSC/GA4/Ahrefs.",
+    icon: Search
+  },
+  {
+    key: "content_to_rewrite",
+    title: "Treści do poprawy",
+    description: "Strony i wpisy, które mają dostać refresh, merge albo zmianę intentu.",
+    emptyMessage: "Brak kolejki rewrite. Potrzebne są GSC query/page, GA4 landing i WordPress inventory.",
+    icon: FileText
+  },
+  {
+    key: "content_to_create",
+    title: "Treści do stworzenia",
+    description: "Nowe landing pages, artykuły i tematy wynikające z Ads/GSC/Ahrefs/Merchant.",
+    emptyMessage: "Brak evidence-backed briefów. WILQ nie tworzy tematów bez danych źródłowych.",
+    icon: ClipboardCheck
+  },
+  {
+    key: "local_visibility_moves",
+    title: "Widoczność lokalna",
+    description: "Localo/GBP ruchy i blockery widoczności lokalnej.",
+    emptyMessage: "Brak lokalnych rekomendacji. Potrzebne są świeże dane Localo/GBP.",
+    icon: MapPin
+  },
+  {
+    key: "social_queue",
+    title: "Social queue",
+    description: "LinkedIn/Facebook kandydaci i permission blockery.",
+    emptyMessage: "Brak postów do przygotowania. Social wymaga evidence-backed claimów i uprawnień.",
+    icon: Megaphone
+  }
+];
+
+function DecisionSection({
+  section,
+  opportunities
+}: {
+  section: OperatingDecisionSection;
+  opportunities: Opportunity[];
+}) {
+  const Icon = section.icon;
+
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <Icon aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            {section.title}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">{section.description}</p>
+        </div>
+      </div>
+      {opportunities.length === 0 ? (
+        <BlockerNotice message={section.emptyMessage} />
+      ) : (
+        <div className="grid gap-3 xl:grid-cols-2">
+          {opportunities.map((opportunity) => (
+            <DecisionOpportunityCard key={opportunity.id} opportunity={opportunity} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DecisionOpportunityCard({ opportunity }: { opportunity: Opportunity }) {
+  const readinessOnly =
+    opportunity.metrics.length === 0 ||
+    opportunity.metrics.every((metric) => metric.name === "connector_configured");
+
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{opportunity.title}</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {opportunity.domain} / {opportunity.type}
+          </p>
+        </div>
+        <StatusBadge value={opportunity.risk} />
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
+      <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
+      {readinessOnly ? (
+        <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-wait">
+          To jeszcze nie jest rekomendacja performance. WILQ ma tylko readiness/status i czeka na
+          vendor_read z realnymi metrykami.
+        </div>
+      ) : null}
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+        <TraceLine label="Evidence" values={opportunity.evidence_ids} />
+        <TraceLine label="Źródła" values={opportunity.source_connectors} />
+        <TraceLine label="Reguły" values={opportunity.expert_rule_ids.slice(0, 3)} />
+        <TraceLine label="Akcje" values={opportunity.action_ids} empty="brak gotowej akcji" />
+      </div>
+      {opportunity.metrics.length > 0 ? (
+        <MetricFactChips facts={opportunity.metrics.slice(0, 4)} />
+      ) : null}
+    </article>
+  );
+}
+
+function ActionQueue({ actions }: { actions: ActionObject[] }) {
+  if (actions.length === 0) {
+    return (
+      <BlockerNotice message="Brak kandydatów ActionObject. Najpierw potrzebne są evidence-backed opportunities." />
+    );
+  }
+
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <ShieldAlert aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Kandydaci działań API
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Każdy write path wymaga walidacji ActionObject i audytu przed wykonaniem.
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-3 xl:grid-cols-2">
+        {actions.map((action) => (
+          <article key={action.id} className="rounded-md border border-line bg-white p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">{action.title}</h3>
+                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                  {action.connector} / {action.mode}
+                </p>
+              </div>
+              <StatusBadge value={action.status} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge value={action.validation_status} />
+              <StatusBadge value={action.risk} />
+            </div>
+            <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+              <TraceLine label="ActionObject" values={[action.id]} />
+              <TraceLine label="Evidence" values={action.evidence_ids} />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ConnectorBlockers({ connectors }: { connectors: ConnectorStatus[] }) {
+  const blockers = connectors.filter(
+    (connector) => connector.status !== "configured" || connector.freshness.state !== "fresh"
+  );
+
+  return (
+    <section>
+      <SectionHeading title="Blockery i świeżość źródeł" />
+      {blockers.length === 0 ? (
+        <div className="rounded-md border border-signal/30 bg-signal/10 p-4 text-sm text-signal">
+          Brak znanych blockerów connectorów.
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {blockers.slice(0, 9).map((connector) => (
+            <article key={connector.id} className="rounded-md border border-line bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold">{connector.label}</h3>
+                  <p className="mt-1 text-xs text-slate-500">{connector.id}</p>
+                </div>
+                <StatusBadge value={connector.status} />
+              </div>
+              <p className="mt-3 text-xs leading-5 text-slate-600">
+                Freshness: {connector.freshness.state}
+                {connector.freshness.notes ? ` - ${connector.freshness.notes}` : ""}
+              </p>
+              {connector.missing_credentials.length > 0 ? (
+                <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
+                  Brakuje: {connector.missing_credentials.join(", ")}
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MetricInventory({
+  facts,
+  status,
+  isLoading,
+  isError
+}: {
+  facts: MetricFact[];
+  status?: MetricStoreStatus;
+  isLoading: boolean;
+  isError: boolean;
+}) {
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <Database aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Realne metric facts zapisane lokalnie
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Dane z connector refreshy w DuckDB; to nie zastępuje freshness ani evidence IDs.
+          </p>
+        </div>
+      </div>
+      {isError ? (
+        <BlockerNotice message="Nie udało się odczytać /api/metrics. Dashboard nie może udawać lokalnych metryk." />
+      ) : isLoading ? (
+        <div className="rounded-md border border-line bg-white p-4 text-sm text-slate-600">
+          Ładowanie metric store...
+        </div>
+      ) : facts.length === 0 ? (
+        <BlockerNotice message="Brak metric facts. Uruchom vendor_read dla skonfigurowanych connectorów." />
+      ) : (
+        <div className="rounded-md border border-line bg-white p-4">
+          <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3">
+            <MetricTile label="Facts" value={status?.metric_fact_count ?? facts.length} />
+            <MetricTile label="Connectors" value={status?.connector_count ?? 0} />
+            <MetricTile label="Refresh runs" value={status?.refresh_run_count ?? 0} />
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            {facts.slice(0, 8).map((fact, index) => (
+              <div key={`${fact.evidence_id}-${fact.name}-${index}`} className="rounded border border-line p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{fact.name}</span>
+                  <span className="text-sm font-semibold">{formatMetricFactValue(fact)}</span>
+                </div>
+                <div className="mt-2 text-xs text-slate-600">
+                  {fact.source_connector} / {fact.period}
+                </div>
+                <div className="mt-1 break-words text-xs text-slate-500">
+                  Evidence: {fact.evidence_id}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function MetricFactChips({ facts }: { facts: MetricFact[] }) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {facts.map((fact) => (
+        <span
+          key={`${fact.name}-${fact.evidence_id}`}
+          className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
+        >
+          {fact.name}: {formatMetricFactValue(fact)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TraceLine({
+  label,
+  values,
+  empty = "brak"
+}: {
+  label: string;
+  values: string[];
+  empty?: string;
+}) {
+  return (
+    <div className="break-words">
+      {label}: {values.length > 0 ? values.join(", ") : empty}
+    </div>
+  );
+}
+
+function BlockerNotice({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-wait/30 bg-wait/10 p-4 text-sm leading-6 text-wait">
+      <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={16} />
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function formatMetricFactValue(fact: MetricFact) {
+  const suffix = fact.unit ? ` ${fact.unit}` : "";
+  return `${fact.value}${suffix}`;
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
     queryFn: getCommandCenter
   });
+  const metricFacts = useQuery({
+    queryKey: ["metric-facts", 24],
+    queryFn: () => getMetricFacts(24)
+  });
+  const metricStoreStatus = useQuery({
+    queryKey: ["metric-store-status"],
+    queryFn: getMetricStoreStatus
+  });
 
   if (isLoading) return <LoadingBand />;
   if (error || !data) return <ErrorState />;
-
-  const todaysMoves = data.sections.todays_moves ?? [];
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -368,20 +717,44 @@ function CommandCenter() {
         </div>
       </div>
 
-      <section className="mb-8">
-        <SectionHeading title="Today's Moves" />
-        <OpportunityList opportunities={todaysMoves} />
-      </section>
+      <div className="grid gap-8">
+        <section>
+          <div className="mb-3 flex items-start gap-3">
+            <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+              <BarChart3 aria-hidden="true" size={18} />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+                Priorytety dnia
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Najważniejsze karty z WILQ API. Readiness nie jest jeszcze rekomendacją
+                marketingową.
+              </p>
+            </div>
+          </div>
+          <OpportunityList opportunities={data.sections.todays_moves ?? []} />
+        </section>
 
-      <section className="mb-8">
-        <SectionHeading title="Connector Health" />
-        <ConnectorGrid connectors={data.connector_health} />
-      </section>
+        {operatingDecisionSections.map((section) => (
+          <DecisionSection
+            key={section.key}
+            section={section}
+            opportunities={data.sections[section.key] ?? []}
+          />
+        ))}
 
-      <section>
-        <SectionHeading title="Active Actions" />
-        <ActionList actions={data.active_actions} />
-      </section>
+        <ActionQueue actions={data.active_actions} />
+
+        <MetricInventory
+          facts={metricFacts.data ?? []}
+          status={metricStoreStatus.data}
+          isLoading={metricFacts.isLoading || metricStoreStatus.isLoading}
+          isError={Boolean(metricFacts.error || metricStoreStatus.error)}
+        />
+
+        <ConnectorBlockers connectors={data.connector_health} />
+      </div>
     </main>
   );
 }
