@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -34,6 +35,19 @@ TacticalIntent = Literal[
     "merchant_feed_triage",
     "traffic_quality_review",
 ]
+WordPressMatchConfidence = Literal["exact_url", "path_fallback", "missing"]
+
+
+@dataclass(frozen=True)
+class WordPressContentIndex:
+    exact_urls: dict[str, MetricFact]
+    paths: dict[str, MetricFact]
+
+
+@dataclass(frozen=True)
+class WordPressMatch:
+    fact: MetricFact | None
+    confidence: WordPressMatchConfidence
 
 
 def build_tactical_queue() -> TacticalQueueResponse:
@@ -99,7 +113,7 @@ def _tactical_sort_key(item: TacticalQueueItem) -> tuple[int, str]:
 def _gsc_content_items(
     facts: list[MetricFact],
     action_ids_by_connector: dict[str, list[str]],
-    wordpress_index: dict[str, MetricFact],
+    wordpress_index: WordPressContentIndex,
     gsc_page_counts: dict[str, int],
 ) -> list[TacticalQueueItem]:
     grouped = _group_facts(
@@ -114,7 +128,8 @@ def _gsc_content_items(
         impressions = _numeric_fact(group_facts, "impressions")
         ctr = _numeric_fact(group_facts, "ctr")
         position = _numeric_fact(group_facts, "average_position")
-        wordpress_fact = _find_wordpress_fact(wordpress_index, page)
+        wordpress_match = _find_wordpress_match(wordpress_index, page)
+        wordpress_fact = wordpress_match.fact
         intent = _content_intent(
             clicks,
             impressions,
@@ -142,7 +157,7 @@ def _gsc_content_items(
                 dimensions={
                     "query": query,
                     "page": page,
-                    **_wordpress_match_dimensions(wordpress_fact),
+                    **_wordpress_match_dimensions(wordpress_match),
                     "gsc_page_query_count": str(gsc_page_counts.get(_normalize_url_key(page), 1)),
                 },
                 diagnosis=_gsc_diagnosis(
@@ -152,7 +167,7 @@ def _gsc_content_items(
                     impressions,
                     ctr,
                     position,
-                    wordpress_fact=wordpress_fact,
+                    wordpress_match=wordpress_match,
                 ),
                 next_step=_content_next_step(intent),
                 blocked_claims=["lead quality", "conversion uplift", "revenue impact"],
@@ -165,7 +180,7 @@ def _gsc_content_items(
 def _ga4_quality_items(
     facts: list[MetricFact],
     action_ids_by_connector: dict[str, list[str]],
-    wordpress_index: dict[str, MetricFact],
+    wordpress_index: WordPressContentIndex,
 ) -> list[TacticalQueueItem]:
     grouped = _group_facts(
         fact
@@ -181,7 +196,8 @@ def _ga4_quality_items(
         active_users = _numeric_fact(group_facts, "active_users")
         sessions = _numeric_fact(group_facts, "sessions")
         engagement_rate = _numeric_fact(group_facts, "engagement_rate")
-        wordpress_fact = _find_wordpress_fact(wordpress_index, landing_page)
+        wordpress_match = _find_wordpress_match(wordpress_index, landing_page)
+        wordpress_fact = wordpress_match.fact
         intent: TacticalIntent = (
             "landing_page_quality"
             if engagement_rate is not None and engagement_rate < 0.2
@@ -207,7 +223,7 @@ def _ga4_quality_items(
                     "landing_page": landing_page,
                     "source_medium": source_medium,
                     "campaign_name": campaign_name,
-                    **_wordpress_match_dimensions(wordpress_fact),
+                    **_wordpress_match_dimensions(wordpress_match),
                 },
                 diagnosis=_ga4_diagnosis(
                     landing_page,
@@ -216,7 +232,7 @@ def _ga4_quality_items(
                     active_users,
                     sessions,
                     engagement_rate,
-                    wordpress_fact=wordpress_fact,
+                    wordpress_match=wordpress_match,
                 ),
                 next_step=(
                     "Sprawdź landing page, message match i tracking. Nie oceniaj kampanii "
@@ -355,8 +371,9 @@ def _numeric_fact(facts: list[MetricFact], name: str) -> float | int | None:
     return fact.value
 
 
-def _wordpress_content_index(facts: list[MetricFact]) -> dict[str, MetricFact]:
-    index: dict[str, MetricFact] = {}
+def _wordpress_content_index(facts: list[MetricFact]) -> WordPressContentIndex:
+    exact_urls: dict[str, MetricFact] = {}
+    paths: dict[str, MetricFact] = {}
     for fact in facts:
         if not fact.source_connector.startswith("wordpress"):
             continue
@@ -365,21 +382,24 @@ def _wordpress_content_index(facts: list[MetricFact]) -> dict[str, MetricFact]:
         content_url = fact.dimensions.get("content_url")
         if not content_url:
             continue
-        _set_wordpress_index(index, _normalize_url_key(content_url), fact)
+        _set_wordpress_index(exact_urls, _normalize_url_key(content_url), fact)
         path_key = _normalize_path_key(content_url)
         if path_key != "/":
-            _set_wordpress_index(index, path_key, fact)
-    return index
+            _set_wordpress_index(paths, path_key, fact)
+    return WordPressContentIndex(exact_urls=exact_urls, paths=paths)
 
 
-def _find_wordpress_fact(index: dict[str, MetricFact], page_or_path: str) -> MetricFact | None:
-    full_match = index.get(_normalize_url_key(page_or_path))
+def _find_wordpress_match(index: WordPressContentIndex, page_or_path: str) -> WordPressMatch:
+    full_match = index.exact_urls.get(_normalize_url_key(page_or_path))
     if full_match:
-        return full_match
+        return WordPressMatch(fact=full_match, confidence="exact_url")
     path_key = _normalize_path_key(page_or_path)
     if path_key == "/":
-        return None
-    return index.get(path_key)
+        return WordPressMatch(fact=None, confidence="missing")
+    path_match = index.paths.get(path_key)
+    if path_match:
+        return WordPressMatch(fact=path_match, confidence="path_fallback")
+    return WordPressMatch(fact=None, confidence="missing")
 
 
 def _set_wordpress_index(
@@ -479,9 +499,9 @@ def _gsc_diagnosis(
     ctr: float | int | None,
     position: float | int | None,
     *,
-    wordpress_fact: MetricFact | None,
+    wordpress_match: WordPressMatch,
 ) -> str:
-    wordpress_note = _wordpress_match_note(wordpress_fact)
+    wordpress_note = _wordpress_match_note(wordpress_match)
     return (
         f"Query `{query}` prowadzi do `{page}`. GSC facts: clicks={clicks or 0}, "
         f"impressions={impressions or 0}, ctr={ctr or 0}, average_position={position or 0}. "
@@ -497,9 +517,9 @@ def _ga4_diagnosis(
     sessions: float | int | None,
     engagement_rate: float | int | None,
     *,
-    wordpress_fact: MetricFact | None,
+    wordpress_match: WordPressMatch,
 ) -> str:
-    wordpress_note = _wordpress_match_note(wordpress_fact)
+    wordpress_note = _wordpress_match_note(wordpress_match)
     return (
         f"Landing `{landing_page}` z `{source_medium}` i kampanii `{campaign_name}` ma "
         f"active_users={active_users or 0}, sessions={sessions or 0}, "
@@ -520,28 +540,36 @@ def _content_next_step(intent: TacticalIntent) -> str:
     return "Przygotuj refresh istniejącej strony: tytuł, H1/H2, sekcje brakujące i CTA."
 
 
-def _wordpress_match_dimensions(wordpress_fact: MetricFact | None) -> dict[str, str]:
+def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, str]:
+    wordpress_fact = wordpress_match.fact
     if wordpress_fact is None:
-        return {"wordpress_match": "missing"}
+        return {
+            "wordpress_match": "missing",
+            "wordpress_match_confidence": wordpress_match.confidence,
+        }
     dimensions = wordpress_fact.dimensions
     return {
         "wordpress_match": "found",
+        "wordpress_match_confidence": wordpress_match.confidence,
         "wordpress_connector": wordpress_fact.source_connector,
         "wordpress_content_type": dimensions.get("content_type", ""),
         "wordpress_status": dimensions.get("status", ""),
         "wordpress_content_url": dimensions.get("content_url", ""),
         "wordpress_modified_gmt": dimensions.get("modified_gmt", ""),
+        "wordpress_inventory_source": dimensions.get("inventory_source", ""),
     }
 
 
-def _wordpress_match_note(wordpress_fact: MetricFact | None) -> str:
+def _wordpress_match_note(wordpress_match: WordPressMatch) -> str:
+    wordpress_fact = wordpress_match.fact
     if wordpress_fact is None:
         return "WordPress inventory nie potwierdza istniejącej strony w ostatnim odczycie."
     dimensions = wordpress_fact.dimensions
     return (
         "WordPress inventory potwierdza istniejący obiekt "
         f"{dimensions.get('content_type', 'content')} "
-        f"status={dimensions.get('status', 'unknown')}."
+        f"status={dimensions.get('status', 'unknown')} "
+        f"confidence={wordpress_match.confidence}."
     )
 
 

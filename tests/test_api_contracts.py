@@ -708,9 +708,14 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert queue["action_ids"]
     content_items = [item for item in queue["items"] if item["intent"] == "content_refresh"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in content_items)
+    assert any(
+        item["dimensions"]["wordpress_match_confidence"] == "exact_url"
+        for item in content_items
+    )
     assert any("wordpress_ekologus" in item["source_connectors"] for item in content_items)
     ga4_items = [item for item in queue["items"] if item["intent"] == "landing_page_quality"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in ga4_items)
+    assert all("wordpress_match_confidence" in item["dimensions"] for item in ga4_items)
     for item in queue["items"]:
         assert item["dimensions"]
         assert item["evidence_ids"]
@@ -1529,10 +1534,10 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "ekologus.test"
-        assert request.headers["authorization"].startswith("Basic ")
-        assert request.url.params["per_page"] == "100"
-        assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug"
         if request.url.path == "/wp-json/wp/v2/posts":
+            assert request.headers["authorization"].startswith("Basic ")
+            assert request.url.params["per_page"] == "100"
+            assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug"
             return httpx.Response(
                 200,
                 headers={"X-WP-Total": "12"},
@@ -1546,6 +1551,9 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                 ],
             )
         if request.url.path == "/wp-json/wp/v2/pages":
+            assert request.headers["authorization"].startswith("Basic ")
+            assert request.url.params["per_page"] == "100"
+            assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug"
             return httpx.Response(
                 200,
                 headers={"X-WP-Total": "4"},
@@ -1557,6 +1565,28 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                         "link": "https://ekologus.test/oferta/",
                     }
                 ],
+            )
+        if request.url.path == "/wp-sitemap.xml":
+            return httpx.Response(
+                200,
+                text=(
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    "<sitemap><loc>https://ekologus.test/page-sitemap.xml</loc>"
+                    "<lastmod>2026-06-16T12:00:00+00:00</lastmod></sitemap>"
+                    "</sitemapindex>"
+                ),
+            )
+        if request.url.path == "/page-sitemap.xml":
+            return httpx.Response(
+                200,
+                text=(
+                    '<?xml version="1.0" encoding="UTF-8"?>'
+                    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                    "<url><loc>https://ekologus.test/europejski-zielony-lad-co-to-takiego/</loc>"
+                    "<lastmod>2026-06-16T12:00:00+00:00</lastmod></url>"
+                    "</urlset>"
+                ),
             )
         return httpx.Response(404)
 
@@ -1570,12 +1600,13 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
     assert result.external_call_attempted is True
     assert result.vendor_data_collected is True
     assert result.metric_summary == {
-        "api": "wordpress_rest_content_inventory",
+        "api": "wordpress_rest_and_sitemap_content_inventory",
         "connector_id": "wordpress_ekologus",
         "site_kind": "primary",
         "content_object_count": 16,
         "posts_total": 12,
         "pages_total": 4,
+        "sitemap_url_count": 1,
         "latest_modified_gmt": "2026-06-16T10:00:00",
         "latest_post_modified_gmt": "2026-06-15T10:00:00",
         "latest_page_modified_gmt": "2026-06-16T10:00:00",
@@ -1599,7 +1630,26 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "content_url": "https://ekologus.test/blog/remediacja/",
         "status": "publish",
         "modified_gmt": "2026-06-15T10:00:00",
+        "inventory_source": "wordpress_rest",
     }
+    sitemap_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "content_object_seen"
+        and fact.dimensions.get("inventory_source") == "sitemap"
+    )
+    assert sitemap_fact.value == 1
+    assert sitemap_fact.dimensions == {
+        "connector_id": "wordpress_ekologus",
+        "site_kind": "primary",
+        "content_type": "sitemap",
+        "object_id": "",
+        "content_url": "https://ekologus.test/europejski-zielony-lad-co-to-takiego/",
+        "status": "indexed",
+        "modified_gmt": "2026-06-16T12:00:00+00:00",
+        "inventory_source": "sitemap",
+    }
+    assert any(fact.name == "sitemap_url_count" for fact in result.metric_facts)
 
 
 def test_wordpress_vendor_read_routes_through_refresh_endpoint(

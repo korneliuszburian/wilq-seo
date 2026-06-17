@@ -5,6 +5,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import httpx
+from defusedxml import ElementTree
 
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.credentials.runtime import variable_value
@@ -33,6 +34,9 @@ WORDPRESS_CONNECTORS = {
 WORDPRESS_CONTENT_TYPES = ("posts", "pages")
 WORDPRESS_CONTENT_PER_PAGE = 100
 WORDPRESS_READ_FIELDS = "id,status,modified_gmt,date_gmt,link,slug"
+WORDPRESS_SITEMAP_PATHS = ("wp-sitemap.xml", "sitemap_index.xml", "sitemap.xml")
+WORDPRESS_SITEMAP_CHILD_LIMIT = 20
+WORDPRESS_SITEMAP_URL_LIMIT = 500
 
 
 @dataclass(frozen=True)
@@ -157,13 +161,15 @@ def _fetch_content_inventory(
         latest = summary["latest_modified_gmt"]
         if isinstance(latest, str) and latest:
             latest_modified_values.append(latest)
+    sitemap_objects = _fetch_sitemap_objects(client, credentials.base_url or "")
     metric_summary: dict[str, float | int | str] = {
-        "api": "wordpress_rest_content_inventory",
+        "api": "wordpress_rest_and_sitemap_content_inventory",
         "connector_id": connector_id,
         "site_kind": credentials.site_kind,
         "content_object_count": content_object_count,
         "posts_total": _summary_total(summaries["posts"]),
         "pages_total": _summary_total(summaries["pages"]),
+        "sitemap_url_count": len(sitemap_objects),
         "latest_modified_gmt": max(latest_modified_values) if latest_modified_values else "",
         "latest_post_modified_gmt": str(summaries["posts"]["latest_modified_gmt"]),
         "latest_page_modified_gmt": str(summaries["pages"]["latest_modified_gmt"]),
@@ -197,10 +203,122 @@ def _fetch_content_inventory(
                         "content_url": item.get("content_url", ""),
                         "status": item.get("status", ""),
                         "modified_gmt": item.get("modified_gmt", ""),
+                        "inventory_source": "wordpress_rest",
                     },
                 )
             )
+    for item in sitemap_objects:
+        metric_facts.append(
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": connector_id,
+                    "site_kind": credentials.site_kind,
+                    "content_type": item.get("content_type", "sitemap"),
+                    "object_id": "",
+                    "content_url": item.get("content_url", ""),
+                    "status": "indexed",
+                    "modified_gmt": item.get("modified_gmt", ""),
+                    "inventory_source": "sitemap",
+                },
+            )
+        )
+    if sitemap_objects:
+        metric_facts.append(
+            VendorMetricFact(
+                name="sitemap_url_count",
+                value=len(sitemap_objects),
+                dimensions={
+                    "connector_id": connector_id,
+                    "site_kind": credentials.site_kind,
+                    "inventory_source": "sitemap",
+                },
+            )
+        )
     return metric_summary, metric_facts
+
+
+def _fetch_sitemap_objects(
+    client: httpx.Client,
+    base_url: str,
+) -> list[dict[str, str]]:
+    for sitemap_path in WORDPRESS_SITEMAP_PATHS:
+        try:
+            response = client.get(urljoin(base_url, sitemap_path))
+            if response.status_code == 404:
+                continue
+            response.raise_for_status()
+        except httpx.HTTPError:
+            continue
+        sitemap_objects = _sitemap_objects_from_xml(client, response.text)
+        if sitemap_objects:
+            return sitemap_objects[:WORDPRESS_SITEMAP_URL_LIMIT]
+    return []
+
+
+def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[str, str]]:
+    entries = _parse_sitemap_xml(xml_text)
+    child_sitemaps = [entry for entry in entries if entry["kind"] == "sitemap"]
+    if not child_sitemaps:
+        return [
+            _sitemap_url_object(entry)
+            for entry in entries
+            if entry["kind"] == "url"
+        ][:WORDPRESS_SITEMAP_URL_LIMIT]
+
+    objects: list[dict[str, str]] = []
+    for sitemap in child_sitemaps[:WORDPRESS_SITEMAP_CHILD_LIMIT]:
+        try:
+            response = client.get(sitemap["loc"])
+            response.raise_for_status()
+        except httpx.HTTPError:
+            continue
+        child_entries = _parse_sitemap_xml(response.text)
+        objects.extend(
+            _sitemap_url_object(entry)
+            for entry in child_entries
+            if entry["kind"] == "url"
+        )
+        if len(objects) >= WORDPRESS_SITEMAP_URL_LIMIT:
+            return objects[:WORDPRESS_SITEMAP_URL_LIMIT]
+    return objects
+
+
+def _parse_sitemap_xml(xml_text: str) -> list[dict[str, str]]:
+    try:
+        root = ElementTree.fromstring(xml_text)
+    except ElementTree.ParseError:
+        return []
+    entries: list[dict[str, str]] = []
+    for element in root:
+        tag = _local_name(element.tag)
+        if tag not in {"url", "sitemap"}:
+            continue
+        loc = ""
+        lastmod = ""
+        for child in element:
+            child_tag = _local_name(child.tag)
+            text = (child.text or "").strip()
+            if child_tag == "loc":
+                loc = text
+            elif child_tag == "lastmod":
+                lastmod = text
+        if loc:
+            entries.append({"kind": tag, "loc": loc, "lastmod": lastmod})
+    return entries
+
+
+def _sitemap_url_object(entry: dict[str, str]) -> dict[str, str]:
+    return {
+        "content_type": "sitemap",
+        "content_url": entry["loc"],
+        "modified_gmt": entry.get("lastmod", ""),
+    }
+
+
+def _local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
 
 
 def _fetch_content_type_summary(

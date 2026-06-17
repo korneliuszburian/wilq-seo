@@ -4946,3 +4946,124 @@ Remaining next work:
    diagnostics. Current live failure is `oauth_error=deleted_client`.
 6. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
+
+---
+
+## 43. Sitemap URL inventory and match confidence - 2026-06-18
+
+Implemented the next content inventory slice from section 42.
+
+What changed:
+
+* WordPress connector now reads public sitemap URL inventory after the REST
+  content inventory:
+  * `wp-sitemap.xml`,
+  * `sitemap_index.xml`,
+  * `sitemap.xml`.
+* Sitemap reads support sitemap indexes and child sitemaps with bounded limits:
+  * `20` child sitemaps,
+  * `500` URLs per connector refresh.
+* Sitemap-derived facts are still redacted operational facts:
+  * `content_object_seen`,
+  * `content_type=sitemap`,
+  * `content_url`,
+  * `status=indexed`,
+  * `modified_gmt`,
+  * `inventory_source=sitemap`.
+* WordPress REST-derived facts now carry `inventory_source=wordpress_rest`.
+* WordPress connector summary now reports:
+  * `api=wordpress_rest_and_sitemap_content_inventory`,
+  * `sitemap_url_count`.
+* Tactical queue now separates WordPress matching into:
+  * exact URL matches,
+  * non-root path fallback matches,
+  * missing matches.
+* Queue item dimensions now include:
+  * `wordpress_match_confidence=exact_url|path_fallback|missing`,
+  * `wordpress_inventory_source=wordpress_rest|sitemap` when found.
+* This prevents WILQ from treating a staged/dev sitemap path fallback as equal
+  to a production exact URL. Operator-facing recommendations can now explain
+  why a page is safe to refresh, only safe to inspect, or still unconfirmed.
+
+Live WordPress proof:
+
+```text
+wordpress_ekologus completed refresh_wordpress_ekologus_8045361964d6
+objects 16
+sitemap_urls 102
+api wordpress_rest_and_sitemap_content_inventory
+
+wordpress_sklep completed refresh_wordpress_sklep_df9826df2137
+objects 11
+sitemap_urls 500
+api wordpress_rest_and_sitemap_content_inventory
+```
+
+Live tactical queue proof:
+
+```text
+GET /api/marketing/tactical-queue
+items 24
+domains {'gsc_seo': 10, 'ga4': 10, 'merchant': 4}
+wordpress_confidence {'missing': 20}
+```
+
+Current interpretation:
+
+* WILQ now has a much deeper URL inventory than the REST-only snapshot.
+* The primary WordPress sitemap is still on `ekologus.dev.proudsite.pl`, while
+  current GSC top pages are production `www.ekologus.pl` URLs such as:
+  * `https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/`,
+  * `https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/`.
+* Those paths are not present in the current dev sitemap snapshot, so the queue
+  still correctly marks them as `wordpress_match=missing`.
+* This is useful product behavior: WILQ should not say "refresh existing page"
+  until the API has URL evidence. The next content step is not more prompting;
+  it is production canonical/source mapping.
+
+Verification:
+
+```bash
+uv run ruff check wilq/connectors/wordpress/client.py wilq/briefing/tactical_queue.py tests/test_api_contracts.py
+uv run mypy wilq/connectors/wordpress/client.py wilq/briefing/tactical_queue.py
+uv run pytest tests/test_api_contracts.py -q
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Focused API contract tests: `53 passed`.
+* Full Python tests through quality/verify: `70 passed`.
+* Dashboard unit tests: `12 passed`.
+* Playwright live API-backed smoke: `5 passed`.
+* `scripts/quality.sh`: passed.
+* `scripts/security.sh`: passed after replacing unsafe stdlib XML parsing with
+  `defusedxml`.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Remaining next work:
+
+1. Add production canonical/source URL mapping for content:
+   * production sitemap fetch if a public production source is available,
+   * configured host alias mapping from `ekologus.dev.proudsite.pl` to
+     `www.ekologus.pl` only when the path exists in sitemap evidence,
+   * confidence labels in dashboard copy so path fallback is visibly weaker
+     than exact URL evidence.
+2. Add Merchant issue reason/detail enrichment if the Merchant adapter exposes
+   safe issue identifiers or reason labels without raw product dumps.
+3. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+4. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+5. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+6. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.
