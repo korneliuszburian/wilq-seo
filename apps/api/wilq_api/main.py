@@ -132,6 +132,19 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
     return redact_mapping(pack)
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    return {
+        "status": "ok",
+        "service": "wilq-api",
+        "health": "/api/health",
+        "system_status": "/api/system/status",
+        "connectors": "/api/connectors",
+        "command_center": "/api/dashboard/command-center",
+        "docs": "/docs",
+    }
+
+
 @app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "wilq-api"}

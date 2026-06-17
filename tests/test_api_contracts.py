@@ -61,6 +61,17 @@ def test_health_endpoint() -> None:
     assert response.json()["status"] == "ok"
 
 
+def test_root_endpoint_points_to_api_entrypoints() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["service"] == "wilq-api"
+    assert data["health"] == "/api/health"
+    assert data["system_status"] == "/api/system/status"
+    assert data["connectors"] == "/api/connectors"
+    assert data["docs"] == "/docs"
+
+
 def test_connector_registry_contains_required_connectors() -> None:
     response = client.get("/api/connectors")
     assert response.status_code == 200
