@@ -26,6 +26,7 @@ Connector refreshes are durable API runs:
 - Google Ads `vendor_read` uses OAuth refresh-token auth and `googleAds:searchStream` to persist only aggregate campaign metrics.
 - Google Search Console `vendor_read` uses Search Analytics to persist aggregate site clicks, impressions, CTR and position.
 - GA4 `vendor_read` uses Analytics Data API `runReport` to persist aggregate behavior metrics.
+- Google Merchant Center `vendor_read` uses Merchant API `aggregateProductStatuses.list` to persist aggregate product status and item-issue counts.
 - Google Sheets `vendor_read` uses `spreadsheets.get` with a field mask to persist aggregate review-surface metadata only.
 - WordPress `vendor_read` uses the REST API for `ekologus.pl` and `sklep.ekologus.pl` content inventory, persisting only aggregate post/page counts and latest modification timestamps.
 - Every refresh run records evidence IDs, checked credential names, missing credential names, external-call status, vendor-data status, metric summary, summary and errors.

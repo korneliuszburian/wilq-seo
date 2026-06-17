@@ -8,6 +8,7 @@ SECRET_KEY_RE = re.compile(r"(token|secret|password|credential|api[_-]?key|clien
 SECRET_VALUE_RE = re.compile(
     r"(gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+|[A-Za-z0-9_-]{32,})"
 )
+ENV_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]+$")
 SAFE_IDENTIFIER_KEYS = {
     "id",
     "action_id",
@@ -38,7 +39,8 @@ def redact_value(value: Any) -> Any:
     if value is None:
         return None
     if isinstance(value, str):
-        if SECRET_VALUE_RE.search(value):
+        matches = SECRET_VALUE_RE.findall(value)
+        if matches and not all(_looks_like_env_name(match) for match in matches):
             return "[REDACTED]"
         return value
     if isinstance(value, list):
@@ -46,6 +48,10 @@ def redact_value(value: Any) -> Any:
     if isinstance(value, Mapping):
         return redact_mapping(value)
     return value
+
+
+def _looks_like_env_name(value: str) -> bool:
+    return "_" in value and bool(ENV_NAME_RE.fullmatch(value))
 
 
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:

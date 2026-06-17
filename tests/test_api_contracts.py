@@ -12,6 +12,9 @@ from apps.api.wilq_api.main import app
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
 from wilq.connectors.google_auth import GOOGLE_SERVICE_ACCOUNT_ENV_NAMES
+from wilq.connectors.google_merchant_center.client import (
+    refresh_merchant_product_status_summary,
+)
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
 from wilq.connectors.vendor import VendorReadResult
@@ -27,6 +30,7 @@ from wilq.schemas import (
     Opportunity,
     OpportunityDomain,
 )
+from wilq.security.redaction import redact_mapping
 
 client = TestClient(app)
 
@@ -55,6 +59,7 @@ def clear_google_service_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "GA4_PROPERTY_ID",
         "GOOGLE_SHEETS_REVIEW_SPREADSHEET_ID",
         "GOOGLE_SHEETS_SPREADSHEET_ID",
+        "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -118,6 +123,24 @@ def test_connector_status_does_not_expose_secret_values(monkeypatch: pytest.Monk
     serialized = json.dumps(response.json())
     assert "gho_supersecretvalue1234567890" not in serialized
     assert "GOOGLE_ADS_DEVELOPER_TOKEN" in serialized
+
+
+def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
+    redacted = redact_mapping(
+        {
+            "summary": (
+                "Vendor read blocked by missing credential names: "
+                "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
+            ),
+            "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
+        }
+    )
+
+    assert redacted["summary"] == (
+        "Vendor read blocked by missing credential names: "
+        "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
+    )
+    assert redacted["error"] == "[REDACTED]"
 
 
 def test_google_first_party_status_requires_valid_service_account(
@@ -739,6 +762,135 @@ def test_google_sheets_vendor_read_routes_through_refresh_endpoint(
     run = response.json()
     assert run["status"] == "completed"
     assert run["metric_summary"] == {"sheet_count": 2, "total_grid_rows": 120}
+
+
+def test_merchant_vendor_read_uses_aggregate_product_statuses(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "accounts/123456")
+    monkeypatch.setattr(
+        "wilq.connectors.google_merchant_center.client.google_service_account_access_token",
+        lambda scopes: "merchant-access-token",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "merchantapi.googleapis.com"
+        assert request.url.path == (
+            "/issueresolution/v1/accounts/123456/aggregateProductStatuses"
+        )
+        assert request.headers["authorization"] == "Bearer merchant-access-token"
+        assert request.url.params["pageSize"] == "100"
+        return httpx.Response(
+            200,
+            json={
+                "aggregateProductStatuses": [
+                    {
+                        "reportingContext": "SHOPPING_ADS",
+                        "country": "PL",
+                        "stats": {
+                            "activeCount": "8",
+                            "pendingCount": "1",
+                            "disapprovedCount": "2",
+                            "expiringCount": "0",
+                        },
+                        "itemLevelIssues": [
+                            {
+                                "severity": "DISAPPROVED",
+                                "resolution": "MERCHANT_ACTION",
+                                "productCount": "2",
+                            },
+                            {
+                                "severity": "NOT_IMPACTED",
+                                "resolution": "PENDING_PROCESSING",
+                                "productCount": "1",
+                            },
+                        ],
+                    },
+                    {
+                        "reportingContext": "FREE_LISTINGS",
+                        "country": "PL",
+                        "stats": {
+                            "activeCount": "4",
+                            "pendingCount": "0",
+                            "disapprovedCount": "1",
+                            "expiringCount": "1",
+                        },
+                        "itemLevelIssues": [
+                            {
+                                "severity": "DEMOTED",
+                                "resolution": "MERCHANT_ACTION",
+                                "productCount": "1",
+                            }
+                        ],
+                    },
+                ],
+                "nextPageToken": "next-page",
+            },
+        )
+
+    result = refresh_merchant_product_status_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary == {
+        "api": "merchant_aggregate_product_statuses",
+        "status_group_count": 2,
+        "country_count": 1,
+        "reporting_context_count": 2,
+        "active_products": 12,
+        "pending_products": 1,
+        "disapproved_products": 3,
+        "expiring_products": 1,
+        "total_products": 17,
+        "item_level_issue_count": 3,
+        "merchant_action_issue_count": 2,
+        "merchant_action_product_count": 3,
+        "disapproved_issue_count": 1,
+        "demoted_issue_count": 1,
+        "warning_issue_count": 1,
+        "next_page_present": 1,
+    }
+
+
+def test_merchant_vendor_read_routes_through_refresh_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_refresh_state.sqlite3"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "123456")
+    service_account_json = tmp_path / "sa.json"
+    service_account_json.write_text('{"type":"service_account"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(service_account_json))
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_merchant_product_status_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Merchant aggregate statuses completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"active_products": 12, "disapproved_products": 3},
+        ),
+    )
+
+    response = client.post(
+        "/api/connectors/google_merchant_center/refresh",
+        json={"mode": "vendor_read", "reason": "contract test"},
+    )
+
+    assert response.status_code == 200
+    run = response.json()
+    assert run["status"] == "completed"
+    assert run["metric_summary"] == {"active_products": 12, "disapproved_products": 3}
 
 
 def test_wordpress_vendor_read_uses_rest_content_inventory(
