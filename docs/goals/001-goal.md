@@ -265,6 +265,7 @@ Current implementation slice completed and verified in this checkpoint:
 * Typer local operator CLI exposed as `uv run wilq`.
 * Tests covering metric persistence, metric API and CLI secret redaction.
 * Python packaging now installs the project as editable through hatchling so the `wilq` console script is available through `uv run wilq`.
+* APScheduler-backed local job definitions, manual job run API/CLI, and redacted persisted job-run state for connector refresh orchestration.
 
 Known external/product blockers:
 

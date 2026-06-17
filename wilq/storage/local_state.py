@@ -8,6 +8,7 @@ from typing import Any, cast
 
 from pydantic import BaseModel
 
+from wilq.jobs.models import JobRun
 from wilq.schemas import AuditEvent, CodexRun, ConnectorRefreshRun
 from wilq.security.redaction import redact_mapping
 from wilq.workflows.models import WorkflowRun
@@ -46,6 +47,7 @@ class LocalStateStore:
             "connector_refresh_runs": self._count_with_query(
                 "SELECT COUNT(*) AS count FROM connector_refresh_runs"
             ),
+            "job_runs": self._count_with_query("SELECT COUNT(*) AS count FROM job_runs"),
         }
 
     def save_codex_run(self, run: CodexRun) -> CodexRun:
@@ -176,6 +178,48 @@ class LocalStateStore:
             return None
         return _model_from_json(ConnectorRefreshRun, cast(str, row["payload_json"]))
 
+    def save_job_run(self, run: JobRun) -> JobRun:
+        redacted = JobRun.model_validate(redact_mapping(run.model_dump(mode="json")))
+        payload_json = _model_json(redacted)
+        updated_at = redacted.completed_at or redacted.started_at
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO job_runs (id, job_id, status, updated_at, payload_json)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  job_id = excluded.job_id,
+                  status = excluded.status,
+                  updated_at = excluded.updated_at,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    redacted.id,
+                    redacted.job_id,
+                    redacted.status,
+                    updated_at.isoformat(),
+                    payload_json,
+                ),
+            )
+        return redacted
+
+    def list_job_runs(self) -> list[JobRun]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT payload_json FROM job_runs ORDER BY updated_at DESC, id DESC"
+            ).fetchall()
+        return [_model_from_json(JobRun, cast(str, row["payload_json"])) for row in rows]
+
+    def get_job_run(self, run_id: str) -> JobRun | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM job_runs WHERE id = ?",
+                (run_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return _model_from_json(JobRun, cast(str, row["payload_json"]))
+
     def save_audit_event(self, event: AuditEvent) -> AuditEvent:
         redacted = AuditEvent.model_validate(redact_mapping(event.model_dump(mode="json")))
         payload_json = _model_json(redacted)
@@ -249,6 +293,14 @@ class LocalStateStore:
             CREATE TABLE IF NOT EXISTS connector_refresh_runs (
               id TEXT PRIMARY KEY,
               connector_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              updated_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS job_runs (
+              id TEXT PRIMARY KEY,
+              job_id TEXT NOT NULL,
               status TEXT NOT NULL,
               updated_at TEXT NOT NULL,
               payload_json TEXT NOT NULL

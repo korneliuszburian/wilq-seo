@@ -61,6 +61,10 @@ uv run wilq connectors status
 uv run wilq connectors refresh ahrefs --mode vendor_read --reason "operator smoke"
 uv run wilq metrics status
 uv run wilq metrics list --connector-id ahrefs --limit 20
+uv run wilq jobs status
+uv run wilq jobs list
+uv run wilq jobs run connector_status_probe_all --reason "operator smoke"
+uv run wilq jobs runs
 ```
 
 CLI output is JSON and must keep credential values, token prefixes, credential paths and raw vendor responses out of stdout.

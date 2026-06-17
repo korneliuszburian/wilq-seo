@@ -17,8 +17,9 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Expert rules are loaded through typed Pydantic contracts and exposed at `/api/expert/rules`, `/api/expert/rule-summaries` and `/api/expert/capabilities`.
 - Codex context packs include expert rule summaries and Ads capability definitions so future skills can use API-provided rule contracts.
 - Dashboard operating routes render expert-rule cards from `/api/expert/rules` through shared Zod validation.
-- Local SQLite state persists Codex runs, workflow runs, connector refresh runs and audit events through `wilq/storage/local_state.py`.
+- Local SQLite state persists Codex runs, workflow runs, job runs, connector refresh runs and audit events through `wilq/storage/local_state.py`.
 - Workflow run APIs exist at `/api/workflows/{workflow_id}/runs` and `/api/workflow-runs`.
+- Local job orchestration exists under `wilq/jobs/` with APScheduler-backed scheduler metadata, explicit run APIs and redacted persisted job runs.
 - Dashboard workflow routes render persisted workflow-run state through shared Zod validation.
 - Machine-readable marketing playbooks exist in `wilq/knowledge/playbooks/marketing_playbooks.yaml`.
 - `wilq/knowledge/compilers/playbook_compiler.py` compiles playbooks into lineage-preserving `KnowledgeCard` records.
@@ -27,7 +28,7 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - Evidence registry APIs expose connector-status evidence without secret values.
 - Connector refresh APIs create durable `status_probe` and read-only `vendor_read` runs with redacted evidence IDs and no invented vendor metrics.
 - Connector refresh metric summaries are persisted as redacted facts in a local DuckDB metric store, exposed through `/api/metrics/status` and `/api/metrics`.
-- Local Typer CLI entrypoint `uv run wilq` exposes runtime status, connector status/refresh and metric store status/list commands without printing secret values. The project is installed as an editable hatchling package so the console script is available through `uv run`.
+- Local Typer CLI entrypoint `uv run wilq` exposes runtime status, connector status/refresh, metric store status/list and job orchestration commands without printing secret values. The project is installed as an editable hatchling package so the console script is available through `uv run`.
 - Google Ads, Google Search Console, GA4, Google Merchant Center, Ahrefs and both WordPress sites have first read-only `vendor_read` adapters that persist aggregate metrics/inventory only. Google Sheets has a read adapter but is disabled by current product scope.
 - Opportunities are now derived from connector readiness evidence plus playbook/expert-rule mappings, not fixed demo opportunity rows.
 - Workflow, model runtime, credential runtime, MCP, quality, security and source-registry docs exist.
@@ -51,6 +52,11 @@ uv run ruff check wilq/storage/metric_store.py wilq/cli.py wilq/connectors/refre
 uv run mypy wilq/storage/metric_store.py wilq/cli.py wilq/connectors/refresh.py apps/api/wilq_api/main.py
 uv run wilq status
 uv run wilq metrics status
+uv run wilq jobs status
+uv run wilq jobs run connector_status_probe_all --reason "operator smoke"
+uv run pytest tests/test_jobs_scheduler.py tests/test_metric_store_and_cli.py -q
+uv run ruff check wilq/jobs wilq/storage/local_state.py wilq/cli.py apps/api/wilq_api/main.py tests/test_jobs_scheduler.py
+uv run mypy wilq/jobs wilq/storage/local_state.py wilq/cli.py apps/api/wilq_api/main.py
 uv run --extra dev ruff check .
 uv run --extra dev mypy .
 pnpm install
@@ -80,7 +86,9 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - `scripts/verify.sh`: passed.
 - Backend tests: 45 passed.
 - Metric store and CLI tests: 3 passed.
+- Job scheduler/API/CLI tests: 2 passed.
 - Narrow ruff and mypy checks for metric store, CLI, connector refresh and API surfaces passed.
+- Narrow ruff and mypy checks for job scheduler, local state, CLI and API surfaces passed.
 - Dashboard tests: 8 passed.
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
@@ -148,7 +156,7 @@ API is runnable through:
 uv run uvicorn apps.api.wilq_api.main:app --reload
 ```
 
-FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs, connector refresh runs and audit events persist to local SQLite state. Connector refresh metric summaries persist as redacted aggregate metric facts in local DuckDB analytical state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state and connector refresh-run state. Opportunities are derived from readiness/refresh evidence plus playbook/expert-rule mappings; Google Ads can now persist aggregate read-only vendor metrics when credentials and API access allow it, Merchant Center can persist aggregate product status and issue counts when Google credentials and Merchant developer registration allow it, Ahrefs can persist aggregate Site Explorer domain rating/rank metadata when token and target config allow it, and WordPress vendor reads can persist aggregate post/page inventory when site credentials allow it. Google Sheets is disabled for current Ekologus scope and must not block connector readiness.
+FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs, job runs, connector refresh runs and audit events persist to local SQLite state. Connector refresh metric summaries persist as redacted aggregate metric facts in local DuckDB analytical state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state and connector refresh-run state. Opportunities are derived from readiness/refresh evidence plus playbook/expert-rule mappings; Google Ads can now persist aggregate read-only vendor metrics when credentials and API access allow it, Merchant Center can persist aggregate product status and issue counts when Google credentials and Merchant developer registration allow it, Ahrefs can persist aggregate Site Explorer domain rating/rank metadata when token and target config allow it, and WordPress vendor reads can persist aggregate post/page inventory when site credentials allow it. Explicit local jobs can orchestrate connector refreshes without auto-starting a background daemon in Goal 001. Google Sheets is disabled for current Ekologus scope and must not block connector readiness.
 
 ## Next recommended goal
 

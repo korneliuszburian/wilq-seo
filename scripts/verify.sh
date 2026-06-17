@@ -9,11 +9,22 @@ from fastapi.testclient import TestClient
 from apps.api.wilq_api.main import app
 
 client = TestClient(app)
-for path in ["/api/health", "/api/system/status", "/api/connectors", "/api/dashboard/command-center", "/api/codex/context"]:
+for path in [
+    "/api/health",
+    "/api/system/status",
+    "/api/connectors",
+    "/api/dashboard/command-center",
+    "/api/codex/context",
+    "/api/jobs/status",
+    "/api/jobs",
+]:
     response = client.get(path)
     assert response.status_code == 200, (path, response.status_code, response.text)
 print("API smoke passed")
 PY
+
+uv run wilq jobs status >/dev/null
+uv run wilq jobs list >/dev/null
 
 uv run python - <<'PY'
 from pathlib import Path

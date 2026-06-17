@@ -25,6 +25,14 @@ from wilq.expert.rules import (
     list_expert_rule_summaries,
     list_expert_rules,
 )
+from wilq.jobs.models import JobRun, JobRunRequest, ScheduledJob
+from wilq.jobs.registry import get_job, list_jobs
+from wilq.jobs.scheduler import (
+    get_job_run,
+    list_job_runs,
+    run_job,
+    scheduler_status,
+)
 from wilq.knowledge.compilers.playbook_compiler import (
     compile_playbook_cards,
     condense_playbooks,
@@ -161,6 +169,7 @@ def system_status() -> dict[str, Any]:
             "connector_summary": connector_summary(connectors).model_dump(),
             "credential_runtime": credential_runtime_status(detailed=False),
             "codex_runtime": codex_runtime_status(),
+            "job_scheduler": scheduler_status(),
             "local_state": local_state_store().status(),
             "metric_store": metric_store().status(),
             "opportunity_types": list(OPPORTUNITY_TYPES),
@@ -284,6 +293,45 @@ def metric_facts(connector_id: str | None = None, limit: int = 100) -> list[Metr
 @app.get("/api/metrics/status")
 def metric_store_status() -> dict[str, Any]:
     return metric_store().status()
+
+
+@app.get("/api/jobs", response_model=list[ScheduledJob])
+def jobs() -> list[ScheduledJob]:
+    return list_jobs()
+
+
+@app.get("/api/jobs/status")
+def jobs_status() -> dict[str, Any]:
+    return scheduler_status()
+
+
+@app.get("/api/jobs/{job_id}", response_model=ScheduledJob)
+def job_detail(job_id: str) -> ScheduledJob:
+    job = get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Unknown job: {job_id}")
+    return job
+
+
+@app.post("/api/jobs/{job_id}/run", response_model=JobRun)
+def run_job_endpoint(job_id: str, request: JobRunRequest | None = None) -> JobRun:
+    run = run_job(job_id, request)
+    if run is None:
+        raise HTTPException(status_code=404, detail=f"Unknown job: {job_id}")
+    return run
+
+
+@app.get("/api/job-runs", response_model=list[JobRun])
+def job_runs() -> list[JobRun]:
+    return list_job_runs()
+
+
+@app.get("/api/job-runs/{run_id}", response_model=JobRun)
+def job_run_detail(run_id: str) -> JobRun:
+    run = get_job_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail=f"Unknown job run: {run_id}")
+    return run
 
 
 @app.get("/api/actions/{action_id}")

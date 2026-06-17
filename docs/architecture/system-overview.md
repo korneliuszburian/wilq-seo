@@ -1,13 +1,13 @@
 # System Overview
 
-WILQ Marketing Operating System connects one canonical API to a dashboard, Codex runtime, connector registry, expert rules, workflows, knowledge cards, opportunities, and action objects.
+WILQ Marketing Operating System connects one canonical API to a dashboard, Codex runtime, connector registry, job orchestration, expert rules, workflows, knowledge cards, opportunities, and action objects.
 
 Product inspiration: WILQ should feel like an AI operating system for Ads/SEO/local/content work, with BDOS.ai as a strong Google Ads operating-system reference point. The implementation rule is stricter than a chat-first ads assistant: WILQ decisions must come from WILQ API evidence, typed action contracts, validation and audit, not from model memory or tool prose.
 
 ```txt
 Dashboard + future Codex skills + hooks
   -> WILQ API
-  -> connector registry, evidence registry, metric store, expert rules, opportunity engine, actions, audit, local state
+  -> connector registry, evidence registry, metric store, job scheduler, expert rules, opportunity engine, actions, audit, local state
   -> Google Ads, GSC, GA4, Merchant Center, Ahrefs, Localo, WordPress, LinkedIn, Facebook
 ```
 
@@ -18,6 +18,7 @@ Rules:
 - Skills are operator workflows created after the API endpoints they call exist.
 - Expert rules live as structured YAML but are consumed through typed WILQ API endpoints, not by prompt-only logic.
 - Codex runs, workflow runs, connector refresh runs, and audit events persist to local SQLite state with redaction.
+- Job runs persist to local SQLite state and orchestrate connector refreshes without bypassing connector redaction rules.
 - Redacted connector refresh metric summaries also persist to a local DuckDB metric store for analytical reads.
 - Repo-local `.env` is the primary private credential source; the Ekologus access pack is import/fallback material.
 - Google Sheets is optional and disabled for the current Ekologus operator scope; it is not a required evidence source.
@@ -38,7 +39,14 @@ Local-state API surface:
 - `/api/codex/runs`: persisted Codex run records.
 - `/api/workflow-runs`: persisted workflow run records.
 - `/api/connectors/refresh-runs`: persisted connector refresh run records.
+- `/api/job-runs`: persisted job orchestration run records.
 - `/api/audit/events`: persisted audit events, optionally filtered by action ID.
+
+Job API surface:
+
+- `/api/jobs/status`: APScheduler-backed job scheduler metadata. The API does not auto-start background jobs in Goal 001.
+- `/api/jobs`: configured local job definitions.
+- `/api/jobs/{job_id}/run`: explicit local run for connector refresh orchestration.
 
 Metric API surface:
 
