@@ -94,6 +94,14 @@ pnpm --filter @wilq/dashboard dev
 scripts/verify.sh
 ```
 
+## Local runtime gotchas
+
+- Use `uv run ...` for every Python-facing repo command. This machine may not have a global `python`; use `uv run python ...` in scripts, pipes and smoke commands instead of bare `python`.
+- After changing `pyproject.toml` entrypoints or build metadata, run `uv sync --all-extras` before expecting `uv run wilq ...` to exist.
+- The canonical goal file is `docs/goals/001-goal.md`. Do not recreate old duplicate numbered goal files.
+- Redaction must preserve audit identifiers such as evidence IDs, action IDs, workflow IDs, job IDs and connector refresh run IDs. Redact secret values, not product traceability.
+- `scripts/verify.sh` is the final local gate for this repo. It intentionally uses WILQ API, skill smokes, CLI smokes and dashboard build as one product surface.
+
 ## Testing instructions
 
 Run the narrow test for changed surfaces first, then the full quality gate:
