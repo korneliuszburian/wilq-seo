@@ -25,6 +25,11 @@ Implementation:
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `POST /api/connectors/{connector}/refresh`
+- `GET /api/evidence`
+- `GET /api/evidence/{evidence_id}`
 
 Missing credentials are product state. They must not be hidden, and values must never be returned.
 
+Opportunity generation can use connector-status evidence for operational
+readiness items, but it must not describe vendor performance until a real
+connector refresh has collected vendor data.

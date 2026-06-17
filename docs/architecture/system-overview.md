@@ -3,9 +3,9 @@
 WILQ Marketing Operating System connects one canonical API to a dashboard, Codex runtime, connector registry, expert rules, workflows, knowledge cards, opportunities, and action objects.
 
 ```txt
-Dashboard + Codex skills + hooks
+Dashboard + future Codex skills + hooks
   -> WILQ API
-  -> connector registry, expert rules, opportunity engine, actions, audit, local state
+  -> connector registry, evidence registry, expert rules, opportunity engine, actions, audit, local state
   -> Google Ads, GSC, GA4, Merchant Center, Sheets, Ahrefs, Localo, WordPress, LinkedIn, Facebook
 ```
 
@@ -17,6 +17,8 @@ Rules:
 - Expert rules live as structured YAML but are consumed through typed WILQ API endpoints, not by prompt-only logic.
 - Codex runs, workflow runs, and audit events persist to local SQLite state with redaction.
 - Knowledge playbooks compile into source-lineage cards before reaching Codex context packs.
+- Evidence registry records expose readiness/source state without secret values.
+- Readiness opportunities may derive from connector-status evidence, playbook IDs, and expert-rule IDs. They must not claim vendor performance metrics until vendor refreshes exist.
 - Seed data is allowed only when labeled as non-real.
 - No evidence ID means no recommendation.
 
@@ -37,3 +39,8 @@ Knowledge API surface:
 - `/api/knowledge/playbooks`: machine-readable playbook contracts.
 - `/api/knowledge/cards`: compact compiled cards with lineage.
 - `/api/knowledge/condense`: deterministic playbook-to-card compilation.
+
+Evidence API surface:
+
+- `/api/evidence`: connector-status evidence records, with freshness and redacted summaries.
+- `/api/evidence/{evidence_id}`: one evidence record by ID.

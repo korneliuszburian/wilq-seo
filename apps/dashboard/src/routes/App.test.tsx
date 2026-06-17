@@ -28,6 +28,8 @@ const opportunities = [
     recommended_action: "Configure connector.",
     risk: "low",
     action_ids: ["act_1"],
+    expert_rule_ids: ["ads_search_terms_v1"],
+    playbook_ids: ["google_ads_search_playbook"],
     is_fixture: true
   }
 ];
@@ -48,6 +50,19 @@ const actions = [
     recommended_reason: "Credential setup unlocks reads.",
     payload: { action_type: "configure_connector" },
     audit_events: []
+  }
+];
+
+const evidence = [
+  {
+    id: "ev_connector_google_ads_status",
+    source_connector: "google_ads",
+    source_type: "connector_status",
+    source_id: "google_ads",
+    collected_at: "2026-06-17T10:00:00Z",
+    freshness: { state: "missing" },
+    summary: "Connector google_ads is missing credential names.",
+    raw_ref: null
   }
 ];
 
@@ -136,6 +151,7 @@ function mockFetch() {
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.endsWith("/api/opportunities")) return Promise.resolve(Response.json(opportunities));
       if (url.endsWith("/api/actions")) return Promise.resolve(Response.json(actions));
+      if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
       if (url.endsWith("/api/expert/rules")) return Promise.resolve(Response.json(expertRules));
       if (url.endsWith("/api/workflows")) {
         return Promise.resolve(
@@ -198,6 +214,7 @@ describe("WILQ dashboard", () => {
     window.history.pushState({}, "", "/ads-doctor");
     render(<App />);
     await waitFor(() => expect(screen.getAllByText("Missing credentials").length).toBeGreaterThan(0));
+    expect(screen.getByText("Evidence Registry")).toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {

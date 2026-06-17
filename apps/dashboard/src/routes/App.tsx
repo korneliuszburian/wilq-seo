@@ -11,10 +11,12 @@ import { AlertCircle, CheckCircle2, FileJson, RefreshCw } from "lucide-react";
 import {
   ActionObject,
   ConnectorStatus,
+  Evidence,
   ExpertRule,
   getActions,
   getCommandCenter,
   getConnectors,
+  getEvidence,
   getExpertRules,
   getKnowledgeCards,
   getKnowledgePlaybooks,
@@ -112,6 +114,8 @@ function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Evidence: {opportunity.evidence_ids.join(", ")}</div>
             <div>Source: {opportunity.source_connectors.join(", ")}</div>
+            <div>Rules: {opportunity.expert_rule_ids.slice(0, 3).join(", ") || "none"}</div>
+            <div>Playbooks: {opportunity.playbook_ids.slice(0, 2).join(", ") || "none"}</div>
           </div>
           {opportunity.is_fixture ? (
             <div className="mt-3 flex items-center gap-2 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
@@ -119,6 +123,31 @@ function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
               Seed state, not real Ekologus performance data
             </div>
           ) : null}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
+  if (evidenceItems.length === 0) {
+    return <p className="text-sm text-slate-600">No evidence records are available yet.</p>;
+  }
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-2">
+      {evidenceItems.map((evidence) => (
+        <article key={evidence.id} className="rounded-md border border-line bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{evidence.id}</h3>
+              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                {evidence.source_connector} / {evidence.source_type}
+              </p>
+            </div>
+            <StatusBadge value={evidence.freshness.state} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">{evidence.summary}</p>
         </article>
       ))}
     </div>
@@ -310,6 +339,7 @@ function GenericSurface({ routeName }: { routeName: string }) {
   const connectors = useQuery({ queryKey: ["connectors"], queryFn: getConnectors });
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
+  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
   const workflows = useQuery({ queryKey: ["workflows"], queryFn: getWorkflows });
   const workflowRuns = useQuery({ queryKey: ["workflow-runs"], queryFn: getWorkflowRuns });
   const expertRules = useQuery({ queryKey: ["expert-rules"], queryFn: getExpertRules });
@@ -334,6 +364,7 @@ function GenericSurface({ routeName }: { routeName: string }) {
     connectors.isLoading ||
     opportunities.isLoading ||
     actions.isLoading ||
+    evidence.isLoading ||
     expertRules.isLoading ||
     isWorkflowLoading ||
     isKnowledgeLoading
@@ -344,6 +375,7 @@ function GenericSurface({ routeName }: { routeName: string }) {
     connectors.error ||
     opportunities.error ||
     actions.error ||
+    evidence.error ||
     expertRules.error ||
     hasWorkflowError ||
     hasKnowledgeError
@@ -404,6 +436,10 @@ function GenericSurface({ routeName }: { routeName: string }) {
         <section>
           <SectionHeading title="Opportunities" />
           <OpportunityList opportunities={opportunities.data ?? []} />
+        </section>
+        <section>
+          <SectionHeading title="Evidence Registry" />
+          <EvidenceList evidenceItems={(evidence.data ?? []).slice(0, 8)} />
         </section>
         <section>
           <SectionHeading title="Actions" />

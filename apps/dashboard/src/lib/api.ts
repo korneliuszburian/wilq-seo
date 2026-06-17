@@ -2,6 +2,7 @@ import {
   ActionObjectSchema,
   CommandCenterResponseSchema,
   ConnectorStatusSchema,
+  EvidenceSchema,
   ExpertRuleSchema,
   KnowledgeCardSchema,
   MarketingPlaybookSchema,
@@ -11,6 +12,7 @@ import {
   type ActionObject,
   type CommandCenterResponse,
   type ConnectorStatus,
+  type Evidence,
   type ExpertRule,
   type KnowledgeCard,
   type MarketingPlaybook,
@@ -46,6 +48,10 @@ export function getActions(): Promise<ActionObject[]> {
   return apiGet("/api/actions", z.array(ActionObjectSchema));
 }
 
+export function getEvidence(): Promise<Evidence[]> {
+  return apiGet("/api/evidence", z.array(EvidenceSchema));
+}
+
 export function getWorkflows(): Promise<Workflow[]> {
   return apiGet("/api/workflows", z.array(WorkflowSchema));
 }
@@ -70,6 +76,7 @@ export type {
   ActionObject,
   CommandCenterResponse,
   ConnectorStatus,
+  Evidence,
   ExpertRule,
   KnowledgeCard,
   MarketingPlaybook,

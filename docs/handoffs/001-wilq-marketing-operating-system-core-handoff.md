@@ -24,6 +24,8 @@ Status: in progress, foundation verified. Goal 001 is not complete yet.
 - `wilq/knowledge/compilers/playbook_compiler.py` compiles playbooks into lineage-preserving `KnowledgeCard` records.
 - Knowledge APIs expose playbooks, compiled cards and deterministic condensation results.
 - Dashboard knowledge routes render compiled cards and playbooks through shared Zod validation.
+- Evidence registry APIs expose connector-status evidence without secret values.
+- Opportunities are now derived from connector readiness evidence plus playbook/expert-rule mappings, not fixed demo opportunity rows.
 - Workflow, model runtime, access-pack, MCP, quality, security and source-registry docs exist.
 - Codex hooks exist for SessionStart and Stop; they fail open and restrict API URL targets to local/allowed hosts.
 - `.agents/skills/` intentionally contains only `.gitkeep`.
@@ -39,7 +41,9 @@ connector status contract and action validation path they call are implemented
 and testable.
 ```
 
-Next skill should be `wilq-daily-command`, created with `$skill-creator`, after the API contracts stay stable.
+The first skill is still deferred. When the API/context-pack/action validation
+contracts are stable enough to smoke test from a skill, create
+`wilq-daily-command` with `$skill-creator`.
 
 ## Commands run
 
@@ -64,7 +68,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 - `scripts/quality.sh`: passed.
 - `scripts/security.sh`: passed.
 - `scripts/verify.sh`: passed.
-- Backend tests: 21 passed.
+- Backend tests: 24 passed.
 - Dashboard tests: 8 passed.
 - Dashboard build: passed.
 - API smoke inside `scripts/verify.sh`: passed.
@@ -75,7 +79,7 @@ gh repo view korneliuszburian/wilq-seo --json nameWithOwner,isPrivate,url,defaul
 
 - Semgrep is not installed, so `scripts/security.sh` reports `Skipping semgrep: command unavailable.`
 - FastAPI/Starlette emits a TestClient deprecation warning about `httpx`; tests still pass.
-- Goal 001 is not complete because skills are deferred, connector/opportunity state is still seed/in-memory, expert rules are not yet used to generate real connector-derived opportunities and real connectors do not call vendor APIs yet.
+- Goal 001 is not complete because skills are deferred by policy, real connectors still do not call vendor APIs, and opportunity generation uses connector-status evidence/rule mappings rather than vendor performance metrics.
 - API has a local-only guard but no production authentication. Do not expose it beyond localhost or a trusted tunnel before adding auth.
 
 ## Connector status
@@ -117,10 +121,10 @@ API is runnable through:
 uv run uvicorn apps.api.wilq_api.main:app --reload
 ```
 
-FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Connector/opportunity state is still seed/in-memory for Goal 001 foundation.
+FastAPI OpenAPI docs are available when the API runs. Codex runs, workflow runs and audit events persist to local SQLite state. Knowledge cards are compiled deterministically from machine-readable playbooks. Evidence records are generated from local connector readiness state. Opportunities are derived from that readiness evidence plus playbook/expert-rule mappings, not from vendor performance metrics yet.
 
 ## Next recommended goal
 
 Goal 002 — Google Ads Connector and Ads Doctor
 
-Before Goal 002, create `wilq-daily-command` with `$skill-creator` only after the current context-pack and validation endpoints are treated as stable enough for a skill smoke test.
+Before Goal 002, keep skills as policy unless the current API context-pack and validation endpoints are stable enough for a real skill smoke test. If they are, create `wilq-daily-command` with `$skill-creator`.

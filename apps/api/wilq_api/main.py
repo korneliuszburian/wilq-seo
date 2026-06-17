@@ -13,6 +13,7 @@ from wilq.access_pack.manifest import access_pack_status
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
+from wilq.evidence.registry import get_evidence, list_evidence
 from wilq.expert.rules import (
     get_expert_rule,
     list_expert_capabilities,
@@ -32,6 +33,7 @@ from wilq.schemas import (
     CommandCenterResponse,
     ConnectorStatus,
     ConnectorSummary,
+    Evidence,
     ExpertCapability,
     ExpertRule,
     ExpertRuleSummary,
@@ -105,6 +107,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
             opportunity.model_dump(mode="json") for opportunity in opportunities[:max_opportunities]
         ],
         "active_action_objects": [action.model_dump(mode="json") for action in list_actions()],
+        "evidence_summaries": [evidence.model_dump(mode="json") for evidence in list_evidence()],
         "knowledge_card_summaries": [
             card.model_dump(mode="json") for card in compile_playbook_cards()
         ],
@@ -209,6 +212,19 @@ def recompute_opportunities() -> list[Opportunity]:
 @app.get("/api/actions")
 def actions() -> list[dict[str, Any]]:
     return [action.model_dump(mode="json") for action in list_actions()]
+
+
+@app.get("/api/evidence", response_model=list[Evidence])
+def evidence_items() -> list[Evidence]:
+    return list_evidence()
+
+
+@app.get("/api/evidence/{evidence_id}", response_model=Evidence)
+def evidence_detail(evidence_id: str) -> Evidence:
+    evidence = get_evidence(evidence_id)
+    if evidence is None:
+        raise HTTPException(status_code=404, detail=f"Unknown evidence: {evidence_id}")
+    return evidence
 
 
 @app.get("/api/actions/{action_id}")

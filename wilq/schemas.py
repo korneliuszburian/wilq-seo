@@ -126,6 +126,8 @@ class Opportunity(BaseModel):
     recommended_action: str
     risk: ActionRisk = ActionRisk.low
     action_ids: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
+    playbook_ids: list[str] = Field(default_factory=list)
     is_fixture: bool = False
 
     @field_validator("source_connectors", "evidence_ids")

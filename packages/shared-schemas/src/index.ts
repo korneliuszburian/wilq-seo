@@ -22,6 +22,20 @@ export const MetricFactSchema = z.object({
   unit: z.string().nullable().optional()
 });
 
+export const EvidenceSchema = z.object({
+  id: z.string(),
+  source_connector: z.string(),
+  source_type: z.string(),
+  source_id: z.string(),
+  collected_at: z.string(),
+  freshness: z.object({
+    state: z.string(),
+    notes: z.string().nullable().optional()
+  }),
+  summary: z.string(),
+  raw_ref: z.string().nullable().optional()
+});
+
 export const OpportunitySchema = z.object({
   id: z.string(),
   type: z.string(),
@@ -34,6 +48,8 @@ export const OpportunitySchema = z.object({
   recommended_action: z.string(),
   risk: z.string(),
   action_ids: z.array(z.string()),
+  expert_rule_ids: z.array(z.string()),
+  playbook_ids: z.array(z.string()),
   is_fixture: z.boolean()
 });
 
@@ -188,6 +204,7 @@ export const ContextPackResponseSchema = z.object({
   connector_status: z.array(ConnectorStatusSchema),
   top_opportunities: z.array(OpportunitySchema),
   active_action_objects: z.array(ActionObjectSchema),
+  evidence_summaries: z.array(EvidenceSchema),
   knowledge_card_summaries: z.array(KnowledgeCardSchema),
   expert_rule_summaries: z.array(ExpertRuleSummarySchema),
   expert_capabilities: z.array(ExpertCapabilitySchema),
@@ -195,6 +212,7 @@ export const ContextPackResponseSchema = z.object({
 });
 
 export type ConnectorStatus = z.infer<typeof ConnectorStatusSchema>;
+export type Evidence = z.infer<typeof EvidenceSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;

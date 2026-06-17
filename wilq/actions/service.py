@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
+from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionApplyResult,
     ActionMode,
@@ -23,7 +24,7 @@ def seed_actions() -> dict[str, ActionObject]:
         mode=ActionMode.prepare,
         risk=ActionRisk.low,
         status=ActionStatus.needs_validation,
-        evidence_ids=["ev_connector_google_ads_missing_credentials"],
+        evidence_ids=[connector_evidence_id("google_ads")],
         human_diagnosis=(
             "Google Ads connector cannot produce real metrics until credentials are available."
         ),

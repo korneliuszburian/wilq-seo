@@ -193,6 +193,45 @@ def test_command_center_returns_valid_shape() -> None:
     assert "todays_moves" in data["sections"]
 
 
+def test_evidence_registry_exposes_connector_status_without_secret_values(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "GOOGLE_ADS_DEVELOPER_TOKEN",
+        "gho_supersecretvalue1234567890",  # pragma: allowlist secret
+    )
+    response = client.get("/api/evidence")
+    assert response.status_code == 200
+    evidence = response.json()
+    evidence_ids = {item["id"] for item in evidence}
+    assert "ev_connector_google_ads_status" in evidence_ids
+    serialized = json.dumps(evidence)
+    assert "gho_supersecretvalue1234567890" not in serialized
+
+
+def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
+    response = client.get("/api/opportunities")
+    assert response.status_code == 200
+    opportunities = response.json()
+    google_ads = next(item for item in opportunities if item["id"] == "opp_connector_google_ads")
+    assert google_ads["evidence_ids"] == ["ev_connector_google_ads_status"]
+    assert "google_ads_search_playbook" in google_ads["playbook_ids"]
+    assert "ads_search_terms_v1" in google_ads["expert_rule_ids"]
+    assert google_ads["is_fixture"] is False
+    assert "No performance metrics" not in google_ads["title"]
+
+
+def test_actions_reference_registered_evidence_ids() -> None:
+    evidence_response = client.get("/api/evidence")
+    assert evidence_response.status_code == 200
+    evidence_ids = {item["id"] for item in evidence_response.json()}
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    for action in actions_response.json():
+        assert set(action["evidence_ids"]).issubset(evidence_ids)
+
+
 def test_expert_rules_are_loaded_from_structured_files() -> None:
     response = client.get("/api/expert/rules")
     assert response.status_code == 200
@@ -293,6 +332,8 @@ def test_codex_context_pack_includes_compiled_knowledge_cards() -> None:
     card_ids = {card["id"] for card in data["knowledge_card_summaries"]}
     assert "card_google_ads_search_playbook" in card_ids
     assert "card_goal_001_rules" in card_ids
+    evidence_ids = {item["id"] for item in data["evidence_summaries"]}
+    assert "ev_connector_google_ads_status" in evidence_ids
 
 
 def test_workflow_run_persists_to_local_state_with_redaction(
