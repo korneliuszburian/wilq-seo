@@ -19,7 +19,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "wilq-ga4-analyst": {
             "surface_path": "/ga4",
             "terms": {"GA4", "active_users"},
-            "action_ids": set(),
+            "action_ids": {"act_review_ga4_tracking_quality"},
         },
         "wilq-gsc-content-doctor": {
             "surface_path": "/seo-gsc",
@@ -29,12 +29,12 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "wilq-merchant-feed-operator": {
             "surface_path": "/merchant",
             "terms": {"Merchant Center", "feed", "product"},
-            "action_ids": set(),
+            "action_ids": {"act_review_merchant_feed_issues"},
         },
         "wilq-content-strategist": {
             "surface_path": "/content-planner",
             "terms": {"Content Planner", "WordPress", "GSC"},
-            "action_ids": set(),
+            "action_ids": {"act_prepare_content_refresh_queue"},
         },
     }
 

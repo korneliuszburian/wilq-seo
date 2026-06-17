@@ -4045,3 +4045,163 @@ Remaining next work:
 3. Add Localo/social route-specific evals after Localo MCP/readiness and social
    evidence surfaces expose useful route evidence instead of missing-access
    blockers.
+
+---
+
+## 36. Evidence-backed prepare ActionObjects - 2026-06-17
+
+Implemented the first remaining item from section 35 for the connectors that
+already expose useful real metric facts.
+
+What changed:
+
+* `wilq.actions.service` now creates metric-backed prepare-only ActionObject
+  candidates from the DuckDB metric store, in addition to the existing Google
+  Ads OAuth repair action.
+* New ActionObjects:
+  * `act_review_merchant_feed_issues`
+    * connector: `google_merchant_center`,
+    * payload action type: `merchant_feed_issue`,
+    * source facts: `active_products`, `disapproved_products`,
+    * purpose: prepare a feed/product review queue with payload preview, not a
+      product-data write.
+  * `act_review_ga4_tracking_quality`
+    * connector: `google_analytics_4`,
+    * payload action type: `ga4_tracking_gap`,
+    * source facts: `active_users`, `sessions`,
+    * purpose: prepare a GA4 measurement-quality review before judging campaign
+      quality.
+  * `act_prepare_content_refresh_queue`
+    * connector: `wordpress_ekologus`,
+    * payload action type: `wordpress_content_refresh`,
+    * source facts: WordPress inventory plus GSC/Ahrefs context,
+    * purpose: prepare a content refresh/create/merge/block queue without
+      inventing new topics.
+* All new actions are:
+  * `mode=prepare`,
+  * non-destructive,
+  * evidence-backed,
+  * metric-backed,
+  * validatable through `POST /api/actions/{action_id}/validate`,
+  * blocked from apply because they are not `mode=apply`.
+* `GET /api/marketing/brief` now exposes these ActionObject IDs in
+  `safe_next_actions`, so the dashboard and Codex skills share the same next
+  safe steps.
+* Codex eval cases now require the new ActionObject IDs:
+  * `wilq-ga4-analyst` requires `act_review_ga4_tracking_quality`,
+  * `wilq-merchant-feed-operator` requires `act_review_merchant_feed_issues`,
+  * `wilq-content-strategist` requires `act_prepare_content_refresh_queue`.
+* Added deterministic tests that seed a temporary DuckDB metric store and prove
+  these actions do not rely on the local developer metric database.
+
+Live API proof after restart:
+
+```txt
+GET /api/actions
+act_configure_google_ads_env              evidence=1  metrics=0  prepare
+act_review_merchant_feed_issues           evidence=7  metrics=8  prepare
+act_review_ga4_tracking_quality           evidence=6  metrics=8  prepare
+act_prepare_content_refresh_queue         evidence=20 metrics=10 prepare
+```
+
+Validation proof:
+
+```txt
+POST /api/actions/act_review_merchant_feed_issues/validate  -> valid=true
+POST /api/actions/act_review_ga4_tracking_quality/validate  -> valid=true
+POST /api/actions/act_prepare_content_refresh_queue/validate -> valid=true
+```
+
+MarketingBrief proof:
+
+```txt
+action_ids:
+  act_configure_google_ads_env
+  act_review_merchant_feed_issues
+  act_review_ga4_tracking_quality
+  act_prepare_content_refresh_queue
+```
+
+Non-interactive Codex eval proof:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-action-candidates/actions-20260617T213823Z/wilq-ga4-analyst \
+scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-action-candidates/actions-20260617T213823Z/wilq-merchant-feed-operator \
+scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+CODEX_SKILL_EVAL_OUT=.local-lab/evals/codex-skill-action-candidates/actions-20260617T213823Z/wilq-content-strategist \
+scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Eval results:
+
+* `wilq-ga4-analyst`: passed.
+  * source connector: `google_analytics_4`,
+  * evidence count: `6`,
+  * action ID: `act_review_ga4_tracking_quality`,
+  * usefulness score: `4`.
+* `wilq-merchant-feed-operator`: passed.
+  * source connector: `google_merchant_center`,
+  * evidence count: `7`,
+  * action ID: `act_review_merchant_feed_issues`,
+  * usefulness score: `5`.
+* `wilq-content-strategist`: passed.
+  * source connectors: `google_search_console`, `google_analytics_4`,
+    `ahrefs`, `wordpress_ekologus`, `wordpress_sklep`,
+  * evidence count: `5`,
+  * action IDs: `act_prepare_content_refresh_queue`,
+    `act_review_ga4_tracking_quality`,
+  * usefulness score: `4`.
+
+Verification:
+
+```bash
+uv run ruff check wilq/actions/service.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/actions/service.py tests/test_api_contracts.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q
+scripts/quality.sh
+scripts/security.sh
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Targeted API/eval tests: `55 passed`.
+* `scripts/quality.sh`: passed.
+  * Python tests: `67 passed`.
+  * Dashboard Vitest: `12 passed`.
+* `scripts/security.sh`: passed.
+  * Semgrep is still unavailable and reported by the script.
+* Full `scripts/verify.sh` with live ports:
+  * Python tests: `67 passed`.
+  * dashboard Vitest: `12 passed`.
+  * security: passed.
+  * API smoke: passed.
+  * skill structure smoke: passed.
+  * skill API smoke: passed.
+  * Playwright: `5 passed`.
+  * dashboard build: passed.
+
+Current live runtime after verification:
+
+* API: `127.0.0.1:8000`
+* Dashboard: `127.0.0.1:5173`
+* No test servers remained on `8765`, `8875` or `5373`.
+
+Remaining next work:
+
+1. Extend `MetricFact` and dashboard route panels with dimensions, freshness
+   windows and period deltas so the marketer sees concrete change, not only
+   route-level counts.
+2. Add route-specific dashboard affordances for the new ActionObjects:
+   visible validation button/state, payload preview focus and "why blocked from
+   apply" copy on `/merchant`, `/ga4` and `/content-planner`.
+3. Add social draft candidates after LinkedIn/Facebook evidence or explicit
+   permission blockers are exposed as useful route evidence.
+4. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.

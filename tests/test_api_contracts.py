@@ -27,11 +27,13 @@ from wilq.schemas import (
     ActionStatus,
     ConnectorRefreshMode,
     ConnectorRefreshRequest,
+    ConnectorRefreshRun,
     ConnectorRefreshStatus,
     Opportunity,
     OpportunityDomain,
 )
 from wilq.security.redaction import redact_mapping
+from wilq.storage.metric_store import metric_store
 
 client = TestClient(app)
 
@@ -95,6 +97,59 @@ def clear_localo_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "LOCALO_ACCESS_TOKEN",
     ):
         monkeypatch.delenv(key, raising=False)
+
+
+def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "action_candidates.duckdb"))
+    runs = [
+        ConnectorRefreshRun(
+            id="refresh_google_merchant_center_action_test",
+            connector_id="google_merchant_center",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_refresh_refresh_google_merchant_center_action_test"],
+            metric_summary={"active_products": 12, "disapproved_products": 3},
+            summary="Merchant Center action candidate metric seed.",
+        ),
+        ConnectorRefreshRun(
+            id="refresh_google_analytics_4_action_test",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_refresh_refresh_google_analytics_4_action_test"],
+            metric_summary={"active_users": 20, "sessions": 30},
+            summary="GA4 action candidate metric seed.",
+        ),
+        ConnectorRefreshRun(
+            id="refresh_wordpress_ekologus_action_test",
+            connector_id="wordpress_ekologus",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_refresh_refresh_wordpress_ekologus_action_test"],
+            metric_summary={"content_object_count": 16, "pages_total": 4},
+            summary="WordPress action candidate metric seed.",
+        ),
+        ConnectorRefreshRun(
+            id="refresh_google_search_console_action_test",
+            connector_id="google_search_console",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_refresh_refresh_google_search_console_action_test"],
+            metric_summary={"clicks": 12, "impressions": 120},
+            summary="GSC action candidate metric seed.",
+        ),
+        ConnectorRefreshRun(
+            id="refresh_ahrefs_action_test",
+            connector_id="ahrefs",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_refresh_refresh_ahrefs_action_test"],
+            metric_summary={"domain_rating": 90, "ahrefs_rank": 1450},
+            summary="Ahrefs action candidate metric seed.",
+        ),
+    ]
+    for run in runs:
+        metric_store().save_connector_refresh_metrics(run)
 
 
 def test_health_endpoint() -> None:
@@ -359,6 +414,70 @@ def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
     assert "client-secret-test" not in serialized
 
 
+def test_metric_backed_prepare_actions_are_evidence_grounded(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    response = client.get("/api/actions")
+    assert response.status_code == 200
+    actions = {action["id"]: action for action in response.json()}
+
+    expected_actions = {
+        "act_review_merchant_feed_issues": {
+            "connector": "google_merchant_center",
+            "action_type": "merchant_feed_issue",
+            "metric_names": {"active_products", "disapproved_products"},
+        },
+        "act_review_ga4_tracking_quality": {
+            "connector": "google_analytics_4",
+            "action_type": "ga4_tracking_gap",
+            "metric_names": {"active_users", "sessions"},
+        },
+        "act_prepare_content_refresh_queue": {
+            "connector": "wordpress_ekologus",
+            "action_type": "wordpress_content_refresh",
+            "metric_names": {"content_object_count", "clicks", "domain_rating"},
+        },
+    }
+
+    for action_id, expected in expected_actions.items():
+        action = actions[action_id]
+        assert action["mode"] == "prepare"
+        assert action["status"] == "needs_validation"
+        assert action["connector"] == expected["connector"]
+        assert action["payload"]["action_type"] == expected["action_type"]
+        assert action["payload"]["mode"] == "prepare_only"
+        assert action["payload"]["destructive"] is False
+        assert action["evidence_ids"]
+        metric_names = {str(metric["name"]) for metric in action["metrics"]}
+        assert metric_names.issuperset(expected["metric_names"])
+        assert "prepare" in json.dumps(action["payload"])
+
+
+def test_metric_backed_prepare_actions_validate_without_apply(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    for action_id in (
+        "act_review_merchant_feed_issues",
+        "act_review_ga4_tracking_quality",
+        "act_prepare_content_refresh_queue",
+    ):
+        validate_response = client.post(f"/api/actions/{action_id}/validate")
+        assert validate_response.status_code == 200
+        validation = validate_response.json()
+        assert validation["valid"] is True
+        assert validation["errors"] == []
+
+        apply_response = client.post(f"/api/actions/{action_id}/apply")
+        assert apply_response.status_code == 409
+        assert "Action mode must be apply" in json.dumps(apply_response.json())
+
+
 def test_action_validation_rejects_unsupported_payload_action_type() -> None:
     action = ActionObject(
         id="bad_payload",
@@ -439,6 +558,35 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
         for section in sections.values()
         for item in section["items"]
     )
+
+
+def test_marketing_brief_exposes_metric_backed_prepare_actions(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    response = client.get("/api/marketing/brief")
+    assert response.status_code == 200
+    brief = response.json()
+    action_items = {
+        item["action_ids"][0]: item
+        for section in brief["sections"]
+        if section["id"] == "safe_next_actions"
+        for item in section["items"]
+        if item["action_ids"]
+    }
+
+    for action_id in (
+        "act_review_merchant_feed_issues",
+        "act_review_ga4_tracking_quality",
+        "act_prepare_content_refresh_queue",
+    ):
+        assert action_id in brief["action_ids"]
+        item = action_items[action_id]
+        assert item["evidence_ids"]
+        assert item["metric_facts"]
+        assert item["risk"] in {"low", "medium"}
 
 
 def test_evidence_registry_exposes_connector_status_without_secret_values(

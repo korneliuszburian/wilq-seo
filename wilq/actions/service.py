@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
@@ -11,11 +13,13 @@ from wilq.schemas import (
     ActionStatus,
     ActionValidationResult,
     AuditEvent,
+    MetricFact,
     OpportunityDomain,
 )
+from wilq.storage.metric_store import metric_store
 
 
-def seed_actions() -> dict[str, ActionObject]:
+def seed_static_actions() -> dict[str, ActionObject]:
     action = ActionObject(
         id="act_configure_google_ads_env",
         title="Odnow Google Ads OAuth refresh token",
@@ -75,15 +79,182 @@ def seed_actions() -> dict[str, ActionObject]:
     return {action.id: action}
 
 
-_ACTIONS = seed_actions()
+_STATIC_ACTIONS = seed_static_actions()
 
 
 def list_actions() -> list[ActionObject]:
-    return list(_ACTIONS.values())
+    actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
+    return list(actions.values())
 
 
 def get_action(action_id: str) -> ActionObject | None:
-    return _ACTIONS.get(action_id)
+    return {**_STATIC_ACTIONS, **seed_metric_action_candidates()}.get(action_id)
+
+
+def seed_metric_action_candidates() -> dict[str, ActionObject]:
+    facts = [
+        fact
+        for fact in metric_store().list_metric_facts(limit=120)
+        if not _is_probe_only_fact(fact)
+    ]
+    by_connector = _facts_by_connector(facts)
+    actions: dict[str, ActionObject] = {}
+
+    merchant_facts = by_connector.get("google_merchant_center", [])
+    if merchant_facts:
+        action = ActionObject(
+            id="act_review_merchant_feed_issues",
+            title="Przygotuj kolejkę przeglądu feedu Merchant Center",
+            domain=OpportunityDomain.merchant,
+            connector="google_merchant_center",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=_unique(fact.evidence_id for fact in merchant_facts),
+            metrics=merchant_facts[:8],
+            human_diagnosis=(
+                "Merchant Center ma realne metryki produktu/feedu w WILQ API. "
+                f"{_metric_sentence(merchant_facts)}. To uzasadnia kolejkę review, "
+                "ale nie automatyczną zmianę danych produktu."
+            ),
+            recommended_reason=(
+                "Na /merchant pokaż produkty/feed jako prepare-only queue: sprawdź "
+                "disapproved_products, przygotuj payload preview i walidację przed "
+                "jakąkolwiek zmianą feedu."
+            ),
+            payload={
+                "action_type": "merchant_feed_issue",
+                "connector": "google_merchant_center",
+                "mode": "prepare_only",
+                "source_metric_names": _unique(fact.name for fact in merchant_facts),
+                "review_steps": [
+                    "identify_disapproved_products",
+                    "group_issue_reasons",
+                    "prepare_feed_fix_preview",
+                    "require_human_confirm_before_apply",
+                ],
+                "destructive": False,
+            },
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
+    ga4_facts = by_connector.get("google_analytics_4", [])
+    if ga4_facts:
+        action = ActionObject(
+            id="act_review_ga4_tracking_quality",
+            title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
+            domain=OpportunityDomain.ga4,
+            connector="google_analytics_4",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.low,
+            status=ActionStatus.needs_validation,
+            evidence_ids=_unique(fact.evidence_id for fact in ga4_facts),
+            metrics=ga4_facts[:8],
+            human_diagnosis=(
+                "GA4 zwraca realne metryki ruchu, ale bieżący brief nie ma jeszcze "
+                f"dowodu konwersji ani ścieżki landing page. {_metric_sentence(ga4_facts)}."
+            ),
+            recommended_reason=(
+                "Na /ga4 przygotuj tracking-gap review: pokaż sessions/active_users, "
+                "oznacz brak konwersji jako blocker i nie oceniaj jakości kampanii bez "
+                "landing/source/campaign breakdown."
+            ),
+            payload={
+                "action_type": "ga4_tracking_gap",
+                "connector": "google_analytics_4",
+                "mode": "prepare_only",
+                "source_metric_names": _unique(fact.name for fact in ga4_facts),
+                "required_breakdowns": ["landing_page", "source_medium", "campaign"],
+                "blocked_claims": ["conversion_rate", "revenue", "roas"],
+                "destructive": False,
+            },
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
+    content_facts = [
+        *by_connector.get("wordpress_ekologus", []),
+        *by_connector.get("google_search_console", []),
+        *by_connector.get("ahrefs", []),
+    ]
+    if content_facts and by_connector.get("wordpress_ekologus"):
+        action = ActionObject(
+            id="act_prepare_content_refresh_queue",
+            title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
+            domain=OpportunityDomain.content,
+            connector="wordpress_ekologus",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=_unique(fact.evidence_id for fact in content_facts),
+            metrics=content_facts[:10],
+            human_diagnosis=(
+                "WordPress inventory istnieje w WILQ API i można go zestawić z GSC/Ahrefs, "
+                "żeby planować refresh zamiast duplikować treści. "
+                f"{_metric_sentence(content_facts)}."
+            ),
+            recommended_reason=(
+                "Na /content-planner przygotuj queue refresh/create/merge/block. "
+                "Nie twórz nowych tematów bez query/page evidence i sprawdzenia inventory."
+            ),
+            payload={
+                "action_type": "wordpress_content_refresh",
+                "connector": "wordpress_ekologus",
+                "mode": "prepare_only",
+                "source_connectors": _unique(fact.source_connector for fact in content_facts),
+                "source_metric_names": _unique(fact.name for fact in content_facts),
+                "queue_steps": [
+                    "join_wordpress_inventory_with_gsc",
+                    "classify_refresh_create_merge_block",
+                    "prepare_brief_preview",
+                    "require_human_confirm_before_wordpress_write",
+                ],
+                "destructive": False,
+            },
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
+    return actions
+
+
+def _facts_by_connector(facts: list[MetricFact]) -> dict[str, list[MetricFact]]:
+    grouped: dict[str, list[MetricFact]] = {}
+    for fact in facts:
+        grouped.setdefault(fact.source_connector, []).append(fact)
+    return grouped
+
+
+def _metric_sentence(facts: list[MetricFact]) -> str:
+    sample = ", ".join(f"{fact.name}={fact.value}" for fact in facts[:4])
+    return f"Najważniejsze fakty: {sample}"
+
+
+def _is_probe_only_fact(fact: MetricFact) -> bool:
+    if (
+        fact.source_connector == "localo"
+        and fact.name == "api"
+        and fact.value == "localo_mcp_oauth_probe"
+    ):
+        return True
+    return fact.source_connector == "localo" and fact.name in {
+        "access_token_present",
+        "authorization_code_supported",
+        "pkce_s256_supported",
+        "mcp_initialize_status",
+    }
+
+
+def _unique(items: Iterable[str]) -> list[str]:
+    unique_items: list[str] = []
+    for item in items:
+        if item and item not in unique_items:
+            unique_items.append(item)
+    return unique_items
 
 
 def validate_action(action: ActionObject) -> ActionValidationResult:
