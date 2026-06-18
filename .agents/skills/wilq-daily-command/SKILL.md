@@ -13,17 +13,19 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 
 1. Read `references/output-contract.md` when producing the final response or action plan.
 2. Run `uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `GET /api/marketing/brief` first. This is the canonical daily operator view model for Polish marketer output.
-4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` to get wider evidence, opportunities, actions, expert rules and knowledge cards.
-5. The `marketing_brief` embedded in the context pack must agree with `GET /api/marketing/brief` on `language`, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
-6. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-7. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-8. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+3. Call `GET /api/dashboard/command-center` first. This is the canonical first-screen operator view model for Polish marketer output.
+4. Call `GET /api/marketing/brief` for supporting daily sections and metric summaries.
+5. Call `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` to get wider evidence, opportunities, actions, expert rules and knowledge cards.
+6. The `command_center` embedded in the context pack must agree with `GET /api/dashboard/command-center` on `operator_brief`, `primary_next_step`, blocker count, tactical item count and action IDs. The embedded `marketing_brief` must agree with `GET /api/marketing/brief` on language, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
+7. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
+8. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
+9. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
 
 ## Allowed API Endpoints
 
 - `GET /api/health`
 - `GET /api/system/status`
+- `GET /api/dashboard/command-center`
 - `GET /api/marketing/brief`
 - `POST /api/codex/context-pack`
 - `GET /api/marketing/brief`
@@ -71,4 +73,6 @@ Polish language contract: produce all operator-facing responses in Polish with P
 
 ## Goal 001 Status
 
-This is fully wired in Goal 001 through `GET /api/marketing/brief` and `POST /api/codex/context-pack`. Use the smoke script before claiming the skill path works.
+This is fully wired in Goal 001 through `GET /api/dashboard/command-center`,
+`GET /api/marketing/brief` and `POST /api/codex/context-pack`. Use the smoke
+script before claiming the skill path works.

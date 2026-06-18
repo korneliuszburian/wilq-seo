@@ -66,6 +66,7 @@ import {
   getWorkflowRuns,
   getWorkflows,
   KnowledgeCard,
+  CommandCenterResponse,
   MarketingBrief,
   MarketingBriefItem,
   MarketingPlaybook,
@@ -1046,6 +1047,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
 }
 
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
+type CommandCenterBriefItem = CommandCenterResponse["operator_brief"][number];
 
 function TacticalQueuePanel({
   queue,
@@ -1142,6 +1144,79 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
   );
 }
 
+function DailyOperatorBrief({ data }: { data: CommandCenterResponse }) {
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <ClipboardCheck aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Dzisiejszy panel operatora
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{data.primary_next_step}</p>
+        </div>
+      </div>
+
+      <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3">
+        <MetricTile label="Taktyki" value={data.tactical_item_count} />
+        <MetricTile label="Blockery" value={data.blocker_count} />
+        <MetricTile label="Akcje" value={data.active_actions.length} />
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-2">
+        {data.operator_brief.map((item) => (
+          <DailyOperatorBriefCard key={item.id} item={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DailyOperatorBriefCard({ item }: { item: CommandCenterBriefItem }) {
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            priority {item.priority}
+          </div>
+          <h3 className="mt-1 text-base font-semibold tracking-normal">{item.title}</h3>
+        </div>
+        <StatusBadge value={item.status} />
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">{item.summary}</p>
+      <p className="mt-2 text-sm font-medium text-ink">{item.next_step}</p>
+
+      {Object.keys(item.metric_tiles).length > 0 ? (
+        <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+          {Object.entries(item.metric_tiles).map(([label, value]) => (
+            <div key={label} className="rounded-md border border-line bg-slate-50 p-2">
+              <div className="uppercase tracking-normal text-slate-500">{label}</div>
+              <div className="mt-1 font-semibold text-ink">{String(value)}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine label="Źródła" values={item.source_connectors} />
+        <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
+        <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
+        <TraceLine label="Zablokowane claimy" values={item.blocked_claims} />
+      </div>
+
+      <a
+        href={item.route}
+        className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
+      >
+        Otwórz widok
+      </a>
+    </article>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
@@ -1182,6 +1257,8 @@ function CommandCenter() {
       </div>
 
       <div className="grid gap-8">
+        <DailyOperatorBrief data={data} />
+
         <MarketingBriefPanel
           brief={marketingBrief.data}
           isLoading={marketingBrief.isLoading}

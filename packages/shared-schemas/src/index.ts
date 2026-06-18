@@ -411,9 +411,29 @@ export const KnowledgeCompilerResultSchema = z.object({
   cards: z.array(KnowledgeCardSchema)
 });
 
+export const CommandCenterBriefItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  route: z.string(),
+  status: z.enum(["ready", "blocked", "missing"]),
+  priority: z.number(),
+  summary: z.string(),
+  next_step: z.string(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  blocked_claims: z.array(z.string()),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
 export const CommandCenterResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   strict_instruction: z.string(),
+  primary_next_step: z.string(),
+  blocker_count: z.number(),
+  tactical_item_count: z.number(),
+  operator_brief: z.array(CommandCenterBriefItemSchema),
   connector_summary: ConnectorSummarySchema,
   sections: z.record(z.array(OpportunitySchema)),
   active_actions: z.array(ActionObjectSchema),
@@ -459,6 +479,7 @@ export const ContextPackResponseSchema = z.object({
   knowledge_card_summaries: z.array(KnowledgeCardSchema),
   expert_rule_summaries: z.array(ExpertRuleSummarySchema),
   expert_capabilities: z.array(ExpertCapabilitySchema),
+  command_center: CommandCenterResponseSchema,
   marketing_brief: MarketingBriefSchema,
   tactical_queue: TacticalQueueResponseSchema,
   ads_diagnostics: AdsDiagnosticsResponseSchema,
@@ -479,6 +500,7 @@ export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
 export type ActionApplyRequest = z.infer<typeof ActionApplyRequestSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
+export type CommandCenterBriefItem = z.infer<typeof CommandCenterBriefItemSchema>;
 export type AdsDiagnosticSection = z.infer<typeof AdsDiagnosticSectionSchema>;
 export type AdsDiagnosticsResponse = z.infer<typeof AdsDiagnosticsResponseSchema>;
 export type MerchantDiagnosticSection = z.infer<typeof MerchantDiagnosticSectionSchema>;

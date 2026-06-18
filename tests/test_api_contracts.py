@@ -839,6 +839,49 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "google_adc.json" not in serialized
 
 
+def test_command_center_exposes_polish_operator_brief(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "WILQ pokazuje tylko metryki" in payload["strict_instruction"]
+    assert payload["primary_next_step"].startswith("Najpierw")
+    assert payload["tactical_item_count"] >= 3
+    brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
+    assert {
+        "daily_ads_status",
+        "daily_merchant_feed",
+        "daily_content_queue",
+        "daily_ga4_landing_quality",
+    }.issubset(brief_by_id)
+    assert brief_by_id["daily_ads_status"]["status"] == "blocked"
+    assert "act_configure_google_ads_env" in brief_by_id["daily_ads_status"]["action_ids"]
+    assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["issues"] == 3
+    assert "act_review_merchant_feed_issues" in brief_by_id["daily_merchant_feed"]["action_ids"]
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["query/page"] >= 1
+    assert "act_prepare_content_refresh_queue" in brief_by_id["daily_content_queue"]["action_ids"]
+    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["landing groups"] >= 1
+    assert (
+        "act_review_ga4_tracking_quality"
+        in brief_by_id["daily_ga4_landing_quality"]["action_ids"]
+    )
+    assert all(item["evidence_ids"] for item in payload["operator_brief"])
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-daily-command"},
+    )
+    assert context_response.status_code == 200
+    context_command = context_response.json()["command_center"]
+    assert context_command["operator_brief"] == payload["operator_brief"]
+    assert context_command["primary_next_step"] == payload["primary_next_step"]
+
+
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

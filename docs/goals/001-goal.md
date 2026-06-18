@@ -6390,3 +6390,188 @@ Current remaining next work before calling the overnight goal stable:
    has real marketer value; screenshots alone are not product progress.
 5. Continue replacing placeholder routes with evidence-backed view models only
    where live connector data exists.
+
+## 54. 2026-06-18 04:42 CEST - Polish Daily Command Center first screen is API-backed
+
+Continuation rule for future Codex sessions:
+
+* Resume from this section and verify `/api/dashboard/command-center` live
+  before claiming dashboard readiness.
+* Goal 001 is still not complete. The first screen is now useful, but the final
+  overnight demo still needs route polish, Ads decision, and any remaining
+  placeholder route cleanup that affects marketer confidence.
+
+Completed in this slice:
+
+* Added typed `operator_brief`, `primary_next_step`, `blocker_count` and
+  `tactical_item_count` to `CommandCenterResponse`.
+* Added `wilq/briefing/command_center.py`, built from existing diagnostics:
+  Ads, Merchant, Content, GA4 and Localo readiness.
+* Added `command_center` to `/api/codex/context-pack`.
+* Reworked `/command-center` dashboard first screen into `Dzisiejszy panel
+  operatora` with Polish cards, route links, metrics, evidence IDs, ActionObject
+  IDs and blocked claims.
+* Updated `wilq-daily-command` workflow, output contract and smoke script to
+  use `/api/dashboard/command-center` first, then `/api/marketing/brief`, then
+  context-pack.
+* Hardened DuckDB retry for concurrent dashboard requests that hit a
+  `Unique file handle conflict`.
+
+Live API proof:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/dashboard/command-center | \
+  jq '{primary_next_step, blocker_count, tactical_item_count, operator_brief: [.operator_brief[] | {id,status,route,metric_tiles,action_ids,evidence_count:(.evidence_ids|length)}]}'
+```
+
+Result:
+
+```json
+{
+  "primary_next_step": "Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.",
+  "blocker_count": 2,
+  "tactical_item_count": 24,
+  "operator_brief": [
+    {
+      "id": "daily_ads_status",
+      "status": "blocked",
+      "route": "/ads-doctor",
+      "metric_tiles": {
+        "blockery": 3
+      },
+      "action_ids": [
+        "act_configure_google_ads_env"
+      ],
+      "evidence_count": 2
+    },
+    {
+      "id": "daily_merchant_feed",
+      "status": "ready",
+      "route": "/merchant",
+      "metric_tiles": {
+        "produkty": 10900,
+        "issues": 15,
+        "blockery": 0
+      },
+      "action_ids": [
+        "act_review_merchant_feed_issues"
+      ],
+      "evidence_count": 12
+    },
+    {
+      "id": "daily_content_queue",
+      "status": "ready",
+      "route": "/content-planner",
+      "metric_tiles": {
+        "query/page": 10,
+        "WP match": 12,
+        "blockery": 0
+      },
+      "action_ids": [
+        "act_prepare_content_refresh_queue"
+      ],
+      "evidence_count": 12
+    },
+    {
+      "id": "daily_ga4_landing_quality",
+      "status": "ready",
+      "route": "/ga4",
+      "metric_tiles": {
+        "landing groups": 10,
+        "low engagement": 2,
+        "WP match": 3
+      },
+      "action_ids": [
+        "act_review_ga4_tracking_quality"
+      ],
+      "evidence_count": 12
+    },
+    {
+      "id": "daily_localo_readiness",
+      "status": "blocked",
+      "route": "/localo",
+      "metric_tiles": {
+        "missing credentials": 0
+      },
+      "action_ids": [],
+      "evidence_count": 1
+    }
+  ]
+}
+```
+
+Skill smoke proof:
+
+```bash
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py \
+  --api-base http://127.0.0.1:8000
+```
+
+Smoke validates:
+
+* `/api/dashboard/command-center` has `operator_brief`.
+* context-pack embedded `command_center` matches the route.
+* required operator items exist for Ads, Merchant, Content and GA4.
+* every operator item has source connectors and evidence IDs.
+* `marketing_brief` still matches between route and context-pack.
+
+Non-interactive Codex eval proof:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh \
+  --skill wilq-daily-command \
+  --api-base http://127.0.0.1:8000
+```
+
+Result path:
+
+```text
+.local-lab/evals/codex-skill/20260618T022929Z
+```
+
+Verification completed in this slice:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py wilq/storage/metric_store.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py
+uv run mypy wilq/briefing/command_center.py wilq/storage/metric_store.py wilq/schemas.py apps/api/wilq_api/main.py .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py
+uv run pytest tests/test_api_contracts.py tests/test_metric_store_and_cli.py -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Focused backend/metric tests: passed.
+* Dashboard route tests: `12 passed`.
+* Playwright e2e: `7 passed`.
+* Daily Command Codex eval: passed.
+* Full product gate `scripts/verify.sh`: passed with backend `80 passed`,
+  dashboard `12 passed`, e2e `7 passed` and production build passed.
+
+Current interpretation:
+
+* The dashboard first screen is now marketer-useful instead of a generic shell:
+  it names exactly what to do first, which sources are ready, which sources are
+  blocked, and which ActionObjects are safe prepare/review candidates.
+* WILQ still does not invent Ads or Localo metrics: Ads and Localo remain
+  visible blockers until access/read data exists.
+* The strongest demo path is now:
+  `/command-center` -> `/merchant` -> `/content-planner` -> `/ga4`, with
+  `/ads-doctor` and `/localo` shown honestly as blockers.
+
+Current remaining next work before calling the overnight goal stable:
+
+1. Commit and push this Daily Command Center slice with a semantic commit.
+2. Do a dashboard route audit for remaining visible placeholder surfaces that
+   could undermine the marketer demo, especially Workflows, Opportunities and
+   non-primary Ads subroutes.
+3. Decide Ads recovery: either repair OAuth if possible or document why Ads
+   remains a blocker and keep all spend/search-term recommendations blocked.
+4. Add browser screenshots only after route audit confirms the visible demo path
+   is coherent.
+5. If time remains, add a compact "demo script" section to the goal for what to
+   show the marketer in order and what each screen proves.

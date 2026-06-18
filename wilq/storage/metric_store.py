@@ -255,9 +255,14 @@ def _connect_with_retry(path: Path) -> duckdb.DuckDBPyConnection:
     for attempt in range(DUCKDB_CONNECT_ATTEMPTS):
         try:
             return duckdb.connect(str(path))
-        except duckdb.IOException as exc:
+        except duckdb.Error as exc:
             last_error = exc
-            if "Conflicting lock" not in str(exc) or attempt == DUCKDB_CONNECT_ATTEMPTS - 1:
+            message = str(exc)
+            is_retryable = (
+                "Conflicting lock" in message
+                or "Unique file handle conflict" in message
+            )
+            if not is_retryable or attempt == DUCKDB_CONNECT_ATTEMPTS - 1:
                 raise
             time.sleep(DUCKDB_CONNECT_RETRY_SECONDS * (attempt + 1))
     raise RuntimeError("DuckDB connection retry exhausted") from last_error

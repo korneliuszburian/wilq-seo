@@ -15,6 +15,7 @@ REQUIRED_KEYS = {
     "evidence_summaries",
     "top_opportunities",
     "active_action_objects",
+    "command_center",
     "marketing_brief",
     "knowledge_card_summaries",
     "expert_rule_summaries",
@@ -70,6 +71,9 @@ def main() -> int:
     if health.get("status") != "ok":
         raise SystemExit(f"WILQ API health is not ok: {health}")
 
+    command_center = request_json(args.api_base, "GET", "/api/dashboard/command-center")
+    validate_command_center(command_center)
+
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     validate_marketing_brief(brief)
 
@@ -93,6 +97,9 @@ def main() -> int:
     pack_brief = pack.get("marketing_brief")
     validate_marketing_brief(pack_brief)
     compare_briefs(brief, pack_brief)
+    pack_command_center = pack.get("command_center")
+    validate_command_center(pack_command_center)
+    compare_command_centers(command_center, pack_command_center)
 
     connector_status = pack.get("connector_status") or []
     configured = [item.get("id") for item in connector_status if item.get("configured")]
@@ -110,6 +117,10 @@ def main() -> int:
         "marketing_brief_sections": [section.get("id") for section in brief.get("sections", [])],
         "marketing_brief_blocker_count": brief.get("blocker_count"),
         "marketing_brief_recommendation_count": brief.get("recommendation_count"),
+        "command_center_primary_next_step": command_center.get("primary_next_step"),
+        "command_center_blocker_count": command_center.get("blocker_count"),
+        "command_center_tactical_item_count": command_center.get("tactical_item_count"),
+        "operator_brief": compact_operator_brief(command_center),
         "evidence_count": len(pack.get("evidence_summaries") or []),
         "brief_evidence_ids": (brief.get("evidence_ids") or [])[:10],
         "brief_evidence_count": len(brief.get("evidence_ids") or []),
@@ -121,6 +132,40 @@ def main() -> int:
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
+
+
+def validate_command_center(command_center: Any) -> None:
+    if not isinstance(command_center, dict):
+        raise SystemExit("Command center is not an object")
+    instruction = str(command_center.get("strict_instruction", "")).lower()
+    if "metryki" not in instruction or "evidence" not in instruction:
+        raise SystemExit("Command center strict instruction lacks metric/evidence guardrails")
+    operator_brief = command_center.get("operator_brief") or []
+    if not isinstance(operator_brief, list) or not operator_brief:
+        raise SystemExit("Command center has no operator_brief")
+    required_ids = {
+        "daily_ads_status",
+        "daily_merchant_feed",
+        "daily_content_queue",
+        "daily_ga4_landing_quality",
+    }
+    item_ids = {item.get("id") for item in operator_brief if isinstance(item, dict)}
+    missing_ids = sorted(required_ids - item_ids)
+    if missing_ids:
+        raise SystemExit(f"Command center missing operator items: {', '.join(missing_ids)}")
+    if not isinstance(command_center.get("blocker_count"), int):
+        raise SystemExit("Command center blocker_count is missing or not numeric")
+    if not isinstance(command_center.get("tactical_item_count"), int):
+        raise SystemExit("Command center tactical_item_count is missing or not numeric")
+    if not command_center.get("primary_next_step"):
+        raise SystemExit("Command center primary_next_step is missing")
+    for item in operator_brief:
+        if not isinstance(item, dict):
+            continue
+        if not item.get("source_connectors"):
+            raise SystemExit(f"Command center item lacks source connectors: {item.get('id')}")
+        if not item.get("evidence_ids"):
+            raise SystemExit(f"Command center item lacks evidence IDs: {item.get('id')}")
 
 
 def validate_marketing_brief(brief: Any) -> None:
@@ -164,6 +209,49 @@ def compare_briefs(brief: dict[str, Any], pack_brief: dict[str, Any]) -> None:
             "Marketing brief in context pack does not match /api/marketing/brief: "
             + ", ".join(failed)
         )
+
+
+def compare_command_centers(
+    command_center: dict[str, Any],
+    pack_command_center: dict[str, Any],
+) -> None:
+    checks = {
+        "primary_next_step": command_center.get("primary_next_step")
+        == pack_command_center.get("primary_next_step"),
+        "blocker_count": command_center.get("blocker_count")
+        == pack_command_center.get("blocker_count"),
+        "tactical_item_count": command_center.get("tactical_item_count")
+        == pack_command_center.get("tactical_item_count"),
+        "operator_brief": command_center.get("operator_brief")
+        == pack_command_center.get("operator_brief"),
+    }
+    failed = [name for name, passed in checks.items() if not passed]
+    if failed:
+        raise SystemExit(
+            "Command center in context pack does not match /api/dashboard/command-center: "
+            + ", ".join(failed)
+        )
+
+
+def compact_operator_brief(command_center: dict[str, Any]) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    for item in command_center.get("operator_brief", []):
+        if not isinstance(item, dict):
+            continue
+        compact_items.append(
+            {
+                "id": item.get("id"),
+                "title": item.get("title"),
+                "route": item.get("route"),
+                "status": item.get("status"),
+                "source_connectors": item.get("source_connectors") or [],
+                "evidence_ids": item.get("evidence_ids") or [],
+                "action_ids": item.get("action_ids") or [],
+                "metric_tiles": item.get("metric_tiles") or {},
+                "next_step": item.get("next_step"),
+            }
+        )
+    return compact_items
 
 
 def compact_brief_items(brief: dict[str, Any]) -> list[dict[str, Any]]:

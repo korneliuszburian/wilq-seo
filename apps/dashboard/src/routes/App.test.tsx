@@ -900,7 +900,73 @@ function mockFetch() {
         return Promise.resolve(
           Response.json({
             generated_at: "2026-06-17T10:00:00Z",
-            strict_instruction: "No WILQ API evidence means no marketing recommendation.",
+            strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+            primary_next_step:
+              "Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.",
+            blocker_count: 2,
+            tactical_item_count: 3,
+            operator_brief: [
+              {
+                id: "daily_ads_status",
+                title: "Ads: blocker OAuth przed analizą spendu",
+                route: "/ads-doctor",
+                status: "blocked",
+                priority: 5,
+                summary: "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client).",
+                next_step: "Otwórz /ads-doctor i napraw OAuth przez `act_configure_google_ads_env`.",
+                source_connectors: ["google_ads"],
+                evidence_ids: ["ev_connector_google_ads_status"],
+                action_ids: ["act_configure_google_ads_env"],
+                metric_tiles: { blockery: 3 },
+                blocked_claims: ["spend", "CPA", "ROAS"],
+                risk: "medium"
+              },
+              {
+                id: "daily_merchant_feed",
+                title: "Merchant: feed/product issues do przeglądu",
+                route: "/merchant",
+                status: "ready",
+                priority: 10,
+                summary: "Produkty=10900, issues=23. To jest read-only queue.",
+                next_step: "Otwórz /merchant i waliduj `act_review_merchant_feed_issues`.",
+                source_connectors: ["google_merchant_center"],
+                evidence_ids: ["ev_refresh_merchant_feed"],
+                action_ids: ["act_review_merchant_feed_issues"],
+                metric_tiles: { produkty: 10900, issues: 23, blockery: 0 },
+                blocked_claims: ["approval restored", "automatic feed edit"],
+                risk: "medium"
+              },
+              {
+                id: "daily_content_queue",
+                title: "Content: GSC query/page + WordPress inventory",
+                route: "/content-planner",
+                status: "ready",
+                priority: 12,
+                summary: "Query/page=1, WordPress match=1.",
+                next_step: "Otwórz /content-planner i przygotuj queue refresh/create/merge/block.",
+                source_connectors: ["google_search_console", "wordpress_ekologus"],
+                evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+                action_ids: ["act_prepare_content_refresh_queue"],
+                metric_tiles: { "query/page": 1, "WP match": 1 },
+                blocked_claims: ["lead uplift", "ranking guarantee"],
+                risk: "low"
+              },
+              {
+                id: "daily_ga4_landing_quality",
+                title: "GA4: landing/source/campaign quality review",
+                route: "/ga4",
+                status: "ready",
+                priority: 14,
+                summary: "Landing groups=1, low engagement=1, WP match=0.",
+                next_step: "Otwórz /ga4 i waliduj `act_review_ga4_tracking_quality`.",
+                source_connectors: ["google_analytics_4"],
+                evidence_ids: ["ev_refresh_ga4"],
+                action_ids: ["act_review_ga4_tracking_quality"],
+                metric_tiles: { "landing groups": 1, "low engagement": 1, "WP match": 0 },
+                blocked_claims: ["ROAS", "revenue", "conversion drop"],
+                risk: "low"
+              }
+            ],
             connector_summary: { total: 1, configured: 0, missing_credentials: 1 },
             sections: {
               todays_moves: opportunities,
@@ -1006,6 +1072,15 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument()
     );
+    expect(screen.getByText("Dzisiejszy panel operatora")).toBeInTheDocument();
+    expect(
+      screen.getByText("Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Ads: blocker OAuth przed analizą spendu")).toBeInTheDocument();
+    expect(screen.getByText("Merchant: feed/product issues do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Content: GSC query/page + WordPress inventory")).toBeInTheDocument();
+    expect(screen.getByText("GA4: landing/source/campaign quality review")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Priorytety dnia")).toBeInTheDocument();
     expect(screen.getByText("Dzisiejszy brief WILQ")).toBeInTheDocument();
     expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();

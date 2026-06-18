@@ -14,8 +14,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Command Center" })).toBeVisible();
     await expect(
-      page.getByText("No WILQ API evidence means no marketing recommendation.")
+      page.getByText("WILQ pokazuje tylko metryki z API/evidence.").first()
     ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dzisiejszy panel operatora" })).toBeVisible();
+    await expect(page.getByText("Merchant: feed/product issues do przeglądu")).toBeVisible();
+    await expect(page.getByText("Content: GSC query/page + WordPress inventory")).toBeVisible();
+    await expect(page.getByText("GA4: landing/source/campaign quality review")).toBeVisible();
+    await expect(page.getByText("Ads: blocker OAuth przed analizą spendu")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toBeVisible();

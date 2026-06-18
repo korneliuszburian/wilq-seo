@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
+from wilq.briefing.command_center import build_command_center_brief, tactical_item_count
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
@@ -165,6 +166,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "expert_capabilities": [
             capability.model_dump(mode="json") for capability in list_expert_capabilities()
         ],
+        "command_center": command_center().model_dump(mode="json"),
         "marketing_brief": build_marketing_brief().model_dump(mode="json"),
         "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
@@ -259,8 +261,16 @@ def connector_refresh(
 def command_center() -> CommandCenterResponse:
     connectors = list_connector_statuses()
     opportunities = list_opportunities()
+    operator_brief, primary_next_step, blocker_count = build_command_center_brief()
     return CommandCenterResponse(
-        strict_instruction="No WILQ API evidence means no marketing recommendation.",
+        strict_instruction=(
+            "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
+            "nie domysł marketingowy."
+        ),
+        primary_next_step=primary_next_step,
+        blocker_count=blocker_count,
+        tactical_item_count=tactical_item_count(),
+        operator_brief=operator_brief,
         connector_summary=connector_summary(connectors),
         sections={
             "todays_moves": opportunities[:2],

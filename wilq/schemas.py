@@ -565,9 +565,29 @@ class Ga4DiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
 
+class CommandCenterBriefItem(BaseModel):
+    id: str
+    title: str
+    route: str
+    status: Literal["ready", "blocked", "missing"]
+    priority: int = Field(ge=1, le=100)
+    summary: str
+    next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
 class CommandCenterResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     strict_instruction: str
+    primary_next_step: str
+    blocker_count: int = 0
+    tactical_item_count: int = 0
+    operator_brief: list[CommandCenterBriefItem] = Field(default_factory=list)
     connector_summary: ConnectorSummary
     sections: dict[str, list[Opportunity]]
     active_actions: list[ActionObject]
