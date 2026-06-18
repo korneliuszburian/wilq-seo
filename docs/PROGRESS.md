@@ -409,3 +409,31 @@ uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py
 uv run mypy wilq/briefing/command_center.py
 uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or command_center_demotes_localo_access_ready_without_visibility_facts or command_center_keeps_localo_access_blocker_in_primary_brief'
 ```
+
+## Marketing Brief Dimensional Facts
+
+Cleaned another stale/sloppy state source.
+
+Problem:
+
+- `/api/marketing/brief` used a single global DuckDB metric limit.
+- Recent aggregate refresh facts dominated that window, so the brief promoted
+  weak aggregates such as `active_products=12`, `sessions=30`, `clicks=12` or
+  `clicks=3` even though richer dimensional evidence existed in the store.
+
+Result:
+
+- Marketing brief now loads facts per connector with a larger connector-local
+  limit.
+- Metric selection prefers dimensional business facts and higher-value decision
+  metrics before aggregate facts.
+- Live shape now promotes Merchant issue facts, GSC query/page facts, GA4
+  landing/source facts and Ads campaign facts.
+
+Focused proof:
+
+```bash
+uv run ruff check wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/marketing_brief.py
+uv run pytest tests/test_api_contracts.py -q -k 'marketing_brief_aggregates_metric_facts_and_blockers or marketing_brief_exposes_metric_backed_prepare_actions or codex_context_pack_embeds_marketing_brief_contract or command_center_exposes_polish_operator_brief'
+```

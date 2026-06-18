@@ -748,6 +748,20 @@ def test_marketing_brief_exposes_metric_backed_prepare_actions(
     response = client.get("/api/marketing/brief")
     assert response.status_code == 200
     brief = response.json()
+    metric_items = {
+        item["source_connectors"][0]: item
+        for section in brief["sections"]
+        if section["id"] == "what_we_know"
+        for item in section["items"]
+        if item["source_connectors"]
+    }
+    for connector_id in (
+        "google_merchant_center",
+        "google_analytics_4",
+        "google_search_console",
+    ):
+        item = metric_items[connector_id]
+        assert item["metric_facts"][0]["dimensions"]
     action_items = {
         item["action_ids"][0]: item
         for section in brief["sections"]

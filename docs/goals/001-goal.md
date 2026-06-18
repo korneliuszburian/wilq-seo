@@ -758,3 +758,14 @@ Latest Command Center cleanup:
   genuinely missing, because that is an actionable blocker.
 - `/localo` and `wilq-localo-operator` remain the right surfaces for Localo
   access/readiness status until a real Localo visibility read contract exists.
+
+Latest Marketing Brief cleanup:
+
+- `GET /api/marketing/brief` now reads metric facts per connector instead of a
+  single global DuckDB limit that was dominated by recent aggregate refreshes.
+- Metric cards prefer dimensional business facts before aggregate facts, so the
+  brief promotes useful GSC query/page, GA4 landing/source, Merchant issue and
+  Ads campaign facts instead of stale-looking aggregates such as
+  `active_products=12`, `sessions=30` or `clicks=3`.
+- This does not change `/api/actions`; it only improves the evidence selected
+  for the daily brief and Codex context.

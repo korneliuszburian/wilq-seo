@@ -41,6 +41,7 @@ CONNECTOR_LABELS = {
 }
 
 OPTIONAL_BRIEF_BLOCKER_CONNECTORS = {"facebook", "google_sheets", "linkedin"}
+MARKETING_BRIEF_CONNECTOR_FACT_LIMIT = 500
 CORE_BRIEF_ACTION_CONNECTORS = {
     "google_ads",
     "google_analytics_4",
@@ -50,12 +51,33 @@ CORE_BRIEF_ACTION_CONNECTORS = {
     "wordpress_ekologus",
     "wordpress_sklep",
 }
+METRIC_NAME_PRIORITY = {
+    "issue_product_count": 0,
+    "clicks": 0,
+    "active_users": 0,
+    "content_object_count": 0,
+    "domain_rating": 0,
+    "conversions": 1,
+    "sessions": 1,
+    "impressions": 1,
+    "active_products": 1,
+    "average_position": 2,
+    "ctr": 2,
+    "engagement_rate": 2,
+    "disapproved_products": 2,
+    "pages_total": 3,
+    "posts_total": 3,
+    "ahrefs_rank": 3,
+    "row_count": 5,
+    "api": 10,
+    "connector_id": 10,
+}
 
 
 def build_marketing_brief() -> MarketingBrief:
     connectors = list_connector_statuses()
     refresh_runs = list_connector_refresh_runs()
-    metric_facts = metric_store().list_metric_facts(limit=200)
+    metric_facts = _marketing_brief_metric_facts(connectors)
     actions = list_actions()
     latest_runs = _latest_run_by_connector(refresh_runs)
     latest_runs = _prefer_successful_localo_access_probe(latest_runs, refresh_runs)
@@ -115,6 +137,18 @@ def build_marketing_brief() -> MarketingBrief:
         blocker_count=len(blocker_items),
         recommendation_count=len(recommendation_items),
     )
+
+
+def _marketing_brief_metric_facts(connectors: list[ConnectorStatus]) -> list[MetricFact]:
+    facts: list[MetricFact] = []
+    for connector in connectors:
+        facts.extend(
+            metric_store().list_metric_facts(
+                connector_id=connector.id,
+                limit=MARKETING_BRIEF_CONNECTOR_FACT_LIMIT,
+            )
+        )
+    return facts
 
 
 def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
@@ -246,9 +280,18 @@ def _prioritize_dimension_facts(metric_facts: list[MetricFact]) -> list[MetricFa
         metric_facts,
         key=lambda fact: (
             0 if fact.dimensions else 1,
-            0 if fact.name not in {"api", "connector_id"} else 1,
+            METRIC_NAME_PRIORITY.get(fact.name, 4),
+            -_numeric_sort_value(fact.value),
         ),
     )
+
+
+def _numeric_sort_value(value: float | int | str) -> float:
+    if isinstance(value, bool):
+        return 1.0 if value else 0.0
+    if isinstance(value, int | float):
+        return float(value)
+    return 0.0
 
 
 def _metric_fact_allowed_by_latest_refresh(
