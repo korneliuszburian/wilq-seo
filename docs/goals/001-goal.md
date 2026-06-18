@@ -7182,7 +7182,7 @@ Goal 001 is still not complete after this slice. Remaining work after commit:
 
 ## 61. Slice 2026-06-18 - Merchant route operator summary for feed issue review
 
-Status: full verification complete; commit and push pending.
+Status: committed and pushed as `e590180 feat(dashboard): add merchant operator summary`.
 
 Product intent:
 
@@ -7272,15 +7272,11 @@ Full verification results:
 * Production dashboard build: passed.
 * Full product gate `scripts/verify.sh`: passed.
 
-Remaining before closing this slice:
-
-1. Commit with Conventional Commit, expected message:
+Closed with commit:
 
 ```text
-feat(dashboard): add merchant operator summary
+e590180 feat(dashboard): add merchant operator summary
 ```
-
-2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. Remaining work after commit:
 
