@@ -1180,7 +1180,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Dzisiejsze konkretne taktyki")).toBeInTheDocument();
     expect(screen.getByText("GA4: /oferta/ / google / cpc")).toBeInTheDocument();
-    expect(screen.getByText("Merchant: NOT_IMPACTED / availability_updated / PL")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Merchant: NOT_IMPACTED / availability_updated / PL").length
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Kontekst").length).toBeGreaterThan(0);
     expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
     expect(screen.getByText(/Issue: availability_updated/)).toBeInTheDocument();
@@ -1278,7 +1280,18 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Merchant Center: feed/product health")).toBeInTheDocument();
     expect(screen.getByText("Merchant Center: kolejka feed/product issues")).toBeInTheDocument();
-    expect(screen.getByText("Merchant: NOT_IMPACTED / availability_updated / PL")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
+    expect(screen.getByText(/WILQ grupuje problemy Merchant po issue type/)).toBeInTheDocument();
+    expect(screen.getByText(/Issue: availability_updated/)).toBeInTheDocument();
+    expect(screen.getByText(/Atrybut: n:availability/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
+      "href",
+      "/actions/act_review_merchant_feed_issues"
+    );
+    expect(
+      screen.getAllByText("Merchant: NOT_IMPACTED / availability_updated / PL").length
+    ).toBeGreaterThan(1);
     expect(screen.getAllByText(/total_products: 10900/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
     expect(screen.getByText("ActionObject focus")).toBeInTheDocument();

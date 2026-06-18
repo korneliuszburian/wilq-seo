@@ -7179,3 +7179,114 @@ Goal 001 is still not complete after this slice. Remaining work after commit:
   stable.
 * Ads OAuth and Localo access remain honest blockers until external access is
   recovered.
+
+## 61. Slice 2026-06-18 - Merchant route operator summary for feed issue review
+
+Status: full verification complete; commit and push pending.
+
+Product intent:
+
+* `/merchant` already had raw diagnostic sections, metric chips and issue
+  queue cards, but the marketer still had to infer what to do first.
+* This slice adds an operator summary that turns Merchant evidence into a
+  review workflow: issue types, affected attributes, product counts, evidence
+  trace and the safe ActionObject validation path.
+* It remains read-only and does not claim approval recovery, revenue recovery,
+  automatic feed edits or primary feed overwrite.
+
+Live API proof before implementation:
+
+```bash
+curl --max-time 20 -sS http://127.0.0.1:8000/api/merchant/diagnostics \
+  | jq '{sections:[.sections[]|{id,status,title,summary,tactical_count:(.tactical_items|length), action_ids,evidence_count:(.evidence_ids|length)}], action_ids, evidence_count:(.evidence_ids|length)}'
+```
+
+Result summary:
+
+* `merchant_feed_health`: `ready`, 87 evidence IDs.
+* `merchant_issue_queue`: `ready`, 4 Merchant tactical items and action
+  `act_review_merchant_feed_issues`.
+* `merchant_action_safety`: `ready`, prepare-only safety state.
+* Live issue examples include:
+  * `availability_updated`
+  * `missing_potentially_required_attribute`
+  * `image_too_small_for_high_resolution`
+
+Implemented in this slice so far:
+
+* Added `MerchantOperatorSummary` above raw diagnostic cards on `/merchant`.
+* The summary shows:
+  * product count,
+  * issue item count,
+  * affected product count aggregated from `issue_product_count` metric facts,
+  * top issue cards from `tactical_items`,
+  * Polish context chips for issue type, affected attribute, country and
+    reporting context,
+  * `Evidence` links,
+  * `ActionObject` links,
+  * blocked claims,
+  * direct `Waliduj ActionObject` link to
+    `/actions/act_review_merchant_feed_issues`.
+* Updated dashboard route tests so `/merchant` must expose:
+  * `Co marketer ma zrobić teraz z feedem`,
+  * `Bezpieczny tryb pracy`,
+  * issue context such as `Issue: availability_updated`,
+  * attribute context such as `Atrybut: n:availability`,
+  * ActionObject validation link.
+
+Focused verification already run:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard exec playwright test e2e/dashboard-api.spec.ts e2e/dashboard-demo-proof.spec.ts --grep "merchant|demo path"
+pnpm --filter @wilq/dashboard build
+```
+
+Focused results:
+
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Dashboard route tests: `12 passed`.
+* Playwright Merchant + marketer demo proof: `2 passed`.
+* Production dashboard build: passed.
+* Latest browser proof path:
+
+```text
+.local-lab/proof/dashboard-demo/2026-06-18T04-19-03-173Z
+```
+
+Full verification run:
+
+```bash
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Full verification results:
+
+* Backend API contracts: `80 passed`.
+* Dashboard route tests: `12 passed`.
+* Skill API smoke: passed.
+* Playwright e2e: `8 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Remaining before closing this slice:
+
+1. Commit with Conventional Commit, expected message:
+
+```text
+feat(dashboard): add merchant operator summary
+```
+
+2. Push to `origin/main`.
+
+Goal 001 is still not complete after this slice. Remaining work after commit:
+
+* Content Planner and GA4 need the same operator-summary treatment so their
+  routes expose decision flow, not only diagnostic sections.
+* Merchant skill eval should later prove that `wilq-merchant-feed-operator`
+  uses the same issue queue and ActionObject safety path.
+* Ads OAuth and Localo access remain honest blockers until external access is
+  recovered.
