@@ -188,7 +188,7 @@ def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
             else {"blockery": data.blocker_count}
         ),
         blocked_claims=(
-            ["CPA", "ROAS", "search terms", "wasted budget"]
+            ["CPA", "ROAS", "search-term waste", "negative keyword candidates"]
             if data.live_data_available
             else ["spend", "CPA", "ROAS", "search terms", "wasted budget"]
         ),
@@ -494,15 +494,17 @@ def _action_plan_item(
                 category="Google Ads",
                 why_it_matters=(
                     "Google Ads OAuth, MCC login i child customer działają. WILQ ma "
-                    "świeże campaign metric facts, ale search terms/CPA/ROAS nadal "
-                    "wymagają osobnych read contractów."
+                    "świeże campaign i search-term metric facts z konwersjami, ale "
+                    "CPA, ROAS, waste i negative keywords nadal wymagają osobnych "
+                    "read/safety/ActionObject contractów."
                 ),
                 operator_action="Otwórz /ads-doctor i analizuj tylko metryki widoczne w evidence.",
                 skill_id="wilq-ads-doctor",
                 codex_prompt=(
                     "Użyj skilla wilq-ads-doctor. Pokaż przestrzeń do poprawy adsów "
-                    "w Ekologus na podstawie dostępnych campaign metric facts. Wyraźnie "
-                    "zablokuj CPA, ROAS, search terms i wasted budget, jeśli nie ma ich w evidence."
+                    "w Ekologus na podstawie dostępnych campaign i search-term metric facts. "
+                    "Wyraźnie zablokuj CPA, ROAS, wasted budget i negative keywords, jeśli "
+                    "brakuje derived KPI, safety checku albo ActionObject validation."
                 ),
                 codex_context_endpoint="/api/codex/context-pack",
                 expected_codex_output=(

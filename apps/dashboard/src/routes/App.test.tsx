@@ -227,7 +227,7 @@ const adsDiagnostics = {
       "WILQ ma 1 campaign rows: clicks=107, impressions=2783, cost_micros=164591174, conversions=2.5, conversion_value=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: ["recommendations"],
-    blocked_claims: ["CPA", "ROAS", "search terms", "wasted budget"],
+    blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     campaign_rows: [
@@ -261,7 +261,7 @@ const adsDiagnostics = {
           }
         ],
         missing_metrics: [],
-        blocked_claims: ["CPA", "ROAS", "search terms", "wasted budget"]
+        blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"]
       }
     ],
     next_step: "Użyj campaign rows do przeglądu aktywności."
@@ -356,7 +356,7 @@ const adsDiagnostics = {
       title: "Google Ads: live data dostępne",
       status: "ready",
       summary: "WILQ ma zapisane metric facts z read-only Google Ads vendor_read.",
-      diagnosis: "Ads Doctor może pokazać campaign metrics, ale nie search terms/CPA/ROAS.",
+      diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie CPA/ROAS.",
       next_step: "Analizuj tylko widoczne metric facts i evidence IDs.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
@@ -372,7 +372,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: ["act_1"],
-      blocked_claims: ["CPA", "ROAS", "search terms"],
+    blocked_claims: ["CPA", "ROAS", "wasted budget"],
       risk: "medium"
     },
     {
@@ -380,7 +380,7 @@ const adsDiagnostics = {
       title: "Campaign activity read contract",
       status: "ready",
       summary: "Metric facts: clicks=107, impressions=2783.",
-      diagnosis: "Są live campaign rows, ale search terms wymagają osobnego read contract.",
+      diagnosis: "Są live campaign rows, ale CPA/ROAS wymagają osobnego read contract.",
       next_step: "Sprawdź kampanie bez claimów CPA/ROAS.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -396,7 +396,7 @@ const adsDiagnostics = {
         }
       ],
       action_ids: ["act_1"],
-      blocked_claims: ["CPA", "ROAS", "search terms"],
+      blocked_claims: ["CPA", "ROAS", "wasted budget"],
       risk: "medium"
     }
   ],
@@ -1194,7 +1194,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "ROAS", "search terms"],
+                blocked_claims: ["CPA", "ROAS", "search-term waste"],
                 risk: "medium"
               }
             ],
@@ -1211,7 +1211,7 @@ function mockFetch() {
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
                 metric_tiles: { sekcje: 4, blockery: 1 },
-                blocked_claims: ["CPA", "ROAS", "search terms"],
+                blocked_claims: ["CPA", "ROAS", "search-term waste"],
                 risk: "medium"
               },
               {
@@ -1340,7 +1340,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                blocked_claims: ["CPA", "ROAS", "search terms"],
+                blocked_claims: ["CPA", "ROAS", "search-term waste"],
                 risk: "medium"
               }
             ],

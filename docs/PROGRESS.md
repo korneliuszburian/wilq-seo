@@ -81,6 +81,11 @@ Data: 2026-06-18
 - Command Center nie renderuje już zdublowanego zestawu kafli
   `Decyzje/Blockery/Źródła`; globalne stats zostają tylko w nagłówku strony.
   Test dashboardu ma regresję `Decyzje` count = 1.
+- Ads Doctor i Command Center nie mówią już, że `search terms` są brakującym
+  read contractem, gdy live search-term rows istnieją. Runtime blokuje teraz
+  precyzyjniej: `search-term waste`, `negative keyword candidates`, CPA/ROAS i
+  apply zmian pozostają blocked do czasu safety/ActionObject/derived KPI
+  contracts.
 - Pełny `scripts/verify.sh` przeszedł po Ads search terms i Command Center
   duplicate-stats slice: backend API contracts 97 passed, dashboard route
   tests 12 passed, Playwright e2e 8 passed i dashboard production build passed.

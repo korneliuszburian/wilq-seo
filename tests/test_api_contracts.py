@@ -2107,7 +2107,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
-            "blocked_claims": ["CPA", "ROAS", "search terms", "wasted budget"],
+            "blocked_claims": ["CPA", "ROAS", "search-term waste", "wasted budget"],
         }
     ]
     live_section = next(

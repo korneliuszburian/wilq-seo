@@ -107,7 +107,11 @@ def _oauth_or_live_section(
                 "Można przejść do diagnozy kampanii, ale nadal każda rekomendacja musi "
                 "wskazać evidence ID, metric facts i bezpieczny ActionObject."
             ),
-            next_step="Rozszerz Ads read pack o search terms, recommendations i change events.",
+            next_step=(
+                "Użyj campaign i search-term rows do read-only review. Następnie dodaj "
+                "recommendations, change events, safety checks i ActionObjecty przed "
+                "rekomendacjami apply."
+            ),
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=evidence_ids,
             metric_facts=metric_facts[:8],
@@ -208,7 +212,7 @@ def _campaign_read_contract(
     blocked_claims = [
         "CPA",
         "ROAS",
-        "search terms",
+        "search-term waste",
         "wasted budget",
         "negative keyword candidates",
         "budget scaling",
@@ -315,7 +319,7 @@ def _campaign_metric_row(
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
-        blocked_claims=["CPA", "ROAS", "search terms", "wasted budget"],
+        blocked_claims=["CPA", "ROAS", "search-term waste", "wasted budget"],
     )
 
 
@@ -402,8 +406,8 @@ def _search_terms_read_contract(
             search_term_rows=rows,
             next_step=(
                 "Użyj search term rows jako read-only przeglądu zapytań. Nie twórz "
-                "negative keywords ani waste claimów bez konwersji, 90-dniowego checku "
-                "i zwalidowanego ActionObject."
+                "negative keywords ani waste claimów bez match contextu, 90-dniowego "
+                "checku i zwalidowanego ActionObject."
             ),
         )
 
@@ -587,11 +591,15 @@ def _blocked_handoff(
                 "walidacji."
             ),
             marketer_message=(
-                "Możesz pokazać bazowy odczyt Google Ads, ale search terms, negative keywords "
-                "i apply zmian wymagają osobnych evidence oraz ActionObject validation."
+                "Możesz pokazać bazowy odczyt kampanii i search terms z konwersjami, "
+                "ale CPA, ROAS, waste, negative keywords i apply zmian wymagają "
+                "osobnych evidence oraz ActionObject validation."
             ),
             repair_steps=[
-                "Rozszerz read-only Google Ads vendor_read o search terms i recommendations.",
+                (
+                    "Rozszerz read-only Google Ads vendor_read o recommendations, "
+                    "change events i safety checks."
+                ),
                 "Waliduj każdy ActionObject przed apply.",
                 "Nie wykonuj budżetów, wykluczeń ani kampanii bez preview i audit eventu.",
             ],
