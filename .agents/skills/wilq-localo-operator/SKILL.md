@@ -12,7 +12,7 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 ## Workflow
 
 1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
+2. Run `uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
 3. Call `POST /api/codex/context-pack` with `{"skill":"wilq-localo-operator"}` before summarizing metrics, opportunities or action candidates.
 4. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
 5. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
@@ -58,4 +58,4 @@ Polish language contract: produce all operator-facing responses in Polish with P
 
 ## Goal 001 Status
 
-Goal 001 stub: Localo token exists, but organization/client ID remains the known external blocker for full MCP OAuth access.
+Goal 001 status: `LOCALO_API_TOKEN` and `LOCALO_ORGANIZATION_ID` are configured. The current known blocker for Localo/local visibility metrics is incomplete MCP OAuth authorization: missing `LOCALO_ACCESS_TOKEN`. Do not claim Localo ranking, GBP or competitor metrics until WILQ API returns Localo evidence IDs beyond the OAuth probe.

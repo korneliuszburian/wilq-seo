@@ -35,8 +35,10 @@
   },
   {
     "skill": "wilq-localo-operator",
+    "surface_path": "/localo",
     "task_pl": "Oceń gotowość workflow Localo/local visibility i nie twierdź, że masz metryki Localo, jeżeli WILQ API ich nie zwraca.",
-    "expected_connectors": ["localo"]
+    "expected_connectors": ["localo"],
+    "expected_terms_pl": ["Localo", "LOCALO_ACCESS_TOKEN", "blocker"]
   },
   {
     "skill": "wilq-content-strategist",

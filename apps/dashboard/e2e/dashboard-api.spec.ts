@@ -98,4 +98,17 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByText("Source connector: google_merchant_center")).toBeVisible();
   });
+
+  test("localo route exposes OAuth blocker without invented local metrics", async ({ page }) => {
+    await page.goto("/localo");
+
+    await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Local Visibility Focus" })).toBeVisible();
+    await expect(page.getByText(/LOCALO_ACCESS_TOKEN/).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "ev_connector_localo_status" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Local Visibility Safety Gate" })).toBeVisible();
+    await expect(page.getByText(/Brak LOCALO_ACCESS_TOKEN jest blockerem/)).toBeVisible();
+    await expect(page.getByText(/local ranking/i)).toHaveCount(0);
+    await expect(page.getByText(/pozycja lokalna/i)).toHaveCount(0);
+  });
 });

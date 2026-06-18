@@ -36,6 +36,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "terms": {"Content Planner", "WordPress", "GSC"},
             "action_ids": {"act_prepare_content_refresh_queue"},
         },
+        "wilq-localo-operator": {
+            "surface_path": "/localo",
+            "terms": {"Localo", "LOCALO_ACCESS_TOKEN", "blocker"},
+            "action_ids": set(),
+        },
     }
 
     for skill, contract in expected.items():

@@ -4766,11 +4766,136 @@ Results:
 
 Remaining next work:
 
-1. Add Localo route-specific eval after Localo MCP/readiness exposes useful
-   local evidence instead of only OAuth/missing-token blockers.
-2. Fix Google Ads OAuth client state before claiming live Ads performance
+1. Fix Google Ads OAuth client state before claiming live Ads performance
    diagnostics. Current live failure is `oauth_error=deleted_client`.
-3. Add apply-confirm UI only after the ActionObject model supports explicit
+2. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.
+
+---
+
+## 47. Localo route-specific eval - 2026-06-18
+
+Implemented the Localo route-specific eval slice from section 46.
+
+What changed:
+
+* `wilq-localo-operator` skill status is now current:
+  * `LOCALO_API_TOKEN` is configured,
+  * `LOCALO_ORGANIZATION_ID` is configured,
+  * the current blocker is missing `LOCALO_ACCESS_TOKEN`.
+* Skill validation command now follows repo runtime rules:
+  * `uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+* Localo skill smoke now asserts the route-specific product contract:
+  * MarketingBrief exposes a Localo blocker item,
+  * blocker names `LOCALO_ACCESS_TOKEN`,
+  * blocker has source connector `localo`,
+  * blocker has evidence IDs,
+  * blocker does not expose Localo ranking metric facts,
+  * latest Localo refresh run is `localo_mcp_oauth_probe`,
+  * blocked OAuth probe reports `access_token_present=0`,
+  * blocked OAuth probe reports `mcp_initialize_status=401`.
+* `docs/evals/cases/wilq-skill-eval-cases.json` now marks
+  `wilq-localo-operator` as a route-specific eval for `/localo`, with expected
+  terms `Localo`, `LOCALO_ACCESS_TOKEN` and `blocker`.
+* Codex eval contract tests now require Localo in the route-specific eval set.
+* Dashboard Playwright live API smoke now opens `/localo` and verifies:
+  * route heading `Localo`,
+  * workflow heading `Local Visibility Focus`,
+  * visible `LOCALO_ACCESS_TOKEN` blocker,
+  * visible `ev_connector_localo_status`,
+  * visible `Local Visibility Safety Gate`,
+  * no invented local ranking labels.
+
+Live Localo read-only proof:
+
+```text
+POST /api/connectors/localo/refresh
+status blocked
+id refresh_localo_3969eb4cfefd
+external_call_attempted True
+vendor_data_collected False
+metric_summary {
+  api: localo_mcp_oauth_probe,
+  mcp_initialize_status: 401,
+  authorization_code_supported: 1,
+  pkce_s256_supported: 1,
+  access_token_present: 0
+}
+errors ['Localo MCP OAuth authorization is incomplete: missing LOCALO_ACCESS_TOKEN.']
+```
+
+Skill smoke proof:
+
+```text
+uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+skill wilq-localo-operator
+required_connectors localo configured=true status=configured
+brief_items [brief_blocker_localo]
+evidence_ids ev_connector_localo_status, ev_refresh_refresh_localo_3969eb4cfefd
+localo_refresh_status blocked
+localo_metric_summary api=localo_mcp_oauth_probe access_token_present=0 mcp_initialize_status=401
+```
+
+Non-interactive Codex eval proof:
+
+```text
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+
+Codex skill eval passed.
+Results: .local-lab/evals/codex-skill/20260618T001109Z
+```
+
+Eval result summary:
+
+```json
+{
+  "skill": "wilq-localo-operator",
+  "language": "pl-PL",
+  "polish_diacritics_present": true,
+  "api_used": true,
+  "allowed_endpoint_violation": false,
+  "source_connectors": ["localo"],
+  "evidence_ids": ["ev_connector_localo_status", "ev_refresh_refresh_localo_3969eb4cfefd"],
+  "recommendations": [],
+  "blocked": true,
+  "blocked_reason": "missing LOCALO_ACCESS_TOKEN",
+  "operator_usefulness_score": 4
+}
+```
+
+Current interpretation:
+
+* `/localo`, `wilq-localo-operator` and Codex non-interactive eval now prove the
+  same truth: Localo is configured enough to reach MCP/OAuth discovery, but not
+  enough to produce local ranking, GBP or competitor metrics.
+* This is the correct marketer-facing behavior until OAuth is completed. WILQ
+  must show the blocker and next safe step, not local visibility recommendations.
+
+Verification:
+
+```bash
+uv run ruff check .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run pytest tests/test_api_contracts.py -q
+uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- --grep "localo route"
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Results:
+
+* Localo skill smoke: passed.
+* Route-specific eval case tests: passed.
+* Focused API contract tests: passed.
+* Playwright live API-backed smoke with Localo route: `6 passed`.
+* Non-interactive Codex eval for `wilq-localo-operator`: passed.
+
+Remaining next work:
+
+1. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+2. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
 
 ---
