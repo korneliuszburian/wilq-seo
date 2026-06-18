@@ -437,3 +437,38 @@ uv run ruff check wilq/briefing/marketing_brief.py tests/test_api_contracts.py
 uv run mypy wilq/briefing/marketing_brief.py
 uv run pytest tests/test_api_contracts.py -q -k 'marketing_brief_aggregates_metric_facts_and_blockers or marketing_brief_exposes_metric_backed_prepare_actions or codex_context_pack_embeds_marketing_brief_contract or command_center_exposes_polish_operator_brief'
 ```
+
+## Daily Command Skill Guardrails
+
+Hardened the first WILQ skill after the Command Center/brief cleanup.
+
+Result:
+
+- `wilq-daily-command` now explicitly treats the daily brief as a core daily
+  loop: Merchant, Content/GSC/WordPress, GA4 and Ads.
+- Localo readiness is not a primary daily task unless WILQ has a real Localo
+  blocker or Localo ranking/GBP evidence.
+- Social draft ActionObjects stay out of daily command and belong to
+  `wilq-social-publisher`.
+- The daily smoke now fails if the context-pack drops core daily actions or
+  reintroduces social draft actions.
+
+Focused proof:
+
+```bash
+uv run ruff check .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py tests/test_codex_skill_eval_cases.py
+uv run mypy .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Non-interactive Codex eval artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260618T112920Z/wilq-daily-command/result.json
+```
+
+Eval result: `pl-PL`, Polish diacritics, `api_used=true`, 14 evidence IDs,
+core ActionObject candidates only, no safety findings and
+`operator_usefulness_score=5`.

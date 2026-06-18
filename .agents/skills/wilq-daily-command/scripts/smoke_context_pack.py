@@ -28,6 +28,24 @@ REQUIRED_BRIEF_SECTIONS = {
     "recommended_focus",
 }
 FORBIDDEN_MARKERS = ("fake_metric", "mock_metric", "seed_metric")
+CORE_DAILY_ACTION_IDS = {
+    "act_prepare_content_refresh_queue",
+    "act_review_ga4_tracking_quality",
+    "act_review_merchant_feed_issues",
+}
+FORBIDDEN_DAILY_ACTION_IDS = {
+    "act_prepare_facebook_social_drafts",
+    "act_prepare_linkedin_social_drafts",
+}
+CORE_OPERATOR_ITEM_IDS = {
+    "daily_ads_status",
+    "daily_content_queue",
+    "daily_ga4_landing_quality",
+    "daily_merchant_feed",
+}
+FORBIDDEN_READY_OPERATOR_ITEM_IDS = {
+    "daily_localo_readiness",
+}
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -100,6 +118,7 @@ def main() -> int:
     pack_command_center = pack.get("command_center")
     validate_command_center(pack_command_center)
     compare_command_centers(command_center, pack_command_center)
+    validate_daily_action_scope(command_center, brief, pack)
 
     connector_status = pack.get("connector_status") or []
     configured = [item.get("id") for item in connector_status if item.get("configured")]
@@ -128,8 +147,19 @@ def main() -> int:
         "brief_evidence_count": len(brief.get("evidence_ids") or []),
         "brief_items": compact_brief_items(brief),
         "opportunity_ids": [item.get("id") for item in (pack.get("top_opportunities") or [])[:5]],
-        "action_ids": [item.get("id") for item in (pack.get("active_action_objects") or [])[:5]],
+        "active_action_object_ids": [
+            item.get("id") for item in (pack.get("active_action_objects") or [])
+        ],
         "brief_action_ids": brief.get("action_ids") or [],
+        "core_daily_action_ids": sorted(CORE_DAILY_ACTION_IDS),
+        "forbidden_daily_action_ids_present": sorted(
+            (
+                set(collect_action_ids(command_center))
+                | set(brief.get("action_ids") or [])
+                | {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
+            )
+            & FORBIDDEN_DAILY_ACTION_IDS
+        ),
         "refresh_run_count": len(pack.get("connector_refresh_runs") or []),
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
@@ -145,16 +175,22 @@ def validate_command_center(command_center: Any) -> None:
     operator_brief = command_center.get("operator_brief") or []
     if not isinstance(operator_brief, list) or not operator_brief:
         raise SystemExit("Command center has no operator_brief")
-    required_ids = {
-        "daily_ads_status",
-        "daily_merchant_feed",
-        "daily_content_queue",
-        "daily_ga4_landing_quality",
-    }
-    item_ids = {item.get("id") for item in operator_brief if isinstance(item, dict)}
-    missing_ids = sorted(required_ids - item_ids)
+    item_ids = {str(item.get("id")) for item in operator_brief if isinstance(item, dict)}
+    missing_ids = sorted(CORE_OPERATOR_ITEM_IDS - item_ids)
     if missing_ids:
         raise SystemExit(f"Command center missing operator items: {', '.join(missing_ids)}")
+    ready_forbidden_ids = sorted(
+        str(item.get("id"))
+        for item in operator_brief
+        if isinstance(item, dict)
+        and item.get("id") in FORBIDDEN_READY_OPERATOR_ITEM_IDS
+        and item.get("status") == "ready"
+    )
+    if ready_forbidden_ids:
+        raise SystemExit(
+            "Command center promotes readiness-only Localo item as primary: "
+            + ", ".join(ready_forbidden_ids)
+        )
     if not isinstance(command_center.get("blocker_count"), int):
         raise SystemExit("Command center blocker_count is missing or not numeric")
     if not isinstance(command_center.get("tactical_item_count"), int):
@@ -234,6 +270,53 @@ def validate_marketing_brief(brief: Any) -> None:
     action_ids = brief.get("action_ids") or []
     if not action_ids:
         raise SystemExit("Marketing brief has no ActionObject IDs")
+    missing_core_actions = sorted(CORE_DAILY_ACTION_IDS - set(action_ids))
+    if missing_core_actions:
+        raise SystemExit(
+            "Marketing brief missing core daily ActionObject IDs: "
+            + ", ".join(missing_core_actions)
+        )
+    forbidden_actions = sorted(FORBIDDEN_DAILY_ACTION_IDS & set(action_ids))
+    if forbidden_actions:
+        raise SystemExit(
+            "Marketing brief promotes non-core daily ActionObject IDs: "
+            + ", ".join(forbidden_actions)
+        )
+
+
+def validate_daily_action_scope(
+    command_center: dict[str, Any],
+    brief: dict[str, Any],
+    pack: dict[str, Any],
+) -> None:
+    command_center_action_ids = set(collect_action_ids(command_center))
+    brief_action_ids = set(brief.get("action_ids") or [])
+    pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
+    all_daily_action_ids = command_center_action_ids | brief_action_ids | pack_action_ids
+
+    missing_core_actions = sorted(CORE_DAILY_ACTION_IDS - all_daily_action_ids)
+    if missing_core_actions:
+        raise SystemExit(
+            "Daily command context missing core ActionObject IDs: "
+            + ", ".join(missing_core_actions)
+        )
+
+    forbidden_actions = sorted(FORBIDDEN_DAILY_ACTION_IDS & all_daily_action_ids)
+    if forbidden_actions:
+        raise SystemExit(
+            "Daily command context includes social ActionObject IDs: "
+            + ", ".join(forbidden_actions)
+        )
+
+    active_action_objects = pack.get("active_action_objects") or []
+    if not isinstance(active_action_objects, list):
+        raise SystemExit("Context pack active_action_objects must be a list")
+    missing_active_core = sorted(CORE_DAILY_ACTION_IDS - pack_action_ids)
+    if missing_active_core:
+        raise SystemExit(
+            "Context pack active_action_objects missing core daily actions: "
+            + ", ".join(missing_active_core)
+        )
 
 
 def compare_briefs(brief: dict[str, Any], pack_brief: dict[str, Any]) -> None:
@@ -355,6 +438,16 @@ def _trace_fields(value: Any) -> list[dict[str, Any]]:
         for item in value
         if isinstance(item, dict)
     ]
+
+
+def collect_action_ids(command_center: dict[str, Any]) -> list[str]:
+    action_ids: list[str] = []
+    for section_name in ("operator_brief", "action_plan", "demo_script"):
+        for item in command_center.get(section_name, []) or []:
+            if not isinstance(item, dict):
+                continue
+            action_ids.extend(str(action_id) for action_id in item.get("action_ids") or [])
+    return action_ids
 
 
 def compact_brief_items(brief: dict[str, Any]) -> list[dict[str, Any]]:

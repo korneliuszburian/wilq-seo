@@ -1102,3 +1102,45 @@ Top product fixes from evals:
 8. Strengthen future evals from schema/safety checks into usefulness checks:
    exact ranked decisions, blocked-claim matrix, ActionObject validation proof
    and route-level dashboard parity.
+
+## 2026-06-18 - wilq-daily-command Guardrail Re-Eval
+
+Artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260618T112920Z/wilq-daily-command/result.json
+```
+
+Why rerun:
+
+- Command Center and `/api/marketing/brief` were cleaned up after earlier evals.
+- The skill needed to prove it does not promote social draft ActionObjects or
+  Localo readiness as primary daily work.
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- 14 evidence IDs returned.
+- Core action candidates only:
+  `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue`,
+  `act_review_ga4_tracking_quality`.
+- `forbidden_daily_action_ids_present=[]` in deterministic smoke.
+- `blocked=false`, no safety findings.
+- `operator_usefulness_score=5`.
+
+Useful output:
+
+- Daily next step is Merchant feed/product issue review, prepare-only.
+- Content and GA4 stay in the daily queue with evidence and blocked claims.
+- Ads is represented as live campaign metrics with blocked CPA/ROAS/search-term
+  claims until stronger read contracts exist.
+- Localo remains configured context, but is not promoted without ranking/GBP
+  facts.
+
+Product gap still open:
+
+- Future daily evals should validate ActionObjects before claiming execution
+  readiness and compare the final response against the dashboard route snapshot.

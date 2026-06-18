@@ -8,6 +8,12 @@ Oczekiwany wynik: A concise operating brief with source connector status,
 CommandCenter action-plan items, evidence IDs, opportunity IDs, action IDs,
 blockers and next safe steps.
 
+Daily Command pokazuje core daily loop: Merchant, Content/GSC/WordPress, GA4 i
+Ads. Nie jest pełnym registry connectorów ani social planning surface. Localo
+może pojawić się w daily briefie tylko jako realny blocker albo ograniczenie
+claimów, dopóki WILQ API nie ma Localo ranking/GBP evidence. Social draft
+ActionObjects należą do `wilq-social-publisher`, nie do daily briefu.
+
 ## Wymagany kontekst API
 
 Pobierz `GET /api/dashboard/command-center` przed analizą marketingową.
@@ -53,6 +59,17 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 4. `Kandydaci działań`: `action_plan.action_ids`, `operator_brief.action_ids`, opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+
+Core ActionObject IDs oczekiwane w daily loop, jeśli WILQ API je zwraca:
+
+- `act_review_merchant_feed_issues`
+- `act_review_ga4_tracking_quality`
+- `act_prepare_content_refresh_queue`
+
+Nie promuj w daily loop:
+
+- `act_prepare_linkedin_social_drafts`
+- `act_prepare_facebook_social_drafts`
 
 ## Warunki odmowy lub downgrade do blockera
 

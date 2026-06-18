@@ -167,9 +167,12 @@ These are the current reasons Goal 001 is not complete:
    explicit read contracts before WILQ can claim BDOS-class Ads value.
 
 4. **Codex skill usefulness is not proven end-to-end.**
-   Skills have contracts and smokes, but Goal 001 still needs a clean
-   plug-and-play Codex session proving Polish prompts -> WILQ API calls -> same
-   evidence IDs as dashboard -> useful next actions.
+   Skills have contracts and smokes, and `wilq-daily-command` now has a
+   strengthened usefulness guardrail plus a fresh non-interactive eval pass.
+   Goal 001 still needs the same strict usefulness pass across the remaining
+   high-value skills and a clean plug-and-play Codex session proving Polish
+   prompts -> WILQ API calls -> same evidence IDs as dashboard -> useful next
+   actions.
 
 5. **Knowledge condensation is not fully proven.**
    Playbooks and knowledge cards exist, but we must prove they influence skill
@@ -429,6 +432,14 @@ Tasks:
   `act_prepare_content_refresh_queue` as the safe pending-validation content
   queue path. Remaining quality gap: future GSC evals should assert concrete
   query/page candidates with `refresh`, `merge`, `create` or `block` decisions.
+- 2026-06-18 follow-up: `wilq-daily-command` was hardened after Command Center
+  and brief cleanup. Deterministic smoke now fails if daily context loses core
+  ActionObjects or reintroduces social draft actions. Fresh non-interactive
+  Codex eval passed:
+  `.local-lab/evals/codex-skill/20260618T112920Z/wilq-daily-command/result.json`.
+  It proves `pl-PL`, Polish diacritics, `api_used=true`, 14 evidence IDs, core
+  ActionObject candidates only, no safety findings and
+  `operator_usefulness_score=5`.
 - Performance direction: follow TanStack/React guidance by avoiding client
   waterfalls and duplicated data models. Do not patch this with random
   `useMemo`; next performance slice should build a lightweight daily-decision
@@ -510,6 +521,10 @@ Pass criteria:
 
 Current eval progress:
 
+- `wilq-daily-command`: strengthened and re-evaluated at
+  `.local-lab/evals/codex-skill/20260618T112920Z/wilq-daily-command/result.json`.
+  Strong daily pass: Merchant, Content and GA4 core action candidates only;
+  Localo/social are not promoted without explicit evidence/workflow.
 - `wilq-content-strategist`: passed non-interactive Codex eval at
   `.local-lab/evals/codex-skill/20260618T093647Z/wilq-content-strategist/result.json`.
   Safe, API-backed, but future eval must force concrete
