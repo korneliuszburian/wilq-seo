@@ -18,6 +18,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "OAuth",
                 "spend",
                 "ads_diagnostics",
+                "blocked_handoff",
+                "finalny handoff",
                 "oauth_error=deleted_client",
                 "wasted spend",
             },
@@ -113,6 +115,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "GET /api/ads/diagnostics" in ads_skill_doc
     assert 'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in ads_smoke_script
     assert '"ads_diagnostics": {' in ads_smoke_script
+    assert "blocked_handoff" in ads_skill_doc
+    assert '"blocked_handoff": {' in ads_smoke_script
 
     merchant_skill_doc = Path(
         ".agents/skills/wilq-merchant-feed-operator/SKILL.md"

@@ -6848,7 +6848,7 @@ proof for upgraded daily/action-plan behavior, and deeper per-route tactical UX.
 
 ## 58. Slice 2026-06-18 - Daily Command Codex proof for action plan
 
-Status: implementation and verification complete; commit/push pending.
+Status: committed and pushed as `167debb test(skills): require daily command action plan eval`.
 
 Product intent:
 
@@ -6931,16 +6931,137 @@ Result summary:
   * `act_configure_google_ads_env`
 * Notes explicitly mention `command_center.action_plan`.
 
-Remaining before committing this slice:
-
-1. Commit with Conventional Commit, expected message:
+Closed with commit:
 
 ```text
-test(skills): require daily command action plan eval
+167debb test(skills): require daily command action plan eval
 ```
-
-2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. Remaining work still includes
 Ads OAuth recovery or final blocked-state handoff and deeper per-route tactical
 UX beyond the first action-plan layer.
+
+## 59. Slice 2026-06-18 - Ads OAuth blocked-state handoff across API, dashboard and skill
+
+Status: full verification complete; commit and push pending.
+
+Product intent:
+
+* Google Ads currently has credential material configured, but live Ads metrics
+  remain blocked by OAuth/API state (`oauth_error=deleted_client` in the latest
+  redacted refresh evidence).
+* WILQ must treat that as a product-quality state, not a missing UI state:
+  dashboard and Codex skills must show exactly what can be claimed in demo,
+  what is blocked, and which ActionObject repairs access.
+* This protects the marketer demo from fake spend, CPA, ROAS, search-term,
+  negative-keyword or budget recommendations while still proving that WILQ
+  sees the blocker and has a safe next action.
+
+Implemented in this slice so far:
+
+* Added `AdsBlockedHandoff` to backend schemas and shared frontend Zod schemas.
+* Extended `/api/ads/diagnostics` with `blocked_handoff`:
+  * `status=blocked` when live Ads evidence is unavailable,
+  * `status=ready` when live metric facts exist,
+  * Polish `marketer_message`,
+  * `repair_steps`,
+  * `allowed_demo_claims`,
+  * `blocked_claims`,
+  * `source_connectors`,
+  * `evidence_ids`,
+  * `action_ids`.
+* Added an Ads Doctor dashboard panel titled `Handoff blockera Ads`.
+* Updated dashboard route tests to assert that the handoff is visible and that
+  WILQ explicitly says it does not invent Ads metrics without vendor evidence.
+* Updated backend contract tests for both blocked OAuth state and live metric
+  state.
+* Updated `wilq-ads-doctor` skill docs and smoke script to require
+  `blocked_handoff` from WILQ API.
+* Updated route-specific Codex eval cases so `wilq-ads-doctor` must mention
+  `blocked_handoff` / final handoff and `act_configure_google_ads_env`.
+
+Live API proof:
+
+```bash
+curl --max-time 20 -sS http://127.0.0.1:8000/api/ads/diagnostics \
+  | jq '{live_data_available, blocker_count, handoff:.blocked_handoff}'
+```
+
+Result summary:
+
+* `live_data_available`: `false`
+* `blocker_count`: `3`
+* `blocked_handoff.status`: `blocked`
+* `blocked_handoff.title`: `Google Ads: finalny handoff blockera OAuth`
+* `blocked_handoff.evidence_ids`:
+  * `ev_connector_google_ads_status`
+  * `ev_refresh_refresh_google_ads_a49400553bb5`
+* `blocked_handoff.action_ids`:
+  * `act_configure_google_ads_env`
+* Blocked claims include `ROAS`, `search terms`, `negative keyword candidates`,
+  `campaign scaling`, `budget apply` and `campaign creation`.
+
+Focused verification already run:
+
+```bash
+uv run ruff check wilq/briefing/ads_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/ads_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py::test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts tests/test_codex_skill_eval_cases.py -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Focused results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Backend Ads/Codex eval tests: `5 passed`.
+* Dashboard route tests: `12 passed`.
+* Dashboard lint/typecheck: passed.
+* `wilq-ads-doctor` API smoke: passed.
+* Non-interactive Codex eval for `wilq-ads-doctor`: passed.
+
+Full verification run:
+
+```bash
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Full verification results:
+
+* Backend API contracts: `80 passed`.
+* Dashboard route tests: `12 passed`.
+* Skill API smoke: passed.
+* Playwright e2e: `8 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Codex eval proof:
+
+```text
+.local-lab/evals/codex-skill/20260618T035255Z
+```
+
+Remaining before closing this slice:
+
+1. Commit with Conventional Commit, expected message:
+
+```text
+feat(ads): add blocked-state handoff
+```
+
+2. Push to `origin/main`.
+
+Goal 001 is still not complete after this slice. Remaining work after commit:
+
+* Ads OAuth still needs external recovery before WILQ can show real Ads spend,
+  CPA, ROAS, search terms, waste or negative-keyword candidates.
+* The next highest-value product slice is deeper marketer usefulness on ready
+  surfaces: Merchant issues, content queue and GA4 landing quality should move
+  from first action-plan tiles into richer per-route tactical views backed by
+  real evidence and ActionObjects.
+* Localo remains blocked until access is fully live; dashboard/skills should
+  keep showing that blocker instead of local visibility claims.

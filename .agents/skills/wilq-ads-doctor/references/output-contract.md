@@ -10,7 +10,7 @@ Product inspiration: treat BDOS.ai as an Ads operating-system reference for the 
 
 ## Required API Context
 
-Fetch `GET /api/ads/diagnostics` before producing Ads analysis. Then fetch `POST /api/codex/context-pack` with `{"skill":"wilq-ads-doctor"}` and use the embedded `ads_diagnostics` object as a consistency check. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
+Fetch `GET /api/ads/diagnostics` before producing Ads analysis. Then fetch `POST /api/codex/context-pack` with `{"skill":"wilq-ads-doctor"}` and use the embedded `ads_diagnostics` object as a consistency check, including `blocked_handoff`. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
 
 Required connectors:
 
@@ -23,7 +23,7 @@ Return these sections when the user asks this skill to operate:
 Polish language contract: respond to the Ekologus marketer in Polish with Polish diacritics. Use Polish operator-facing labels such as `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` and `Następny krok`. Keep API identifiers, connector IDs, evidence IDs, opportunity IDs and ActionObject IDs unchanged.
 
 
-1. `Status`: API reachability, connector readiness and known blockers.
+1. `Status`: API reachability, connector readiness, `blocked_handoff.status` and known blockers.
 2. `Dowody`: Ads diagnostics section IDs, evidence IDs, connector IDs, latest refresh status, freshness notes and metric summaries from WILQ API only.
 3. `Diagnoza`: what `/api/ads/diagnostics` supports, with uncertainty if the evidence is aggregate, stale, incomplete or blocked by OAuth.
 4. `Kandydaci działań`: opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.

@@ -1691,6 +1691,7 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
 };
 
 type AdsDiagnosticSection = AdsDiagnosticsResponse["sections"][number];
+type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
 
 function AdsDoctorSurface() {
   const diagnostics = useQuery({
@@ -1768,6 +1769,8 @@ function AdsDoctorSurface() {
         ) : null}
       </section>
 
+      {data.blocked_handoff ? <AdsBlockedHandoffPanel handoff={data.blocked_handoff} /> : null}
+
       <div className="grid gap-4 xl:grid-cols-2">
         {data.sections.map((section) => (
           <AdsDiagnosticCard key={section.id} section={section} />
@@ -1781,6 +1784,50 @@ function AdsDoctorSurface() {
       ) : null}
 
     </main>
+  );
+}
+
+function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Handoff blockera Ads
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{handoff.title}</h2>
+        </div>
+        <StatusBadge value={handoff.status} />
+      </div>
+      <p className="text-sm leading-6 text-slate-700">{handoff.summary}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{handoff.marketer_message}</p>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Ścieżka naprawy</h3>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-slate-700">
+            {handoff.repair_steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Co wolno pokazać w demo</h3>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-700">
+            {handoff.allowed_demo_claims.map((claim) => (
+              <li key={claim}>{claim}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <LinkedTraceLine label="Evidence" values={handoff.evidence_ids} kind="evidence" />
+        <TraceLine label="Źródła" values={handoff.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={handoff.action_ids} kind="actions" />
+        <TraceLine label="Zablokowane claimy" values={handoff.blocked_claims} />
+      </div>
+    </section>
   );
 }
 

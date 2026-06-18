@@ -61,6 +61,21 @@ def main() -> int:
         raise SystemExit("Context pack ads_diagnostics evidence IDs differ from endpoint")
     if pack.get("ads_diagnostics", {}).get("action_ids") != ads_diagnostics.get("action_ids"):
         raise SystemExit("Context pack ads_diagnostics action IDs differ from endpoint")
+    blocked_handoff = ads_diagnostics.get("blocked_handoff")
+    if not isinstance(blocked_handoff, dict):
+        raise SystemExit("Ads diagnostics must expose blocked_handoff")
+    if blocked_handoff.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads blocked_handoff must expose ready/blocked status")
+    if "google_ads" not in blocked_handoff.get("source_connectors", []):
+        raise SystemExit("Ads blocked_handoff must include google_ads source connector")
+    if not blocked_handoff.get("evidence_ids"):
+        raise SystemExit("Ads blocked_handoff must include evidence IDs")
+    if not blocked_handoff.get("action_ids"):
+        raise SystemExit("Ads blocked_handoff must include action IDs")
+    if ads_diagnostics.get("live_data_available") is False:
+        blocked_claims = set(blocked_handoff.get("blocked_claims", []))
+        if not {"ROAS", "search terms"} <= blocked_claims:
+            raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -109,6 +124,13 @@ def main() -> int:
                 "ads_diagnostics": {
                     "live_data_available": ads_diagnostics.get("live_data_available"),
                     "blocker_count": ads_diagnostics.get("blocker_count"),
+                    "blocked_handoff": {
+                        "status": blocked_handoff.get("status"),
+                        "title": blocked_handoff.get("title"),
+                        "source_connectors": blocked_handoff.get("source_connectors", []),
+                        "evidence_ids": blocked_handoff.get("evidence_ids", []),
+                        "action_ids": blocked_handoff.get("action_ids", []),
+                    },
                     "section_ids": [
                         section.get("id")
                         for section in ads_diagnostics.get("sections", [])

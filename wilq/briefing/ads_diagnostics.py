@@ -10,6 +10,7 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
+    AdsBlockedHandoff,
     AdsDiagnosticSection,
     AdsDiagnosticsResponse,
     ConnectorRefreshRun,
@@ -51,6 +52,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
         sections=sections,
+        blocked_handoff=_blocked_handoff(live_data_available, latest_refresh, sections, action_ids),
         evidence_ids=_unique(
             evidence_id for section in sections for evidence_id in section.evidence_ids
         ),
@@ -231,6 +233,70 @@ def _safe_action_section(
         action_ids=action_ids,
         blocked_claims=["budget apply", "campaign creation", "negative keyword apply"],
         risk=ActionRisk.medium,
+    )
+
+
+def _blocked_handoff(
+    live_data_available: bool,
+    latest_refresh: ConnectorRefreshRun | None,
+    sections: list[AdsDiagnosticSection],
+    action_ids: list[str],
+) -> AdsBlockedHandoff:
+    evidence_ids = _unique(
+        evidence_id for section in sections for evidence_id in section.evidence_ids
+    )
+    blocked_claims = _unique(claim for section in sections for claim in section.blocked_claims)
+    if live_data_available:
+        return AdsBlockedHandoff(
+            status="ready",
+            title="Google Ads: live read gotowy do kolejnego kroku",
+            summary=(
+                "WILQ ma live metric facts z Google Ads, ale akcje zapisu nadal wymagają "
+                "walidacji."
+            ),
+            marketer_message=(
+                "Możesz pokazać bazowy odczyt Google Ads, ale search terms, negative keywords "
+                "i apply zmian wymagają osobnych evidence oraz ActionObject validation."
+            ),
+            repair_steps=[
+                "Rozszerz read-only Google Ads vendor_read o search terms i recommendations.",
+                "Waliduj każdy ActionObject przed apply.",
+                "Nie wykonuj budżetów, wykluczeń ani kampanii bez preview i audit eventu.",
+            ],
+            allowed_demo_claims=[
+                "Google Ads connector ma live metric facts.",
+                "WILQ wymaga evidence IDs i ActionObject validation przed działaniami.",
+            ],
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=evidence_ids,
+            action_ids=action_ids,
+        )
+    return AdsBlockedHandoff(
+        status="blocked",
+        title="Google Ads: finalny handoff blockera OAuth",
+        summary=_ads_blocker_reason(latest_refresh),
+        marketer_message=(
+            "W demo pokaż, że WILQ widzi problem z dostępem i blokuje wszystkie wnioski o "
+            "spendzie, CPA, ROAS, search terms i negative keywords. To jest kontrola jakości, "
+            "nie brak wiedzy."
+        ),
+        repair_steps=[
+            "Otwórz /ads-doctor i pokaż redacted OAuth blocker.",
+            "Zweryfikuj ActionObject `act_configure_google_ads_env`.",
+            "Uzyskaj świeży Google Ads OAuth token z zakresem `adwords`.",
+            "Uruchom read-only `google_ads vendor_read`.",
+            "Dopiero po świeżym evidence pokazuj spend, CPA, ROAS lub search terms.",
+        ],
+        allowed_demo_claims=[
+            "Google Ads jest zablokowany przez OAuth/API access.",
+            "WILQ nie zmyśla Ads metryk bez vendor evidence.",
+            "Naprawa dostępu ma ActionObject i validation gate.",
+        ],
+        blocked_claims=blocked_claims,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=evidence_ids,
+        action_ids=action_ids,
     )
 
 

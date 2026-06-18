@@ -242,6 +242,29 @@ const adsDiagnostics = {
       risk: "medium"
     }
   ],
+  blocked_handoff: {
+    id: "ads_oauth_blocked_handoff",
+    status: "blocked",
+    title: "Google Ads: finalny handoff blockera OAuth",
+    summary: "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client).",
+    marketer_message:
+      "W demo pokaż, że WILQ widzi problem z dostępem i blokuje wszystkie wnioski o spendzie, CPA, ROAS, search terms i negative keywords.",
+    repair_steps: [
+      "Otwórz /ads-doctor i pokaż redacted OAuth blocker.",
+      "Zweryfikuj ActionObject `act_configure_google_ads_env`.",
+      "Uzyskaj świeży Google Ads OAuth token z zakresem `adwords`.",
+      "Uruchom read-only `google_ads vendor_read`."
+    ],
+    allowed_demo_claims: [
+      "Google Ads jest zablokowany przez OAuth/API access.",
+      "WILQ nie zmyśla Ads metryk bez vendor evidence.",
+      "Naprawa dostępu ma ActionObject i validation gate."
+    ],
+    blocked_claims: ["wasted spend", "CPA", "ROAS", "search terms"],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
+    action_ids: ["act_1"]
+  },
   evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
   action_ids: ["act_1"],
   blocker_count: 2
@@ -1203,6 +1226,12 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Ads Doctor" })).toBeInTheDocument()
     );
     expect(screen.getByText("Google Ads: OAuth blokuje live metryki")).toBeInTheDocument();
+    expect(screen.getByText("Handoff blockera Ads")).toBeInTheDocument();
+    expect(screen.getByText("Google Ads: finalny handoff blockera OAuth")).toBeInTheDocument();
+    expect(screen.getByText("Co wolno pokazać w demo")).toBeInTheDocument();
+    expect(
+      screen.getByText("WILQ nie zmyśla Ads metryk bez vendor evidence.")
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/oauth_error=deleted_client/).length).toBeGreaterThan(0);
     expect(screen.getByText("Campaign overview")).toBeInTheDocument();
     expect(screen.getAllByText("Odnow Google Ads OAuth refresh token").length).toBeGreaterThan(0);

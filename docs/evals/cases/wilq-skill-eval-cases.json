@@ -38,6 +38,8 @@
       "OAuth",
       "spend",
       "ads_diagnostics",
+      "blocked_handoff",
+      "finalny handoff",
       "oauth_error=deleted_client",
       "wasted spend"
     ],

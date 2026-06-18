@@ -229,6 +229,20 @@ export const AdsDiagnosticSectionSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const AdsBlockedHandoffSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  marketer_message: z.string(),
+  repair_steps: z.array(z.string()),
+  allowed_demo_claims: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string())
+});
+
 export const AdsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -237,6 +251,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   live_data_available: z.boolean(),
   sections: z.array(AdsDiagnosticSectionSchema),
+  blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
   blocker_count: z.number()

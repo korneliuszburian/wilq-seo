@@ -1347,6 +1347,14 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     )
     assert campaign_section["status"] == "blocked"
     assert campaign_section["metric_facts"] == []
+    handoff = payload["blocked_handoff"]
+    assert handoff["status"] == "blocked"
+    assert handoff["title"] == "Google Ads: finalny handoff blockera OAuth"
+    assert "oauth_error=deleted_client" in handoff["summary"]
+    assert "act_configure_google_ads_env" in handoff["action_ids"]
+    assert "google_ads" in handoff["source_connectors"]
+    assert "ROAS" in handoff["blocked_claims"]
+    assert any("nie zmyśla Ads metryk" in claim for claim in handoff["allowed_demo_claims"])
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     brief_metric_item_ids = {
@@ -1415,6 +1423,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     payload = response.json()
     assert payload["live_data_available"] is True
     assert payload["latest_refresh"]["status"] == "completed"
+    assert payload["blocked_handoff"]["status"] == "ready"
+    assert "Google Ads connector ma live metric facts." in payload["blocked_handoff"][
+        "allowed_demo_claims"
+    ]
     live_section = next(
         section for section in payload["sections"] if section["id"] == "ads_live_data_status"
     )

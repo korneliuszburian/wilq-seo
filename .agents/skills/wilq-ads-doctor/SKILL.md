@@ -12,9 +12,9 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 ## Workflow
 
 1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
+2. Run `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
 3. Call `GET /api/ads/diagnostics` before diagnosing Google Ads readiness, wasted spend, search terms, campaign quality, recommendations or negative keywords.
-4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-ads-doctor"}` and confirm `ads_diagnostics` matches the Ads diagnostics endpoint.
+4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-ads-doctor"}` and confirm `ads_diagnostics` matches the Ads diagnostics endpoint, including `blocked_handoff`.
 5. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
 6. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
 7. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
@@ -43,7 +43,7 @@ Required connector surfaces for this skill:
 
 - `google_ads`
 
-Every recommendation must include source connector IDs and evidence IDs from WILQ API. If `/api/ads/diagnostics` reports `live_data_available=false`, return an OAuth/API blocker and blocked claims instead of diagnosing spend, CPA, ROAS, search terms or negative keywords.
+Every recommendation must include source connector IDs and evidence IDs from WILQ API. If `/api/ads/diagnostics` reports `live_data_available=false`, return `blocked_handoff`, the OAuth/API blocker and blocked claims instead of diagnosing spend, CPA, ROAS, search terms or negative keywords.
 
 ## Output Contract
 
