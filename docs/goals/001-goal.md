@@ -4766,17 +4766,111 @@ Results:
 
 Remaining next work:
 
-1. Add production canonical/source URL mapping for content:
-   * production sitemap fetch if a public production source is available,
-   * configured host alias mapping from `ekologus.dev.proudsite.pl` to
-     `www.ekologus.pl` only when the path exists in sitemap evidence,
-   * confidence labels in dashboard copy so path fallback is visibly weaker
-     than exact URL evidence.
-2. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+1. Add Localo route-specific eval after Localo MCP/readiness exposes useful
    local evidence instead of only OAuth/missing-token blockers.
-3. Fix Google Ads OAuth client state before claiming live Ads performance
+2. Fix Google Ads OAuth client state before claiming live Ads performance
    diagnostics. Current live failure is `oauth_error=deleted_client`.
-4. Add apply-confirm UI only after the ActionObject model supports explicit
+3. Add apply-confirm UI only after the ActionObject model supports explicit
+   confirmation semantics and audit requirements for that action type.
+
+---
+
+## 46. Production canonical URL mapping for content - 2026-06-18
+
+Implemented the production canonical/source URL slice from section 45.
+
+What changed:
+
+* WordPress connector now supports an optional public sitemap source:
+  * `WORDPRESS_EKOLOGUS_PUBLIC_URL`,
+  * `WORDPRESS_SKLEP_PUBLIC_URL`.
+* `wordpress_ekologus` has a repo default public source of
+  `https://www.ekologus.pl/` because the authenticated REST base is currently
+  `https://ekologus.dev.proudsite.pl/` while GSC/GA4 use production URLs.
+* Public sitemap reads are read-only and produce sanitized metric facts only:
+  * `content_object_seen`,
+  * `public_sitemap_url_count`,
+  * `inventory_source=public_sitemap`.
+* Public sitemap facts do not store page bodies, raw sitemap XML, credentials,
+  REST auth details or protected paths.
+* Tactical queue WordPress matching now has explicit confidence levels:
+  * `exact_url`,
+  * `host_alias_sitemap`,
+  * `path_fallback`,
+  * `missing`.
+* Host alias matching is limited to configured Ekologus host aliases:
+  * `www.ekologus.pl`,
+  * `ekologus.pl`,
+  * `ekologus.dev.proudsite.pl`.
+* Host alias confidence is only allowed when the matching path comes from
+  sitemap evidence (`sitemap` or `public_sitemap`). WILQ must not infer a
+  production content match from arbitrary path similarity alone.
+* Tactical queue dimensions now expose:
+  * `wordpress_content_host`,
+  * `wordpress_host_alias_applied`,
+  * `wordpress_inventory_source`.
+* `.env.example` now documents the public WordPress sitemap URL knobs.
+
+Live proof on fresh local API `127.0.0.1:8012`:
+
+```text
+POST /api/connectors/wordpress_ekologus/refresh
+refresh_status completed
+refresh_id refresh_wordpress_ekologus_25f9090bdfe6
+content_object_count 16
+sitemap_url_count 102
+public_sitemap_url_count 500
+```
+
+Live tactical queue proof after refresh:
+
+```text
+GET /api/marketing/tactical-queue
+queue_items 24
+content_items 20
+wordpress_confidence {'exact_url': 10, 'missing': 5, 'path_fallback': 5}
+sample found items:
+found exact_url www.ekologus.pl public_sitemap
+found exact_url www.ekologus.pl public_sitemap
+found exact_url www.ekologus.pl public_sitemap
+```
+
+Current interpretation:
+
+* Content route is now materially more useful: top production GSC URLs such as
+  production `www.ekologus.pl` pages can be confirmed through public production
+  sitemap evidence instead of being shown as missing only because the WordPress
+  authenticated base points to dev.
+* `missing` still appears for URLs/landing pages not present in the current
+  WordPress/public sitemap evidence. This is correct and must remain visible to
+  the marketer.
+* `path_fallback` remains weaker than `exact_url` and `host_alias_sitemap`; the
+  dashboard/skills must not treat it as a fully proven production URL match.
+
+Verification:
+
+```bash
+uv run ruff check wilq/connectors/wordpress/client.py wilq/briefing/tactical_queue.py tests/test_api_contracts.py
+uv run mypy wilq/connectors/wordpress/client.py wilq/briefing/tactical_queue.py
+uv run pytest tests/test_api_contracts.py -q
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Focused API contract tests: `55 passed`.
+* Fresh local API proof on `127.0.0.1:8012`: WordPress refresh completed,
+  public production sitemap collected `500` URLs, tactical queue now has
+  `10` exact production WordPress matches in the content/GA4 slice.
+
+Remaining next work:
+
+1. Add Localo route-specific eval after Localo MCP/readiness exposes useful
+   local evidence instead of only OAuth/missing-token blockers.
+2. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+3. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
 
 ---

@@ -35,13 +35,22 @@ TacticalIntent = Literal[
     "merchant_feed_triage",
     "traffic_quality_review",
 ]
-WordPressMatchConfidence = Literal["exact_url", "path_fallback", "missing"]
+WordPressMatchConfidence = Literal[
+    "exact_url",
+    "host_alias_sitemap",
+    "path_fallback",
+    "missing",
+]
+WORDPRESS_CANONICAL_HOST_ALIASES = {
+    "www.ekologus.pl": {"ekologus.dev.proudsite.pl", "ekologus.pl"},
+    "ekologus.pl": {"ekologus.dev.proudsite.pl", "www.ekologus.pl"},
+}
 
 
 @dataclass(frozen=True)
 class WordPressContentIndex:
     exact_urls: dict[str, MetricFact]
-    paths: dict[str, MetricFact]
+    paths: dict[str, list[MetricFact]]
 
 
 @dataclass(frozen=True)
@@ -397,7 +406,7 @@ def _dimension_value(facts: list[MetricFact], name: str) -> str | None:
 
 def _wordpress_content_index(facts: list[MetricFact]) -> WordPressContentIndex:
     exact_urls: dict[str, MetricFact] = {}
-    paths: dict[str, MetricFact] = {}
+    paths: dict[str, list[MetricFact]] = {}
     for fact in facts:
         if not fact.source_connector.startswith("wordpress"):
             continue
@@ -409,7 +418,7 @@ def _wordpress_content_index(facts: list[MetricFact]) -> WordPressContentIndex:
         _set_wordpress_index(exact_urls, _normalize_url_key(content_url), fact)
         path_key = _normalize_path_key(content_url)
         if path_key != "/":
-            _set_wordpress_index(paths, path_key, fact)
+            paths.setdefault(path_key, []).append(fact)
     return WordPressContentIndex(exact_urls=exact_urls, paths=paths)
 
 
@@ -420,7 +429,11 @@ def _find_wordpress_match(index: WordPressContentIndex, page_or_path: str) -> Wo
     path_key = _normalize_path_key(page_or_path)
     if path_key == "/":
         return WordPressMatch(fact=None, confidence="missing")
-    path_match = index.paths.get(path_key)
+    path_candidates = index.paths.get(path_key, [])
+    alias_match = _host_alias_sitemap_match(page_or_path, path_candidates)
+    if alias_match:
+        return WordPressMatch(fact=alias_match, confidence="host_alias_sitemap")
+    path_match = _preferred_wordpress_path_match(path_candidates)
     if path_match:
         return WordPressMatch(fact=path_match, confidence="path_fallback")
     return WordPressMatch(fact=None, confidence="missing")
@@ -434,6 +447,46 @@ def _set_wordpress_index(
     current = index.get(key)
     if current is None or fact.source_connector == "wordpress_ekologus":
         index[key] = fact
+
+
+def _preferred_wordpress_path_match(candidates: list[MetricFact]) -> MetricFact | None:
+    preferred: MetricFact | None = None
+    for fact in candidates:
+        if preferred is None:
+            preferred = fact
+            continue
+        if fact.source_connector == "wordpress_ekologus":
+            preferred = fact
+    return preferred
+
+
+def _host_alias_sitemap_match(
+    requested_url_or_path: str,
+    candidates: list[MetricFact],
+) -> MetricFact | None:
+    requested_host = _url_host(requested_url_or_path)
+    if not requested_host:
+        return None
+    for fact in candidates:
+        dimensions = fact.dimensions
+        if dimensions.get("inventory_source") not in {"sitemap", "public_sitemap"}:
+            continue
+        content_url = dimensions.get("content_url", "")
+        content_host = _url_host(content_url)
+        if _is_allowed_wordpress_host_alias(requested_host, content_host):
+            return fact
+    return None
+
+
+def _is_allowed_wordpress_host_alias(requested_host: str, content_host: str) -> bool:
+    if not requested_host or not content_host:
+        return False
+    normalized_requested = requested_host.lower()
+    normalized_content = content_host.lower()
+    return normalized_content in WORDPRESS_CANONICAL_HOST_ALIASES.get(
+        normalized_requested,
+        set(),
+    )
 
 
 def _gsc_page_counts(facts: list[MetricFact]) -> dict[str, int]:
@@ -579,6 +632,10 @@ def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, st
         "wordpress_content_type": dimensions.get("content_type", ""),
         "wordpress_status": dimensions.get("status", ""),
         "wordpress_content_url": dimensions.get("content_url", ""),
+        "wordpress_content_host": _url_host(dimensions.get("content_url", "")),
+        "wordpress_host_alias_applied": str(
+            wordpress_match.confidence == "host_alias_sitemap"
+        ).lower(),
         "wordpress_modified_gmt": dimensions.get("modified_gmt", ""),
         "wordpress_inventory_source": dimensions.get("inventory_source", ""),
     }
@@ -643,6 +700,10 @@ def _normalize_path_only(value: str) -> str:
     if path != "/" and path.endswith("/"):
         path = path.rstrip("/")
     return path.lower()
+
+
+def _url_host(value: str) -> str:
+    return urlparse(value).netloc.lower()
 
 
 def _unique(items: Iterable[str]) -> list[str]:

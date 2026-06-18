@@ -19,12 +19,16 @@ def _wp_env(*parts: str) -> str:
 WORDPRESS_CONNECTORS = {
     "wordpress_ekologus": {
         "url": _wp_env("WORDPRESS", "EKOLOGUS", "URL"),
+        "public_url": _wp_env("WORDPRESS", "EKOLOGUS", "PUBLIC", "URL"),
+        "fallback_public_url": "https://www.ekologus.pl/",
         "username": _wp_env("WORDPRESS", "EKOLOGUS", "USERNAME"),
         "application_auth": _wp_env("WORDPRESS", "EKOLOGUS", "APP", "PASSWORD"),
         "site_kind": "primary",
     },
     "wordpress_sklep": {
         "url": _wp_env("WORDPRESS", "SKLEP", "URL"),
+        "public_url": _wp_env("WORDPRESS", "SKLEP", "PUBLIC", "URL"),
+        "fallback_public_url": "",
         "username": _wp_env("WORDPRESS", "SKLEP", "USERNAME"),
         "application_auth": _wp_env("WORDPRESS", "SKLEP", "APP", "PASSWORD"),
         "site_kind": "shop",
@@ -42,6 +46,7 @@ WORDPRESS_SITEMAP_URL_LIMIT = 500
 @dataclass(frozen=True)
 class WordPressCredentials:
     base_url: str | None
+    public_url: str | None
     username: str | None
     application_auth: str | None
     site_kind: str
@@ -94,7 +99,7 @@ def refresh_wordpress_content_inventory(
     return VendorReadResult(
         status=ConnectorRefreshStatus.completed,
         summary=(
-            "WordPress vendor read completed through REST content inventory. "
+            "WordPress vendor read completed through REST and sitemap inventory. "
             f"Objects: {metric_summary['content_object_count']}."
         ),
         external_call_attempted=True,
@@ -110,6 +115,9 @@ def _wordpress_credentials(connector_id: str) -> WordPressCredentials | None:
         return None
     return WordPressCredentials(
         base_url=_normalize_base_url(variable_value(names["url"])),
+        public_url=_normalize_base_url(
+            variable_value(names["public_url"]) or names["fallback_public_url"]
+        ),
         username=variable_value(names["username"]),
         application_auth=variable_value(names["application_auth"]),
         site_kind=names["site_kind"],
@@ -162,6 +170,11 @@ def _fetch_content_inventory(
         if isinstance(latest, str) and latest:
             latest_modified_values.append(latest)
     sitemap_objects = _fetch_sitemap_objects(client, credentials.base_url or "")
+    public_sitemap_objects = _fetch_public_sitemap_objects(
+        client,
+        credentials.base_url,
+        credentials.public_url,
+    )
     metric_summary: dict[str, float | int | str] = {
         "api": "wordpress_rest_and_sitemap_content_inventory",
         "connector_id": connector_id,
@@ -170,6 +183,7 @@ def _fetch_content_inventory(
         "posts_total": _summary_total(summaries["posts"]),
         "pages_total": _summary_total(summaries["pages"]),
         "sitemap_url_count": len(sitemap_objects),
+        "public_sitemap_url_count": len(public_sitemap_objects),
         "latest_modified_gmt": max(latest_modified_values) if latest_modified_values else "",
         "latest_post_modified_gmt": str(summaries["posts"]["latest_modified_gmt"]),
         "latest_page_modified_gmt": str(summaries["pages"]["latest_modified_gmt"]),
@@ -224,6 +238,23 @@ def _fetch_content_inventory(
                 },
             )
         )
+    for item in public_sitemap_objects:
+        metric_facts.append(
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": connector_id,
+                    "site_kind": credentials.site_kind,
+                    "content_type": item.get("content_type", "sitemap"),
+                    "object_id": "",
+                    "content_url": item.get("content_url", ""),
+                    "status": "indexed",
+                    "modified_gmt": item.get("modified_gmt", ""),
+                    "inventory_source": "public_sitemap",
+                },
+            )
+        )
     if sitemap_objects:
         metric_facts.append(
             VendorMetricFact(
@@ -236,7 +267,35 @@ def _fetch_content_inventory(
                 },
             )
         )
+    if public_sitemap_objects:
+        metric_facts.append(
+            VendorMetricFact(
+                name="public_sitemap_url_count",
+                value=len(public_sitemap_objects),
+                dimensions={
+                    "connector_id": connector_id,
+                    "site_kind": credentials.site_kind,
+                    "inventory_source": "public_sitemap",
+                },
+            )
+        )
     return metric_summary, metric_facts
+
+
+def _fetch_public_sitemap_objects(
+    client: httpx.Client,
+    base_url: str | None,
+    public_url: str | None,
+) -> list[dict[str, str]]:
+    if not public_url or _normalize_base_url(public_url) == _normalize_base_url(base_url):
+        return []
+    base_hosts = {_host(base_url or "")}
+    public_objects = _fetch_sitemap_objects(client, public_url)
+    return [
+        item
+        for item in public_objects
+        if _host(item.get("content_url", "")) not in base_hosts
+    ]
 
 
 def _fetch_sitemap_objects(
@@ -319,6 +378,10 @@ def _sitemap_url_object(entry: dict[str, str]) -> dict[str, str]:
 
 def _local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
+
+
+def _host(value: str) -> str:
+    return httpx.URL(value).host or ""
 
 
 def _fetch_content_type_summary(

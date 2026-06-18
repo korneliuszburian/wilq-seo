@@ -5,6 +5,20 @@ from wilq.schemas import ConnectorRefreshRun, Evidence, FreshnessState
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
+METRIC_EVIDENCE_CONNECTORS = (
+    "google_ads",
+    "google_search_console",
+    "google_analytics_4",
+    "google_merchant_center",
+    "ahrefs",
+    "localo",
+    "wordpress_ekologus",
+    "wordpress_sklep",
+    "linkedin",
+    "facebook",
+    "openai_codex",
+)
+
 
 def connector_evidence_id(connector_id: str) -> str:
     return f"ev_connector_{connector_id}_status"
@@ -86,9 +100,10 @@ def _refresh_run_evidence(run: ConnectorRefreshRun) -> Evidence:
 def _metric_fact_evidence() -> list[Evidence]:
     facts_by_evidence_id: dict[str, list[str]] = {}
     connector_by_evidence_id: dict[str, str] = {}
-    for fact in metric_store().list_metric_facts(limit=500):
-        facts_by_evidence_id.setdefault(fact.evidence_id, []).append(fact.name)
-        connector_by_evidence_id.setdefault(fact.evidence_id, fact.source_connector)
+    for connector_id in METRIC_EVIDENCE_CONNECTORS:
+        for fact in metric_store().list_metric_facts(connector_id=connector_id, limit=500):
+            facts_by_evidence_id.setdefault(fact.evidence_id, []).append(fact.name)
+            connector_by_evidence_id.setdefault(fact.evidence_id, fact.source_connector)
 
     evidence_items: list[Evidence] = []
     for evidence_id, fact_names in sorted(facts_by_evidence_id.items()):

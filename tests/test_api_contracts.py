@@ -70,9 +70,11 @@ def clear_google_service_env(monkeypatch: pytest.MonkeyPatch) -> None:
 def clear_wordpress_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for key in (
         "WORDPRESS_EKOLOGUS_URL",
+        "WORDPRESS_EKOLOGUS_PUBLIC_URL",
         "WORDPRESS_EKOLOGUS_USERNAME",
         "WORDPRESS_EKOLOGUS_APP_PASSWORD",
         "WORDPRESS_SKLEP_URL",
+        "WORDPRESS_SKLEP_PUBLIC_URL",
         "WORDPRESS_SKLEP_USERNAME",
         "WORDPRESS_SKLEP_APP_PASSWORD",
     ):
@@ -753,6 +755,106 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         assert item["metric_facts"]
         assert item["blocked_claims"]
         assert item["next_step"]
+
+
+def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "host_alias.duckdb"))
+    gsc_run = ConnectorRefreshRun(
+        id="refresh_google_search_console_host_alias_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_google_search_console_host_alias_test"],
+        metric_summary={"clicks": 8, "impressions": 220},
+        summary="GSC host alias test seed.",
+    )
+    wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_ekologus_host_alias_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_wordpress_ekologus_host_alias_test"],
+        metric_summary={"content_object_count": 1, "sitemap_url_count": 1},
+        summary="WordPress host alias sitemap seed.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=8,
+                dimensions={
+                    "query": "bdo przedsiębiorca",
+                    "page": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+                },
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=220,
+                dimensions={
+                    "query": "bdo przedsiębiorca",
+                    "page": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+                },
+            ),
+            VendorMetricFact(
+                name="ctr",
+                value=0.036,
+                dimensions={
+                    "query": "bdo przedsiębiorca",
+                    "page": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+                },
+            ),
+            VendorMetricFact(
+                name="average_position",
+                value=6.2,
+                dimensions={
+                    "query": "bdo przedsiębiorca",
+                    "page": "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+                },
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "site_kind": "primary",
+                    "content_type": "sitemap",
+                    "object_id": "",
+                    "content_url": (
+                        "https://ekologus.dev.proudsite.pl/"
+                        "bdo-co-musi-wiedziec-przedsiebiorca/"
+                    ),
+                    "status": "indexed",
+                    "modified_gmt": "2026-06-17T20:00:00+00:00",
+                    "inventory_source": "sitemap",
+                },
+            )
+        ],
+    )
+
+    response = client.get("/api/marketing/tactical-queue")
+
+    assert response.status_code == 200
+    item = next(
+        item
+        for item in response.json()["items"]
+        if item["dimensions"].get("query") == "bdo przedsiębiorca"
+    )
+    assert item["dimensions"]["wordpress_match"] == "found"
+    assert item["dimensions"]["wordpress_match_confidence"] == "host_alias_sitemap"
+    assert item["dimensions"]["wordpress_content_host"] == "ekologus.dev.proudsite.pl"
+    assert item["dimensions"]["wordpress_host_alias_applied"] == "true"
+    assert item["dimensions"]["wordpress_inventory_source"] == "sitemap"
+    assert "wordpress_ekologus" in item["source_connectors"]
+    assert "ev_refresh_refresh_wordpress_ekologus_host_alias_test" in item["evidence_ids"]
 
 
 def test_evidence_registry_exposes_connector_status_without_secret_values(
@@ -1568,6 +1670,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
     clear_wordpress_env(monkeypatch)
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.test")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://ekologus.test")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
     monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
 
@@ -1646,6 +1749,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "posts_total": 12,
         "pages_total": 4,
         "sitemap_url_count": 1,
+        "public_sitemap_url_count": 0,
         "latest_modified_gmt": "2026-06-16T10:00:00",
         "latest_post_modified_gmt": "2026-06-15T10:00:00",
         "latest_page_modified_gmt": "2026-06-16T10:00:00",
@@ -1689,6 +1793,73 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "inventory_source": "sitemap",
     }
     assert any(fact.name == "sitemap_url_count" for fact in result.metric_facts)
+
+
+def test_wordpress_vendor_read_adds_public_production_sitemap_inventory(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_wordpress_env(monkeypatch)
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.dev.proudsite.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "ekologus.dev.proudsite.pl":
+            if request.url.path == "/wp-json/wp/v2/posts":
+                return httpx.Response(200, headers={"X-WP-Total": "0"}, json=[])
+            if request.url.path == "/wp-json/wp/v2/pages":
+                return httpx.Response(200, headers={"X-WP-Total": "0"}, json=[])
+            if request.url.path == "/wp-sitemap.xml":
+                return httpx.Response(404)
+        if request.url.host == "www.ekologus.pl":
+            if request.url.path == "/wp-sitemap.xml":
+                return httpx.Response(404)
+            if request.url.path == "/sitemap_index.xml":
+                return httpx.Response(
+                    200,
+                    text=(
+                        '<?xml version="1.0" encoding="UTF-8"?>'
+                        '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                        "<sitemap><loc>https://www.ekologus.pl/post-sitemap.xml</loc>"
+                        "<lastmod>2026-06-17T12:00:00+00:00</lastmod></sitemap>"
+                        "</sitemapindex>"
+                    ),
+                )
+            if request.url.path == "/post-sitemap.xml":
+                return httpx.Response(
+                    200,
+                    text=(
+                        '<?xml version="1.0" encoding="UTF-8"?>'
+                        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+                        "<url><loc>https://www.ekologus.pl/"
+                        "bdo-co-musi-wiedziec-przedsiebiorca/</loc>"
+                        "<lastmod>2026-06-17T12:00:00+00:00</lastmod></url>"
+                        "</urlset>"
+                    ),
+                )
+        return httpx.Response(404)
+
+    result = refresh_wordpress_content_inventory(
+        "wordpress_ekologus",
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.metric_summary["public_sitemap_url_count"] == 1
+    public_sitemap_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "content_object_seen"
+        and fact.dimensions.get("inventory_source") == "public_sitemap"
+    )
+    assert public_sitemap_fact.dimensions["content_url"] == (
+        "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    )
+    assert any(fact.name == "public_sitemap_url_count" for fact in result.metric_facts)
 
 
 def test_wordpress_vendor_read_routes_through_refresh_endpoint(
