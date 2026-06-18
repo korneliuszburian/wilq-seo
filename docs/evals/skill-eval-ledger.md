@@ -797,3 +797,92 @@ Verdict:
 
 Strong anti-hallucination pass. `wilq-custom-segments` is correctly blocked
 until WILQ exposes real source terms for audience candidates.
+
+## 2026-06-18 - wilq-demand-gen-operator
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-demand-gen-operator`.
+
+Why this eval matters:
+
+Demand Gen is a high-risk workflow because it can easily become generic advice
+about creatives, audiences or campaign migration. The skill must not claim
+asset quality, creative readiness, traffic quality or migration readiness
+unless WILQ exposes Demand Gen-specific evidence and validated action gates.
+
+Pre-eval smoke facts:
+
+- Required connectors `google_ads` and `google_analytics_4` are configured.
+- Merchant evidence is available as adjacent context.
+- Context-pack evidence count: 80.
+- Opportunity count: 3:
+  `opp_connector_google_ads`,
+  `opp_connector_google_analytics_4`,
+  `opp_connector_google_merchant_center`.
+- Active action count: 2:
+  `act_review_merchant_feed_issues`,
+  `act_review_ga4_tracking_quality`.
+- Current facts are aggregate Ads/GA4/Merchant readiness, not Demand Gen asset,
+  creative, landing-quality or migration evidence.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260618T105005Z/wilq-demand-gen-operator/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors:
+  `google_ads`, `google_analytics_4`, `google_merchant_center`.
+- Evidence IDs:
+  `ev_refresh_refresh_google_analytics_4_a45fa03e453b`,
+  `ev_refresh_refresh_google_ads_2b355f0a0001`,
+  `ev_connector_google_merchant_center_status`.
+- Opportunity IDs:
+  `opp_connector_google_ads`,
+  `opp_connector_google_analytics_4`,
+  `opp_connector_google_merchant_center`.
+- Action candidates:
+  `act_review_ga4_tracking_quality`,
+  `act_review_merchant_feed_issues`, both with missing validation state.
+- Recommendations: empty.
+- `blocked=true` is correct.
+- `operator_usefulness_score=3`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill confirms API/context-pack and connector readiness.
+- It blocks Demand Gen recommendations because the current evidence is only
+  aggregate readiness, not asset/creative/landing/migration diagnostics.
+- It points to the nearest safe action:
+  validate `act_review_ga4_tracking_quality` before judging campaign traffic.
+
+Product gaps found:
+
+1. This is a guardrail pass, not a strong marketer-value pass. A score of 3 is
+   correct because the skill mostly blocks.
+2. WILQ needs a Demand Gen diagnostics/read contract: campaign type, assets,
+   creative inventory, landing/source/campaign quality, Merchant/product fit and
+   migration-specific constraints.
+3. Adjacent actions are not Demand Gen actions. Future evals should fail if the
+   skill treats `act_review_merchant_feed_issues` or
+   `act_review_ga4_tracking_quality` as sufficient to create/migrate Demand Gen.
+
+Verdict:
+
+Safe but shallow. `wilq-demand-gen-operator` correctly refuses unsupported
+Demand Gen recommendations, but needs real Demand Gen evidence and ActionObject
+contracts before it can produce useful campaign/readiness work.

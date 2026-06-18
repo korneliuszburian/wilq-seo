@@ -296,3 +296,18 @@ Recommendations and action candidates are empty because WILQ currently exposes
 aggregate Ads/GSC metrics, not real source terms/search terms/query evidence
 for audience candidates. Next product slice: source-term read contract with
 evidence lineage.
+
+Tenth non-interactive Codex eval completed:
+
+```text
+skill: wilq-demand-gen-operator
+result: passed
+artifact: .local-lab/evals/codex-skill/20260618T105005Z/wilq-demand-gen-operator/result.json
+```
+
+Interpretation: safe but shallow guardrail pass. It returned `pl-PL`,
+`api_used=true`, Ads/GA4/Merchant connectors, `blocked=true`, and
+`operator_usefulness_score=3`. The skill correctly refuses Demand Gen
+recommendations because WILQ has aggregate Ads/GA4/Merchant readiness, but no
+asset, creative, landing-quality or migration diagnostics. Next product slice:
+Demand Gen diagnostics/read contract plus Demand Gen-specific ActionObject.

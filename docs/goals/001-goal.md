@@ -556,6 +556,12 @@ Current eval progress:
   This is an anti-hallucination pass. It blocks audience/custom segment
   candidates because WILQ currently has aggregate Ads/GSC facts, but not real
   source terms/search terms/query evidence with lineage.
+- `wilq-demand-gen-operator`: passed at
+  `.local-lab/evals/codex-skill/20260618T105005Z/wilq-demand-gen-operator/result.json`.
+  This is a guardrail pass with low usefulness (`operator_usefulness_score=3`).
+  It correctly blocks Demand Gen recommendations because WILQ has aggregate
+  Ads/GA4/Merchant readiness only, not asset, creative, landing-quality,
+  migration diagnostics or a Demand Gen-specific ActionObject.
 
 ### 4. Performance Slice
 
