@@ -309,3 +309,72 @@ Verdict:
 Useful as a guardrailed GA4 readiness and behavior-review skill. It is not yet a
 deep landing/source/campaign analyst until eval cases require concrete ranked
 diagnostic items.
+
+## 2026-06-18 - wilq-gsc-content-doctor
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-gsc-content-doctor`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260618T101550Z/wilq-gsc-content-doctor/result.json
+trace: .local-lab/evals/codex-skill/20260618T101550Z/wilq-gsc-content-doctor/trace.jsonl
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors:
+  `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`.
+- Evidence IDs:
+  `ev_refresh_refresh_google_search_console_554550c44ec7`,
+  `ev_refresh_refresh_wordpress_ekologus_48a29f72b86c`.
+- Opportunity IDs:
+  `opp_connector_google_search_console`,
+  `opp_connector_wordpress_ekologus`.
+- Action candidate:
+  `act_prepare_content_refresh_queue` with `pending_validation`.
+- Key live facts surfaced by the skill:
+  `content_diagnostics.live_data_available=true`,
+  `query_page_count=10`, `matched_inventory_count=0`,
+  section IDs `content_query_page_matrix`, `content_inventory_match`,
+  `content_action_safety`.
+- `operator_usefulness_score=4`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill correctly turns GSC evidence into a prepare-only content queue
+  direction.
+- It names the route `/seo-gsc`, `content_diagnostics`, query/page matrix and
+  `act_prepare_content_refresh_queue`.
+- It blocks ranking uplift, WordPress write/apply and publication claims without
+  validation and audit.
+
+Product gaps found:
+
+1. The eval is safe, but too generic for final marketer value. It does not force
+   concrete query/URL items such as BDO or Zielony Lad clusters, even though the
+   richer manual `wilq-content-strategist` run showed that this is possible.
+2. `matched_inventory_count=0` means the current WordPress inventory matching is
+   still a blocker for confident refresh/create/merge decisions.
+3. Future GSC eval cases should require at least one explicit query/page
+   candidate, evidence IDs, and whether it is `refresh`, `merge`, `create` or
+   `block`.
+
+Verdict:
+
+Useful as a safe GSC/content readiness and queue-preparation skill. Not yet
+strong enough as a standalone SEO operator until evals require concrete
+query/page decisions.

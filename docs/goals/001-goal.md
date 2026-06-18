@@ -420,6 +420,15 @@ Tasks:
   Remaining quality gap: future GA4 evals should assert ranked
   landing/source/campaign diagnostic items and explicit ActionObject validation
   proof.
+- 2026-06-18 follow-up: fourth real non-interactive Codex eval passed for
+  `wilq-gsc-content-doctor`:
+  `.local-lab/evals/codex-skill/20260618T101550Z/wilq-gsc-content-doctor/result.json`.
+  It proves `pl-PL`, Polish diacritics, `api_used=true`,
+  GSC/WordPress evidence IDs, `content_diagnostics.live_data_available=true`,
+  `query_page_count=10`, `matched_inventory_count=0` and
+  `act_prepare_content_refresh_queue` as the safe pending-validation content
+  queue path. Remaining quality gap: future GSC evals should assert concrete
+  query/page candidates with `refresh`, `merge`, `create` or `block` decisions.
 - Performance direction: follow TanStack/React guidance by avoiding client
   waterfalls and duplicated data models. Do not patch this with random
   `useMemo`; next performance slice should build a lightweight daily-decision
