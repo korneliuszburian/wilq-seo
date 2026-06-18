@@ -983,20 +983,19 @@ Prompt source:
 
 Why this eval matters:
 
-Social publishing is a write-adjacent workflow. The skill must distinguish
-review-safe draft preparation from actual publishing, and it must not pretend
-LinkedIn/Facebook permissions exist when connector credentials are missing.
+Social publishing is write-adjacent. The skill must clearly separate
+review-safe drafts from publishing, and it must not pretend LinkedIn/Facebook
+permissions exist when connector credentials are missing.
 
 Pre-eval smoke facts:
 
-- Required connectors:
-  - `linkedin`: `missing_credentials`
-    (`LINKEDIN_ORGANIZATION_ID`, `LINKEDIN_ACCESS_TOKEN`),
-  - `facebook`: `missing_credentials`
-    (`FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN`).
+- Required connector `linkedin` has `missing_credentials`:
+  `LINKEDIN_ORGANIZATION_ID`, `LINKEDIN_ACCESS_TOKEN`.
+- Required connector `facebook` has `missing_credentials`:
+  `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN`.
 - Context-pack evidence count: 80.
 - Opportunity count: 5.
-- Active action count: 5, including social draft ActionObjects:
+- Active action count: 5, including:
   `act_prepare_linkedin_social_drafts`,
   `act_prepare_facebook_social_drafts`.
 - `/api/marketing/brief` does not promote social as a primary brief item.
@@ -1038,16 +1037,15 @@ Useful output:
 
 - The skill does not publish and does not call write/apply.
 - It does not pretend social permissions exist.
-- It treats LinkedIn/Facebook draft actions as review candidates only, blocked
-  until connector readiness and ActionObject validation exist.
+- It keeps draft ActionObjects review-only until connector readiness and
+  ActionObject validation exist.
 
 Product gaps found:
 
 1. Social draft ActionObjects exist, but social connectors are not configured.
-2. The skill cannot produce post directions because current social context has
-   status/evidence IDs but no review-safe post content payload or validated
-   ActionObject result.
-3. Social actions should stay out of daily primary action candidates unless the
+2. Current social context has status/evidence IDs but no validated post payload
+   or review-safe post content result.
+3. Social actions must stay out of daily primary action candidates unless the
    operator explicitly asks for social.
 
 Verdict:
