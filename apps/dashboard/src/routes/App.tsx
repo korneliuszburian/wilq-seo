@@ -1058,11 +1058,43 @@ type CommandCenterBriefItem = CommandCenterResponse["operator_brief"][number];
 type CommandCenterDemoStep = CommandCenterResponse["demo_script"][number];
 type CommandCenterActionPlanItem = CommandCenterResponse["action_plan"][number];
 
+const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> = {
+  content_refresh: "odświeżenie treści",
+  content_create: "nowa treść",
+  content_merge: "scalenie treści",
+  content_block: "blokada treści",
+  landing_page_quality: "jakość landing page",
+  merchant_feed_triage: "triage feedu",
+  traffic_quality_review: "jakość ruchu"
+};
+
+const tacticalDomainLabels: Record<string, string> = {
+  gsc_seo: "SEO / GSC",
+  ga4: "GA4",
+  merchant: "Merchant",
+  content: "Content"
+};
+
+const tacticalDimensionLabels: Record<string, string> = {
+  query: "Query",
+  page: "Strona",
+  landing_page: "Landing",
+  source_medium: "Źródło",
+  campaign_name: "Kampania",
+  issue_type: "Issue",
+  affected_attribute: "Atrybut",
+  country: "Kraj",
+  reporting_context: "Kontekst",
+  wordpress_match: "WordPress",
+  wordpress_match_confidence: "Dopasowanie WP",
+  gsc_page_query_count: "Liczba query"
+};
+
 function TacticalQueuePanel({
   queue,
   connectorIds,
   limit = 8,
-  title = "Kolejka taktyczna WILQ",
+  title = "Konkretne zadania z danych",
   isLoading,
   isError
 }: {
@@ -1096,15 +1128,22 @@ function TacticalQueuePanel({
 
   return (
     <section>
-      <div className="mb-3 flex items-start gap-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
           <ClipboardCheck aria-hidden="true" size={18} />
         </div>
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            {title}
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">{queue.strict_instruction}</p>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">{title}</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródło,
+            evidence IDs, ActionObject i claimy, których WILQ nie wolno dopowiadać.
+          </p>
+          <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Taktyki" value={queue.items.length} />
+          <MetricTile label="Evidence" value={queue.evidence_ids.length} />
+          <MetricTile label="Akcje" value={queue.action_ids.length} />
         </div>
       </div>
       {items.length === 0 ? (
@@ -1127,7 +1166,8 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
         <div>
           <h3 className="text-sm font-semibold">{item.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {item.intent} / priority {item.priority}
+            {tacticalDomainLabels[item.domain] ?? item.domain} /{" "}
+            {tacticalIntentLabels[item.intent]} / priority {item.priority}
           </p>
         </div>
         <StatusBadge value={item.risk} />
@@ -1140,17 +1180,42 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
         <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
         <TraceLine label="Blokady claimów" values={item.blocked_claims} />
       </div>
-      {Object.keys(item.dimensions).length > 0 ? (
+      {tacticalContextPairs(item).length > 0 ? (
         <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-700">
-          Wymiar:{" "}
-          {Object.entries(item.dimensions)
-            .map(([key, value]) => `${key}=${value}`)
-            .join(", ")}
+          <div className="font-semibold text-ink">Kontekst</div>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {tacticalContextPairs(item).map(([key, value]) => (
+              <span key={key} className="rounded border border-line bg-white px-2 py-1">
+                {tacticalDimensionLabels[key] ?? key}: {value}
+              </span>
+            ))}
+          </div>
         </div>
       ) : null}
       {item.metric_facts.length > 0 ? <MetricFactChips facts={item.metric_facts.slice(0, 4)} /> : null}
     </article>
   );
+}
+
+function tacticalContextPairs(item: TacticalQueueItem): Array<[string, string]> {
+  const priorityKeys = [
+    "query",
+    "page",
+    "landing_page",
+    "source_medium",
+    "campaign_name",
+    "issue_type",
+    "affected_attribute",
+    "country",
+    "reporting_context",
+    "wordpress_match",
+    "wordpress_match_confidence",
+    "gsc_page_query_count"
+  ];
+  return priorityKeys
+    .filter((key) => item.dimensions[key])
+    .slice(0, 6)
+    .map((key) => [key, item.dimensions[key]]);
 }
 
 function DailyOperatorBrief({ data }: { data: CommandCenterResponse }) {
@@ -1369,6 +1434,14 @@ function CommandCenter() {
 
         <MarketerActionPlan items={data.action_plan} />
 
+        <TacticalQueuePanel
+          queue={tacticalQueue.data}
+          limit={6}
+          title="Dzisiejsze konkretne taktyki"
+          isLoading={tacticalQueue.isLoading}
+          isError={Boolean(tacticalQueue.error)}
+        />
+
         <MarketerDemoScript steps={data.demo_script} />
 
         <MarketingBriefPanel
@@ -1404,12 +1477,6 @@ function CommandCenter() {
         ))}
 
         <ActionQueue actions={data.active_actions} />
-
-        <TacticalQueuePanel
-          queue={tacticalQueue.data}
-          isLoading={tacticalQueue.isLoading}
-          isError={Boolean(tacticalQueue.error)}
-        />
 
         <MetricInventory
           facts={metricFacts.data ?? []}

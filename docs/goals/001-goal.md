@@ -7061,3 +7061,125 @@ Goal 001 is still not complete after this slice. Remaining work after commit:
   real evidence and ActionObjects.
 * Localo remains blocked until access is fully live; dashboard/skills should
   keep showing that blocker instead of local visibility claims.
+
+## 60. Slice 2026-06-18 - Command Center tactical queue preview for ready evidence
+
+Status: full verification complete; commit and push pending.
+
+Product intent:
+
+* The Command Center action plan tells the marketer which route to open, but
+  the first screen also needs concrete tactical rows from real evidence:
+  GSC query/page candidates, GA4 landing/source/campaign checks and Merchant
+  feed issue triage.
+* WILQ already exposes these through `/api/marketing/tactical-queue`; the demo
+  should make them visible before long inventory tables so the marketer sees
+  immediate work, not only high-level cards.
+* The UI must remain API-backed and Polish. It must show evidence/action trace
+  and blocked claims instead of presenting tactical queue items as guaranteed
+  uplift or automatic fixes.
+
+Implemented in this slice so far:
+
+* Moved tactical queue visibility up in `/command-center`, directly after
+  `Plan działań marketera`.
+* Renamed the marketer-facing panel to `Dzisiejsze konkretne taktyki`.
+* Added compact panel counters:
+  * tactical item count,
+  * evidence ID count,
+  * ActionObject count.
+* Replaced raw technical `Wymiar: key=value` dump with Polish `Kontekst` chips
+  for the most important dimensions:
+  * query/page,
+  * landing/source/campaign,
+  * Merchant issue/attribute/context,
+  * WordPress match confidence.
+* Added Polish labels for tactical domains and intents, for example:
+  * `SEO / GSC`,
+  * `GA4`,
+  * `Merchant`,
+  * `odświeżenie treści`,
+  * `jakość landing page`,
+  * `triage feedu`.
+* Updated dashboard unit tests and Playwright smoke expectations from the old
+  generic tactical title to the new marketer-facing panel.
+
+Live API proof before implementation:
+
+```bash
+curl --max-time 20 -sS http://127.0.0.1:8000/api/marketing/tactical-queue \
+  | jq '{count:(.items|length), evidence_count:(.evidence_ids|length), action_ids}'
+```
+
+Result summary:
+
+* Tactical queue item count: `24`.
+* Evidence ID count: `5`.
+* Action IDs:
+  * `act_prepare_content_refresh_queue`
+  * `act_review_ga4_tracking_quality`
+  * `act_review_merchant_feed_issues`
+* Live item examples include:
+  * GSC `bdo co to -> https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/`
+  * GA4 `(not set) / (not set)`
+  * Merchant `availability_updated`, `missing_potentially_required_attribute`,
+    `image_too_small_for_high_resolution`.
+
+Focused verification already run:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard exec playwright test e2e/dashboard-demo-proof.spec.ts e2e/dashboard-api.spec.ts --grep "command center|demo path"
+pnpm --filter @wilq/dashboard build
+```
+
+Focused results:
+
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Dashboard route tests: `12 passed`.
+* Playwright command center + marketer demo proof: `2 passed`.
+* Production dashboard build: passed.
+* Latest browser proof path:
+
+```text
+.local-lab/proof/dashboard-demo/2026-06-18T04-06-31-485Z
+```
+
+Full verification run:
+
+```bash
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Full verification results:
+
+* Backend API contracts: `80 passed`.
+* Dashboard route tests: `12 passed`.
+* Skill API smoke: passed.
+* Playwright e2e: `8 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Remaining before closing this slice:
+
+1. Commit with Conventional Commit, expected message:
+
+```text
+feat(dashboard): surface tactical queue in command center
+```
+
+2. Push to `origin/main`.
+
+Goal 001 is still not complete after this slice. Remaining work after commit:
+
+* Ready route depth still needs improvement beyond preview: Merchant, Content
+  Planner and GA4 should expose richer per-route operator decisions with fewer
+  raw metric dumps and clearer next-step/action validation affordances.
+* Codex skills for Merchant, Content and GA4 should be upgraded/evaluated
+  against the same tactical queue contract after the dashboard surface is
+  stable.
+* Ads OAuth and Localo access remain honest blockers until external access is
+  recovered.

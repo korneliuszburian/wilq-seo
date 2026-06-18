@@ -1178,6 +1178,12 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Content: GSC query/page + WordPress inventory")).toBeInTheDocument();
     expect(screen.getByText("GA4: landing/source/campaign quality review")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Dzisiejsze konkretne taktyki")).toBeInTheDocument();
+    expect(screen.getByText("GA4: /oferta/ / google / cpc")).toBeInTheDocument();
+    expect(screen.getByText("Merchant: NOT_IMPACTED / availability_updated / PL")).toBeInTheDocument();
+    expect(screen.getAllByText("Kontekst").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
+    expect(screen.getByText(/Issue: availability_updated/)).toBeInTheDocument();
     expect(screen.getByText("Demo dla marketera")).toBeInTheDocument();
     expect(screen.getByText("Start: plan dnia WILQ")).toBeInTheDocument();
     expect(
@@ -1192,7 +1198,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
     expect(screen.getByText("Budżet i ryzyko wydatków")).toBeInTheDocument();
     expect(screen.getByText("Kandydaci działań API")).toBeInTheDocument();
-    expect(screen.getByText("Kolejka taktyczna WILQ")).toBeInTheDocument();
+    expect(screen.getByText("Dzisiejsze konkretne taktyki")).toBeInTheDocument();
     expect(screen.getAllByText("GA4: /oferta/ / google / cpc").length).toBeGreaterThan(0);
   });
 

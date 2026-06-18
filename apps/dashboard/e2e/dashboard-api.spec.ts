@@ -26,10 +26,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kolejka taktyczna WILQ" })).toBeVisible();
-    await expect(page.getByText(/Wymiar:/).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toBeVisible();
+    await expect(page.getByText("Kontekst").first()).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Google Ads connector ready for first search-term refresh" }).first()
+      page.getByRole("heading", { name: /GSC: .* ->/ }).first()
     ).toBeVisible();
 
     await expect
