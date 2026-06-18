@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-18.
+Last updated: 2026-06-19.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -156,6 +156,10 @@ Do not rebuild these from scratch:
 - Merchant route/API clarification for feed issues: issue clusters show report
   occurrences and context, while product-level sample IDs/titles remain blocked
   until the Merchant read contract exposes them.
+- Merchant route operator cleanup: `/merchant` now shows the feed review task,
+  issue clusters, translated blocked claims, ActionObject validation and
+  `Dowody i ograniczenia Merchant` instead of duplicate diagnostic sections or
+  English technical copy.
 - Metric store grouped batch reads for tactical/content surfaces: latest
   query/page groups keep clicks, impressions, CTR and position together instead
   of truncating by connector row count.
@@ -165,11 +169,12 @@ Do not rebuild these from scratch:
 These are the current reasons Goal 001 is not complete:
 
 1. **Dashboard route audit is not finished.**
-   Command Center, `/actions` and `/opportunities` have been cleaned up for the
-   current stale Ads/Localo/readiness issues. Remaining route work must continue
-   top-to-bottom on `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and
-   `/localo`, looking for duplicate intent, stale copy, missing Codex bridge and
-   technical wording that masquerades as marketer insight.
+   Command Center, `/actions`, `/opportunities` and `/merchant` have been
+   cleaned up for the current stale Ads/Localo/readiness issues and technical
+   wording. Remaining route work must continue top-to-bottom on
+   `/content-planner`, `/ga4`, `/ads-doctor` and `/localo`, looking for
+   duplicate intent, stale copy, missing Codex bridge and technical wording that
+   masquerades as marketer insight.
 
 2. **Command Center and supporting registries must stay separated.**
    Evidence IDs and ActionObjects are required, but the marketer needs a clear
@@ -956,11 +961,10 @@ Commit rules:
 ## Immediate Next Tasks
 
 1. **Continue route audit beyond Command Center/actions/opportunities.**
-   Next routes: `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and
-   `/localo`. Use `agent-browser` after the page settles. For each route,
-   remove or demote visible sections that cannot answer: `co widzę`,
-   `co to znaczy`, `co zrobić teraz`, `czego nie wolno twierdzić`, and
-   `jak Codex może pomóc`.
+   Next routes: `/content-planner`, `/ga4`, `/ads-doctor` and `/localo`. Use
+   `agent-browser` after the page settles. For each route, remove or demote
+   visible sections that cannot answer: `co widzę`, `co to znaczy`, `co zrobić
+   teraz`, `czego nie wolno twierdzić`, and `jak Codex może pomóc`.
 
 2. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a
@@ -1007,6 +1011,33 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 `/merchant` operator cleanup:
+
+```bash
+uv run ruff check wilq/briefing/merchant_diagnostics.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/merchant_diagnostics.py
+uv run pytest tests/test_api_contracts.py -q -k 'merchant_diagnostics'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts
+scripts/verify.sh
+```
+
+Result:
+
+- API focused pytest: passed.
+- Dashboard lint/typecheck: passed.
+- Dashboard route tests: 13 passed.
+- Playwright e2e: 9 passed.
+- `agent-browser` proof: `/merchant` has no visible `payload preview`,
+  `review queue`, `read-only`, `feed/product`, `configured`, `Evidence`,
+  `Feed Safety Gate`, `ActionObject focus`, duplicate old Merchant diagnostic headings,
+  `automatic feed edit`, `approval restored`, `sample product IDs` or `READY`.
+- Full `scripts/verify.sh`: passed with backend API contracts `98 passed`,
+  dashboard route tests `13 passed`, Playwright e2e `9 passed` and dashboard
+  production build passed.
 
 Passed after the 2026-06-19 `/actions` + `/opportunities` cleanup:
 

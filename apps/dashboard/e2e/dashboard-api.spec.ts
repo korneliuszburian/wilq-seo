@@ -114,7 +114,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Content Planner", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "ActionObject focus" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ActionObjecty do walidacji" })).toBeVisible();
   });
 
   test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
@@ -152,14 +152,19 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status Merchant Center" })).toBeVisible();
-    await expect(page.getByText("Merchant Center: feed/product health")).toBeVisible();
-    await expect(page.getByText("Merchant Center: kolejka feed/product issues")).toBeVisible();
+    await expect(page.getByText("Dowody i ograniczenia Merchant")).toBeVisible();
+    await expect(page.getByText("Merchant Center: feed/product health")).toHaveCount(0);
+    await expect(page.getByText("Merchant Center: kolejka feed/product issues")).toHaveCount(0);
     await expect(page.getByText("Zgłoszenia", { exact: true })).toBeVisible();
     await expect(page.getByText("Affected", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("dostęp skonfigurowany")).toBeVisible();
+    await expect(page.getByText("metryki feedu dostępne")).toBeVisible();
     await expect(page.getByText(/zgłoszenia:/).first()).toBeVisible();
     await expect(page.getByText(/kontekst:/).first()).toBeVisible();
-    await expect(page.getByText(/Merchant: .*availability_updated/).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "ActionObject focus" })).toBeVisible();
+    await expect(page.getByText(/Merchant: .*availability_updated/)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "ActionObjecty do walidacji" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()
     ).toBeVisible();
@@ -168,7 +173,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.getByRole("button", { name: "Waliduj" }).first().click();
     await expect(page.getByText("Wynik:")).toBeVisible();
     await expect(page.getByText("valid").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Feed Safety Gate" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa feedu" })).toBeVisible();
 
     const evidenceLink = page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first();
     await expect(evidenceLink).toBeVisible();

@@ -735,7 +735,7 @@ const tacticalQueue = {
         affected_attribute: "n:availability"
       },
       diagnosis: "Merchant issue availability_updated dotyczy atrybutu n:availability.",
-      next_step: "Przygotuj review queue bez zmiany primary feedu.",
+      next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego feedu.",
       blocked_claims: ["automatic feed edit", "approval restored"],
       action_ids: ["act_review_merchant_feed_issues"]
     }
@@ -795,24 +795,24 @@ const merchantDiagnostics = {
       sample_product_ids: [],
       sample_titles: [],
       sample_unavailable_reason:
-        "Obecny Merchant read contract zwraca issue dimensions i liczbę wystąpień problemu w raportach, ale nie zwraca sample product IDs ani tytułów.",
+        "Obecny kontrakt odczytu Merchant zwraca wymiary problemu i liczbę wystąpień problemu w raportach, ale nie zwraca przykładowych ID produktów ani tytułów.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
       action_id: "act_review_merchant_feed_issues",
       risk: "medium",
       next_step:
-        "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; najpierw przygotuj payload preview, bez automatycznej zmiany feedu."
+        "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
     }
   ],
   sections: [
     {
       id: "merchant_feed_health",
-      title: "Merchant Center: feed/product health",
+      title: "Merchant Center: stan produktów i feedu",
       status: "ready",
       summary: "Metryki Merchant: total_products=10900, item_level_issue_count=23.",
-      diagnosis: "WILQ ma read-only Merchant facts i może ocenić skalę feedu.",
-      next_step: "Przejdź do issue queue i grupuj problemy po issue_type.",
+      diagnosis: "WILQ ma metryki Merchant z odczytu i może ocenić skalę feedu.",
+      next_step: "Przejdź do kolejki problemów i grupuj je po typie.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       metric_facts: [metricFacts[2], metricFacts[3]],
@@ -823,11 +823,11 @@ const merchantDiagnostics = {
     },
     {
       id: "merchant_issue_queue",
-      title: "Merchant Center: kolejka feed/product issues",
+      title: "Merchant Center: kolejka problemów feedu",
       status: "ready",
       summary:
-        "WILQ ma 1 grupę problemów feedu, 1 taktykę Merchant i 1 metrykę issue. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
-      diagnosis: "Najbezpieczniejsza praca to review problemów po issue_type.",
+        "WILQ ma 1 grupę problemów feedu, 1 taktykę Merchant i 1 metrykę problemu. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
+      diagnosis: "Najbezpieczniejsza praca to przegląd problemów po typie.",
       next_step: "Otwórz ActionObject `act_review_merchant_feed_issues`.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
@@ -1579,11 +1579,12 @@ describe("WILQ dashboard", () => {
         screen.getByRole("heading", { name: "Merchant Center" })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Merchant Center: feed/product health")).toBeInTheDocument();
-    expect(screen.getByText("Merchant Center: kolejka feed/product issues")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i ograniczenia Merchant")).toBeInTheDocument();
+    expect(screen.queryByText("Merchant Center: feed/product health")).not.toBeInTheDocument();
+    expect(screen.queryByText("Merchant Center: kolejka feed/product issues")).not.toBeInTheDocument();
     expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
-    expect(screen.getByText(/WILQ grupuje problemy Merchant po issue type/)).toBeInTheDocument();
+    expect(screen.getByText(/WILQ grupuje problemy Merchant po typie/)).toBeInTheDocument();
     expect(screen.getByText("availability_updated / n:availability / SHOPPING_ADS")).toBeInTheDocument();
     expect(
       screen.getByText(/Raport pokazuje 23 zgłoszenia tego problemu w kraju PL \/ SHOPPING_ADS/)
@@ -1592,15 +1593,23 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("zgłoszenia: 23")).toBeInTheDocument();
     expect(screen.getByText("kontekst: SHOPPING_ADS")).toBeInTheDocument();
     expect(screen.queryByText("Affected")).not.toBeInTheDocument();
-    expect(screen.getByText(/nie zwraca sample product IDs/)).toBeInTheDocument();
+    expect(screen.queryByText("configured")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
+    expect(screen.getByText("dostęp skonfigurowany")).toBeInTheDocument();
+    expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
+    expect(screen.getByText("Dowody")).toBeInTheDocument();
+    expect(screen.getByText(/nie zwraca przykładowych ID produktów/)).toBeInTheDocument();
+    expect(screen.getByText(/najpierw przygotuj podgląd payloadu/)).toBeInTheDocument();
+    expect(screen.getAllByText(/produkt zatwierdzony ponownie/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
       "href",
       "/actions/act_review_merchant_feed_issues"
     );
-    expect(screen.getAllByText("Merchant: NOT_IMPACTED / availability_updated / PL").length).toBe(1);
+    expect(screen.queryByText("Merchant: NOT_IMPACTED / availability_updated / PL")).not.toBeInTheDocument();
     expect(screen.getAllByText(/total_products: 10900/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
-    expect(screen.getByText("ActionObject focus")).toBeInTheDocument();
+    expect(screen.getByText("ActionObjecty do walidacji")).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
     ).toBeInTheDocument();

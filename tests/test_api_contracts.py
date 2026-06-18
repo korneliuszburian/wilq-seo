@@ -2293,7 +2293,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert cluster["action_id"] == "act_review_merchant_feed_issues"
     assert cluster["sample_product_ids"] == []
     assert cluster["sample_titles"] == []
-    assert "nie zwraca sample product IDs" in cluster["sample_unavailable_reason"]
+    assert "nie zwraca przykładowych ID produktów" in cluster["sample_unavailable_reason"]
     assert "wystąpień problemu" in cluster["sample_unavailable_reason"]
     assert "approval restored" in cluster["blocked_claims"]
     feed_section = next(

@@ -1110,3 +1110,73 @@ Remaining product risk:
 - Continue route audit on `/merchant`, `/content-planner`, `/ga4`,
   `/ads-doctor` and `/localo` for stale copy, duplicate intent, missing
   Codex/action bridge and performance cost.
+
+## 2026-06-19 - Merchant Route Operator Cleanup
+
+What changed:
+
+- `/merchant` is no longer a duplicate diagnostic dump of
+  `Merchant Center: feed/product health` and
+  `Merchant Center: kolejka feed/product issues`.
+- The route now starts from a marketer task: `Co marketer ma zrobić teraz z
+  feedem`, then shows issue clusters, safe mode, `Dowody i ograniczenia
+  Merchant`, ActionObject validation and the feed safety gate.
+- Visible Merchant copy no longer shows stale English/technical phrases such as
+  `payload preview`, `review queue`, `read-only`, `configured`, `Evidence`,
+  `Feed Safety Gate`, `ActionObject focus`, `automatic feed edit`,
+  `approval restored` or `sample product IDs`.
+- Merchant API copy now uses Polish operator wording for missing sample product
+  IDs/titles, review queue and payload preview. Stable IDs/enums remain
+  unchanged.
+- Blocked Merchant claims are translated in the route UI while preserving the
+  original API contract values underneath.
+- Shared `ActionObjectFocus` now uses Polish labels:
+  `ActionObjecty do walidacji`, `Dowody`, `Podgląd payloadu` and a Polish
+  apply-blocker explanation.
+
+Browser proof:
+
+- `agent-browser` `/merchant` after API restart and an 8s settle:
+  - headings include `Co marketer ma zrobić teraz z feedem`,
+    `DOWODY I OGRANICZENIA MERCHANT`, `ACTIONOBJECTY DO WALIDACJI`,
+    `BRAMA BEZPIECZEŃSTWA FEEDU`;
+  - suspect hits are empty for `payload preview`, `review queue`,
+    `read-only`, `feed/product`, `live product facts`, `raw product dumps`, `issue queue`,
+    `configured`, `Evidence`, `Feed Safety Gate`, `ActionObject focus`,
+    `Merchant Center: feed/product health`,
+    `Merchant Center: kolejka feed/product issues`, `automatic feed edit`,
+    `approval restored`, `sample product IDs`, `READY`, `resolution:`.
+
+Focused proof passed:
+
+```bash
+uv run ruff check wilq/briefing/merchant_diagnostics.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/merchant_diagnostics.py
+uv run pytest tests/test_api_contracts.py -q -k 'merchant_diagnostics'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts
+```
+
+Full proof passed:
+
+```bash
+scripts/verify.sh
+```
+
+Full gate result:
+
+- Backend API contracts: `98 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- Dashboard production build: passed.
+
+Remaining product risk:
+
+- `/merchant` is now a useful route for feed review, but it still cannot show
+  product-level sample IDs/titles until the Merchant read contract exposes
+  them.
+- Continue route audit on `/content-planner`, `/ga4`, `/ads-doctor` and
+  `/localo` for stale copy, duplicate intent, missing Codex/action bridge and
+  performance cost.

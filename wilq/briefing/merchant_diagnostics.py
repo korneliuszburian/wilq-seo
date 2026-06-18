@@ -111,14 +111,17 @@ def _feed_health_section(
     if not facts:
         return MerchantDiagnosticSection(
             id="merchant_feed_health",
-            title="Merchant Center: brak live feed facts",
+            title="Merchant Center: brak aktualnych metryk feedu",
             status="blocked",
             summary=_merchant_blocker_reason(latest_refresh),
             diagnosis=(
                 "WILQ nie ma aktualnych Merchant metric facts, więc nie może ocenić "
                 "liczby produktów, issue count ani stanu feedu."
             ),
-            next_step="Uruchom read-only Merchant vendor_read i dopiero potem twórz feed queue.",
+            next_step=(
+                "Uruchom odczyt Merchant w trybie vendor_read i dopiero potem "
+                "twórz kolejkę feedu."
+            ),
             source_connectors=[MERCHANT_CONNECTOR_ID],
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             action_ids=action_ids,
@@ -129,15 +132,15 @@ def _feed_health_section(
     product_facts = _merchant_health_metric_facts(latest_refresh, facts)
     return MerchantDiagnosticSection(
         id="merchant_feed_health",
-        title="Merchant Center: feed/product health",
+        title="Merchant Center: stan produktów i feedu",
         status="ready",
         summary=_metric_sentence(product_facts or facts),
         diagnosis=(
-            "WILQ ma read-only Merchant facts. Można ocenić skalę feedu i liczbę "
+            "WILQ ma metryki Merchant z odczytu. Można ocenić skalę feedu i liczbę "
             "zgłoszonych problemów, ale nie wolno twierdzić, że produkt został naprawiony bez "
             "ActionObject, walidacji i audytu."
         ),
-        next_step="Przejdź do issue queue i grupuj problemy po issue_type oraz affected_attribute.",
+        next_step="Przejdź do kolejki problemów i grupuj je po typie oraz atrybucie.",
         source_connectors=[MERCHANT_CONNECTOR_ID],
         evidence_ids=_unique(fact.evidence_id for fact in product_facts or facts),
         metric_facts=(product_facts or facts)[:10],
@@ -162,12 +165,12 @@ def _issue_queue_section(
     if not issue_facts and not tactical_items:
         return MerchantDiagnosticSection(
             id="merchant_issue_queue",
-            title="Merchant Center: brak issue queue",
+            title="Merchant Center: brak kolejki problemów feedu",
             status="missing",
-            summary="Brak issue facts i Merchant tactical queue items.",
+            summary="Brak metryk problemów i pozycji kolejki Merchant.",
             diagnosis=(
                 "Nie ma bezpiecznego materiału do kolejki feed triage. WILQ musi "
-                "najpierw zebrać issue_type, affected_attribute albo product status facts."
+                "najpierw zebrać typ problemu, atrybut albo metryki statusu produktu."
             ),
             next_step="Odśwież Merchant vendor_read i sprawdź aggregateProductStatuses.",
             source_connectors=[MERCHANT_CONNECTOR_ID],
@@ -191,14 +194,14 @@ def _issue_queue_section(
     )
     issue_fact_count = _pl_count(
         len(issue_facts),
-        "metrykę issue",
-        "metryki issue",
-        "metryk issue",
+        "metrykę problemu",
+        "metryki problemu",
+        "metryk problemu",
     )
 
     return MerchantDiagnosticSection(
         id="merchant_issue_queue",
-        title="Merchant Center: kolejka feed/product issues",
+        title="Merchant Center: kolejka problemów feedu",
         status="ready",
         summary=(
             f"WILQ ma {cluster_count}, {tactical_count} i {issue_fact_count}. "
@@ -207,9 +210,13 @@ def _issue_queue_section(
         ),
         diagnosis=(
             "Najbezpieczniejsza praca dla marketera to review problemów po typie "
-            "issue, atrybucie i kontekście widoczności. WILQ nadal nie pokazuje raw product dumps."
+            "problemu, atrybucie i kontekście widoczności. WILQ nadal nie pokazuje "
+            "surowych list produktów."
         ),
-        next_step="Otwórz ActionObject `act_review_merchant_feed_issues` i przygotuj review queue.",
+        next_step=(
+            "Otwórz ActionObject `act_review_merchant_feed_issues` i przygotuj "
+            "kolejkę przeglądu."
+        ),
         source_connectors=[MERCHANT_CONNECTOR_ID],
         evidence_ids=_unique(
             [
@@ -273,8 +280,9 @@ def _merchant_issue_clusters(
                 reporting_context=reporting_context or None,
                 product_count=product_count,
                 sample_unavailable_reason=(
-                    "Obecny Merchant read contract zwraca issue dimensions i liczbę "
-                    "wystąpień problemu w raportach, ale nie zwraca sample product IDs ani tytułów."
+                    "Obecny kontrakt odczytu Merchant zwraca wymiary problemu i liczbę "
+                    "wystąpień problemu w raportach, ale nie zwraca przykładowych ID "
+                    "produktów ani tytułów."
                 ),
                 source_connectors=[MERCHANT_CONNECTOR_ID],
                 evidence_ids=_unique(fact.evidence_id for fact in group_facts),
@@ -283,7 +291,7 @@ def _merchant_issue_clusters(
                 risk=_merchant_cluster_risk(severity, resolution),
                 next_step=(
                     "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; "
-                    "najpierw przygotuj payload preview, bez automatycznej zmiany feedu."
+                    "najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
                 ),
             )
         )
@@ -325,15 +333,18 @@ def _product_action_safety_section(
         id="merchant_action_safety",
         title="Merchant Center: bezpieczne akcje",
         status="ready" if facts or tactical_items else "blocked",
-        summary="Merchant actions pozostają prepare-only do czasu walidacji payloadu i audytu.",
+        summary=(
+            "Akcje Merchant pozostają w trybie przygotowania do czasu walidacji "
+            "payloadu i audytu."
+        ),
         diagnosis=(
             "Zmiany feedu lub produktów mogą wpływać na widoczność i sprzedaż. WILQ "
-            "może przygotować review queue, ale nie może zmieniać primary feedu ani "
-            "twierdzić, że naprawił produkty bez apply support."
+            "może przygotować kolejkę przeglądu, ale nie może zmieniać głównego feedu ani "
+            "twierdzić, że naprawił produkty bez obsługi apply."
         ),
         next_step=(
-            "Waliduj ActionObject, pokaż payload preview i zatrzymaj apply "
-            "do explicit confirm."
+            "Waliduj ActionObject, pokaż podgląd payloadu i zatrzymaj apply "
+            "do jawnego potwierdzenia."
         ),
         source_connectors=[MERCHANT_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
