@@ -7064,7 +7064,7 @@ Goal 001 is still not complete after this slice. Remaining work after commit:
 
 ## 60. Slice 2026-06-18 - Command Center tactical queue preview for ready evidence
 
-Status: full verification complete; commit and push pending.
+Status: committed and pushed as `522704b feat(dashboard): surface tactical queue in command center`.
 
 Product intent:
 
@@ -7163,15 +7163,11 @@ Full verification results:
 * Production dashboard build: passed.
 * Full product gate `scripts/verify.sh`: passed.
 
-Remaining before closing this slice:
-
-1. Commit with Conventional Commit, expected message:
+Closed with commit:
 
 ```text
-feat(dashboard): surface tactical queue in command center
+522704b feat(dashboard): surface tactical queue in command center
 ```
-
-2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. Remaining work after commit:
 
