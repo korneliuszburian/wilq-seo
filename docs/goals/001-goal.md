@@ -6116,3 +6116,135 @@ Current remaining next work before calling the overnight goal stable:
    fresh Google Ads vendor data.
 4. Continue replacing generic dashboard shells with marketer-useful route view
    models backed by evidence, action IDs and blocked claims.
+
+## 52. 2026-06-18 03:56 CEST - Content Diagnostics route is live-useful for SEO/GSC and Content Planner
+
+Continuation rule for future Codex sessions:
+
+* This file is the canonical continuation ledger. Update it during work, before
+  and after each verified slice, so context loss does not erase current state.
+* If context is compacted, resume from this file plus `AGENTS.md`, then verify
+  live API truth before claiming current product state.
+
+Completed in this slice:
+
+* Added canonical API route `GET /api/content/diagnostics`.
+* Added `content_diagnostics` to `/api/codex/context-pack`.
+* Added typed Python and TypeScript schemas for Content Diagnostics.
+* Replaced generic SEO/GSC and Content Planner dashboard shells with a
+  dedicated marketer-facing surface backed by WILQ API.
+* Updated `wilq-gsc-content-doctor` and `wilq-content-strategist` skills to use
+  `/api/content/diagnostics` first, then context-pack confirmation.
+* Updated deterministic skill smoke scripts and Codex eval case expectations.
+* Added API contract tests, dashboard unit tests and Playwright e2e coverage.
+
+Live API proof:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/content/diagnostics | \
+  jq '{live_data_available, query_page_count, matched_inventory_count, sections:[.sections[].id], action_ids, blocker_count}'
+```
+
+Result:
+
+```json
+{
+  "live_data_available": true,
+  "query_page_count": 10,
+  "matched_inventory_count": 13,
+  "sections": [
+    "content_query_page_matrix",
+    "content_inventory_match",
+    "content_action_safety"
+  ],
+  "action_ids": [
+    "act_prepare_content_refresh_queue"
+  ],
+  "blocker_count": 0
+}
+```
+
+Skill smoke proof:
+
+```bash
+uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py \
+  --api-base http://127.0.0.1:8000 | jq '.content_diagnostics'
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py \
+  --api-base http://127.0.0.1:8000 | jq '.content_diagnostics'
+```
+
+Both smoke scripts returned:
+
+* `live_data_available=true`
+* `query_page_count=10`
+* `matched_inventory_count=13`
+* `action_ids=["act_prepare_content_refresh_queue"]`
+* sections `content_query_page_matrix`, `content_inventory_match`,
+  `content_action_safety`
+* safety-blocked claims: lead uplift, conversion uplift, revenue impact,
+  duplicate-free guarantee, WordPress write, auto publish and ranking guarantee
+
+Non-interactive Codex eval proof:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh \
+  --skill wilq-gsc-content-doctor \
+  --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh \
+  --skill wilq-content-strategist \
+  --api-base http://127.0.0.1:8000
+```
+
+Result path:
+
+```text
+.local-lab/evals/codex-skill/20260618T014600Z
+```
+
+Verification completed in this slice:
+
+```bash
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q
+uv run ruff check wilq/briefing/content_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/content_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py
+uv run mypy .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py
+uv run mypy .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* API/eval focused tests: `64 passed`.
+* Dashboard route tests: `12 passed`.
+* Playwright e2e: `7 passed`.
+* Full product gate `scripts/verify.sh`: passed.
+
+Current interpretation:
+
+* SEO/GSC and Content Planner are no longer placeholder-only routes. They now
+  expose real query/page evidence, WordPress inventory matching and a safe
+  prepare-only ActionObject for content refresh queues.
+* This route is useful for the overnight demo because it shows how WILQ turns
+  GSC + WordPress evidence into Polish marketer-facing content work without
+  inventing conversion, revenue or ranking outcomes.
+* The dashboard still needs more route-specific depth, but the pattern is now
+  proven across Merchant and Content: diagnostics API -> context-pack -> typed
+  dashboard surface -> skill smoke -> Codex non-interactive eval.
+
+Current remaining next work before calling the overnight goal stable:
+
+1. Commit and push this Content Diagnostics slice with a semantic commit.
+2. Add a dedicated GA4 Landing Quality route using the same pattern:
+   API diagnostics -> context-pack -> dashboard route -> skill smoke -> Codex
+   non-interactive eval.
+3. Add an Ads OAuth recovery/readiness route only if credentials are repaired;
+   otherwise keep Ads blocked with clear repair instructions and no Ads
+   recommendations.
+4. Add a Polish dashboard command surface that ties Merchant, Content, GA4,
+   Localo and Ads blockers into one operator-ready daily brief.
+5. Continue replacing generic dashboard placeholders with marketer-useful route
+   view models backed by evidence, action IDs, blocked claims and freshness.

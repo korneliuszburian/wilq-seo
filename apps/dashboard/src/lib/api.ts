@@ -4,6 +4,7 @@ import {
   ActionValidationResultSchema,
   AdsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
+  ContentDiagnosticsResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
   EvidenceSchema,
@@ -24,6 +25,7 @@ import {
   type ActionValidationResult,
   type AdsDiagnosticsResponse,
   type CommandCenterResponse,
+  type ContentDiagnosticsResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
   type Evidence,
@@ -86,6 +88,10 @@ export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
 
 export function getMerchantDiagnostics(): Promise<MerchantDiagnosticsResponse> {
   return apiGet("/api/merchant/diagnostics", MerchantDiagnosticsResponseSchema);
+}
+
+export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
+  return apiGet("/api/content/diagnostics", ContentDiagnosticsResponseSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -172,6 +178,7 @@ export type {
   ActionValidationResult,
   AdsDiagnosticsResponse,
   CommandCenterResponse,
+  ContentDiagnosticsResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   Evidence,

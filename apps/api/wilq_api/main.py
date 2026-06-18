@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
+from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
@@ -54,6 +55,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorStatus,
     ConnectorSummary,
+    ContentDiagnosticsResponse,
     Evidence,
     ExpertCapability,
     ExpertRule,
@@ -165,6 +167,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
         "merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json"),
+        "content_diagnostics": build_content_diagnostics().model_dump(mode="json"),
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
     return redact_mapping(pack)
@@ -295,6 +298,11 @@ def ads_diagnostics() -> AdsDiagnosticsResponse:
 @app.get("/api/merchant/diagnostics", response_model=MerchantDiagnosticsResponse)
 def merchant_diagnostics() -> MerchantDiagnosticsResponse:
     return build_merchant_diagnostics()
+
+
+@app.get("/api/content/diagnostics", response_model=ContentDiagnosticsResponse)
+def content_diagnostics() -> ContentDiagnosticsResponse:
+    return build_content_diagnostics()
 
 
 @app.get("/api/opportunities", response_model=list[Opportunity])

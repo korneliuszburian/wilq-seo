@@ -13,17 +13,20 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 
 1. Read `references/output-contract.md` when producing the final response or action plan.
 2. Run `python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `POST /api/codex/context-pack` with `{"skill":"wilq-content-strategist"}` before summarizing metrics, opportunities or action candidates.
-4. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-5. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-6. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+3. Call `GET /api/content/diagnostics` before building a content plan or queue.
+4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-content-strategist"}` and confirm embedded `content_diagnostics` exists.
+5. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
+6. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
+7. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
 
 ## Allowed API Endpoints
 
 - `GET /api/health`
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
+- `GET /api/content/diagnostics`
 - `GET /api/marketing/brief`
+- `GET /api/marketing/tactical-queue`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `GET /api/connectors/{connector}/refresh-runs`
@@ -62,4 +65,4 @@ Polish language contract: produce all operator-facing responses in Polish with P
 
 ## Goal 001 Status
 
-Goal 001 stub: content strategy must stay within aggregate/inventory evidence currently exposed by WILQ API.
+Goal 001 status: content strategy must use `/api/content/diagnostics` for query/page matrix, WordPress inventory protection, tactical items and `act_prepare_content_refresh_queue`.

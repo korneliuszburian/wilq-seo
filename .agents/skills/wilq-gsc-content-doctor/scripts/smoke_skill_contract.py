@@ -16,6 +16,7 @@ REQUIRED_CONTEXT_KEYS = {
     "evidence_summaries",
     "top_opportunities",
     "active_action_objects",
+    "content_diagnostics",
 }
 
 
@@ -50,6 +51,18 @@ def main() -> int:
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
+
+    content_diagnostics = request_json(args.api_base, "GET", "/api/content/diagnostics")
+    if content_diagnostics.get("language") != "pl-PL":
+        raise SystemExit("Content diagnostics language must be pl-PL")
+    sections = content_diagnostics.get("sections")
+    if not isinstance(sections, list) or not sections:
+        raise SystemExit("Content diagnostics must expose sections")
+    packed_content = pack.get("content_diagnostics", {})
+    if packed_content.get("evidence_ids") != content_diagnostics.get("evidence_ids"):
+        raise SystemExit("Context pack content_diagnostics evidence IDs differ from endpoint")
+    if packed_content.get("action_ids") != content_diagnostics.get("action_ids"):
+        raise SystemExit("Context pack content_diagnostics action IDs differ from endpoint")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -99,6 +112,29 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "content_diagnostics": {
+                    "live_data_available": content_diagnostics.get("live_data_available"),
+                    "query_page_count": content_diagnostics.get("query_page_count"),
+                    "matched_inventory_count": content_diagnostics.get("matched_inventory_count"),
+                    "blocker_count": content_diagnostics.get("blocker_count"),
+                    "section_ids": [
+                        section.get("id")
+                        for section in content_diagnostics.get("sections", [])
+                    ],
+                    "evidence_ids": content_diagnostics.get("evidence_ids", [])[:20],
+                    "action_ids": content_diagnostics.get("action_ids", []),
+                    "tactical_item_ids": [
+                        item.get("id")
+                        for section in content_diagnostics.get("sections", [])
+                        for item in section.get("tactical_items", [])
+                        if item.get("id")
+                    ][:20],
+                    "blocked_claims": [
+                        claim
+                        for section in content_diagnostics.get("sections", [])
+                        for claim in section.get("blocked_claims", [])
+                    ][:20],
+                },
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])

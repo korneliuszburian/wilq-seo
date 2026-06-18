@@ -30,8 +30,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-gsc-content-doctor": {
             "surface_path": "/seo-gsc",
-            "terms": {"SEO / GSC", "GSC", "treści"},
-            "action_ids": set(),
+            "terms": {"SEO / GSC", "GSC", "treści", "content_diagnostics", "query/page"},
+            "action_ids": {"act_prepare_content_refresh_queue"},
         },
         "wilq-merchant-feed-operator": {
             "surface_path": "/merchant",
@@ -47,7 +47,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-content-strategist": {
             "surface_path": "/content-planner",
-            "terms": {"Content Planner", "WordPress", "GSC"},
+            "terms": {"Content Planner", "WordPress", "GSC", "content_diagnostics", "inventory"},
             "action_ids": {"act_prepare_content_refresh_queue"},
         },
         "wilq-localo-operator": {
@@ -126,3 +126,17 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         in merchant_smoke_script
     )
     assert '"merchant_diagnostics": {' in merchant_smoke_script
+
+    for skill in ("wilq-gsc-content-doctor", "wilq-content-strategist"):
+        content_skill_doc = (Path(".agents/skills") / skill / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        content_smoke_script = (
+            Path(".agents/skills") / skill / "scripts" / "smoke_skill_contract.py"
+        ).read_text(encoding="utf-8")
+        assert "GET /api/content/diagnostics" in content_skill_doc
+        assert (
+            'request_json(args.api_base, "GET", "/api/content/diagnostics")'
+            in content_smoke_script
+        )
+        assert '"content_diagnostics": {' in content_smoke_script

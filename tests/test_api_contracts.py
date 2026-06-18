@@ -1400,6 +1400,138 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "adc.json" not in serialized
 
 
+def test_content_diagnostics_exposes_query_page_inventory_queue(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_diag_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "content_diag_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    clear_wordpress_env(monkeypatch)
+    service_account_json = tmp_path / "google_adc.json"
+    service_account_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(service_account_json))
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "sc-domain:ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_search_console_site_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="GSC vendor read completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"clicks": 12, "impressions": 120},
+            metric_facts=[
+                VendorMetricFact(
+                    "clicks",
+                    12,
+                    {
+                        "query": "zielony ład",
+                        "page": (
+                            "https://www.ekologus.pl/"
+                            "europejski-zielony-lad-co-to-takiego/"
+                        ),
+                    },
+                ),
+                VendorMetricFact(
+                    "impressions",
+                    120,
+                    {
+                        "query": "zielony ład",
+                        "page": (
+                            "https://www.ekologus.pl/"
+                            "europejski-zielony-lad-co-to-takiego/"
+                        ),
+                    },
+                ),
+            ],
+        ),
+    )
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_wordpress_content_inventory",
+        lambda connector_id, request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="WordPress inventory completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"content_object_count": 16, "pages_total": 4},
+            metric_facts=[
+                VendorMetricFact("content_object_count", 16, {}),
+                VendorMetricFact(
+                    "content_object_seen",
+                    1,
+                    {
+                        "connector_id": "wordpress_ekologus",
+                        "content_type": "sitemap",
+                        "status": "indexed",
+                        "content_url": (
+                            "https://www.ekologus.pl/"
+                            "europejski-zielony-lad-co-to-takiego/"
+                        ),
+                        "modified_gmt": "2024-07-11T07:04:02+00:00",
+                        "inventory_source": "public_sitemap",
+                    },
+                ),
+            ],
+        ),
+    )
+
+    gsc_response = client.post(
+        "/api/connectors/google_search_console/refresh",
+        json={"mode": "vendor_read", "reason": "content diagnostics test"},
+    )
+    wordpress_response = client.post(
+        "/api/connectors/wordpress_ekologus/refresh",
+        json={"mode": "vendor_read", "reason": "content diagnostics test"},
+    )
+    assert gsc_response.status_code == 200
+    assert wordpress_response.status_code == 200
+
+    response = client.get("/api/content/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["language"] == "pl-PL"
+    assert payload["live_data_available"] is True
+    assert payload["query_page_count"] >= 1
+    assert payload["matched_inventory_count"] >= 1
+    assert "act_prepare_content_refresh_queue" in payload["action_ids"]
+    query_section = next(
+        section for section in payload["sections"] if section["id"] == "content_query_page_matrix"
+    )
+    assert query_section["status"] == "ready"
+    assert query_section["tactical_items"]
+    assert any(
+        item["dimensions"].get("query") == "zielony ład"
+        for item in query_section["tactical_items"]
+    )
+    inventory_section = next(
+        section for section in payload["sections"] if section["id"] == "content_inventory_match"
+    )
+    assert inventory_section["status"] == "ready"
+    assert any(
+        item["dimensions"].get("wordpress_match") == "found"
+        for item in inventory_section["tactical_items"]
+    )
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-gsc-content-doctor"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    assert context_payload["content_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
+    assert context_payload["content_diagnostics"]["action_ids"] == payload["action_ids"]
+    serialized = json.dumps(payload)
+    assert "google_adc.json" not in serialized
+    assert "app-password" not in serialized
+
+
 def test_gsc_vendor_read_uses_search_analytics(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

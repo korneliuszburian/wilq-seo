@@ -535,7 +535,13 @@ const tacticalQueue = {
       metric_facts: [metricFacts[5]],
       dimensions: {
         query: "zielony ład",
-        page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+        page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+        wordpress_match: "found",
+        wordpress_match_confidence: "exact_url",
+        wordpress_connector: "wordpress_ekologus",
+        wordpress_content_type: "sitemap",
+        wordpress_status: "indexed",
+        wordpress_content_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
       },
       diagnosis: "Query zielony ład ma GSC evidence i prowadzi do istniejącej strony.",
       next_step: "Przygotuj refresh istniejącej strony i sprawdź duplikaty w WordPress.",
@@ -641,6 +647,108 @@ const merchantDiagnostics = {
   blocker_count: 0
 };
 
+const contentDiagnostics = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  connectors: [
+    {
+      id: "google_search_console",
+      label: "Google Search Console",
+      status: "configured",
+      configured: true,
+      missing_credentials: [],
+      available_credential_sources: ["repo_env"],
+      freshness: { state: "fresh" },
+      supported_actions: ["content_refresh"]
+    },
+    {
+      id: "wordpress_ekologus",
+      label: "WordPress ekologus.pl",
+      status: "configured",
+      configured: true,
+      missing_credentials: [],
+      available_credential_sources: ["repo_env"],
+      freshness: { state: "fresh" },
+      supported_actions: ["content_refresh"]
+    }
+  ],
+  latest_refreshes: [
+    {
+      id: "refresh_google_search_console_test",
+      connector_id: "google_search_console",
+      mode: "vendor_read",
+      status: "completed",
+      started_at: "2026-06-17T10:00:00Z",
+      completed_at: "2026-06-17T10:00:01Z",
+      evidence_ids: ["ev_refresh_gsc"],
+      missing_credentials: [],
+      checked_credentials: ["GOOGLE_APPLICATION_CREDENTIALS"],
+      external_call_attempted: true,
+      vendor_data_collected: true,
+      metric_summary: { clicks: 12, impressions: 120 },
+      summary: "GSC vendor read completed.",
+      errors: [],
+      redacted: true
+    },
+    {
+      id: "refresh_wordpress_ekologus_test",
+      connector_id: "wordpress_ekologus",
+      mode: "vendor_read",
+      status: "completed",
+      started_at: "2026-06-17T10:00:00Z",
+      completed_at: "2026-06-17T10:00:01Z",
+      evidence_ids: ["ev_refresh_wordpress_inventory"],
+      missing_credentials: [],
+      checked_credentials: ["WORDPRESS_EKOLOGUS_URL"],
+      external_call_attempted: true,
+      vendor_data_collected: true,
+      metric_summary: { content_object_count: 16 },
+      summary: "WordPress inventory completed.",
+      errors: [],
+      redacted: true
+    }
+  ],
+  live_data_available: true,
+  query_page_count: 1,
+  matched_inventory_count: 1,
+  sections: [
+    {
+      id: "content_query_page_matrix",
+      title: "GSC: query/page matrix",
+      status: "ready",
+      summary: "WILQ ma 1 GSC tactical items i 1 query/page metric facts.",
+      diagnosis: "Query/page matrix pozwala wskazać konkretne strony i zapytania.",
+      next_step: "Otwórz najwyższe priorytety i sprawdź intent oraz WordPress match.",
+      source_connectors: ["google_search_console"],
+      evidence_ids: ["ev_refresh_gsc"],
+      metric_facts: [metricFacts[5]],
+      tactical_items: [tacticalQueue.items[1]],
+      action_ids: ["act_prepare_content_refresh_queue"],
+      blocked_claims: ["lead uplift", "conversion uplift"],
+      risk: "low"
+    },
+    {
+      id: "content_inventory_match",
+      title: "WordPress: inventory protection",
+      status: "ready",
+      summary: "WILQ ma 1 inventory facts, 1 matched queue items i 0 missing matches.",
+      diagnosis: "WordPress inventory chroni marketera przed pisaniem drugi raz tego samego.",
+      next_step: "Najpierw obsłuż matched refresh/merge; nowe treści twórz po duplicate check.",
+      source_connectors: ["wordpress_ekologus"],
+      evidence_ids: ["ev_refresh_wordpress_inventory", "ev_refresh_gsc"],
+      metric_facts: [metricFacts[0]],
+      tactical_items: [tacticalQueue.items[1]],
+      action_ids: ["act_prepare_content_refresh_queue"],
+      blocked_claims: ["new article without inventory check"],
+      risk: "low"
+    }
+  ],
+  evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+  action_ids: ["act_prepare_content_refresh_queue"],
+  blocker_count: 0
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -743,6 +851,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/merchant/diagnostics")) {
         return Promise.resolve(Response.json(merchantDiagnostics));
+      }
+      if (url.endsWith("/api/content/diagnostics")) {
+        return Promise.resolve(Response.json(contentDiagnostics));
       }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
@@ -931,8 +1042,17 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "SEO / GSC" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Search Console Content Focus")).toBeInTheDocument();
-    expect(screen.getByText("GSC: przełóż widoczność na kolejkę treści")).toBeInTheDocument();
+    expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
+    expect(screen.getByText("GSC: query/page matrix")).toBeInTheDocument();
+    expect(screen.getByText("WordPress: inventory protection")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("GSC: zielony ład -> /europejski-zielony-lad-co-to-takiego/").length
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Content Safety Gate")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "act_prepare_content_refresh_queue" })[0]).toHaveAttribute(
+      "href",
+      "/actions/act_prepare_content_refresh_queue"
+    );
     expect(screen.getAllByText(/clicks: 12/).length).toBeGreaterThan(0);
   });
 
@@ -963,11 +1083,14 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Content Planner" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Content Growth Focus")).toBeInTheDocument();
-    expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
+    expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
+    expect(screen.getByText("WordPress: inventory protection")).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
+    await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
+    expect(screen.getByText("valid")).toBeInTheDocument();
   });
 
   it("evidence detail route renders source trace from linked evidence id", async () => {

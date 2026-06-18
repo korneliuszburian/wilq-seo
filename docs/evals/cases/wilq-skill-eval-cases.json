@@ -33,7 +33,8 @@
     "surface_path": "/seo-gsc",
     "task_pl": "Na podstawie dostępnego GSC evidence wskaż jedną bezpieczną diagnozę SEO/content i co marketer ma zrobić dalej.",
     "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
-    "expected_terms_pl": ["SEO / GSC", "GSC", "treści"]
+    "expected_terms_pl": ["SEO / GSC", "GSC", "treści", "content_diagnostics", "query/page"],
+    "expected_action_ids": ["act_prepare_content_refresh_queue"]
   },
   {
     "skill": "wilq-ahrefs-gap-finder",
@@ -64,7 +65,7 @@
       "ahrefs",
       "wordpress_ekologus"
     ],
-    "expected_terms_pl": ["Content Planner", "WordPress", "GSC"],
+    "expected_terms_pl": ["Content Planner", "WordPress", "GSC", "content_diagnostics", "inventory"],
     "expected_action_ids": ["act_prepare_content_refresh_queue"]
   },
   {

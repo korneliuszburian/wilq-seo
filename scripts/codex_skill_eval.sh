@@ -182,8 +182,10 @@ Oczekiwane connector surfaces: {connectors}
 Smoke script output jest dowodem działania skill/API path. Dla `wilq-ads-doctor`
 `ads_diagnostics` jest najmocniejszym dowodem Ads Doctor. Dla
 `wilq-merchant-feed-operator` `merchant_diagnostics` jest najmocniejszym dowodem
-Merchant route. Dla pozostałych route-specific skillów `brief_items` są wycinkiem
-z /api/marketing/brief. Jeżeli script podaje tylko liczniki, nie wymyślaj
+Merchant route. Dla `wilq-gsc-content-doctor` i `wilq-content-strategist`
+`content_diagnostics` jest najmocniejszym dowodem SEO/content route. Dla
+pozostałych route-specific skillów `brief_items` są wycinkiem z
+/api/marketing/brief. Jeżeli script podaje tylko liczniki, nie wymyślaj
 brakujących evidence IDs. W takiej sytuacji zostaw `recommendations` puste albo
 ustaw blocker/notes z uczciwym ograniczeniem.
 </interpretation>

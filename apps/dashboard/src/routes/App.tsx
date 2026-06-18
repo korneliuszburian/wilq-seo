@@ -40,11 +40,13 @@ import {
   AdsDiagnosticsResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
+  ContentDiagnosticsResponse,
   Evidence,
   ExpertRule,
   getActions,
   getAdsDiagnostics,
   getCommandCenter,
+  getContentDiagnostics,
   getConnectorRefreshRuns,
   getConnectors,
   getEvidence,
@@ -1467,6 +1469,154 @@ function AdsDiagnosticCard({ section }: { section: AdsDiagnosticSection }) {
 
 type MerchantDiagnosticSection = MerchantDiagnosticsResponse["sections"][number];
 
+type ContentDiagnosticSection = ContentDiagnosticsResponse["sections"][number];
+
+function ContentDiagnosticSurface({ title }: { title: string }) {
+  const diagnostics = useQuery({
+    queryKey: ["content-diagnostics"],
+    queryFn: getContentDiagnostics
+  });
+  const actions = useQuery({
+    queryKey: ["actions"],
+    queryFn: getActions
+  });
+
+  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.error || !diagnostics.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/content/diagnostics. Content route nie może udawać SEO ani content insightów bez WILQ API." />
+      </main>
+    );
+  }
+  if (actions.error || !actions.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/actions. Content route nie może pokazać walidacji ani payload preview." />
+      </main>
+    );
+  }
+
+  const data = diagnostics.data;
+  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const latestStatuses = data.latest_refreshes.map(
+    (refresh) => `${refresh.connector_id}: ${refresh.status}`
+  );
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Dedykowany widok SEO/content z WILQ API. Łączy GSC query-page matrix,
+            WordPress inventory i ActionObjecty, żeby marketer wiedział co odświeżyć,
+            połączyć, utworzyć albo zablokować bez duplikowania treści.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Query/page" value={data.query_page_count} />
+          <MetricTile label="WP match" value={data.matched_inventory_count} />
+          <MetricTile label="Evidence" value={data.evidence_ids.length} />
+        </div>
+      </div>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Status SEO / Content
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+              {data.live_data_available ? "live content facts" : "brak live content facts"}
+            </span>
+            {data.connectors.map((connector) => (
+              <StatusBadge key={connector.id} value={connector.status} />
+            ))}
+          </div>
+        </div>
+        <TraceLine label="Ostatnie refresh" values={latestStatuses} />
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {data.sections.map((section) => (
+          <ContentDiagnosticCard key={section.id} section={section} />
+        ))}
+      </div>
+
+      {routeActions.length > 0 ? (
+        <div className="mt-6">
+          <ActionObjectFocus actions={routeActions} />
+        </div>
+      ) : null}
+
+      <section className="mt-6 rounded-md border border-line bg-white p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+            <ShieldAlert aria-hidden="true" size={18} />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Content Safety Gate
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              WILQ może przygotować brief, refresh queue i payload preview, ale nie
+              publikuje ani nie zmienia WordPress bez walidacji ActionObject, jawnej
+              zgody operatora i audytu.
+            </p>
+          </div>
+        </div>
+        <TraceLine
+          label="Zablokowane claimy"
+          values={data.sections.flatMap((section) => section.blocked_claims)}
+        />
+      </section>
+    </main>
+  );
+}
+
+function ContentDiagnosticCard({ section }: { section: ContentDiagnosticSection }) {
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            {section.status}
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{section.title}</h2>
+        </div>
+        <StatusBadge value={section.status} />
+      </div>
+      <p className="text-sm leading-6 text-slate-700">{section.summary}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{section.diagnosis}</p>
+      <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700">
+        {section.next_step}
+      </div>
+      {section.metric_facts.length > 0 ? <MetricFactChips facts={section.metric_facts} /> : null}
+      {section.tactical_items.length > 0 ? (
+        <div className="mt-3 grid gap-2">
+          {section.tactical_items.slice(0, 4).map((item) => (
+            <div key={item.id} className="rounded-md border border-line bg-white p-3 text-xs">
+              <div className="font-semibold text-ink">{item.title}</div>
+              <div className="mt-1 text-slate-600">{item.diagnosis}</div>
+              <TraceLine label="Intent" values={[item.intent]} />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <LinkedTraceLine label="Evidence" values={section.evidence_ids} kind="evidence" />
+        <TraceLine label="Źródła" values={section.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={section.action_ids} kind="actions" />
+        <TraceLine label="Zablokowane claimy" values={section.blocked_claims} />
+      </div>
+    </section>
+  );
+}
+
 function MerchantDiagnosticSurface() {
   const diagnostics = useQuery({
     queryKey: ["merchant-diagnostics"],
@@ -2094,6 +2244,9 @@ const generatedRoutes = operatingRoutes.map((path) =>
       }
       if (path === "/merchant") {
         return <MerchantDiagnosticSurface />;
+      }
+      if (path === "/seo-gsc" || path === "/content-planner") {
+        return <ContentDiagnosticSurface title={briefSurfaceConfigs[path].title} />;
       }
       const briefConfig = briefSurfaceConfigs[path];
       return briefConfig ? (

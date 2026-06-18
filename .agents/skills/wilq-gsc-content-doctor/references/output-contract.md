@@ -8,7 +8,7 @@ Expected outcome: SEO/content action candidates grounded in GSC evidence and exi
 
 ## Required API Context
 
-Fetch `POST /api/codex/context-pack` with `{"skill":"wilq-gsc-content-doctor"}` before producing marketing analysis. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
+Fetch `GET /api/content/diagnostics` first. Then fetch `POST /api/codex/context-pack` with `{"skill":"wilq-gsc-content-doctor"}` and confirm `content_diagnostics.evidence_ids` and `content_diagnostics.action_ids` match the endpoint. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
 
 Required connectors:
 
@@ -24,9 +24,9 @@ Polish language contract: respond to the Ekologus marketer in Polish with Polish
 
 
 1. `Status`: API reachability, connector readiness and known blockers.
-2. `Dowody`: evidence IDs, connector IDs, freshness notes and metric summaries from WILQ API only.
-3. `Diagnoza`: what the evidence supports, with uncertainty if the evidence is aggregate, stale or incomplete.
-4. `Kandydaci działań`: opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
+2. `Dowody`: `content_diagnostics` section IDs, evidence IDs, connector IDs, freshness notes, query/page facts and WordPress inventory match status from WILQ API only.
+3. `Diagnoza`: what the query/page matrix and WordPress inventory support, with uncertainty if the evidence is aggregate, stale or incomplete.
+4. `Kandydaci działań`: tactical queue item IDs and ActionObject IDs, especially `act_prepare_content_refresh_queue`, when available; otherwise describe the missing API/evidence needed to create them.
 5. `Walidacja`: result or required call to `POST /api/actions/{action_id}/validate` before apply/execution.
 6. `Następny krok`: the smallest safe operator action.
 
@@ -37,8 +37,13 @@ Refuse or downgrade to a blocker report when:
 - WILQ API is unreachable.
 - Required connector status is `missing_credentials`, `disabled` or failed for the requested operation.
 - The requested metric or action is not present in context-pack, evidence, connector refresh runs, expert rules or action objects.
+- `content_diagnostics.live_data_available=false` and the user asks for content recommendations instead of readiness/blocker status.
 - The user asks for write execution without a validated ActionObject and explicit approval.
 
 ## Evidence Rules
 
 No evidence ID means no recommendation. No source connector means no recommendation. No validated payload means no apply. No audit event means no write.
+
+## Content Safety
+
+`act_prepare_content_refresh_queue` is prepare-only. It can support refresh/create/merge/block planning, payload preview and validation. It must not claim WordPress edits, auto-publication, ranking gains, lead uplift or duplicate-free guarantees without future apply support and audit.

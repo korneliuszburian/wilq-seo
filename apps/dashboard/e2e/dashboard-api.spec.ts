@@ -44,7 +44,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("link", { name: "act_configure_google_ads_env" }).first()).toBeVisible();
   });
 
-  test("ga4 and gsc routes expose metric-backed workflow focus", async ({ page }) => {
+  test("ga4 route exposes metric-backed workflow focus", async ({ page }) => {
     await page.goto("/ga4");
 
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
@@ -53,12 +53,24 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/active_users:/).first()).toBeVisible();
     await expect(page.getByText(/landing_page=/).first()).toBeVisible();
     await expect(page.getByText(/odświeżone/).first()).toBeVisible();
+  });
 
+  test("seo and content routes expose dedicated Content Diagnostics", async ({ page }) => {
     await page.goto("/seo-gsc");
 
     await expect(page.getByRole("heading", { name: "SEO / GSC" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Search Console Content Focus" })).toBeVisible();
-    await expect(page.getByText("GSC: przełóż widoczność na kolejkę treści")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "GSC: query/page matrix" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "WordPress: inventory protection" })).toBeVisible();
+    await expect(page.getByText(/GSC: .*->/).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "act_prepare_content_refresh_queue" }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Content Safety Gate" })).toBeVisible();
+
+    await page.goto("/content-planner");
+
+    await expect(page.getByRole("heading", { name: "Content Planner", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ActionObject focus" })).toBeVisible();
   });
 
   test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
