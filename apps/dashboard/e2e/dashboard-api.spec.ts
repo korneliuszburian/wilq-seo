@@ -21,15 +21,16 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(
       page.getByText("WILQ pokazuje tylko metryki z API/evidence.").first()
     ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dzisiejszy panel operatora" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(page.getByText("Merchant: feed/product issues do przeglądu")).toHaveCount(0);
     await expect(page.getByText("Content: GSC query/page + WordPress inventory")).toHaveCount(0);
     await expect(page.getByText("GA4: landing/source/campaign quality review")).toHaveCount(0);
     await expect(page.getByText("Ads: live campaign metrics dostępne")).toHaveCount(0);
-    await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Źródła i ograniczenia" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toHaveCount(0);
-    await expect(page.getByText("Kontekst: /api/codex/context-pack").first()).toBeVisible();
+    await expect(page.getByText("Prompt do Codex").first()).toBeVisible();
     await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Ułóż kolejkę refresh/merge/create dla treści SEO" })

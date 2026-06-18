@@ -1316,17 +1316,22 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Dzisiejszy panel operatora")).toBeInTheDocument();
+    expect(screen.getByText("Dzisiejsze decyzje marketera")).toBeInTheDocument();
     expect(
       screen.getByText("Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.")
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Plan działań marketera")).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj produkty z problemami w Merchant Center")).toBeInTheDocument();
-    expect(screen.getAllByText("Jak Codex ma pomóc").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Prompt do Codex").length).toBeGreaterThan(0);
     expect(screen.getByText("Skill: wilq-merchant-feed-operator")).toBeInTheDocument();
     expect(screen.getByText("Ułóż kolejkę refresh/merge/create dla treści SEO")).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj kampanie Google Ads z live metryk")).toBeInTheDocument();
+    expect(screen.getByText("Źródła i ograniczenia")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz Settings" })).toBeInTheDocument();
+    expect(screen.queryByText("Plan działań marketera")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dzisiejszy panel operatora")).not.toBeInTheDocument();
+    expect(screen.queryByText("Blockery i świeżość źródeł")).not.toBeInTheDocument();
+    expect(screen.queryByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).not.toBeInTheDocument();
     expect(screen.queryByText("Dzisiejsze konkretne taktyki")).not.toBeInTheDocument();
     expect(screen.queryByText("Realne metric facts zapisane lokalnie")).not.toBeInTheDocument();
     expect(screen.queryByText("GA4: /oferta/ / google / cpc")).not.toBeInTheDocument();
@@ -1349,7 +1354,7 @@ describe("WILQ dashboard", () => {
   });
 
   it("connector status renders", async () => {
-    renderApp("/command-center");
+    renderApp("/settings");
     await waitFor(() => expect(screen.getByText("Google Ads")).toBeInTheDocument());
     expect(screen.getByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).toBeInTheDocument();
   });

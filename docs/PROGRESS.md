@@ -40,6 +40,14 @@ Data: 2026-06-18
   `wordpress_content_url`. Bezpośredni proof z aktualnego checkoutu pokazał
   `found` dla BDO, Zielonego Ładu, remediacji oraz GA4 path fallback. Pełny
   `scripts/verify.sh` przeszedł dla tego slice'a.
+- Command Center first screen został odchudzony do jednego boardu
+  `Dzisiejsze decyzje marketera`. Stary dubel `Dzisiejszy panel operatora` +
+  `Plan działań marketera` został usunięty, a pełne connector blocker cards
+  zeszły z `/command-center` do diagnostycznego `/settings`. Na głównym widoku
+  zostaje tylko skrót `Źródła i ograniczenia`, bez credential names i bez
+  udawania marketing insightu. Pełny `scripts/verify.sh` przeszedł po tej
+  zmianie: backend API contracts 97 passed, dashboard route tests 12 passed,
+  Playwright e2e 8 passed i dashboard production build passed.
 
 ## Latest Verified Checks
 
@@ -59,7 +67,24 @@ Data: 2026-06-18
 - `uv run mypy wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/storage/metric_store.py wilq/security/redaction.py wilq/schemas.py tests/test_api_contracts.py`
 - `uv run pytest tests/test_api_contracts.py -q -k 'redaction_preserves_env_names_but_redacts_token_values or content_diagnostics_exposes_query_page_inventory_queue or marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match or marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching'`
 - `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000`
+- `uv run ruff check wilq/briefing/command_center.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py`
+- `uv run mypy wilq/briefing/command_center.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or command_center_treats_localo_mcp_initialize_as_access_ready or marketing_brief_exposes_metric_backed_prepare_actions'`
+- `pnpm --filter @wilq/dashboard lint`
+- `pnpm --filter @wilq/dashboard typecheck`
+- `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
 - `scripts/verify.sh`
+
+```text
+scripts/verify.sh passed
+backend API contracts: 97 passed
+dashboard route tests: 12 passed
+Playwright e2e: 8 passed
+dashboard production build: passed
+```
+
+Po Command Center cleanup 2026-06-18:
 
 ```text
 scripts/verify.sh passed

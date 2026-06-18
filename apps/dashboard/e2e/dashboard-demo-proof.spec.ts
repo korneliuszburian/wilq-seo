@@ -24,7 +24,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await fs.mkdir(runDir, { recursive: true });
 
     await gotoAndWaitForApi(page, "/command-center", "/api/dashboard/command-center");
-    await expect(page.getByRole("heading", { name: "Plan działań marketera" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Przejrzyj produkty z problemami w Merchant Center" })
     ).toBeVisible();
@@ -40,6 +40,8 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(
       page.getByRole("heading", { name: "Localo: MCP access działa, brak jeszcze ranking/GBP facts" })
     ).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Plan działań marketera" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
     await expect(page.getByText("act_review_merchant_feed_issues").first()).toBeVisible();
     await expect(page.getByText("Przejrzyj kampanie Google Ads z live metryk")).toBeVisible();

@@ -565,45 +565,6 @@ function ActionApplyResultPanel({
   );
 }
 
-function ConnectorBlockers({ connectors }: { connectors: ConnectorStatus[] }) {
-  const blockers = connectors.filter(
-    (connector) => connector.status !== "configured" || connector.missing_credentials.length > 0
-  );
-
-  return (
-    <section>
-      <SectionHeading title="Blockery i świeżość źródeł" />
-      {blockers.length === 0 ? (
-        <div className="rounded-md border border-signal/30 bg-signal/10 p-4 text-sm text-signal">
-          Brak znanych blockerów connectorów.
-        </div>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {blockers.slice(0, 9).map((connector) => (
-            <article key={connector.id} className="rounded-md border border-line bg-white p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold">{connector.label}</h3>
-                  <p className="mt-1 text-xs text-slate-500">{connector.id}</p>
-                </div>
-                <StatusBadge value={connector.status} />
-              </div>
-              <p className="mt-3 text-xs leading-5 text-slate-600">
-                Status dostępu: {connector.status}
-              </p>
-              {connector.missing_credentials.length > 0 ? (
-                <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
-                  Brakuje: {connector.missing_credentials.join(", ")}
-                </div>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
 function MetricFactChips({ facts }: { facts: MetricFact[] }) {
   return (
     <div className="mt-3 flex flex-wrap gap-2">
@@ -747,7 +708,6 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
 }
 
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
-type DailyDecision = CommandCenterResponse["daily_decisions"][number];
 
 const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> = {
   content_refresh: "odświeżenie treści",
@@ -1077,48 +1037,29 @@ function priorityLabel(priority: number) {
   return "niżej w kolejce";
 }
 
-function DailyOperatorBrief({ data }: { data: CommandCenterResponse }) {
-  return (
-    <section className="rounded-md border border-line bg-white p-4">
-      <div className="mb-3 flex items-start gap-3">
-        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-          <ClipboardCheck aria-hidden="true" size={18} />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dzisiejszy panel operatora
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">{data.primary_next_step}</p>
-        </div>
-      </div>
-
-      <div className="mb-4 grid gap-3 text-sm sm:grid-cols-2">
-        <MetricTile label="Decyzje" value={data.daily_decisions.length} />
-        <MetricTile label="Blockery" value={data.blocker_count} />
-      </div>
-    </section>
-  );
-}
-
-function MarketerActionPlan({ items }: { items: DailyDecision[] }) {
+function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
   return (
     <section>
-      <div className="mb-3 flex items-start gap-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
           <ClipboardCheck aria-hidden="true" size={18} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Plan działań marketera
+            Dzisiejsze decyzje marketera
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Konkretne kroki z WILQ API. Ready oznacza źródło z evidence; blocked oznacza,
-            że WILQ celowo blokuje claimy i pokazuje repair path.
+            {data.primary_next_step}
           </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Decyzje" value={data.daily_decisions.length} />
+          <MetricTile label="Blockery" value={data.blocker_count} />
+          <MetricTile label="Źródła" value={uniqueValues(data.daily_decisions.flatMap((item) => item.source_connectors)).length} />
         </div>
       </div>
       <div className="grid gap-3 xl:grid-cols-2">
-        {items.map((item) => (
+        {data.daily_decisions.map((item) => (
           <article key={item.id} className="rounded-md border border-line bg-white p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -1136,20 +1077,12 @@ function MarketerActionPlan({ items }: { items: DailyDecision[] }) {
             <p className="mt-2 text-sm font-medium text-ink">{item.bezpieczny_next_step}</p>
             {item.skill_id && item.codex_prompt ? (
               <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
-                <div className="flex items-center gap-2 font-semibold text-action">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
                   <Copy aria-hidden="true" size={15} />
-                  Jak Codex ma pomóc
+                  Prompt do Codex
                 </div>
                 <p className="mt-2 leading-6 text-slate-700">{item.codex_prompt}</p>
-                <div className="mt-2 grid gap-1 text-xs text-slate-600">
-                  <div>Skill: {item.skill_id}</div>
-                  {item.codex_context_endpoint ? (
-                    <div>Kontekst: {item.codex_context_endpoint}</div>
-                  ) : null}
-                  {item.expected_codex_output ? (
-                    <div>Wynik: {item.expected_codex_output}</div>
-                  ) : null}
-                </div>
+                <TraceLine label="Skill" values={[item.skill_id]} />
               </div>
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
@@ -1180,6 +1113,35 @@ function MarketerActionPlan({ items }: { items: DailyDecision[] }) {
   );
 }
 
+function SourceHealthSummary({ data }: { data: CommandCenterResponse }) {
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Źródła i ograniczenia
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            To jest tylko skrót zdrowia źródeł. Pełne statusy connectorów, braki
+            uprawnień i credential labels są w Settings, nie w planie dnia.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Connectory" value={data.connector_summary.total} />
+          <MetricTile label="Gotowe" value={data.connector_summary.configured} />
+          <MetricTile label="Braki" value={data.connector_summary.missing_credentials} />
+        </div>
+      </div>
+      <a
+        href="/settings"
+        className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
+      >
+        Otwórz Settings
+      </a>
+    </section>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
@@ -1188,10 +1150,6 @@ function CommandCenter() {
 
   if (isLoading) return <LoadingBand />;
   if (error || !data) return <ErrorState />;
-
-  const actionPlanSources = uniqueValues(
-    data.daily_decisions.flatMap((item) => item.source_connectors)
-  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -1203,16 +1161,14 @@ function CommandCenter() {
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Decyzje" value={data.daily_decisions.length} />
           <MetricTile label="Blockery" value={data.blocker_count} />
-          <MetricTile label="Źródła" value={actionPlanSources.length} />
+          <MetricTile label="Źródła" value={uniqueValues(data.daily_decisions.flatMap((item) => item.source_connectors)).length} />
         </div>
       </div>
 
       <div className="grid gap-8">
-        <DailyOperatorBrief data={data} />
+        <DailyDecisionBoard data={data} />
 
-        <MarketerActionPlan items={data.daily_decisions} />
-
-        <ConnectorBlockers connectors={data.connector_health} />
+        <SourceHealthSummary data={data} />
       </div>
     </main>
   );

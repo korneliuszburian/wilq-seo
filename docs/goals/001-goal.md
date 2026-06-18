@@ -319,12 +319,17 @@ Work in this order:
    `skill_id`, `codex_prompt` and `route`.
 
    Current local status: `DailyDecision` schema and
-   `/api/dashboard/command-center.daily_decisions` are implemented locally.
-   Dashboard Command Center renders `daily_decisions` as the main marketer plan.
-   `wilq-daily-command` smoke validates the field and its context-pack trace.
-   Focused API/shared-schema/dashboard checks pass. Full `scripts/verify.sh`
-   also passed: backend API contracts 93 passed, dashboard route tests 12
-   passed, Playwright e2e 8 passed and dashboard production build passed.
+   `/api/dashboard/command-center.daily_decisions` are implemented. Dashboard
+   Command Center now renders one `Dzisiejsze decyzje marketera` board instead
+   of duplicating the same intent as `Dzisiejszy panel operatora` plus
+   `Plan działań marketera`. Full connector blocker cards were removed from
+   `/command-center`; a compact `Źródła i ograniczenia` footer links to
+   `/settings` for diagnostic credential/status details. `wilq-daily-command`
+   smoke validates the field and its context-pack trace. Focused API/shared
+   schema/dashboard checks and Playwright Command Center/demo proof pass after
+   this cleanup. Full `scripts/verify.sh` passed on 2026-06-18 for the current
+   checkout: backend API contracts 97 passed, dashboard route tests 12 passed,
+   Playwright e2e 8 passed and dashboard production build passed.
 
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when

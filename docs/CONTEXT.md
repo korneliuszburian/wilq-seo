@@ -20,8 +20,9 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
 
-1. Remove remaining Command Center readiness/developer slop from first-screen
-   marketer workflow.
+1. Command Center first-screen cleanup is implemented and verified: one
+   `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
+   and no full connector blocker cards on `/command-center`.
 2. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
 3. Repair each skill only after the matching API/read contract exists.
 
@@ -78,6 +79,17 @@ Current content URL normalization truth:
 - Direct checkout proof shows BDO, Zielony Ład and remediacja GSC URLs as
   `found exact_url`; GA4 landing paths resolve with `path_fallback`.
 - Full `scripts/verify.sh` passed for this slice on 2026-06-18.
+
+Current Command Center cleanup truth:
+
+- `/command-center` renders `daily_decisions` as the single marketer decision
+  board.
+- The old summary/plan duplication is removed from the first screen.
+- Full connector blocker/status cards are no longer rendered on
+  `/command-center`; the compact `Źródła i ograniczenia` footer links to
+  `/settings`.
+- Focused frontend/backend checks and full `scripts/verify.sh` passed on
+  2026-06-18 after the cleanup.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the
