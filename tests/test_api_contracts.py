@@ -25,12 +25,20 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     ActionStatus,
+    CommandCenterResponse,
+    ConnectorCapability,
     ConnectorRefreshMode,
     ConnectorRefreshRequest,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    ConnectorStatus,
+    ConnectorStatusValue,
+    ConnectorSummary,
+    FreshnessState,
+    MarketingBrief,
     Opportunity,
     OpportunityDomain,
+    TacticalQueueResponse,
 )
 from wilq.security.redaction import redact_mapping
 from wilq.storage.local_state import local_state_store
@@ -2882,6 +2890,103 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     assert [section["id"] for section in context_brief["sections"]] == [
         section["id"] for section in brief["sections"]
     ]
+
+
+def test_daily_runtime_reuses_preloaded_daily_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import daily_runtime
+
+    connector = ConnectorStatus(
+        id="google_merchant_center",
+        label="Merchant Center",
+        status=ConnectorStatusValue.configured,
+        configured=True,
+        freshness=FreshnessState(state="fresh"),
+        capabilities=ConnectorCapability(read=True),
+        health_check="configured",
+    )
+    action = ActionObject(
+        id="act_review_merchant_feed_issues",
+        title="Przejrzyj problemy feedu",
+        domain=OpportunityDomain.merchant,
+        connector="google_merchant_center",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_merchant"],
+        human_diagnosis="Merchant wymaga review.",
+        recommended_reason="Przygotuj review.",
+        payload={},
+        validation_status="not_validated",
+        created_by="wilq",
+    )
+    refresh_run = ConnectorRefreshRun(
+        id="refresh_merchant",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_merchant"],
+        summary="Merchant read.",
+    )
+    tactical_queue = TacticalQueueResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        items=[],
+    )
+    command = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        primary_next_step="Przejrzyj Merchant.",
+        connector_summary=ConnectorSummary(total=1, configured=1, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[connector],
+        codex_operator_status={},
+    )
+    brief = MarketingBrief(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        connector_summary=ConnectorSummary(total=1, configured=1, missing_credentials=0),
+        sections=[],
+    )
+    seen: dict[str, object] = {}
+
+    monkeypatch.setattr(daily_runtime, "list_connector_statuses", lambda: [connector])
+    monkeypatch.setattr(daily_runtime, "list_actions", lambda: [action])
+    monkeypatch.setattr(daily_runtime, "list_connector_refresh_runs", lambda: [refresh_run])
+    monkeypatch.setattr(daily_runtime, "build_tactical_queue", lambda: tactical_queue)
+
+    def command_builder(
+        connectors: list[ConnectorStatus] | None = None,
+        tactical_queue: TacticalQueueResponse | None = None,
+    ) -> CommandCenterResponse:
+        seen["command_connectors"] = connectors
+        seen["command_tactical_queue"] = tactical_queue
+        return command
+
+    def brief_builder(
+        connectors: list[ConnectorStatus] | None = None,
+        refresh_runs: list[ConnectorRefreshRun] | None = None,
+        actions: list[ActionObject] | None = None,
+    ) -> MarketingBrief:
+        seen["brief_connectors"] = connectors
+        seen["brief_refresh_runs"] = refresh_runs
+        seen["brief_actions"] = actions
+        return brief
+
+    monkeypatch.setattr(daily_runtime, "build_command_center_response", command_builder)
+    monkeypatch.setattr(daily_runtime, "build_marketing_brief", brief_builder)
+
+    runtime = daily_runtime.build_daily_runtime()
+
+    assert runtime.connectors == [connector]
+    assert runtime.actions == [action]
+    assert runtime.core_actions == [action]
+    assert runtime.command_center == command
+    assert runtime.marketing_brief == brief
+    assert seen["command_connectors"] == [connector]
+    assert seen["command_tactical_queue"] == tactical_queue
+    assert seen["brief_connectors"] == [connector]
+    assert seen["brief_refresh_runs"] == [refresh_run]
+    assert seen["brief_actions"] == [action]
 
 
 def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(

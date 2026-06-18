@@ -32,6 +32,8 @@ Recently completed and pushed foundations:
 
 - `2e0b0dc feat(content): expose content decision queue`
 - `39511ac feat(command-center): add daily decision model`
+- `8cfdf83 perf(codex): scope daily command context pack`
+- `de09cab perf(api): batch metric fact reads`
 
 Current performance slice truth:
 
@@ -44,10 +46,17 @@ Current performance slice truth:
   - full daily context-pack: about `6.5s`, `998704 bytes`;
   - marketing brief: about `0.5s`, `46072 bytes`;
   - command-center: about `2.1-2.4s`, `30521 bytes`.
+- Current follow-up adds a shared `DailyRuntime` view-model for
+  daily Codex context. It builds `command_center`, `marketing_brief` and core
+  actions from one connector/action/refresh snapshot and caches that runtime
+  for a short TTL. Fresh helper API proof on `:8011`: cold daily context
+  `3.047s`, then warm cached daily context `0.467s`, `0.544s`, `0.470s`, same
+  payload size `160478 bytes`.
 - This is improved from the old full context-pack (`~996 KB`, `~15s`) but not
   done. Batch DuckDB reads and read-only metric-store connections fixed a
-  conflicting-lock runtime risk. Remaining bottleneck: duplicated daily
-  view-model work between `command_center` and `marketing_brief`.
+  conflicting-lock runtime risk. Remaining cold-run bottleneck: diagnostics
+  inside Command Center, especially the tactical/diagnostic joins used before
+  Merchant issue-level triage and URL normalization are fully shaped.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

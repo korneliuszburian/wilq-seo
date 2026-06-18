@@ -10,22 +10,64 @@ from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
-from wilq.connectors.registry import get_connector_status
+from wilq.codex.runtime_status import codex_runtime_status
+from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionRisk,
     AdsDiagnosticsResponse,
     CommandCenterActionPlanItem,
     CommandCenterBriefItem,
+    CommandCenterResponse,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ConnectorStatus,
+    ConnectorSummary,
     ContentDiagnosticsResponse,
     DailyDecision,
     Ga4DiagnosticsResponse,
     MerchantDiagnosticsResponse,
+    TacticalQueueResponse,
 )
 from wilq.storage.local_state import local_state_store
+
+STRICT_DAILY_INSTRUCTION = (
+    "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
+    "nie domysł marketingowy."
+)
+
+
+def build_command_center_response(
+    connectors: list[ConnectorStatus] | None = None,
+    tactical_queue: TacticalQueueResponse | None = None,
+) -> CommandCenterResponse:
+    connectors = connectors if connectors is not None else list_connector_statuses()
+    operator_brief, primary_next_step, blocker_count = build_command_center_brief()
+    tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
+    action_plan = build_command_center_action_plan(operator_brief, tactical_queue.items)
+    return CommandCenterResponse(
+        strict_instruction=STRICT_DAILY_INSTRUCTION,
+        primary_next_step=primary_next_step,
+        blocker_count=blocker_count,
+        tactical_item_count=len(tactical_queue.items),
+        daily_decisions=build_daily_decisions(action_plan),
+        operator_brief=operator_brief,
+        demo_script=[],
+        action_plan=action_plan,
+        connector_summary=_connector_summary(connectors),
+        sections={},
+        active_actions=[],
+        connector_health=connectors,
+        codex_operator_status=codex_runtime_status(),
+    )
+
+
+def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
+    return ConnectorSummary(
+        total=len(connectors),
+        configured=sum(1 for connector in connectors if connector.configured),
+        missing_credentials=sum(1 for connector in connectors if connector.missing_credentials),
+    )
 
 
 def build_command_center_brief() -> tuple[list[CommandCenterBriefItem], str, int]:

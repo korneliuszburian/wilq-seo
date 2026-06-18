@@ -12,11 +12,10 @@ from pydantic import BaseModel, Field
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.command_center import (
-    build_command_center_action_plan,
-    build_command_center_brief,
-    build_daily_decisions,
+    build_command_center_response,
 )
 from wilq.briefing.content_diagnostics import build_content_diagnostics
+from wilq.briefing.daily_runtime import build_daily_runtime, clear_daily_runtime_cache
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief, core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
@@ -204,9 +203,11 @@ def _daily_command_context_pack(
     connectors: list[ConnectorStatus],
     opportunities: list[Opportunity],
 ) -> dict[str, Any]:
-    command = command_center()
-    brief = build_marketing_brief()
-    active_actions = core_brief_actions(list_actions())
+    daily_runtime = build_daily_runtime()
+    command = daily_runtime.command_center
+    brief = daily_runtime.marketing_brief
+    active_actions = daily_runtime.core_actions
+    connectors = daily_runtime.connectors
     evidence_ids = _daily_context_evidence_ids(command, brief, active_actions)
     source_connectors = _daily_context_connectors(command, brief, active_actions)
     scoped_opportunities = _daily_context_opportunities(
@@ -647,33 +648,13 @@ def connector_refresh(
     run = run_connector_refresh(connector, request)
     if run is None:
         raise HTTPException(status_code=404, detail=f"Unknown connector: {connector}")
+    clear_daily_runtime_cache()
     return run
 
 
 @app.get("/api/dashboard/command-center", response_model=CommandCenterResponse)
 def command_center() -> CommandCenterResponse:
-    connectors = list_connector_statuses()
-    operator_brief, primary_next_step, blocker_count = build_command_center_brief()
-    tactical_queue = build_tactical_queue()
-    action_plan = build_command_center_action_plan(operator_brief, tactical_queue.items)
-    return CommandCenterResponse(
-        strict_instruction=(
-            "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
-            "nie domysł marketingowy."
-        ),
-        primary_next_step=primary_next_step,
-        blocker_count=blocker_count,
-        tactical_item_count=len(tactical_queue.items),
-        daily_decisions=build_daily_decisions(action_plan),
-        operator_brief=operator_brief,
-        demo_script=[],
-        action_plan=action_plan,
-        connector_summary=connector_summary(connectors),
-        sections={},
-        active_actions=[],
-        connector_health=connectors,
-        codex_operator_status=codex_runtime_status(),
-    )
+    return build_command_center_response()
 
 
 @app.get("/api/marketing/brief", response_model=MarketingBrief)
@@ -804,7 +785,9 @@ def validate_action_endpoint(action_id: str) -> dict[str, Any]:
     action = get_action(action_id)
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    return validate_action(action).model_dump(mode="json")
+    result = validate_action(action).model_dump(mode="json")
+    clear_daily_runtime_cache()
+    return result
 
 
 @app.post("/api/actions/{action_id}/apply")
@@ -817,6 +800,7 @@ def apply_action_endpoint(
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = apply_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
+    clear_daily_runtime_cache()
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
     return result.model_dump(mode="json")

@@ -126,6 +126,10 @@ scripts/verify.sh
 - `POST /api/codex/context-pack` can be much slower than narrow diagnostics
   because it embeds many surfaces at once. Prefer skill-scoped context packs or
   narrow endpoint reads when evaluating a single skill.
+- Direct `uv run python` profiling against the real `.local-lab/state/wilq.duckdb`
+  can hit a DuckDB conflicting lock when the long-running API on `:8000` has
+  the DB open. Measure runtime through HTTP, restart the API deliberately, or
+  use a copied `WILQ_METRIC_DB` for helper servers.
 - `scripts/verify.sh` is the final local gate for this repo. It intentionally uses WILQ API, skill smokes, CLI smokes and dashboard build as one product surface.
 
 ## Local credential paths

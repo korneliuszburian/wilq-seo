@@ -74,11 +74,15 @@ METRIC_NAME_PRIORITY = {
 }
 
 
-def build_marketing_brief() -> MarketingBrief:
-    connectors = list_connector_statuses()
-    refresh_runs = list_connector_refresh_runs()
+def build_marketing_brief(
+    connectors: list[ConnectorStatus] | None = None,
+    refresh_runs: list[ConnectorRefreshRun] | None = None,
+    actions: list[ActionObject] | None = None,
+) -> MarketingBrief:
+    connectors = connectors if connectors is not None else list_connector_statuses()
+    refresh_runs = refresh_runs if refresh_runs is not None else list_connector_refresh_runs()
     metric_facts = _marketing_brief_metric_facts(connectors)
-    actions = list_actions()
+    actions = actions if actions is not None else list_actions()
     latest_runs = _latest_run_by_connector(refresh_runs)
     latest_runs = _prefer_successful_localo_access_probe(latest_runs, refresh_runs)
 

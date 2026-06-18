@@ -644,24 +644,42 @@ Current local result:
   connections when the DB file already exists. This removed the conflicting
   lock failure observed when the running `:8000` API and local profiling code
   read the same DuckDB file.
+- Current local follow-up adds `wilq.briefing.daily_runtime.DailyRuntime`.
+  Daily Codex context now builds `command_center`, `marketing_brief` and core
+  actions from one connector/action/refresh snapshot instead of calling the
+  endpoint builder and brief builder independently.
+- `DailyRuntime` has a short API-process TTL cache
+  (`WILQ_DAILY_RUNTIME_CACHE_SECONDS`, default `2`, disabled under pytest) and
+  is invalidated after connector refresh and action validation/apply paths.
+- Fresh helper API proof on `:8011` after this follow-up:
+  - default daily context: `3.047s` cold, then `0.467s`, `0.544s`, `0.470s`
+    warm within TTL;
+  - payload size stayed `160478 bytes`;
+  - `/api/dashboard/command-center`: `2.034s`, `2.029s`, `2.396s`;
+  - `/api/marketing/brief`: `0.618s`, `0.608s`, `0.588s`.
+- Runtime gotcha: direct `uv run python` profiling against the real
+  `.local-lab/state/wilq.duckdb` can fail with a DuckDB conflicting lock if a
+  long-running API process already has the DB open. For runtime proof, measure
+  through HTTP or start a helper API with a copied `WILQ_METRIC_DB`.
 
 Focused proof already passed:
 
 ```bash
-uv run ruff check wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py tests/test_metric_store_and_cli.py apps/api/wilq_api/main.py
-uv run mypy wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py apps/api/wilq_api/main.py
-uv run pytest tests/test_metric_store_and_cli.py tests/test_api_contracts.py -q -k 'metric_store_lists_metric_facts_by_connector_in_one_batch or metric_store_retries_duckdb_conflicting_lock or metric_fact_evidence_ids_are_resolvable_without_refresh_run_state or codex_context_pack or daily_context_pack or marketing_brief'
+uv run ruff check apps/api/wilq_api/main.py wilq/briefing/command_center.py wilq/briefing/daily_runtime.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py wilq/briefing/command_center.py wilq/briefing/daily_runtime.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+uv run pytest tests/test_api_contracts.py -q -k 'daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_embeds_marketing_brief_contract or command_center_exposes_polish_operator_brief or daily_context_pack_excludes_social_draft_action_objects or codex_context_pack_contains_no_metric_invention_instruction or codex_context_pack_includes_expert_rule_summaries'
 uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8011
 ```
 
 Remaining performance gap:
 
-- This is a real improvement in payload size and DuckDB read stability, but not
-  a full performance win.
-- The daily context-pack still spends time rebuilding `command_center` and
-  `marketing_brief` independently. The next fix should introduce a shared daily
-  runtime/view-model or cache expensive per-request joins instead of adding more
-  prompt/reference logic.
+- This is a real improvement in payload size, DuckDB read stability and warm
+  daily Codex runtime, but not a full cold-run performance win.
+- The shared runtime/cache removes duplicated `command_center` +
+  `marketing_brief` assembly for daily Codex context. The remaining cold cost
+  is inside Command Center diagnostics and tactical joins; solve that through
+  Merchant issue-level triage, URL normalization and a slimmer daily decision
+  model, not prompt/reference logic.
 
 ## Audit-Derived Next Stack
 
@@ -671,8 +689,8 @@ Source:
 docs/audits/001-output.md
 ```
 
-Current execution order after the daily context-pack/DuckDB read stability
-slice:
+Current execution order after the daily context-pack/DuckDB read stability and
+shared runtime/cache slices:
 
 1. Remove remaining Command Center readiness/developer slop.
 2. Add Merchant issue-level triage.

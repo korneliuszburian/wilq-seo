@@ -798,11 +798,23 @@ Current slice result:
   connections when the DB file already exists. This removes the conflicting
   lock failure observed when local profiling and the running `:8000` API read
   `.local-lab/state/wilq.duckdb` at the same time.
+- Current follow-up adds a shared `DailyRuntime` for daily Codex context:
+  `command_center`, `marketing_brief` and core daily ActionObjects are built
+  from one connector/action/refresh snapshot and cached for a short TTL.
+  `WILQ_DAILY_RUNTIME_CACHE_SECONDS` controls the TTL, default `2`; tests
+  disable the cache. The cache is invalidated after connector refresh and
+  action validation/apply paths.
+- Fresh helper API proof on `:8011` after this follow-up:
+  - default daily context: `3.047s` cold, then `0.467s`, `0.544s`, `0.470s`
+    warm within TTL;
+  - payload size stayed `160478 bytes`;
+  - `/api/dashboard/command-center`: `2.034s`, `2.029s`, `2.396s`;
+  - `/api/marketing/brief`: `0.618s`, `0.608s`, `0.588s`.
 - Focused proof passed:
   ```bash
-  uv run ruff check wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py tests/test_metric_store_and_cli.py apps/api/wilq_api/main.py
-  uv run mypy wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py apps/api/wilq_api/main.py
-  uv run pytest tests/test_metric_store_and_cli.py tests/test_api_contracts.py -q -k 'metric_store_lists_metric_facts_by_connector_in_one_batch or metric_store_retries_duckdb_conflicting_lock or metric_fact_evidence_ids_are_resolvable_without_refresh_run_state or codex_context_pack or daily_context_pack or marketing_brief'
+  uv run ruff check apps/api/wilq_api/main.py wilq/briefing/command_center.py wilq/briefing/daily_runtime.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+  uv run mypy apps/api/wilq_api/main.py wilq/briefing/command_center.py wilq/briefing/daily_runtime.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+  uv run pytest tests/test_api_contracts.py -q -k 'daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_embeds_marketing_brief_contract or command_center_exposes_polish_operator_brief or daily_context_pack_excludes_social_draft_action_objects or codex_context_pack_contains_no_metric_invention_instruction or codex_context_pack_includes_expert_rule_summaries'
   uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8011
   ```
 - Full proof passed:
@@ -812,11 +824,11 @@ Current slice result:
 
 Remaining blocker:
 
-- Payload size and DuckDB read stability are much better, but runtime is not
-  done. The remaining cost is duplicated daily view-model work:
-  context-pack rebuilds `command_center` and `marketing_brief` independently.
-  Next performance slice should introduce a shared daily runtime/view-model or
-  cache expensive per-request joins. Do not hide this in skill references.
+- Payload size, DuckDB read stability and warm daily Codex context are much
+  better, but cold runtime is not done. The remaining cost is inside Command
+  Center diagnostics/tactical joins and should be reduced by the next product
+  slices: Merchant issue-level triage, URL normalization and slimmer
+  `DailyDecision` data. Do not hide this in skill references.
 
 ### 5. Verification And Commit
 
