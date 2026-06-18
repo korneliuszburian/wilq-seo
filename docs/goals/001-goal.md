@@ -6575,3 +6575,108 @@ Current remaining next work before calling the overnight goal stable:
    is coherent.
 5. If time remains, add a compact "demo script" section to the goal for what to
    show the marketer in order and what each screen proves.
+
+## 55. Slice 2026-06-18 - marketer demo path and visible placeholder cleanup
+
+Status: implementation and verification complete; commit/push pending.
+
+Resume instructions:
+
+* Resume from this section if context is lost.
+* Inspect current worktree before trusting this ledger.
+* The active files for this slice are:
+  * `wilq/schemas.py`
+  * `wilq/briefing/command_center.py`
+  * `apps/api/wilq_api/main.py`
+  * `packages/shared-schemas/src/index.ts`
+  * `apps/dashboard/src/routes/App.tsx`
+  * `apps/dashboard/src/routes/App.test.tsx`
+  * `tests/test_api_contracts.py`
+* The product intent is not a static demo script. The demo path must be returned
+  by `/api/dashboard/command-center`, embedded in `/api/codex/context-pack`, and
+  rendered in the dashboard.
+
+Completed in this slice so far:
+
+* Added typed `CommandCenterDemoStep` and `CommandCenterResponse.demo_script`.
+* Added `build_command_center_demo_script(...)`, derived from the same
+  `operator_brief` items used by Command Center.
+* Added `/command-center` dashboard section `Demo dla marketera`, with Polish
+  proof text, operator prompt, route, evidence IDs and ActionObject links.
+* Replaced `/opportunities` fallback rendering with a dedicated API-backed
+  surface showing:
+  * queue summary,
+  * live/non-fixture count,
+  * evidence count,
+  * related ActionObjects,
+  * evidence used by opportunities.
+* Replaced `/workflows` fallback rendering with a dedicated API-backed surface
+  showing:
+  * workflow registry,
+  * persisted workflow runs,
+  * evidence/action IDs produced by workflows,
+  * related ActionObjects.
+* Added a Polish empty state for opportunities so the dashboard does not create
+  fake recommendations when WILQ API has no evidence-backed opportunities.
+
+Current expected demo path from API:
+
+1. `/command-center` - explain the day's Polish operator plan.
+2. `/merchant` - show real Merchant product/feed metrics and
+   `act_review_merchant_feed_issues`.
+3. `/content-planner` - show GSC + WordPress content queue.
+4. `/ga4` - show landing/source/campaign quality evidence without ROAS/revenue
+   claims.
+5. `/ads-doctor` - show OAuth blocker and do not claim spend/search-term facts.
+6. `/localo` - show local visibility blocker until Localo evidence exists.
+
+Verification run in this slice:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/command_center.py wilq/schemas.py apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Backend API contracts: `80 passed` in full verify.
+* Dashboard lint/typecheck: passed.
+* Dashboard route tests: `12 passed`.
+* Playwright e2e: `7 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Live API proof:
+
+After restarting the local API process on `127.0.0.1:8000`, this command
+returned six demo steps, including ready Merchant/Content/GA4 steps and blocked
+Ads/Localo steps with evidence/action IDs:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/dashboard/command-center | \
+  jq '{primary_next_step, demo_script:[.demo_script[] | {id, route, status, evidence_count:(.evidence_ids|length), action_ids}]}'
+```
+
+Remaining before closing this slice:
+
+1. Commit with Conventional Commit, expected message:
+
+```text
+feat(dashboard): add marketer demo path
+```
+
+2. Push to `origin/main`.
+
+Goal 001 is still not complete after this slice. This slice improves the
+overnight demo path, but remaining work still includes Ads OAuth recovery or
+explicit blocked-state handoff, browser screenshot proof after live route audit,
+deeper Ads/Merchant/Content/GA4 tactical expansion, and continued replacement of
+generic operating surfaces only when backed by WILQ API evidence.

@@ -15,6 +15,7 @@ from wilq.schemas import (
     ActionRisk,
     AdsDiagnosticsResponse,
     CommandCenterBriefItem,
+    CommandCenterDemoStep,
     ConnectorStatus,
     ConnectorStatusValue,
     ContentDiagnosticsResponse,
@@ -40,6 +41,47 @@ def build_command_center_brief() -> tuple[list[CommandCenterBriefItem], str, int
     sorted_items = sorted(items, key=lambda item: item.priority)
     blocker_count = sum(1 for item in sorted_items if item.status == "blocked")
     return sorted_items, _primary_next_step(sorted_items), blocker_count
+
+
+def build_command_center_demo_script(
+    items: list[CommandCenterBriefItem],
+) -> list[CommandCenterDemoStep]:
+    items_by_id = {item.id: item for item in items}
+    ordered_item_ids = [
+        "daily_merchant_feed",
+        "daily_content_queue",
+        "daily_ga4_landing_quality",
+        "daily_ads_status",
+        "daily_localo_readiness",
+    ]
+    steps = [
+        CommandCenterDemoStep(
+            id="demo_start_command_center",
+            label="Start: plan dnia WILQ",
+            route="/command-center",
+            status="ready",
+            what_it_proves=(
+                "WILQ zbiera gotowe źródła, blockery, evidence IDs i ActionObjecty "
+                "w jeden polski plan pracy."
+            ),
+            operator_prompt=(
+                "Pokaż dzisiejszy priorytet, gotowe źródła, blockery i akcje, "
+                "których nie wolno wykonać bez walidacji."
+            ),
+            source_item_ids=[item.id for item in items],
+            evidence_ids=_limited_ids(
+                [evidence for item in items for evidence in item.evidence_ids],
+                10,
+            ),
+            action_ids=_limited_ids([action for item in items for action in item.action_ids], 10),
+        )
+    ]
+    for item_id in ordered_item_ids:
+        item = items_by_id.get(item_id)
+        if item is None:
+            continue
+        steps.append(_demo_step_from_item(item))
+    return steps
 
 
 def tactical_item_count() -> int:
@@ -216,6 +258,63 @@ def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
         if item.status == "ready":
             return item.next_step
     return "Najpierw usuń blocker dostępu z najwyższym priorytetem."
+
+
+def _demo_step_from_item(item: CommandCenterBriefItem) -> CommandCenterDemoStep:
+    return CommandCenterDemoStep(
+        id=f"demo_{item.id}",
+        label=_demo_label(item),
+        route=item.route,
+        status="ready" if item.status == "ready" else "blocked",
+        what_it_proves=_demo_proof(item),
+        operator_prompt=item.next_step,
+        source_item_ids=[item.id],
+        evidence_ids=item.evidence_ids,
+        action_ids=item.action_ids,
+    )
+
+
+def _demo_label(item: CommandCenterBriefItem) -> str:
+    if item.id == "daily_merchant_feed":
+        return "Merchant Center: dowód feedu produktów"
+    if item.id == "daily_content_queue":
+        return "Content Planner: kolejka treści"
+    if item.id == "daily_ga4_landing_quality":
+        return "GA4: jakość ruchu"
+    if item.id == "daily_ads_status":
+        return "Ads Doctor: blocker OAuth"
+    if item.id == "daily_localo_readiness":
+        return "Localo: blocker lokalnej widoczności"
+    return item.title
+
+
+def _demo_proof(item: CommandCenterBriefItem) -> str:
+    if item.id == "daily_merchant_feed":
+        return (
+            "Merchant Center daje realne product/feed metryki, issue count i review-safe "
+            "ActionObject bez automatycznej edycji feedu."
+        )
+    if item.id == "daily_content_queue":
+        return (
+            "GSC i WordPress inventory tworzą kolejkę content refresh/create/merge/block "
+            "bez obietnic wzrostu pozycji."
+        )
+    if item.id == "daily_ga4_landing_quality":
+        return (
+            "GA4 wskazuje jakość landing/source/campaign i blokuje ROAS/revenue claimy, "
+            "jeśli nie ma takich danych w evidence."
+        )
+    if item.id == "daily_ads_status":
+        return (
+            "Ads Doctor nie zmyśla spendu ani search terms: pokazuje OAuth blocker i "
+            "bezpieczny ActionObject naprawy dostępu."
+        )
+    if item.id == "daily_localo_readiness":
+        return (
+            "Localo jest jawnie oznaczone jako dostęp/readiness blocker, dopóki WILQ "
+            "nie ma świeżego evidence lokalnej widoczności."
+        )
+    return item.summary
 
 
 __all__ = ["STRICT_BRIEF_INSTRUCTION", "build_command_center_brief", "tactical_item_count"]

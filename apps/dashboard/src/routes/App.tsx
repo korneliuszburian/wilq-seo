@@ -75,6 +75,7 @@ import {
   MetricStoreStatus,
   Opportunity,
   TacticalQueueResponse,
+  Workflow,
   WorkflowRun
 } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
@@ -155,6 +156,12 @@ function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] }) {
 }
 
 function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
+  if (opportunities.length === 0) {
+    return (
+      <BlockerNotice message="Brak opportunities z WILQ API. Dashboard nie generuje rekomendacji bez evidence IDs." />
+    );
+  }
+
   return (
     <div className="grid gap-3 xl:grid-cols-2">
       {opportunities.map((opportunity) => (
@@ -1048,6 +1055,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
 
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
 type CommandCenterBriefItem = CommandCenterResponse["operator_brief"][number];
+type CommandCenterDemoStep = CommandCenterResponse["demo_script"][number];
 
 function TacticalQueuePanel({
   queue,
@@ -1217,6 +1225,55 @@ function DailyOperatorBriefCard({ item }: { item: CommandCenterBriefItem }) {
   );
 }
 
+function MarketerDemoScript({ steps }: { steps: CommandCenterDemoStep[] }) {
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <FileText aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Demo dla marketera
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Kolejność pokazu z WILQ API: co ekran udowadnia, jaki prompt ma sens i gdzie
+            są evidence IDs oraz ActionObjecty.
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-3 xl:grid-cols-2">
+        {steps.map((step, index) => (
+          <article key={step.id} className="rounded-md border border-line bg-white p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  krok {index + 1}
+                </div>
+                <h3 className="mt-1 text-base font-semibold tracking-normal">{step.label}</h3>
+              </div>
+              <StatusBadge value={step.status} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-700">{step.what_it_proves}</p>
+            <p className="mt-2 text-sm font-medium text-ink">{step.operator_prompt}</p>
+            <div className="mt-3 grid gap-2 text-xs text-slate-600">
+              <TraceLine label="Źródłowe karty" values={step.source_item_ids} />
+              <LinkedTraceLine label="Evidence" values={step.evidence_ids} kind="evidence" />
+              <LinkedTraceLine label="Akcje" values={step.action_ids} kind="actions" empty="brak" />
+            </div>
+            <a
+              href={step.route}
+              className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
+            >
+              Otwórz krok
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
@@ -1258,6 +1315,8 @@ function CommandCenter() {
 
       <div className="grid gap-8">
         <DailyOperatorBrief data={data} />
+
+        <MarketerDemoScript steps={data.demo_script} />
 
         <MarketingBriefPanel
           brief={marketingBrief.data}
@@ -1309,6 +1368,160 @@ function CommandCenter() {
         <ConnectorBlockers connectors={data.connector_health} />
       </div>
     </main>
+  );
+}
+
+function OpportunitiesSurface() {
+  const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
+  const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
+  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
+
+  if (opportunities.isLoading || actions.isLoading || evidence.isLoading) return <LoadingBand />;
+  if (opportunities.error || actions.error || evidence.error) return <ErrorState />;
+
+  const items = opportunities.data ?? [];
+  const evidenceIds = new Set(items.flatMap((item) => item.evidence_ids));
+  const actionEvidenceIds = new Set((actions.data ?? []).flatMap((action) => action.evidence_ids));
+  const liveItems = items.filter((item) => !item.is_fixture);
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Opportunities</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Lista decyzji z WILQ API. Każda karta musi mieć evidence IDs, źródła i reguły;
+            readiness albo seed data nie są jeszcze rekomendacją marketingową.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Karty" value={items.length} />
+          <MetricTile label="Live" value={liveItems.length} />
+          <MetricTile label="Evidence" value={evidenceIds.size} />
+        </div>
+      </div>
+
+      <div className="grid gap-8">
+        <section>
+          <SectionHeading title="Kolejka decyzji" />
+          <OpportunityList opportunities={items} />
+        </section>
+        <section>
+          <SectionHeading title="Powiązane ActionObjecty" />
+          <ActionList
+            actions={(actions.data ?? []).filter(
+              (action) =>
+                actionEvidenceIds.size === 0 ||
+                action.evidence_ids.some((id) => evidenceIds.has(id))
+            )}
+          />
+        </section>
+        <section>
+          <SectionHeading title="Evidence użyte przez opportunities" />
+          <EvidenceList
+            evidenceItems={(evidence.data ?? []).filter((item) => evidenceIds.has(item.id)).slice(0, 12)}
+          />
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function WorkflowsSurface() {
+  const workflows = useQuery({ queryKey: ["workflows"], queryFn: getWorkflows });
+  const workflowRuns = useQuery({ queryKey: ["workflow-runs"], queryFn: getWorkflowRuns });
+  const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
+  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
+
+  if (workflows.isLoading || workflowRuns.isLoading || actions.isLoading || evidence.isLoading) {
+    return <LoadingBand />;
+  }
+  if (workflows.error || workflowRuns.error || actions.error || evidence.error) {
+    return <ErrorState />;
+  }
+
+  const runs = workflowRuns.data ?? [];
+  const completedRuns = runs.filter((run) => run.status === "completed");
+  const workflowEvidenceIds = new Set(runs.flatMap((run) => run.output.evidence_ids));
+  const workflowActionIds = new Set(runs.flatMap((run) => run.output.action_ids));
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Workflows</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Rejestr automatyzacji WILQ. Workflows uruchamiają API-backed operacje,
+            zapisują run state i oddają evidence/action IDs do dashboardu oraz skillsów.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Workflowy" value={(workflows.data ?? []).length} />
+          <MetricTile label="Runy" value={runs.length} />
+          <MetricTile label="Gotowe" value={completedRuns.length} />
+        </div>
+      </div>
+
+      <div className="grid gap-8">
+        <section>
+          <SectionHeading title="Rejestr workflowów" />
+          <WorkflowRegistryList workflows={workflows.data ?? []} />
+        </section>
+        <section>
+          <SectionHeading title="Ostatnie uruchomienia" />
+          <WorkflowRunList runs={runs} />
+        </section>
+        <section>
+          <SectionHeading title="Wyniki workflowów" />
+          <div className="grid gap-3 xl:grid-cols-2">
+            <article className="rounded-md border border-line bg-white p-4 text-sm text-slate-700">
+              <h3 className="font-semibold text-ink">Evidence z workflowów</h3>
+              <LinkedTraceLine
+                label="Evidence"
+                values={[...workflowEvidenceIds].slice(0, 12)}
+                kind="evidence"
+                empty="brak"
+              />
+            </article>
+            <article className="rounded-md border border-line bg-white p-4 text-sm text-slate-700">
+              <h3 className="font-semibold text-ink">ActionObjecty z workflowów</h3>
+              <LinkedTraceLine
+                label="Akcje"
+                values={[...workflowActionIds].slice(0, 12)}
+                kind="actions"
+                empty="brak"
+              />
+            </article>
+          </div>
+        </section>
+        <section>
+          <SectionHeading title="Powiązane ActionObjecty" />
+          <ActionList
+            actions={(actions.data ?? []).filter((action) => workflowActionIds.has(action.id))}
+          />
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function WorkflowRegistryList({ workflows }: { workflows: Workflow[] }) {
+  if (workflows.length === 0) {
+    return (
+      <BlockerNotice message="Brak workflowów w WILQ API. Nie pokazujemy automatyzacji, której API nie zna." />
+    );
+  }
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {workflows.map((workflow) => (
+        <article key={workflow.id} className="rounded-md border border-line bg-white p-4">
+          <h3 className="text-sm font-semibold">{workflow.label}</h3>
+          <p className="mt-1 break-words text-xs text-slate-500">{workflow.id}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-700">{workflow.description}</p>
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -2439,7 +2652,7 @@ const commandCenterRoute = createRoute({
 const opportunitiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/opportunities",
-  component: () => <GenericSurface routeName="/opportunities" />
+  component: OpportunitiesSurface
 });
 const opportunityDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -2454,7 +2667,7 @@ const actionsRoute = createRoute({
 const workflowsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/workflows",
-  component: () => <GenericSurface routeName="/workflows" />
+  component: WorkflowsSurface
 });
 const actionDetailRoute = createRoute({
   getParentRoute: () => rootRoute,

@@ -675,6 +675,8 @@ def test_command_center_returns_valid_shape() -> None:
     assert data["strict_instruction"]
     assert data["connector_summary"]["total"] >= 12
     assert "todays_moves" in data["sections"]
+    assert data["demo_script"]
+    assert data["demo_script"][0]["route"] == "/command-center"
 
 
 def test_marketing_brief_aggregates_metric_facts_and_blockers(
@@ -871,6 +873,11 @@ def test_command_center_exposes_polish_operator_brief(
         in brief_by_id["daily_ga4_landing_quality"]["action_ids"]
     )
     assert all(item["evidence_ids"] for item in payload["operator_brief"])
+    demo_by_id = {item["id"]: item for item in payload["demo_script"]}
+    assert "demo_start_command_center" in demo_by_id
+    assert demo_by_id["demo_start_command_center"]["route"] == "/command-center"
+    assert demo_by_id["demo_daily_merchant_feed"]["route"] == "/merchant"
+    assert "act_review_merchant_feed_issues" in demo_by_id["demo_daily_merchant_feed"]["action_ids"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -879,6 +886,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert context_response.status_code == 200
     context_command = context_response.json()["command_center"]
     assert context_command["operator_brief"] == payload["operator_brief"]
+    assert context_command["demo_script"] == payload["demo_script"]
     assert context_command["primary_next_step"] == payload["primary_next_step"]
 
 

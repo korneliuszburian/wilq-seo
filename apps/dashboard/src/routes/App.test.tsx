@@ -967,6 +967,32 @@ function mockFetch() {
                 risk: "low"
               }
             ],
+            demo_script: [
+              {
+                id: "demo_start_command_center",
+                label: "Start: plan dnia WILQ",
+                route: "/command-center",
+                status: "ready",
+                what_it_proves:
+                  "WILQ zbiera gotowe źródła, blockery, evidence IDs i ActionObjecty.",
+                operator_prompt: "Pokaż dzisiejszy priorytet i akcje do walidacji.",
+                source_item_ids: ["daily_ads_status", "daily_merchant_feed"],
+                evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_merchant_feed"],
+                action_ids: ["act_configure_google_ads_env", "act_review_merchant_feed_issues"]
+              },
+              {
+                id: "demo_daily_merchant_feed",
+                label: "Merchant Center: dowód feedu produktów",
+                route: "/merchant",
+                status: "ready",
+                what_it_proves:
+                  "Merchant Center daje realne product/feed metryki i ActionObject review.",
+                operator_prompt: "Otwórz /merchant i waliduj feed/product issues.",
+                source_item_ids: ["daily_merchant_feed"],
+                evidence_ids: ["ev_refresh_merchant_feed"],
+                action_ids: ["act_review_merchant_feed_issues"]
+              }
+            ],
             connector_summary: { total: 1, configured: 0, missing_credentials: 1 },
             sections: {
               todays_moves: opportunities,
@@ -1077,10 +1103,15 @@ describe("WILQ dashboard", () => {
       screen.getByText("Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.")
     ).toBeInTheDocument();
     expect(screen.getByText("Ads: blocker OAuth przed analizą spendu")).toBeInTheDocument();
-    expect(screen.getByText("Merchant: feed/product issues do przeglądu")).toBeInTheDocument();
+    expect(screen.getAllByText("Merchant: feed/product issues do przeglądu").length).toBeGreaterThan(0);
     expect(screen.getByText("Content: GSC query/page + WordPress inventory")).toBeInTheDocument();
     expect(screen.getByText("GA4: landing/source/campaign quality review")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Demo dla marketera")).toBeInTheDocument();
+    expect(screen.getByText("Start: plan dnia WILQ")).toBeInTheDocument();
+    expect(
+      screen.getByText("Merchant Center daje realne product/feed metryki i ActionObject review.")
+    ).toBeInTheDocument();
     expect(screen.getByText("Priorytety dnia")).toBeInTheDocument();
     expect(screen.getByText("Dzisiejszy brief WILQ")).toBeInTheDocument();
     expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
@@ -1101,6 +1132,8 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByText("Google Ads diagnostics blocked until credentials are configured")).toBeInTheDocument()
     );
+    expect(screen.getByText("Kolejka decyzji")).toBeInTheDocument();
+    expect(screen.getByText("Evidence użyte przez opportunities")).toBeInTheDocument();
   });
 
   it("action detail route renders", async () => {
@@ -1136,7 +1169,9 @@ describe("WILQ dashboard", () => {
 
   it("workflow route renders persisted workflow runs", async () => {
     renderApp("/workflows");
-    await waitFor(() => expect(screen.getByText("Workflow Runs")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Ostatnie uruchomienia")).toBeInTheDocument());
+    expect(screen.getByText("Rejestr workflowów")).toBeInTheDocument();
+    expect(screen.getByText("Wyniki workflowów")).toBeInTheDocument();
     expect(screen.getByText("run_daily_command_test")).toBeInTheDocument();
   });
 
