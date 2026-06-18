@@ -124,7 +124,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert 'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in ads_smoke_script
     assert '"ads_diagnostics": {' in ads_smoke_script
     assert "blocked_handoff" in ads_skill_doc
-    assert '"blocked_handoff": {' in ads_smoke_script
+    assert "Live Ads diagnostics must not expose OAuth blocked_handoff" in ads_smoke_script
+    assert "Blocked Ads diagnostics must expose blocked_handoff" in ads_smoke_script
 
     merchant_skill_doc = Path(
         ".agents/skills/wilq-merchant-feed-operator/SKILL.md"

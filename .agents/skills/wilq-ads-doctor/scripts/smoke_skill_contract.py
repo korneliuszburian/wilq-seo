@@ -62,15 +62,18 @@ def main() -> int:
     if pack.get("ads_diagnostics", {}).get("action_ids") != ads_diagnostics.get("action_ids"):
         raise SystemExit("Context pack ads_diagnostics action IDs differ from endpoint")
     blocked_handoff = ads_diagnostics.get("blocked_handoff")
-    if not isinstance(blocked_handoff, dict):
-        raise SystemExit("Ads diagnostics must expose blocked_handoff")
-    if blocked_handoff.get("status") not in {"ready", "blocked"}:
-        raise SystemExit("Ads blocked_handoff must expose ready/blocked status")
-    if "google_ads" not in blocked_handoff.get("source_connectors", []):
-        raise SystemExit("Ads blocked_handoff must include google_ads source connector")
-    if not blocked_handoff.get("evidence_ids"):
-        raise SystemExit("Ads blocked_handoff must include evidence IDs")
-    if ads_diagnostics.get("live_data_available") is False:
+    if ads_diagnostics.get("live_data_available") is True:
+        if blocked_handoff is not None:
+            raise SystemExit("Live Ads diagnostics must not expose OAuth blocked_handoff")
+    else:
+        if not isinstance(blocked_handoff, dict):
+            raise SystemExit("Blocked Ads diagnostics must expose blocked_handoff")
+        if blocked_handoff.get("status") != "blocked":
+            raise SystemExit("Blocked Ads handoff must expose blocked status")
+        if "google_ads" not in blocked_handoff.get("source_connectors", []):
+            raise SystemExit("Ads blocked_handoff must include google_ads source connector")
+        if not blocked_handoff.get("evidence_ids"):
+            raise SystemExit("Ads blocked_handoff must include evidence IDs")
         if not blocked_handoff.get("action_ids"):
             raise SystemExit("Blocked Ads handoff must include action IDs")
         blocked_claims = set(blocked_handoff.get("blocked_claims", []))

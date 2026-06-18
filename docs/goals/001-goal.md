@@ -948,9 +948,12 @@ Commit rules:
    honest blockers.
 
 2. **Clean remaining stale Ads/Localo state in product surfaces.**
-   Ensure Command Center, Ads Doctor, marketing brief, action plan and skill
-   text no longer show OAuth repair when live Ads data exists, and no Localo
-   surface says "dokończ access" after `mcp_initialize_status=200`. Keep direct
+   Current status after the latest slice: `/api/ads/diagnostics` returns
+   `blocked_handoff=null` when live Ads data exists; `/ads-doctor` shows live
+   read contracts plus `Bezpieczne akcje Ads`, not OAuth handoff copy; Localo
+   access-ready route does not show a global `Taktyki z WILQ API` queue or
+   fake `24 Taktyki` count. Continue auditing Command Center, action plan and
+   skill outputs for any remaining stale OAuth/access wording. Keep direct
    `/actions/act_configure_google_ads_env` available for troubleshooting only.
 
 3. **Continue API surface audit from `/api/actions` and `/api/dashboard/command-center`.**
@@ -1118,6 +1121,30 @@ Latest Command Center metric-decision cleanup:
   `SHOPPING_ADS`.
 - `agent-browser` proof was run with local runtime dir:
   `XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime`.
+
+Latest Ads/Localo stale-state cleanup:
+
+- Live Ads diagnostics no longer overload `blocked_handoff` for "next step"
+  messaging. `blocked_handoff` is now only for real access blockers; live Ads
+  keeps write/apply limits in `ads_action_safety`, campaign/search-term read
+  contracts and blocked claims.
+- `wilq-ads-doctor` smoke now accepts both legal API states: live diagnostics
+  with no OAuth handoff, or blocked diagnostics with a blocked handoff and
+  ActionObject IDs.
+- `/localo` no longer renders generic global tactical queue stats when there
+  are no Localo tactical items. It keeps Localo access/readiness and blocks
+  ranking/GBP/local-visibility claims until a real Localo read contract exists.
+- Focused proof passed:
+  - `uv run ruff check wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py`
+  - `uv run mypy wilq/briefing/ads_diagnostics.py`
+  - `uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`
+  - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+  - `WILQ_E2E_API_PORT=8875 WILQ_E2E_DASHBOARD_PORT=5373 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts` -> `8 passed`
+  - `scripts/verify.sh` -> backend API contracts `98 passed`, dashboard route
+    tests `12 passed`, Playwright e2e `8 passed`, dashboard production build
+    passed.
 
 Important product note:
 

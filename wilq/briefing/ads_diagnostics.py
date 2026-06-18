@@ -62,7 +62,11 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             campaign_read_contract,
         ),
         _search_terms_section(search_terms_read_contract, action_ids),
-        _safe_action_section(action_ids, latest_refresh),
+        _safe_action_section(
+            action_ids,
+            latest_refresh,
+            live_data_available=live_data_available,
+        ),
     ]
     return AdsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
@@ -564,22 +568,42 @@ def _search_terms_section(
 def _safe_action_section(
     action_ids: list[str],
     latest_refresh: ConnectorRefreshRun | None,
+    *,
+    live_data_available: bool,
 ) -> AdsDiagnosticSection:
     evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
+    if live_data_available:
+        summary = (
+            "WILQ ma read-only Google Ads evidence; write/apply nadal nie ma gotowego "
+            "ActionObject."
+        )
+        diagnosis = (
+            "Odczyt kampanii i search terms może wspierać analizę, ale zmiany budżetów, "
+            "kampanii, wykluczeń i segmentów wymagają osobnych payload preview, walidacji, "
+            "jawnego confirm i audit eventu."
+        )
+        next_step = (
+            "Rozszerz Ads workflow o prepare-only ActionObject dopiero po osobnym evidence "
+            "dla konkretnej zmiany."
+        )
+    else:
+        summary = "WILQ ma tylko prepare-only repair action dla Google Ads access."
+        diagnosis = (
+            "Żadna zmiana Google Ads nie może przejść do apply bez payload preview, "
+            "walidacji, jawnego confirm i audit eventu. Obecnie jedyny sensowny "
+            "ActionObject to naprawa dostępu."
+        )
+        next_step = (
+            "Zweryfikuj `act_configure_google_ads_env`; apply pozostaje zablokowany "
+            "bez explicit support."
+        )
     return AdsDiagnosticSection(
         id="ads_action_safety",
         title="Bezpieczne akcje Ads",
         status="blocked",
-        summary="WILQ ma tylko prepare-only repair action dla OAuth.",
-        diagnosis=(
-            "Żadna zmiana Google Ads nie może przejść do apply bez payload preview, "
-            "walidacji, jawnego confirm i audit eventu. Obecnie jedyny sensowny "
-            "ActionObject to naprawa dostępu."
-        ),
-        next_step=(
-            "Zweryfikuj `act_configure_google_ads_env`; apply pozostaje zablokowany "
-            "bez explicit support."
-        ),
+        summary=summary,
+        diagnosis=diagnosis,
+        next_step=next_step,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=evidence_ids,
         action_ids=action_ids,
@@ -593,41 +617,13 @@ def _blocked_handoff(
     latest_refresh: ConnectorRefreshRun | None,
     sections: list[AdsDiagnosticSection],
     action_ids: list[str],
-) -> AdsBlockedHandoff:
+) -> AdsBlockedHandoff | None:
     evidence_ids = _unique(
         evidence_id for section in sections for evidence_id in section.evidence_ids
     )
     blocked_claims = _unique(claim for section in sections for claim in section.blocked_claims)
     if live_data_available:
-        return AdsBlockedHandoff(
-            status="ready",
-            title="Google Ads: live read gotowy do kolejnego kroku",
-            summary=(
-                "WILQ ma live metric facts z Google Ads, ale akcje zapisu nadal wymagają "
-                "walidacji."
-            ),
-            marketer_message=(
-                "Możesz pokazać bazowy odczyt kampanii i search terms z konwersjami, "
-                "ale CPA, ROAS, waste, negative keywords i apply zmian wymagają "
-                "osobnych evidence oraz ActionObject validation."
-            ),
-            repair_steps=[
-                (
-                    "Rozszerz read-only Google Ads vendor_read o recommendations, "
-                    "change events i safety checks."
-                ),
-                "Waliduj każdy ActionObject przed apply.",
-                "Nie wykonuj budżetów, wykluczeń ani kampanii bez preview i audit eventu.",
-            ],
-            allowed_demo_claims=[
-                "Google Ads connector ma live metric facts.",
-                "WILQ wymaga evidence IDs i ActionObject validation przed działaniami.",
-            ],
-            blocked_claims=blocked_claims,
-            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=evidence_ids,
-            action_ids=action_ids,
-        )
+        return None
     return AdsBlockedHandoff(
         status="blocked",
         title="Google Ads: finalny handoff blockera OAuth",

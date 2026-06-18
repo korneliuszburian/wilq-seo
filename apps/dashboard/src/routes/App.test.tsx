@@ -200,7 +200,14 @@ const adsDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
   language: "pl-PL",
   strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
-  connector: connectors[0],
+  connector: {
+    ...connectors[0],
+    status: "configured",
+    configured: true,
+    missing_credentials: [],
+    available_credential_sources: ["repo_env"],
+    freshness: { state: "fresh" }
+  },
   latest_refresh: {
     ...connectorRefreshRuns[0],
     mode: "vendor_read",
@@ -371,8 +378,8 @@ const adsDiagnostics = {
           unit: null
         }
       ],
-      action_ids: ["act_1"],
-    blocked_claims: ["CPA", "ROAS", "wasted budget"],
+      action_ids: [],
+      blocked_claims: ["CPA", "ROAS", "wasted budget"],
       risk: "medium"
     },
     {
@@ -395,37 +402,15 @@ const adsDiagnostics = {
           unit: null
         }
       ],
-      action_ids: ["act_1"],
+      action_ids: [],
       blocked_claims: ["CPA", "ROAS", "wasted budget"],
       risk: "medium"
     }
   ],
-  blocked_handoff: {
-    id: "ads_oauth_blocked_handoff",
-    status: "blocked",
-    title: "Google Ads: finalny handoff blockera OAuth",
-    summary: "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client).",
-    marketer_message:
-      "W demo pokaż, że WILQ widzi problem z dostępem i blokuje wszystkie wnioski o spendzie, CPA, ROAS, search terms i negative keywords.",
-    repair_steps: [
-      "Otwórz /ads-doctor i pokaż redacted OAuth blocker.",
-      "Zweryfikuj ActionObject `act_configure_google_ads_env`.",
-      "Uzyskaj świeży Google Ads OAuth token z zakresem `adwords`.",
-      "Uruchom read-only `google_ads vendor_read`."
-    ],
-    allowed_demo_claims: [
-      "Google Ads jest zablokowany przez OAuth/API access.",
-      "WILQ nie zmyśla Ads metryk bez vendor evidence.",
-      "Naprawa dostępu ma ActionObject i validation gate."
-    ],
-    blocked_claims: ["wasted spend", "CPA", "ROAS", "search terms"],
-    source_connectors: ["google_ads"],
-    evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
-    action_ids: ["act_1"]
-  },
+  blocked_handoff: null,
   evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
-  action_ids: ["act_1"],
-  blocker_count: 2
+  action_ids: [],
+  blocker_count: 0
 };
 
 const metricFacts = [
@@ -1531,10 +1516,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Google Ads: live data dostępne")).toBeInTheDocument();
     expect(screen.getByText(/clicks: \d+/)).toBeInTheDocument();
     expect(screen.getAllByText(/campaign_id=123/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Co wolno pokazać w demo")).toBeInTheDocument();
-    expect(
-      screen.getByText("WILQ nie zmyśla Ads metryk bez vendor evidence.")
-    ).toBeInTheDocument();
+    expect(screen.queryByText("Handoff blockera Ads")).not.toBeInTheDocument();
+    expect(screen.queryByText(/handoff blockera OAuth/i)).not.toBeInTheDocument();
     expect(screen.getByText("Google Ads: campaign activity rows")).toBeInTheDocument();
     expect(screen.getByText("Read contract Ads")).toBeInTheDocument();
     expect(screen.getAllByText("Ekologus Search").length).toBeGreaterThan(0);
@@ -1548,12 +1531,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();
     expect(screen.getByText(/90_day_safety_check/)).toBeInTheDocument();
     expect(screen.getByText("Campaign activity read contract")).toBeInTheDocument();
-    expect(screen.getAllByText("Odnow Google Ads OAuth refresh token").length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "act_1" })[0]).toHaveAttribute(
-      "href",
-      "/actions/act_1"
-    );
-    expect(screen.getAllByText(/wasted spend/).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
+    expect(screen.queryByText(/wasted spend/)).not.toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {
@@ -1686,6 +1665,9 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Localo: MCP access działa, brak jeszcze ranking/GBP facts")
     ).toBeInTheDocument();
+    expect(screen.queryByText("Taktyki z WILQ API")).not.toBeInTheDocument();
+    expect(screen.queryByText("Metric facts")).not.toBeInTheDocument();
+    expect(screen.queryByText("24 Taktyki")).not.toBeInTheDocument();
 
     cleanup();
     testQueryClient.clear();

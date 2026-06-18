@@ -32,7 +32,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
 3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, wasted spend, search terms, jakości kampanii, rekomendacji lub negative keywords.
-4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także `blocked_handoff`.
+4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także opcjonalny `blocked_handoff`.
 5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
 7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.

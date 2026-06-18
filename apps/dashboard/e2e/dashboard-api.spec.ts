@@ -77,9 +77,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/clicks:/).first()).toBeVisible();
     await expect(page.getByText("Konwersje").first()).toBeVisible();
     await expect(page.getByText("Wartość konw.").first()).toBeVisible();
-    await expect(page.getByText("Google Ads: live read gotowy do kolejnego kroku")).toBeVisible();
-    await expect(page.getByText("Google Ads connector ma live metric facts.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bezpieczne akcje Ads" })).toBeVisible();
+    await expect(page.getByText(/WILQ ma read-only Google Ads evidence/)).toBeVisible();
     await expect(page.getByRole("link", { name: "ev_connector_google_ads_status" }).first()).toBeVisible();
+    await expect(page.getByText("Handoff blockera Ads")).toHaveCount(0);
+    await expect(page.getByText(/handoff blockera OAuth/i)).toHaveCount(0);
   });
 
   test("ga4 route exposes metric-backed workflow focus", async ({ page }) => {
@@ -175,5 +177,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/LOCALO_ACCESS_TOKEN/)).toHaveCount(0);
     await expect(page.getByText(/local ranking/i)).toHaveCount(0);
     await expect(page.getByText(/pozycja lokalna/i)).toHaveCount(0);
+    await expect(page.getByText("Taktyki z WILQ API")).toHaveCount(0);
+    await expect(page.getByText("Metric facts")).toHaveCount(0);
+    await expect(page.getByText("24 Taktyki")).toHaveCount(0);
   });
 });

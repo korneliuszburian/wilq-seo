@@ -2102,10 +2102,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     payload = response.json()
     assert payload["live_data_available"] is True
     assert payload["latest_refresh"]["status"] == "completed"
-    assert payload["blocked_handoff"]["status"] == "ready"
-    assert "Google Ads connector ma live metric facts." in payload["blocked_handoff"][
-        "allowed_demo_claims"
-    ]
+    assert payload["blocked_handoff"] is None
     read_contract = payload["campaign_read_contract"]
     assert read_contract["status"] == "ready"
     assert read_contract["allowed_metrics"] == [
@@ -2206,7 +2203,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     after_probe_payload = after_probe_response.json()
     assert after_probe_payload["live_data_available"] is True
     assert after_probe_payload["latest_refresh"]["id"] == refresh_response.json()["id"]
-    assert after_probe_payload["blocked_handoff"]["status"] == "ready"
+    assert after_probe_payload["blocked_handoff"] is None
     assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
 

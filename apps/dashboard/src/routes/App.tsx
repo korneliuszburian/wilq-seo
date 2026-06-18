@@ -800,7 +800,10 @@ function TacticalQueuePanel({
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label={compact ? "Decyzje" : "Taktyki"} value={compact ? compactGroups.length : queue.items.length} />
+          <MetricTile
+            label={compact ? "Decyzje" : "Taktyki"}
+            value={compact ? compactGroups.length : filteredItems.length}
+          />
           <MetricTile label="Evidence" value={uniqueValues(filteredItems.flatMap((item) => item.evidence_ids)).length} />
           <MetricTile label="Akcje" value={uniqueValues(filteredItems.flatMap((item) => item.action_ids)).length} />
         </div>
@@ -1356,19 +1359,20 @@ type BriefSurfaceConfig = {
   safetyText: string;
   connectorIds: string[];
   textNeedles: string[];
+  showTacticalQueue?: boolean;
 };
 
 const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/ads-doctor": {
     title: "Ads Doctor",
     description:
-      "Widok Google Ads oparty o WILQ MarketingBrief. Najpierw pokazuje OAuth/blockery, evidence i ActionObject, dopiero potem diagnozę spendu.",
+      "Widok Google Ads oparty o WILQ MarketingBrief. Pokazuje live evidence, read contracts i ActionObjecty; jeśli Ads jest zablokowany, pokazuje blocker zamiast diagnozy spendu.",
     focusTitle: "Ads Focus",
     emptyMessage:
       "Brak Google Ads evidence w /api/marketing/brief. WILQ nie pokaże spend/campaign rekomendacji bez odczytu Ads API.",
     safetyTitle: "Spend Safety Gate",
     safetyText:
-      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają payload preview, walidacji ActionObject i audytu. Do czasu naprawy OAuth widok pokazuje blocker, nie performance claims.",
+      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają payload preview, walidacji ActionObject i audytu. Brak search terms, CPA albo ROAS evidence oznacza zakres blokad, nie powód do zgadywania.",
     connectorIds: ["google_ads"],
     textNeedles: []
   },
@@ -1409,7 +1413,8 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
     safetyText:
       "GBP posty i lokalne działania wymagają evidence, payload preview, walidacji ActionObject i audytu. MCP initialize=200 potwierdza access, ale nie zastępuje rankingów, GBP performance ani competitor facts.",
     connectorIds: ["localo"],
-    textNeedles: []
+    textNeedles: [],
+    showTacticalQueue: false
   },
   "/social-publisher": {
     title: "Social Publisher",
@@ -1502,7 +1507,7 @@ function AdsDoctorSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">Ads Doctor</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok Google Ads z WILQ API. Pokazuje live campaign facts dopiero
-            po udanym vendor_read; przy OAuth blockerze pokazuje dokładny powód i bezpieczny
+            po udanym vendor_read; przy blockerze dostępu pokazuje dokładny powód i bezpieczny
             ActionObject zamiast zmyślać spend, CPA albo ROAS.
           </p>
         </div>
@@ -2658,7 +2663,7 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Rekomendacje" value={recommendations.length} />
           <MetricTile label="Blockery" value={blockers.length} />
-          <MetricTile label="Metric facts" value={metricFacts.length} />
+          <MetricTile label="Fakty" value={metricFacts.length} />
         </div>
       </div>
 
@@ -2678,14 +2683,16 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
 
         {routeActionIds.length > 0 ? <ActionObjectFocus actions={routeActions} /> : null}
 
-        <TacticalQueuePanel
-          queue={tacticalQueue.data}
-          connectorIds={config.connectorIds}
-          limit={6}
-          title="Taktyki z WILQ API"
-          isLoading={tacticalQueue.isLoading}
-          isError={Boolean(tacticalQueue.error)}
-        />
+        {config.showTacticalQueue === false ? null : (
+          <TacticalQueuePanel
+            queue={tacticalQueue.data}
+            connectorIds={config.connectorIds}
+            limit={6}
+            title="Taktyki z WILQ API"
+            isLoading={tacticalQueue.isLoading}
+            isError={Boolean(tacticalQueue.error)}
+          />
+        )}
 
         <section className="rounded-md border border-line bg-white p-4">
           <div className="mb-3 flex items-start gap-3">

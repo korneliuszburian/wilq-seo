@@ -98,6 +98,14 @@ Data: 2026-06-18
   precyzyjniej: `search-term waste`, `negative keyword candidates`, CPA/ROAS i
   apply zmian pozostają blocked do czasu safety/ActionObject/derived KPI
   contracts.
+- Ads Doctor nie zwraca już `blocked_handoff` przy live Google Ads data.
+  `/api/ads/diagnostics` w stanie live ma teraz `blocked_handoff=null`,
+  `action_ids=[]`, campaign/search-term read contracts i osobną sekcję
+  `Bezpieczne akcje Ads` dla zablokowanego write/apply. OAuth repair handoff
+  jest zarezerwowany wyłącznie dla realnego access blockera.
+- `/localo` nie dokleja już generycznej globalnej kolejki `Taktyki z WILQ API`.
+  Localo pokazuje access/readiness oraz brak ranking/GBP facts bez fałszywych
+  liczników typu `24 Taktyki` i bez angielskiego `Metric facts`.
 - Pełny `scripts/verify.sh` przeszedł po Ads search terms i Command Center
   duplicate-stats slice: backend API contracts 97 passed, dashboard route
   tests 12 passed, Playwright e2e 8 passed i dashboard production build passed.
@@ -139,6 +147,14 @@ Data: 2026-06-18
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
 - `uv run pytest tests/test_api_contracts.py -q -k 'ads_diagnostics_exposes_live_campaign_metric_facts or ads_diagnostics_exposes_oauth_blocker_without_fake_metrics'`
 - `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
+- `scripts/verify.sh`
+- `uv run ruff check wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py`
+- `uv run mypy wilq/briefing/ads_diagnostics.py`
+- `uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q`
+- `pnpm --filter @wilq/dashboard lint`
+- `pnpm --filter @wilq/dashboard typecheck`
+- `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `WILQ_E2E_API_PORT=8875 WILQ_E2E_DASHBOARD_PORT=5373 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
 - `scripts/verify.sh`
 - `uv run ruff check wilq/briefing/merchant_diagnostics.py tests/test_api_contracts.py`
 - `uv run mypy wilq/briefing/merchant_diagnostics.py`
@@ -190,6 +206,16 @@ dashboard production build: passed
 ```
 
 Po metric grouped reads / Content Planner impressions fix 2026-06-18:
+
+```text
+scripts/verify.sh passed
+backend API contracts: 98 passed
+dashboard route tests: 12 passed
+Playwright e2e: 8 passed
+dashboard production build: passed
+```
+
+Po Ads/Localo stale-state cleanup 2026-06-18:
 
 ```text
 scripts/verify.sh passed
@@ -862,7 +888,9 @@ Runtime proof:
   - latest refresh `refresh_google_ads_c2f62ee2b43a`, mode `vendor_read`;
   - campaign rows `18`;
   - search-term rows `50`;
-  - `blocked_handoff.status=ready`.
+  - `blocked_handoff=null`;
+  - write/apply constraints stay in `ads_action_safety`, not in an OAuth
+    handoff.
 - `/api/marketing/brief` no longer returns Google Ads OAuth repair action while
   Ads live data is available.
 - `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` returns
