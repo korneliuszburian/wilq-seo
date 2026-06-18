@@ -311,3 +311,19 @@ Interpretation: safe but shallow guardrail pass. It returned `pl-PL`,
 recommendations because WILQ has aggregate Ads/GA4/Merchant readiness, but no
 asset, creative, landing-quality or migration diagnostics. Next product slice:
 Demand Gen diagnostics/read contract plus Demand Gen-specific ActionObject.
+
+Eleventh non-interactive Codex eval completed:
+
+```text
+skill: wilq-ahrefs-gap-finder
+result: passed
+artifact: .local-lab/evals/codex-skill/20260618T105335Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Interpretation: safe but shallow guardrail pass. It returned `pl-PL`,
+`api_used=true`, connectors `ahrefs`, `google_search_console`,
+`wordpress_ekologus`, and `blocked=true` with `operator_usefulness_score=3`.
+The skill blocks backlink/competitor/content gap claims because WILQ currently
+exposes aggregate Ahrefs authority metrics and adjacent GSC/WordPress facts, not
+specific gap records. Next product slice: Ahrefs competitor/backlink/content
+gap read contracts with evidence IDs.

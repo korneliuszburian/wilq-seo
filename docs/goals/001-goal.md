@@ -562,6 +562,12 @@ Current eval progress:
   It correctly blocks Demand Gen recommendations because WILQ has aggregate
   Ads/GA4/Merchant readiness only, not asset, creative, landing-quality,
   migration diagnostics or a Demand Gen-specific ActionObject.
+- `wilq-ahrefs-gap-finder`: passed at
+  `.local-lab/evals/codex-skill/20260618T105335Z/wilq-ahrefs-gap-finder/result.json`.
+  This is a guardrail pass with low usefulness (`operator_usefulness_score=3`).
+  It correctly blocks backlink/competitor/content gap claims because WILQ has
+  aggregate Ahrefs authority metrics plus GSC/WordPress context, but no concrete
+  Ahrefs gap records.
 
 ### 4. Performance Slice
 
