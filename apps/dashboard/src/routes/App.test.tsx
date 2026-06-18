@@ -1336,6 +1336,17 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "SEO / GSC" })).toBeInTheDocument()
     );
     expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma zrobić teraz z treściami")).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczny tryb content")).toBeInTheDocument();
+    expect(screen.getByText(/WILQ łączy GSC query\/page z WordPress inventory/)).toBeInTheDocument();
+    expect(screen.getByText(/Query: zielony ład/)).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/WordPress match: found/).length
+    ).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
+      "href",
+      "/actions/act_prepare_content_refresh_queue"
+    );
     expect(screen.getByText("GSC: query/page matrix")).toBeInTheDocument();
     expect(screen.getByText("WordPress: inventory protection")).toBeInTheDocument();
     expect(

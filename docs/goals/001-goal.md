@@ -7286,3 +7286,118 @@ Goal 001 is still not complete after this slice. Remaining work after commit:
   uses the same issue queue and ActionObject safety path.
 * Ads OAuth and Localo access remain honest blockers until external access is
   recovered.
+
+## 62. Slice 2026-06-18 - Content Planner operator summary for GSC and WordPress decisions
+
+Status: full verification complete; commit and push pending.
+
+Product intent:
+
+* `/content-planner` and `/seo-gsc` already had diagnostic sections, but the
+  marketer still had to infer the actual content decision flow from raw
+  query/page and inventory facts.
+* This slice adds an operator summary that turns GSC + WordPress evidence into
+  concrete content work: refresh existing URL, merge clustered queries, create
+  only after inventory check, or block unsupported claims.
+* It remains prepare-only. WILQ must not claim ranking improvement, lead uplift
+  or conversion uplift without additional evidence and a validated ActionObject.
+
+Live API proof before implementation:
+
+```bash
+curl --max-time 20 -sS http://127.0.0.1:8000/api/content/diagnostics \
+  | jq '{query_page_count, matched_inventory_count, sections:[.sections[]|{id,status,title,summary,tactical_count:(.tactical_items|length), action_ids,evidence_count:(.evidence_ids|length)}]}'
+```
+
+Result summary:
+
+* `query_page_count`: `10`.
+* `matched_inventory_count`: `12`.
+* `content_query_page_matrix`: `ready`, 8 tactical items.
+* `content_inventory_match`: `ready`, 6 tactical items.
+* `content_action_safety`: `ready`, 6 tactical items.
+* Action ID: `act_prepare_content_refresh_queue`.
+* Live item examples include:
+  * `bdo co to -> https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/`
+  * `ekologus -> https://www.ekologus.pl/`
+  * `co to jest zielony ład -> https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/`
+
+Implemented in this slice so far:
+
+* Added `ContentOperatorSummary` above raw diagnostic cards on content routes.
+* The summary shows:
+  * query/page count,
+  * WordPress match count,
+  * unique tactical item count,
+  * top query/page cards sorted by priority,
+  * Polish context chips for query, page, WordPress match, match confidence
+    and page query count,
+  * `Evidence` links,
+  * `ActionObject` links,
+  * blocked claims,
+  * direct `Waliduj ActionObject` link to
+    `/actions/act_prepare_content_refresh_queue`.
+* Updated dashboard route tests so `/seo-gsc` must expose:
+  * `Co marketer ma zrobić teraz z treściami`,
+  * `Bezpieczny tryb content`,
+  * GSC + WordPress inventory explanation,
+  * query context such as `Query: zielony ład`,
+  * WordPress match trace,
+  * ActionObject validation link.
+
+Focused verification already run:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard exec playwright test e2e/dashboard-api.spec.ts e2e/dashboard-demo-proof.spec.ts --grep "seo and content|demo path"
+pnpm --filter @wilq/dashboard build
+```
+
+Focused results:
+
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Dashboard route tests: `12 passed`.
+* Playwright SEO/content + marketer demo proof: `2 passed`.
+* Production dashboard build: passed.
+* Latest browser proof path:
+
+```text
+.local-lab/proof/dashboard-demo/2026-06-18T04-30-33-963Z
+```
+
+Full verification run:
+
+```bash
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Full verification results:
+
+* Backend API contracts: `80 passed`.
+* Dashboard route tests: `12 passed`.
+* Skill API smoke: passed.
+* Playwright e2e: `8 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Remaining before closing this slice:
+
+1. Commit with Conventional Commit, expected message:
+
+```text
+feat(dashboard): add content operator summary
+```
+
+2. Push to `origin/main`.
+
+Goal 001 is still not complete after this slice. Remaining work after commit:
+
+* GA4 needs the same operator-summary treatment so landing/source/campaign
+  decisions are clear without raw metric interpretation.
+* Content and Merchant skills should be upgraded/evaluated against the same
+  tactical queue and ActionObject safety contracts.
+* Ads OAuth and Localo access remain honest blockers until external access is
+  recovered.

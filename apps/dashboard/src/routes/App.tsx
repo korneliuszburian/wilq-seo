@@ -2159,6 +2159,8 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
         <TraceLine label="Ostatnie refresh" values={latestStatuses} />
       </section>
 
+      <ContentOperatorSummary data={data} />
+
       <div className="grid gap-4 xl:grid-cols-2">
         {data.sections.map((section) => (
           <ContentDiagnosticCard key={section.id} section={section} />
@@ -2193,6 +2195,100 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
         />
       </section>
     </main>
+  );
+}
+
+function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
+  const tacticalItems = data.sections.flatMap((section) => section.tactical_items);
+  const uniqueItems = Array.from(new Map(tacticalItems.map((item) => [item.id, item])).values());
+  const topItems = uniqueItems
+    .slice()
+    .sort((left, right) => left.priority - right.priority)
+    .slice(0, 4);
+  const matchedCount = uniqueItems.filter((item) => item.dimensions.wordpress_match === "found").length;
+  const missingCount = uniqueItems.filter((item) => item.dimensions.wordpress_match === "missing").length;
+  const intentLabels = Array.from(
+    new Set(uniqueItems.map((item) => tacticalIntentLabels[item.intent] ?? item.intent))
+  );
+  const actionIds = data.action_ids.length ? data.action_ids : ["act_prepare_content_refresh_queue"];
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Operator Content
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">
+            Co marketer ma zrobić teraz z treściami
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ łączy GSC query/page z WordPress inventory. Najpierw obsłuż
+            istniejące URL-e i klastry zapytań, potem dopiero twórz nowe treści. Bez
+            evidence nie wolno claimować wzrostu leadów, pozycji ani konwersji.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Query/page" value={data.query_page_count} />
+          <MetricTile label="WP match" value={data.matched_inventory_count} />
+          <MetricTile label="Taktyki" value={uniqueItems.length} />
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-3">
+          {topItems.length > 0 ? (
+            topItems.map((item) => (
+              <article key={item.id} className="rounded-md border border-line bg-slate-50 p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
+                    <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                      {tacticalIntentLabels[item.intent]} / priority {item.priority}
+                    </p>
+                  </div>
+                  <StatusBadge value={item.risk} />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
+                <p className="mt-2 text-sm font-medium text-ink">{item.next_step}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+                  {tacticalContextPairs(item).map(([key, value]) => (
+                    <span key={key} className="rounded border border-line bg-white px-2 py-1">
+                      {tacticalDimensionLabels[key] ?? key}: {value}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))
+          ) : (
+            <BlockerNotice message="Brak query/page tactical items. Najpierw uruchom GSC i WordPress read-only refresh." />
+          )}
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb content</h3>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600">
+            <TraceLine label="Tryby pracy" values={intentLabels} empty="brak" />
+            <TraceLine
+              label="WordPress match"
+              values={[`found: ${matchedCount}`, `missing: ${missingCount}`]}
+            />
+            <LinkedTraceLine label="Evidence" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
+            <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
+            <TraceLine
+              label="Nie wolno claimować"
+              values={data.sections.flatMap((section) => section.blocked_claims)}
+            />
+          </div>
+          <a
+            href={`/actions/${actionIds[0]}`}
+            className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
+          >
+            Waliduj ActionObject
+          </a>
+        </div>
+      </div>
+    </section>
   );
 }
 
