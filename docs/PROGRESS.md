@@ -48,6 +48,18 @@ Data: 2026-06-18
   udawania marketing insightu. Pełny `scripts/verify.sh` przeszedł po tej
   zmianie: backend API contracts 97 passed, dashboard route tests 12 passed,
   Playwright e2e 8 passed i dashboard production build passed.
+- Ads Doctor ma pierwszy typed read contract:
+  `/api/ads/diagnostics.campaign_read_contract`. Kontrakt grupuje live Google
+  Ads metric facts do campaign rows z `campaign_id`, `campaign_name`, `clicks`,
+  `impressions`, `cost_micros`, evidence IDs i blocked claims. Live API proof
+  po restarcie `:8000` pokazał `status=ready`, `rows=18`, allowed metrics
+  `clicks/impressions/cost_micros` oraz brakujące read contracts:
+  `search_term_view`, `conversions`, `conversion_value`, `recommendations`,
+  `change_history`, `budget_pacing`, `impression_share`. Nadal nie wolno
+  claimować CPA, ROAS, search terms, wasted budget ani negative keyword
+  candidates. Pełny `scripts/verify.sh` przeszedł po tej zmianie: backend API
+  contracts 97 passed, dashboard route tests 12 passed, Playwright e2e 8
+  passed i dashboard production build passed.
 
 ## Latest Verified Checks
 
@@ -74,6 +86,10 @@ Data: 2026-06-18
 - `pnpm --filter @wilq/dashboard typecheck`
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
 - `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
+- `uv run ruff check wilq/schemas.py wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py`
+- `uv run mypy wilq/schemas.py wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'ads_diagnostics_exposes_live_campaign_metric_facts or ads_diagnostics_exposes_oauth_blocker_without_fake_metrics'`
+- `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
 - `scripts/verify.sh`
 
 ```text
@@ -85,6 +101,16 @@ dashboard production build: passed
 ```
 
 Po Command Center cleanup 2026-06-18:
+
+```text
+scripts/verify.sh passed
+backend API contracts: 97 passed
+dashboard route tests: 12 passed
+Playwright e2e: 8 passed
+dashboard production build: passed
+```
+
+Po Ads campaign read contract 2026-06-18:
 
 ```text
 scripts/verify.sh passed

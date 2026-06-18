@@ -23,7 +23,9 @@ Audit `docs/audits/001-output.md` is now folded into
 1. Command Center first-screen cleanup is implemented and verified: one
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
-2. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
+2. Ads campaign activity read contract is implemented. Continue with search
+   terms, conversions, recommendations, change history, budget pacing and
+   impression share before any money-leak/CPA/ROAS/search-term claims.
 3. Repair each skill only after the matching API/read contract exists.
 
 Recently completed and pushed foundations:
@@ -90,6 +92,23 @@ Current Command Center cleanup truth:
   `/settings`.
 - Focused frontend/backend checks and full `scripts/verify.sh` passed on
   2026-06-18 after the cleanup.
+
+Current Ads Doctor contract truth:
+
+- `/api/ads/diagnostics.campaign_read_contract` is typed and rendered on
+  `/ads-doctor`.
+- It groups live Google Ads metric facts into campaign rows with campaign ID,
+  campaign name, clicks, impressions, cost micros, evidence IDs and blocked
+  claims.
+- It explicitly limits allowed metrics to `clicks`, `impressions` and
+  `cost_micros`.
+- It explicitly lists missing read contracts: `search_term_view`,
+  `conversions`, `conversion_value`, `recommendations`, `change_history`,
+  `budget_pacing` and `impression_share`.
+- Live local proof after restarting API on `:8000` showed 18 campaign rows.
+- Do not claim CPA, ROAS, search terms, wasted budget, negative keyword
+  candidates, budget scaling or conversion drops until those read contracts
+  exist.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

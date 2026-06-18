@@ -173,9 +173,10 @@ These are the current reasons Goal 001 is not complete:
    screen and `wilq-daily-command` need one daily decision contract.
 
 3. **Ads Doctor is only partially useful.**
-   Campaign-level facts exist, but search terms, recommendations, quality,
-   budget pacing, impression share, CPA/ROAS and negative keyword workflows need
-   explicit read contracts before WILQ can claim BDOS-class Ads value.
+   Campaign-level activity facts now have an explicit read contract, but search
+   terms, recommendations, quality, budget pacing, impression share, CPA/ROAS
+   and negative keyword workflows still need explicit read contracts before WILQ
+   can claim BDOS-class Ads value.
 
 4. **Codex skill usefulness is not proven end-to-end.**
    Skills have contracts and smokes, and `wilq-daily-command` now has a
@@ -370,6 +371,18 @@ Work in this order:
    contracts for search terms, conversions, campaign budget/spend/clicks,
    recommendations, change history and blocked-claim matrix. Do not call it a
    money-leak optimizer until those facts exist.
+
+   Current local status: `/api/ads/diagnostics.campaign_read_contract` is typed
+   and live. It groups Google Ads metric facts into campaign rows with
+   `campaign_id`, `campaign_name`, `clicks`, `impressions`, `cost_micros`,
+   evidence IDs and blocked claims. It also exposes allowed metrics and missing
+   read contracts (`search_term_view`, conversions, conversion value,
+   recommendations, change history, budget pacing and impression share). Live
+   `:8000` proof after API restart showed 18 campaign rows. Dashboard
+   `/ads-doctor` renders the read contract as a dedicated panel. Full
+   `scripts/verify.sh` passed on 2026-06-18 after this slice: backend API
+   contracts 97 passed, dashboard route tests 12 passed, Playwright e2e 8
+   passed and dashboard production build passed.
 
 7. **Later P2/P3 data contracts.**
    Localo needs rankings, GBP visibility, competitors and reviews before local

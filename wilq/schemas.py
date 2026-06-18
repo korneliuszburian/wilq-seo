@@ -473,6 +473,32 @@ class AdsBlockedHandoff(BaseModel):
     action_ids: list[str] = Field(default_factory=list)
 
 
+class AdsCampaignMetricRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    clicks: int | None = None
+    impressions: int | None = None
+    cost_micros: int | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsCampaignReadContract(BaseModel):
+    id: str = "ads_campaign_activity_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -480,6 +506,7 @@ class AdsDiagnosticsResponse(BaseModel):
     connector: ConnectorStatus
     latest_refresh: ConnectorRefreshRun | None = None
     live_data_available: bool
+    campaign_read_contract: AdsCampaignReadContract
     sections: list[AdsDiagnosticSection] = Field(default_factory=list)
     blocked_handoff: AdsBlockedHandoff | None = None
     evidence_ids: list[str] = Field(default_factory=list)

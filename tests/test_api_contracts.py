@@ -1930,6 +1930,24 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "Google Ads connector ma live metric facts." in payload["blocked_handoff"][
         "allowed_demo_claims"
     ]
+    read_contract = payload["campaign_read_contract"]
+    assert read_contract["status"] == "ready"
+    assert read_contract["allowed_metrics"] == ["clicks", "impressions", "cost_micros"]
+    assert "search_term_view" in read_contract["missing_read_contracts"]
+    assert "ROAS" in read_contract["blocked_claims"]
+    assert read_contract["campaign_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "clicks": 9,
+            "impressions": 90,
+            "cost_micros": 12000000,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": ["CPA", "ROAS", "search terms", "wasted budget"],
+        }
+    ]
     live_section = next(
         section for section in payload["sections"] if section["id"] == "ads_live_data_status"
     )
@@ -1938,6 +1956,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
     )
     assert campaign_section["status"] == "ready"
+    assert campaign_section["title"] == "Campaign activity read contract"
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
     assert facts_by_name["clicks"]["value"] == 9
     assert any(

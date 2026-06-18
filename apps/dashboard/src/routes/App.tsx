@@ -1444,6 +1444,7 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
 
 type AdsDiagnosticSection = AdsDiagnosticsResponse["sections"][number];
 type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
+type AdsCampaignReadContract = AdsDiagnosticsResponse["campaign_read_contract"];
 
 function AdsDoctorSurface() {
   const diagnostics = useQuery({
@@ -1523,6 +1524,8 @@ function AdsDoctorSurface() {
 
       {data.blocked_handoff ? <AdsBlockedHandoffPanel handoff={data.blocked_handoff} /> : null}
 
+      <AdsCampaignReadContractPanel contract={data.campaign_read_contract} />
+
       <div className="grid gap-4 xl:grid-cols-2">
         {data.sections.map((section) => (
           <AdsDiagnosticCard key={section.id} section={section} />
@@ -1536,6 +1539,62 @@ function AdsDoctorSurface() {
       ) : null}
 
     </main>
+  );
+}
+
+function AdsCampaignReadContractPanel({ contract }: { contract: AdsCampaignReadContract }) {
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Read contract Ads
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{contract.title}</h2>
+        </div>
+        <StatusBadge value={contract.status} />
+      </div>
+      <p className="text-sm leading-6 text-slate-700">{contract.summary}</p>
+      <p className="mt-2 text-sm font-medium text-ink">{contract.next_step}</p>
+
+      {contract.campaign_rows.length > 0 ? (
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-line text-xs uppercase tracking-normal text-slate-500">
+              <tr>
+                <th className="py-2 pr-4 font-semibold">Kampania</th>
+                <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
+                <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
+                <th className="py-2 pr-4 font-semibold">Koszt micros</th>
+                <th className="py-2 pr-4 font-semibold">Evidence</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {contract.campaign_rows.map((row) => (
+                <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}`}>
+                  <td className="py-2 pr-4 font-medium text-ink">{row.campaign_name}</td>
+                  <td className="py-2 pr-4 text-slate-700">{row.clicks ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">{row.impressions ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">{row.cost_micros ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-xs text-slate-600">
+                    {row.evidence_ids.length} ID
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <BlockerNotice message="Brak wymiarowych campaign rows. Ads Doctor nie może analizować kampanii bez vendor_read." />
+      )}
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine label="Wolno użyć metryk" values={contract.allowed_metrics} />
+        <TraceLine label="Brakujące read contracts" values={contract.missing_read_contracts} />
+        <LinkedTraceLine label="Evidence" values={contract.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Zablokowane claimy" values={contract.blocked_claims} />
+      </div>
+    </section>
   );
 }
 

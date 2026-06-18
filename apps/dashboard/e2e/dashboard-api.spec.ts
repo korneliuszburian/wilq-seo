@@ -58,6 +58,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
     await expect(page.getByText("Google Ads: live data dostępne")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Google Ads: campaign activity rows" })).toBeVisible();
+    await expect(page.getByText("Brakujące read contracts:")).toBeVisible();
+    await expect(page.getByText("search_term_view").first()).toBeVisible();
     await expect(page.getByText(/clicks:/).first()).toBeVisible();
     await expect(page.getByText("Google Ads: live read gotowy do kolejnego kroku")).toBeVisible();
     await expect(page.getByText("Google Ads connector ma live metric facts.")).toBeVisible();

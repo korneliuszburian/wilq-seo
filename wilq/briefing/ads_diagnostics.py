@@ -11,6 +11,8 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     AdsBlockedHandoff,
+    AdsCampaignMetricRow,
+    AdsCampaignReadContract,
     AdsDiagnosticSection,
     AdsDiagnosticsResponse,
     ConnectorRefreshRun,
@@ -39,10 +41,16 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     )
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
+    campaign_read_contract = _campaign_read_contract(trusted_metric_facts, latest_refresh)
     action_ids = _google_ads_action_ids(list_actions())
     sections = [
         _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
-        _campaign_overview_section(trusted_metric_facts, latest_refresh, action_ids),
+        _campaign_overview_section(
+            trusted_metric_facts,
+            latest_refresh,
+            action_ids,
+            campaign_read_contract,
+        ),
         _search_terms_section(latest_refresh, action_ids),
         _safe_action_section(action_ids, latest_refresh),
     ]
@@ -51,6 +59,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         connector=connector,
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
+        campaign_read_contract=campaign_read_contract,
         sections=sections,
         blocked_handoff=_blocked_handoff(live_data_available, latest_refresh, sections, action_ids),
         evidence_ids=_unique(
@@ -134,32 +143,28 @@ def _campaign_overview_section(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
     action_ids: list[str],
+    campaign_read_contract: AdsCampaignReadContract,
 ) -> AdsDiagnosticSection:
     campaign_facts = [
-        fact
-        for fact in metric_facts
-        if fact.name in {"clicks", "impressions", "cost_micros"}
+        fact for row in campaign_read_contract.campaign_rows for fact in row.metric_facts
     ]
     if campaign_facts:
         return AdsDiagnosticSection(
             id="ads_campaign_overview",
-            title="Campaign overview",
+            title="Campaign activity read contract",
             status="ready",
-            summary=_metric_sentence(campaign_facts),
+            summary=campaign_read_contract.summary,
             diagnosis=(
-                "WILQ ma bazowy odczyt kampanii z Google Ads. To wystarcza do "
-                "pierwszego przeglądu aktywności, ale nie do diagnozy waste bez "
-                "search-term i conversion evidence."
+                "WILQ ma wymiarowe campaign activity rows z Google Ads. To wystarcza "
+                "do pierwszego przeglądu aktywności kampanii, ale nadal nie wystarcza "
+                "do diagnozy CPA, ROAS, search-term waste ani negative keywords."
             ),
-            next_step=(
-                "Dodaj search-term read contract i konwersje przed rekomendacjami "
-                "negative keywords."
-            ),
+            next_step=campaign_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(fact.evidence_id for fact in campaign_facts),
+            evidence_ids=campaign_read_contract.evidence_ids,
             metric_facts=campaign_facts[:12],
             action_ids=action_ids,
-            blocked_claims=["search-term waste", "CPA", "ROAS"],
+            blocked_claims=campaign_read_contract.blocked_claims,
             risk=ActionRisk.low,
         )
 
@@ -180,6 +185,125 @@ def _campaign_overview_section(
         blocked_claims=["spend", "clicks", "impressions", "campaign trend"],
         risk=ActionRisk.medium,
     )
+
+
+def _campaign_read_contract(
+    metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsCampaignReadContract:
+    rows = _campaign_metric_rows(metric_facts)
+    missing_read_contracts = [
+        "search_term_view",
+        "conversions",
+        "conversion_value",
+        "recommendations",
+        "change_history",
+        "budget_pacing",
+        "impression_share",
+    ]
+    blocked_claims = [
+        "CPA",
+        "ROAS",
+        "search terms",
+        "wasted budget",
+        "negative keyword candidates",
+        "budget scaling",
+        "conversion drop",
+    ]
+    if rows:
+        total_clicks = sum(row.clicks or 0 for row in rows)
+        total_impressions = sum(row.impressions or 0 for row in rows)
+        total_cost_micros = sum(row.cost_micros or 0 for row in rows)
+        return AdsCampaignReadContract(
+            status="ready",
+            title="Google Ads: campaign activity rows",
+            summary=(
+                f"WILQ ma {len(rows)} campaign rows: clicks={total_clicks}, "
+                f"impressions={total_impressions}, cost_micros={total_cost_micros}."
+            ),
+            allowed_metrics=["clicks", "impressions", "cost_micros"],
+            missing_read_contracts=missing_read_contracts,
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            campaign_rows=rows,
+            next_step=(
+                "Użyj campaign rows do przeglądu aktywności. Przed wnioskami o waste, "
+                "CPA, ROAS albo negative keywords dodaj brakujące read contracts."
+            ),
+        )
+
+    return AdsCampaignReadContract(
+        status="blocked",
+        title="Google Ads: brak campaign activity rows",
+        summary="WILQ nie ma wymiarowych campaign facts z Google Ads.",
+        allowed_metrics=[],
+        missing_read_contracts=["campaign activity", *missing_read_contracts],
+        blocked_claims=["clicks", "impressions", "spend", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        campaign_rows=[],
+        next_step="Uruchom read-only Google Ads vendor_read i zapisz campaign metric facts.",
+    )
+
+
+def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMetricRow]:
+    grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
+    seen_metric_keys: set[tuple[str | None, str, str]] = set()
+    for fact in metric_facts:
+        if fact.name not in {"clicks", "impressions", "cost_micros"}:
+            continue
+        campaign_id = fact.dimensions.get("campaign_id")
+        campaign_name = fact.dimensions.get("campaign_name")
+        if not campaign_id and not campaign_name:
+            continue
+        row_key = (campaign_id, campaign_name or f"campaign {campaign_id}")
+        metric_key = (campaign_id, row_key[1], fact.name)
+        if metric_key in seen_metric_keys:
+            continue
+        seen_metric_keys.add(metric_key)
+        grouped_facts.setdefault(row_key, []).append(fact)
+
+    rows = [
+        _campaign_metric_row(campaign_id, campaign_name, facts)
+        for (campaign_id, campaign_name), facts in grouped_facts.items()
+    ]
+    return sorted(rows, key=_campaign_row_sort_key)
+
+
+def _campaign_metric_row(
+    campaign_id: str | None,
+    campaign_name: str,
+    facts: list[MetricFact],
+) -> AdsCampaignMetricRow:
+    facts_by_name = {fact.name: fact for fact in facts}
+    expected_metrics = ["clicks", "impressions", "cost_micros"]
+    return AdsCampaignMetricRow(
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        clicks=_int_metric_value(facts_by_name.get("clicks")),
+        impressions=_int_metric_value(facts_by_name.get("impressions")),
+        cost_micros=_int_metric_value(facts_by_name.get("cost_micros")),
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        blocked_claims=["CPA", "ROAS", "search terms", "wasted budget"],
+    )
+
+
+def _campaign_row_sort_key(row: AdsCampaignMetricRow) -> tuple[int, int, str]:
+    return (-(row.cost_micros or 0), -(row.clicks or 0), row.campaign_name)
+
+
+def _int_metric_value(fact: MetricFact | None) -> int | None:
+    if fact is None:
+        return None
+    if isinstance(fact.value, str):
+        try:
+            return int(float(fact.value))
+        except ValueError:
+            return None
+    return int(fact.value)
 
 
 def _search_terms_section(

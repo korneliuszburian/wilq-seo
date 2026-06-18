@@ -217,6 +217,41 @@ const adsDiagnostics = {
     }
   },
   live_data_available: true,
+  campaign_read_contract: {
+    id: "ads_campaign_activity_read_contract",
+    status: "ready",
+    title: "Google Ads: campaign activity rows",
+    summary: "WILQ ma 1 campaign rows: clicks=107, impressions=2783, cost_micros=164591174.",
+    allowed_metrics: ["clicks", "impressions", "cost_micros"],
+    missing_read_contracts: ["search_term_view", "conversions", "recommendations"],
+    blocked_claims: ["CPA", "ROAS", "search terms", "wasted budget"],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    campaign_rows: [
+      {
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        clicks: 107,
+        impressions: 2783,
+        cost_micros: 164591174,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [
+          {
+            name: "clicks",
+            value: 107,
+            period: "connector_refresh",
+            source_connector: "google_ads",
+            evidence_id: "ev_refresh_refresh_google_ads_test",
+            dimensions: { campaign_id: "123", campaign_name: "Ekologus Search" },
+            unit: null
+          }
+        ],
+        missing_metrics: [],
+        blocked_claims: ["CPA", "ROAS", "search terms", "wasted budget"]
+      }
+    ],
+    next_step: "Użyj campaign rows do przeglądu aktywności."
+  },
   sections: [
     {
       id: "ads_live_data_status",
@@ -244,7 +279,7 @@ const adsDiagnostics = {
     },
     {
       id: "ads_campaign_overview",
-      title: "Campaign overview",
+      title: "Campaign activity read contract",
       status: "ready",
       summary: "Metric facts: clicks=107, impressions=2783.",
       diagnosis: "Są live campaign rows, ale search terms wymagają osobnego read contract.",
@@ -1389,7 +1424,12 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("WILQ nie zmyśla Ads metryk bez vendor evidence.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Campaign overview")).toBeInTheDocument();
+    expect(screen.getByText("Google Ads: campaign activity rows")).toBeInTheDocument();
+    expect(screen.getByText("Read contract Ads")).toBeInTheDocument();
+    expect(screen.getByText("Ekologus Search")).toBeInTheDocument();
+    expect(screen.getByText(/Brakujące read contracts/)).toBeInTheDocument();
+    expect(screen.getAllByText(/search_term_view/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Campaign activity read contract")).toBeInTheDocument();
     expect(screen.getAllByText("Odnow Google Ads OAuth refresh token").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "act_1" })[0]).toHaveAttribute(
       "href",
