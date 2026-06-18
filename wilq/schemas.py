@@ -238,6 +238,11 @@ class ActionApplyResult(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
+class ActionApplyRequest(BaseModel):
+    confirm: bool = False
+    confirmed_by: str | None = None
+
+
 class CodexRun(BaseModel):
     id: str
     skill: str | None = None

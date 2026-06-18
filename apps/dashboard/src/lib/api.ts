@@ -1,5 +1,6 @@
 import {
   ActionObjectSchema,
+  ActionApplyResultSchema,
   ActionValidationResultSchema,
   CommandCenterResponseSchema,
   ConnectorRefreshRunSchema,
@@ -16,6 +17,8 @@ import {
   WorkflowRunSchema,
   WorkflowSchema,
   type ActionObject,
+  type ActionApplyRequest,
+  type ActionApplyResult,
   type ActionValidationResult,
   type CommandCenterResponse,
   type ConnectorRefreshRun,
@@ -49,8 +52,12 @@ async function apiGet<T>(path: string, schema: ApiSchema<T>): Promise<T> {
   return schema.parse(await response.json());
 }
 
-async function apiPost<T>(path: string, schema: ApiSchema<T>): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, { method: "POST" });
+async function apiPost<T>(path: string, schema: ApiSchema<T>, body?: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
   if (!response.ok) {
     throw new Error(`API request failed: ${path}`);
   }
@@ -97,6 +104,32 @@ export function validateAction(actionId: string): Promise<ActionValidationResult
   return apiPost(`/api/actions/${actionId}/validate`, ActionValidationResultSchema);
 }
 
+export function applyAction(
+  actionId: string,
+  request: ActionApplyRequest
+): Promise<ActionApplyResult> {
+  return apiApplyAction(actionId, request);
+}
+
+async function apiApplyAction(
+  actionId: string,
+  request: ActionApplyRequest
+): Promise<ActionApplyResult> {
+  const response = await fetch(`${API_BASE}/api/actions/${actionId}/apply`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request)
+  });
+  const payload = await response.json();
+  if (!response.ok && payload && typeof payload === "object" && "detail" in payload) {
+    return ActionApplyResultSchema.parse(payload.detail);
+  }
+  if (!response.ok) {
+    throw new Error(`API request failed: /api/actions/${actionId}/apply`);
+  }
+  return ActionApplyResultSchema.parse(payload);
+}
+
 export function getEvidence(): Promise<Evidence[]> {
   return apiGet("/api/evidence", z.array(EvidenceSchema));
 }
@@ -123,6 +156,7 @@ export function getKnowledgePlaybooks(): Promise<MarketingPlaybook[]> {
 
 export type {
   ActionObject,
+  ActionApplyResult,
   ActionValidationResult,
   CommandCenterResponse,
   ConnectorRefreshRun,

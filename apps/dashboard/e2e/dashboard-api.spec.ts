@@ -69,6 +69,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Evidence And Diagnosis" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Payload Preview" })).toBeVisible();
     await expect(page.getByText("Evidence: ev_connector_google_ads_status")).toBeVisible();
+    await expect(page.getByText("Jawne potwierdzenie apply")).toBeVisible();
+    await page.getByRole("button", { name: "Potwierdź apply" }).click();
+    await expect(page.getByText("Apply: blocked")).toBeVisible();
+    await expect(
+      page.getByText(/Błędy apply: .*Action mode must be apply before external execution/)
+    ).toBeVisible();
+    await expect(page.getByText("Audit event: apply_blocked")).toBeVisible();
   });
 
   test("merchant route renders live MarketingBrief evidence links", async ({ page }) => {

@@ -43,6 +43,7 @@ from wilq.knowledge.compilers.playbook_compiler import (
 )
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
+    ActionApplyRequest,
     AuditEvent,
     CodexRun,
     CommandCenterResponse,
@@ -382,11 +383,14 @@ def validate_action_endpoint(action_id: str) -> dict[str, Any]:
 
 
 @app.post("/api/actions/{action_id}/apply")
-def apply_action_endpoint(action_id: str) -> dict[str, Any]:
+def apply_action_endpoint(
+    action_id: str,
+    request: ActionApplyRequest | None = None,
+) -> dict[str, Any]:
     action = get_action(action_id)
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
-    result = apply_action(action)
+    result = apply_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))

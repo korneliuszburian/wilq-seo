@@ -493,12 +493,53 @@ def test_action_apply_requires_validation(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "audit_state.sqlite3"))
     response = client.post("/api/actions/act_configure_google_ads_env/apply")
     assert response.status_code == 409
-    assert "validated before apply" in json.dumps(response.json())
+    serialized = json.dumps(response.json())
+    assert "Explicit apply confirmation is required" in serialized
+    assert "validated before apply" in serialized
     audit_response = client.get(
         "/api/audit/events?action_id=act_configure_google_ads_env"
     )
     assert audit_response.status_code == 200
-    assert audit_response.json()[0]["event_type"] == "apply_blocked"
+    assert audit_response.json()[0]["event_type"] == "apply_confirmation_missing"
+
+
+def test_action_apply_requires_explicit_confirmation_actor(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "confirm_audit_state.sqlite3"))
+
+    response = client.post(
+        "/api/actions/act_configure_google_ads_env/apply",
+        json={"confirm": True},
+    )
+
+    assert response.status_code == 409
+    body = response.json()["detail"]
+    assert body["status"] == "blocked"
+    assert "confirmed_by is required" in json.dumps(body)
+    assert body["audit_event"]["event_type"] == "apply_confirmation_missing"
+
+
+def test_action_apply_confirmed_prepare_action_still_blocks_with_audit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "confirmed_prepare_audit.sqlite3"))
+    validate_response = client.post("/api/actions/act_configure_google_ads_env/validate")
+    assert validate_response.status_code == 200
+
+    response = client.post(
+        "/api/actions/act_configure_google_ads_env/apply",
+        json={"confirm": True, "confirmed_by": "operator_test"},
+    )
+
+    assert response.status_code == 409
+    body = response.json()["detail"]
+    assert body["status"] == "blocked"
+    assert body["audit_event"]["event_type"] == "apply_blocked"
+    assert body["audit_event"]["actor"] == "operator_test"
+    assert "Action mode must be apply" in json.dumps(body)
 
 
 def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:

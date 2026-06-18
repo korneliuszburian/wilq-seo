@@ -6,6 +6,7 @@ from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
+    ActionApplyRequest,
     ActionApplyResult,
     ActionMode,
     ActionObject,
@@ -429,9 +430,16 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
     )
 
 
-def apply_action(action: ActionObject) -> ActionApplyResult:
+def apply_action(
+    action: ActionObject,
+    request: ActionApplyRequest | None = None,
+) -> ActionApplyResult:
     errors: list[str] = []
     connector = get_connector_status(action.connector)
+    if request is None or request.confirm is not True:
+        errors.append("Explicit apply confirmation is required.")
+    if request is not None and request.confirm is True and not request.confirmed_by:
+        errors.append("confirmed_by is required for explicit apply confirmation.")
     if action.validation_status != "valid":
         errors.append("Action must be validated before apply.")
     if action.mode != ActionMode.apply:
@@ -448,8 +456,8 @@ def apply_action(action: ActionObject) -> ActionApplyResult:
     audit = AuditEvent(
         id=f"audit_{action.id}_{len(action.audit_events) + 1}",
         action_id=action.id,
-        event_type="apply_blocked" if errors else "apply_succeeded",
-        actor="wilq_api",
+        event_type=_apply_audit_event_type(errors),
+        actor=request.confirmed_by if request and request.confirmed_by else "wilq_api",
         summary="; ".join(errors) if errors else "Action applied through validated API path.",
         evidence_ids=action.evidence_ids,
     )
@@ -465,3 +473,11 @@ def apply_action(action: ActionObject) -> ActionApplyResult:
         )
     action.status = ActionStatus.applied
     return ActionApplyResult(action_id=action.id, applied=True, status="applied", audit_event=audit)
+
+
+def _apply_audit_event_type(errors: list[str]) -> str:
+    if not errors:
+        return "apply_succeeded"
+    if any("confirmation" in error for error in errors):
+        return "apply_confirmation_missing"
+    return "apply_blocked"

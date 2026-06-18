@@ -4768,8 +4768,129 @@ Remaining next work:
 
 1. Fix Google Ads OAuth client state before claiming live Ads performance
    diagnostics. Current live failure is `oauth_error=deleted_client`.
-2. Add apply-confirm UI only after the ActionObject model supports explicit
-   confirmation semantics and audit requirements for that action type.
+
+---
+
+## 48. Explicit apply-confirm ActionObject gate - 2026-06-18
+
+Implemented the explicit apply-confirm slice from section 47.
+
+What changed:
+
+* Added `ActionApplyRequest`:
+  * `confirm: bool`,
+  * `confirmed_by: str | None`.
+* `POST /api/actions/{action_id}/apply` now accepts an optional request body and
+  requires explicit confirmation before any apply path is considered.
+* Missing confirmation produces a blocked result with audit event:
+  * `event_type=apply_confirmation_missing`,
+  * `applied=false`,
+  * no external write.
+* `confirm=true` without `confirmed_by` also produces
+  `apply_confirmation_missing`.
+* `confirm=true` with `confirmed_by` moves past the confirmation gate, but
+  current prepare-only actions still block with:
+  * `Action mode must be apply before external execution.`
+* `confirmed_by` is preserved as the audit actor when explicit confirmation is
+  present.
+* Dashboard action detail now includes a visible Polish apply-confirm panel:
+  * `Jawne potwierdzenie apply`,
+  * explains `confirm=true` and `confirmed_by`,
+  * shows blocked apply result and audit event.
+* Frontend shared schemas now include:
+  * `ActionApplyRequestSchema`,
+  * `ActionApplyResultSchema`.
+* Dashboard API client handles blocked apply responses by parsing the returned
+  `ActionApplyResult` from HTTP 409 `detail`, instead of reducing it to a
+  generic fetch error.
+
+Live API proof on fresh local API `127.0.0.1:8013`:
+
+```text
+POST /api/actions/act_configure_google_ads_env/apply
+without_confirm http 409
+result_status blocked
+applied False
+audit_event apply_confirmation_missing
+actor wilq_api
+errors [
+  Explicit apply confirmation is required.,
+  Action must be validated before apply.,
+  Action mode must be apply before external execution.
+]
+
+confirm_without_actor http 409
+result_status blocked
+applied False
+audit_event apply_confirmation_missing
+actor wilq_api
+errors [
+  confirmed_by is required for explicit apply confirmation.,
+  Action must be validated before apply.,
+  Action mode must be apply before external execution.
+]
+
+with_confirm http 409
+result_status blocked
+applied False
+audit_event apply_blocked
+actor goal_001_apply_confirm_proof
+errors [
+  Action must be validated before apply.,
+  Action mode must be apply before external execution.
+]
+```
+
+Validated-then-confirmed proof:
+
+```text
+POST /api/actions/act_configure_google_ads_env/validate
+POST /api/actions/act_configure_google_ads_env/apply
+body {"confirm": true, "confirmed_by": "goal_001_after_validation"}
+
+after_validate_with_confirm http 409
+result_status blocked
+applied False
+audit_event apply_blocked
+actor goal_001_after_validation
+errors ['Action mode must be apply before external execution.']
+```
+
+Current interpretation:
+
+* WILQ now has the missing explicit confirmation semantics for ActionObject
+  apply. The system can distinguish:
+  * no operator confirmation,
+  * malformed confirmation,
+  * confirmed but still blocked by action mode/safety gates.
+* Goal 001 still has no external write execution path for current actions.
+  This is intentional: prepare-only actions may validate and preview, but apply
+  remains blocked until an action type is explicitly modeled as `mode=apply`
+  with write support, validation and audit requirements.
+
+Verification:
+
+```bash
+uv run ruff check wilq/schemas.py wilq/actions/service.py apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/actions/service.py apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Focused API contract tests: `57 passed`.
+* Dashboard lint/typecheck: passed.
+* Playwright live API-backed smoke: `6 passed`.
+
+Remaining next work:
+
+1. Fix Google Ads OAuth client state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
 
 ---
 

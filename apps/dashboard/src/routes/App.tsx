@@ -35,6 +35,7 @@ import {
 
 import {
   ActionObject,
+  ActionApplyResult,
   ActionValidationResult,
   ConnectorRefreshRun,
   ConnectorStatus,
@@ -53,6 +54,7 @@ import {
   getMetricStoreStatus,
   getOpportunities,
   getTacticalQueue,
+  applyAction,
   validateAction,
   getWorkflowRuns,
   getWorkflows,
@@ -604,14 +606,25 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
 
 function ActionValidationControls({ action }: { action: ActionObject }) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
+  const validationMutation = useMutation({
     mutationFn: () => validateAction(action.id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["actions"] });
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
-  const validation = mutation.data;
+  const applyMutation = useMutation({
+    mutationFn: () =>
+      applyAction(action.id, {
+        confirm: true,
+        confirmed_by: "operator_local_dashboard"
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+  const validation = validationMutation.data;
 
   return (
     <div className="mt-3 rounded-md border border-line bg-slate-50 p-3">
@@ -627,22 +640,49 @@ function ActionValidationControls({ action }: { action: ActionObject }) {
         </div>
         <button
           type="button"
-          onClick={() => mutation.mutate()}
-          disabled={mutation.isPending}
+          onClick={() => validationMutation.mutate()}
+          disabled={validationMutation.isPending}
           className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {mutation.isPending ? (
+          {validationMutation.isPending ? (
             <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
           ) : (
             <CheckCircle2 aria-hidden="true" size={15} />
           )}
-          {mutation.isPending ? "Waliduję" : "Waliduj"}
+          {validationMutation.isPending ? "Waliduję" : "Waliduj"}
         </button>
       </div>
       <ActionValidationResultPanel
         validation={validation}
-        error={mutation.error instanceof Error ? mutation.error.message : null}
+        error={validationMutation.error instanceof Error ? validationMutation.error.message : null}
       />
+      <div className="mt-3 rounded-md border border-wait/30 bg-white p-3">
+        <div className="text-xs font-semibold uppercase tracking-normal text-slate-600">
+          Jawne potwierdzenie apply
+        </div>
+        <p className="mt-1 text-xs leading-5 text-slate-600">
+          Apply wymaga requestu z <code>confirm=true</code> i <code>confirmed_by</code>.
+          Dla obecnych ActionObjectów prepare-only endpoint nadal zwróci blocker i zapisze
+          audit event.
+        </p>
+        <button
+          type="button"
+          onClick={() => applyMutation.mutate()}
+          disabled={applyMutation.isPending}
+          className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md border border-wait bg-white px-3 py-2 text-xs font-medium text-wait hover:bg-wait/10 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {applyMutation.isPending ? (
+            <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
+          ) : (
+            <ShieldAlert aria-hidden="true" size={15} />
+          )}
+          {applyMutation.isPending ? "Sprawdzam apply gate" : "Potwierdź apply"}
+        </button>
+        <ActionApplyResultPanel
+          result={applyMutation.data}
+          error={applyMutation.error instanceof Error ? applyMutation.error.message : null}
+        />
+      </div>
     </div>
   );
 }
@@ -667,6 +707,30 @@ function ActionValidationResultPanel({
       </div>
       <TraceLine label="Błędy" values={validation.errors} empty="brak" />
       <TraceLine label="Ostrzeżenia" values={validation.warnings} empty="brak" />
+    </div>
+  );
+}
+
+function ActionApplyResultPanel({
+  result,
+  error
+}: {
+  result?: ActionApplyResult;
+  error: string | null;
+}) {
+  if (error) {
+    return <div className="mt-3 text-xs leading-5 text-risk">Apply zablokowany: {error}</div>;
+  }
+  if (!result) {
+    return null;
+  }
+  return (
+    <div className="mt-3 grid gap-2 text-xs text-slate-700">
+      <div>
+        Apply: <span className="font-semibold">{result.status}</span>
+      </div>
+      <TraceLine label="Błędy apply" values={result.errors} empty="brak" />
+      <div>Audit event: {result.audit_event.event_type}</div>
     </div>
   );
 }
