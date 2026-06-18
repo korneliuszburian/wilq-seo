@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.command_center import (
+    build_command_center_action_plan,
     build_command_center_brief,
     build_command_center_demo_script,
     tactical_item_count,
@@ -276,6 +277,7 @@ def command_center() -> CommandCenterResponse:
         tactical_item_count=tactical_item_count(),
         operator_brief=operator_brief,
         demo_script=build_command_center_demo_script(operator_brief),
+        action_plan=build_command_center_action_plan(operator_brief),
         connector_summary=connector_summary(connectors),
         sections={
             "todays_moves": opportunities[:2],

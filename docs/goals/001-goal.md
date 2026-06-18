@@ -6680,3 +6680,99 @@ overnight demo path, but remaining work still includes Ads OAuth recovery or
 explicit blocked-state handoff, browser screenshot proof after live route audit,
 deeper Ads/Merchant/Content/GA4 tactical expansion, and continued replacement of
 generic operating surfaces only when backed by WILQ API evidence.
+
+## 56. Slice 2026-06-18 - marketer action plan from live evidence
+
+Status: implementation and verification complete; commit/push pending.
+
+Resume instructions:
+
+* Resume from this section if context is lost.
+* Inspect the worktree before trusting this ledger.
+* Product intent: Command Center must not only show metrics and demo order. It
+  must also tell the Polish marketer what to do next, with evidence/action IDs
+  and explicit blockers for Ads/Localo.
+
+Active files:
+
+* `wilq/schemas.py`
+* `wilq/briefing/command_center.py`
+* `apps/api/wilq_api/main.py`
+* `packages/shared-schemas/src/index.ts`
+* `apps/dashboard/src/routes/App.tsx`
+* `apps/dashboard/src/routes/App.test.tsx`
+* `tests/test_api_contracts.py`
+
+Implemented in this slice so far:
+
+* Added typed `CommandCenterActionPlanItem`.
+* Added `CommandCenterResponse.action_plan`.
+* Added `build_command_center_action_plan(...)`, derived from:
+  * the same `operator_brief` source truth,
+  * `build_tactical_queue()` for first Content/GA4 tactical examples,
+  * existing evidence IDs and ActionObject IDs.
+* Added dashboard section `Plan działań marketera`.
+* Plan items currently produced:
+  * `plan_review_merchant_feed_issues` - ready, `/merchant`,
+    `act_review_merchant_feed_issues`.
+  * `plan_prepare_content_refresh_queue` - ready, `/content-planner`,
+    `act_prepare_content_refresh_queue`.
+  * `plan_review_ga4_landing_quality` - ready, `/ga4`,
+    `act_review_ga4_tracking_quality`.
+  * `plan_fix_ads_oauth_before_spend_analysis` - blocked, `/ads-doctor`,
+    `act_configure_google_ads_env`, blocks spend/CPA/ROAS/search-term claims.
+  * `plan_finish_localo_access_before_local_visibility` - blocked, `/localo`,
+    blocks local ranking/GBP performance claims.
+
+Live API proof:
+
+```bash
+curl --max-time 20 -sS http://127.0.0.1:8000/api/dashboard/command-center | \
+  jq '{action_plan:[.action_plan[] | {id,status,route,evidence_count:(.evidence_ids|length), action_ids}], demo_count:(.demo_script|length)}'
+```
+
+Result summary:
+
+* `action_plan` has 5 items.
+* Merchant/Content/GA4 are `ready`.
+* Ads/Localo are `blocked`.
+* Every ready action has evidence IDs and ActionObject IDs.
+
+Verification run:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/command_center.py wilq/schemas.py apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py::test_command_center_exposes_polish_operator_brief tests/test_api_contracts.py::test_command_center_returns_valid_shape -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Backend API contracts: `80 passed` in full verify.
+* Dashboard lint/typecheck: passed.
+* Dashboard route tests: `12 passed`.
+* Skill API smoke: passed.
+* Playwright e2e: `7 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Remaining before committing this slice:
+
+1. Commit with Conventional Commit, expected message:
+
+```text
+feat(dashboard): add marketer action plan
+```
+
+2. Push to `origin/main`.
+
+Goal 001 is still not complete after this slice. Remaining work still includes
+Ads OAuth recovery or final blocked-state handoff, browser screenshot proof,
+deeper per-route tactical UX, and any remaining generic operating surface that
+is visible in the demo path.

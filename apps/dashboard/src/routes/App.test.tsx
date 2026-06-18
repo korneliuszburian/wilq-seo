@@ -993,6 +993,54 @@ function mockFetch() {
                 action_ids: ["act_review_merchant_feed_issues"]
               }
             ],
+            action_plan: [
+              {
+                id: "plan_review_merchant_feed_issues",
+                title: "Przejrzyj produkty z problemami w Merchant Center",
+                route: "/merchant",
+                status: "ready",
+                priority: 10,
+                category: "Merchant Center",
+                why_it_matters:
+                  "WILQ widzi 10900 produktów i 23 feed/product issues. To wymaga review.",
+                operator_action: "Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+                source_connectors: ["google_merchant_center"],
+                evidence_ids: ["ev_refresh_merchant_feed"],
+                action_ids: ["act_review_merchant_feed_issues"],
+                blocked_claims: ["approval restored", "automatic feed edit"],
+                risk: "medium"
+              },
+              {
+                id: "plan_prepare_content_refresh_queue",
+                title: "Ułóż kolejkę refresh/merge/create dla treści SEO",
+                route: "/content-planner",
+                status: "ready",
+                priority: 12,
+                category: "Content + SEO",
+                why_it_matters: "WILQ ma query/page kandydatów i dopasowania WordPress.",
+                operator_action: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+                source_connectors: ["google_search_console", "wordpress_ekologus"],
+                evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+                action_ids: ["act_prepare_content_refresh_queue"],
+                blocked_claims: ["lead uplift", "ranking guarantee"],
+                risk: "low"
+              },
+              {
+                id: "plan_fix_ads_oauth_before_spend_analysis",
+                title: "Napraw Google Ads OAuth zanim padną wnioski o spendzie",
+                route: "/ads-doctor",
+                status: "blocked",
+                priority: 5,
+                category: "Google Ads",
+                why_it_matters: "Ads Doctor ma blocker OAuth.",
+                operator_action: "Otwórz /ads-doctor i wykonaj repair path z ActionObject.",
+                source_connectors: ["google_ads"],
+                evidence_ids: ["ev_connector_google_ads_status"],
+                action_ids: ["act_configure_google_ads_env"],
+                blocked_claims: ["spend", "CPA", "ROAS"],
+                risk: "medium"
+              }
+            ],
             connector_summary: { total: 1, configured: 0, missing_credentials: 1 },
             sections: {
               todays_moves: opportunities,
@@ -1112,6 +1160,10 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Merchant Center daje realne product/feed metryki i ActionObject review.")
     ).toBeInTheDocument();
+    expect(screen.getByText("Plan działań marketera")).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj produkty z problemami w Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Ułóż kolejkę refresh/merge/create dla treści SEO")).toBeInTheDocument();
+    expect(screen.getByText("Napraw Google Ads OAuth zanim padną wnioski o spendzie")).toBeInTheDocument();
     expect(screen.getByText("Priorytety dnia")).toBeInTheDocument();
     expect(screen.getByText("Dzisiejszy brief WILQ")).toBeInTheDocument();
     expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();

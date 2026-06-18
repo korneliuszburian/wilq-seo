@@ -593,6 +593,22 @@ class CommandCenterDemoStep(BaseModel):
     action_ids: list[str] = Field(default_factory=list)
 
 
+class CommandCenterActionPlanItem(BaseModel):
+    id: str
+    title: str
+    route: str
+    status: Literal["ready", "blocked"]
+    priority: int = Field(ge=1, le=100)
+    category: str
+    why_it_matters: str
+    operator_action: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
 class CommandCenterResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     strict_instruction: str
@@ -601,6 +617,7 @@ class CommandCenterResponse(BaseModel):
     tactical_item_count: int = 0
     operator_brief: list[CommandCenterBriefItem] = Field(default_factory=list)
     demo_script: list[CommandCenterDemoStep] = Field(default_factory=list)
+    action_plan: list[CommandCenterActionPlanItem] = Field(default_factory=list)
     connector_summary: ConnectorSummary
     sections: dict[str, list[Opportunity]]
     active_actions: list[ActionObject]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, Literal
 
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
@@ -14,6 +14,7 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionRisk,
     AdsDiagnosticsResponse,
+    CommandCenterActionPlanItem,
     CommandCenterBriefItem,
     CommandCenterDemoStep,
     ConnectorStatus,
@@ -82,6 +83,26 @@ def build_command_center_demo_script(
             continue
         steps.append(_demo_step_from_item(item))
     return steps
+
+
+def build_command_center_action_plan(
+    items: list[CommandCenterBriefItem],
+) -> list[CommandCenterActionPlanItem]:
+    items_by_id = {item.id: item for item in items}
+    tactical_items = build_tactical_queue().items
+    plan: list[CommandCenterActionPlanItem] = []
+    for item_id in (
+        "daily_merchant_feed",
+        "daily_content_queue",
+        "daily_ga4_landing_quality",
+        "daily_ads_status",
+        "daily_localo_readiness",
+    ):
+        item = items_by_id.get(item_id)
+        if item is None:
+            continue
+        plan.append(_action_plan_item(item, tactical_items))
+    return plan
 
 
 def tactical_item_count() -> int:
@@ -315,6 +336,150 @@ def _demo_proof(item: CommandCenterBriefItem) -> str:
             "nie ma świeżego evidence lokalnej widoczności."
         )
     return item.summary
+
+
+def _action_plan_item(
+    item: CommandCenterBriefItem,
+    tactical_items: list[Any],
+) -> CommandCenterActionPlanItem:
+    related_tactics = _related_tactical_items(item, tactical_items)
+    if item.id == "daily_merchant_feed":
+        return CommandCenterActionPlanItem(
+            id="plan_review_merchant_feed_issues",
+            title="Przejrzyj produkty z problemami w Merchant Center",
+            route=item.route,
+            status=_action_plan_status(item),
+            priority=10,
+            category="Merchant Center",
+            why_it_matters=(
+                f"WILQ widzi {item.metric_tiles.get('produkty', 0)} produktów i "
+                f"{item.metric_tiles.get('issues', 0)} feed/product issues. To może blokować "
+                "widoczność produktów, ale wymaga ręcznego review przed zmianami."
+            ),
+            operator_action="Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+            source_connectors=item.source_connectors,
+            evidence_ids=item.evidence_ids,
+            action_ids=item.action_ids,
+            blocked_claims=item.blocked_claims,
+            risk=item.risk,
+        )
+    if item.id == "daily_content_queue":
+        top_titles = ", ".join(tactic.title for tactic in related_tactics[:3])
+        return CommandCenterActionPlanItem(
+            id="plan_prepare_content_refresh_queue",
+            title="Ułóż kolejkę refresh/merge/create dla treści SEO",
+            route=item.route,
+            status=_action_plan_status(item),
+            priority=12,
+            category="Content + SEO",
+            why_it_matters=(
+                f"WILQ ma {item.metric_tiles.get('query/page', 0)} query/page kandydatów i "
+                f"{item.metric_tiles.get('WP match', 0)} dopasowań WordPress. "
+                f"Pierwsze taktyki: {top_titles or 'brak taktyk w kolejce'}."
+            ),
+            operator_action="Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+            source_connectors=item.source_connectors,
+            evidence_ids=_merge_ids(item.evidence_ids, related_tactics),
+            action_ids=item.action_ids,
+            blocked_claims=item.blocked_claims,
+            risk=item.risk,
+        )
+    if item.id == "daily_ga4_landing_quality":
+        top_titles = ", ".join(tactic.title for tactic in related_tactics[:2])
+        return CommandCenterActionPlanItem(
+            id="plan_review_ga4_landing_quality",
+            title="Sprawdź jakość ruchu i landing page w GA4",
+            route=item.route,
+            status=_action_plan_status(item),
+            priority=14,
+            category="GA4",
+            why_it_matters=(
+                f"WILQ widzi {item.metric_tiles.get('landing groups', 0)} grup landing/source "
+                f"i {item.metric_tiles.get('low engagement', 0)} niskiej jakości grupy. "
+                f"Pierwsze taktyki: {top_titles or 'brak taktyk w kolejce'}."
+            ),
+            operator_action="Otwórz /ga4 i waliduj jakość ruchu bez ROAS/revenue claimów.",
+            source_connectors=item.source_connectors,
+            evidence_ids=_merge_ids(item.evidence_ids, related_tactics),
+            action_ids=item.action_ids,
+            blocked_claims=item.blocked_claims,
+            risk=item.risk,
+        )
+    if item.id == "daily_ads_status":
+        return CommandCenterActionPlanItem(
+            id="plan_fix_ads_oauth_before_spend_analysis",
+            title="Napraw Google Ads OAuth zanim padną wnioski o spendzie",
+            route=item.route,
+            status="blocked",
+            priority=5,
+            category="Google Ads",
+            why_it_matters=(
+                "Ads Doctor ma blocker OAuth. WILQ nie pokaże spendu, CPA, ROAS ani search "
+                "terms bez świeżego Ads evidence."
+            ),
+            operator_action="Otwórz /ads-doctor i wykonaj repair path z ActionObject.",
+            source_connectors=item.source_connectors,
+            evidence_ids=item.evidence_ids,
+            action_ids=item.action_ids,
+            blocked_claims=item.blocked_claims,
+            risk=ActionRisk.medium,
+        )
+    if item.id == "daily_localo_readiness":
+        return CommandCenterActionPlanItem(
+            id="plan_finish_localo_access_before_local_visibility",
+            title="Dokończ Localo access przed lokalnymi rekomendacjami",
+            route=item.route,
+            status="blocked",
+            priority=20,
+            category="Localo",
+            why_it_matters=(
+                "Localo nie ma świeżego evidence lokalnej widoczności, więc WILQ blokuje "
+                "claimy o rankingach i GBP performance."
+            ),
+            operator_action="Otwórz /localo i pokaż blocker dostępu zamiast metryk lokalnych.",
+            source_connectors=item.source_connectors,
+            evidence_ids=item.evidence_ids,
+            action_ids=item.action_ids,
+            blocked_claims=item.blocked_claims,
+            risk=ActionRisk.medium,
+        )
+    return CommandCenterActionPlanItem(
+        id=f"plan_{item.id}",
+        title=item.title,
+        route=item.route,
+        status="ready" if item.status == "ready" else "blocked",
+        priority=item.priority,
+        category="WILQ",
+        why_it_matters=item.summary,
+        operator_action=item.next_step,
+        source_connectors=item.source_connectors,
+        evidence_ids=item.evidence_ids,
+        action_ids=item.action_ids,
+        blocked_claims=item.blocked_claims,
+        risk=item.risk,
+    )
+
+
+def _related_tactical_items(item: CommandCenterBriefItem, tactical_items: list[Any]) -> list[Any]:
+    source_connectors = set(item.source_connectors)
+    return [
+        tactic
+        for tactic in tactical_items
+        if source_connectors.intersection(set(tactic.source_connectors))
+    ]
+
+
+def _action_plan_status(item: CommandCenterBriefItem) -> Literal["ready", "blocked"]:
+    return "ready" if item.status == "ready" else "blocked"
+
+
+def _merge_ids(base_ids: list[str], tactical_items: list[Any], limit: int = 12) -> list[str]:
+    merged = list(base_ids)
+    for tactic in tactical_items:
+        for evidence_id in tactic.evidence_ids:
+            if evidence_id not in merged:
+                merged.append(evidence_id)
+    return merged[:limit]
 
 
 __all__ = ["STRICT_BRIEF_INSTRUCTION", "build_command_center_brief", "tactical_item_count"]

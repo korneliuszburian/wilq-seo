@@ -1056,6 +1056,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
 type CommandCenterBriefItem = CommandCenterResponse["operator_brief"][number];
 type CommandCenterDemoStep = CommandCenterResponse["demo_script"][number];
+type CommandCenterActionPlanItem = CommandCenterResponse["action_plan"][number];
 
 function TacticalQueuePanel({
   queue,
@@ -1225,6 +1226,56 @@ function DailyOperatorBriefCard({ item }: { item: CommandCenterBriefItem }) {
   );
 }
 
+function MarketerActionPlan({ items }: { items: CommandCenterActionPlanItem[] }) {
+  return (
+    <section>
+      <div className="mb-3 flex items-start gap-3">
+        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+          <ClipboardCheck aria-hidden="true" size={18} />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Plan działań marketera
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Konkretne kroki z WILQ API. Ready oznacza źródło z evidence; blocked oznacza,
+            że WILQ celowo blokuje claimy i pokazuje repair path.
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-3 xl:grid-cols-2">
+        {items.map((item) => (
+          <article key={item.id} className="rounded-md border border-line bg-white p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  {item.category} / priority {item.priority}
+                </div>
+                <h3 className="mt-1 text-base font-semibold tracking-normal">{item.title}</h3>
+              </div>
+              <StatusBadge value={item.status} />
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-700">{item.why_it_matters}</p>
+            <p className="mt-2 text-sm font-medium text-ink">{item.operator_action}</p>
+            <div className="mt-3 grid gap-2 text-xs text-slate-600">
+              <TraceLine label="Źródła" values={item.source_connectors} />
+              <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
+              <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
+              <TraceLine label="Zablokowane claimy" values={item.blocked_claims} />
+            </div>
+            <a
+              href={item.route}
+              className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
+            >
+              Otwórz działanie
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function MarketerDemoScript({ steps }: { steps: CommandCenterDemoStep[] }) {
   return (
     <section>
@@ -1315,6 +1366,8 @@ function CommandCenter() {
 
       <div className="grid gap-8">
         <DailyOperatorBrief data={data} />
+
+        <MarketerActionPlan items={data.action_plan} />
 
         <MarketerDemoScript steps={data.demo_script} />
 

@@ -677,6 +677,8 @@ def test_command_center_returns_valid_shape() -> None:
     assert "todays_moves" in data["sections"]
     assert data["demo_script"]
     assert data["demo_script"][0]["route"] == "/command-center"
+    assert data["action_plan"]
+    assert data["action_plan"][0]["evidence_ids"]
 
 
 def test_marketing_brief_aggregates_metric_facts_and_blockers(
@@ -878,6 +880,12 @@ def test_command_center_exposes_polish_operator_brief(
     assert demo_by_id["demo_start_command_center"]["route"] == "/command-center"
     assert demo_by_id["demo_daily_merchant_feed"]["route"] == "/merchant"
     assert "act_review_merchant_feed_issues" in demo_by_id["demo_daily_merchant_feed"]["action_ids"]
+    plan_by_id = {item["id"]: item for item in payload["action_plan"]}
+    assert plan_by_id["plan_review_merchant_feed_issues"]["route"] == "/merchant"
+    assert plan_by_id["plan_prepare_content_refresh_queue"]["route"] == "/content-planner"
+    assert plan_by_id["plan_review_ga4_landing_quality"]["route"] == "/ga4"
+    assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["status"] == "blocked"
+    assert "spend" in plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["blocked_claims"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -887,6 +895,14 @@ def test_command_center_exposes_polish_operator_brief(
     context_command = context_response.json()["command_center"]
     assert context_command["operator_brief"] == payload["operator_brief"]
     assert context_command["demo_script"] == payload["demo_script"]
+    context_plan_by_id = {item["id"]: item for item in context_command["action_plan"]}
+    assert set(context_plan_by_id) == set(plan_by_id)
+    for item_id, item in plan_by_id.items():
+        context_item = context_plan_by_id[item_id]
+        assert context_item["route"] == item["route"]
+        assert context_item["status"] == item["status"]
+        assert context_item["evidence_ids"] == item["evidence_ids"]
+        assert context_item["action_ids"] == item["action_ids"]
     assert context_command["primary_next_step"] == payload["primary_next_step"]
 
 
