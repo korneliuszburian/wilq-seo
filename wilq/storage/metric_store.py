@@ -412,18 +412,7 @@ def _deduplicate_metric_rows(rows: list[MetricRow]) -> list[MetricRow]:
     deduplicated: dict[tuple[str, str, str], MetricRow] = {}
     for row in rows:
         key = (row[0], row[2], row[8])
-        existing = deduplicated.get(key)
-        if existing is None:
-            deduplicated[key] = row
-            continue
-        existing_numeric = existing[3]
-        current_numeric = row[3]
-        if existing_numeric is not None and current_numeric is not None:
-            deduplicated[key] = existing[:3] + (
-                existing_numeric + current_numeric,
-            ) + existing[4:]
-        else:
-            deduplicated[key] = row
+        deduplicated[key] = row
     return list(deduplicated.values())
 
 

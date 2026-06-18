@@ -94,7 +94,7 @@ def build_marketing_brief() -> MarketingBrief:
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector_summary=_connector_summary(connectors),
         sections=sections,
-        top_metric_facts=_representative_metric_facts(metric_facts, limit=12),
+        top_metric_facts=_representative_metric_facts(business_metric_facts, limit=12),
         evidence_ids=evidence_ids,
         action_ids=action_ids,
         blocker_count=len(blocker_items),

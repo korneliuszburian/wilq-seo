@@ -11,6 +11,7 @@ import {
   KnowledgeCardSchema,
   MarketingBriefSchema,
   MarketingPlaybookSchema,
+  MerchantDiagnosticsResponseSchema,
   MetricFactSchema,
   MetricStoreStatusSchema,
   OpportunitySchema,
@@ -31,6 +32,7 @@ import {
   type MarketingBrief,
   type MarketingBriefItem,
   type MarketingPlaybook,
+  type MerchantDiagnosticsResponse,
   type MetricFact,
   type MetricStoreStatus,
   type Opportunity,
@@ -80,6 +82,10 @@ export function getTacticalQueue(): Promise<TacticalQueueResponse> {
 
 export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
   return apiGet("/api/ads/diagnostics", AdsDiagnosticsResponseSchema);
+}
+
+export function getMerchantDiagnostics(): Promise<MerchantDiagnosticsResponse> {
+  return apiGet("/api/merchant/diagnostics", MerchantDiagnosticsResponseSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -174,6 +180,7 @@ export type {
   MarketingBrief,
   MarketingBriefItem,
   MarketingPlaybook,
+  MerchantDiagnosticsResponse,
   MetricFact,
   MetricStoreStatus,
   Opportunity,

@@ -35,7 +35,14 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-merchant-feed-operator": {
             "surface_path": "/merchant",
-            "terms": {"Merchant Center", "feed", "product"},
+            "terms": {
+                "Merchant Center",
+                "feed",
+                "product",
+                "merchant_diagnostics",
+                "issue",
+                "act_review_merchant_feed_issues",
+            },
             "action_ids": {"act_review_merchant_feed_issues"},
         },
         "wilq-content-strategist": {
@@ -106,3 +113,16 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "GET /api/ads/diagnostics" in ads_skill_doc
     assert 'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in ads_smoke_script
     assert '"ads_diagnostics": {' in ads_smoke_script
+
+    merchant_skill_doc = Path(
+        ".agents/skills/wilq-merchant-feed-operator/SKILL.md"
+    ).read_text(encoding="utf-8")
+    merchant_smoke_script = Path(
+        ".agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    assert "GET /api/merchant/diagnostics" in merchant_skill_doc
+    assert (
+        'request_json(args.api_base, "GET", "/api/merchant/diagnostics")'
+        in merchant_smoke_script
+    )
+    assert '"merchant_diagnostics": {' in merchant_smoke_script

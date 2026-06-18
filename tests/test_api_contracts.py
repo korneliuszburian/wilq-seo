@@ -1325,6 +1325,81 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "act_configure_google_ads_env" in payload["action_ids"]
 
 
+def test_merchant_diagnostics_exposes_feed_issue_queue(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_diag_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_diag_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    adc_json = tmp_path / "adc.json"
+    adc_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(adc_json))
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "5519957373")
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_merchant_product_status_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Merchant Center vendor read completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={
+                "total_products": 10900,
+                "item_level_issue_count": 23,
+                "merchant_action_issue_count": 15,
+            },
+            metric_facts=[
+                VendorMetricFact("total_products", 10900, {}),
+                VendorMetricFact("item_level_issue_count", 23, {}),
+                VendorMetricFact(
+                    "issue_product_count",
+                    23,
+                    {
+                        "issue_type": "availability_updated",
+                        "affected_attribute": "n:availability",
+                        "country": "PL",
+                        "severity": "NOT_IMPACTED",
+                    },
+                ),
+            ],
+        ),
+    )
+
+    refresh_response = client.post(
+        "/api/connectors/google_merchant_center/refresh",
+        json={"mode": "vendor_read", "reason": "merchant diagnostics test"},
+    )
+    assert refresh_response.status_code == 200
+
+    response = client.get("/api/merchant/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["language"] == "pl-PL"
+    assert payload["live_data_available"] is True
+    assert payload["product_count"] == 10900
+    assert payload["issue_count"] == 23
+    assert payload["latest_refresh"]["status"] == "completed"
+    assert "act_review_merchant_feed_issues" in payload["action_ids"]
+    feed_section = next(
+        section for section in payload["sections"] if section["id"] == "merchant_feed_health"
+    )
+    assert feed_section["status"] == "ready"
+    issue_section = next(
+        section for section in payload["sections"] if section["id"] == "merchant_issue_queue"
+    )
+    assert issue_section["status"] == "ready"
+    assert issue_section["tactical_items"]
+    assert any(
+        item["dimensions"].get("issue_type") == "availability_updated"
+        for item in issue_section["tactical_items"]
+    )
+    serialized = json.dumps(payload)
+    assert "5519957373" not in serialized
+    assert "adc.json" not in serialized
+
+
 def test_gsc_vendor_read_uses_search_analytics(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -2147,6 +2222,9 @@ def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
     ads_response = client.get("/api/ads/diagnostics")
     assert ads_response.status_code == 200
     ads_diagnostics = ads_response.json()
+    merchant_response = client.get("/api/merchant/diagnostics")
+    assert merchant_response.status_code == 200
+    merchant_diagnostics = merchant_response.json()
 
     context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert context_response.status_code == 200
@@ -2170,6 +2248,16 @@ def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
     ]
     assert context_payload["ads_diagnostics"]["evidence_ids"] == ads_diagnostics["evidence_ids"]
     assert context_payload["ads_diagnostics"]["action_ids"] == ads_diagnostics["action_ids"]
+    assert context_payload["merchant_diagnostics"]["language"] == "pl-PL"
+    assert context_payload["merchant_diagnostics"]["live_data_available"] == merchant_diagnostics[
+        "live_data_available"
+    ]
+    assert context_payload["merchant_diagnostics"]["evidence_ids"] == merchant_diagnostics[
+        "evidence_ids"
+    ]
+    assert context_payload["merchant_diagnostics"]["action_ids"] == merchant_diagnostics[
+        "action_ids"
+    ]
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

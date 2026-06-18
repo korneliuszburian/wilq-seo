@@ -52,6 +52,7 @@ import {
   getKnowledgeCards,
   getKnowledgePlaybooks,
   getMarketingBrief,
+  getMerchantDiagnostics,
   getMetricFacts,
   getMetricStoreStatus,
   getOpportunities,
@@ -64,6 +65,7 @@ import {
   MarketingBrief,
   MarketingBriefItem,
   MarketingPlaybook,
+  MerchantDiagnosticsResponse,
   MetricFact,
   MetricStoreStatus,
   Opportunity,
@@ -1430,6 +1432,7 @@ function AdsDoctorSurface() {
           <ActionObjectFocus actions={routeActions} />
         </div>
       ) : null}
+
     </main>
   );
 }
@@ -1452,6 +1455,153 @@ function AdsDiagnosticCard({ section }: { section: AdsDiagnosticSection }) {
         {section.next_step}
       </div>
       {section.metric_facts.length > 0 ? <MetricFactChips facts={section.metric_facts} /> : null}
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <LinkedTraceLine label="Evidence" values={section.evidence_ids} kind="evidence" />
+        <TraceLine label="Źródła" values={section.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={section.action_ids} kind="actions" />
+        <TraceLine label="Zablokowane claimy" values={section.blocked_claims} />
+      </div>
+    </section>
+  );
+}
+
+type MerchantDiagnosticSection = MerchantDiagnosticsResponse["sections"][number];
+
+function MerchantDiagnosticSurface() {
+  const diagnostics = useQuery({
+    queryKey: ["merchant-diagnostics"],
+    queryFn: getMerchantDiagnostics
+  });
+  const actions = useQuery({
+    queryKey: ["actions"],
+    queryFn: getActions
+  });
+
+  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.error || !diagnostics.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/merchant/diagnostics. Merchant route nie może udawać feed insightów bez WILQ API." />
+      </main>
+    );
+  }
+  if (actions.error || !actions.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/actions. Merchant route nie może pokazać walidacji ani payload preview." />
+      </main>
+    );
+  }
+
+  const data = diagnostics.data;
+  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const latestRefresh = data.latest_refresh;
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Merchant Center</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Dedykowany widok feed/product oparty o Merchant Diagnostics z WILQ API.
+            Pokazuje live product facts, issue queue i bezpieczne ActionObjecty bez raw
+            product dumps i bez obietnic naprawy produktów.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Produkty" value={data.product_count ?? 0} />
+          <MetricTile label="Issues" value={data.issue_count ?? 0} />
+          <MetricTile label="Evidence" value={data.evidence_ids.length} />
+        </div>
+      </div>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Status Merchant Center
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <StatusBadge value={data.connector.status} />
+            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+              {data.live_data_available ? "live feed facts" : "brak live feed facts"}
+            </span>
+            {latestRefresh ? (
+              <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+                ostatni refresh: {latestRefresh.status}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {data.sections.map((section) => (
+          <MerchantDiagnosticCard key={section.id} section={section} />
+        ))}
+      </div>
+
+      {routeActions.length > 0 ? (
+        <div className="mt-6">
+          <ActionObjectFocus actions={routeActions} />
+        </div>
+      ) : null}
+
+      <section className="mt-6 rounded-md border border-line bg-white p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+            <ShieldAlert aria-hidden="true" size={18} />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Feed Safety Gate
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Merchant Center pozostaje w trybie review/prepare. WILQ może pokazać
+              issue queue, evidence i payload preview, ale nie może zmienić feedu,
+              obiecać approval recovery ani wykonać apply bez walidacji i audytu.
+            </p>
+          </div>
+        </div>
+        <TraceLine
+          label="Zablokowane claimy"
+          values={data.sections.flatMap((section) => section.blocked_claims)}
+        />
+      </section>
+    </main>
+  );
+}
+
+function MerchantDiagnosticCard({ section }: { section: MerchantDiagnosticSection }) {
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            {section.status}
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{section.title}</h2>
+        </div>
+        <StatusBadge value={section.status} />
+      </div>
+      <p className="text-sm leading-6 text-slate-700">{section.summary}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{section.diagnosis}</p>
+      <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700">
+        {section.next_step}
+      </div>
+      {section.metric_facts.length > 0 ? <MetricFactChips facts={section.metric_facts} /> : null}
+      {section.tactical_items.length > 0 ? (
+        <div className="mt-3 grid gap-2">
+          {section.tactical_items.slice(0, 3).map((item) => (
+            <div key={item.id} className="rounded-md border border-line bg-white p-3 text-xs">
+              <div className="font-semibold text-ink">{item.title}</div>
+              <div className="mt-1 text-slate-600">{item.diagnosis}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <LinkedTraceLine label="Evidence" values={section.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={section.source_connectors} />
@@ -1941,6 +2091,9 @@ const generatedRoutes = operatingRoutes.map((path) =>
     component: () => {
       if (path === "/ads-doctor") {
         return <AdsDoctorSurface />;
+      }
+      if (path === "/merchant") {
+        return <MerchantDiagnosticSurface />;
       }
       const briefConfig = briefSurfaceConfigs[path];
       return briefConfig ? (

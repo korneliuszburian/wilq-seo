@@ -265,7 +265,7 @@ def _merchant_feed_items(
         fact
         for fact in merchant_facts
         if fact.name == "issue_product_count"
-        and {"severity", "resolution"}.issubset(fact.dimensions)
+        and {"severity", "issue_type", "country"}.issubset(fact.dimensions)
     ]
     if any(fact.dimensions.get("issue_type") for fact in merchant_issue_facts):
         merchant_issue_facts = [
@@ -377,7 +377,7 @@ def _fact_group_key(fact: MetricFact) -> tuple[str, ...] | None:
     if fact.source_connector == "google_merchant_center" and fact.name == "issue_product_count":
         return (
             fact.dimensions.get("severity", ""),
-            fact.dimensions.get("resolution", ""),
+            fact.dimensions.get("resolution", "unknown_resolution"),
             fact.dimensions.get("issue_type", "unknown_issue"),
             fact.dimensions.get("country", ""),
         )

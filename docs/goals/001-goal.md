@@ -5929,3 +5929,190 @@ Current remaining next work:
    models only after each Ads read contract exists.
 4. Continue route-specific skill eval upgrades for Merchant, GA4, GSC/content,
    Localo and social, always using the API evidence route first.
+
+---
+
+## 51. Merchant Diagnostics API/dashboard/skill eval slice - 2026-06-18
+
+Implemented the Merchant follow-up from section 50.
+
+What changed:
+
+* Added `GET /api/merchant/diagnostics` as the canonical Merchant Center view
+  model for dashboard and Codex skills.
+* Added `MerchantDiagnosticsResponse` and `MerchantDiagnosticSection` schemas
+  to the Python API and shared TypeScript/Zod package.
+* Embedded `merchant_diagnostics` into `POST /api/codex/context-pack`, so
+  Codex and dashboard consume the same Merchant facts.
+* Replaced the generic `/merchant` dashboard route with a dedicated Merchant
+  Diagnostics surface showing:
+  * connector/latest refresh status,
+  * product count,
+  * issue count,
+  * diagnostic sections,
+  * safe metric facts,
+  * tactical queue items,
+  * evidence IDs,
+  * `act_review_merchant_feed_issues`,
+  * Feed Safety Gate for blocked feed/product claims.
+* Updated `wilq-merchant-feed-operator` skill and output contract so it calls
+  `/api/merchant/diagnostics` first and refuses unsupported feed/product claims
+  when live data is unavailable.
+* Updated the Merchant smoke script and Codex eval case to require
+  `merchant_diagnostics`, feed/product issue wording, and the Merchant
+  ActionObject ID.
+* Fixed stale Ads leakage in the main MarketingBrief top metrics:
+  `top_metric_facts` now uses freshness-gated business metric facts instead of
+  raw metric store facts, so stale `google_ads` facts do not appear while the
+  latest Ads refresh is failed.
+* Fixed metric-store deduplication: duplicate facts with the same
+  `(run_id, metric_name, dimensions)` no longer get summed. The last detailed
+  fact wins. This prevents false doubled Merchant product counts when the same
+  aggregate appears in both `metric_summary` and detailed facts.
+* Relaxed Merchant tactical queue grouping for partial issue facts:
+  `issue_product_count` facts with `severity`, `issue_type` and `country` now
+  produce queue items even when `resolution` is missing. Missing resolution is
+  represented as `unknown_resolution`.
+
+Live API proof after backend restart:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/merchant/diagnostics | \
+  jq '{live_data_available, product_count, issue_count, sections:[.sections[].id], action_ids, blocker_count}'
+```
+
+Result:
+
+```json
+{
+  "live_data_available": true,
+  "product_count": 10900,
+  "issue_count": 15,
+  "sections": [
+    "merchant_feed_health",
+    "merchant_issue_queue",
+    "merchant_action_safety"
+  ],
+  "action_ids": [
+    "act_review_merchant_feed_issues"
+  ],
+  "blocker_count": 0
+}
+```
+
+MarketingBrief stale Ads proof:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/marketing/brief | \
+  jq '[.top_metric_facts[].source_connector]|unique'
+```
+
+Result:
+
+```json
+[
+  "ahrefs",
+  "google_analytics_4",
+  "google_merchant_center",
+  "google_search_console",
+  "wordpress_ekologus"
+]
+```
+
+Merchant smoke proof:
+
+```bash
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py \
+  --api-base http://127.0.0.1:8000
+```
+
+Relevant result:
+
+```json
+{
+  "merchant_diagnostics": {
+    "live_data_available": true,
+    "product_count": 10900,
+    "issue_count": 15,
+    "blocker_count": 0,
+    "section_ids": [
+      "merchant_feed_health",
+      "merchant_issue_queue",
+      "merchant_action_safety"
+    ],
+    "action_ids": [
+      "act_review_merchant_feed_issues"
+    ],
+    "tactical_item_ids": [
+      "tq_merchant_issue_pl_not_impacted_availability_updated",
+      "tq_merchant_issue_pl_not_impacted_missing_potentially_required_attribute",
+      "tq_merchant_issue_pl_not_impacted_image_too_small_for_high_resolution",
+      "tq_merchant_status_pl_free_listings"
+    ],
+    "latest_refresh_status": "completed"
+  }
+}
+```
+
+Non-interactive Codex eval proof:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh \
+  --skill wilq-merchant-feed-operator \
+  --api-base http://127.0.0.1:8000
+```
+
+Result path:
+
+```text
+.local-lab/evals/codex-skill/20260618T011419Z
+```
+
+Current interpretation:
+
+* Merchant Center is now the strongest live-data route for the overnight demo:
+  API, dashboard, context-pack, skill smoke and Codex eval all use the same
+  diagnostics contract.
+* Merchant output remains safe: WILQ can prepare a review queue and payload
+  preview, but it must not claim feed fixes, approval recovery or revenue
+  recovery without future write/apply support and audit.
+* Google Ads is still not live-useful because OAuth remains blocked by
+  `oauth_error=deleted_client`; Ads must continue to show blocker and repair
+  action instead of recommendations.
+
+Verification completed in this slice:
+
+```bash
+uv run ruff check wilq/briefing/merchant_diagnostics.py wilq/briefing/marketing_brief.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/merchant_diagnostics.py wilq/briefing/marketing_brief.py wilq/schemas.py apps/api/wilq_api/main.py .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+uv run pytest tests/test_metric_store_and_cli.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* Dashboard lint/typecheck: passed.
+* Dashboard Merchant unit route: `12 passed`.
+* API/eval/metric-store tests: `70 passed`.
+* Merchant smoke: passed.
+* Merchant Codex non-interactive eval: passed.
+* Full product gate `scripts/verify.sh`: passed after the Merchant dashboard
+  safety panel fix.
+
+Current remaining next work before calling the overnight goal stable:
+
+1. Commit and push this Merchant slice with a semantic commit.
+2. Add the next dedicated live-data route for GSC/content or GA4 landing-page
+   quality using the same pattern:
+   API diagnostics -> context-pack -> dashboard route -> skill smoke -> Codex
+   non-interactive eval.
+3. Keep Ads blocked until OAuth is repaired; no Ads recommendations without
+   fresh Google Ads vendor data.
+4. Continue replacing generic dashboard shells with marketer-useful route view
+   models backed by evidence, action IDs and blocked claims.

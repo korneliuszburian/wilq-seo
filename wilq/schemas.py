@@ -471,6 +471,37 @@ class AdsDiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
 
+class MerchantDiagnosticSection(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "blocked", "missing"]
+    summary: str
+    diagnosis: str
+    next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
+class MerchantDiagnosticsResponse(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    language: Literal["pl-PL"] = "pl-PL"
+    strict_instruction: str
+    connector: ConnectorStatus
+    latest_refresh: ConnectorRefreshRun | None = None
+    live_data_available: bool
+    product_count: int | None = None
+    issue_count: int | None = None
+    sections: list[MerchantDiagnosticSection] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocker_count: int = 0
+
+
 class CommandCenterResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     strict_instruction: str

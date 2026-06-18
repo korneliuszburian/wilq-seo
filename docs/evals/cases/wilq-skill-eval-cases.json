@@ -100,7 +100,14 @@
     "surface_path": "/merchant",
     "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczny kandydat działania bez zmiany danych produktu.",
     "expected_connectors": ["google_merchant_center"],
-    "expected_terms_pl": ["Merchant Center", "feed", "product"],
+    "expected_terms_pl": [
+      "Merchant Center",
+      "feed",
+      "product",
+      "merchant_diagnostics",
+      "issue",
+      "act_review_merchant_feed_issues"
+    ],
     "expected_action_ids": ["act_review_merchant_feed_issues"]
   }
 ]

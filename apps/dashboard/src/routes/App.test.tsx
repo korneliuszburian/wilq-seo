@@ -279,6 +279,40 @@ const metricFacts = [
     freshness_label: "odświeżone mniej niż godzinę temu"
   },
   {
+    name: "total_products",
+    value: 10900,
+    period: "connector_refresh",
+    source_connector: "google_merchant_center",
+    evidence_id: "ev_refresh_merchant_feed",
+    unit: null,
+    collected_at: "2026-06-17T10:00:00Z",
+    previous_value: 10900,
+    delta: 0,
+    delta_percent: 0,
+    trend: "flat",
+    freshness_state: "fresh",
+    freshness_label: "odświeżone mniej niż godzinę temu"
+  },
+  {
+    name: "issue_product_count",
+    value: 23,
+    period: "connector_refresh",
+    source_connector: "google_merchant_center",
+    evidence_id: "ev_refresh_merchant_feed",
+    dimensions: {
+      issue_type: "availability_updated",
+      affected_attribute: "n:availability"
+    },
+    unit: null,
+    collected_at: "2026-06-17T10:00:00Z",
+    previous_value: 20,
+    delta: 3,
+    delta_percent: 15,
+    trend: "up",
+    freshness_state: "fresh",
+    freshness_label: "odświeżone mniej niż godzinę temu"
+  },
+  {
     name: "active_users",
     value: 20,
     period: "connector_refresh",
@@ -428,7 +462,7 @@ const marketingBrief = {
           priority: 75,
           source_connectors: ["google_analytics_4"],
           evidence_ids: ["ev_refresh_ga4"],
-          metric_facts: [metricFacts[2]],
+          metric_facts: [metricFacts[4]],
           action_ids: ["act_review_ga4_tracking_quality"],
           summary: "WILQ ma GA4 metric facts i może ocenić jakość ruchu po odświeżeniu.",
           next_step: "Porównaj engagement i konwersje z kampaniami.",
@@ -442,7 +476,7 @@ const marketingBrief = {
           priority: 74,
           source_connectors: ["google_search_console"],
           evidence_ids: ["ev_refresh_gsc"],
-          metric_facts: [metricFacts[3]],
+          metric_facts: [metricFacts[5]],
           action_ids: ["act_prepare_content_refresh_queue"],
           summary: "WILQ ma GSC clicks i może zbudować kolejkę content opportunities.",
           next_step: "Połącz query/page evidence z WordPress inventory.",
@@ -478,7 +512,7 @@ const tacticalQueue = {
       risk: "low",
       source_connectors: ["google_analytics_4"],
       evidence_ids: ["ev_refresh_ga4"],
-      metric_facts: [metricFacts[2]],
+      metric_facts: [metricFacts[4]],
       dimensions: {
         landing_page: "/oferta/",
         source_medium: "google / cpc",
@@ -498,7 +532,7 @@ const tacticalQueue = {
       risk: "low",
       source_connectors: ["google_search_console"],
       evidence_ids: ["ev_refresh_gsc"],
-      metric_facts: [metricFacts[3]],
+      metric_facts: [metricFacts[5]],
       dimensions: {
         query: "zielony ład",
         page: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
@@ -507,10 +541,104 @@ const tacticalQueue = {
       next_step: "Przygotuj refresh istniejącej strony i sprawdź duplikaty w WordPress.",
       blocked_claims: ["conversion uplift", "revenue impact"],
       action_ids: ["act_prepare_content_refresh_queue"]
+    },
+    {
+      id: "tq_merchant_issue",
+      title: "Merchant: NOT_IMPACTED / availability_updated / PL",
+      domain: "merchant",
+      intent: "merchant_feed_triage",
+      priority: 27,
+      risk: "medium",
+      source_connectors: ["google_merchant_center"],
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      metric_facts: [metricFacts[3]],
+      dimensions: {
+        issue_type: "availability_updated",
+        affected_attribute: "n:availability"
+      },
+      diagnosis: "Merchant issue availability_updated dotyczy atrybutu n:availability.",
+      next_step: "Przygotuj review queue bez zmiany primary feedu.",
+      blocked_claims: ["automatic feed edit", "approval restored"],
+      action_ids: ["act_review_merchant_feed_issues"]
     }
   ],
-  evidence_ids: ["ev_refresh_ga4", "ev_refresh_gsc"],
-  action_ids: ["act_review_ga4_tracking_quality", "act_prepare_content_refresh_queue"]
+  evidence_ids: ["ev_refresh_ga4", "ev_refresh_gsc", "ev_refresh_merchant_feed"],
+  action_ids: [
+    "act_review_ga4_tracking_quality",
+    "act_prepare_content_refresh_queue",
+    "act_review_merchant_feed_issues"
+  ]
+};
+
+const merchantDiagnostics = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  connector: {
+    id: "google_merchant_center",
+    label: "Merchant Center",
+    status: "configured",
+    configured: true,
+    missing_credentials: [],
+    available_credential_sources: ["repo_env"],
+    freshness: { state: "fresh" },
+    supported_actions: ["merchant_feed_issue"]
+  },
+  latest_refresh: {
+    id: "refresh_google_merchant_center_test",
+    connector_id: "google_merchant_center",
+    mode: "vendor_read",
+    status: "completed",
+    started_at: "2026-06-17T10:00:00Z",
+    completed_at: "2026-06-17T10:00:01Z",
+    evidence_ids: ["ev_refresh_merchant_feed"],
+    missing_credentials: [],
+    checked_credentials: ["GOOGLE_MERCHANT_CENTER_ACCOUNT_ID"],
+    external_call_attempted: true,
+    vendor_data_collected: true,
+    metric_summary: { total_products: 10900, item_level_issue_count: 23 },
+    summary: "Merchant Center vendor read completed.",
+    errors: [],
+    redacted: true
+  },
+  live_data_available: true,
+  product_count: 10900,
+  issue_count: 23,
+  sections: [
+    {
+      id: "merchant_feed_health",
+      title: "Merchant Center: feed/product health",
+      status: "ready",
+      summary: "Metric facts: total_products=10900, issue_product_count=23.",
+      diagnosis: "WILQ ma read-only Merchant facts i może ocenić skalę feedu.",
+      next_step: "Przejdź do issue queue i grupuj problemy po issue_type.",
+      source_connectors: ["google_merchant_center"],
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      metric_facts: [metricFacts[2], metricFacts[3]],
+      tactical_items: [],
+      action_ids: ["act_review_merchant_feed_issues"],
+      blocked_claims: ["approval restored", "revenue recovered"],
+      risk: "medium"
+    },
+    {
+      id: "merchant_issue_queue",
+      title: "Merchant Center: kolejka feed/product issues",
+      status: "ready",
+      summary: "WILQ ma 1 Merchant tactical items i 1 issue metric facts.",
+      diagnosis: "Najbezpieczniejsza praca to review problemów po issue_type.",
+      next_step: "Otwórz ActionObject `act_review_merchant_feed_issues`.",
+      source_connectors: ["google_merchant_center"],
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      metric_facts: [metricFacts[3]],
+      tactical_items: [tacticalQueue.items[2]],
+      action_ids: ["act_review_merchant_feed_issues"],
+      blocked_claims: ["automatic feed edit", "primary feed overwrite"],
+      risk: "medium"
+    }
+  ],
+  evidence_ids: ["ev_refresh_merchant_feed"],
+  action_ids: ["act_review_merchant_feed_issues"],
+  blocker_count: 0
 };
 
 const expertRules = [
@@ -612,6 +740,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/ads/diagnostics")) {
         return Promise.resolve(Response.json(adsDiagnostics));
+      }
+      if (url.endsWith("/api/merchant/diagnostics")) {
+        return Promise.resolve(Response.json(merchantDiagnostics));
       }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
@@ -728,7 +859,7 @@ describe("WILQ dashboard", () => {
       "href",
       "/actions/act_1"
     );
-    expect(screen.getByText(/wasted spend/)).toBeInTheDocument();
+    expect(screen.getAllByText(/wasted spend/).length).toBeGreaterThan(0);
   });
 
   it("expert rules render on operating routes", async () => {
@@ -750,17 +881,18 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Machine-Readable Playbooks")).toBeInTheDocument();
   });
 
-  it("merchant route renders WILQ marketing brief feed focus", async () => {
+  it("merchant route renders dedicated feed diagnostics", async () => {
     renderApp("/merchant");
     await waitFor(() =>
       expect(
         screen.getByRole("heading", { name: "Merchant Center" })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Merchant Center: zacznij od feed/product issues")).toBeInTheDocument();
+    expect(screen.getByText("Merchant Center: feed/product health")).toBeInTheDocument();
+    expect(screen.getByText("Merchant Center: kolejka feed/product issues")).toBeInTheDocument();
+    expect(screen.getByText("Merchant: NOT_IMPACTED / availability_updated / PL")).toBeInTheDocument();
+    expect(screen.getAllByText(/total_products: 10900/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/payload preview/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ActionObject/).length).toBeGreaterThan(0);
     expect(screen.getByText("ActionObject focus")).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")

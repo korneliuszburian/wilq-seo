@@ -13,17 +13,20 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 
 1. Read `references/output-contract.md` when producing the final response or action plan.
 2. Run `python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `POST /api/codex/context-pack` with `{"skill":"wilq-merchant-feed-operator"}` before summarizing metrics, opportunities or action candidates.
-4. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-5. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-6. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+3. Call `GET /api/merchant/diagnostics` before summarizing feed/product health, issue queue or product action candidates.
+4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-merchant-feed-operator"}` and confirm `merchant_diagnostics` matches the Merchant diagnostics endpoint.
+5. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
+6. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
+7. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
 
 ## Allowed API Endpoints
 
 - `GET /api/health`
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
+- `GET /api/merchant/diagnostics`
 - `GET /api/marketing/brief`
+- `GET /api/marketing/tactical-queue`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `GET /api/connectors/{connector}/refresh-runs`
@@ -41,7 +44,7 @@ Required connector surfaces for this skill:
 
 - `google_merchant_center`
 
-Every recommendation must include source connector IDs and evidence IDs from WILQ API. If evidence is aggregated, stale, missing or blocked by credentials, say that directly.
+Every recommendation must include source connector IDs and evidence IDs from WILQ API. Use Merchant Diagnostics sections and tactical items as the primary source. If evidence is aggregated, stale, missing or blocked by credentials, say that directly.
 
 ## Output Contract
 
@@ -58,4 +61,4 @@ Polish language contract: produce all operator-facing responses in Polish with P
 
 ## Goal 001 Status
 
-Goal 001 stub: current Merchant adapter persists aggregate product status and issue counts.
+Goal 001 status: `/api/merchant/diagnostics` is the canonical Merchant route view model. Current Merchant adapter persists aggregate product status, issue counts and safe issue dimensions; changes remain prepare-only through ActionObjects.
