@@ -122,8 +122,11 @@ is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
 api_instruction = (
-    "Najpierw sprawdź API, pobierz /api/marketing/brief przez smoke script i "
-    "potwierdź zgodność marketing_brief w context-packu."
+    "Najpierw sprawdź API, pobierz /api/dashboard/command-center, /api/marketing/brief "
+    "oraz context-pack przez smoke script. Potwierdź zgodność marketing_brief i "
+    "command_center.action_plan w context-packu. Finalny JSON dla daily command musi "
+    "uwzględnić Plan działań marketera przez recommendations, action_candidates, "
+    "notes albo operator_next_step."
     if is_daily_command
     else "Najpierw sprawdź API i context-pack właściwy dla skillu."
 )

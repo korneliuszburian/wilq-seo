@@ -2,6 +2,21 @@
   {
     "skill": "wilq-daily-command",
     "task_pl": "Przygotuj dzisiejszy brief operacyjny WILQ dla Ekologus na podstawie /api/marketing/brief i marketing_brief z context-packu: realne metryki, evidence IDs, blockery, ActionObject IDs i jeden najbezpieczniejszy następny krok.",
+    "expected_terms_pl": [
+      "Plan działań",
+      "action_plan",
+      "Merchant",
+      "Content",
+      "GA4",
+      "OAuth",
+      "Localo"
+    ],
+    "expected_action_ids": [
+      "act_review_merchant_feed_issues",
+      "act_prepare_content_refresh_queue",
+      "act_review_ga4_tracking_quality",
+      "act_configure_google_ads_env"
+    ],
     "expected_connectors": [
       "google_ads",
       "google_search_console",

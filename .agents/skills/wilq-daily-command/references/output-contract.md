@@ -4,7 +4,9 @@
 
 Daily command-center triage across connectors, evidence, opportunities, actions, expert rules and knowledge cards.
 
-Expected outcome: A concise operating brief with source connector status, evidence IDs, opportunity IDs, action IDs, blockers and next safe steps.
+Expected outcome: A concise operating brief with source connector status,
+CommandCenter action-plan items, evidence IDs, opportunity IDs, action IDs,
+blockers and next safe steps.
 
 ## Required API Context
 
@@ -19,9 +21,9 @@ Then fetch `POST /api/codex/context-pack` with
 `{"skill":"wilq-daily-command"}` for wider context: connector status,
 refresh runs, evidence summaries, opportunities, ActionObjects, expert rules
 and knowledge cards. The embedded `command_center` in the context pack must
-match `GET /api/dashboard/command-center` for `operator_brief`,
-`primary_next_step`, blocker count, tactical item count and action IDs. The
-embedded `marketing_brief` in the context pack must match
+match `GET /api/dashboard/command-center` for `operator_brief`, `demo_script`,
+`action_plan`, `primary_next_step`, blocker count, tactical item count and
+action IDs. The embedded `marketing_brief` in the context pack must match
 `GET /api/marketing/brief` for language, section IDs, blocker count,
 recommendation count, evidence IDs and action IDs.
 
@@ -46,10 +48,10 @@ Return these sections when the user asks this skill to operate:
 Polish language contract: respond to the Ekologus marketer in Polish with Polish diacritics. Use Polish operator-facing labels such as `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` and `Następny krok`. Keep API identifiers, connector IDs, evidence IDs, opportunity IDs and ActionObject IDs unchanged.
 
 
-1. `Status`: API reachability, connector readiness, `CommandCenter.operator_brief` status and known blockers.
+1. `Status`: API reachability, connector readiness, `CommandCenter.operator_brief` and `CommandCenter.action_plan` status and known blockers.
 2. `Dowody`: evidence IDs, connector IDs, freshness notes and metric summaries from `CommandCenter`/`MarketingBrief`/WILQ API only.
-3. `Diagnoza`: what the operator brief supports, with uncertainty if the evidence is aggregate, stale or incomplete.
-4. `Kandydaci działań`: `operator_brief.action_ids`, opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
+3. `Diagnoza`: what the operator brief and action plan support, with uncertainty if the evidence is aggregate, stale or incomplete.
+4. `Kandydaci działań`: `action_plan.action_ids`, `operator_brief.action_ids`, opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
 5. `Walidacja`: result or required call to `POST /api/actions/{action_id}/validate` before apply/execution.
 6. `Następny krok`: the smallest safe operator action.
 

@@ -16,7 +16,7 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 3. Call `GET /api/dashboard/command-center` first. This is the canonical first-screen operator view model for Polish marketer output.
 4. Call `GET /api/marketing/brief` for supporting daily sections and metric summaries.
 5. Call `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` to get wider evidence, opportunities, actions, expert rules and knowledge cards.
-6. The `command_center` embedded in the context pack must agree with `GET /api/dashboard/command-center` on `operator_brief`, `primary_next_step`, blocker count, tactical item count and action IDs. The embedded `marketing_brief` must agree with `GET /api/marketing/brief` on language, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
+6. The `command_center` embedded in the context pack must agree with `GET /api/dashboard/command-center` on `operator_brief`, `demo_script`, `action_plan`, `primary_next_step`, blocker count, tactical item count and action IDs. The embedded `marketing_brief` must agree with `GET /api/marketing/brief` on language, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
 7. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
 8. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
 9. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.

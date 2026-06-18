@@ -6771,7 +6771,7 @@ is visible in the demo path.
 
 ## 57. Slice 2026-06-18 - browser proof for marketer demo path
 
-Status: implementation and verification complete; commit/push pending.
+Status: committed and pushed as `d2fe2cc test(dashboard): add marketer demo browser proof`.
 
 Product intent:
 
@@ -6836,16 +6836,111 @@ Results:
 * Production dashboard build: passed.
 * Full product gate `scripts/verify.sh`: passed.
 
+Closed with commit:
+
+```text
+d2fe2cc test(dashboard): add marketer demo browser proof
+```
+
+Goal 001 is still not complete after this slice. Remaining work still includes
+Ads OAuth recovery or final blocked-state handoff, richer non-interactive Codex
+proof for upgraded daily/action-plan behavior, and deeper per-route tactical UX.
+
+## 58. Slice 2026-06-18 - Daily Command Codex proof for action plan
+
+Status: implementation and verification complete; commit/push pending.
+
+Product intent:
+
+* After adding `CommandCenter.action_plan` to API and dashboard, prove that the
+  repo-local `wilq-daily-command` skill and non-interactive Codex eval consume
+  the same action-plan layer.
+* The proof must stay API-backed: no prompt-only action plan, no invented Ads or
+  Localo metrics, no raw secrets.
+
+Implemented in this slice so far:
+
+* Updated `.agents/skills/wilq-daily-command/SKILL.md` so context-pack parity
+  explicitly includes `operator_brief`, `demo_script`, `action_plan`,
+  `primary_next_step`, blocker count, tactical item count and action IDs.
+* Updated `.agents/skills/wilq-daily-command/references/output-contract.md` so
+  Daily Command output must include CommandCenter action-plan items.
+* Updated `.agents/skills/wilq-daily-command/scripts/smoke_context_pack.py` to:
+  * require `demo_script`,
+  * require `action_plan`,
+  * require Merchant/Content/GA4/Ads action-plan IDs,
+  * ensure ready action-plan items have evidence IDs and ActionObject IDs,
+  * compare action-plan trace fields between `/api/dashboard/command-center`
+    and `POST /api/codex/context-pack`,
+  * print compact `demo_script` and `action_plan` proof.
+* Updated `docs/evals/cases/wilq-skill-eval-cases.json` so
+  `wilq-daily-command` requires action-plan terms and these ActionObject IDs:
+  * `act_review_merchant_feed_issues`
+  * `act_prepare_content_refresh_queue`
+  * `act_review_ga4_tracking_quality`
+  * `act_configure_google_ads_env`
+* Updated `scripts/codex_skill_eval.sh` prompt generation so the daily command
+  eval explicitly requires `/api/dashboard/command-center`,
+  `/api/marketing/brief`, context-pack parity and action-plan usage.
+
+Focused verification already run:
+
+```bash
+bash -n scripts/codex_skill_eval.sh
+uv run python -m json.tool docs/evals/cases/wilq-skill-eval-cases.json >/dev/null
+uv run ruff check .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py tests/test_codex_skill_eval_cases.py
+uv run mypy .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Focused results:
+
+* Bash/JSON validation: passed.
+* Ruff: passed.
+* Mypy: passed.
+* Codex eval case tests: `3 passed`.
+* Daily Command smoke script: passed and printed 5 action-plan items.
+* Non-interactive Codex eval: passed.
+* Backend API contracts: `80 passed` in full verify.
+* Dashboard route tests: `12 passed`.
+* Skill API smoke: passed.
+* Playwright e2e: `8 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Codex eval proof:
+
+```text
+.local-lab/evals/codex-skill/20260618T033632Z
+```
+
+Result summary:
+
+* `skill`: `wilq-daily-command`
+* `language`: `pl-PL`
+* `api_used`: `true`
+* `operator_usefulness_score`: `5`
+* `evidence_count`: `13`
+* `action_candidates`:
+  * `act_review_merchant_feed_issues`
+  * `act_prepare_content_refresh_queue`
+  * `act_review_ga4_tracking_quality`
+  * `act_configure_google_ads_env`
+* Notes explicitly mention `command_center.action_plan`.
+
 Remaining before committing this slice:
 
 1. Commit with Conventional Commit, expected message:
 
 ```text
-test(dashboard): add marketer demo browser proof
+test(skills): require daily command action plan eval
 ```
 
 2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. Remaining work still includes
-Ads OAuth recovery or final blocked-state handoff, richer non-interactive Codex
-proof for upgraded daily/action-plan behavior, and deeper per-route tactical UX.
+Ads OAuth recovery or final blocked-state handoff and deeper per-route tactical
+UX beyond the first action-plan layer.
