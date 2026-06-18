@@ -46,6 +46,12 @@ Data: 2026-06-18
   `wordpress_content_url`. Bezpośredni proof z aktualnego checkoutu pokazał
   `found` dla BDO, Zielonego Ładu, remediacji oraz GA4 path fallback. Pełny
   `scripts/verify.sh` przeszedł dla tego slice'a.
+- Metric store batch reads zachowują teraz kompletne najnowsze grupy metryk
+  `(connector, evidence, dimensions)`, zamiast ucinać pojedyncze wiersze po
+  `metric_name`. To naprawia Content Planner: GSC query/page cards nie pokazują
+  już fałszywego `impressions=0` przy istniejących `clicks`/`ctr`; live browser
+  proof po restarcie API pokazał m.in. `bdo co to` z `impressions=4429`,
+  `ekologus` z `impressions=80` i Zielony Ład z realnymi impressions.
 - Command Center first screen został odchudzony do jednego boardu
   `Dzisiejsze decyzje marketera`. Stary dubel `Dzisiejszy panel operatora` +
   `Plan działań marketera` został usunięty, a pełne connector blocker cards
@@ -140,6 +146,10 @@ Data: 2026-06-18
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
 - `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
 - `scripts/verify.sh`
+- `uv run ruff check wilq/storage/metric_store.py tests/test_metric_store_and_cli.py tests/test_api_contracts.py`
+- `uv run mypy wilq/storage/metric_store.py wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py`
+- `uv run pytest tests/test_metric_store_and_cli.py -q`
+- `uv run pytest tests/test_api_contracts.py -q -k 'marketing_tactical_queue_uses_dimensioned_metric_facts or content_diagnostics_exposes_query_page_inventory_queue'`
 
 ```text
 scripts/verify.sh passed
@@ -170,6 +180,16 @@ dashboard production build: passed
 ```
 
 Po Merchant occurrence wording/API fallback 2026-06-18:
+
+```text
+scripts/verify.sh passed
+backend API contracts: 98 passed
+dashboard route tests: 12 passed
+Playwright e2e: 8 passed
+dashboard production build: passed
+```
+
+Po metric grouped reads / Content Planner impressions fix 2026-06-18:
 
 ```text
 scripts/verify.sh passed

@@ -243,10 +243,9 @@ def test_metric_store_lists_metric_facts_by_connector_in_one_batch(
     assert ga4_fact.value == 15
     assert ga4_fact.previous_value == 10
     assert ga4_fact.delta == 5
-    assert len(facts_by_connector["google_search_console"]) == 1
-    assert facts_by_connector["google_search_console"][0].source_connector == (
-        "google_search_console"
-    )
+    gsc_facts = facts_by_connector["google_search_console"]
+    assert {fact.name for fact in gsc_facts} == {"clicks", "impressions"}
+    assert all(fact.source_connector == "google_search_console" for fact in gsc_facts)
     assert facts_by_connector["missing_connector"] == []
 
 

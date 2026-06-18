@@ -114,6 +114,9 @@ Current connector truth:
   `Affected`, and aggregate `product_count`/`issue_count` may fallback to latest
   refresh summary when issue-level metric facts are the only stored facts.
 - `google_search_console`: query/page facts exist and support content decisions.
+  Tactical/content reads now preserve complete latest metric groups per
+  `(connector, evidence, dimensions)`, so query/page cards do not show false
+  `impressions=0` when the same evidence group has real impressions.
 - `google_analytics_4`: landing/source/campaign facts exist, but ROAS/revenue
   and conversion-drop claims are blocked unless conversion evidence exists.
 - `wordpress_ekologus` and `wordpress_sklep`: inventory context exists and must
@@ -153,6 +156,9 @@ Do not rebuild these from scratch:
 - Merchant route/API clarification for feed issues: issue clusters show report
   occurrences and context, while product-level sample IDs/titles remain blocked
   until the Merchant read contract exposes them.
+- Metric store grouped batch reads for tactical/content surfaces: latest
+  query/page groups keep clicks, impressions, CTR and position together instead
+  of truncating by connector row count.
 
 ## Active Product Problems
 
