@@ -7289,7 +7289,7 @@ Goal 001 is still not complete after this slice. Remaining work after commit:
 
 ## 62. Slice 2026-06-18 - Content Planner operator summary for GSC and WordPress decisions
 
-Status: full verification complete; commit and push pending.
+Status: committed and pushed as `2c86e1f feat(dashboard): add content operator summary`.
 
 Product intent:
 
@@ -7383,15 +7383,11 @@ Full verification results:
 * Production dashboard build: passed.
 * Full product gate `scripts/verify.sh`: passed.
 
-Remaining before closing this slice:
-
-1. Commit with Conventional Commit, expected message:
+Closed with commit:
 
 ```text
-feat(dashboard): add content operator summary
+2c86e1f feat(dashboard): add content operator summary
 ```
-
-2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. Remaining work after commit:
 
