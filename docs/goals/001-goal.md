@@ -551,6 +551,11 @@ Current eval progress:
   Ads/GA4/GSC evidence access, then blocks campaign candidate and payload
   preview because WILQ lacks a campaign-specific ActionObject, keyword/asset
   evidence, budget facts and validated campaign payload contract.
+- `wilq-custom-segments`: passed at
+  `.local-lab/evals/codex-skill/20260618T104644Z/wilq-custom-segments/result.json`.
+  This is an anti-hallucination pass. It blocks audience/custom segment
+  candidates because WILQ currently has aggregate Ads/GSC facts, but not real
+  source terms/search terms/query evidence with lineage.
 
 ### 4. Performance Slice
 

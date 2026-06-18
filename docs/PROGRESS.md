@@ -281,3 +281,18 @@ because WILQ does not expose a campaign-specific ActionObject, payload preview,
 keywords, assets, budget or campaign structure. Next product slice for this
 skill is not prompt polish; it is an API/action contract for safe campaign
 drafts.
+
+Ninth non-interactive Codex eval completed:
+
+```text
+skill: wilq-custom-segments
+result: passed
+artifact: .local-lab/evals/codex-skill/20260618T104644Z/wilq-custom-segments/result.json
+```
+
+Interpretation: anti-hallucination pass. It returned `pl-PL`, `api_used=true`,
+connectors `google_ads` and `google_search_console`, and `blocked=true`.
+Recommendations and action candidates are empty because WILQ currently exposes
+aggregate Ads/GSC metrics, not real source terms/search terms/query evidence
+for audience candidates. Next product slice: source-term read contract with
+evidence lineage.
