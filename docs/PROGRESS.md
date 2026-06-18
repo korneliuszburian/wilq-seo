@@ -248,3 +248,20 @@ readiness only: connector `localo` is configured, Localo refresh is completed,
 ranking, GBP, competitor and local visibility uplift claims because those facts
 do not exist yet in WILQ evidence. Next stricter improvement: add a real Localo
 diagnostics/read contract before expecting local SEO recommendations.
+
+Seventh non-interactive Codex eval completed:
+
+```text
+skill: wilq-daily-command
+result: passed
+artifact: .local-lab/evals/codex-skill/20260618T103758Z/wilq-daily-command/result.json
+```
+
+Interpretation: strong daily-loop pass. It returned `pl-PL`, all 8 expected
+source connectors, daily evidence IDs, primary opportunities, and a concrete
+next step: open `/merchant` and validate `act_review_merchant_feed_issues`.
+The answer correctly treats Ads as live campaign review, Localo as access-ready
+but no ranking/GBP facts, and blocks unsupported claims. Product gap found:
+daily action candidates still include LinkedIn/Facebook draft ActionObjects
+from wider `marketing_brief.action_ids`, while `CommandCenter.action_plan` is
+cleaner and has only Merchant/Content/GA4 core actions.

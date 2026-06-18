@@ -537,6 +537,14 @@ Current eval progress:
   `LOCALO_ACCESS_TOKEN`; however, the skill must still block ranking, GBP,
   competitor and local visibility uplift claims until WILQ exposes Localo facts
   beyond MCP initialize/access readiness.
+- `wilq-daily-command`: passed at
+  `.local-lab/evals/codex-skill/20260618T103758Z/wilq-daily-command/result.json`.
+  This proves the top-level Polish daily loop across Command Center,
+  MarketingBrief and context-pack: Merchant first, then Content/GA4/Ads/Localo
+  with evidence IDs and safe next actions. Cleanup still needed:
+  LinkedIn/Facebook draft ActionObjects can leak into daily action candidates
+  from the wider `marketing_brief.action_ids`; daily primary actions should stay
+  focused on core marketer decisions unless social is explicitly requested.
 
 ### 4. Performance Slice
 

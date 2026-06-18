@@ -530,3 +530,106 @@ Verdict:
 Strong guardrail pass. `wilq-localo-operator` is currently an access-readiness
 and blocker skill. It is not yet a local SEO recommendation skill until WILQ
 collects Localo ranking/GBP/competitor facts.
+
+## 2026-06-18 - wilq-daily-command
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case `wilq-daily-command`.
+
+Why this eval matters:
+
+This is the closest skill to the promised plug-and-play marketer workflow. It
+checks the full daily loop instead of a single vertical route:
+
+`/api/dashboard/command-center` -> `/api/marketing/brief` ->
+`POST /api/codex/context-pack {"skill":"wilq-daily-command"}` -> Polish
+operating answer with evidence IDs, source connectors and safe next actions.
+
+Pre-eval smoke facts:
+
+- `CommandCenter.primary_next_step`: open `/merchant` and review feed/product
+  issues with an ActionObject.
+- `operator_brief_count=5`.
+- `action_plan_count=4`.
+- `tactical_item_count=24`.
+- `blocker_count=0`.
+- `command_center.action_plan` actions:
+  `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue`,
+  `act_review_ga4_tracking_quality`.
+- `/api/marketing/brief` sections:
+  `what_we_know=6`, `what_blocks_us=0`, `safe_next_actions=3`,
+  `recommended_focus=2`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260618T103758Z/wilq-daily-command/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors:
+  `google_ads`, `google_search_console`, `google_analytics_4`,
+  `google_merchant_center`, `ahrefs`, `localo`, `wordpress_ekologus`,
+  `wordpress_sklep`.
+- Evidence IDs included one daily proof per main source, including:
+  `ev_refresh_refresh_google_merchant_center_871ffa1395a4`,
+  `ev_refresh_refresh_google_analytics_4_a45fa03e453b`,
+  `ev_refresh_refresh_google_search_console_a3b6f4d09ec7`,
+  `ev_refresh_refresh_google_ads_2b355f0a0001`,
+  `ev_connector_localo_status`.
+- Opportunity IDs:
+  `opp_connector_google_ads`,
+  `opp_connector_google_search_console`,
+  `opp_connector_google_analytics_4`,
+  `opp_connector_google_merchant_center`,
+  `opp_connector_ahrefs`.
+- Core action candidates:
+  `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue`,
+  `act_review_ga4_tracking_quality`.
+- `operator_usefulness_score=5`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill starts with Merchant feed/product issues:
+  `products=10900`, `issues=15`, `blockers=0`.
+- It gives Content, GA4, Ads and Localo follow-ups without unsupported claims.
+- Ads is treated as live campaign metric review, while CPA/ROAS/search terms
+  and wasted budget stay blocked.
+- Localo is treated as access-ready, while ranking/GBP facts stay blocked.
+- The next step is concrete:
+  validate `act_review_merchant_feed_issues` on `/merchant`.
+
+Product gaps found:
+
+1. The daily answer still includes LinkedIn/Facebook draft ActionObjects as
+   action candidates because the wider context exposes top-level
+   `/api/marketing/brief.action_ids`. `CommandCenter.action_plan` is cleaner
+   and contains only the core actions. Future context-pack/action filtering
+   should keep social drafts out of daily primary action candidates until the
+   marketer explicitly asks for social.
+2. Daily command proves the operating loop, but not yet strict usefulness. A
+   stronger eval should require exactly 3-5 ranked daily decisions, each with
+   `what_we_know`, `why_it_matters`, `safe_next_step`, `blocked_claims` and
+   `route`.
+3. The full daily context is still heavy. It passed, but performance and
+   context-size should be monitored separately from correctness.
+
+Verdict:
+
+Strong daily-loop pass. `wilq-daily-command` is currently useful enough as the
+top-level marketer brief, with one visible cleanup needed around social
+ActionObjects leaking into action candidates.
