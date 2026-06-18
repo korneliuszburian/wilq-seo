@@ -231,3 +231,20 @@ the stale OAuth/deleted-client blocker. Current Ads truth is
 allows live campaign-level facts, but blocks `search terms`, `CPA`, `ROAS` and
 `wasted budget` without stronger evidence/read contracts. Next stricter
 improvement: force a ranked campaign table and blocked-claim matrix.
+
+Sixth non-interactive Codex eval completed:
+
+```text
+skill: wilq-localo-operator
+result: passed
+artifact: .local-lab/evals/codex-skill/20260618T102743Z/wilq-localo-operator/result.json
+```
+
+Interpretation: strong guardrail pass. The eval case was corrected away from
+the stale missing-`LOCALO_ACCESS_TOKEN` blocker. Current Localo truth is access
+readiness only: connector `localo` is configured, Localo refresh is completed,
+`localo_metric_summary.api=localo_mcp_oauth_probe`, and
+`mcp_initialize_status=200`. The skill correctly returns `blocked=true` for
+ranking, GBP, competitor and local visibility uplift claims because those facts
+do not exist yet in WILQ evidence. Next stricter improvement: add a real Localo
+diagnostics/read contract before expecting local SEO recommendations.

@@ -455,3 +455,78 @@ Verdict:
 Strong guardrail pass. `wilq-ads-doctor` is currently a safe live campaign
 review skill with explicit blockers for unsupported performance claims, not yet
 a search-term/ROAS/wasted-budget optimizer.
+
+## 2026-06-18 - wilq-localo-operator
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-localo-operator`.
+
+Important contract correction:
+
+The old eval case still expected a missing `LOCALO_ACCESS_TOKEN` blocker. That
+was stale after the 2026-06-18 Localo OAuth/MCP setup. Current WILQ truth is:
+
+- Localo connector is configured,
+- Localo MCP OAuth probe can complete with `mcp_initialize_status=200`,
+- Localo access readiness is evidence-backed,
+- ranking, GBP, local competitors and local visibility uplift are still blocked
+  because WILQ does not yet expose those facts,
+- no Localo ActionObject is expected in the current main flow.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260618T102743Z/wilq-localo-operator/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `localo`.
+- Evidence IDs: 20 Localo/status IDs, including
+  `ev_connector_localo_status` and current Localo refresh evidence.
+- Opportunity ID: `opp_connector_localo`.
+- Action candidates: four blocked claim checks with no `action_id`:
+  ranking, GBP, local competitors and local visibility uplift.
+- Key live facts surfaced by the skill:
+  connector `localo` is configured, Localo refresh status is `completed`,
+  `localo_metric_summary.api=localo_mcp_oauth_probe`, and
+  `mcp_initialize_status=200`.
+- `blocked=true` is correct because access readiness is not ranking/GBP
+  evidence.
+- `operator_usefulness_score=5`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill correctly separates Localo access from Localo marketing insight.
+- It says `/localo` may show access readiness, but must block rankings, GBP,
+  local competitors and local visibility uplift.
+- It avoids the old false `LOCALO_ACCESS_TOKEN` handoff.
+
+Product gaps found:
+
+1. Localo still lacks a dedicated diagnostics endpoint and read contract for
+   rankings, GBP, competitors, reviews and local visibility trends.
+2. The scoped context pack exposes Localo evidence through
+   `evidence_summaries` and refresh runs, not a dedicated Localo diagnostics
+   object. That is acceptable for readiness, but weak for future marketer value.
+3. Future eval cases should require concrete Localo facts once the read
+   contract exists: keyword/location ranking, GBP visibility, competitors,
+   reviews and freshness.
+
+Verdict:
+
+Strong guardrail pass. `wilq-localo-operator` is currently an access-readiness
+and blocker skill. It is not yet a local SEO recommendation skill until WILQ
+collects Localo ranking/GBP/competitor facts.

@@ -531,6 +531,12 @@ Current eval progress:
   The skill may use campaign-level evidence from `google_ads`, but must block
   `search terms`, `CPA`, `ROAS` and `wasted budget` until WILQ exposes stronger
   evidence/read contracts.
+- `wilq-localo-operator`: passed at
+  `.local-lab/evals/codex-skill/20260618T102743Z/wilq-localo-operator/result.json`.
+  Important correction: Localo is currently access-ready, not missing
+  `LOCALO_ACCESS_TOKEN`; however, the skill must still block ranking, GBP,
+  competitor and local visibility uplift claims until WILQ exposes Localo facts
+  beyond MCP initialize/access readiness.
 
 ### 4. Performance Slice
 

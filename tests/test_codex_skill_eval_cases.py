@@ -55,7 +55,14 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-localo-operator": {
             "surface_path": "/localo",
-            "terms": {"Localo", "LOCALO_ACCESS_TOKEN", "blocker"},
+            "terms": {
+                "Localo",
+                "mcp_initialize_status",
+                "ranking",
+                "GBP",
+                "local visibility",
+                "blocked claims",
+            },
             "action_ids": set(),
         },
     }
