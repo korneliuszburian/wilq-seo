@@ -37,11 +37,13 @@ import {
   ActionObject,
   ActionApplyResult,
   ActionValidationResult,
+  AdsDiagnosticsResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
   Evidence,
   ExpertRule,
   getActions,
+  getAdsDiagnostics,
   getCommandCenter,
   getConnectorRefreshRuns,
   getConnectors,
@@ -1339,6 +1341,127 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   }
 };
 
+type AdsDiagnosticSection = AdsDiagnosticsResponse["sections"][number];
+
+function AdsDoctorSurface() {
+  const diagnostics = useQuery({
+    queryKey: ["ads-diagnostics"],
+    queryFn: getAdsDiagnostics
+  });
+  const actions = useQuery({
+    queryKey: ["actions"],
+    queryFn: getActions
+  });
+
+  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.error || !diagnostics.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/ads/diagnostics. Ads Doctor nie może udawać diagnozy bez WILQ API." />
+      </main>
+    );
+  }
+  if (actions.error || !actions.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/actions. Ads Doctor nie może pokazać walidacji ani payload preview." />
+      </main>
+    );
+  }
+
+  const data = diagnostics.data;
+  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const latestRefresh = data.latest_refresh;
+  const liveLabel = data.live_data_available ? "live metryki" : "blokada danych";
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Ads Doctor</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Dedykowany widok Google Ads z WILQ API. Pokazuje live campaign facts dopiero
+            po udanym vendor_read; przy OAuth blockerze pokazuje dokładny powód i bezpieczny
+            ActionObject zamiast zmyślać spend, CPA albo ROAS.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Stan" value={data.blocker_count} />
+          <MetricTile label="Sekcje" value={data.sections.length} />
+          <MetricTile label="Evidence" value={data.evidence_ids.length} />
+        </div>
+      </div>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Status Google Ads
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <StatusBadge value={data.connector.status} />
+            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+              {liveLabel}
+            </span>
+            {latestRefresh ? (
+              <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+                ostatni refresh: {latestRefresh.status}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        {latestRefresh?.errors.length ? (
+          <div className="mt-3 rounded-md border border-risk/30 bg-risk/10 p-3 text-sm text-risk">
+            {latestRefresh.errors[0]}
+          </div>
+        ) : null}
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {data.sections.map((section) => (
+          <AdsDiagnosticCard key={section.id} section={section} />
+        ))}
+      </div>
+
+      {routeActions.length > 0 ? (
+        <div className="mt-6">
+          <ActionObjectFocus actions={routeActions} />
+        </div>
+      ) : null}
+    </main>
+  );
+}
+
+function AdsDiagnosticCard({ section }: { section: AdsDiagnosticSection }) {
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            {section.status}
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{section.title}</h2>
+        </div>
+        <StatusBadge value={section.status} />
+      </div>
+      <p className="text-sm leading-6 text-slate-700">{section.summary}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{section.diagnosis}</p>
+      <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700">
+        {section.next_step}
+      </div>
+      {section.metric_facts.length > 0 ? <MetricFactChips facts={section.metric_facts} /> : null}
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <LinkedTraceLine label="Evidence" values={section.evidence_ids} kind="evidence" />
+        <TraceLine label="Źródła" values={section.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={section.action_ids} kind="actions" />
+        <TraceLine label="Zablokowane claimy" values={section.blocked_claims} />
+      </div>
+    </section>
+  );
+}
+
 function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
   const marketingBrief = useQuery({
     queryKey: ["marketing-brief"],
@@ -1816,6 +1939,9 @@ const generatedRoutes = operatingRoutes.map((path) =>
     getParentRoute: () => rootRoute,
     path,
     component: () => {
+      if (path === "/ads-doctor") {
+        return <AdsDoctorSurface />;
+      }
       const briefConfig = briefSurfaceConfigs[path];
       return briefConfig ? (
         <BriefWorkflowSurface config={briefConfig} />

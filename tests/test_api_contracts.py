@@ -1162,6 +1162,132 @@ def test_google_ads_vendor_read_endpoint_persists_metric_summary(
     assert run["id"] in context_runs
 
 
+def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ads_diag_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ads_diag_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.setenv(key, "configured")
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.failed,
+            summary=(
+                "Google Ads OAuth token refresh failed with HTTP 401 "
+                "(oauth_error=deleted_client)."
+            ),
+            external_call_attempted=True,
+            vendor_data_collected=False,
+            errors=[
+                "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client)."
+            ],
+        ),
+    )
+
+    refresh_response = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "reason": "ads diagnostics blocker test"},
+    )
+    assert refresh_response.status_code == 200
+
+    response = client.get("/api/ads/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["language"] == "pl-PL"
+    assert payload["live_data_available"] is False
+    assert payload["blocker_count"] >= 1
+    assert payload["latest_refresh"]["status"] == "failed"
+    assert payload["latest_refresh"]["vendor_data_collected"] is False
+    oauth_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_oauth_blocker"
+    )
+    assert oauth_section["status"] == "blocked"
+    assert "oauth_error=deleted_client" in oauth_section["summary"]
+    assert "act_configure_google_ads_env" in oauth_section["action_ids"]
+    assert oauth_section["metric_facts"] == []
+    serialized = json.dumps(payload)
+    assert "refresh-token-test" not in serialized
+    assert "client-secret-test" not in serialized
+
+
+def test_ads_diagnostics_exposes_live_campaign_metric_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ads_diag_live_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ads_diag_live_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.setenv(key, "configured")
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Google Ads vendor read completed through googleAds:searchStream. Rows: 1.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={
+                "row_count": 1,
+                "clicks": 9,
+                "impressions": 90,
+                "cost_micros": 12000000,
+            },
+            metric_facts=[
+                VendorMetricFact(
+                    "clicks",
+                    9,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "impressions",
+                    90,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "cost_micros",
+                    12000000,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+            ],
+        ),
+    )
+
+    refresh_response = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "reason": "ads diagnostics live test"},
+    )
+    assert refresh_response.status_code == 200
+
+    response = client.get("/api/ads/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["live_data_available"] is True
+    assert payload["latest_refresh"]["status"] == "completed"
+    live_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_live_data_status"
+    )
+    assert live_section["status"] == "ready"
+    campaign_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
+    )
+    assert campaign_section["status"] == "ready"
+    facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
+    assert facts_by_name["clicks"]["value"] == 9
+    assert any(
+        fact["name"] == "cost_micros"
+        and fact["dimensions"].get("campaign_name") == "Brand Search"
+        for fact in campaign_section["metric_facts"]
+    )
+    assert "act_configure_google_ads_env" in payload["action_ids"]
+
+
 def test_gsc_vendor_read_uses_search_analytics(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1981,10 +2107,14 @@ def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     brief = brief_response.json()
+    ads_response = client.get("/api/ads/diagnostics")
+    assert ads_response.status_code == 200
+    ads_diagnostics = ads_response.json()
 
     context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert context_response.status_code == 200
-    context_brief = context_response.json()["marketing_brief"]
+    context_payload = context_response.json()
+    context_brief = context_payload["marketing_brief"]
 
     assert context_brief["language"] == "pl-PL"
     assert context_brief["language"] == brief["language"]
@@ -1995,8 +2125,14 @@ def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
     assert [section["id"] for section in context_brief["sections"]] == [
         section["id"] for section in brief["sections"]
     ]
-    assert context_response.json()["tactical_queue"]["language"] == "pl-PL"
-    assert "items" in context_response.json()["tactical_queue"]
+    assert context_payload["tactical_queue"]["language"] == "pl-PL"
+    assert "items" in context_payload["tactical_queue"]
+    assert context_payload["ads_diagnostics"]["language"] == "pl-PL"
+    assert context_payload["ads_diagnostics"]["live_data_available"] == ads_diagnostics[
+        "live_data_available"
+    ]
+    assert context_payload["ads_diagnostics"]["evidence_ids"] == ads_diagnostics["evidence_ids"]
+    assert context_payload["ads_diagnostics"]["action_ids"] == ads_diagnostics["action_ids"]
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

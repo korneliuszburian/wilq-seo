@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
+from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.codex.runtime_status import codex_runtime_status
@@ -44,6 +45,7 @@ from wilq.knowledge.compilers.playbook_compiler import (
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
     ActionApplyRequest,
+    AdsDiagnosticsResponse,
     AuditEvent,
     CodexRun,
     CommandCenterResponse,
@@ -159,6 +161,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         ],
         "marketing_brief": build_marketing_brief().model_dump(mode="json"),
         "tactical_queue": build_tactical_queue().model_dump(mode="json"),
+        "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
     return redact_mapping(pack)
@@ -279,6 +282,11 @@ def marketing_brief() -> MarketingBrief:
 @app.get("/api/marketing/tactical-queue", response_model=TacticalQueueResponse)
 def marketing_tactical_queue() -> TacticalQueueResponse:
     return build_tactical_queue()
+
+
+@app.get("/api/ads/diagnostics", response_model=AdsDiagnosticsResponse)
+def ads_diagnostics() -> AdsDiagnosticsResponse:
+    return build_ads_diagnostics()
 
 
 @app.get("/api/opportunities", response_model=list[Opportunity])

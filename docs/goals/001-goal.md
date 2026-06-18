@@ -5656,3 +5656,123 @@ Remaining next work:
    diagnostics. Current live failure is `oauth_error=deleted_client`.
 5. Add apply-confirm UI only after the ActionObject model supports explicit
    confirmation semantics and audit requirements for that action type.
+
+---
+
+## 49. Dedicated Ads Diagnostics API and dashboard view - 2026-06-18
+
+Implemented the next BDOS-class Ads slice after the explicit apply-confirm gate.
+
+Why this slice:
+
+* Live Google Ads performance diagnostics are still blocked externally by OAuth.
+* Current live proof:
+  * `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 live Ads blocker recheck"`
+  * run id: `refresh_google_ads_a49400553bb5`,
+  * status: `failed`,
+  * vendor data collected: `false`,
+  * external call attempted: `true`,
+  * redacted error: `Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client).`
+* Because the blocker is real, WILQ must not turn Ads Doctor into fake spend,
+  CPA, ROAS, search-term or negative-keyword insight.
+* The useful product move was to give Ads Doctor its own typed API view model
+  that dashboard and Codex can share, instead of filtering generic
+  MarketingBrief cards.
+
+What changed:
+
+* Added `/api/ads/diagnostics`.
+* Added typed Pydantic schemas:
+  * `AdsDiagnosticSection`,
+  * `AdsDiagnosticsResponse`.
+* Added shared Zod schemas/types:
+  * `AdsDiagnosticSectionSchema`,
+  * `AdsDiagnosticsResponseSchema`.
+* Added `ads_diagnostics` to `/api/codex/context-pack`, so Codex skills and the
+  dashboard see the same Ads blocker/evidence/action contract.
+* Added `wilq/briefing/ads_diagnostics.py`, which joins:
+  * Google Ads connector status,
+  * latest Google Ads refresh run,
+  * stored Google Ads metric facts when they exist,
+  * Google Ads ActionObject IDs.
+* Replaced the main `/ads-doctor` dashboard route with a dedicated
+  Ads Diagnostics surface.
+* `/ads-doctor` now shows, in Polish:
+  * exact OAuth/live-data state,
+  * latest refresh status and redacted OAuth error,
+  * Ads diagnostic sections,
+  * blocked claims such as `wasted spend`, `CPA`, `ROAS`, `search terms`,
+  * evidence IDs,
+  * ActionObject links,
+  * no fake metric values when Google Ads vendor data is absent.
+
+Current live API proof after restarting the local API on `127.0.0.1:8000`:
+
+```json
+{
+  "live_data_available": false,
+  "blocker_count": 2,
+  "latest_refresh": "failed",
+  "sections": [
+    "ads_oauth_blocker",
+    "ads_campaign_overview",
+    "ads_search_terms",
+    "ads_action_safety"
+  ],
+  "first_summary": "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client)."
+}
+```
+
+Current interpretation:
+
+* Ads Doctor is now a real WILQ API-backed route, not only a generic brief
+  filter.
+* The route is useful even while blocked: it tells the marketer exactly why
+  Ads metrics are absent and which ActionObject unlocks the next step.
+* It still does not satisfy final Ads usefulness, because live Google Ads
+  campaign/search-term/recommendation evidence is absent until OAuth is fixed.
+
+Verification:
+
+```bash
+uv run ruff check wilq/briefing/ads_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/ads_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* API contract tests: `59 passed`.
+* Dashboard lint/typecheck: passed.
+* Dashboard unit tests: `12 passed`.
+* Playwright live API-backed smoke: `6 passed`.
+
+Current remaining next work:
+
+1. Fix Google Ads OAuth client/token state before claiming live Ads performance
+   diagnostics. Current live failure is `oauth_error=deleted_client`.
+2. After OAuth works, expand Google Ads read adapter from campaign summary to a
+   BDOS-class read pack:
+   * campaign overview,
+   * search terms and n-grams,
+   * recommendations/optimization score,
+   * quality and asset indicators,
+   * change events,
+   * budget and impression-share blockers,
+   * explicit PMax/Demand Gen capability blockers.
+3. Add Ads Doctor skill eval cases against `/api/ads/diagnostics`:
+   * OAuth blocker,
+   * live campaign metrics,
+   * search-term waste refusal until search-term evidence exists,
+   * ActionObject validation and explicit apply confirmation.
+4. Continue marketer-facing useful routes with real data:
+   * Merchant product/feed issue action candidates,
+   * GSC/GA4 content and landing-page tactic cards,
+   * social draft candidates only after permission/readiness evidence,
+   * Localo route proof only after Localo evidence or exact MCP/API blocker.

@@ -33,13 +33,14 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     expect(apiResponses.every((entry) => entry.startsWith("200 "))).toBe(true);
   });
 
-  test("ads doctor route exposes OAuth action focus from MarketingBrief", async ({ page }) => {
+  test("ads doctor route exposes dedicated OAuth diagnostics", async ({ page }) => {
     await page.goto("/ads-doctor");
 
     await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Ads Focus" })).toBeVisible();
-    await expect(page.getByText("Google Ads: najpierw napraw OAuth, potem diagnozuj spend")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Spend Safety Gate" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
+    await expect(page.getByText("Google Ads: OAuth blokuje live metryki")).toBeVisible();
+    await expect(page.getByText(/oauth_error=/).first()).toBeVisible();
+    await expect(page.getByText("Campaign overview")).toBeVisible();
     await expect(page.getByRole("link", { name: "act_configure_google_ads_env" }).first()).toBeVisible();
   });
 

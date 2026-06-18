@@ -2,6 +2,7 @@ import {
   ActionObjectSchema,
   ActionApplyResultSchema,
   ActionValidationResultSchema,
+  AdsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
@@ -20,6 +21,7 @@ import {
   type ActionApplyRequest,
   type ActionApplyResult,
   type ActionValidationResult,
+  type AdsDiagnosticsResponse,
   type CommandCenterResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
@@ -74,6 +76,10 @@ export function getMarketingBrief(): Promise<MarketingBrief> {
 
 export function getTacticalQueue(): Promise<TacticalQueueResponse> {
   return apiGet("/api/marketing/tactical-queue", TacticalQueueResponseSchema);
+}
+
+export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
+  return apiGet("/api/ads/diagnostics", AdsDiagnosticsResponseSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -158,6 +164,7 @@ export type {
   ActionObject,
   ActionApplyResult,
   ActionValidationResult,
+  AdsDiagnosticsResponse,
   CommandCenterResponse,
   ConnectorRefreshRun,
   ConnectorStatus,

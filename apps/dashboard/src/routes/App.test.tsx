@@ -196,6 +196,57 @@ const connectorRefreshRuns = [
   }
 ];
 
+const adsDiagnostics = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  connector: connectors[0],
+  latest_refresh: {
+    ...connectorRefreshRuns[0],
+    mode: "vendor_read",
+    status: "failed",
+    external_call_attempted: true,
+    summary: "Google Ads OAuth token refresh failed with HTTP 401.",
+    errors: ["Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client)."]
+  },
+  live_data_available: false,
+  sections: [
+    {
+      id: "ads_oauth_blocker",
+      title: "Google Ads: OAuth blokuje live metryki",
+      status: "blocked",
+      summary: "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client).",
+      diagnosis:
+        "Ads Doctor nie może uczciwie pokazać spendu, CPA, ROAS ani search terms bez poprawnego OAuth.",
+      next_step:
+        "Użyj ActionObject `act_configure_google_ads_env`, odśwież token i uruchom vendor_read.",
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      action_ids: ["act_1"],
+      blocked_claims: ["wasted spend", "CPA", "ROAS", "search terms"],
+      risk: "medium"
+    },
+    {
+      id: "ads_campaign_overview",
+      title: "Campaign overview",
+      status: "blocked",
+      summary: "Brak campaign metric facts z Google Ads.",
+      diagnosis: "Nie ma live campaign rows, więc dashboard nie pokazuje spendu.",
+      next_step: "Napraw OAuth i wykonaj read-only Google Ads vendor_read.",
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_connector_google_ads_status"],
+      metric_facts: [],
+      action_ids: ["act_1"],
+      blocked_claims: ["spend", "clicks", "impressions"],
+      risk: "medium"
+    }
+  ],
+  evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
+  action_ids: ["act_1"],
+  blocker_count: 2
+};
+
 const metricFacts = [
   {
     name: "content_object_count",
@@ -559,6 +610,9 @@ function mockFetch() {
       if (url.endsWith("/api/marketing/tactical-queue")) {
         return Promise.resolve(Response.json(tacticalQueue));
       }
+      if (url.endsWith("/api/ads/diagnostics")) {
+        return Promise.resolve(Response.json(adsDiagnostics));
+      }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
       if (url.endsWith("/api/metrics/status")) return Promise.resolve(Response.json(metricStoreStatus));
@@ -661,18 +715,20 @@ describe("WILQ dashboard", () => {
     );
   });
 
-  it("ads doctor route renders OAuth action focus from marketing brief", async () => {
+  it("ads doctor route renders dedicated OAuth diagnostics", async () => {
     renderApp("/ads-doctor");
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Ads Doctor" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Ads Focus")).toBeInTheDocument();
+    expect(screen.getByText("Google Ads: OAuth blokuje live metryki")).toBeInTheDocument();
+    expect(screen.getAllByText(/oauth_error=deleted_client/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Campaign overview")).toBeInTheDocument();
     expect(screen.getAllByText("Odnow Google Ads OAuth refresh token").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "act_1" })[0]).toHaveAttribute(
       "href",
       "/actions/act_1"
     );
-    expect(screen.getByText("Spend Safety Gate")).toBeInTheDocument();
+    expect(screen.getByText(/wasted spend/)).toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {
