@@ -140,15 +140,15 @@ def build_marketing_brief() -> MarketingBrief:
 
 
 def _marketing_brief_metric_facts(connectors: list[ConnectorStatus]) -> list[MetricFact]:
-    facts: list[MetricFact] = []
-    for connector in connectors:
-        facts.extend(
-            metric_store().list_metric_facts(
-                connector_id=connector.id,
-                limit=MARKETING_BRIEF_CONNECTOR_FACT_LIMIT,
-            )
-        )
-    return facts
+    facts_by_connector = metric_store().list_metric_facts_by_connector(
+        [connector.id for connector in connectors],
+        limit_per_connector=MARKETING_BRIEF_CONNECTOR_FACT_LIMIT,
+    )
+    return [
+        fact
+        for connector in connectors
+        for fact in facts_by_connector.get(connector.id, [])
+    ]
 
 
 def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:

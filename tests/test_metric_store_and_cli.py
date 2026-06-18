@@ -180,6 +180,76 @@ def test_metric_store_exposes_previous_value_delta_and_freshness(
     assert traffic_source.trend == "unknown"
 
 
+def test_metric_store_lists_metric_facts_by_connector_in_one_batch(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    older = datetime.now(UTC) - timedelta(hours=2)
+    newer = datetime.now(UTC) - timedelta(minutes=5)
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_batch_ga4_old",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=older,
+            completed_at=older,
+            evidence_ids=["ev_refresh_batch_ga4_old"],
+            metric_summary={"active_users": 10},
+            summary="Older GA4 metric facts.",
+        )
+    )
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_batch_ga4_new",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=newer,
+            completed_at=newer,
+            evidence_ids=["ev_refresh_batch_ga4_new"],
+            metric_summary={"active_users": 15},
+            summary="Newer GA4 metric facts.",
+        )
+    )
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_batch_gsc",
+            connector_id="google_search_console",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=newer,
+            completed_at=newer,
+            evidence_ids=["ev_refresh_batch_gsc"],
+            metric_summary={"clicks": 4, "impressions": 100},
+            summary="GSC metric facts.",
+        )
+    )
+
+    facts_by_connector = metric_store().list_metric_facts_by_connector(
+        ["google_analytics_4", "google_search_console", "missing_connector"],
+        limit_per_connector=1,
+    )
+
+    assert set(facts_by_connector) == {
+        "google_analytics_4",
+        "google_search_console",
+        "missing_connector",
+    }
+    assert len(facts_by_connector["google_analytics_4"]) == 1
+    ga4_fact = facts_by_connector["google_analytics_4"][0]
+    assert ga4_fact.name == "active_users"
+    assert ga4_fact.value == 15
+    assert ga4_fact.previous_value == 10
+    assert ga4_fact.delta == 5
+    assert len(facts_by_connector["google_search_console"]) == 1
+    assert facts_by_connector["google_search_console"][0].source_connector == (
+        "google_search_console"
+    )
+    assert facts_by_connector["missing_connector"] == []
+
+
 def test_connector_refresh_persists_detailed_metric_facts_with_dimensions(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -275,12 +345,12 @@ def test_metric_store_retries_duckdb_conflicting_lock(
     calls = 0
     original_connect = duckdb.connect
 
-    def flaky_connect(path: str) -> duckdb.DuckDBPyConnection:
+    def flaky_connect(path: str, read_only: bool = False) -> duckdb.DuckDBPyConnection:
         nonlocal calls
         calls += 1
         if calls == 1:
             raise duckdb.IOException("IO Error: Conflicting lock is held by another process")
-        return original_connect(path)
+        return original_connect(path, read_only=read_only)
 
     monkeypatch.setattr("wilq.storage.metric_store.duckdb.connect", flaky_connect)
     monkeypatch.setattr("wilq.storage.metric_store.DUCKDB_CONNECT_RETRY_SECONDS", 0)

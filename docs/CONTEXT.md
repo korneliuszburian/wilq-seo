@@ -40,11 +40,14 @@ Current performance slice truth:
 - Default daily context excludes full tactical queue and diagnostics. Use
   `{"skill":"wilq-daily-command","full_context":true}` for debug/full mode.
 - Latest fresh `:8011` proof after the local patch:
-  - daily context-pack: about `4.6-4.8s`, `160478 bytes`;
-  - command-center: about `2.2-2.9s`, `30521 bytes`.
+  - daily context-pack: about `2.9s`, `160053 bytes`;
+  - full daily context-pack: about `6.5s`, `998704 bytes`;
+  - marketing brief: about `0.5s`, `46072 bytes`;
+  - command-center: about `2.1-2.4s`, `30521 bytes`.
 - This is improved from the old full context-pack (`~996 KB`, `~15s`) but not
-  done. Remaining bottleneck: duplicated daily view-model work between
-  `command_center` and `marketing_brief`.
+  done. Batch DuckDB reads and read-only metric-store connections fixed a
+  conflicting-lock runtime risk. Remaining bottleneck: duplicated daily
+  view-model work between `command_center` and `marketing_brief`.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

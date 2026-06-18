@@ -631,25 +631,33 @@ Current local result:
 - Evidence summaries are limited to evidence IDs referenced by the daily
   command/brief/actions, not every evidence object from every source connector.
 - Fresh `:8011` runtime proof after the patch:
-  - default daily context: `4.600s`, `160478 bytes`;
-  - default daily context repeated: `4.653s`, `160478 bytes`;
-  - default daily context repeated: `4.770s`, `160478 bytes`;
-  - `/api/dashboard/command-center`: `2.221s`, `30521 bytes`;
-  - `/api/dashboard/command-center` repeated: `2.517s`, `30521 bytes`;
-  - `/api/dashboard/command-center` repeated: `2.934s`, `30521 bytes`.
+  - default daily context: `2.888s`, `160053 bytes`;
+  - default daily context repeated: `2.985s`, `160053 bytes`;
+  - default daily context repeated: `2.959s`, `160053 bytes`;
+  - full daily context: `6.465s`, `998704 bytes`;
+  - `/api/marketing/brief`: `0.541s`, `46072 bytes`;
+  - `/api/dashboard/command-center`: `2.424s`, `30521 bytes`;
+  - `/api/dashboard/command-center` repeated: `2.094s`, `30521 bytes`;
+  - `/api/dashboard/command-center` repeated: `2.102s`, `30521 bytes`.
+- The follow-up fix moved `marketing_brief` and evidence registry metric reads
+  to batch DuckDB queries and makes read paths use read-only DuckDB
+  connections when the DB file already exists. This removed the conflicting
+  lock failure observed when the running `:8000` API and local profiling code
+  read the same DuckDB file.
 
 Focused proof already passed:
 
 ```bash
-uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
-uv run mypy apps/api/wilq_api/main.py
-uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack or daily_context_pack'
+uv run ruff check wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py tests/test_metric_store_and_cli.py apps/api/wilq_api/main.py
+uv run mypy wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py apps/api/wilq_api/main.py
+uv run pytest tests/test_metric_store_and_cli.py tests/test_api_contracts.py -q -k 'metric_store_lists_metric_facts_by_connector_in_one_batch or metric_store_retries_duckdb_conflicting_lock or metric_fact_evidence_ids_are_resolvable_without_refresh_run_state or codex_context_pack or daily_context_pack or marketing_brief'
 uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8011
 ```
 
 Remaining performance gap:
 
-- This is a real improvement in payload size, but not a full performance win.
+- This is a real improvement in payload size and DuckDB read stability, but not
+  a full performance win.
 - The daily context-pack still spends time rebuilding `command_center` and
   `marketing_brief` independently. The next fix should introduce a shared daily
   runtime/view-model or cache expensive per-request joins instead of adding more
@@ -663,15 +671,13 @@ Source:
 docs/audits/001-output.md
 ```
 
-Current execution order after this uncommitted slice:
+Current execution order after the daily context-pack/DuckDB read stability
+slice:
 
-1. Commit `content_diagnostics.decision_queue`.
-2. Build canonical `DailyDecision` for Command Center and
-   `wilq-daily-command`.
-3. Enforce performance budgets and scoped context-packs.
-4. Add Merchant issue-level triage.
-5. Fix Content/GSC/GA4/WordPress URL normalization.
-6. Add Ads read contracts before search-term, CPA, ROAS or wasted-budget
+1. Remove remaining Command Center readiness/developer slop.
+2. Add Merchant issue-level triage.
+3. Fix Content/GSC/GA4/WordPress URL normalization.
+4. Add Ads read contracts before search-term, CPA, ROAS or wasted-budget
    claims.
 
 Skill repair is not done. It happens per workflow after the matching API/read

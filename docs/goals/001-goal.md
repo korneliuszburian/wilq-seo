@@ -194,7 +194,8 @@ These are the current reasons Goal 001 is not complete:
 
    Current local slice moves this in the right direction for content:
    `content_diagnostics.decision_queue` is typed API state, not skill-reference
-   logic. Finish and commit this before starting a new feature.
+   logic. The follow-up daily context-pack slice also moved metric fact reads
+   into batched/read-only API storage paths instead of skill-reference patches.
 
 6. **Localo and social remain limited-evidence surfaces.**
    Localo access is no longer an OAuth blocker, but local ranking/GBP/competitor
@@ -202,9 +203,9 @@ These are the current reasons Goal 001 is not complete:
    publishing remains permission-gated; drafting can be prepare-only and
    evidence-backed.
 
-7. **Full verification after the latest changes is still pending.**
-   Focused API/dashboard/skill checks passed after the 2026-06-18 Localo and
-   brief-dedupe fixes, but full `scripts/verify.sh` must pass before commit.
+7. **Full verification after the latest changes passed.**
+   `scripts/verify.sh` passed after the daily context-pack and DuckDB
+   read-stability slice. Keep this file current after every future slice.
 
 ## What WILQ Must Give The Marketer
 
@@ -785,27 +786,37 @@ Current slice result:
   - daily context-pack: `15.030s`, `996121 bytes`;
   - daily full context-pack: `11.734s`, `996121 bytes`.
 - Fresh `:8011` runtime proof after this slice:
-  - default daily context-pack: `4.600s`, `160478 bytes`;
-  - repeated default daily context-pack: `4.653s`, `160478 bytes`;
-  - repeated default daily context-pack: `4.770s`, `160478 bytes`;
-  - command-center: `2.221s`, `30521 bytes`;
-  - repeated command-center: `2.517s`, `30521 bytes`;
-  - repeated command-center: `2.934s`, `30521 bytes`.
+  - default daily context-pack: `2.888s`, `160053 bytes`;
+  - repeated default daily context-pack: `2.985s`, `160053 bytes`;
+  - repeated default daily context-pack: `2.959s`, `160053 bytes`;
+  - full daily context-pack: `6.465s`, `998704 bytes`;
+  - marketing brief: `0.541s`, `46072 bytes`;
+  - command-center: `2.424s`, `30521 bytes`;
+  - repeated command-center: `2.094s`, `30521 bytes`;
+  - repeated command-center: `2.102s`, `30521 bytes`.
+- Metric store read paths now use batch DuckDB reads and read-only DuckDB
+  connections when the DB file already exists. This removes the conflicting
+  lock failure observed when local profiling and the running `:8000` API read
+  `.local-lab/state/wilq.duckdb` at the same time.
 - Focused proof passed:
   ```bash
-  uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
-  uv run mypy apps/api/wilq_api/main.py
-  uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack or daily_context_pack'
+  uv run ruff check wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py tests/test_metric_store_and_cli.py apps/api/wilq_api/main.py
+  uv run mypy wilq/storage/metric_store.py wilq/briefing/marketing_brief.py wilq/evidence/registry.py apps/api/wilq_api/main.py
+  uv run pytest tests/test_metric_store_and_cli.py tests/test_api_contracts.py -q -k 'metric_store_lists_metric_facts_by_connector_in_one_batch or metric_store_retries_duckdb_conflicting_lock or metric_fact_evidence_ids_are_resolvable_without_refresh_run_state or codex_context_pack or daily_context_pack or marketing_brief'
   uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8011
+  ```
+- Full proof passed:
+  ```bash
+  scripts/verify.sh
   ```
 
 Remaining blocker:
 
-- Payload size is much better, but runtime is not done. The remaining cost is
-  duplicated daily view-model work: context-pack rebuilds `command_center` and
-  `marketing_brief` independently. Next performance slice should introduce a
-  shared daily runtime/view-model or cache expensive per-request joins. Do not
-  hide this in skill references.
+- Payload size and DuckDB read stability are much better, but runtime is not
+  done. The remaining cost is duplicated daily view-model work:
+  context-pack rebuilds `command_center` and `marketing_brief` independently.
+  Next performance slice should introduce a shared daily runtime/view-model or
+  cache expensive per-request joins. Do not hide this in skill references.
 
 ### 5. Verification And Commit
 

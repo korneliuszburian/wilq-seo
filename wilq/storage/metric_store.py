@@ -152,12 +152,99 @@ class DuckDbMetricStore:
             LIMIT ?
         """
         params.append(bounded_limit)
-        with self._connect() as connection:
+        with self._connect(read_only=True) as connection:
             rows = connection.execute(query, params).fetchall()
         return [_metric_fact_from_row(row) for row in rows]
 
-    def _connect(self) -> duckdb.DuckDBPyConnection:
+    def list_metric_facts_by_connector(
+        self,
+        connector_ids: list[str],
+        limit_per_connector: int = 100,
+    ) -> dict[str, list[MetricFact]]:
+        if not connector_ids:
+            return {}
+        unique_connector_ids = list(dict.fromkeys(connector_ids))
+        bounded_limit = max(1, min(limit_per_connector, 500))
+        query = """
+            WITH metric_facts_with_previous AS (
+            SELECT
+              metric_name,
+              metric_value_double,
+              metric_value_text,
+              value_kind,
+              connector_id,
+              evidence_id,
+              collected_at,
+              period,
+              unit,
+              dimensions_json,
+              LAG(metric_value_double) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_metric_value_double,
+              LAG(metric_value_text) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_metric_value_text,
+              LAG(value_kind) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_value_kind
+            FROM connector_metric_facts
+            WHERE connector_id = ANY(?)
+            ),
+            ranked_metric_facts AS (
+            SELECT
+              *,
+              ROW_NUMBER() OVER (
+                PARTITION BY connector_id
+                ORDER BY
+                  collected_at DESC,
+                  connector_id ASC,
+                  metric_name ASC,
+                  dimensions_json ASC,
+                  evidence_id ASC
+              ) AS connector_rank
+            FROM metric_facts_with_previous
+            )
+            SELECT
+              metric_name,
+              metric_value_double,
+              metric_value_text,
+              value_kind,
+              connector_id,
+              evidence_id,
+              collected_at,
+              period,
+              unit,
+              dimensions_json,
+              previous_metric_value_double,
+              previous_metric_value_text,
+              previous_value_kind
+            FROM ranked_metric_facts
+            WHERE connector_rank <= ?
+            ORDER BY
+              connector_id ASC,
+              collected_at DESC,
+              metric_name ASC,
+              dimensions_json ASC,
+              evidence_id ASC
+        """
+        params: list[Any] = [unique_connector_ids, bounded_limit]
+        with self._connect(read_only=True) as connection:
+            rows = connection.execute(query, params).fetchall()
+        facts_by_connector: dict[str, list[MetricFact]] = {
+            connector_id: [] for connector_id in unique_connector_ids
+        }
+        for row in rows:
+            fact = _metric_fact_from_row(row)
+            facts_by_connector.setdefault(fact.source_connector, []).append(fact)
+        return facts_by_connector
+
+    def _connect(self, read_only: bool = False) -> duckdb.DuckDBPyConnection:
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        if read_only and self.path.exists():
+            return _connect_with_retry(self.path, read_only=True)
         connection = _connect_with_retry(self.path)
         self._ensure_schema(connection)
         return connection
@@ -250,11 +337,11 @@ class DuckDbMetricStore:
         connection.execute("ALTER TABLE connector_metric_facts_v2 RENAME TO connector_metric_facts")
 
 
-def _connect_with_retry(path: Path) -> duckdb.DuckDBPyConnection:
+def _connect_with_retry(path: Path, read_only: bool = False) -> duckdb.DuckDBPyConnection:
     last_error: Exception | None = None
     for attempt in range(DUCKDB_CONNECT_ATTEMPTS):
         try:
-            return duckdb.connect(str(path))
+            return duckdb.connect(str(path), read_only=read_only)
         except duckdb.Error as exc:
             last_error = exc
             message = str(exc)

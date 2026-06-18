@@ -100,8 +100,12 @@ def _refresh_run_evidence(run: ConnectorRefreshRun) -> Evidence:
 def _metric_fact_evidence() -> list[Evidence]:
     facts_by_evidence_id: dict[str, list[str]] = {}
     connector_by_evidence_id: dict[str, str] = {}
-    for connector_id in METRIC_EVIDENCE_CONNECTORS:
-        for fact in metric_store().list_metric_facts(connector_id=connector_id, limit=500):
+    metric_facts_by_connector = metric_store().list_metric_facts_by_connector(
+        list(METRIC_EVIDENCE_CONNECTORS),
+        limit_per_connector=500,
+    )
+    for facts in metric_facts_by_connector.values():
+        for fact in facts:
             facts_by_evidence_id.setdefault(fact.evidence_id, []).append(fact.name)
             connector_by_evidence_id.setdefault(fact.evidence_id, fact.source_connector)
 

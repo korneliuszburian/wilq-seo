@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from uuid import uuid4
 
@@ -205,13 +204,9 @@ def _daily_command_context_pack(
     connectors: list[ConnectorStatus],
     opportunities: list[Opportunity],
 ) -> dict[str, Any]:
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        command_future = executor.submit(command_center)
-        brief_future = executor.submit(build_marketing_brief)
-        actions_future = executor.submit(lambda: core_brief_actions(list_actions()))
-        command = command_future.result()
-        brief = brief_future.result()
-        active_actions = actions_future.result()
+    command = command_center()
+    brief = build_marketing_brief()
+    active_actions = core_brief_actions(list_actions())
     evidence_ids = _daily_context_evidence_ids(command, brief, active_actions)
     source_connectors = _daily_context_connectors(command, brief, active_actions)
     scoped_opportunities = _daily_context_opportunities(
