@@ -653,12 +653,33 @@ class CommandCenterActionPlanItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class DailyDecision(BaseModel):
+    id: str
+    title: str
+    route: str
+    status: Literal["ready", "blocked"]
+    priority: int = Field(ge=1, le=100)
+    co_widzimy: str
+    dlaczego_to_ma_znaczenie: str
+    bezpieczny_next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    skill_id: str | None = None
+    codex_prompt: str | None = None
+    codex_context_endpoint: str | None = None
+    expected_codex_output: str | None = None
+    risk: ActionRisk = ActionRisk.low
+
+
 class CommandCenterResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     strict_instruction: str
     primary_next_step: str
     blocker_count: int = 0
     tactical_item_count: int = 0
+    daily_decisions: list[DailyDecision] = Field(default_factory=list)
     operator_brief: list[CommandCenterBriefItem] = Field(default_factory=list)
     demo_script: list[CommandCenterDemoStep] = Field(default_factory=list)
     action_plan: list[CommandCenterActionPlanItem] = Field(default_factory=list)

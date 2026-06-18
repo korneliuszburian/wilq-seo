@@ -928,6 +928,22 @@ def test_command_center_exposes_polish_operator_brief(
         "wilq-ads-doctor"
     )
     assert "spend" in plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["blocked_claims"]
+    decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
+    assert set(decisions_by_id) == {
+        item_id.replace("plan_", "decision_", 1) for item_id in plan_by_id
+    }
+    merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
+    assert merchant_decision["co_widzimy"].startswith("Merchant Center:")
+    assert merchant_decision["dlaczego_to_ma_znaczenie"] == plan_by_id[
+        "plan_review_merchant_feed_issues"
+    ]["why_it_matters"]
+    assert merchant_decision["bezpieczny_next_step"] == plan_by_id[
+        "plan_review_merchant_feed_issues"
+    ]["operator_action"]
+    assert merchant_decision["skill_id"] == "wilq-merchant-feed-operator"
+    assert "Użyj skilla wilq-merchant-feed-operator" in merchant_decision["codex_prompt"]
+    assert merchant_decision["evidence_ids"]
+    assert merchant_decision["blocked_claims"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -937,6 +953,31 @@ def test_command_center_exposes_polish_operator_brief(
     context_command = context_response.json()["command_center"]
     assert context_command["operator_brief"] == payload["operator_brief"]
     assert context_command["demo_script"] == []
+    assert [
+        {
+            "id": item["id"],
+            "route": item["route"],
+            "status": item["status"],
+            "source_connectors": item["source_connectors"],
+            "evidence_ids": item["evidence_ids"],
+            "action_ids": item["action_ids"],
+            "blocked_claims": item["blocked_claims"],
+            "skill_id": item["skill_id"],
+        }
+        for item in context_command["daily_decisions"]
+    ] == [
+        {
+            "id": item["id"],
+            "route": item["route"],
+            "status": item["status"],
+            "source_connectors": item["source_connectors"],
+            "evidence_ids": item["evidence_ids"],
+            "action_ids": item["action_ids"],
+            "blocked_claims": item["blocked_claims"],
+            "skill_id": item["skill_id"],
+        }
+        for item in payload["daily_decisions"]
+    ]
     context_plan_by_id = {item["id"]: item for item in context_command["action_plan"]}
     assert set(context_plan_by_id) == set(plan_by_id)
     for item_id, item in plan_by_id.items():

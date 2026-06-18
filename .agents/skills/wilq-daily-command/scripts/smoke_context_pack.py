@@ -139,6 +139,7 @@ def main() -> int:
         "command_center_primary_next_step": command_center.get("primary_next_step"),
         "command_center_blocker_count": command_center.get("blocker_count"),
         "command_center_tactical_item_count": command_center.get("tactical_item_count"),
+        "daily_decisions": compact_daily_decisions(command_center),
         "operator_brief": compact_operator_brief(command_center),
         "demo_script": compact_demo_script(command_center),
         "action_plan": compact_action_plan(command_center),
@@ -203,6 +204,9 @@ def validate_command_center(command_center: Any) -> None:
     action_plan = command_center.get("action_plan") or []
     if not isinstance(action_plan, list) or len(action_plan) < 4:
         raise SystemExit("Command center action_plan is missing or too small")
+    daily_decisions = command_center.get("daily_decisions") or []
+    if not isinstance(daily_decisions, list) or len(daily_decisions) < 4:
+        raise SystemExit("Command center daily_decisions is missing or too small")
     required_plan_ids = {
         "plan_review_merchant_feed_issues",
         "plan_prepare_content_refresh_queue",
@@ -220,6 +224,15 @@ def validate_command_center(command_center: Any) -> None:
     missing_plan_ids = sorted(required_plan_ids - plan_ids)
     if missing_plan_ids:
         raise SystemExit(f"Command center missing action_plan items: {', '.join(missing_plan_ids)}")
+    decision_ids = {item.get("id") for item in daily_decisions if isinstance(item, dict)}
+    expected_decision_ids = {
+        plan_id.replace("plan_", "decision_", 1) for plan_id in required_plan_ids
+    }
+    missing_decision_ids = sorted(expected_decision_ids - decision_ids)
+    if missing_decision_ids:
+        raise SystemExit(
+            f"Command center missing daily_decisions: {', '.join(missing_decision_ids)}"
+        )
     for item in operator_brief:
         if not isinstance(item, dict):
             continue
@@ -246,6 +259,22 @@ def validate_command_center(command_center: Any) -> None:
             raise SystemExit(
                 f"Ready action_plan item lacks action IDs or blocked claims: {item.get('id')}"
             )
+    for item in daily_decisions:
+        if not isinstance(item, dict):
+            continue
+        for key in (
+            "co_widzimy",
+            "dlaczego_to_ma_znaczenie",
+            "bezpieczny_next_step",
+            "source_connectors",
+            "evidence_ids",
+            "blocked_claims",
+            "route",
+            "skill_id",
+            "codex_prompt",
+        ):
+            if not item.get(key):
+                raise SystemExit(f"DailyDecision lacks {key}: {item.get('id')}")
 
 
 def validate_marketing_brief(brief: Any) -> None:
@@ -352,6 +381,8 @@ def compare_command_centers(
         "operator_brief": command_center.get("operator_brief")
         == pack_command_center.get("operator_brief"),
         "demo_script": command_center.get("demo_script") == pack_command_center.get("demo_script"),
+        "daily_decisions": _trace_fields(command_center.get("daily_decisions"))
+        == _trace_fields(pack_command_center.get("daily_decisions")),
         "action_plan": _trace_fields(command_center.get("action_plan"))
         == _trace_fields(pack_command_center.get("action_plan")),
     }
@@ -379,6 +410,26 @@ def compact_operator_brief(command_center: dict[str, Any]) -> list[dict[str, Any
                 "action_ids": item.get("action_ids") or [],
                 "metric_tiles": item.get("metric_tiles") or {},
                 "next_step": item.get("next_step"),
+            }
+        )
+    return compact_items
+
+
+def compact_daily_decisions(command_center: dict[str, Any]) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    for item in command_center.get("daily_decisions", []):
+        if not isinstance(item, dict):
+            continue
+        compact_items.append(
+            {
+                "id": item.get("id"),
+                "title": item.get("title"),
+                "route": item.get("route"),
+                "status": item.get("status"),
+                "source_connectors": item.get("source_connectors") or [],
+                "evidence_ids": item.get("evidence_ids") or [],
+                "action_ids": item.get("action_ids") or [],
+                "skill_id": item.get("skill_id"),
             }
         )
     return compact_items
@@ -434,6 +485,7 @@ def _trace_fields(value: Any) -> list[dict[str, Any]]:
             "evidence_ids": item.get("evidence_ids") or [],
             "action_ids": item.get("action_ids") or [],
             "blocked_claims": item.get("blocked_claims") or [],
+            "skill_id": item.get("skill_id"),
         }
         for item in value
         if isinstance(item, dict)
@@ -442,7 +494,7 @@ def _trace_fields(value: Any) -> list[dict[str, Any]]:
 
 def collect_action_ids(command_center: dict[str, Any]) -> list[str]:
     action_ids: list[str] = []
-    for section_name in ("operator_brief", "action_plan", "demo_script"):
+    for section_name in ("operator_brief", "daily_decisions", "action_plan", "demo_script"):
         for item in command_center.get(section_name, []) or []:
             if not isinstance(item, dict):
                 continue

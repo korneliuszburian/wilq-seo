@@ -21,6 +21,7 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     ConnectorStatus,
     ContentDiagnosticsResponse,
+    DailyDecision,
     Ga4DiagnosticsResponse,
     MerchantDiagnosticsResponse,
 )
@@ -76,6 +77,33 @@ def build_command_center_action_plan(
             continue
         plan.append(_action_plan_item(item, tactical_items))
     return plan
+
+
+def build_daily_decisions(
+    action_plan: list[CommandCenterActionPlanItem],
+) -> list[DailyDecision]:
+    return [
+        DailyDecision(
+            id=plan_item.id.replace("plan_", "decision_", 1),
+            title=plan_item.title,
+            route=plan_item.route,
+            status=plan_item.status,
+            priority=plan_item.priority,
+            co_widzimy=_decision_observation(plan_item),
+            dlaczego_to_ma_znaczenie=plan_item.why_it_matters,
+            bezpieczny_next_step=plan_item.operator_action,
+            source_connectors=plan_item.source_connectors,
+            evidence_ids=plan_item.evidence_ids,
+            action_ids=plan_item.action_ids,
+            blocked_claims=plan_item.blocked_claims,
+            skill_id=plan_item.skill_id,
+            codex_prompt=plan_item.codex_prompt,
+            codex_context_endpoint=plan_item.codex_context_endpoint,
+            expected_codex_output=plan_item.expected_codex_output,
+            risk=plan_item.risk,
+        )
+        for plan_item in action_plan
+    ]
 
 
 def tactical_item_count() -> int:
@@ -629,6 +657,18 @@ def _polish_query_label(query_count: int) -> str:
 
 def _action_plan_status(item: CommandCenterBriefItem) -> Literal["ready", "blocked"]:
     return "ready" if item.status == "ready" else "blocked"
+
+
+def _decision_observation(item: CommandCenterActionPlanItem) -> str:
+    connector_labels = ", ".join(item.source_connectors) if item.source_connectors else "brak"
+    evidence_label = f"{len(item.evidence_ids)} evidence ID"
+    if len(item.evidence_ids) != 1:
+        evidence_label += "s"
+    action_label = ", ".join(item.action_ids) if item.action_ids else "brak ActionObject"
+    return (
+        f"{item.category}: status={item.status}, źródła={connector_labels}, "
+        f"dowody={evidence_label}, akcje={action_label}."
+    )
 
 
 def _merge_ids(base_ids: list[str], tactical_items: list[Any], limit: int = 12) -> list[str]:

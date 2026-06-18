@@ -14,6 +14,7 @@ from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.command_center import (
     build_command_center_action_plan,
     build_command_center_brief,
+    build_daily_decisions,
 )
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
@@ -536,6 +537,7 @@ def command_center() -> CommandCenterResponse:
     connectors = list_connector_statuses()
     operator_brief, primary_next_step, blocker_count = build_command_center_brief()
     tactical_queue = build_tactical_queue()
+    action_plan = build_command_center_action_plan(operator_brief, tactical_queue.items)
     return CommandCenterResponse(
         strict_instruction=(
             "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
@@ -544,9 +546,10 @@ def command_center() -> CommandCenterResponse:
         primary_next_step=primary_next_step,
         blocker_count=blocker_count,
         tactical_item_count=len(tactical_queue.items),
+        daily_decisions=build_daily_decisions(action_plan),
         operator_brief=operator_brief,
         demo_script=[],
-        action_plan=build_command_center_action_plan(operator_brief, tactical_queue.items),
+        action_plan=action_plan,
         connector_summary=connector_summary(connectors),
         sections={},
         active_actions=[],

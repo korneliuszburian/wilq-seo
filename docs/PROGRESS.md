@@ -470,9 +470,9 @@ Eval result: `pl-PL`, Polish diacritics, `api_used=true`, 14 evidence IDs,
 core ActionObject candidates only, no safety findings and
 `operator_usefulness_score=5`.
 
-## In Progress: Content Decision Queue In API
+## Completed: Content Decision Queue In API
 
-Status: implemented locally, not committed yet.
+Status: committed and pushed.
 
 Why:
 
@@ -528,16 +528,6 @@ Eval result: `pl-PL`, `api_used=true`, 11 evidence IDs,
 `operator_usefulness_score=4`, and recommendations based on
 `content_diagnostics.decision_queue`.
 
-Next before commit:
-
-- `docs/evals/skill-eval-ledger.md` is updated with the API decision queue
-  re-eval.
-- `docs/goals/001-goal.md` is updated with the audit-derived goal stack and
-  explicit skill repair track.
-- Focused checks and full `scripts/verify.sh` passed in the current worktree.
-- Commit with Conventional Commit, likely
-  `feat(content): expose content decision queue`.
-
 Clean-runtime verify finding:
 
 - `scripts/verify.sh` runs skill API smokes against an empty temporary
@@ -548,6 +538,71 @@ Clean-runtime verify finding:
   metric-backed ActionObjects override them when real facts are available.
 - `wilq-content-strategist` smoke now distinguishes clean runtime from live
   content facts; it must not require fake decisions in clean runtime.
+
+## In Progress: Canonical DailyDecision
+
+Status: implemented locally, not committed yet; full verification passed.
+
+Why:
+
+- `docs/audits/001-output.md` says Command Center must become one
+  operator-first decision model instead of competing `operator_brief`,
+  `action_plan`, `marketing_brief`, diagnostics and ActionObject fragments.
+- Goal 001 requires canonical `DailyDecision` fields:
+  `co_widzimy`, `dlaczego_to_ma_znaczenie`, `bezpieczny_next_step`,
+  `blocked_claims`, `evidence_ids`, `source_connectors`, `action_ids`,
+  `skill_id`, `codex_prompt` and `route`.
+
+Current result:
+
+- Added typed `DailyDecision`.
+- `GET /api/dashboard/command-center` exposes `daily_decisions`.
+- `daily_decisions` are built from the current action plan so backcompat
+  surfaces remain available while the first screen moves to one canonical
+  contract.
+- Dashboard Command Center now renders `daily_decisions` as the main marketer
+  plan.
+- `wilq-daily-command` smoke validates that `daily_decisions` exists and is
+  present in the context-pack trace.
+
+Focused proof already passed:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py wilq/briefing/command_center.py wilq/schemas.py .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py wilq/briefing/command_center.py wilq/schemas.py .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py
+pnpm --filter @wilq/shared-schemas lint
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or daily_context_pack_excludes_social_draft_action_objects or codex_context_pack_embeds_marketing_brief_contract'
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+```
+
+Live smoke after API restart showed four daily decisions:
+
+- `decision_review_merchant_feed_issues` -> `wilq-merchant-feed-operator`
+- `decision_prepare_content_refresh_queue` -> `wilq-content-strategist`
+- `decision_review_ga4_landing_quality` -> `wilq-ga4-analyst`
+- `decision_review_ads_campaign_metrics` -> `wilq-ads-doctor`
+
+Full proof:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- backend API contracts: 93 passed
+- dashboard route tests: 12 passed
+- Playwright e2e: 8 passed
+- dashboard production build: passed
+
+Next before commit:
+
+- Commit with Conventional Commit:
+  `feat(command-center): add daily decision model`.
 
 ## Audit-Derived Next Stack
 

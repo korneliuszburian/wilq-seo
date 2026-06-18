@@ -301,20 +301,29 @@ produce high-value decisions.
 
 Work in this order:
 
-1. **Finish and commit current local slice: content decision queue.**
+1. **Done: content decision queue.**
    `content_diagnostics.decision_queue` must remain typed API state, not skill
    reference logic. It must support `refresh_or_merge`,
    `merge_create_after_inventory_check`, `inventory_check_before_create` and
    `block_as_tracking_not_content`, with evidence IDs, source connectors,
-   ActionObject IDs and blocked claims. Commit only after focused checks pass.
+   ActionObject IDs and blocked claims. This was committed as
+   `2e0b0dc feat(content): expose content decision queue`.
 
-2. **Slice 1: Command Center as canonical `DailyDecision`.**
+2. **Active local slice: Command Center as canonical `DailyDecision`.**
    Introduce one first-screen decision model instead of competing
    `operator_brief`, `action_plan`, `marketing_brief`, diagnostics and action
    fragments. A `DailyDecision` must include:
    `co_widzimy`, `dlaczego_to_ma_znaczenie`, `bezpieczny_next_step`,
    `blocked_claims`, `evidence_ids`, `source_connectors`, `action_ids`,
    `skill_id`, `codex_prompt` and `route`.
+
+   Current local status: `DailyDecision` schema and
+   `/api/dashboard/command-center.daily_decisions` are implemented locally.
+   Dashboard Command Center renders `daily_decisions` as the main marketer plan.
+   `wilq-daily-command` smoke validates the field and its context-pack trace.
+   Focused API/shared-schema/dashboard checks pass. Full `scripts/verify.sh`
+   also passed: backend API contracts 93 passed, dashboard route tests 12
+   passed, Playwright e2e 8 passed and dashboard production build passed.
 
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when

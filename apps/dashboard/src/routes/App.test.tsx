@@ -954,6 +954,72 @@ function mockFetch() {
               "Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.",
             blocker_count: 2,
             tactical_item_count: 3,
+            daily_decisions: [
+              {
+                id: "decision_review_merchant_feed_issues",
+                title: "Przejrzyj produkty z problemami w Merchant Center",
+                route: "/merchant",
+                status: "ready",
+                priority: 10,
+                co_widzimy:
+                  "Merchant Center: status=ready, źródła=google_merchant_center, dowody=1 evidence ID, akcje=act_review_merchant_feed_issues.",
+                dlaczego_to_ma_znaczenie:
+                  "WILQ widzi 10900 produktów i 23 feed/product issues. To wymaga review.",
+                bezpieczny_next_step:
+                  "Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+                skill_id: "wilq-merchant-feed-operator",
+                codex_prompt:
+                  "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
+                codex_context_endpoint: "/api/codex/context-pack",
+                expected_codex_output: "Polski brief feed issue review z evidence IDs.",
+                source_connectors: ["google_merchant_center"],
+                evidence_ids: ["ev_refresh_merchant_feed"],
+                action_ids: ["act_review_merchant_feed_issues"],
+                blocked_claims: ["approval restored", "automatic feed edit"],
+                risk: "medium"
+              },
+              {
+                id: "decision_prepare_content_refresh_queue",
+                title: "Ułóż kolejkę refresh/merge/create dla treści SEO",
+                route: "/content-planner",
+                status: "ready",
+                priority: 12,
+                co_widzimy:
+                  "Content + SEO: status=ready, źródła=google_search_console, wordpress_ekologus, dowody=2 evidence IDs, akcje=act_prepare_content_refresh_queue.",
+                dlaczego_to_ma_znaczenie:
+                  "WILQ ma query/page kandydatów i dopasowania WordPress.",
+                bezpieczny_next_step:
+                  "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+                skill_id: "wilq-content-strategist",
+                codex_prompt:
+                  "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
+                codex_context_endpoint: "/api/codex/context-pack",
+                expected_codex_output: "Polska kolejka content decyzji.",
+                source_connectors: ["google_search_console", "wordpress_ekologus"],
+                evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+                action_ids: ["act_prepare_content_refresh_queue"],
+                blocked_claims: ["lead uplift", "ranking guarantee"],
+                risk: "low"
+              },
+              {
+                id: "decision_review_ads_campaign_metrics",
+                title: "Przejrzyj kampanie Google Ads z live metryk",
+                route: "/ads-doctor",
+                status: "ready",
+                priority: 16,
+                co_widzimy:
+                  "Google Ads: status=ready, źródła=google_ads, dowody=1 evidence ID, akcje=brak ActionObject.",
+                dlaczego_to_ma_znaczenie:
+                  "Google Ads OAuth, MCC login i child customer działają.",
+                bezpieczny_next_step:
+                  "Otwórz /ads-doctor i analizuj tylko metryki widoczne w evidence.",
+                source_connectors: ["google_ads"],
+                evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+                action_ids: [],
+                blocked_claims: ["CPA", "ROAS", "search terms"],
+                risk: "medium"
+              }
+            ],
             operator_brief: [
               {
                 id: "daily_ads_status",

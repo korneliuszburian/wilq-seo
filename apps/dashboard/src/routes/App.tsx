@@ -747,7 +747,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
 }
 
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
-type CommandCenterActionPlanItem = CommandCenterResponse["action_plan"][number];
+type DailyDecision = CommandCenterResponse["daily_decisions"][number];
 
 const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> = {
   content_refresh: "odświeżenie treści",
@@ -1093,14 +1093,14 @@ function DailyOperatorBrief({ data }: { data: CommandCenterResponse }) {
       </div>
 
       <div className="mb-4 grid gap-3 text-sm sm:grid-cols-2">
-        <MetricTile label="Decyzje" value={data.action_plan.length} />
+        <MetricTile label="Decyzje" value={data.daily_decisions.length} />
         <MetricTile label="Blockery" value={data.blocker_count} />
       </div>
     </section>
   );
 }
 
-function MarketerActionPlan({ items }: { items: CommandCenterActionPlanItem[] }) {
+function MarketerActionPlan({ items }: { items: DailyDecision[] }) {
   return (
     <section>
       <div className="mb-3 flex items-start gap-3">
@@ -1123,14 +1123,17 @@ function MarketerActionPlan({ items }: { items: CommandCenterActionPlanItem[] })
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  {item.category} / {priorityLabel(item.priority)}
+                  Decyzja / {priorityLabel(item.priority)}
                 </div>
                 <h3 className="mt-1 text-base font-semibold tracking-normal">{item.title}</h3>
               </div>
               <StatusBadge value={item.status} />
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">{item.why_it_matters}</p>
-            <p className="mt-2 text-sm font-medium text-ink">{item.operator_action}</p>
+            <p className="mt-3 text-sm leading-6 text-slate-700">{item.co_widzimy}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {item.dlaczego_to_ma_znaczenie}
+            </p>
+            <p className="mt-2 text-sm font-medium text-ink">{item.bezpieczny_next_step}</p>
             {item.skill_id && item.codex_prompt ? (
               <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
                 <div className="flex items-center gap-2 font-semibold text-action">
@@ -1187,7 +1190,7 @@ function CommandCenter() {
   if (error || !data) return <ErrorState />;
 
   const actionPlanSources = uniqueValues(
-    data.action_plan.flatMap((item) => item.source_connectors)
+    data.daily_decisions.flatMap((item) => item.source_connectors)
   );
 
   return (
@@ -1198,7 +1201,7 @@ function CommandCenter() {
           <p className="mt-1 text-sm text-slate-600">{data.strict_instruction}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Decyzje" value={data.action_plan.length} />
+          <MetricTile label="Decyzje" value={data.daily_decisions.length} />
           <MetricTile label="Blockery" value={data.blocker_count} />
           <MetricTile label="Źródła" value={actionPlanSources.length} />
         </div>
@@ -1207,7 +1210,7 @@ function CommandCenter() {
       <div className="grid gap-8">
         <DailyOperatorBrief data={data} />
 
-        <MarketerActionPlan items={data.action_plan} />
+        <MarketerActionPlan items={data.daily_decisions} />
 
         <ConnectorBlockers connectors={data.connector_health} />
       </div>

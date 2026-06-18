@@ -475,12 +475,33 @@ export const CommandCenterActionPlanItemSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const DailyDecisionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  route: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  priority: z.number(),
+  co_widzimy: z.string(),
+  dlaczego_to_ma_znaczenie: z.string(),
+  bezpieczny_next_step: z.string(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  skill_id: z.string().nullable().optional(),
+  codex_prompt: z.string().nullable().optional(),
+  codex_context_endpoint: z.string().nullable().optional(),
+  expected_codex_output: z.string().nullable().optional(),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
 export const CommandCenterResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   strict_instruction: z.string(),
   primary_next_step: z.string(),
   blocker_count: z.number(),
   tactical_item_count: z.number(),
+  daily_decisions: z.array(DailyDecisionSchema),
   operator_brief: z.array(CommandCenterBriefItemSchema),
   demo_script: z.array(CommandCenterDemoStepSchema),
   action_plan: z.array(CommandCenterActionPlanItemSchema),
@@ -553,6 +574,7 @@ export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type CommandCenterBriefItem = z.infer<typeof CommandCenterBriefItemSchema>;
 export type CommandCenterDemoStep = z.infer<typeof CommandCenterDemoStepSchema>;
 export type CommandCenterActionPlanItem = z.infer<typeof CommandCenterActionPlanItemSchema>;
+export type DailyDecision = z.infer<typeof DailyDecisionSchema>;
 export type AdsDiagnosticSection = z.infer<typeof AdsDiagnosticSectionSchema>;
 export type AdsDiagnosticsResponse = z.infer<typeof AdsDiagnosticsResponseSchema>;
 export type MerchantDiagnosticSection = z.infer<typeof MerchantDiagnosticSectionSchema>;
