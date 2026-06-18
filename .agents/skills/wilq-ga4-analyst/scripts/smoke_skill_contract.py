@@ -16,6 +16,7 @@ REQUIRED_CONTEXT_KEYS = {
     "evidence_summaries",
     "top_opportunities",
     "active_action_objects",
+    "ga4_diagnostics",
 }
 
 
@@ -50,6 +51,24 @@ def main() -> int:
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
+
+    ga4_diagnostics = request_json(args.api_base, "GET", "/api/ga4/diagnostics")
+    if ga4_diagnostics.get("language") != "pl-PL":
+        raise SystemExit("GA4 diagnostics must declare language=pl-PL")
+    section_ids = [section.get("id") for section in ga4_diagnostics.get("sections", [])]
+    required_sections = {
+        "ga4_landing_behavior",
+        "ga4_tracking_readiness",
+        "ga4_action_safety",
+    }
+    missing_sections = sorted(required_sections - set(section_ids))
+    if missing_sections:
+        raise SystemExit(f"GA4 diagnostics missing sections: {', '.join(missing_sections)}")
+    context_ga4 = pack.get("ga4_diagnostics") or {}
+    if context_ga4.get("evidence_ids") != ga4_diagnostics.get("evidence_ids"):
+        raise SystemExit("Context-pack ga4_diagnostics evidence IDs differ from route")
+    if context_ga4.get("action_ids") != ga4_diagnostics.get("action_ids"):
+        raise SystemExit("Context-pack ga4_diagnostics action IDs differ from route")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -114,6 +133,23 @@ def main() -> int:
                     for item in (pack.get("active_action_objects") or [])
                     if item.get("id")
                 ][:20],
+                "ga4_diagnostics": {
+                    "live_data_available": ga4_diagnostics.get("live_data_available"),
+                    "landing_group_count": ga4_diagnostics.get("landing_group_count"),
+                    "low_engagement_count": ga4_diagnostics.get("low_engagement_count"),
+                    "wordpress_match_count": ga4_diagnostics.get("wordpress_match_count"),
+                    "blocker_count": ga4_diagnostics.get("blocker_count"),
+                    "section_ids": section_ids,
+                    "evidence_ids": ga4_diagnostics.get("evidence_ids", [])[:20],
+                    "action_ids": ga4_diagnostics.get("action_ids", []),
+                    "blocked_claims": sorted(
+                        {
+                            claim
+                            for section in ga4_diagnostics.get("sections", [])
+                            for claim in section.get("blocked_claims", [])
+                        }
+                    ),
+                },
             },
             indent=2,
             sort_keys=True,

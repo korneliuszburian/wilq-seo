@@ -318,6 +318,11 @@ const metricFacts = [
     period: "connector_refresh",
     source_connector: "google_analytics_4",
     evidence_id: "ev_refresh_ga4",
+    dimensions: {
+      landing_page: "/oferta/",
+      source_medium: "google / cpc",
+      campaign_name: "Ekologus Ogólna"
+    },
     unit: null,
     collected_at: "2026-06-17T10:00:00Z",
     previous_value: 10,
@@ -749,6 +754,78 @@ const contentDiagnostics = {
   blocker_count: 0
 };
 
+const ga4Diagnostics = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  connector: {
+    id: "google_analytics_4",
+    label: "Google Analytics 4",
+    status: "configured",
+    configured: true,
+    missing_credentials: [],
+    available_credential_sources: ["repo_env"],
+    freshness: { state: "fresh" },
+    supported_actions: ["ga4_tracking_gap"]
+  },
+  latest_refresh: {
+    id: "refresh_google_analytics_4_test",
+    connector_id: "google_analytics_4",
+    mode: "vendor_read",
+    status: "completed",
+    started_at: "2026-06-17T10:00:00Z",
+    completed_at: "2026-06-17T10:00:01Z",
+    evidence_ids: ["ev_refresh_ga4"],
+    missing_credentials: [],
+    checked_credentials: ["GOOGLE_APPLICATION_CREDENTIALS"],
+    external_call_attempted: true,
+    vendor_data_collected: true,
+    metric_summary: { active_users: 20, sessions: 30 },
+    summary: "GA4 vendor read completed.",
+    errors: [],
+    redacted: true
+  },
+  live_data_available: true,
+  landing_group_count: 1,
+  low_engagement_count: 1,
+  wordpress_match_count: 0,
+  sections: [
+    {
+      id: "ga4_landing_behavior",
+      title: "GA4: landing/source/campaign behavior",
+      status: "ready",
+      summary: "WILQ ma 1 landing/source/campaign groups i 1 GA4 metric facts.",
+      diagnosis: "GA4 behavior facts pozwalają wskazać landing pages do kontroli jakości ruchu.",
+      next_step: "Najpierw sprawdź grupy z niskim engagement.",
+      source_connectors: ["google_analytics_4"],
+      evidence_ids: ["ev_refresh_ga4"],
+      metric_facts: [metricFacts[4]],
+      tactical_items: [tacticalQueue.items[0]],
+      action_ids: ["act_review_ga4_tracking_quality"],
+      blocked_claims: ["conversion rate", "ROAS", "revenue"],
+      risk: "low"
+    },
+    {
+      id: "ga4_tracking_readiness",
+      title: "GA4: tracking/conversion readiness",
+      status: "missing",
+      summary: "WILQ ma 1 behavior facts i 0 conversion-like facts.",
+      diagnosis: "Aktualne dane wspierają review jakości ruchu, ale nie dowodzą konwersji.",
+      next_step: "Waliduj ActionObject i przygotuj tracking-gap checklist bez apply.",
+      source_connectors: ["google_analytics_4"],
+      evidence_ids: ["ev_refresh_ga4"],
+      metric_facts: [metricFacts[4]],
+      tactical_items: [tacticalQueue.items[0]],
+      action_ids: ["act_review_ga4_tracking_quality"],
+      blocked_claims: ["conversion drop", "funnel diagnosis"],
+      risk: "medium"
+    }
+  ],
+  evidence_ids: ["ev_refresh_ga4"],
+  action_ids: ["act_review_ga4_tracking_quality"],
+  blocker_count: 0
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -855,6 +932,9 @@ function mockFetch() {
       if (url.endsWith("/api/content/diagnostics")) {
         return Promise.resolve(Response.json(contentDiagnostics));
       }
+      if (url.endsWith("/api/ga4/diagnostics")) {
+        return Promise.resolve(Response.json(ga4Diagnostics));
+      }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
       if (url.endsWith("/api/metrics/status")) return Promise.resolve(Response.json(metricStoreStatus));
@@ -932,7 +1012,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Budżet i ryzyko wydatków")).toBeInTheDocument();
     expect(screen.getByText("Kandydaci działań API")).toBeInTheDocument();
     expect(screen.getByText("Kolejka taktyczna WILQ")).toBeInTheDocument();
-    expect(screen.getByText("GA4: /oferta/ / google / cpc")).toBeInTheDocument();
+    expect(screen.getAllByText("GA4: /oferta/ / google / cpc").length).toBeGreaterThan(0);
   });
 
   it("connector status renders", async () => {
@@ -1023,16 +1103,19 @@ describe("WILQ dashboard", () => {
 
   it("ga4 and gsc routes render workflow-specific brief focus", async () => {
     renderApp("/ga4");
-    await waitFor(() => expect(screen.getByRole("heading", { name: "GA4" })).toBeInTheDocument());
-    expect(screen.getByText("GA4 Quality Focus")).toBeInTheDocument();
-    expect(screen.getByText("GA4: sprawdź jakość ruchu na landing pages")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: /^GA4$/ })).toBeInTheDocument());
+    expect(screen.getByText("Status GA4 / Landing Quality")).toBeInTheDocument();
+    expect(screen.getByText("GA4: landing/source/campaign behavior")).toBeInTheDocument();
+    expect(screen.getByText("GA4: tracking/conversion readiness")).toBeInTheDocument();
     expect(
       screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
-    expect(screen.getByText("Taktyki z WILQ API")).toBeInTheDocument();
-    expect(screen.getByText("GA4: /oferta/ / google / cpc")).toBeInTheDocument();
+    expect(screen.getAllByText("GA4: /oferta/ / google / cpc").length).toBeGreaterThan(0);
+    expect(screen.getByText("Analytics Safety Gate")).toBeInTheDocument();
     expect(screen.getAllByText(/active_users: 20/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/delta: \+10/).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("link", { name: "act_review_ga4_tracking_quality" })[0]
+    ).toHaveAttribute("href", "/actions/act_review_ga4_tracking_quality");
 
     cleanup();
     testQueryClient.clear();

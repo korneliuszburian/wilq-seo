@@ -184,6 +184,7 @@ Smoke script output jest dowodem działania skill/API path. Dla `wilq-ads-doctor
 `wilq-merchant-feed-operator` `merchant_diagnostics` jest najmocniejszym dowodem
 Merchant route. Dla `wilq-gsc-content-doctor` i `wilq-content-strategist`
 `content_diagnostics` jest najmocniejszym dowodem SEO/content route. Dla
+`wilq-ga4-analyst` `ga4_diagnostics` jest najmocniejszym dowodem GA4 route. Dla
 pozostałych route-specific skillów `brief_items` są wycinkiem z
 /api/marketing/brief. Jeżeli script podaje tylko liczniki, nie wymyślaj
 brakujących evidence IDs. W takiej sytuacji zostaw `recommendations` puste albo

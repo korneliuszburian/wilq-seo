@@ -13,10 +13,11 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 
 1. Read `references/output-contract.md` when producing the final response or action plan.
 2. Run `python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `POST /api/codex/context-pack` with `{"skill":"wilq-ga4-analyst"}` before summarizing metrics, opportunities or action candidates.
-4. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-5. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-6. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+3. Call `GET /api/ga4/diagnostics` before summarizing GA4 behavior, landing quality, conversion readiness or tracking blockers.
+4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-ga4-analyst"}` and confirm the embedded `ga4_diagnostics` contract matches the route.
+5. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
+6. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
+7. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
 
 ## Allowed API Endpoints
 
@@ -24,6 +25,8 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
 - `GET /api/marketing/brief`
+- `GET /api/ga4/diagnostics`
+- `GET /api/marketing/tactical-queue`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `GET /api/connectors/{connector}/refresh-runs`
@@ -58,4 +61,6 @@ Polish language contract: produce all operator-facing responses in Polish with P
 
 ## Goal 001 Status
 
-Goal 001 stub: current GA4 adapter persists aggregate behavior summary metrics.
+Goal 001 route model: `/api/ga4/diagnostics` is the canonical GA4 behavior,
+landing/source/campaign and tracking-readiness surface. Use it before producing
+operator-facing GA4 analysis.

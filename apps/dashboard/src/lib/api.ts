@@ -9,6 +9,7 @@ import {
   ConnectorStatusSchema,
   EvidenceSchema,
   ExpertRuleSchema,
+  Ga4DiagnosticsResponseSchema,
   KnowledgeCardSchema,
   MarketingBriefSchema,
   MarketingPlaybookSchema,
@@ -30,6 +31,7 @@ import {
   type ConnectorStatus,
   type Evidence,
   type ExpertRule,
+  type Ga4DiagnosticsResponse,
   type KnowledgeCard,
   type MarketingBrief,
   type MarketingBriefItem,
@@ -92,6 +94,10 @@ export function getMerchantDiagnostics(): Promise<MerchantDiagnosticsResponse> {
 
 export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
   return apiGet("/api/content/diagnostics", ContentDiagnosticsResponseSchema);
+}
+
+export function getGa4Diagnostics(): Promise<Ga4DiagnosticsResponse> {
+  return apiGet("/api/ga4/diagnostics", Ga4DiagnosticsResponseSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -183,6 +189,7 @@ export type {
   ConnectorStatus,
   Evidence,
   ExpertRule,
+  Ga4DiagnosticsResponse,
   KnowledgeCard,
   MarketingBrief,
   MarketingBriefItem,

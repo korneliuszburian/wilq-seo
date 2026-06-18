@@ -8,7 +8,7 @@ Expected outcome: GA4 diagnostics with metric summaries, evidence IDs, caveats a
 
 ## Required API Context
 
-Fetch `POST /api/codex/context-pack` with `{"skill":"wilq-ga4-analyst"}` before producing marketing analysis. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
+Fetch `GET /api/ga4/diagnostics` first. Then fetch `POST /api/codex/context-pack` with `{"skill":"wilq-ga4-analyst"}` and confirm `ga4_diagnostics` is present before producing marketing analysis. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
 
 Required connectors:
 
@@ -22,9 +22,9 @@ Polish language contract: respond to the Ekologus marketer in Polish with Polish
 
 
 1. `Status`: API reachability, connector readiness and known blockers.
-2. `Dowody`: evidence IDs, connector IDs, freshness notes and metric summaries from WILQ API only.
-3. `Diagnoza`: what the evidence supports, with uncertainty if the evidence is aggregate, stale or incomplete.
-4. `Kandydaci działań`: opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
+2. `Dowody`: `ga4_diagnostics.sections`, evidence IDs, connector IDs, landing/source/campaign metric facts, tactical item IDs and freshness notes from WILQ API only.
+3. `Diagnoza`: what the evidence supports, with uncertainty if the evidence is aggregate, stale, lacks conversion-like facts or has only behavior metrics.
+4. `Kandydaci działań`: opportunity IDs, tactical queue IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
 5. `Walidacja`: result or required call to `POST /api/actions/{action_id}/validate` before apply/execution.
 6. `Następny krok`: the smallest safe operator action.
 
@@ -35,8 +35,13 @@ Refuse or downgrade to a blocker report when:
 - WILQ API is unreachable.
 - Required connector status is `missing_credentials`, `disabled` or failed for the requested operation.
 - The requested metric or action is not present in context-pack, evidence, connector refresh runs, expert rules or action objects.
+- `ga4_diagnostics.live_data_available=false` and the user asks for landing quality, conversion readiness, tracking gap, campaign quality or behavior recommendations.
 - The user asks for write execution without a validated ActionObject and explicit approval.
 
 ## Evidence Rules
 
 No evidence ID means no recommendation. No source connector means no recommendation. No validated payload means no apply. No audit event means no write.
+
+## GA4 Safety
+
+`active_users`, `sessions` and `engagement_rate` support traffic-quality review, not ROAS, revenue, conversion-drop or profitability claims. If conversion-like facts are missing, say so explicitly and keep the next step as review/prepare-only.

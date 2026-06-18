@@ -798,6 +798,47 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         assert item["next_step"]
 
 
+def test_ga4_diagnostics_exposes_landing_quality_contract(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_state.sqlite3"))
+    clear_google_service_env(monkeypatch)
+    service_account_json = tmp_path / "google_adc.json"
+    service_account_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(service_account_json))
+    monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
+
+    response = client.get("/api/ga4/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["language"] == "pl-PL"
+    assert payload["live_data_available"] is True
+    assert payload["landing_group_count"] >= 1
+    assert payload["low_engagement_count"] >= 1
+    assert payload["wordpress_match_count"] >= 1
+    assert "act_review_ga4_tracking_quality" in payload["action_ids"]
+    sections = {section["id"]: section for section in payload["sections"]}
+    assert sections["ga4_landing_behavior"]["status"] == "ready"
+    assert sections["ga4_landing_behavior"]["tactical_items"]
+    assert sections["ga4_landing_behavior"]["tactical_items"][0]["dimensions"][
+        "landing_page"
+    ] == "/europejski-zielony-lad-co-to-takiego/"
+    assert sections["ga4_tracking_readiness"]["status"] == "missing"
+    assert "conversion drop" in sections["ga4_tracking_readiness"]["blocked_claims"]
+    assert sections["ga4_action_safety"]["status"] == "ready"
+
+    context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-ga4-analyst"})
+    assert context_response.status_code == 200
+    context_ga4 = context_response.json()["ga4_diagnostics"]
+    assert context_ga4["evidence_ids"] == payload["evidence_ids"]
+    assert context_ga4["action_ids"] == payload["action_ids"]
+    serialized = json.dumps(payload, ensure_ascii=False)
+    assert "google_adc.json" not in serialized
+
+
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

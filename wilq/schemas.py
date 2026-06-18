@@ -533,6 +533,38 @@ class ContentDiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
 
+class Ga4DiagnosticSection(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "blocked", "missing"]
+    summary: str
+    diagnosis: str
+    next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
+class Ga4DiagnosticsResponse(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    language: Literal["pl-PL"] = "pl-PL"
+    strict_instruction: str
+    connector: ConnectorStatus
+    latest_refresh: ConnectorRefreshRun | None = None
+    live_data_available: bool
+    landing_group_count: int = 0
+    low_engagement_count: int = 0
+    wordpress_match_count: int = 0
+    sections: list[Ga4DiagnosticSection] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocker_count: int = 0
+
+
 class CommandCenterResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     strict_instruction: str

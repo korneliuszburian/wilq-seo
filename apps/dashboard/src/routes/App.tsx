@@ -43,6 +43,7 @@ import {
   ContentDiagnosticsResponse,
   Evidence,
   ExpertRule,
+  Ga4DiagnosticsResponse,
   getActions,
   getAdsDiagnostics,
   getCommandCenter,
@@ -51,6 +52,7 @@ import {
   getConnectors,
   getEvidence,
   getExpertRules,
+  getGa4Diagnostics,
   getKnowledgeCards,
   getKnowledgePlaybooks,
   getMarketingBrief,
@@ -1471,6 +1473,165 @@ type MerchantDiagnosticSection = MerchantDiagnosticsResponse["sections"][number]
 
 type ContentDiagnosticSection = ContentDiagnosticsResponse["sections"][number];
 
+type Ga4DiagnosticSection = Ga4DiagnosticsResponse["sections"][number];
+
+function Ga4DiagnosticSurface() {
+  const diagnostics = useQuery({
+    queryKey: ["ga4-diagnostics"],
+    queryFn: getGa4Diagnostics
+  });
+  const actions = useQuery({
+    queryKey: ["actions"],
+    queryFn: getActions
+  });
+
+  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.error || !diagnostics.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/ga4/diagnostics. GA4 route nie może udawać behavior ani conversion insightów bez WILQ API." />
+      </main>
+    );
+  }
+  if (actions.error || !actions.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/actions. GA4 route nie może pokazać walidacji ani payload preview." />
+      </main>
+    );
+  }
+
+  const data = diagnostics.data;
+  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const latestRefresh = data.latest_refresh;
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">GA4</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Dedykowany widok GA4 z WILQ API. Pokazuje landing/source/campaign behavior,
+            WordPress match i tracking blockers bez udawania konwersji, ROAS albo revenue.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Landing groups" value={data.landing_group_count} />
+          <MetricTile label="Low engagement" value={data.low_engagement_count} />
+          <MetricTile label="WP match" value={data.wordpress_match_count} />
+        </div>
+      </div>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Status GA4 / Landing Quality
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <StatusBadge value={data.connector.status} />
+            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+              {data.live_data_available ? "live GA4 facts" : "brak live GA4 facts"}
+            </span>
+            {latestRefresh ? (
+              <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+                ostatni refresh: {latestRefresh.status}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        {latestRefresh?.errors.length ? (
+          <div className="mt-3 rounded-md border border-risk/30 bg-risk/10 p-3 text-sm text-risk">
+            {latestRefresh.errors[0]}
+          </div>
+        ) : null}
+      </section>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {data.sections.map((section) => (
+          <Ga4DiagnosticCard key={section.id} section={section} />
+        ))}
+      </div>
+
+      {routeActions.length > 0 ? (
+        <div className="mt-6">
+          <ActionObjectFocus actions={routeActions} />
+        </div>
+      ) : null}
+
+      <section className="mt-6 rounded-md border border-line bg-white p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+            <ShieldAlert aria-hidden="true" size={18} />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Analytics Safety Gate
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              GA4 route jest read-only. WILQ może przygotować review jakości ruchu i
+              tracking-gap checklist, ale nie może uznać wyniku za problem kampanii bez
+              konwersji, kosztów i ActionObject validation.
+            </p>
+          </div>
+        </div>
+        <TraceLine
+          label="Zablokowane claimy"
+          values={data.sections.flatMap((section) => section.blocked_claims)}
+        />
+      </section>
+    </main>
+  );
+}
+
+function Ga4DiagnosticCard({ section }: { section: Ga4DiagnosticSection }) {
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            {section.status}
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{section.title}</h2>
+        </div>
+        <StatusBadge value={section.status} />
+      </div>
+      <p className="text-sm leading-6 text-slate-700">{section.summary}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{section.diagnosis}</p>
+      <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700">
+        {section.next_step}
+      </div>
+      {section.metric_facts.length > 0 ? <MetricFactChips facts={section.metric_facts} /> : null}
+      {section.tactical_items.length > 0 ? (
+        <div className="mt-3 grid gap-2">
+          {section.tactical_items.slice(0, 4).map((item) => (
+            <div key={item.id} className="rounded-md border border-line bg-white p-3 text-xs">
+              <div className="font-semibold text-ink">{item.title}</div>
+              <div className="mt-1 text-slate-600">{item.diagnosis}</div>
+              <TraceLine
+                label="Landing"
+                values={[
+                  item.dimensions.landing_page,
+                  item.dimensions.source_medium,
+                  item.dimensions.campaign_name
+                ].filter(Boolean)}
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <LinkedTraceLine label="Evidence" values={section.evidence_ids} kind="evidence" />
+        <TraceLine label="Źródła" values={section.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={section.action_ids} kind="actions" />
+        <TraceLine label="Zablokowane claimy" values={section.blocked_claims} />
+      </div>
+    </section>
+  );
+}
+
 function ContentDiagnosticSurface({ title }: { title: string }) {
   const diagnostics = useQuery({
     queryKey: ["content-diagnostics"],
@@ -2241,6 +2402,9 @@ const generatedRoutes = operatingRoutes.map((path) =>
     component: () => {
       if (path === "/ads-doctor") {
         return <AdsDoctorSurface />;
+      }
+      if (path === "/ga4") {
+        return <Ga4DiagnosticSurface />;
       }
       if (path === "/merchant") {
         return <MerchantDiagnosticSurface />;

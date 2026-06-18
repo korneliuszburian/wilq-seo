@@ -93,7 +93,7 @@
     "surface_path": "/ga4",
     "task_pl": "Zrób krótką diagnozę GA4 behavior/conversion readiness z evidence IDs i wskaż, co jest blockerem albo następnym krokiem.",
     "expected_connectors": ["google_analytics_4"],
-    "expected_terms_pl": ["GA4", "active_users"],
+    "expected_terms_pl": ["GA4", "active_users", "ga4_diagnostics", "landing/source/campaign"],
     "expected_action_ids": ["act_review_ga4_tracking_quality"]
   },
   {

@@ -6248,3 +6248,145 @@ Current remaining next work before calling the overnight goal stable:
    Localo and Ads blockers into one operator-ready daily brief.
 5. Continue replacing generic dashboard placeholders with marketer-useful route
    view models backed by evidence, action IDs, blocked claims and freshness.
+
+## 53. 2026-06-18 04:15 CEST - GA4 Landing Quality route is live-useful
+
+Continuation rule for future Codex sessions:
+
+* This file remains the canonical continuation ledger. Resume from this section,
+  then verify live API state before relying on any metric count.
+* Do not mark Goal 001 complete yet. Merchant, Content and GA4 route patterns
+  are now proven, but the final dashboard still needs a stronger Polish command
+  surface that ties the routes together for a marketer demo.
+
+Completed in this slice:
+
+* Added canonical API route `GET /api/ga4/diagnostics`.
+* Added `ga4_diagnostics` to `/api/codex/context-pack`.
+* Added typed Python and TypeScript schemas for GA4 Diagnostics.
+* Replaced generic `/ga4` dashboard brief surface with a dedicated GA4 Landing
+  Quality surface backed by WILQ API.
+* Updated `wilq-ga4-analyst` to call `/api/ga4/diagnostics` first and then
+  confirm embedded `ga4_diagnostics` in context-pack.
+* Updated deterministic GA4 smoke script, Codex eval expectations and
+  route-specific meta-tests.
+* Added API contract test, dashboard unit assertions and Playwright e2e checks.
+
+Live API proof:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/ga4/diagnostics | \
+  jq '{live_data_available, landing_group_count, low_engagement_count, wordpress_match_count, sections:[.sections[].id], action_ids, blocker_count}'
+```
+
+Result:
+
+```json
+{
+  "live_data_available": true,
+  "landing_group_count": 10,
+  "low_engagement_count": 2,
+  "wordpress_match_count": 4,
+  "sections": [
+    "ga4_landing_behavior",
+    "ga4_tracking_readiness",
+    "ga4_action_safety"
+  ],
+  "action_ids": [
+    "act_review_ga4_tracking_quality"
+  ],
+  "blocker_count": 0
+}
+```
+
+Skill smoke proof:
+
+```bash
+uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py \
+  --api-base http://127.0.0.1:8000 | jq '.ga4_diagnostics'
+```
+
+Relevant result:
+
+```json
+{
+  "live_data_available": true,
+  "landing_group_count": 10,
+  "low_engagement_count": 2,
+  "wordpress_match_count": 4,
+  "action_ids": [
+    "act_review_ga4_tracking_quality"
+  ],
+  "blocked_claims": [
+    "GA4 write",
+    "ROAS",
+    "attribution verdict",
+    "conversion drop",
+    "conversion rate",
+    "conversion setup applied",
+    "funnel diagnosis",
+    "profitability",
+    "revenue",
+    "tracking fixed"
+  ]
+}
+```
+
+Non-interactive Codex eval proof:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh \
+  --skill wilq-ga4-analyst \
+  --api-base http://127.0.0.1:8000
+```
+
+Result path:
+
+```text
+.local-lab/evals/codex-skill/20260618T020502Z
+```
+
+Verification completed in this slice:
+
+```bash
+uv run ruff check wilq/briefing/ga4_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/ga4_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Focused backend/meta tests: `65 passed`.
+* Dashboard route tests: `12 passed`.
+* Playwright e2e: `7 passed`.
+* Full product gate `scripts/verify.sh`: passed with backend `79 passed`,
+  dashboard `12 passed`, e2e `7 passed` and production build passed.
+
+Current interpretation:
+
+* GA4 is no longer a generic MarketingBrief route. It now exposes real
+  landing/source/campaign groups, low-engagement queue count, WordPress match
+  count and a safe `act_review_ga4_tracking_quality` ActionObject.
+* GA4 output is intentionally conservative: `active_users`, `sessions` and
+  `engagement_rate` support traffic-quality review, not revenue, ROAS,
+  conversion-drop, profitability or tracking-fixed claims.
+* The proven route pattern now covers Merchant, Content and GA4:
+  diagnostics API -> context-pack -> typed dashboard route -> skill smoke ->
+  Codex non-interactive eval -> full verify.
+
+Current remaining next work before calling the overnight goal stable:
+
+1. Commit and push this GA4 Diagnostics slice with a semantic commit.
+2. Add a Polish Daily Command Center surface that fuses Merchant, Content, GA4,
+   Localo blockers and Ads OAuth blockers into one first-screen operator view.
+3. Decide whether Ads can be repaired from credentials; if not, keep Ads as a
+   transparent blocker and do not build spend/search-term recommendations.
+4. Add route-level screenshots or browser proof only after the command surface
+   has real marketer value; screenshots alone are not product progress.
+5. Continue replacing placeholder routes with evidence-backed view models only
+   where live connector data exists.
