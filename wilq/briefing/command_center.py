@@ -50,7 +50,7 @@ def build_command_center_response(
         primary_next_step=primary_next_step,
         blocker_count=blocker_count,
         tactical_item_count=len(tactical_queue.items),
-        daily_decisions=build_daily_decisions(action_plan),
+        daily_decisions=build_daily_decisions(action_plan, operator_brief),
         operator_brief=operator_brief,
         demo_script=[],
         action_plan=action_plan,
@@ -123,7 +123,9 @@ def build_command_center_action_plan(
 
 def build_daily_decisions(
     action_plan: list[CommandCenterActionPlanItem],
+    operator_brief: list[CommandCenterBriefItem],
 ) -> list[DailyDecision]:
+    brief_by_plan_id = _brief_items_by_plan_id(operator_brief)
     return [
         DailyDecision(
             id=plan_item.id.replace("plan_", "decision_", 1),
@@ -131,7 +133,11 @@ def build_daily_decisions(
             route=plan_item.route,
             status=plan_item.status,
             priority=plan_item.priority,
-            co_widzimy=_decision_observation(plan_item),
+            metric_tiles=_decision_metric_tiles(plan_item, brief_by_plan_id),
+            co_widzimy=_decision_observation(
+                plan_item,
+                brief_by_plan_id.get(plan_item.id),
+            ),
             dlaczego_to_ma_znaczenie=plan_item.why_it_matters,
             bezpieczny_next_step=plan_item.operator_action,
             source_connectors=plan_item.source_connectors,
@@ -146,6 +152,36 @@ def build_daily_decisions(
         )
         for plan_item in action_plan
     ]
+
+
+def _brief_items_by_plan_id(
+    operator_brief: list[CommandCenterBriefItem],
+) -> dict[str, CommandCenterBriefItem]:
+    items_by_id = {item.id: item for item in operator_brief}
+    mapping = {
+        "plan_review_merchant_feed_issues": "daily_merchant_feed",
+        "plan_prepare_content_refresh_queue": "daily_content_queue",
+        "plan_review_ga4_landing_quality": "daily_ga4_landing_quality",
+        "plan_review_ads_campaign_metrics": "daily_ads_status",
+        "plan_fix_ads_oauth_before_spend_analysis": "daily_ads_status",
+        "plan_localo_access_ready_wait_for_visibility_facts": "daily_localo_readiness",
+        "plan_finish_localo_access_before_local_visibility": "daily_localo_readiness",
+    }
+    return {
+        plan_id: items_by_id[item_id]
+        for plan_id, item_id in mapping.items()
+        if item_id in items_by_id
+    }
+
+
+def _decision_metric_tiles(
+    plan_item: CommandCenterActionPlanItem,
+    brief_by_plan_id: dict[str, CommandCenterBriefItem],
+) -> dict[str, float | int | str]:
+    brief_item = brief_by_plan_id.get(plan_item.id)
+    if brief_item is None:
+        return {}
+    return brief_item.metric_tiles
 
 
 def tactical_item_count() -> int:
@@ -181,7 +217,8 @@ def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
         action_ids=data.action_ids,
         metric_tiles=(
             {
-                "sekcje": len(data.sections),
+                "kampanie": len(data.campaign_read_contract.campaign_rows),
+                "search terms": len(data.search_terms_read_contract.search_term_rows),
                 "blockery": data.blocker_count,
             }
             if data.live_data_available
@@ -703,16 +740,26 @@ def _action_plan_status(item: CommandCenterBriefItem) -> Literal["ready", "block
     return "ready" if item.status == "ready" else "blocked"
 
 
-def _decision_observation(item: CommandCenterActionPlanItem) -> str:
+def _decision_observation(
+    item: CommandCenterActionPlanItem,
+    brief_item: CommandCenterBriefItem | None,
+) -> str:
     connector_labels = ", ".join(item.source_connectors) if item.source_connectors else "brak"
     evidence_label = f"{len(item.evidence_ids)} evidence ID"
     if len(item.evidence_ids) != 1:
         evidence_label += "s"
     action_label = ", ".join(item.action_ids) if item.action_ids else "brak ActionObject"
+    metric_sentence = ""
+    if brief_item and brief_item.metric_tiles:
+        metric_sentence = _metric_tiles_sentence(brief_item.metric_tiles) + ". "
     return (
-        f"{item.category}: status={item.status}, źródła={connector_labels}, "
+        f"{item.category}: {metric_sentence}Źródła={connector_labels}, "
         f"dowody={evidence_label}, akcje={action_label}."
     )
+
+
+def _metric_tiles_sentence(metric_tiles: dict[str, float | int | str]) -> str:
+    return ", ".join(f"{label}={value}" for label, value in metric_tiles.items())
 
 
 def _merge_ids(base_ids: list[str], tactical_items: list[Any], limit: int = 12) -> list[str]:

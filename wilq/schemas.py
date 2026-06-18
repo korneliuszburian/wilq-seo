@@ -745,6 +745,7 @@ class DailyDecision(BaseModel):
     route: str
     status: Literal["ready", "blocked"]
     priority: int = Field(ge=1, le=100)
+    metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     co_widzimy: str
     dlaczego_to_ma_znaczenie: str
     bezpieczny_next_step: str

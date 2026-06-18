@@ -56,7 +56,10 @@ def build_ga4_diagnostics() -> Ga4DiagnosticsResponse:
         connector=connector,
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
-        landing_group_count=_landing_group_count(trusted_facts),
+        landing_group_count=max(
+            _landing_group_count(trusted_facts),
+            _tactical_landing_group_count(tactical_items),
+        ),
         low_engagement_count=_low_engagement_count(tactical_items),
         wordpress_match_count=_wordpress_match_count(tactical_items),
         sections=sections,
@@ -84,7 +87,7 @@ def _landing_behavior_section(
     action_ids: list[str],
 ) -> Ga4DiagnosticSection:
     dimensioned_facts = _dimensioned_ga4_facts(facts)
-    if not dimensioned_facts:
+    if not dimensioned_facts and not tactical_items:
         return Ga4DiagnosticSection(
             id="ga4_landing_behavior",
             title="GA4: brak landing/source/campaign breakdown",
@@ -100,6 +103,34 @@ def _landing_behavior_section(
             action_ids=action_ids,
             blocked_claims=["landing page quality", "campaign quality", "message match"],
             risk=ActionRisk.medium,
+        )
+    if not dimensioned_facts:
+        return Ga4DiagnosticSection(
+            id="ga4_landing_behavior",
+            title="GA4: landing/source/campaign behavior",
+            status="ready",
+            summary=(
+                f"WILQ ma {_tactical_landing_group_count(tactical_items)} "
+                "landing/source/campaign groups z tactical queue. Pełne metric_facts "
+                "w tej sekcji są dostępne przez tactical items."
+            ),
+            diagnosis=(
+                "GA4 tactical queue pozwala wskazać landing pages do kontroli jakości "
+                "ruchu. To nadal nie jest dowód konwersji, ROAS ani opłacalności."
+            ),
+            next_step=(
+                "Sprawdź landing/source/campaign w tactical queue i oddziel problem "
+                "pomiaru od problemu content/landing."
+            ),
+            source_connectors=[GA4_CONNECTOR_ID],
+            evidence_ids=_unique(
+                evidence_id for item in tactical_items for evidence_id in item.evidence_ids
+            ),
+            metric_facts=_tactical_metric_facts(tactical_items)[:12],
+            tactical_items=tactical_items[:6],
+            action_ids=action_ids,
+            blocked_claims=["conversion rate", "ROAS", "revenue", "profitability"],
+            risk=ActionRisk.low,
         )
     return Ga4DiagnosticSection(
         id="ga4_landing_behavior",
@@ -145,6 +176,7 @@ def _tracking_readiness_section(
         in {"conversions", "key_events", "purchase_revenue", "total_revenue", "transactions"}
     ]
     dimensioned_facts = _dimensioned_ga4_facts(facts)
+    tactical_group_count = _tactical_landing_group_count(tactical_items)
     if not facts:
         return Ga4DiagnosticSection(
             id="ga4_tracking_readiness",
@@ -164,7 +196,8 @@ def _tracking_readiness_section(
         title="GA4: tracking/conversion readiness",
         status="ready" if conversion_like_facts else "missing",
         summary=(
-            f"WILQ ma {len(dimensioned_facts)} behavior facts i "
+            f"WILQ ma {len(dimensioned_facts)} behavior facts, "
+            f"{tactical_group_count} tactical landing groups i "
             f"{len(conversion_like_facts)} conversion-like facts."
         ),
         diagnosis=(
@@ -227,6 +260,33 @@ def _landing_group_count(facts: Iterable[MetricFact]) -> int:
             for fact in _dimensioned_ga4_facts(facts)
         }
     )
+
+
+def _tactical_landing_group_count(items: Iterable[TacticalQueueItem]) -> int:
+    return len(
+        {
+            (
+                item.dimensions.get("landing_page", ""),
+                item.dimensions.get("source_medium", ""),
+                item.dimensions.get("campaign_name", ""),
+            )
+            for item in items
+            if item.dimensions.get("landing_page")
+        }
+    )
+
+
+def _tactical_metric_facts(items: Iterable[TacticalQueueItem]) -> list[MetricFact]:
+    facts: list[MetricFact] = []
+    seen: set[tuple[str, str, str]] = set()
+    for item in items:
+        for fact in item.metric_facts:
+            key = (fact.source_connector, fact.name, fact.evidence_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            facts.append(fact)
+    return facts
 
 
 def _low_engagement_count(tactical_items: Iterable[TacticalQueueItem]) -> int:

@@ -909,3 +909,54 @@ Result:
 - Dashboard typecheck passed.
 - Dashboard route tests: `12 passed`.
 - Controlled Playwright dashboard API smoke: `7 passed`.
+
+## 2026-06-18 - Command Center Daily Decision Metric Tiles
+
+What changed:
+
+- `DailyDecision` now carries `metric_tiles`, not only status/source/evidence
+  prose. Command Center decision cards render the tiles directly.
+- The first-screen decisions now show marketer-readable numbers:
+  - Merchant: `produkty=10900`, `issues=15`, `blockery=0`;
+  - Content: `query/page=10`, `WP match=15`, `blockery=0`;
+  - GA4: `landing groups=10`, `low engagement=0`, `WP match=5`;
+  - Ads: `kampanie=18`, `search terms=50`, `blockery=1`.
+- GA4 diagnostics now falls back to GA4 tactical queue groups when the
+  section-level metric facts are empty, so Command Center no longer says
+  `0 landing/source groups` while listing landing candidates.
+- Merchant issue cluster IDs now include reporting context and resolution, so
+  the same issue type in `all_contexts`, `FREE_LISTINGS` and `SHOPPING_ADS`
+  no longer produces duplicate React keys or ambiguous cluster IDs.
+
+Runtime proof:
+
+```bash
+curl -sS http://127.0.0.1:8000/api/dashboard/command-center | jq '.daily_decisions[] | {id,metric_tiles,co_widzimy}'
+XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser open http://127.0.0.1:5173/command-center
+XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser wait --text "produkty"
+XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser snapshot --compact --depth 10
+```
+
+Proof artifact:
+
+```txt
+.local-lab/proof/command-center-audit/screenshot-1781814322197.png
+```
+
+Focused proof passed:
+
+```bash
+uv run ruff check wilq/schemas.py wilq/briefing/command_center.py wilq/briefing/ga4_diagnostics.py wilq/briefing/merchant_diagnostics.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/briefing/command_center.py wilq/briefing/ga4_diagnostics.py wilq/briefing/merchant_diagnostics.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or merchant_diagnostics_exposes_feed_issue_queue or ga4_diagnostics_exposes_landing_quality_contract'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+```
+
+Remaining product risk:
+
+- Command Center is better, but the primary route audit is not complete.
+  Continue with `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and
+  `/localo`, checking each route for technical wording, stale readiness cards,
+  duplicate intent and missing Codex/action bridge.

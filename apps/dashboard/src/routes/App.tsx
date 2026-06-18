@@ -1066,6 +1066,13 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               <StatusBadge value={item.status} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">{item.co_widzimy}</p>
+            {Object.keys(item.metric_tiles ?? {}).length > 0 ? (
+              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3">
+                {Object.entries(item.metric_tiles).map(([label, value]) => (
+                  <MetricTile key={label} label={label} value={value} />
+                ))}
+              </div>
+            ) : null}
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {item.dlaczego_to_ma_znaczenie}
             </p>
@@ -2964,7 +2971,7 @@ function SectionHeading({ title }: { title: string }) {
   return <h2 className="mb-3 text-sm font-semibold uppercase tracking-normal text-slate-600">{title}</h2>;
 }
 
-function MetricTile({ label, value }: { label: string; value: number }) {
+function MetricTile({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="min-w-24 rounded-md border border-line bg-white px-3 py-2">
       <div className="text-lg font-semibold">{value}</div>

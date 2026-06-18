@@ -236,7 +236,9 @@ def _merchant_issue_clusters(
                 id=(
                     f"merchant_issue_{_stable_slug(country or 'global')}_"
                     f"{_stable_slug(severity)}_{_stable_slug(issue_type)}_"
-                    f"{_stable_slug(affected_attribute or 'attribute_unknown')}"
+                    f"{_stable_slug(affected_attribute or 'attribute_unknown')}_"
+                    f"{_stable_slug(reporting_context or 'all_contexts')}_"
+                    f"{_stable_slug(resolution or 'resolution_unknown')}"
                 ),
                 issue_type=issue_type,
                 severity=severity,

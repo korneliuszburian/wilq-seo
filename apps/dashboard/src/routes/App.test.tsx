@@ -1139,8 +1139,9 @@ function mockFetch() {
                 route: "/merchant",
                 status: "ready",
                 priority: 10,
+                metric_tiles: { produkty: 10900, issues: 23, blockery: 0 },
                 co_widzimy:
-                  "Merchant Center: status=ready, źródła=google_merchant_center, dowody=1 evidence ID, akcje=act_review_merchant_feed_issues.",
+                  "Merchant Center: produkty=10900, issues=23, blockery=0. Źródła=google_merchant_center, dowody=1 evidence ID, akcje=act_review_merchant_feed_issues.",
                 dlaczego_to_ma_znaczenie:
                   "WILQ widzi 10900 produktów i 23 feed/product issues. To wymaga review.",
                 bezpieczny_next_step:
@@ -1162,8 +1163,9 @@ function mockFetch() {
                 route: "/content-planner",
                 status: "ready",
                 priority: 12,
+                metric_tiles: { "query/page": 1, "WP match": 1 },
                 co_widzimy:
-                  "Content + SEO: status=ready, źródła=google_search_console, wordpress_ekologus, dowody=2 evidence IDs, akcje=act_prepare_content_refresh_queue.",
+                  "Content + SEO: query/page=1, WP match=1. Źródła=google_search_console, wordpress_ekologus, dowody=2 evidence IDs, akcje=act_prepare_content_refresh_queue.",
                 dlaczego_to_ma_znaczenie:
                   "WILQ ma query/page kandydatów i dopasowania WordPress.",
                 bezpieczny_next_step:
@@ -1185,8 +1187,9 @@ function mockFetch() {
                 route: "/ads-doctor",
                 status: "ready",
                 priority: 16,
+                metric_tiles: { kampanie: 18, "search terms": 50 },
                 co_widzimy:
-                  "Google Ads: status=ready, źródła=google_ads, dowody=1 evidence ID, akcje=brak ActionObject.",
+                  "Google Ads: kampanie=18, search terms=50. Źródła=google_ads, dowody=1 evidence ID, akcje=brak ActionObject.",
                 dlaczego_to_ma_znaczenie:
                   "Google Ads OAuth, MCC login i child customer działają.",
                 bezpieczny_next_step:
@@ -1210,7 +1213,7 @@ function mockFetch() {
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],
                 action_ids: [],
-                metric_tiles: { sekcje: 4, blockery: 1 },
+                metric_tiles: { kampanie: 18, "search terms": 50, blockery: 1 },
                 blocked_claims: ["CPA", "ROAS", "search-term waste"],
                 risk: "medium"
               },
@@ -1456,6 +1459,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("Decyzje")).toHaveLength(1);
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Przejrzyj produkty z problemami w Merchant Center")).toBeInTheDocument();
+    expect(screen.getAllByText("produkty").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("10900").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/status=ready/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Prompt do Codex").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Jak Codex może pomóc").length).toBeGreaterThan(0);
     expect(screen.getByText("Skill: wilq-merchant-feed-operator")).toBeInTheDocument();

@@ -591,6 +591,7 @@ export const DailyDecisionSchema = z.object({
   route: z.string(),
   status: z.enum(["ready", "blocked"]),
   priority: z.number(),
+  metric_tiles: z.record(z.union([z.string(), z.number()])),
   co_widzimy: z.string(),
   dlaczego_to_ma_znaczenie: z.string(),
   bezpieczny_next_step: z.string(),

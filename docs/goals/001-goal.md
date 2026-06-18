@@ -1089,6 +1089,24 @@ Latest Command Center Codex bridge cleanup:
   WILQ_E2E_API_PORT=<dynamic> WILQ_E2E_DASHBOARD_PORT=<dynamic> CI= pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1
   ```
 
+Latest Command Center metric-decision cleanup:
+
+- `DailyDecision` now exposes `metric_tiles` and Command Center renders them
+  directly on the first-screen decision cards.
+- Runtime proof after API restart:
+  - Merchant decision: `produkty=10900`, `issues=15`, `blockery=0`;
+  - Content decision: `query/page=10`, `WP match=15`, `blockery=0`;
+  - GA4 decision: `landing groups=10`, `low engagement=0`, `WP match=5`;
+  - Ads decision: `kampanie=18`, `search terms=50`, `blockery=1`.
+- GA4 no longer claims `0 landing/source groups` when tactical queue already
+  has landing/source/campaign groups; diagnostics falls back to tactical group
+  count when section metric facts are empty.
+- Merchant issue cluster IDs include reporting context and resolution, so issue
+  clusters do not collide across `all_contexts`, `FREE_LISTINGS` and
+  `SHOPPING_ADS`.
+- `agent-browser` proof was run with local runtime dir:
+  `XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime`.
+
 Important product note:
 
 - The Codex bridge is necessary but not sufficient. It only connects a dashboard

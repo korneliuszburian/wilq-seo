@@ -118,6 +118,7 @@ scripts/verify.sh
 ## Local runtime gotchas
 
 - Use `uv run ...` for every Python-facing repo command. This machine may not have a global `python`; use `uv run python ...` in scripts, pipes and smoke commands instead of bare `python`.
+- If `agent-browser` fails with `Failed to create socket directory: Permission denied`, set a writable runtime dir first: `mkdir -p .local-lab/xdg-runtime && chmod 700 .local-lab/xdg-runtime && XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser ...`. In this WSL session `/run/user/1000` may not exist.
 - After changing `pyproject.toml` entrypoints or build metadata, run `uv sync --all-extras` before expecting `uv run wilq ...` to exist.
 - The canonical goal file is `docs/goals/001-goal.md`. Do not recreate old duplicate numbered goal files.
 - Redaction must preserve audit identifiers such as evidence IDs, action IDs, workflow IDs, job IDs and connector refresh run IDs. Redact secret values, not product traceability.

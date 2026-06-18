@@ -120,7 +120,12 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
             mode=ConnectorRefreshMode.vendor_read,
             status=ConnectorRefreshStatus.completed,
             evidence_ids=["ev_refresh_refresh_google_merchant_center_action_test"],
-            metric_summary={"active_products": 12, "disapproved_products": 3},
+            metric_summary={
+                "total_products": 10900,
+                "active_products": 12,
+                "disapproved_products": 3,
+                "item_level_issue_count": 3,
+            },
             summary="Merchant Center action candidate metric seed.",
         ),
         ConnectorRefreshRun(
@@ -963,6 +968,9 @@ def test_command_center_exposes_polish_operator_brief(
     }
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
     assert merchant_decision["co_widzimy"].startswith("Merchant Center:")
+    assert merchant_decision["metric_tiles"]["produkty"] == 10900
+    assert merchant_decision["metric_tiles"]["issues"] == 3
+    assert "status=ready" not in merchant_decision["co_widzimy"]
     assert merchant_decision["dlaczego_to_ma_znaczenie"] == plan_by_id[
         "plan_review_merchant_feed_issues"
     ]["why_it_matters"]
@@ -973,6 +981,9 @@ def test_command_center_exposes_polish_operator_brief(
     assert "Użyj skilla wilq-merchant-feed-operator" in merchant_decision["codex_prompt"]
     assert merchant_decision["evidence_ids"]
     assert merchant_decision["blocked_claims"]
+    ga4_decision = decisions_by_id["decision_review_ga4_landing_quality"]
+    assert ga4_decision["metric_tiles"]["landing groups"] >= 1
+    assert "landing groups=0" not in ga4_decision["co_widzimy"]
 
     context_response = client.post(
         "/api/codex/context-pack",
