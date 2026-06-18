@@ -18,7 +18,14 @@
     "surface_path": "/ads-doctor",
     "task_pl": "Sprawdź gotowość Google Ads i powiedz, czy można wiarygodnie diagnozować wasted spend, search terms i negative keywords bez wymyślania metryk.",
     "expected_connectors": ["google_ads"],
-    "expected_terms_pl": ["Ads Doctor", "OAuth", "spend"],
+    "expected_terms_pl": [
+      "Ads Doctor",
+      "OAuth",
+      "spend",
+      "ads_diagnostics",
+      "oauth_error=deleted_client",
+      "wasted spend"
+    ],
     "expected_action_ids": ["act_configure_google_ads_env"]
   },
   {

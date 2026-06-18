@@ -1172,6 +1172,30 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     clear_google_ads_env(monkeypatch)
     for key in GOOGLE_ADS_TEST_ENV:
         monkeypatch.setenv(key, "configured")
+
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Google Ads vendor read completed through stale test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"row_count": 1, "clicks": 99},
+            metric_facts=[
+                VendorMetricFact(
+                    "clicks",
+                    99,
+                    {"campaign_id": "stale", "campaign_name": "Stale Campaign"},
+                )
+            ],
+        ),
+    )
+    stale_refresh_response = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "reason": "ads diagnostics stale metric seed"},
+    )
+    assert stale_refresh_response.status_code == 200
+
     monkeypatch.setattr(
         "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
         lambda request: VendorReadResult(
@@ -1210,6 +1234,19 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     assert "oauth_error=deleted_client" in oauth_section["summary"]
     assert "act_configure_google_ads_env" in oauth_section["action_ids"]
     assert oauth_section["metric_facts"] == []
+    campaign_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
+    )
+    assert campaign_section["status"] == "blocked"
+    assert campaign_section["metric_facts"] == []
+    brief_response = client.get("/api/marketing/brief")
+    assert brief_response.status_code == 200
+    brief_metric_item_ids = {
+        item["id"]
+        for section in brief_response.json()["sections"]
+        for item in section["items"]
+    }
+    assert "brief_metric_google_ads" not in brief_metric_item_ids
     serialized = json.dumps(payload)
     assert "refresh-token-test" not in serialized
     assert "client-secret-test" not in serialized

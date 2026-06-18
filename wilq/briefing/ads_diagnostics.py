@@ -31,13 +31,17 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         connector_id=GOOGLE_ADS_CONNECTOR_ID,
         limit=ADS_METRIC_FACT_LIMIT,
     )
-    live_data_available = bool(metric_facts) and (
-        latest_refresh is None or latest_refresh.vendor_data_collected
+    latest_refresh_collected_data = (
+        latest_refresh is not None
+        and latest_refresh.status == ConnectorRefreshStatus.completed
+        and latest_refresh.vendor_data_collected
     )
+    trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
+    live_data_available = bool(trusted_metric_facts)
     action_ids = _google_ads_action_ids(list_actions())
     sections = [
-        _oauth_or_live_section(latest_refresh, metric_facts, action_ids),
-        _campaign_overview_section(metric_facts, latest_refresh, action_ids),
+        _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
+        _campaign_overview_section(trusted_metric_facts, latest_refresh, action_ids),
         _search_terms_section(latest_refresh, action_ids),
         _safe_action_section(action_ids, latest_refresh),
     ]

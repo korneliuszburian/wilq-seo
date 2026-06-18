@@ -47,7 +47,12 @@ def build_marketing_brief() -> MarketingBrief:
     actions = list_actions()
     latest_runs = _latest_run_by_connector(refresh_runs)
 
-    business_metric_facts = [fact for fact in metric_facts if not _is_probe_only_fact(fact)]
+    business_metric_facts = [
+        fact
+        for fact in metric_facts
+        if not _is_probe_only_fact(fact)
+        and _metric_fact_allowed_by_latest_refresh(fact, latest_runs)
+    ]
     metric_items = _metric_items(business_metric_facts)
     blocker_items = _blocker_items(connectors, latest_runs)
     action_items = _action_items(actions)
@@ -175,6 +180,21 @@ def _prioritize_dimension_facts(metric_facts: list[MetricFact]) -> list[MetricFa
             0 if fact.dimensions else 1,
             0 if fact.name not in {"api", "connector_id"} else 1,
         ),
+    )
+
+
+def _metric_fact_allowed_by_latest_refresh(
+    fact: MetricFact,
+    latest_runs: dict[str, ConnectorRefreshRun],
+) -> bool:
+    if fact.source_connector != "google_ads":
+        return True
+    latest_run = latest_runs.get(fact.source_connector)
+    if latest_run is None:
+        return True
+    return (
+        latest_run.status == ConnectorRefreshStatus.completed
+        and latest_run.vendor_data_collected
     )
 
 

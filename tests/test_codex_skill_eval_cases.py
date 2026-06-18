@@ -13,7 +13,14 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     expected = {
         "wilq-ads-doctor": {
             "surface_path": "/ads-doctor",
-            "terms": {"Ads Doctor", "OAuth", "spend"},
+            "terms": {
+                "Ads Doctor",
+                "OAuth",
+                "spend",
+                "ads_diagnostics",
+                "oauth_error=deleted_client",
+                "wasted spend",
+            },
             "action_ids": {"act_configure_google_ads_env"},
         },
         "wilq-ga4-analyst": {
@@ -89,3 +96,13 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         assert "GET /api/marketing/brief" in skill_doc
         assert 'brief = request_json(args.api_base, "GET", "/api/marketing/brief")' in smoke_script
         assert '"brief_items": brief_items' in smoke_script
+
+    ads_skill_doc = Path(".agents/skills/wilq-ads-doctor/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    ads_smoke_script = Path(
+        ".agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    assert "GET /api/ads/diagnostics" in ads_skill_doc
+    assert 'request_json(args.api_base, "GET", "/api/ads/diagnostics")' in ads_smoke_script
+    assert '"ads_diagnostics": {' in ads_smoke_script

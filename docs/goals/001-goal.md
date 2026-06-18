@@ -5776,3 +5776,156 @@ Current remaining next work:
    * GSC/GA4 content and landing-page tactic cards,
    * social draft candidates only after permission/readiness evidence,
    * Localo route proof only after Localo evidence or exact MCP/API blocker.
+
+---
+
+## 50. Ads Doctor skill eval and stale Ads metric guard - 2026-06-18
+
+Implemented the follow-up to section 49.
+
+What changed:
+
+* Updated `.agents/skills/wilq-ads-doctor/SKILL.md` so the skill treats
+  `GET /api/ads/diagnostics` as the canonical Ads Doctor view model.
+* Updated the Ads Doctor output contract so operator responses must use:
+  * Ads diagnostics section IDs,
+  * latest refresh state,
+  * evidence IDs,
+  * ActionObject IDs,
+  * blocked claims from `/api/ads/diagnostics`.
+* Updated the Ads Doctor smoke script to:
+  * call `GET /api/ads/diagnostics`,
+  * require `ads_diagnostics` in `/api/codex/context-pack`,
+  * verify context-pack Ads evidence/action IDs match the endpoint,
+  * emit `ads_diagnostics` in deterministic smoke output.
+* Updated the non-interactive Codex eval case for `wilq-ads-doctor` with
+  route markers:
+  * `ads_diagnostics`,
+  * `oauth_error=deleted_client`,
+  * `wasted spend`.
+* Updated `scripts/codex_skill_eval.sh` interpretation: for
+  `wilq-ads-doctor`, `ads_diagnostics` is the strongest evidence surface.
+* Added regression coverage for stale Google Ads metrics:
+  * if an older Google Ads run has metric facts,
+  * but the latest Google Ads refresh is failed/blocked,
+  * Ads Diagnostics must show campaign overview as blocked with `0` metrics,
+  * MarketingBrief must not surface `brief_metric_google_ads`.
+
+Why the stale metric guard matters:
+
+* Local development and previous test runs had old Google Ads metric facts in
+  DuckDB.
+* The real current Google Ads state is still failed OAuth:
+  `oauth_error=deleted_client`.
+* Without this guard, WILQ could show old/mock `clicks` or `row_count` as if
+  live Ads data were available. That violates the Goal 001 rule: no invented or
+  stale Ads performance claims.
+
+Live API proof after backend restart:
+
+```json
+{
+  "live_data_available": false,
+  "blocker_count": 3,
+  "campaign": {
+    "status": "blocked",
+    "metric_count": 0
+  },
+  "evidence_ids": [
+    "ev_connector_google_ads_status",
+    "ev_refresh_refresh_google_ads_a49400553bb5"
+  ]
+}
+```
+
+Ads Doctor smoke proof:
+
+```json
+{
+  "action_ids": ["act_configure_google_ads_env"],
+  "blocker_count": 3,
+  "evidence_ids": [
+    "ev_connector_google_ads_status",
+    "ev_refresh_refresh_google_ads_a49400553bb5"
+  ],
+  "latest_refresh_status": "failed",
+  "live_data_available": false,
+  "section_ids": [
+    "ads_oauth_blocker",
+    "ads_campaign_overview",
+    "ads_search_terms",
+    "ads_action_safety"
+  ]
+}
+```
+
+Non-interactive Codex eval proof:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh \
+  --skill wilq-ads-doctor \
+  --api-base http://127.0.0.1:8000
+```
+
+Result path:
+
+```text
+.local-lab/evals/codex-skill/20260618T005424Z
+```
+
+Summary:
+
+```json
+{
+  "result_count": 1,
+  "results": [
+    {
+      "skill": "wilq-ads-doctor",
+      "blocked": true,
+      "evidence_count": 2,
+      "recommendations_count": 0,
+      "actions_count": 1,
+      "operator_usefulness_score": 5
+    }
+  ]
+}
+```
+
+Current interpretation:
+
+* Ads Doctor skill, Codex context-pack, API and dashboard now share the same
+  Ads Diagnostics blocker state.
+* The correct Codex behavior is now proven: return a Polish blocker and the
+  OAuth repair ActionObject instead of generating Ads recommendations.
+* This still does not complete live Ads usefulness. The next Ads milestone
+  remains external OAuth repair followed by real campaign/search-term reads.
+
+Verification:
+
+```bash
+uv run ruff check wilq/briefing/ads_diagnostics.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/ads_diagnostics.py wilq/briefing/marketing_brief.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Results:
+
+* Ruff: passed.
+* Mypy: passed.
+* API/eval contract tests: `62 passed`.
+* Ads Doctor smoke: passed.
+* Codex non-interactive eval: passed.
+
+Current remaining next work:
+
+1. Fix Google Ads OAuth client/token state before claiming live Ads performance
+   diagnostics. Current live failure remains `oauth_error=deleted_client`.
+2. After OAuth works, implement Google Ads read pack surfaces for campaign
+   overview, search terms, recommendations, change events, budget/impression
+   share and PMax/Demand Gen blockers.
+3. Extend `/ads-doctor` subroutes from generic surfaces to typed WILQ API view
+   models only after each Ads read contract exists.
+4. Continue route-specific skill eval upgrades for Merchant, GA4, GSC/content,
+   Localo and social, always using the API evidence route first.

@@ -179,11 +179,12 @@ Oczekiwane connector surfaces: {connectors}
 </smoke_command>
 
 <interpretation>
-Smoke script output jest dowodem działania skill/API path. `brief_items` są
-route-specific wycinkiem z /api/marketing/brief i są najmocniejszym dowodem dla
-ocenianego workflow. Jeżeli script podaje tylko liczniki, nie wymyślaj
-brakujących evidence IDs. W takiej sytuacji zostaw `recommendations` puste albo
-ustaw blocker/notes z uczciwym ograniczeniem.
+Smoke script output jest dowodem działania skill/API path. Dla `wilq-ads-doctor`
+`ads_diagnostics` jest najmocniejszym dowodem Ads Doctor; dla pozostałych
+route-specific skillów `brief_items` są wycinkiem z /api/marketing/brief. Jeżeli
+script podaje tylko liczniki, nie wymyślaj brakujących evidence IDs. W takiej
+sytuacji zostaw `recommendations` puste albo ustaw blocker/notes z uczciwym
+ograniczeniem.
 </interpretation>
 
 <required_final_json>

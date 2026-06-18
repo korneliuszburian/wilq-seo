@@ -16,6 +16,7 @@ REQUIRED_CONTEXT_KEYS = {
     "evidence_summaries",
     "top_opportunities",
     "active_action_objects",
+    "ads_diagnostics",
 }
 
 
@@ -50,6 +51,16 @@ def main() -> int:
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
+
+    ads_diagnostics = request_json(args.api_base, "GET", "/api/ads/diagnostics")
+    if ads_diagnostics.get("language") != "pl-PL":
+        raise SystemExit("Ads diagnostics language must be pl-PL")
+    if not isinstance(ads_diagnostics.get("sections"), list) or not ads_diagnostics["sections"]:
+        raise SystemExit("Ads diagnostics must expose sections")
+    if pack.get("ads_diagnostics", {}).get("evidence_ids") != ads_diagnostics.get("evidence_ids"):
+        raise SystemExit("Context pack ads_diagnostics evidence IDs differ from endpoint")
+    if pack.get("ads_diagnostics", {}).get("action_ids") != ads_diagnostics.get("action_ids"):
+        raise SystemExit("Context pack ads_diagnostics action IDs differ from endpoint")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -95,6 +106,25 @@ def main() -> int:
                 "api_base": args.api_base,
                 "health": health.get("status"),
                 "required_connectors": connector_results,
+                "ads_diagnostics": {
+                    "live_data_available": ads_diagnostics.get("live_data_available"),
+                    "blocker_count": ads_diagnostics.get("blocker_count"),
+                    "section_ids": [
+                        section.get("id")
+                        for section in ads_diagnostics.get("sections", [])
+                        if section.get("id")
+                    ],
+                    "evidence_ids": ads_diagnostics.get("evidence_ids", []),
+                    "action_ids": ads_diagnostics.get("action_ids", []),
+                    "blocked_claims": [
+                        claim
+                        for section in ads_diagnostics.get("sections", [])
+                        for claim in section.get("blocked_claims", [])
+                    ][:20],
+                    "latest_refresh_status": (
+                        ads_diagnostics.get("latest_refresh") or {}
+                    ).get("status"),
+                },
                 "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
