@@ -20,12 +20,31 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
 
-1. Finish the uncommitted `content_diagnostics.decision_queue` slice.
-2. Build canonical `DailyDecision` for Command Center.
-3. Enforce performance budgets and scoped context-packs.
-4. Add Merchant issue-level triage.
-5. Fix Content/GSC/GA4/WordPress URL normalization.
-6. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
+1. Finish the current daily context-pack performance slice.
+2. Remove remaining Command Center readiness/developer slop from first-screen
+   marketer workflow.
+3. Add Merchant issue-level triage.
+4. Fix Content/GSC/GA4/WordPress URL normalization.
+5. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
+6. Repair each skill only after the matching API/read contract exists.
+
+Recently completed and pushed foundations:
+
+- `2e0b0dc feat(content): expose content decision queue`
+- `39511ac feat(command-center): add daily decision model`
+
+Current performance slice truth:
+
+- `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` now defaults
+  to `context_scope.mode=daily`.
+- Default daily context excludes full tactical queue and diagnostics. Use
+  `{"skill":"wilq-daily-command","full_context":true}` for debug/full mode.
+- Latest fresh `:8011` proof after the local patch:
+  - daily context-pack: about `4.6-4.8s`, `160478 bytes`;
+  - command-center: about `2.2-2.9s`, `30521 bytes`.
+- This is improved from the old full context-pack (`~996 KB`, `~15s`) but not
+  done. Remaining bottleneck: duplicated daily view-model work between
+  `command_center` and `marketing_brief`.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

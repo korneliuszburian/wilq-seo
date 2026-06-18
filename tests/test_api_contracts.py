@@ -2859,18 +2859,20 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     brief = brief_response.json()
-    ads_response = client.get("/api/ads/diagnostics")
-    assert ads_response.status_code == 200
-    ads_diagnostics = ads_response.json()
-    merchant_response = client.get("/api/merchant/diagnostics")
-    assert merchant_response.status_code == 200
-    merchant_diagnostics = merchant_response.json()
 
     context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert context_response.status_code == 200
     context_payload = context_response.json()
     context_brief = context_payload["marketing_brief"]
 
+    assert context_payload["context_scope"]["mode"] == "daily"
+    assert context_payload["context_scope"]["skill"] == "wilq-daily-command"
+    assert context_payload["context_scope"]["full_context_available"] is True
+    assert "command_center" in context_payload
+    assert "tactical_queue" not in context_payload
+    assert "ads_diagnostics" not in context_payload
+    assert "merchant_diagnostics" not in context_payload
+    assert len(context_payload["evidence_summaries"]) <= 80
     assert context_brief["language"] == "pl-PL"
     assert context_brief["language"] == brief["language"]
     assert context_brief["blocker_count"] == brief["blocker_count"]
@@ -2880,6 +2882,29 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     assert [section["id"] for section in context_brief["sections"]] == [
         section["id"] for section in brief["sections"]
     ]
+
+
+def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "context_pack_full.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "context_pack_full.duckdb"))
+    ads_response = client.get("/api/ads/diagnostics")
+    assert ads_response.status_code == 200
+    ads_diagnostics = ads_response.json()
+    merchant_response = client.get("/api/merchant/diagnostics")
+    assert merchant_response.status_code == 200
+    merchant_diagnostics = merchant_response.json()
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-daily-command", "full_context": True},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+
+    assert "context_scope" not in context_payload
     assert context_payload["tactical_queue"]["language"] == "pl-PL"
     assert "items" in context_payload["tactical_queue"]
     assert context_payload["ads_diagnostics"]["language"] == "pl-PL"

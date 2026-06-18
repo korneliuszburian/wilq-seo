@@ -769,6 +769,44 @@ Pass criteria:
 - first-screen work is reduced or a precise blocker remains,
 - no performance fix removes required evidence/action traceability.
 
+Current slice result:
+
+- Implemented scoped default context-pack for
+  `POST /api/codex/context-pack {"skill":"wilq-daily-command"}`.
+- Default daily context now includes `command_center`, `marketing_brief`, core
+  daily ActionObjects, relevant connector status, relevant evidence summaries,
+  knowledge cards, expert rules and expert capabilities.
+- Default daily context no longer embeds `tactical_queue`, Ads/Merchant/Content
+  or GA4 diagnostics. Full context remains available through
+  `{"skill":"wilq-daily-command","full_context":true}`.
+- Baseline from the old `:8000` runtime before this slice:
+  - command-center: `5.937s`, `30521 bytes`;
+  - marketing brief: `1.648s`, `46310 bytes`;
+  - daily context-pack: `15.030s`, `996121 bytes`;
+  - daily full context-pack: `11.734s`, `996121 bytes`.
+- Fresh `:8011` runtime proof after this slice:
+  - default daily context-pack: `4.600s`, `160478 bytes`;
+  - repeated default daily context-pack: `4.653s`, `160478 bytes`;
+  - repeated default daily context-pack: `4.770s`, `160478 bytes`;
+  - command-center: `2.221s`, `30521 bytes`;
+  - repeated command-center: `2.517s`, `30521 bytes`;
+  - repeated command-center: `2.934s`, `30521 bytes`.
+- Focused proof passed:
+  ```bash
+  uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
+  uv run mypy apps/api/wilq_api/main.py
+  uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack or daily_context_pack'
+  uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8011
+  ```
+
+Remaining blocker:
+
+- Payload size is much better, but runtime is not done. The remaining cost is
+  duplicated daily view-model work: context-pack rebuilds `command_center` and
+  `marketing_brief` independently. Next performance slice should introduce a
+  shared daily runtime/view-model or cache expensive per-request joins. Do not
+  hide this in skill references.
+
 ### 5. Verification And Commit
 
 Goal: finish with proof, not vibes.

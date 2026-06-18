@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from uuid import uuid4
 
@@ -146,6 +147,8 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
     opportunities = list_opportunities()
     max_opportunities = request.max_opportunities if request else 5
     skill = request.skill if request else None
+    if request and skill == "wilq-daily-command" and not request.full_context:
+        return _daily_command_context_pack(request, connectors, opportunities)
     if request and skill and skill != "wilq-daily-command" and not request.full_context:
         return _skill_scoped_context_pack(request, connectors, opportunities)
     active_actions = _full_context_actions_for_skill(skill)
@@ -195,6 +198,126 @@ def _full_context_actions_for_skill(skill: str | None) -> list[ActionObject]:
     if skill == "wilq-daily-command":
         return core_brief_actions(actions)
     return actions
+
+
+def _daily_command_context_pack(
+    request: ContextPackRequest,
+    connectors: list[ConnectorStatus],
+    opportunities: list[Opportunity],
+) -> dict[str, Any]:
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        command_future = executor.submit(command_center)
+        brief_future = executor.submit(build_marketing_brief)
+        actions_future = executor.submit(lambda: core_brief_actions(list_actions()))
+        command = command_future.result()
+        brief = brief_future.result()
+        active_actions = actions_future.result()
+    evidence_ids = _daily_context_evidence_ids(command, brief, active_actions)
+    source_connectors = _daily_context_connectors(command, brief, active_actions)
+    scoped_opportunities = _daily_context_opportunities(
+        opportunities,
+        source_connectors,
+        request.max_opportunities,
+    )
+    evidence_ids.update(
+        evidence_id
+        for opportunity in scoped_opportunities
+        for evidence_id in opportunity.evidence_ids
+    )
+
+    pack = {
+        "context_scope": {
+            "mode": "daily",
+            "skill": "wilq-daily-command",
+            "full_context_available": True,
+            "full_context_request": {
+                "skill": "wilq-daily-command",
+                "full_context": True,
+            },
+            "source_connectors": sorted(source_connectors),
+        },
+        "current_product_rules": [
+            "No evidence ID -> no recommendation.",
+            "No source connector -> no recommendation.",
+            "No validated payload -> no apply.",
+            "No audit event -> no write.",
+            "No WILQ API call -> Codex must not invent metrics.",
+        ],
+        "available_connectors": [connector.id for connector in connectors],
+        "connector_status": [
+            connector.model_dump(mode="json")
+            for connector in connectors
+            if connector.id in source_connectors
+        ],
+        "top_opportunities": [
+            opportunity.model_dump(mode="json") for opportunity in scoped_opportunities
+        ],
+        "active_action_objects": [
+            action.model_dump(mode="json") for action in active_actions
+        ],
+        "connector_refresh_runs": [
+            run.model_dump(mode="json")
+            for run in list_connector_refresh_runs()[:30]
+            if run.connector_id in source_connectors
+        ][:10],
+        "evidence_summaries": [
+            evidence.model_dump(mode="json")
+            for evidence in list_evidence()
+            if evidence.id in evidence_ids
+        ][:80],
+        "knowledge_card_summaries": [
+            card.model_dump(mode="json") for card in compile_playbook_cards()
+        ],
+        "expert_rule_summaries": [
+            rule.model_dump(mode="json") for rule in list_expert_rule_summaries(limit=12)
+        ],
+        "expert_capabilities": [
+            capability.model_dump(mode="json") for capability in list_expert_capabilities()
+        ],
+        "command_center": command.model_dump(mode="json"),
+        "marketing_brief": brief.model_dump(mode="json"),
+        "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
+    }
+    return redact_mapping(pack)
+
+
+def _daily_context_evidence_ids(
+    command: CommandCenterResponse,
+    brief: MarketingBrief,
+    actions: list[ActionObject],
+) -> set[str]:
+    evidence_ids = set(brief.evidence_ids)
+    evidence_ids.update(_collect_values_by_key(command.model_dump(mode="json"), "evidence_ids"))
+    for action in actions:
+        evidence_ids.update(action.evidence_ids)
+    return evidence_ids
+
+
+def _daily_context_connectors(
+    command: CommandCenterResponse,
+    brief: MarketingBrief,
+    actions: list[ActionObject],
+) -> set[str]:
+    source_connectors = set(
+        _collect_values_by_key(command.model_dump(mode="json"), "source_connectors")
+    )
+    source_connectors.update(
+        _collect_values_by_key(brief.model_dump(mode="json"), "source_connectors")
+    )
+    source_connectors.update(action.connector for action in actions)
+    return source_connectors
+
+
+def _daily_context_opportunities(
+    opportunities: list[Opportunity],
+    source_connectors: set[str],
+    max_opportunities: int,
+) -> list[Opportunity]:
+    return [
+        opportunity
+        for opportunity in opportunities
+        if _connectors_intersect(opportunity.source_connectors, source_connectors)
+    ][:max_opportunities]
 
 
 SKILL_CONNECTOR_SCOPES: dict[str, set[str]] = {

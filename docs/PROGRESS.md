@@ -539,9 +539,10 @@ Clean-runtime verify finding:
 - `wilq-content-strategist` smoke now distinguishes clean runtime from live
   content facts; it must not require fake decisions in clean runtime.
 
-## In Progress: Canonical DailyDecision
+## Completed: Canonical DailyDecision
 
-Status: implemented locally, not committed yet; full verification passed.
+Status: committed and pushed as
+`39511ac feat(command-center): add daily decision model`.
 
 Why:
 
@@ -599,10 +600,60 @@ Result:
 - Playwright e2e: 8 passed
 - dashboard production build: passed
 
-Next before commit:
+Next after this foundation:
 
-- Commit with Conventional Commit:
-  `feat(command-center): add daily decision model`.
+- keep Command Center first-screen work on `daily_decisions`,
+- do not re-promote readiness-only cards as marketer insight,
+- keep matching Codex prompts on the same evidence/action IDs.
+
+## In Progress: Daily Codex Context-Pack Performance
+
+Why:
+
+- `wilq-daily-command` was still using the full context-pack by default.
+- Baseline against the existing `:8000` runtime before this slice:
+  - `/api/dashboard/command-center`: `5.937s`, `30521 bytes`;
+  - `/api/marketing/brief`: `1.648s`, `46310 bytes`;
+  - `POST /api/codex/context-pack {"skill":"wilq-daily-command"}`:
+    `15.030s`, `996121 bytes`;
+  - `POST /api/codex/context-pack {"skill":"wilq-daily-command","full_context":true}`:
+    `11.734s`, `996121 bytes`.
+
+Current local result:
+
+- `wilq-daily-command` now gets a scoped default context-pack:
+  - `context_scope.mode=daily`,
+  - includes `command_center`, `marketing_brief`, core daily ActionObjects,
+    relevant connector status, relevant evidence summaries, knowledge cards,
+    expert rules and capabilities,
+  - excludes `tactical_queue`, `ads_diagnostics`, `merchant_diagnostics`,
+    `content_diagnostics` and `ga4_diagnostics` unless `full_context=true`.
+- Evidence summaries are limited to evidence IDs referenced by the daily
+  command/brief/actions, not every evidence object from every source connector.
+- Fresh `:8011` runtime proof after the patch:
+  - default daily context: `4.600s`, `160478 bytes`;
+  - default daily context repeated: `4.653s`, `160478 bytes`;
+  - default daily context repeated: `4.770s`, `160478 bytes`;
+  - `/api/dashboard/command-center`: `2.221s`, `30521 bytes`;
+  - `/api/dashboard/command-center` repeated: `2.517s`, `30521 bytes`;
+  - `/api/dashboard/command-center` repeated: `2.934s`, `30521 bytes`.
+
+Focused proof already passed:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack or daily_context_pack'
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8011
+```
+
+Remaining performance gap:
+
+- This is a real improvement in payload size, but not a full performance win.
+- The daily context-pack still spends time rebuilding `command_center` and
+  `marketing_brief` independently. The next fix should introduce a shared daily
+  runtime/view-model or cache expensive per-request joins instead of adding more
+  prompt/reference logic.
 
 ## Audit-Derived Next Stack
 
