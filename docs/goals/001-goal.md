@@ -6943,7 +6943,7 @@ UX beyond the first action-plan layer.
 
 ## 59. Slice 2026-06-18 - Ads OAuth blocked-state handoff across API, dashboard and skill
 
-Status: full verification complete; commit and push pending.
+Status: committed and pushed as `5245773 feat(ads): add blocked-state handoff`.
 
 Product intent:
 
@@ -7045,15 +7045,11 @@ Codex eval proof:
 .local-lab/evals/codex-skill/20260618T035255Z
 ```
 
-Remaining before closing this slice:
-
-1. Commit with Conventional Commit, expected message:
+Closed with commit:
 
 ```text
-feat(ads): add blocked-state handoff
+5245773 feat(ads): add blocked-state handoff
 ```
-
-2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. Remaining work after commit:
 
