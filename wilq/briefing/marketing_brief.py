@@ -69,7 +69,8 @@ def build_marketing_brief() -> MarketingBrief:
     business_metric_facts = _latest_metric_facts_by_identity(business_metric_facts)
     metric_items = _metric_items(business_metric_facts)
     blocker_items = _blocker_items(connectors, latest_runs)
-    action_items = _action_items(actions)
+    core_actions = core_brief_actions(actions)
+    action_items = _action_items(core_actions)
     recommendation_items = _recommendation_items(business_metric_facts, blocker_items)
     sections = [
         MarketingBriefSection(
@@ -103,7 +104,7 @@ def build_marketing_brief() -> MarketingBrief:
         for item in section.items
         for evidence_id in item.evidence_ids
     )
-    action_ids = _unique(action.id for action in actions)
+    action_ids = _unique(action.id for action in core_actions)
     return MarketingBrief(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector_summary=_connector_summary(connectors),
@@ -311,12 +312,13 @@ def _blocker_items(
     return sorted(blockers, key=lambda item: item.priority)
 
 
+def core_brief_actions(actions: Iterable[ActionObject]) -> list[ActionObject]:
+    return [action for action in actions if action.connector in CORE_BRIEF_ACTION_CONNECTORS]
+
+
 def _action_items(actions: list[ActionObject]) -> list[MarketingBriefItem]:
     items: list[MarketingBriefItem] = []
-    core_actions = [
-        action for action in actions if action.connector in CORE_BRIEF_ACTION_CONNECTORS
-    ]
-    for index, action in enumerate(core_actions, start=1):
+    for index, action in enumerate(actions, start=1):
         items.append(
             MarketingBriefItem(
                 id=f"brief_action_{action.id}",

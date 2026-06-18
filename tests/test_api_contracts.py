@@ -766,6 +766,8 @@ def test_marketing_brief_exposes_metric_backed_prepare_actions(
         assert item["evidence_ids"]
         assert item["metric_facts"]
         assert item["risk"] in {"low", "medium"}
+    assert "act_prepare_linkedin_social_drafts" not in brief["action_ids"]
+    assert "act_prepare_facebook_social_drafts" not in brief["action_ids"]
     assert "act_prepare_linkedin_social_drafts" not in action_items
     assert "act_prepare_facebook_social_drafts" not in action_items
 
@@ -2811,6 +2813,57 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     assert context_payload["merchant_diagnostics"]["action_ids"] == merchant_diagnostics[
         "action_ids"
     ]
+
+
+def test_daily_context_pack_excludes_social_draft_action_objects(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    all_action_ids = {action["id"] for action in actions_response.json()}
+    assert "act_prepare_linkedin_social_drafts" in all_action_ids
+    assert "act_prepare_facebook_social_drafts" in all_action_ids
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-daily-command"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    daily_action_ids = {
+        action["id"] for action in context_payload["active_action_objects"]
+    }
+
+    assert {
+        "act_review_merchant_feed_issues",
+        "act_review_ga4_tracking_quality",
+        "act_prepare_content_refresh_queue",
+    }.issubset(daily_action_ids)
+    assert "act_prepare_linkedin_social_drafts" not in daily_action_ids
+    assert "act_prepare_facebook_social_drafts" not in daily_action_ids
+
+
+def test_social_context_pack_keeps_explicit_social_draft_action_objects(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-social-publisher"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    social_action_ids = {
+        action["id"] for action in context_payload["active_action_objects"]
+    }
+
+    assert "act_prepare_linkedin_social_drafts" in social_action_ids
+    assert "act_prepare_facebook_social_drafts" in social_action_ids
 
 
 def test_codex_context_pack_scopes_content_strategist_payload() -> None:

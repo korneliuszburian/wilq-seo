@@ -643,7 +643,7 @@ Commit rules:
    marketing insight. Keep real metric facts, tactical queue, ActionObjects and
    honest blockers.
 
-2. **Clean remaining stale Ads/Localo/social state in product surfaces.**
+2. **Clean remaining stale Ads/Localo state in product surfaces.**
    Ensure Command Center, Ads Doctor, marketing brief, action plan and skill
    text no longer show OAuth repair when live Ads data exists, and no Localo
    surface says "dokończ access" after `mcp_initialize_status=200`. Keep direct
@@ -658,12 +658,12 @@ Commit rules:
 4. **Run focused verification.**
    Required:
    ```bash
-   uv run ruff check wilq/actions/service.py wilq/briefing/command_center.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
-   uv run mypy wilq/actions/service.py wilq/briefing/command_center.py wilq/briefing/marketing_brief.py
-   uv run pytest tests/test_api_contracts.py::test_command_center_exposes_polish_operator_brief tests/test_api_contracts.py::test_command_center_treats_localo_mcp_initialize_as_access_ready tests/test_api_contracts.py::test_codex_context_pack_embeds_marketing_brief_contract -q
-   pnpm --filter @wilq/dashboard lint
-   pnpm --filter @wilq/dashboard typecheck
-   pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+  uv run ruff check apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+  uv run mypy apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py
+  uv run pytest tests/test_api_contracts.py -q -k 'marketing_brief_exposes_metric_backed_prepare_actions or codex_context_pack_embeds_marketing_brief_contract or daily_context_pack_excludes_social_draft_action_objects or social_context_pack_keeps_explicit_social_draft_action_objects or command_center_exposes_polish_operator_brief'
+  pnpm --filter @wilq/dashboard lint
+  pnpm --filter @wilq/dashboard typecheck
+  pnpm --filter @wilq/dashboard test -- --run App.test.tsx
    ```
 
 5. **Audit Command Center top-to-bottom.**
@@ -728,3 +728,22 @@ dashboard route tests: 12 passed
 Playwright e2e: 8 passed
 dashboard production build: passed
 ```
+
+Latest focused backend slice:
+
+- Social draft ActionObjects remain available in `/api/actions` and explicit
+  `wilq-social-publisher` context-pack.
+- `GET /api/marketing/brief` top-level `action_ids` now contains only core
+  daily actions:
+  `act_review_merchant_feed_issues`,
+  `act_review_ga4_tracking_quality`,
+  `act_prepare_content_refresh_queue`.
+- `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` now exposes
+  only those core daily `active_action_objects`.
+- Proof:
+  ```bash
+  uv run ruff check apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+  uv run mypy apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py
+  uv run pytest tests/test_api_contracts.py -q -k 'marketing_brief_exposes_metric_backed_prepare_actions or codex_context_pack_embeds_marketing_brief_contract or daily_context_pack_excludes_social_draft_action_objects or social_context_pack_keeps_explicit_social_draft_action_objects or command_center_exposes_polish_operator_brief'
+  uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+  ```

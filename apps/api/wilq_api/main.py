@@ -17,7 +17,7 @@ from wilq.briefing.command_center import (
 )
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
-from wilq.briefing.marketing_brief import build_marketing_brief
+from wilq.briefing.marketing_brief import build_marketing_brief, core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.codex.runtime_status import codex_runtime_status
@@ -147,6 +147,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
     skill = request.skill if request else None
     if request and skill and skill != "wilq-daily-command" and not request.full_context:
         return _skill_scoped_context_pack(request, connectors, opportunities)
+    active_actions = _full_context_actions_for_skill(skill)
     pack = {
         "current_product_rules": [
             "No evidence ID -> no recommendation.",
@@ -160,7 +161,9 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "top_opportunities": [
             opportunity.model_dump(mode="json") for opportunity in opportunities[:max_opportunities]
         ],
-        "active_action_objects": [action.model_dump(mode="json") for action in list_actions()],
+        "active_action_objects": [
+            action.model_dump(mode="json") for action in active_actions
+        ],
         "connector_refresh_runs": [
             run.model_dump(mode="json") for run in list_connector_refresh_runs()[:10]
         ],
@@ -184,6 +187,13 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
     return redact_mapping(pack)
+
+
+def _full_context_actions_for_skill(skill: str | None) -> list[ActionObject]:
+    actions = list_actions()
+    if skill == "wilq-daily-command":
+        return core_brief_actions(actions)
+    return actions
 
 
 SKILL_CONNECTOR_SCOPES: dict[str, set[str]] = {

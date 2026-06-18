@@ -358,3 +358,32 @@ completion. Highest-priority implementation fixes from the eval series:
 6. Add Ahrefs competitor/backlink/content gap records.
 7. Add Demand Gen asset/creative/landing-quality diagnostics.
 8. Upgrade evals from schema/safety checks to strict usefulness checks.
+
+## Daily Social Action Filtering
+
+Implemented the first eval-driven cleanup after 12/12 skill eval coverage.
+
+Result:
+
+- `/api/actions` still exposes `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts` for the explicit `/social-publisher`
+  workflow.
+- `/api/marketing/brief` no longer includes social draft ActionObjects in
+  top-level daily `action_ids`.
+- `POST /api/codex/context-pack` for `wilq-daily-command` now exposes only core
+  daily `active_action_objects`.
+- `POST /api/codex/context-pack` for `wilq-social-publisher` still includes
+  the social draft ActionObjects.
+
+Focused proof:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py
+uv run pytest tests/test_api_contracts.py -q -k 'marketing_brief_exposes_metric_backed_prepare_actions or codex_context_pack_embeds_marketing_brief_contract or daily_context_pack_excludes_social_draft_action_objects or social_context_pack_keeps_explicit_social_draft_action_objects or command_center_exposes_polish_operator_brief'
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+```
+
+Live API note: the previously running `uvicorn` process did not use `--reload`,
+so the first smoke still showed stale social action IDs. Restarted WILQ API on
+`127.0.0.1:8000`; the repeated smoke returned only the three core daily actions.
