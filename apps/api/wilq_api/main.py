@@ -89,6 +89,7 @@ DEFAULT_CORS_ORIGINS = (
     "http://localhost:5373",
     "http://127.0.0.1:5373",
 )
+LOCAL_CORS_ORIGIN_REGEX = r"^http://(localhost|127\.0\.0\.1):\d+$"
 
 
 def cors_origins() -> list[str]:
@@ -102,6 +103,7 @@ app = FastAPI(title="WILQ Marketing API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins(),
+    allow_origin_regex=LOCAL_CORS_ORIGIN_REGEX,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -384,6 +386,7 @@ def _skill_scoped_context_pack(
 
     actions = list_actions()
     diagnostics = _diagnostics_for_skill(skill)
+    actions = _stateful_context_actions(skill, actions, diagnostics)
     evidence_ids = _evidence_ids_from_context(diagnostics, actions, scoped_connectors)
     scoped_actions = _actions_for_scope(actions, scoped_connectors, evidence_ids)
     evidence_ids.update(
@@ -464,6 +467,21 @@ def _skill_scoped_context_pack(
         **diagnostics,
     }
     return redact_mapping(pack)
+
+
+def _stateful_context_actions(
+    skill: str,
+    actions: list[ActionObject],
+    diagnostics: dict[str, Any],
+) -> list[ActionObject]:
+    ads_diagnostics = diagnostics.get("ads_diagnostics")
+    if (
+        skill == "wilq-ads-doctor"
+        and isinstance(ads_diagnostics, dict)
+        and ads_diagnostics.get("live_data_available") is True
+    ):
+        return [action for action in actions if action.id != "act_configure_google_ads_env"]
+    return actions
 
 
 def _diagnostics_for_skill(skill: str) -> dict[str, Any]:

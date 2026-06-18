@@ -29,7 +29,7 @@
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
-    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts i jasno zablokuj search terms, CPA, ROAS oraz wasted budget, jeśli nie ma ich w evidence.",
+    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts i search terms read-only rows, a jasno zablokuj CPA, ROAS, search-term waste, wasted budget i negative keywords bez dodatkowych read/safety/ActionObject contracts.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
       "Ads Doctor",
@@ -37,9 +37,11 @@
       "ads_diagnostics",
       "live_data_available",
       "campaign",
+      "read-only rows",
       "search terms",
       "CPA",
       "ROAS",
+      "negative keywords",
       "blocked claims"
     ],
     "expected_action_ids": []

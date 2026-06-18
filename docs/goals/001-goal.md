@@ -181,10 +181,11 @@ These are the current reasons Goal 001 is not complete:
 4. **Codex skill usefulness is not proven end-to-end.**
    Skills have contracts and smokes, and `wilq-daily-command` now has a
    strengthened usefulness guardrail plus a fresh non-interactive eval pass.
-   Goal 001 still needs the same strict usefulness pass across the remaining
-   high-value skills and a clean plug-and-play Codex session proving Polish
-   prompts -> WILQ API calls -> same evidence IDs as dashboard -> useful next
-   actions.
+   `wilq-content-strategist` and `wilq-ads-doctor` also have strict usefulness
+   passes after their matching API contracts. Goal 001 still needs the same
+   strict usefulness pass across the remaining high-value skills and a clean
+   plug-and-play Codex session proving Polish prompts -> WILQ API calls -> same
+   evidence IDs as dashboard -> useful next actions.
 
 5. **Knowledge condensation is not fully proven.**
    Playbooks and knowledge cards exist, but we must prove they influence skill
@@ -392,6 +393,22 @@ Work in this order:
    review with conversion context, not automatic waste or negative keyword
    claims.
 
+   Fresh correction: Ads diagnostics now selects the latest Google Ads
+   `vendor_read` as the evidence-bearing refresh. A later `status_probe` cannot
+   downgrade live Ads state into stale OAuth blocker language. While live Ads
+   data is available, `/api/marketing/brief`,
+   `/api/ads/diagnostics.action_ids` and the scoped `wilq-ads-doctor`
+   context-pack no longer promote `act_configure_google_ads_env`.
+
+   Fresh skill proof: `wilq-ads-doctor` passed non-interactive Codex eval at
+   `.local-lab/evals/codex-skill/20260618T191243Z/wilq-ads-doctor/result.json`.
+   The output is Polish, uses WILQ API, cites
+   `ev_connector_google_ads_status` and
+   `ev_refresh_refresh_google_ads_c2f62ee2b43a`, shows 18 campaign read-only
+   rows and 50 search-term read-only rows, and blocks CPA, ROAS,
+   search-term waste, wasted budget and negative keywords until missing
+   read/safety/ActionObject contracts exist.
+
    Still missing for BDOS-class Ads value: recommendations, change history,
    budget pacing, impression share, keyword/match context, 90-day safety check,
    explicit CPA/ROAS derived KPI contract and prepare-only negative keyword
@@ -417,8 +434,10 @@ Work in this order:
      `content_diagnostics.decision_queue` and URL normalization;
    - `wilq-ga4-analyst` after ranked GA4 landing/source/campaign diagnostics
      and clear tracking-gap separation;
-   - `wilq-ads-doctor` after campaign table, search terms/conversions and
-     blocked-claim matrix;
+   - done for `wilq-ads-doctor` after campaign table,
+     search terms/conversions and blocked-claim matrix; keep rerunning when
+     recommendations, change history, budget pacing, impression share, derived
+     CPA/ROAS or negative keyword ActionObjects are added;
    - `wilq-localo-operator`, `wilq-ahrefs-gap-finder`,
      `wilq-custom-segments`, `wilq-campaign-builder`,
      `wilq-demand-gen-operator` and `wilq-social-publisher` only after their

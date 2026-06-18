@@ -17,6 +17,7 @@ from wilq.schemas import (
     AdsDiagnosticsResponse,
     AdsSearchTermMetricRow,
     AdsSearchTermsReadContract,
+    ConnectorRefreshMode,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
@@ -48,7 +49,10 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         trusted_metric_facts,
         latest_refresh,
     )
-    action_ids = _google_ads_action_ids(list_actions())
+    action_ids = _google_ads_action_ids(
+        list_actions(),
+        live_data_available=live_data_available,
+    )
     sections = [
         _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
         _campaign_overview_section(
@@ -79,11 +83,23 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
 
 def _latest_google_ads_refresh() -> ConnectorRefreshRun | None:
     runs = list_connector_refresh_runs(connector_id=GOOGLE_ADS_CONNECTOR_ID)
-    return runs[0] if runs else None
+    for run in runs:
+        if run.mode == ConnectorRefreshMode.vendor_read:
+            return run
+    return None
 
 
-def _google_ads_action_ids(actions: list[ActionObject]) -> list[str]:
-    return [action.id for action in actions if action.connector == GOOGLE_ADS_CONNECTOR_ID]
+def _google_ads_action_ids(
+    actions: list[ActionObject],
+    *,
+    live_data_available: bool,
+) -> list[str]:
+    return [
+        action.id
+        for action in actions
+        if action.connector == GOOGLE_ADS_CONNECTOR_ID
+        and not (live_data_available and action.id == "act_configure_google_ads_env")
+    ]
 
 
 def _oauth_or_live_section(

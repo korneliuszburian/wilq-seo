@@ -797,6 +797,67 @@ Remaining performance gap:
   Merchant issue-level triage, URL normalization and a slimmer daily decision
   model, not prompt/reference logic.
 
+## 2026-06-18 - Ads Doctor Status-Probe Regression And Skill Eval
+
+What changed:
+
+- `/api/ads/diagnostics` now selects the latest Google Ads `vendor_read` as
+  the evidence-bearing refresh. A later `status_probe` no longer downgrades
+  live Ads diagnostics into an OAuth blocker.
+- When Ads live data is available, `act_configure_google_ads_env` is filtered
+  out of `/api/marketing/brief`, `/api/ads/diagnostics.action_ids` and the
+  scoped `wilq-ads-doctor` context-pack.
+- DuckDB metric store operations now use a process-wide lock around reads and
+  writes. This prevents concurrent FastAPI requests from competing for the
+  local DuckDB file during Ads diagnostics/context-pack smoke runs.
+- `wilq-ads-doctor` smoke output now exposes campaign/search-term read
+  contract summaries, allowed metrics and row counts.
+
+Runtime proof:
+
+- `/api/ads/diagnostics` after restart:
+  - `live_data_available=true`;
+  - latest refresh `refresh_google_ads_c2f62ee2b43a`, mode `vendor_read`;
+  - campaign rows `18`;
+  - search-term rows `50`;
+  - `blocked_handoff.status=ready`.
+- `/api/marketing/brief` no longer returns Google Ads OAuth repair action while
+  Ads live data is available.
+- `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` returns
+  `active_action_objects=[]` and `ads_diagnostics.action_ids=[]` in the live
+  Ads state.
+
+Non-interactive skill proof:
+
+```txt
+.local-lab/evals/codex-skill/20260618T191243Z/wilq-ads-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `operator_usefulness_score=5`
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- The output correctly states that Ads Doctor can show 18 campaign read-only
+  rows and 50 search-term read-only rows, while blocking CPA, ROAS,
+  search-term waste, wasted budget and negative keywords until missing
+  read/safety/ActionObject contracts exist.
+
+Focused proof already passed:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py wilq/briefing/ads_diagnostics.py wilq/briefing/marketing_brief.py wilq/storage/metric_store.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py wilq/briefing/ads_diagnostics.py wilq/briefing/marketing_brief.py wilq/storage/metric_store.py
+uv run pytest tests/test_metric_store_and_cli.py tests/test_api_contracts.py -k 'metric_store or ads_diagnostics' -q
+uv run pytest tests/test_api_contracts.py -k 'ads_diagnostics or context_pack or marketing_brief' -q
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=360 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
 ## Audit-Derived Next Stack
 
 Source:

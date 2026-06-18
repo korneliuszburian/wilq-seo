@@ -76,6 +76,8 @@ def main() -> int:
         blocked_claims = set(blocked_handoff.get("blocked_claims", []))
         if not {"ROAS", "search terms"} <= blocked_claims:
             raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
+    campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
+    search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -124,6 +126,28 @@ def main() -> int:
                 "ads_diagnostics": {
                     "live_data_available": ads_diagnostics.get("live_data_available"),
                     "blocker_count": ads_diagnostics.get("blocker_count"),
+                    "campaign_read_contract": {
+                        "status": campaign_read_contract.get("status"),
+                        "summary": campaign_read_contract.get("summary"),
+                        "allowed_metrics": campaign_read_contract.get("allowed_metrics", []),
+                        "missing_read_contracts": campaign_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "row_count": len(campaign_read_contract.get("campaign_rows") or []),
+                    },
+                    "search_terms_read_contract": {
+                        "status": search_terms_read_contract.get("status"),
+                        "summary": search_terms_read_contract.get("summary"),
+                        "allowed_metrics": search_terms_read_contract.get(
+                            "allowed_metrics", []
+                        ),
+                        "missing_read_contracts": search_terms_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "row_count": len(
+                            search_terms_read_contract.get("search_term_rows") or []
+                        ),
+                    },
                     "blocked_handoff": {
                         "status": blocked_handoff.get("status"),
                         "title": blocked_handoff.get("title"),

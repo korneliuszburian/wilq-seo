@@ -96,7 +96,8 @@ def build_marketing_brief(
     metric_items = _metric_items(business_metric_facts)
     blocker_items = _blocker_items(connectors, latest_runs)
     core_actions = core_brief_actions(actions)
-    action_items = _action_items(core_actions)
+    stateful_actions = _stateful_brief_actions(core_actions, blocker_items)
+    action_items = _action_items(stateful_actions)
     recommendation_items = _recommendation_items(business_metric_facts, blocker_items)
     sections = [
         MarketingBriefSection(
@@ -361,6 +362,25 @@ def _blocker_items(
 
 def core_brief_actions(actions: Iterable[ActionObject]) -> list[ActionObject]:
     return [action for action in actions if action.connector in CORE_BRIEF_ACTION_CONNECTORS]
+
+
+def _stateful_brief_actions(
+    actions: Iterable[ActionObject],
+    blocker_items: list[MarketingBriefItem],
+) -> list[ActionObject]:
+    blocked_connector_ids = {
+        connector
+        for item in blocker_items
+        for connector in item.source_connectors
+    }
+    return [
+        action
+        for action in actions
+        if not (
+            action.id == "act_configure_google_ads_env"
+            and "google_ads" not in blocked_connector_ids
+        )
+    ]
 
 
 def _action_items(actions: list[ActionObject]) -> list[MarketingBriefItem]:

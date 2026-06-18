@@ -5,6 +5,7 @@ import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from threading import RLock
 from typing import Any, Literal, cast
 
 import duckdb
@@ -15,6 +16,7 @@ from wilq.schemas import ConnectorRefreshRun, MetricFact
 DEFAULT_METRIC_DB = Path(".local-lab/state/wilq.duckdb")
 DUCKDB_CONNECT_ATTEMPTS = 5
 DUCKDB_CONNECT_RETRY_SECONDS = 0.2
+_DUCKDB_LOCK = RLock()
 
 
 def metric_store_path() -> Path:
@@ -33,7 +35,7 @@ class DuckDbMetricStore:
         self.path = path
 
     def status(self) -> dict[str, Any]:
-        with self._connect() as connection:
+        with _DUCKDB_LOCK, self._connect() as connection:
             row = connection.execute(
                 """
                 SELECT
@@ -64,7 +66,7 @@ class DuckDbMetricStore:
         rows = [_metric_row(run, name, value) for name, value in run.metric_summary.items()]
         rows.extend(_detailed_metric_row(run, fact) for fact in detailed_facts or [])
         rows = _deduplicate_metric_rows(rows)
-        with self._connect() as connection:
+        with _DUCKDB_LOCK, self._connect() as connection:
             connection.execute("DELETE FROM connector_metric_facts WHERE run_id = ?", [run.id])
             connection.executemany(
                 """
@@ -152,7 +154,7 @@ class DuckDbMetricStore:
             LIMIT ?
         """
         params.append(bounded_limit)
-        with self._connect(read_only=True) as connection:
+        with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
             rows = connection.execute(query, params).fetchall()
         return [_metric_fact_from_row(row) for row in rows]
 
@@ -231,7 +233,7 @@ class DuckDbMetricStore:
               evidence_id ASC
         """
         params: list[Any] = [unique_connector_ids, bounded_limit]
-        with self._connect(read_only=True) as connection:
+        with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
             rows = connection.execute(query, params).fetchall()
         facts_by_connector: dict[str, list[MetricFact]] = {
             connector_id: [] for connector_id in unique_connector_ids

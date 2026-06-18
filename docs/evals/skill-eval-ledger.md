@@ -1189,3 +1189,54 @@ Product correction recorded:
 
 - Skills must not contain product decision repairs or edge-case classifiers in
   references. Typed WILQ API/view-model contracts must own that logic.
+
+## 2026-06-18 - wilq-ads-doctor Live Read Contract Eval
+
+Artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260618T191243Z/wilq-ads-doctor/result.json
+```
+
+Why rerun:
+
+- Google Ads OAuth and live `vendor_read` now work, so Ads Doctor must stop
+  behaving like an OAuth repair workflow.
+- A status probe after a successful vendor read previously made Ads diagnostics
+  fall back to stale OAuth blocker language.
+- The first green eval was too weak: the smoke script exposed evidence IDs but
+  not campaign/search-term row counts, so Codex still over-blocked concrete
+  read-only search-term review.
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- `operator_usefulness_score=5`.
+- `recommendations_count=3`, `actions_count=2`.
+- No safety findings.
+
+Useful output:
+
+- Ads Doctor may show `live_data_available=true`.
+- Campaign read-only rows: `18`.
+- Search terms read-only rows: `50`.
+- Allowed read metrics include clicks, impressions, cost micros,
+  conversions and conversion value.
+- CPA, ROAS, search-term waste, wasted budget and negative keywords remain
+  blocked until WILQ has the missing read/safety/ActionObject contracts.
+
+Product correction recorded:
+
+- Ads diagnostics now ignores `status_probe` runs when selecting the latest
+  Google Ads evidence-bearing read. A successful `vendor_read` is not
+  invalidated by a later credential-name status probe.
+- `/api/marketing/brief` and scoped `wilq-ads-doctor` context-pack no longer
+  promote `act_configure_google_ads_env` while Ads live data is available.
+- The Ads smoke script must expose row counts and read-contract summaries, not
+  only section IDs, otherwise non-interactive evals can pass while staying too
+  vague for a marketer.

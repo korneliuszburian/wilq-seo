@@ -3,9 +3,17 @@ set -euo pipefail
 
 verify_tmp_dir="$(mktemp -d)"
 skill_api_pid=""
+dashboard_api_pid=""
+dashboard_dev_pid=""
 cleanup() {
   if [ -n "$skill_api_pid" ]; then
     kill "$skill_api_pid" >/dev/null 2>&1 || true
+  fi
+  if [ -n "$dashboard_dev_pid" ]; then
+    kill "$dashboard_dev_pid" >/dev/null 2>&1 || true
+  fi
+  if [ -n "$dashboard_api_pid" ]; then
+    kill "$dashboard_api_pid" >/dev/null 2>&1 || true
   fi
   rm -rf "$verify_tmp_dir"
 }
@@ -14,6 +22,24 @@ trap cleanup EXIT
 verify_state_db="$verify_tmp_dir/wilq-verify.sqlite3"
 verify_metric_db="$verify_tmp_dir/wilq-verify.duckdb"
 skill_api_port="$(
+  uv run python - <<'PY'
+import socket
+
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+    print(sock.getsockname()[1])
+PY
+)"
+dashboard_api_port="$(
+  uv run python - <<'PY'
+import socket
+
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+    print(sock.getsockname()[1])
+PY
+)"
+dashboard_dev_port="$(
   uv run python - <<'PY'
 import socket
 
@@ -108,8 +134,40 @@ for skill_script in .agents/skills/wilq-*/scripts/smoke_skill_contract.py; do
 done
 echo "Skill API smoke passed"
 
+if [ -n "$skill_api_pid" ]; then
+  kill "$skill_api_pid" >/dev/null 2>&1 || true
+  wait "$skill_api_pid" >/dev/null 2>&1 || true
+  skill_api_pid=""
+fi
+
 if [ -d apps/dashboard/node_modules ]; then
-  pnpm --filter @wilq/dashboard test:e2e
+  dashboard_api_base="http://127.0.0.1:${dashboard_api_port}"
+  dashboard_base="http://127.0.0.1:${dashboard_dev_port}"
+  dashboard_api_log="${TMPDIR:-/tmp}/wilq-dashboard-api.log"
+  dashboard_dev_log="${TMPDIR:-/tmp}/wilq-dashboard-vite.log"
+  uv run uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$dashboard_api_port" >"$dashboard_api_log" 2>&1 &
+  dashboard_api_pid="$!"
+  for _ in $(seq 1 30); do
+    if curl -fsS --max-time 2 "$dashboard_api_base/api/health" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.5
+  done
+  curl -fsS --max-time 2 "$dashboard_api_base/api/health" >/dev/null
+
+  VITE_WILQ_API_BASE_URL="$dashboard_api_base" \
+    pnpm --filter @wilq/dashboard dev --host 127.0.0.1 --port "$dashboard_dev_port" --strictPort >"$dashboard_dev_log" 2>&1 &
+  dashboard_dev_pid="$!"
+  for _ in $(seq 1 40); do
+    if curl -fsS --max-time 2 "$dashboard_base/command-center" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.5
+  done
+  curl -fsS --max-time 2 "$dashboard_base/command-center" >/dev/null
+
+  WILQ_E2E_API_PORT="$dashboard_api_port" WILQ_E2E_DASHBOARD_PORT="$dashboard_dev_port" CI= \
+    pnpm --filter @wilq/dashboard exec playwright test --workers=1
   pnpm --filter @wilq/dashboard build
 else
   echo "Skipping dashboard e2e/build: node_modules missing. Run pnpm install."

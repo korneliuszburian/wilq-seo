@@ -285,6 +285,19 @@ def test_local_dashboard_e2e_origin_is_allowed_by_cors() -> None:
     assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:5373"
 
 
+def test_dynamic_local_dashboard_e2e_origin_is_allowed_by_cors() -> None:
+    response = client.options(
+        "/api/health",
+        headers={
+            "Origin": "http://127.0.0.1:39241",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:39241"
+
+
 def test_root_endpoint_points_to_api_entrypoints() -> None:
     response = client.get("/")
     assert response.status_code == 200
@@ -2170,6 +2183,31 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert search_terms_section["status"] == "ready"
     assert search_terms_section["title"] == "Search terms read contract"
+
+    status_probe_response = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "status_probe", "reason": "ads diagnostics status probe regression"},
+    )
+    assert status_probe_response.status_code == 200
+
+    after_probe_response = client.get("/api/ads/diagnostics")
+    assert after_probe_response.status_code == 200
+    after_probe_payload = after_probe_response.json()
+    assert after_probe_payload["live_data_available"] is True
+    assert after_probe_payload["latest_refresh"]["id"] == refresh_response.json()["id"]
+    assert after_probe_payload["blocked_handoff"]["status"] == "ready"
+    assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
+    assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
+
+    brief_response = client.get("/api/marketing/brief")
+    assert brief_response.status_code == 200
+    brief_action_ids = {
+        action_id
+        for section in brief_response.json()["sections"]
+        for item in section["items"]
+        for action_id in item["action_ids"]
+    }
+    assert "act_configure_google_ads_env" not in brief_action_ids
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(
