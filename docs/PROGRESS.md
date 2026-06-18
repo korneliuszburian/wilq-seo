@@ -26,6 +26,13 @@ Data: 2026-06-18
   `plan_review_ads_campaign_metrics`.
 - Localo access działa na poziomie MCP initialize, ale ranking/GBP/competitor
   facts nadal są blocked.
+- Merchant issue-level triage jest wdrożony lokalnie w API/schema/action
+  payload/dashboard route. `/api/merchant/diagnostics` zwraca
+  `issue_clusters` z `issue_type`, `affected_attribute`, `country`,
+  `reporting_context`, `severity`, `resolution`, `product_count`, evidence IDs,
+  blocked claims i `act_review_merchant_feed_issues`. Dashboard `/merchant`
+  pokazuje klastry jako primary review queue, a tactical items tylko jako
+  fallback.
 
 ## Latest Verified Checks
 
@@ -35,6 +42,12 @@ Data: 2026-06-18
 - `uv run ruff check wilq/briefing/marketing_brief.py tests/test_api_contracts.py`
 - `uv run mypy wilq/briefing/marketing_brief.py`
 - `uv run pytest tests/test_api_contracts.py::test_marketing_brief_aggregates_metric_facts_and_blockers tests/test_api_contracts.py::test_marketing_brief_exposes_metric_backed_prepare_actions -q`
+- `uv run ruff check wilq/schemas.py wilq/briefing/merchant_diagnostics.py wilq/actions/service.py tests/test_api_contracts.py`
+- `uv run mypy wilq/schemas.py wilq/briefing/merchant_diagnostics.py wilq/actions/service.py tests/test_api_contracts.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'merchant_diagnostics_exposes_feed_issue_queue or merchant_vendor_read_uses_aggregate_product_statuses'`
+- `pnpm --filter @wilq/dashboard lint`
+- `pnpm --filter @wilq/dashboard typecheck`
+- `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
 - `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000`
 - `scripts/verify.sh`
 
@@ -59,6 +72,9 @@ dashboard production build: passed
    toward a lightweight decision view model/cache.
 5. Content workflow gap: WordPress inventory matching misses several URLs that
    GSC/GA4 see. This forces create/refresh/block uncertainty.
+6. Merchant issue clusters currently expose aggregate issue dimensions and
+   product counts, but not sample product IDs/titles. The dashboard states this
+   limit explicitly instead of pretending to show product-level fixes.
 
 ## Performance Snapshot
 

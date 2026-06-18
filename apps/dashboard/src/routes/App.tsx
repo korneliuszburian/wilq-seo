@@ -2272,6 +2272,7 @@ function MerchantDiagnosticSurface() {
 
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
   const issueItems = data.sections.flatMap((section) => section.tactical_items);
+  const topIssueClusters = data.issue_clusters.slice(0, 4);
   const topIssueItems = issueItems
     .slice()
     .sort((left, right) => right.priority - left.priority)
@@ -2279,11 +2280,16 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
   const issueMetricFacts = data.sections
     .flatMap((section) => section.metric_facts)
     .filter((fact) => fact.name === "issue_product_count");
-  const affectedProducts = issueMetricFacts.reduce((sum, fact) => {
-    return sum + (typeof fact.value === "number" ? fact.value : 0);
-  }, 0);
+  const affectedProducts = data.issue_clusters.length
+    ? data.issue_clusters.reduce((sum, cluster) => sum + cluster.product_count, 0)
+    : issueMetricFacts.reduce((sum, fact) => {
+        return sum + (typeof fact.value === "number" ? fact.value : 0);
+      }, 0);
   const issueTypes = Array.from(
-    new Set(issueItems.map((item) => item.dimensions.issue_type).filter(Boolean))
+    new Set([
+      ...data.issue_clusters.map((cluster) => cluster.issue_type),
+      ...issueItems.map((item) => item.dimensions.issue_type).filter(Boolean)
+    ])
   );
   const actionIds = data.action_ids.length ? data.action_ids : ["act_review_merchant_feed_issues"];
 
@@ -2305,14 +2311,57 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Produkty" value={data.product_count ?? 0} />
-          <MetricTile label="Issue items" value={issueItems.length} />
+          <MetricTile label="Klastry" value={data.issue_clusters.length || issueItems.length} />
           <MetricTile label="Affected" value={affectedProducts} />
         </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
-          {topIssueItems.length > 0 ? (
+          {topIssueClusters.length > 0 ? (
+            topIssueClusters.map((cluster) => (
+              <article key={cluster.id} className="rounded-md border border-line bg-slate-50 p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-ink">
+                      {cluster.issue_type}
+                      {cluster.affected_attribute ? ` / ${cluster.affected_attribute}` : ""}
+                    </h3>
+                    <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                      {cluster.severity} / {cluster.resolution ?? "brak resolution"}
+                    </p>
+                  </div>
+                  <StatusBadge value={cluster.risk} />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  Dotyczy {cluster.product_count} produktów
+                  {cluster.country ? ` w kraju ${cluster.country}` : ""}
+                  {cluster.reporting_context ? ` / ${cluster.reporting_context}` : ""}.
+                </p>
+                {cluster.sample_unavailable_reason ? (
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
+                    {cluster.sample_unavailable_reason}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-sm font-medium text-ink">{cluster.next_step}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+                  <span className="rounded border border-line bg-white px-2 py-1">
+                    produkty: {cluster.product_count}
+                  </span>
+                  {cluster.country ? (
+                    <span className="rounded border border-line bg-white px-2 py-1">
+                      kraj: {cluster.country}
+                    </span>
+                  ) : null}
+                  {cluster.action_id ? (
+                    <span className="rounded border border-line bg-white px-2 py-1">
+                      ActionObject: {cluster.action_id}
+                    </span>
+                  ) : null}
+                </div>
+              </article>
+            ))
+          ) : topIssueItems.length > 0 ? (
             topIssueItems.map((item) => (
               <article key={item.id} className="rounded-md border border-line bg-slate-50 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">

@@ -15,6 +15,7 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     MerchantDiagnosticSection,
     MerchantDiagnosticsResponse,
+    MerchantIssueCluster,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -48,9 +49,16 @@ def build_merchant_diagnostics() -> MerchantDiagnosticsResponse:
         if item.domain == OpportunityDomain.merchant
     ]
     action_ids = _merchant_action_ids(list_actions())
+    issue_clusters = _merchant_issue_clusters(trusted_facts, action_ids)
     sections = [
         _feed_health_section(latest_refresh, trusted_facts, action_ids),
-        _issue_queue_section(latest_refresh, trusted_facts, tactical_items, action_ids),
+        _issue_queue_section(
+            latest_refresh,
+            trusted_facts,
+            tactical_items,
+            issue_clusters,
+            action_ids,
+        ),
         _product_action_safety_section(latest_refresh, trusted_facts, tactical_items, action_ids),
     ]
     return MerchantDiagnosticsResponse(
@@ -60,6 +68,7 @@ def build_merchant_diagnostics() -> MerchantDiagnosticsResponse:
         live_data_available=live_data_available,
         product_count=_numeric_metric(trusted_facts, "total_products"),
         issue_count=_numeric_metric(trusted_facts, "item_level_issue_count"),
+        issue_clusters=issue_clusters,
         sections=sections,
         evidence_ids=_unique(
             evidence_id for section in sections for evidence_id in section.evidence_ids
@@ -136,6 +145,7 @@ def _issue_queue_section(
     latest_refresh: ConnectorRefreshRun | None,
     facts: list[MetricFact],
     tactical_items: list[TacticalQueueItem],
+    issue_clusters: list[MerchantIssueCluster],
     action_ids: list[str],
 ) -> MerchantDiagnosticSection:
     issue_facts = [
@@ -166,8 +176,9 @@ def _issue_queue_section(
         title="Merchant Center: kolejka feed/product issues",
         status="ready",
         summary=(
-            f"WILQ ma {len(tactical_items)} Merchant tactical items i "
-            f"{len(issue_facts)} issue metric facts."
+            f"WILQ ma {len(issue_clusters)} issue clusters, "
+            f"{len(tactical_items)} Merchant tactical items i {len(issue_facts)} "
+            "issue metric facts."
         ),
         diagnosis=(
             "Najbezpieczniejsza praca dla marketera to review problemów po typie "
@@ -187,6 +198,94 @@ def _issue_queue_section(
         blocked_claims=["automatic feed edit", "primary feed overwrite", "approval restored"],
         risk=ActionRisk.medium,
     )
+
+
+def _merchant_issue_clusters(
+    facts: list[MetricFact],
+    action_ids: list[str],
+) -> list[MerchantIssueCluster]:
+    issue_facts = [
+        fact
+        for fact in facts
+        if fact.name == "issue_product_count" and fact.dimensions.get("issue_type")
+    ]
+    grouped: dict[tuple[str, str, str, str, str, str], list[MetricFact]] = {}
+    for fact in issue_facts:
+        dimensions = fact.dimensions
+        key = (
+            dimensions.get("issue_type", "unknown_issue"),
+            dimensions.get("affected_attribute", ""),
+            dimensions.get("country", ""),
+            dimensions.get("reporting_context", ""),
+            dimensions.get("severity", "UNKNOWN"),
+            dimensions.get("resolution", ""),
+        )
+        grouped.setdefault(key, []).append(fact)
+
+    clusters: list[MerchantIssueCluster] = []
+    action_id = action_ids[0] if action_ids else None
+    for key, group_facts in grouped.items():
+        issue_type, affected_attribute, country, reporting_context, severity, resolution = key
+        product_count = sum(
+            int(fact.value)
+            for fact in group_facts
+            if isinstance(fact.value, int | float)
+        )
+        clusters.append(
+            MerchantIssueCluster(
+                id=(
+                    f"merchant_issue_{_stable_slug(country or 'global')}_"
+                    f"{_stable_slug(severity)}_{_stable_slug(issue_type)}_"
+                    f"{_stable_slug(affected_attribute or 'attribute_unknown')}"
+                ),
+                issue_type=issue_type,
+                severity=severity,
+                resolution=resolution or None,
+                affected_attribute=affected_attribute or None,
+                country=country or None,
+                reporting_context=reporting_context or None,
+                product_count=product_count,
+                sample_unavailable_reason=(
+                    "Obecny Merchant read contract zwraca issue dimensions i liczby "
+                    "produktów, ale nie zwraca sample product IDs ani tytułów."
+                ),
+                source_connectors=[MERCHANT_CONNECTOR_ID],
+                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
+                blocked_claims=["approval restored", "revenue recovered", "automatic feed edit"],
+                action_id=action_id,
+                risk=_merchant_cluster_risk(severity, resolution),
+                next_step=(
+                    "Przejrzyj ten issue cluster w `act_review_merchant_feed_issues`; "
+                    "najpierw przygotuj payload preview, bez automatycznej zmiany feedu."
+                ),
+            )
+        )
+    return sorted(
+        clusters,
+        key=lambda cluster: (
+            _merchant_severity_rank(cluster.severity),
+            -cluster.product_count,
+            cluster.issue_type,
+        ),
+    )
+
+
+def _merchant_cluster_risk(severity: str, resolution: str | None) -> ActionRisk:
+    if severity == "DISAPPROVED":
+        return ActionRisk.high
+    if resolution == "MERCHANT_ACTION":
+        return ActionRisk.medium
+    return ActionRisk.low
+
+
+def _merchant_severity_rank(severity: str) -> int:
+    return {"DISAPPROVED": 0, "DEMOTED": 1, "NOT_IMPACTED": 2}.get(severity, 3)
+
+
+def _stable_slug(value: str) -> str:
+    lowered = value.lower()
+    chars = [char if char.isalnum() else "_" for char in lowered]
+    return "_".join("".join(chars).split("_")) or "unknown"
 
 
 def _product_action_safety_section(

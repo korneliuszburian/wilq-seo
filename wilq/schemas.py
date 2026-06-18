@@ -503,6 +503,26 @@ class MerchantDiagnosticSection(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class MerchantIssueCluster(BaseModel):
+    id: str
+    issue_type: str
+    severity: str
+    resolution: str | None = None
+    affected_attribute: str | None = None
+    country: str | None = None
+    reporting_context: str | None = None
+    product_count: int = 0
+    sample_product_ids: list[str] = Field(default_factory=list)
+    sample_titles: list[str] = Field(default_factory=list)
+    sample_unavailable_reason: str | None = None
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    action_id: str | None = None
+    risk: ActionRisk = ActionRisk.low
+    next_step: str
+
+
 class MerchantDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -512,6 +532,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     live_data_available: bool
     product_count: int | None = None
     issue_count: int | None = None
+    issue_clusters: list[MerchantIssueCluster] = Field(default_factory=list)
     sections: list[MerchantDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

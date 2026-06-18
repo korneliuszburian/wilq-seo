@@ -1858,7 +1858,9 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
                         "issue_type": "availability_updated",
                         "affected_attribute": "n:availability",
                         "country": "PL",
+                        "reporting_context": "SHOPPING_ADS",
                         "severity": "NOT_IMPACTED",
+                        "resolution": "MERCHANT_ACTION",
                     },
                 ),
             ],
@@ -1881,6 +1883,20 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["issue_count"] == 23
     assert payload["latest_refresh"]["status"] == "completed"
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
+    assert payload["issue_clusters"]
+    cluster = payload["issue_clusters"][0]
+    assert cluster["issue_type"] == "availability_updated"
+    assert cluster["affected_attribute"] == "n:availability"
+    assert cluster["country"] == "PL"
+    assert cluster["reporting_context"] == "SHOPPING_ADS"
+    assert cluster["severity"] == "NOT_IMPACTED"
+    assert cluster["resolution"] == "MERCHANT_ACTION"
+    assert cluster["product_count"] == 23
+    assert cluster["action_id"] == "act_review_merchant_feed_issues"
+    assert cluster["sample_product_ids"] == []
+    assert cluster["sample_titles"] == []
+    assert "nie zwraca sample product IDs" in cluster["sample_unavailable_reason"]
+    assert "approval restored" in cluster["blocked_claims"]
     feed_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_feed_health"
     )
@@ -1894,6 +1910,17 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         item["dimensions"].get("issue_type") == "availability_updated"
         for item in issue_section["tactical_items"]
     )
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    merchant_action = next(
+        action
+        for action in actions_response.json()
+        if action["id"] == "act_review_merchant_feed_issues"
+    )
+    assert merchant_action["payload"]["issue_clusters"][0]["issue_type"] == (
+        "availability_updated"
+    )
+    assert merchant_action["payload"]["issue_clusters"][0]["product_count"] == 23
     serialized = json.dumps(payload)
     assert "5519957373" not in serialized
     assert "adc.json" not in serialized

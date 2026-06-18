@@ -338,6 +338,14 @@ Work in this order:
    sample products if available, evidence IDs and
    `act_review_merchant_feed_issues`. This is the strongest current demo win.
 
+   Current status: typed `MerchantIssueCluster` exists in Python and
+   shared frontend schemas. `/api/merchant/diagnostics` now returns
+   `issue_clusters`, `act_review_merchant_feed_issues` carries the same cluster
+   payload, and dashboard `/merchant` renders clusters as the primary review
+   queue. Full `scripts/verify.sh` passed for this slice on 2026-06-18. The
+   current Merchant API read contract still does not return sample product IDs
+   or product titles; the UI must state that limit honestly.
+
 5. **Slice 4: Content/GSC/GA4/WordPress URL normalizer.**
    Normalize host, path, slash, sitemap, post/page type and GA4 landing path to
    full WordPress URL. The goal is reliable `refresh/merge/create/block`
@@ -862,41 +870,47 @@ Commit rules:
 
 ## Immediate Next Tasks
 
-1. **Remove remaining Command Center readiness slop.**
+1. **Fix Content/GSC/GA4/WordPress URL normalization.**
+   Normalize host, path, slash, sitemap, post/page type and GA4 landing path to
+   full WordPress URL. The goal is reliable `refresh/merge/create/block`
+   decisions and no duplicate content suggestions. GA4 `(not set)` stays a
+   tracking issue, not a content task.
+
+2. **Remove remaining Command Center readiness slop.**
    First-screen `/command-center` must stop rendering connector readiness as
    marketing insight. Keep real metric facts, tactical queue, ActionObjects and
    honest blockers.
 
-2. **Clean remaining stale Ads/Localo state in product surfaces.**
+3. **Clean remaining stale Ads/Localo state in product surfaces.**
    Ensure Command Center, Ads Doctor, marketing brief, action plan and skill
    text no longer show OAuth repair when live Ads data exists, and no Localo
    surface says "dokończ access" after `mcp_initialize_status=200`. Keep direct
    `/actions/act_configure_google_ads_env` available for troubleshooting only.
 
-3. **Continue API surface audit from `/api/actions` and `/api/dashboard/command-center`.**
+4. **Continue API surface audit from `/api/actions` and `/api/dashboard/command-center`.**
    `/api/marketing/brief` has been narrowed and deduped for the current slice.
    Continue by removing or demoting any ActionObject/Command Center item that
    repeats the same intent in multiple sections without adding a new decision,
    validation path or Codex bridge.
 
-4. **Run focused verification.**
+5. **Run focused verification for the active slice.**
    Required:
    ```bash
-  uv run ruff check apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
-  uv run mypy apps/api/wilq_api/main.py wilq/briefing/marketing_brief.py
-  uv run pytest tests/test_api_contracts.py -q -k 'marketing_brief_exposes_metric_backed_prepare_actions or codex_context_pack_embeds_marketing_brief_contract or daily_context_pack_excludes_social_draft_action_objects or social_context_pack_keeps_explicit_social_draft_action_objects or command_center_exposes_polish_operator_brief'
+  uv run ruff check wilq/schemas.py wilq/briefing/merchant_diagnostics.py wilq/actions/service.py tests/test_api_contracts.py
+  uv run mypy wilq/schemas.py wilq/briefing/merchant_diagnostics.py wilq/actions/service.py tests/test_api_contracts.py
+  uv run pytest tests/test_api_contracts.py -q -k 'merchant_diagnostics_exposes_feed_issue_queue or merchant_vendor_read_uses_aggregate_product_statuses'
   pnpm --filter @wilq/dashboard lint
   pnpm --filter @wilq/dashboard typecheck
   pnpm --filter @wilq/dashboard test -- --run App.test.tsx
    ```
 
-5. **Audit Command Center top-to-bottom.**
+6. **Audit Command Center top-to-bottom.**
    Use the running dashboard and `agent-browser` after the page settles. Remove,
    rewrite or demote every visible section that cannot answer:
    `co widzę`, `co to znaczy`, `co zrobić teraz`, `czego nie wolno twierdzić`,
    and `jak Codex może pomóc`.
 
-6. **Run full verification.**
+7. **Run full verification.**
    Required before commit:
    ```bash
    scripts/verify.sh

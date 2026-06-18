@@ -20,13 +20,11 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
 
-1. Finish the current daily context-pack performance slice.
+1. Fix Content/GSC/GA4/WordPress URL normalization.
 2. Remove remaining Command Center readiness/developer slop from first-screen
    marketer workflow.
-3. Add Merchant issue-level triage.
-4. Fix Content/GSC/GA4/WordPress URL normalization.
-5. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
-6. Repair each skill only after the matching API/read contract exists.
+3. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
+4. Repair each skill only after the matching API/read contract exists.
 
 Recently completed and pushed foundations:
 
@@ -57,6 +55,17 @@ Current performance slice truth:
   conflicting-lock runtime risk. Remaining cold-run bottleneck: diagnostics
   inside Command Center, especially the tactical/diagnostic joins used before
   Merchant issue-level triage and URL normalization are fully shaped.
+
+Current Merchant slice truth:
+
+- `MerchantIssueCluster` is implemented in Python and shared frontend schemas.
+- `/api/merchant/diagnostics` returns `issue_clusters` grouped by issue type,
+  affected attribute, country, reporting context, severity and resolution.
+- `act_review_merchant_feed_issues` includes issue clusters in its payload.
+- Dashboard `/merchant` renders issue clusters as the primary review queue.
+- Full `scripts/verify.sh` passed for this slice on 2026-06-18.
+- Current Merchant read contract still exposes aggregate issue dimensions and
+  counts only; no sample product IDs/titles yet.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

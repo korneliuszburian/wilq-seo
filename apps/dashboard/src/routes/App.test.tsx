@@ -664,6 +664,29 @@ const merchantDiagnostics = {
   live_data_available: true,
   product_count: 10900,
   issue_count: 23,
+  issue_clusters: [
+    {
+      id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
+      issue_type: "availability_updated",
+      severity: "NOT_IMPACTED",
+      resolution: "MERCHANT_ACTION",
+      affected_attribute: "n:availability",
+      country: "PL",
+      reporting_context: "SHOPPING_ADS",
+      product_count: 23,
+      sample_product_ids: [],
+      sample_titles: [],
+      sample_unavailable_reason:
+        "Obecny Merchant read contract zwraca issue dimensions i liczby produktów, ale nie zwraca sample product IDs ani tytułów.",
+      source_connectors: ["google_merchant_center"],
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
+      action_id: "act_review_merchant_feed_issues",
+      risk: "medium",
+      next_step:
+        "Przejrzyj ten issue cluster w `act_review_merchant_feed_issues`; najpierw przygotuj payload preview, bez automatycznej zmiany feedu."
+    }
+  ],
   sections: [
     {
       id: "merchant_feed_health",
@@ -684,7 +707,7 @@ const merchantDiagnostics = {
       id: "merchant_issue_queue",
       title: "Merchant Center: kolejka feed/product issues",
       status: "ready",
-      summary: "WILQ ma 1 Merchant tactical items i 1 issue metric facts.",
+      summary: "WILQ ma 1 issue clusters, 1 Merchant tactical items i 1 issue metric facts.",
       diagnosis: "Najbezpieczniejsza praca to review problemów po issue_type.",
       next_step: "Otwórz ActionObject `act_review_merchant_feed_issues`.",
       source_connectors: ["google_merchant_center"],
@@ -1381,15 +1404,14 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
     expect(screen.getByText(/WILQ grupuje problemy Merchant po issue type/)).toBeInTheDocument();
-    expect(screen.getByText(/Issue: availability_updated/)).toBeInTheDocument();
-    expect(screen.getByText(/Atrybut: n:availability/)).toBeInTheDocument();
+    expect(screen.getByText("availability_updated / n:availability")).toBeInTheDocument();
+    expect(screen.getByText(/Dotyczy 23 produktów w kraju PL \/ SHOPPING_ADS/)).toBeInTheDocument();
+    expect(screen.getByText(/nie zwraca sample product IDs/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
       "href",
       "/actions/act_review_merchant_feed_issues"
     );
-    expect(
-      screen.getAllByText("Merchant: NOT_IMPACTED / availability_updated / PL").length
-    ).toBeGreaterThan(1);
+    expect(screen.getAllByText("Merchant: NOT_IMPACTED / availability_updated / PL").length).toBe(1);
     expect(screen.getAllByText(/total_products: 10900/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
     expect(screen.getByText("ActionObject focus")).toBeInTheDocument();

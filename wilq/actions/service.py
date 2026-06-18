@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any
 
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -239,6 +240,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
     merchant_facts = by_connector.get("google_merchant_center", [])
     if merchant_facts:
         merchant_action_metrics = merchant_facts[:8]
+        merchant_issue_clusters = _merchant_issue_clusters_payload(merchant_facts)
         action = ActionObject(
             id="act_review_merchant_feed_issues",
             title="Przygotuj kolejkę przeglądu feedu Merchant Center",
@@ -264,6 +266,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "connector": "google_merchant_center",
                 "mode": "prepare_only",
                 "source_metric_names": _unique(fact.name for fact in merchant_facts),
+                "issue_clusters": merchant_issue_clusters,
                 "review_steps": [
                     "identify_disapproved_products",
                     "group_issue_reasons",
@@ -385,6 +388,58 @@ def _action_metric_facts() -> list[MetricFact]:
             if not _is_probe_only_fact(fact)
         )
     return _latest_metric_facts_by_identity(facts)
+
+
+def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, Any]]:
+    issue_facts = [
+        fact
+        for fact in facts
+        if fact.name == "issue_product_count" and fact.dimensions.get("issue_type")
+    ]
+    grouped: dict[tuple[str, str, str, str, str, str], list[MetricFact]] = {}
+    for fact in issue_facts:
+        dimensions = fact.dimensions
+        key = (
+            dimensions.get("issue_type", "unknown_issue"),
+            dimensions.get("affected_attribute", ""),
+            dimensions.get("country", ""),
+            dimensions.get("reporting_context", ""),
+            dimensions.get("severity", "UNKNOWN"),
+            dimensions.get("resolution", ""),
+        )
+        grouped.setdefault(key, []).append(fact)
+    clusters: list[dict[str, Any]] = []
+    for key, group_facts in grouped.items():
+        issue_type, affected_attribute, country, reporting_context, severity, resolution = key
+        clusters.append(
+            {
+                "issue_type": issue_type,
+                "affected_attribute": affected_attribute or None,
+                "country": country or None,
+                "reporting_context": reporting_context or None,
+                "severity": severity,
+                "resolution": resolution or None,
+                "product_count": sum(
+                    int(fact.value)
+                    for fact in group_facts
+                    if isinstance(fact.value, int | float)
+                ),
+                "evidence_ids": _unique(fact.evidence_id for fact in group_facts),
+                "sample_products_available": False,
+            }
+        )
+    return sorted(
+        clusters,
+        key=lambda cluster: (
+            _merchant_severity_rank(str(cluster["severity"])),
+            -int(cluster["product_count"]),
+            str(cluster["issue_type"]),
+        ),
+    )[:10]
+
+
+def _merchant_severity_rank(severity: str) -> int:
+    return {"DISAPPROVED": 0, "DEMOTED": 1, "NOT_IMPACTED": 2}.get(severity, 3)
 
 
 def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
