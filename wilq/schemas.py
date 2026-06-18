@@ -479,6 +479,8 @@ class AdsCampaignMetricRow(BaseModel):
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None
+    conversions: float | None = None
+    conversion_value: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
@@ -509,6 +511,8 @@ class AdsSearchTermMetricRow(BaseModel):
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None
+    conversions: float | None = None
+    conversion_value: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)

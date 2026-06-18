@@ -213,7 +213,9 @@ const adsDiagnostics = {
       row_count: 18,
       clicks: 107,
       impressions: 2783,
-      cost_micros: 164591174
+      cost_micros: 164591174,
+      conversions: 2.5,
+      conversion_value: 450.75
     }
   },
   live_data_available: true,
@@ -221,9 +223,10 @@ const adsDiagnostics = {
     id: "ads_campaign_activity_read_contract",
     status: "ready",
     title: "Google Ads: campaign activity rows",
-    summary: "WILQ ma 1 campaign rows: clicks=107, impressions=2783, cost_micros=164591174.",
-    allowed_metrics: ["clicks", "impressions", "cost_micros"],
-    missing_read_contracts: ["conversions", "recommendations"],
+    summary:
+      "WILQ ma 1 campaign rows: clicks=107, impressions=2783, cost_micros=164591174, conversions=2.5, conversion_value=450.75.",
+    allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
+    missing_read_contracts: ["recommendations"],
     blocked_claims: ["CPA", "ROAS", "search terms", "wasted budget"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -234,11 +237,22 @@ const adsDiagnostics = {
         clicks: 107,
         impressions: 2783,
         cost_micros: 164591174,
+        conversions: 2.5,
+        conversion_value: 450.75,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [
           {
             name: "clicks",
             value: 107,
+            period: "connector_refresh",
+            source_connector: "google_ads",
+            evidence_id: "ev_refresh_refresh_google_ads_test",
+            dimensions: { campaign_id: "123", campaign_name: "Ekologus Search" },
+            unit: null
+          },
+          {
+            name: "conversions",
+            value: 2.5,
             period: "connector_refresh",
             source_connector: "google_ads",
             evidence_id: "ev_refresh_refresh_google_ads_test",
@@ -256,7 +270,8 @@ const adsDiagnostics = {
     id: "ads_search_terms_read_contract",
     status: "ready",
     title: "Google Ads: search terms read-only rows",
-    summary: "WILQ ma 1 search term rows: clicks=12, impressions=140, cost_micros=9000000.",
+    summary:
+      "WILQ ma 1 search term rows: clicks=12, impressions=140, cost_micros=9000000, conversions=1, conversion_value=120.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -264,11 +279,11 @@ const adsDiagnostics = {
       "status",
       "clicks",
       "impressions",
-      "cost_micros"
+      "cost_micros",
+      "conversions",
+      "conversion_value"
     ],
     missing_read_contracts: [
-      "conversions",
-      "conversion_value",
       "90_day_safety_check",
       "negative_keyword_action_validation"
     ],
@@ -292,11 +307,29 @@ const adsDiagnostics = {
         clicks: 12,
         impressions: 140,
         cost_micros: 9000000,
+        conversions: 1,
+        conversion_value: 120,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [
           {
             name: "search_term_clicks",
             value: 12,
+            period: "connector_refresh",
+            source_connector: "google_ads",
+            evidence_id: "ev_refresh_refresh_google_ads_test",
+            dimensions: {
+              campaign_id: "123",
+              campaign_name: "Ekologus Search",
+              ad_group_id: "456",
+              ad_group_name: "BDO",
+              search_term: "bdo rejestracja",
+              search_term_status: "ADDED"
+            },
+            unit: null
+          },
+          {
+            name: "search_term_conversions",
+            value: 1,
             period: "connector_refresh",
             source_connector: "google_ads",
             evidence_id: "ev_refresh_refresh_google_ads_test",
@@ -1493,6 +1526,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Google Ads: campaign activity rows")).toBeInTheDocument();
     expect(screen.getByText("Read contract Ads")).toBeInTheDocument();
     expect(screen.getAllByText("Ekologus Search").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Konwersje").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Wartość konw.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("450.75").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("120").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Brakujące read contracts/).length).toBeGreaterThan(0);
     expect(screen.getByText("Google Ads: search terms read-only rows")).toBeInTheDocument();
     expect(screen.getByText("Search terms read-only")).toBeInTheDocument();

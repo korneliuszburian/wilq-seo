@@ -200,8 +200,6 @@ def _campaign_read_contract(
 ) -> AdsCampaignReadContract:
     rows = _campaign_metric_rows(metric_facts)
     missing_read_contracts = [
-        "conversions",
-        "conversion_value",
         "recommendations",
         "change_history",
         "budget_pacing",
@@ -220,14 +218,24 @@ def _campaign_read_contract(
         total_clicks = sum(row.clicks or 0 for row in rows)
         total_impressions = sum(row.impressions or 0 for row in rows)
         total_cost_micros = sum(row.cost_micros or 0 for row in rows)
+        total_conversions = sum(row.conversions or 0 for row in rows)
+        total_conversion_value = sum(row.conversion_value or 0 for row in rows)
         return AdsCampaignReadContract(
             status="ready",
             title="Google Ads: campaign activity rows",
             summary=(
                 f"WILQ ma {len(rows)} campaign rows: clicks={total_clicks}, "
-                f"impressions={total_impressions}, cost_micros={total_cost_micros}."
+                f"impressions={total_impressions}, cost_micros={total_cost_micros}, "
+                f"conversions={_format_float(total_conversions)}, "
+                f"conversion_value={_format_float(total_conversion_value)}."
             ),
-            allowed_metrics=["clicks", "impressions", "cost_micros"],
+            allowed_metrics=[
+                "clicks",
+                "impressions",
+                "cost_micros",
+                "conversions",
+                "conversion_value",
+            ],
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -257,7 +265,13 @@ def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMet
     grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
     seen_metric_keys: set[tuple[str | None, str, str]] = set()
     for fact in metric_facts:
-        if fact.name not in {"clicks", "impressions", "cost_micros"}:
+        if fact.name not in {
+            "clicks",
+            "impressions",
+            "cost_micros",
+            "conversions",
+            "conversion_value",
+        }:
             continue
         campaign_id = fact.dimensions.get("campaign_id")
         campaign_name = fact.dimensions.get("campaign_name")
@@ -283,13 +297,21 @@ def _campaign_metric_row(
     facts: list[MetricFact],
 ) -> AdsCampaignMetricRow:
     facts_by_name = {fact.name: fact for fact in facts}
-    expected_metrics = ["clicks", "impressions", "cost_micros"]
+    expected_metrics = [
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+    ]
     return AdsCampaignMetricRow(
         campaign_id=campaign_id,
         campaign_name=campaign_name,
         clicks=_int_metric_value(facts_by_name.get("clicks")),
         impressions=_int_metric_value(facts_by_name.get("impressions")),
         cost_micros=_int_metric_value(facts_by_name.get("cost_micros")),
+        conversions=_float_metric_value(facts_by_name.get("conversions")),
+        conversion_value=_float_metric_value(facts_by_name.get("conversion_value")),
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
@@ -312,14 +334,29 @@ def _int_metric_value(fact: MetricFact | None) -> int | None:
     return int(fact.value)
 
 
+def _float_metric_value(fact: MetricFact | None) -> float | None:
+    if fact is None:
+        return None
+    if isinstance(fact.value, str):
+        try:
+            return float(fact.value)
+        except ValueError:
+            return None
+    return float(fact.value)
+
+
+def _format_float(value: float) -> str:
+    if value.is_integer():
+        return str(int(value))
+    return f"{value:.4f}".rstrip("0").rstrip(".")
+
+
 def _search_terms_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
 ) -> AdsSearchTermsReadContract:
     rows = _search_term_metric_rows(metric_facts)
     missing_read_contracts = [
-        "conversions",
-        "conversion_value",
         "keyword match context",
         "90_day_safety_check",
         "negative_keyword_action_validation",
@@ -336,12 +373,16 @@ def _search_terms_read_contract(
         total_clicks = sum(row.clicks or 0 for row in rows)
         total_impressions = sum(row.impressions or 0 for row in rows)
         total_cost_micros = sum(row.cost_micros or 0 for row in rows)
+        total_conversions = sum(row.conversions or 0 for row in rows)
+        total_conversion_value = sum(row.conversion_value or 0 for row in rows)
         return AdsSearchTermsReadContract(
             status="ready",
             title="Google Ads: search terms read-only rows",
             summary=(
                 f"WILQ ma {len(rows)} search term rows: clicks={total_clicks}, "
-                f"impressions={total_impressions}, cost_micros={total_cost_micros}."
+                f"impressions={total_impressions}, cost_micros={total_cost_micros}, "
+                f"conversions={_format_float(total_conversions)}, "
+                f"conversion_value={_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "search_term",
@@ -351,6 +392,8 @@ def _search_terms_read_contract(
                 "clicks",
                 "impressions",
                 "cost_micros",
+                "conversions",
+                "conversion_value",
             ],
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
@@ -389,6 +432,8 @@ def _search_term_metric_rows(metric_facts: list[MetricFact]) -> list[AdsSearchTe
             "search_term_clicks",
             "search_term_impressions",
             "search_term_cost_micros",
+            "search_term_conversions",
+            "search_term_conversion_value",
         }:
             continue
         search_term = fact.dimensions.get("search_term")
@@ -421,6 +466,8 @@ def _search_term_metric_row(
         "search_term_clicks",
         "search_term_impressions",
         "search_term_cost_micros",
+        "search_term_conversions",
+        "search_term_conversion_value",
     ]
     first_dimensions = facts[0].dimensions if facts else {}
     return AdsSearchTermMetricRow(
@@ -433,6 +480,10 @@ def _search_term_metric_row(
         clicks=_int_metric_value(facts_by_name.get("search_term_clicks")),
         impressions=_int_metric_value(facts_by_name.get("search_term_impressions")),
         cost_micros=_int_metric_value(facts_by_name.get("search_term_cost_micros")),
+        conversions=_float_metric_value(facts_by_name.get("search_term_conversions")),
+        conversion_value=_float_metric_value(
+            facts_by_name.get("search_term_conversion_value")
+        ),
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
@@ -459,8 +510,8 @@ def _search_terms_section(
             summary=search_terms_read_contract.summary,
             diagnosis=(
                 "WILQ ma read-only search term rows z Google Ads. To jeszcze nie "
-                "odblokowuje negative keywords: brakuje konwersji, 90-dniowego checku "
-                "i zwalidowanego ActionObject."
+                "odblokowuje negative keywords: brakuje match contextu, 90-dniowego "
+                "safety checku i zwalidowanego ActionObject."
             ),
             next_step=search_terms_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],

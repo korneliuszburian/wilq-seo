@@ -227,8 +227,9 @@ Examples of real value:
   do not promise ranking or lead uplift."
 - GA4: "Landing/source/campaign traffic quality looks weak; review tracking and
   message match; do not claim ROAS/revenue."
-- Ads: "Campaign metric facts exist; review live campaign activity; search-term
-  waste remains blocked until search-term read contract exists."
+- Ads: "Campaign and search-term metric facts exist, including conversion
+  counts/value; review live activity, but keep waste/CPA/ROAS/negative keyword
+  claims blocked until derived KPI, safety and ActionObject contracts exist."
 - Localo: "MCP access działa (`mcp_initialize_status=200`), ale lokalna
   widoczność nie może być analizowana, dopóki WILQ API nie zbierze konkretnych
   Localo ranking/GBP/competitor facts poza initialize probe."
@@ -369,31 +370,33 @@ Work in this order:
 6. **Slice 5: Ads Doctor read contracts.**
    Keep Ads as live campaign-level review until WILQ has explicit read
    contracts for search terms, conversions, campaign budget/spend/clicks,
-   recommendations, change history and blocked-claim matrix. Do not call it a
-   money-leak optimizer until those facts exist.
+   recommendations, change history, safety checks and blocked-claim matrix. Do
+   not call it a money-leak optimizer until those facts exist.
 
    Current local status: `/api/ads/diagnostics.campaign_read_contract` is typed
    and live. It groups Google Ads metric facts into campaign rows with
    `campaign_id`, `campaign_name`, `clicks`, `impressions`, `cost_micros`,
-   evidence IDs and blocked claims.
+   `conversions`, `conversion_value`, evidence IDs and blocked claims.
 
    Current local status: `/api/ads/diagnostics.search_terms_read_contract` is
    now typed too. Google Ads `vendor_read` queries `search_term_view` read-only
-   and stores `search_term_clicks`, `search_term_impressions` and
-   `search_term_cost_micros` metric facts with campaign/ad group/search term
-   dimensions. Dashboard `/ads-doctor` renders this as a second dedicated
-   read-only panel. Live read `refresh_google_ads_13c265d9a0aa` completed on
-   2026-06-18 with 18 campaign rows and 50 search term rows. This unlocks
-   honest search term review, not automatic waste or negative keyword claims.
-   Negative keyword candidates and waste diagnosis remain blocked until
-   conversions, conversion value, keyword/match context, 90-day safety check
-   and ActionObject validation exist.
+   and stores `search_term_clicks`, `search_term_impressions`,
+   `search_term_cost_micros`, `search_term_conversions` and
+   `search_term_conversion_value` metric facts with campaign/ad group/search
+   term dimensions. Dashboard `/ads-doctor` renders this as a second dedicated
+   read-only panel. Live read `refresh_google_ads_c2f62ee2b43a` completed on
+   2026-06-18 with 18 campaign rows, 50 search term rows, campaign
+   `conversions=2.0`, campaign `conversion_value=2.0`, search-term
+   `search_term_conversions=0.0` and
+   `search_term_conversion_value=0.0`. This unlocks honest campaign/search-term
+   review with conversion context, not automatic waste or negative keyword
+   claims.
 
-   Still missing for BDOS-class Ads value: conversions, conversion value,
-   recommendations, change history, budget pacing, impression share and
-   prepare-only negative keyword ActionObjects. Full `scripts/verify.sh`
-   passed after this search terms and Command Center duplicate-stats slice:
-   backend API contracts 97 passed, dashboard route tests 12 passed,
+   Still missing for BDOS-class Ads value: recommendations, change history,
+   budget pacing, impression share, keyword/match context, 90-day safety check,
+   explicit CPA/ROAS derived KPI contract and prepare-only negative keyword
+   ActionObjects. Full `scripts/verify.sh` passed after this conversion-metrics
+   slice: backend API contracts 97 passed, dashboard route tests 12 passed,
    Playwright e2e 8 passed and dashboard production build passed.
 
 7. **Later P2/P3 data contracts.**

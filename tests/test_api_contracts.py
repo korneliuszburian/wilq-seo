@@ -1405,6 +1405,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         search_stream_queries.append(query)
         if "FROM campaign" in query:
             assert "campaign.name" in query
+            assert "metrics.conversions" in query
+            assert "metrics.conversions_value" in query
             return httpx.Response(
                 200,
                 json=[
@@ -1416,6 +1418,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                     "clicks": "2",
                                     "impressions": "10",
                                     "costMicros": "3000000",
+                                    "conversions": "1.5",
+                                    "conversionsValue": "250.75",
                                 }
                             },
                             {
@@ -1424,6 +1428,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                     "clicks": "1",
                                     "impressions": "5",
                                     "costMicros": "1000000",
+                                    "conversions": "0",
+                                    "conversionsValue": "0",
                                 }
                             },
                         ]
@@ -1432,6 +1438,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
             )
         assert "FROM search_term_view" in query
         assert "search_term_view.search_term" in query
+        assert "metrics.conversions" in query
+        assert "metrics.conversions_value" in query
         return httpx.Response(
             200,
             json=[
@@ -1448,6 +1456,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                 "clicks": "4",
                                 "impressions": "20",
                                 "costMicros": "5000000",
+                                "conversions": "1",
+                                "conversionsValue": "120",
                             },
                         },
                     ]
@@ -1467,10 +1477,14 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["clicks"] == 3
     assert result.metric_summary["impressions"] == 15
     assert result.metric_summary["cost_micros"] == 4000000
+    assert result.metric_summary["conversions"] == 1.5
+    assert result.metric_summary["conversion_value"] == 250.75
     assert result.metric_summary["search_term_row_count"] == 1
     assert result.metric_summary["search_term_clicks"] == 4
     assert result.metric_summary["search_term_impressions"] == 20
     assert result.metric_summary["search_term_cost_micros"] == 5000000
+    assert result.metric_summary["search_term_conversions"] == 1.0
+    assert result.metric_summary["search_term_conversion_value"] == 120.0
     assert any("FROM campaign" in query for query in search_stream_queries)
     assert any("FROM search_term_view" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
@@ -1479,6 +1493,12 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     }
     assert result.metric_facts[0].name == "clicks"
     assert result.metric_facts[0].value == 2
+    conversion_fact = next(fact for fact in result.metric_facts if fact.name == "conversions")
+    assert conversion_fact.value == 1.5
+    conversion_value_fact = next(
+        fact for fact in result.metric_facts if fact.name == "conversion_value"
+    )
+    assert conversion_value_fact.value == 250.75
     search_term_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_term_clicks"
     )
@@ -1491,6 +1511,10 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "search_term": "bdo rejestracja",
         "search_term_status": "ADDED",
     }
+    search_term_conversion_fact = next(
+        fact for fact in result.metric_facts if fact.name == "search_term_conversions"
+    )
+    assert search_term_conversion_fact.value == 1.0
     serialized = json.dumps(result.metric_summary)
     assert "developer-token-test" not in serialized
     assert "refresh-token-test" not in serialized
@@ -1943,10 +1967,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "clicks": 9,
                 "impressions": 90,
                 "cost_micros": 12000000,
+                "conversions": 2.5,
+                "conversion_value": 450.75,
                 "search_term_row_count": 1,
                 "search_term_clicks": 4,
                 "search_term_impressions": 40,
                 "search_term_cost_micros": 7000000,
+                "search_term_conversions": 1.0,
+                "search_term_conversion_value": 120.0,
             },
             metric_facts=[
                 VendorMetricFact(
@@ -1962,6 +1990,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 VendorMetricFact(
                     "cost_micros",
                     12000000,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "conversions",
+                    2.5,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "conversion_value",
+                    450.75,
                     {"campaign_id": "101", "campaign_name": "Brand Search"},
                 ),
                 VendorMetricFact(
@@ -2000,6 +2038,30 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "search_term_status": "ADDED",
                     },
                 ),
+                VendorMetricFact(
+                    "search_term_conversions",
+                    1.0,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "201",
+                        "ad_group_name": "BDO",
+                        "search_term": "bdo rejestracja",
+                        "search_term_status": "ADDED",
+                    },
+                ),
+                VendorMetricFact(
+                    "search_term_conversion_value",
+                    120.0,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "201",
+                        "ad_group_name": "BDO",
+                        "search_term": "bdo rejestracja",
+                        "search_term_status": "ADDED",
+                    },
+                ),
             ],
         ),
     )
@@ -2022,7 +2084,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     read_contract = payload["campaign_read_contract"]
     assert read_contract["status"] == "ready"
-    assert read_contract["allowed_metrics"] == ["clicks", "impressions", "cost_micros"]
+    assert read_contract["allowed_metrics"] == [
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+    ]
+    assert "conversions" not in read_contract["missing_read_contracts"]
+    assert "conversion_value" not in read_contract["missing_read_contracts"]
     assert "ROAS" in read_contract["blocked_claims"]
     assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
@@ -2032,6 +2102,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "clicks": 9,
             "impressions": 90,
             "cost_micros": 12000000,
+            "conversions": 2.5,
+            "conversion_value": 450.75,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
@@ -2049,6 +2121,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_section["title"] == "Campaign activity read contract"
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
     assert facts_by_name["clicks"]["value"] == 9
+    assert facts_by_name["conversions"]["value"] == 2.5
+    assert facts_by_name["conversion_value"]["value"] == 450.75
     assert any(
         fact["name"] == "cost_micros"
         and fact["dimensions"].get("campaign_name") == "Brand Search"
@@ -2065,7 +2139,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "clicks",
         "impressions",
         "cost_micros",
+        "conversions",
+        "conversion_value",
     ]
+    assert "conversions" not in search_terms_contract["missing_read_contracts"]
+    assert "conversion_value" not in search_terms_contract["missing_read_contracts"]
     assert "90_day_safety_check" in search_terms_contract["missing_read_contracts"]
     assert "negative keyword apply" in search_terms_contract["blocked_claims"]
     assert search_terms_contract["search_term_rows"] == [
@@ -2079,6 +2157,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "clicks": 4,
             "impressions": 40,
             "cost_micros": 7000000,
+            "conversions": 1.0,
+            "conversion_value": 120.0,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": search_terms_contract["search_term_rows"][0]["metric_facts"],
             "missing_metrics": [],

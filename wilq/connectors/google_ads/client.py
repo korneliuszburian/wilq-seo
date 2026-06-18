@@ -35,7 +35,9 @@ SELECT
   campaign.name,
   metrics.clicks,
   metrics.impressions,
-  metrics.cost_micros
+  metrics.cost_micros,
+  metrics.conversions,
+  metrics.conversions_value
 FROM campaign
 WHERE segments.date DURING LAST_7_DAYS
   AND campaign.status != 'REMOVED'
@@ -51,7 +53,9 @@ SELECT
   search_term_view.status,
   metrics.clicks,
   metrics.impressions,
-  metrics.cost_micros
+  metrics.cost_micros,
+  metrics.conversions,
+  metrics.conversions_value
 FROM search_term_view
 WHERE segments.date DURING LAST_30_DAYS
 LIMIT 50
@@ -420,15 +424,23 @@ def _summarize_search_stream_response(
     clicks = 0
     impressions = 0
     cost_micros = 0
+    conversions = 0.0
+    conversion_value = 0.0
     metric_facts: list[VendorMetricFact] = []
     for row in rows:
         metrics = row.get("metrics", {})
         row_clicks = _int_metric(metrics.get("clicks"))
         row_impressions = _int_metric(metrics.get("impressions"))
         row_cost_micros = _int_metric(metrics.get("costMicros", metrics.get("cost_micros")))
+        row_conversions = _float_metric(metrics.get("conversions"))
+        row_conversion_value = _float_metric(
+            metrics.get("conversionsValue", metrics.get("conversions_value"))
+        )
         clicks += row_clicks
         impressions += row_impressions
         cost_micros += row_cost_micros
+        conversions += row_conversions
+        conversion_value += row_conversion_value
         campaign = row.get("campaign", {})
         dimensions = _campaign_dimensions(campaign)
         if dimensions:
@@ -437,6 +449,8 @@ def _summarize_search_stream_response(
                     VendorMetricFact("clicks", row_clicks, dimensions),
                     VendorMetricFact("impressions", row_impressions, dimensions),
                     VendorMetricFact("cost_micros", row_cost_micros, dimensions),
+                    VendorMetricFact("conversions", row_conversions, dimensions),
+                    VendorMetricFact("conversion_value", row_conversion_value, dimensions),
                 ]
             )
     return (
@@ -447,6 +461,8 @@ def _summarize_search_stream_response(
             "clicks": clicks,
             "impressions": impressions,
             "cost_micros": cost_micros,
+            "conversions": conversions,
+            "conversion_value": conversion_value,
         },
         metric_facts,
     )
@@ -459,15 +475,23 @@ def _summarize_search_term_response(
     clicks = 0
     impressions = 0
     cost_micros = 0
+    conversions = 0.0
+    conversion_value = 0.0
     metric_facts: list[VendorMetricFact] = []
     for row in rows:
         metrics = row.get("metrics", {})
         row_clicks = _int_metric(metrics.get("clicks"))
         row_impressions = _int_metric(metrics.get("impressions"))
         row_cost_micros = _int_metric(metrics.get("costMicros", metrics.get("cost_micros")))
+        row_conversions = _float_metric(metrics.get("conversions"))
+        row_conversion_value = _float_metric(
+            metrics.get("conversionsValue", metrics.get("conversions_value"))
+        )
         clicks += row_clicks
         impressions += row_impressions
         cost_micros += row_cost_micros
+        conversions += row_conversions
+        conversion_value += row_conversion_value
         dimensions = _search_term_dimensions(row)
         if dimensions:
             metric_facts.extend(
@@ -475,6 +499,12 @@ def _summarize_search_term_response(
                     VendorMetricFact("search_term_clicks", row_clicks, dimensions),
                     VendorMetricFact("search_term_impressions", row_impressions, dimensions),
                     VendorMetricFact("search_term_cost_micros", row_cost_micros, dimensions),
+                    VendorMetricFact("search_term_conversions", row_conversions, dimensions),
+                    VendorMetricFact(
+                        "search_term_conversion_value",
+                        row_conversion_value,
+                        dimensions,
+                    ),
                 ]
             )
     return (
@@ -484,6 +514,8 @@ def _summarize_search_term_response(
             "search_term_clicks": clicks,
             "search_term_impressions": impressions,
             "search_term_cost_micros": cost_micros,
+            "search_term_conversions": conversions,
+            "search_term_conversion_value": conversion_value,
         },
         metric_facts,
     )
@@ -527,6 +559,19 @@ def _int_metric(value: Any) -> int:
     if isinstance(value, str) and value.isdigit():
         return int(value)
     return 0
+
+
+def _float_metric(value: Any) -> float:
+    if value is None:
+        return 0.0
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0
 
 
 def _campaign_dimensions(campaign: Any) -> dict[str, str]:

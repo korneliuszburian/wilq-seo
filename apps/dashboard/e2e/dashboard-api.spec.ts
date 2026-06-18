@@ -64,6 +64,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByText("Brakujące read contracts:").first()).toBeVisible();
     await expect(page.getByText(/clicks:/).first()).toBeVisible();
+    await expect(page.getByText("Konwersje").first()).toBeVisible();
+    await expect(page.getByText("Wartość konw.").first()).toBeVisible();
     await expect(page.getByText("Google Ads: live read gotowy do kolejnego kroku")).toBeVisible();
     await expect(page.getByText("Google Ads connector ma live metric facts.")).toBeVisible();
     await expect(page.getByRole("link", { name: "ev_connector_google_ads_status" }).first()).toBeVisible();

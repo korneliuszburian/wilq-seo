@@ -1567,6 +1567,8 @@ function AdsCampaignReadContractPanel({ contract }: { contract: AdsCampaignReadC
                 <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
                 <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
                 <th className="py-2 pr-4 font-semibold">Koszt micros</th>
+                <th className="py-2 pr-4 font-semibold">Konwersje</th>
+                <th className="py-2 pr-4 font-semibold">Wartość konw.</th>
                 <th className="py-2 pr-4 font-semibold">Evidence</th>
               </tr>
             </thead>
@@ -1577,6 +1579,10 @@ function AdsCampaignReadContractPanel({ contract }: { contract: AdsCampaignReadC
                   <td className="py-2 pr-4 text-slate-700">{row.clicks ?? "brak"}</td>
                   <td className="py-2 pr-4 text-slate-700">{row.impressions ?? "brak"}</td>
                   <td className="py-2 pr-4 text-slate-700">{row.cost_micros ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">{row.conversions ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">
+                    {row.conversion_value ?? "brak"}
+                  </td>
                   <td className="py-2 pr-4 text-xs text-slate-600">
                     {row.evidence_ids.length} ID
                   </td>
@@ -1625,6 +1631,8 @@ function AdsSearchTermsReadContractPanel({ contract }: { contract: AdsSearchTerm
                 <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
                 <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
                 <th className="py-2 pr-4 font-semibold">Koszt micros</th>
+                <th className="py-2 pr-4 font-semibold">Konwersje</th>
+                <th className="py-2 pr-4 font-semibold">Wartość konw.</th>
                 <th className="py-2 pr-4 font-semibold">Evidence</th>
               </tr>
             </thead>
@@ -1645,6 +1653,10 @@ function AdsSearchTermsReadContractPanel({ contract }: { contract: AdsSearchTerm
                   <td className="py-2 pr-4 text-slate-700">{row.clicks ?? "brak"}</td>
                   <td className="py-2 pr-4 text-slate-700">{row.impressions ?? "brak"}</td>
                   <td className="py-2 pr-4 text-slate-700">{row.cost_micros ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">{row.conversions ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">
+                    {row.conversion_value ?? "brak"}
+                  </td>
                   <td className="py-2 pr-4 text-xs text-slate-600">
                     {row.evidence_ids.length} ID
                   </td>

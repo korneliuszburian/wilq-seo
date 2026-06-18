@@ -51,24 +51,31 @@ Data: 2026-06-18
 - Ads Doctor ma pierwszy typed read contract:
   `/api/ads/diagnostics.campaign_read_contract`. Kontrakt grupuje live Google
   Ads metric facts do campaign rows z `campaign_id`, `campaign_name`, `clicks`,
-  `impressions`, `cost_micros`, evidence IDs i blocked claims.
+  `impressions`, `cost_micros`, `conversions`, `conversion_value`, evidence
+  IDs i blocked claims.
 - Ads Doctor ma drugi typed read contract:
   `/api/ads/diagnostics.search_terms_read_contract`. Google Ads `vendor_read`
   odpytuje read-only `search_term_view` i zapisuje `search_term_clicks`,
-  `search_term_impressions`, `search_term_cost_micros` z wymiarami
+  `search_term_impressions`, `search_term_cost_micros`,
+  `search_term_conversions`, `search_term_conversion_value` z wymiarami
   `campaign_id`, `campaign_name`, `ad_group_id`, `ad_group_name`,
   `search_term`, `search_term_status`. Dashboard `/ads-doctor` pokazuje osobny
-  panel `Search terms read-only`. To odblokowuje uczciwy przegląd zapytań, ale
-  nie odblokowuje waste/negative keyword claims bez konwersji,
-  `90_day_safety_check` i walidowanego ActionObject.
+  panel `Search terms read-only`. To odblokowuje uczciwy przegląd zapytań z
+  kontekstem konwersji, ale nie odblokowuje waste/negative keyword claims bez
+  `keyword match context`, `90_day_safety_check` i walidowanego ActionObject.
 - Live Google Ads proof po restarcie API: `uv run wilq connectors refresh
-  google_ads --mode vendor_read --reason "Goal 001 search terms read contract
-  proof"` zakończył się `completed`, `refresh_google_ads_13c265d9a0aa`,
-  `row_count=18`, `search_term_row_count=50`, `search_term_clicks=8`,
-  `search_term_impressions=71`, `search_term_cost_micros=48090179`. Następnie
-  `/api/ads/diagnostics.search_terms_read_contract` zwrócił `status=ready`,
-  `rows=50` i nadal blokuje `search-term waste`, `negative keyword candidates`,
-  `negative keyword apply`, `CPA`.
+  google_ads --mode vendor_read --reason "Goal 001 Ads conversion read
+  contract proof"` zakończył się `completed`,
+  `refresh_google_ads_c2f62ee2b43a`, `row_count=18`,
+  `search_term_row_count=50`, `conversions=2.0`, `conversion_value=2.0`,
+  `search_term_conversions=0.0`,
+  `search_term_conversion_value=0.0`. Następnie `/api/ads/diagnostics`
+  zwrócił campaign allowed metrics
+  `clicks/impressions/cost_micros/conversions/conversion_value`, search-term
+  allowed metrics z `conversions/conversion_value`, a missing contracts zostały
+  ograniczone do `recommendations`, `change_history`, `budget_pacing`,
+  `impression_share`, `keyword match context`, `90_day_safety_check` i
+  `negative_keyword_action_validation`.
 - Nadal nie wolno claimować CPA, ROAS, wasted budget, negative keyword
   candidates, budget scaling ani conversion drop bez osobnych read contracts.
 - Command Center nie renderuje już zdublowanego zestawu kafli

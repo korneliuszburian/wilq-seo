@@ -23,9 +23,10 @@ Audit `docs/audits/001-output.md` is now folded into
 1. Command Center first-screen cleanup is implemented and verified: one
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
-2. Ads campaign activity read contract is implemented. Continue with search
-   terms, conversions, recommendations, change history, budget pacing and
-   impression share before any money-leak/CPA/ROAS/search-term claims.
+2. Ads campaign/search-term read contracts are implemented with conversion
+   counts/value. Continue with recommendations, change history, budget pacing,
+   impression share, keyword/match context, 90-day safety and ActionObjects
+   before any money-leak/CPA/ROAS/negative-keyword claims.
 3. Repair each skill only after the matching API/read contract exists.
 
 Recently completed and pushed foundations:
@@ -98,22 +99,30 @@ Current Ads Doctor contract truth:
 - `/api/ads/diagnostics.campaign_read_contract` is typed and rendered on
   `/ads-doctor`.
 - It groups live Google Ads metric facts into campaign rows with campaign ID,
-  campaign name, clicks, impressions, cost micros, evidence IDs and blocked
-  claims.
-- It explicitly limits allowed metrics to `clicks`, `impressions` and
-  `cost_micros`.
+  campaign name, clicks, impressions, cost micros, conversions, conversion
+  value, evidence IDs and blocked claims.
+- It explicitly limits allowed metrics to `clicks`, `impressions`,
+  `cost_micros`, `conversions` and `conversion_value`.
 - `/api/ads/diagnostics.search_terms_read_contract` is typed and rendered on
   `/ads-doctor`.
 - Google Ads `vendor_read` now queries `search_term_view` read-only and stores
   `search_term_clicks`, `search_term_impressions` and
-  `search_term_cost_micros` with campaign, ad group, search term and status
-  dimensions.
+  `search_term_cost_micros`, `search_term_conversions` and
+  `search_term_conversion_value` with campaign, ad group, search term and
+  status dimensions.
 - Search terms rows are for read-only review only. Do not claim search-term
-  waste, CPA, ROAS or negative keyword candidates until conversions,
-  conversion value, keyword/match context, 90-day safety check and validated
-  ActionObject contracts exist.
-- Still missing read contracts: conversions, conversion value,
-  recommendations, change history, budget pacing and impression share.
+  waste, CPA, ROAS or negative keyword candidates until keyword/match context,
+  90-day safety check, derived KPI semantics and validated ActionObject
+  contracts exist.
+- Live proof on 2026-06-18:
+  `refresh_google_ads_c2f62ee2b43a` completed with 18 campaign rows, 50 search
+  term rows, `conversions=2.0`, `conversion_value=2.0`,
+  `search_term_conversions=0.0` and
+  `search_term_conversion_value=0.0`.
+- Still missing read contracts: recommendations, change history, budget
+  pacing, impression share, keyword/match context, 90-day safety,
+  prepare-only negative keyword ActionObjects and explicit CPA/ROAS derived KPI
+  contracts.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the
