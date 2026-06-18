@@ -352,6 +352,14 @@ Work in this order:
    decisions and no duplicate content suggestions. GA4 `(not set)` remains a
    tracking issue, not a content task.
 
+   Current local status: tactical queue now reads enough WordPress inventory
+   rows from DuckDB to avoid false `missing` caused by large sitemap inventories.
+   GSC full URLs and GA4 landing paths expose normalized path keys, match
+   confidence and matched WordPress URL in typed API fields. Direct checkout
+   proof shows BDO, Zielony Ład and remediacja GSC URLs as `found exact_url`,
+   and GA4 landing paths as `found path_fallback`. Full `scripts/verify.sh`
+   passed for this slice on 2026-06-18.
+
 6. **Slice 5: Ads Doctor read contracts.**
    Keep Ads as live campaign-level review until WILQ has explicit read
    contracts for search terms, conversions, campaign budget/spend/clicks,
@@ -870,47 +878,41 @@ Commit rules:
 
 ## Immediate Next Tasks
 
-1. **Fix Content/GSC/GA4/WordPress URL normalization.**
-   Normalize host, path, slash, sitemap, post/page type and GA4 landing path to
-   full WordPress URL. The goal is reliable `refresh/merge/create/block`
-   decisions and no duplicate content suggestions. GA4 `(not set)` stays a
-   tracking issue, not a content task.
-
-2. **Remove remaining Command Center readiness slop.**
+1. **Remove remaining Command Center readiness slop.**
    First-screen `/command-center` must stop rendering connector readiness as
    marketing insight. Keep real metric facts, tactical queue, ActionObjects and
    honest blockers.
 
-3. **Clean remaining stale Ads/Localo state in product surfaces.**
+2. **Clean remaining stale Ads/Localo state in product surfaces.**
    Ensure Command Center, Ads Doctor, marketing brief, action plan and skill
    text no longer show OAuth repair when live Ads data exists, and no Localo
    surface says "dokończ access" after `mcp_initialize_status=200`. Keep direct
    `/actions/act_configure_google_ads_env` available for troubleshooting only.
 
-4. **Continue API surface audit from `/api/actions` and `/api/dashboard/command-center`.**
+3. **Continue API surface audit from `/api/actions` and `/api/dashboard/command-center`.**
    `/api/marketing/brief` has been narrowed and deduped for the current slice.
    Continue by removing or demoting any ActionObject/Command Center item that
    repeats the same intent in multiple sections without adding a new decision,
    validation path or Codex bridge.
 
-5. **Run focused verification for the active slice.**
+4. **Run focused verification for the active slice.**
    Required:
    ```bash
-  uv run ruff check wilq/schemas.py wilq/briefing/merchant_diagnostics.py wilq/actions/service.py tests/test_api_contracts.py
-  uv run mypy wilq/schemas.py wilq/briefing/merchant_diagnostics.py wilq/actions/service.py tests/test_api_contracts.py
-  uv run pytest tests/test_api_contracts.py -q -k 'merchant_diagnostics_exposes_feed_issue_queue or merchant_vendor_read_uses_aggregate_product_statuses'
+  uv run ruff check wilq/briefing/command_center.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+  uv run mypy wilq/briefing/command_center.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
+  uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or command_center_treats_localo_mcp_initialize_as_access_ready or marketing_brief_exposes_metric_backed_prepare_actions'
   pnpm --filter @wilq/dashboard lint
   pnpm --filter @wilq/dashboard typecheck
   pnpm --filter @wilq/dashboard test -- --run App.test.tsx
    ```
 
-6. **Audit Command Center top-to-bottom.**
+5. **Audit Command Center top-to-bottom.**
    Use the running dashboard and `agent-browser` after the page settles. Remove,
    rewrite or demote every visible section that cannot answer:
    `co widzę`, `co to znaczy`, `co zrobić teraz`, `czego nie wolno twierdzić`,
    and `jak Codex może pomóc`.
 
-7. **Run full verification.**
+6. **Run full verification.**
    Required before commit:
    ```bash
    scripts/verify.sh

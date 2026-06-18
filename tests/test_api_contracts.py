@@ -373,6 +373,10 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "api_key": "sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "decision_type": "merge_create_after_inventory_check",
+            "normalized_page_path": "/europejski-zielony-lad-co-to-takiego",
+            "wordpress_content_url": (
+                "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+            ),
         }
     )
 
@@ -384,6 +388,10 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["error"] == "[REDACTED]"
     assert redacted["api_key"] == "[REDACTED]"
     assert redacted["decision_type"] == "merge_create_after_inventory_check"
+    assert redacted["normalized_page_path"] == "/europejski-zielony-lad-co-to-takiego"
+    assert redacted["wordpress_content_url"] == (
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    )
 
 
 def test_google_first_party_status_accepts_authorized_user_credentials(
@@ -1160,6 +1168,122 @@ def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
     assert item["dimensions"]["wordpress_inventory_source"] == "sitemap"
     assert "wordpress_ekologus" in item["source_connectors"]
     assert "ev_refresh_refresh_wordpress_ekologus_host_alias_test" in item["evidence_ids"]
+
+
+def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "large_inventory.duckdb"))
+    gsc_run = ConnectorRefreshRun(
+        id="refresh_google_search_console_large_inventory_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_google_search_console_large_inventory_test"],
+        metric_summary={"clicks": 29, "impressions": 651},
+        summary="GSC large inventory test seed.",
+    )
+    target_wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_ekologus_target_inventory_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wordpress_ekologus_target_inventory_test"],
+        metric_summary={"content_object_count": 1},
+        summary="WordPress target URL seed.",
+    )
+    noisy_wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_ekologus_noisy_inventory_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wordpress_ekologus_noisy_inventory_test"],
+        metric_summary={"content_object_count": 350},
+        summary="Newer noisy WordPress inventory seed.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=29,
+                dimensions={
+                    "query": "co to jest zielony ład",
+                    "page": (
+                        "https://www.ekologus.pl/"
+                        "europejski-zielony-lad-co-to-takiego/"
+                    ),
+                },
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=651,
+                dimensions={
+                    "query": "co to jest zielony ład",
+                    "page": (
+                        "https://www.ekologus.pl/"
+                        "europejski-zielony-lad-co-to-takiego/"
+                    ),
+                },
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        target_wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "sitemap",
+                    "content_url": (
+                        "https://www.ekologus.pl/"
+                        "europejski-zielony-lad-co-to-takiego/"
+                    ),
+                    "status": "indexed",
+                    "inventory_source": "public_sitemap",
+                },
+            )
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        noisy_wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "sitemap",
+                    "content_url": f"https://www.ekologus.pl/noisy-page-{index}/",
+                    "status": "indexed",
+                    "inventory_source": "public_sitemap",
+                },
+            )
+            for index in range(350)
+        ],
+    )
+
+    response = client.get("/api/marketing/tactical-queue")
+
+    assert response.status_code == 200
+    item = next(
+        item
+        for item in response.json()["items"]
+        if item["dimensions"].get("query") == "co to jest zielony ład"
+    )
+    assert item["dimensions"]["wordpress_match"] == "found"
+    assert item["dimensions"]["wordpress_match_confidence"] == "exact_url"
+    assert item["dimensions"]["wordpress_requested_path"] == (
+        "/europejski-zielony-lad-co-to-takiego"
+    )
+    assert item["dimensions"]["wordpress_matched_path"] == (
+        "/europejski-zielony-lad-co-to-takiego"
+    )
+    assert item["intent"] in {"content_refresh", "content_merge"}
+    assert "ev_refresh_wordpress_ekologus_target_inventory_test" in item["evidence_ids"]
 
 
 def test_evidence_registry_exposes_connector_status_without_secret_values(
@@ -2048,6 +2172,13 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     first_decision = payload["decision_queue"][0]
     assert first_decision["decision_type"] == "refresh_or_merge"
     assert first_decision["wordpress_match"] == "found"
+    assert first_decision["wordpress_match_confidence"] == "exact_url"
+    assert first_decision["wordpress_content_url"] == (
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    )
+    assert first_decision["normalized_page_path"] == (
+        "/europejski-zielony-lad-co-to-takiego"
+    )
     assert first_decision["evidence_ids"]
     assert "act_prepare_content_refresh_queue" in first_decision["action_ids"]
 
@@ -2061,6 +2192,10 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_payload["content_diagnostics"]["action_ids"] == payload["action_ids"]
     context_decision = context_payload["content_diagnostics"]["decision_queue"][0]
     assert context_decision["decision_type"] == first_decision["decision_type"]
+    assert context_decision["wordpress_match_confidence"] == first_decision[
+        "wordpress_match_confidence"
+    ]
+    assert context_decision["normalized_page_path"] == first_decision["normalized_page_path"]
     assert context_decision["source_connectors"] == first_decision["source_connectors"]
     assert context_decision["evidence_ids"] == first_decision["evidence_ids"]
     assert context_decision["action_ids"] == first_decision["action_ids"]

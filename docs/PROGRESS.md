@@ -33,6 +33,13 @@ Data: 2026-06-18
   blocked claims i `act_review_merchant_feed_issues`. Dashboard `/merchant`
   pokazuje klastry jako primary review queue, a tactical items tylko jako
   fallback.
+- Content URL normalization jest wdrożony lokalnie w tactical/content API:
+  WordPress inventory jest pobierane pełniej z DuckDB, GSC full URL i GA4
+  landing path są normalizowane do jednego path key, a decision queue pokazuje
+  `normalized_page_path`, `wordpress_match_confidence` i
+  `wordpress_content_url`. Bezpośredni proof z aktualnego checkoutu pokazał
+  `found` dla BDO, Zielonego Ładu, remediacji oraz GA4 path fallback. Pełny
+  `scripts/verify.sh` przeszedł dla tego slice'a.
 
 ## Latest Verified Checks
 
@@ -48,12 +55,15 @@ Data: 2026-06-18
 - `pnpm --filter @wilq/dashboard lint`
 - `pnpm --filter @wilq/dashboard typecheck`
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `uv run ruff check wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/storage/metric_store.py wilq/security/redaction.py wilq/schemas.py tests/test_api_contracts.py`
+- `uv run mypy wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/storage/metric_store.py wilq/security/redaction.py wilq/schemas.py tests/test_api_contracts.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'redaction_preserves_env_names_but_redacts_token_values or content_diagnostics_exposes_query_page_inventory_queue or marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match or marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching'`
 - `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000`
 - `scripts/verify.sh`
 
 ```text
 scripts/verify.sh passed
-backend API contracts: 93 passed
+backend API contracts: 97 passed
 dashboard route tests: 12 passed
 Playwright e2e: 8 passed
 dashboard production build: passed
@@ -70,8 +80,10 @@ dashboard production build: passed
 4. `GET /api/dashboard/command-center` still computes several diagnostics and
    tactical queue data live. It is faster than the old baseline but should move
    toward a lightweight decision view model/cache.
-5. Content workflow gap: WordPress inventory matching misses several URLs that
-   GSC/GA4 see. This forces create/refresh/block uncertainty.
+5. Content workflow gap is narrower after URL normalization. GSC/GA4/WordPress
+   URL matching now handles large WordPress inventories and GA4 landing paths,
+   but decisions still need richer scoring for query intent, cannibalization and
+   final marketer usefulness.
 6. Merchant issue clusters currently expose aggregate issue dimensions and
    product counts, but not sample product IDs/titles. The dashboard states this
    limit explicitly instead of pretending to show product-level fixes.
@@ -705,13 +717,11 @@ Source:
 docs/audits/001-output.md
 ```
 
-Current execution order after the daily context-pack/DuckDB read stability and
-shared runtime/cache slices:
+Current execution order after the daily context-pack/DuckDB read stability,
+shared runtime/cache, Merchant issue-level triage and URL normalization slices:
 
 1. Remove remaining Command Center readiness/developer slop.
-2. Add Merchant issue-level triage.
-3. Fix Content/GSC/GA4/WordPress URL normalization.
-4. Add Ads read contracts before search-term, CPA, ROAS or wasted-budget
+2. Add Ads read contracts before search-term, CPA, ROAS or wasted-budget
    claims.
 
 Skill repair is not done. It happens per workflow after the matching API/read

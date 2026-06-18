@@ -565,9 +565,12 @@ class ContentDecisionItem(BaseModel):
     ]
     title: str
     page: str | None = None
+    normalized_page_path: str | None = None
     queries: list[str] = Field(default_factory=list)
     query_count: int = 0
     wordpress_match: str | None = None
+    wordpress_match_confidence: str | None = None
+    wordpress_content_url: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)

@@ -390,9 +390,12 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
                 decision_type=decision_type,
                 title=title,
                 page=page,
+                normalized_page_path=first.dimensions.get("wordpress_requested_path"),
                 queries=queries,
                 query_count=query_count,
                 wordpress_match=wordpress_match,
+                wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
+                wordpress_content_url=first.dimensions.get("wordpress_content_url"),
                 source_connectors=_unique(
                     connector for item in page_items for connector in item.source_connectors
                 ),

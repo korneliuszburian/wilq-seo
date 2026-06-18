@@ -26,6 +26,7 @@ TACTICAL_QUEUE_SOURCE_CONNECTORS = (
     "wordpress_sklep",
 )
 TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT = 300
+WORDPRESS_INVENTORY_FACT_LIMIT = 1200
 TacticalIntent = Literal[
     "content_refresh",
     "content_create",
@@ -58,6 +59,8 @@ class WordPressContentIndex:
 class WordPressMatch:
     fact: MetricFact | None
     confidence: WordPressMatchConfidence
+    requested_url_key: str
+    requested_path_key: str
 
 
 def build_tactical_queue() -> TacticalQueueResponse:
@@ -85,14 +88,18 @@ def build_tactical_queue() -> TacticalQueueResponse:
 
 
 def _tactical_metric_facts() -> list[MetricFact]:
+    facts_by_connector = metric_store().list_metric_facts_by_connector(
+        list(TACTICAL_QUEUE_SOURCE_CONNECTORS),
+        limit_per_connector=WORDPRESS_INVENTORY_FACT_LIMIT,
+    )
     facts: list[MetricFact] = []
     for connector_id in TACTICAL_QUEUE_SOURCE_CONNECTORS:
-        facts.extend(
-            metric_store().list_metric_facts(
-                connector_id=connector_id,
-                limit=TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT,
-            )
+        connector_limit = (
+            WORDPRESS_INVENTORY_FACT_LIMIT
+            if connector_id.startswith("wordpress")
+            else TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT
         )
+        facts.extend(facts_by_connector.get(connector_id, [])[:connector_limit])
     return facts
 
 
@@ -432,20 +439,46 @@ def _wordpress_content_index(facts: list[MetricFact]) -> WordPressContentIndex:
 
 
 def _find_wordpress_match(index: WordPressContentIndex, page_or_path: str) -> WordPressMatch:
-    full_match = index.exact_urls.get(_normalize_url_key(page_or_path))
-    if full_match:
-        return WordPressMatch(fact=full_match, confidence="exact_url")
+    requested_url_key = _normalize_url_key(page_or_path)
     path_key = _normalize_path_key(page_or_path)
+    full_match = index.exact_urls.get(requested_url_key)
+    if full_match:
+        return WordPressMatch(
+            fact=full_match,
+            confidence="exact_url",
+            requested_url_key=requested_url_key,
+            requested_path_key=path_key,
+        )
     if path_key == "/":
-        return WordPressMatch(fact=None, confidence="missing")
+        return WordPressMatch(
+            fact=None,
+            confidence="missing",
+            requested_url_key=requested_url_key,
+            requested_path_key=path_key,
+        )
     path_candidates = index.paths.get(path_key, [])
     alias_match = _host_alias_sitemap_match(page_or_path, path_candidates)
     if alias_match:
-        return WordPressMatch(fact=alias_match, confidence="host_alias_sitemap")
+        return WordPressMatch(
+            fact=alias_match,
+            confidence="host_alias_sitemap",
+            requested_url_key=requested_url_key,
+            requested_path_key=path_key,
+        )
     path_match = _preferred_wordpress_path_match(path_candidates)
     if path_match:
-        return WordPressMatch(fact=path_match, confidence="path_fallback")
-    return WordPressMatch(fact=None, confidence="missing")
+        return WordPressMatch(
+            fact=path_match,
+            confidence="path_fallback",
+            requested_url_key=requested_url_key,
+            requested_path_key=path_key,
+        )
+    return WordPressMatch(
+        fact=None,
+        confidence="missing",
+        requested_url_key=requested_url_key,
+        requested_path_key=path_key,
+    )
 
 
 def _set_wordpress_index(
@@ -654,20 +687,27 @@ def _content_next_step(intent: TacticalIntent) -> str:
 
 def _wordpress_match_dimensions(wordpress_match: WordPressMatch) -> dict[str, str]:
     wordpress_fact = wordpress_match.fact
+    base_dimensions = {
+        "wordpress_match_confidence": wordpress_match.confidence,
+        "wordpress_requested_url_key": wordpress_match.requested_url_key,
+        "wordpress_requested_path": wordpress_match.requested_path_key,
+    }
     if wordpress_fact is None:
         return {
+            **base_dimensions,
             "wordpress_match": "missing",
-            "wordpress_match_confidence": wordpress_match.confidence,
         }
     dimensions = wordpress_fact.dimensions
     return {
+        **base_dimensions,
         "wordpress_match": "found",
-        "wordpress_match_confidence": wordpress_match.confidence,
         "wordpress_connector": wordpress_fact.source_connector,
         "wordpress_content_type": dimensions.get("content_type", ""),
         "wordpress_status": dimensions.get("status", ""),
         "wordpress_content_url": dimensions.get("content_url", ""),
         "wordpress_content_host": _url_host(dimensions.get("content_url", "")),
+        "wordpress_matched_url_key": _normalize_url_key(dimensions.get("content_url", "")),
+        "wordpress_matched_path": _normalize_path_key(dimensions.get("content_url", "")),
         "wordpress_host_alias_applied": str(
             wordpress_match.confidence == "host_alias_sitemap"
         ).lower(),

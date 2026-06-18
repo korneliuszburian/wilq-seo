@@ -326,6 +326,32 @@ export const ContentDiagnosticSectionSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const ContentDecisionItemSchema = z.object({
+  id: z.string(),
+  decision_type: z.enum([
+    "refresh_or_merge",
+    "merge_create_after_inventory_check",
+    "inventory_check_before_create",
+    "block_as_tracking_not_content"
+  ]),
+  title: z.string(),
+  page: z.string().nullable().optional(),
+  normalized_page_path: z.string().nullable().optional(),
+  queries: z.array(z.string()),
+  query_count: z.number(),
+  wordpress_match: z.string().nullable().optional(),
+  wordpress_match_confidence: z.string().nullable().optional(),
+  wordpress_content_url: z.string().nullable().optional(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  rationale: z.string(),
+  next_step: z.string(),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
 export const ContentDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -335,6 +361,7 @@ export const ContentDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   query_page_count: z.number(),
   matched_inventory_count: z.number(),
+  decision_queue: z.array(ContentDecisionItemSchema),
   sections: z.array(ContentDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),

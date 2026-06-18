@@ -20,11 +20,10 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
 
-1. Fix Content/GSC/GA4/WordPress URL normalization.
-2. Remove remaining Command Center readiness/developer slop from first-screen
+1. Remove remaining Command Center readiness/developer slop from first-screen
    marketer workflow.
-3. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
-4. Repair each skill only after the matching API/read contract exists.
+2. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
+3. Repair each skill only after the matching API/read contract exists.
 
 Recently completed and pushed foundations:
 
@@ -66,6 +65,19 @@ Current Merchant slice truth:
 - Full `scripts/verify.sh` passed for this slice on 2026-06-18.
 - Current Merchant read contract still exposes aggregate issue dimensions and
   counts only; no sample product IDs/titles yet.
+
+Current content URL normalization truth:
+
+- Tactical queue reads enough WordPress inventory rows from DuckDB to keep large
+  sitemap inventories in the WordPress index.
+- GSC full URLs and GA4 landing paths are normalized to stable path keys.
+- `ContentDecisionItem` now exposes `normalized_page_path`,
+  `wordpress_match_confidence` and `wordpress_content_url`.
+- Context-pack redaction preserves these public URL/path fields while still
+  redacting token-like secret values.
+- Direct checkout proof shows BDO, Zielony Ład and remediacja GSC URLs as
+  `found exact_url`; GA4 landing paths resolve with `path_fallback`.
+- Full `scripts/verify.sh` passed for this slice on 2026-06-18.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

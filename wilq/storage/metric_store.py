@@ -94,7 +94,7 @@ class DuckDbMetricStore:
         connector_id: str | None = None,
         limit: int = 100,
     ) -> list[MetricFact]:
-        bounded_limit = max(1, min(limit, 500))
+        bounded_limit = max(1, min(limit, 2000))
         query = """
             WITH metric_facts_with_previous AS (
             SELECT
@@ -164,7 +164,7 @@ class DuckDbMetricStore:
         if not connector_ids:
             return {}
         unique_connector_ids = list(dict.fromkeys(connector_ids))
-        bounded_limit = max(1, min(limit_per_connector, 500))
+        bounded_limit = max(1, min(limit_per_connector, 2000))
         query = """
             WITH metric_facts_with_previous AS (
             SELECT
