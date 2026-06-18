@@ -8,14 +8,13 @@
       "Merchant",
       "Content",
       "GA4",
-      "OAuth",
+      "Ads",
       "Localo"
     ],
     "expected_action_ids": [
       "act_review_merchant_feed_issues",
       "act_prepare_content_refresh_queue",
-      "act_review_ga4_tracking_quality",
-      "act_configure_google_ads_env"
+      "act_review_ga4_tracking_quality"
     ],
     "expected_connectors": [
       "google_ads",
@@ -31,19 +30,20 @@
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
-    "task_pl": "Sprawdź gotowość Google Ads i powiedz, czy można wiarygodnie diagnozować wasted spend, search terms i negative keywords bez wymyślania metryk.",
+    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts i jasno zablokuj search terms, CPA, ROAS oraz wasted budget, jeśli nie ma ich w evidence.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
       "Ads Doctor",
-      "OAuth",
-      "spend",
+      "google_ads",
       "ads_diagnostics",
-      "blocked_handoff",
-      "finalny handoff",
-      "oauth_error=deleted_client",
-      "wasted spend"
+      "live_data_available",
+      "campaign",
+      "search terms",
+      "CPA",
+      "ROAS",
+      "blocked claims"
     ],
-    "expected_action_ids": ["act_configure_google_ads_env"]
+    "expected_action_ids": []
   },
   {
     "skill": "wilq-gsc-content-doctor",

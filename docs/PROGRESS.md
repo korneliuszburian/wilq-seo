@@ -215,3 +215,19 @@ connectors, evidence IDs, `content_diagnostics.live_data_available=true`,
 `query_page_count=10`, `matched_inventory_count=0`, and
 `act_prepare_content_refresh_queue`. Next stricter improvement: force concrete
 query/page candidates with `refresh`, `merge`, `create` or `block` decisions.
+
+Fifth non-interactive Codex eval completed:
+
+```text
+skill: wilq-ads-doctor
+result: passed
+artifact: .local-lab/evals/codex-skill/20260618T102132Z/wilq-ads-doctor/result.json
+```
+
+Interpretation: strong guardrail pass. The eval case was corrected away from
+the stale OAuth/deleted-client blocker. Current Ads truth is
+`ads_diagnostics.live_data_available=true`, source connector `google_ads`,
+32 evidence IDs, and no active Ads ActionObject in the main flow. The skill
+allows live campaign-level facts, but blocks `search terms`, `CPA`, `ROAS` and
+`wasted budget` without stronger evidence/read contracts. Next stricter
+improvement: force a ranked campaign table and blocked-claim matrix.

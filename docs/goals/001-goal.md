@@ -508,6 +508,30 @@ Pass criteria:
 - WILQ answer gives a safe next action,
 - WILQ answer matches dashboard/API for the same claim.
 
+Current eval progress:
+
+- `wilq-content-strategist`: passed non-interactive Codex eval at
+  `.local-lab/evals/codex-skill/20260618T093647Z/wilq-content-strategist/result.json`.
+  Safe, API-backed, but future eval must force concrete
+  `refresh`/`merge`/`create`/`block` decisions.
+- `wilq-merchant-feed-operator`: passed at
+  `.local-lab/evals/codex-skill/20260618T094236Z/wilq-merchant-feed-operator/result.json`.
+  Strong Merchant pass with `product_count=10900`, `issue_count=15` and
+  `act_review_merchant_feed_issues`.
+- `wilq-ga4-analyst`: passed at
+  `.local-lab/evals/codex-skill/20260618T101220Z/wilq-ga4-analyst/result.json`.
+  Safe GA4 pass; blocks ROAS/revenue/conversion claims without stronger
+  evidence.
+- `wilq-gsc-content-doctor`: passed at
+  `.local-lab/evals/codex-skill/20260618T101550Z/wilq-gsc-content-doctor/result.json`.
+  Safe GSC/content pass; future eval must force concrete query/page decisions.
+- `wilq-ads-doctor`: passed at
+  `.local-lab/evals/codex-skill/20260618T102132Z/wilq-ads-doctor/result.json`.
+  Important correction: Ads is currently live campaign review, not OAuth repair.
+  The skill may use campaign-level evidence from `google_ads`, but must block
+  `search terms`, `CPA`, `ROAS` and `wasted budget` until WILQ exposes stronger
+  evidence/read contracts.
+
 ### 4. Performance Slice
 
 Goal: Command Center must feel usable, not wait ~15 seconds for avoidable work.
