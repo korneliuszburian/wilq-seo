@@ -568,6 +568,17 @@ Current eval progress:
   It correctly blocks backlink/competitor/content gap claims because WILQ has
   aggregate Ahrefs authority metrics plus GSC/WordPress context, but no concrete
   Ahrefs gap records.
+- `wilq-social-publisher`: passed at
+  `.local-lab/evals/codex-skill/20260618T105649Z/wilq-social-publisher/result.json`.
+  This is a strong safety pass. It exposes LinkedIn/Facebook draft ActionObjects
+  but blocks publishing and draft claims because social credentials and
+  ActionObject validation are missing.
+
+Current eval coverage: 12/12 WILQ skills have recorded non-interactive Codex
+evals. This proves API integration and guardrails, not Goal 001 completion. The
+next product work must convert eval findings into fixes: social action filtering
+in daily context, Ads read contracts, campaign ActionObjects, source-term
+evidence, Localo facts, Ahrefs gap records and Demand Gen diagnostics.
 
 ### 4. Performance Slice
 
