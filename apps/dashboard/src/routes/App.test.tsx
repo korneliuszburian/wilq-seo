@@ -810,14 +810,14 @@ const merchantDiagnostics = {
       sample_product_ids: [],
       sample_titles: [],
       sample_unavailable_reason:
-        "Obecny Merchant read contract zwraca issue dimensions i liczby produktów, ale nie zwraca sample product IDs ani tytułów.",
+        "Obecny Merchant read contract zwraca issue dimensions i liczbę wystąpień problemu w raportach, ale nie zwraca sample product IDs ani tytułów.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
       action_id: "act_review_merchant_feed_issues",
       risk: "medium",
       next_step:
-        "Przejrzyj ten issue cluster w `act_review_merchant_feed_issues`; najpierw przygotuj payload preview, bez automatycznej zmiany feedu."
+        "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; najpierw przygotuj payload preview, bez automatycznej zmiany feedu."
     }
   ],
   sections: [
@@ -825,7 +825,7 @@ const merchantDiagnostics = {
       id: "merchant_feed_health",
       title: "Merchant Center: feed/product health",
       status: "ready",
-      summary: "Metric facts: total_products=10900, issue_product_count=23.",
+      summary: "Metryki Merchant: total_products=10900, item_level_issue_count=23.",
       diagnosis: "WILQ ma read-only Merchant facts i może ocenić skalę feedu.",
       next_step: "Przejdź do issue queue i grupuj problemy po issue_type.",
       source_connectors: ["google_merchant_center"],
@@ -840,7 +840,8 @@ const merchantDiagnostics = {
       id: "merchant_issue_queue",
       title: "Merchant Center: kolejka feed/product issues",
       status: "ready",
-      summary: "WILQ ma 1 issue clusters, 1 Merchant tactical items i 1 issue metric facts.",
+      summary:
+        "WILQ ma 1 grupę problemów feedu, 1 taktykę Merchant i 1 metrykę issue. Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją unikalnych produktów.",
       diagnosis: "Najbezpieczniejsza praca to review problemów po issue_type.",
       next_step: "Otwórz ActionObject `act_review_merchant_feed_issues`.",
       source_connectors: ["google_merchant_center"],
@@ -1588,8 +1589,14 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
     expect(screen.getByText(/WILQ grupuje problemy Merchant po issue type/)).toBeInTheDocument();
-    expect(screen.getByText("availability_updated / n:availability")).toBeInTheDocument();
-    expect(screen.getByText(/Dotyczy 23 produktów w kraju PL \/ SHOPPING_ADS/)).toBeInTheDocument();
+    expect(screen.getByText("availability_updated / n:availability / SHOPPING_ADS")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Raport pokazuje 23 zgłoszenia tego problemu w kraju PL \/ SHOPPING_ADS/)
+    ).toBeInTheDocument();
+    expect(screen.getByText("Zgłoszenia")).toBeInTheDocument();
+    expect(screen.getByText("zgłoszenia: 23")).toBeInTheDocument();
+    expect(screen.getByText("kontekst: SHOPPING_ADS")).toBeInTheDocument();
+    expect(screen.queryByText("Affected")).not.toBeInTheDocument();
     expect(screen.getByText(/nie zwraca sample product IDs/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
       "href",

@@ -109,7 +109,10 @@ Current connector truth:
   is the child metrics customer. Do not call Ads an OAuth blocker unless a fresh
   read proves that.
 - `google_merchant_center`: live product/feed facts exist and support a review
-  queue.
+  queue. Merchant diagnostics now distinguishes report occurrences from unique
+  affected products: `/merchant` labels them as `Zgłoszenia`/`kontekst`, not
+  `Affected`, and aggregate `product_count`/`issue_count` may fallback to latest
+  refresh summary when issue-level metric facts are the only stored facts.
 - `google_search_console`: query/page facts exist and support content decisions.
 - `google_analytics_4`: landing/source/campaign facts exist, but ROAS/revenue
   and conversion-drop claims are blocked unless conversion evidence exists.
@@ -147,6 +150,9 @@ Do not rebuild these from scratch:
   surfaces.
 - Google Ads OAuth helper and successful live campaign metric read.
 - Real-browser Playwright smoke in `scripts/verify.sh`.
+- Merchant route/API clarification for feed issues: issue clusters show report
+  occurrences and context, while product-level sample IDs/titles remain blocked
+  until the Merchant read contract exposes them.
 
 ## Active Product Problems
 
@@ -206,8 +212,8 @@ These are the current reasons Goal 001 is not complete:
    evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the daily context-pack and DuckDB
-   read-stability slice. Keep this file current after every future slice.
+   `scripts/verify.sh` passed after the Merchant occurrence wording/API fallback
+   slice. Keep this file current after every future slice.
 
 ## What WILQ Must Give The Marketer
 

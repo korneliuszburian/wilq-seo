@@ -2246,8 +2246,6 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
                 "merchant_action_issue_count": 15,
             },
             metric_facts=[
-                VendorMetricFact("total_products", 10900, {}),
-                VendorMetricFact("item_level_issue_count", 23, {}),
                 VendorMetricFact(
                     "issue_product_count",
                     23,
@@ -2293,15 +2291,20 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert cluster["sample_product_ids"] == []
     assert cluster["sample_titles"] == []
     assert "nie zwraca sample product IDs" in cluster["sample_unavailable_reason"]
+    assert "wystąpień problemu" in cluster["sample_unavailable_reason"]
     assert "approval restored" in cluster["blocked_claims"]
     feed_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_feed_health"
     )
     assert feed_section["status"] == "ready"
+    assert feed_section["summary"].startswith("Metryki Merchant:")
+    assert "total_products=10900" in feed_section["summary"]
     issue_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_issue_queue"
     )
     assert issue_section["status"] == "ready"
+    assert "problemów feedu" in issue_section["summary"]
+    assert "wystąpieniami problemu" in issue_section["summary"]
     assert issue_section["tactical_items"]
     assert any(
         item["dimensions"].get("issue_type") == "availability_updated"

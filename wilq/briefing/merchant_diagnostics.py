@@ -24,6 +24,14 @@ from wilq.storage.metric_store import metric_store
 
 MERCHANT_CONNECTOR_ID = "google_merchant_center"
 MERCHANT_METRIC_FACT_LIMIT = 240
+MERCHANT_HEALTH_METRIC_NAMES = {
+    "total_products",
+    "active_products",
+    "disapproved_products",
+    "expiring_products",
+    "item_level_issue_count",
+    "merchant_action_issue_count",
+}
 
 
 def build_merchant_diagnostics() -> MerchantDiagnosticsResponse:
@@ -66,8 +74,16 @@ def build_merchant_diagnostics() -> MerchantDiagnosticsResponse:
         connector=connector,
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
-        product_count=_numeric_metric(trusted_facts, "total_products"),
-        issue_count=_numeric_metric(trusted_facts, "item_level_issue_count"),
+        product_count=_numeric_metric_or_refresh_summary(
+            trusted_facts,
+            latest_refresh,
+            "total_products",
+        ),
+        issue_count=_numeric_metric_or_refresh_summary(
+            trusted_facts,
+            latest_refresh,
+            "item_level_issue_count",
+        ),
         issue_clusters=issue_clusters,
         sections=sections,
         evidence_ids=_unique(
@@ -110,25 +126,15 @@ def _feed_health_section(
             risk=ActionRisk.medium,
         )
 
-    product_facts = _facts_by_names(
-        facts,
-        {
-            "total_products",
-            "active_products",
-            "disapproved_products",
-            "expiring_products",
-            "item_level_issue_count",
-            "merchant_action_issue_count",
-        },
-    )
+    product_facts = _merchant_health_metric_facts(latest_refresh, facts)
     return MerchantDiagnosticSection(
         id="merchant_feed_health",
         title="Merchant Center: feed/product health",
         status="ready",
         summary=_metric_sentence(product_facts or facts),
         diagnosis=(
-            "WILQ ma read-only Merchant facts. Można ocenić skalę feedu i issue "
-            "counts, ale nie wolno twierdzić, że produkt został naprawiony bez "
+            "WILQ ma read-only Merchant facts. Można ocenić skalę feedu i liczbę "
+            "zgłoszonych problemów, ale nie wolno twierdzić, że produkt został naprawiony bez "
             "ActionObject, walidacji i audytu."
         ),
         next_step="Przejdź do issue queue i grupuj problemy po issue_type oraz affected_attribute.",
@@ -171,18 +177,37 @@ def _issue_queue_section(
             risk=ActionRisk.medium,
         )
 
+    cluster_count = _pl_count(
+        len(issue_clusters),
+        "grupę problemów feedu",
+        "grupy problemów feedu",
+        "grup problemów feedu",
+    )
+    tactical_count = _pl_count(
+        len(tactical_items),
+        "taktykę Merchant",
+        "taktyki Merchant",
+        "taktyk Merchant",
+    )
+    issue_fact_count = _pl_count(
+        len(issue_facts),
+        "metrykę issue",
+        "metryki issue",
+        "metryk issue",
+    )
+
     return MerchantDiagnosticSection(
         id="merchant_issue_queue",
         title="Merchant Center: kolejka feed/product issues",
         status="ready",
         summary=(
-            f"WILQ ma {len(issue_clusters)} issue clusters, "
-            f"{len(tactical_items)} Merchant tactical items i {len(issue_facts)} "
-            "issue metric facts."
+            f"WILQ ma {cluster_count}, {tactical_count} i {issue_fact_count}. "
+            "Liczby w grupach są wystąpieniami problemu w raportach, nie gwarancją "
+            "unikalnych produktów."
         ),
         diagnosis=(
             "Najbezpieczniejsza praca dla marketera to review problemów po typie "
-            "issue, atrybucie i destination. WILQ nadal nie pokazuje raw product dumps."
+            "issue, atrybucie i kontekście widoczności. WILQ nadal nie pokazuje raw product dumps."
         ),
         next_step="Otwórz ActionObject `act_review_merchant_feed_issues` i przygotuj review queue.",
         source_connectors=[MERCHANT_CONNECTOR_ID],
@@ -248,8 +273,8 @@ def _merchant_issue_clusters(
                 reporting_context=reporting_context or None,
                 product_count=product_count,
                 sample_unavailable_reason=(
-                    "Obecny Merchant read contract zwraca issue dimensions i liczby "
-                    "produktów, ale nie zwraca sample product IDs ani tytułów."
+                    "Obecny Merchant read contract zwraca issue dimensions i liczbę "
+                    "wystąpień problemu w raportach, ale nie zwraca sample product IDs ani tytułów."
                 ),
                 source_connectors=[MERCHANT_CONNECTOR_ID],
                 evidence_ids=_unique(fact.evidence_id for fact in group_facts),
@@ -257,7 +282,7 @@ def _merchant_issue_clusters(
                 action_id=action_id,
                 risk=_merchant_cluster_risk(severity, resolution),
                 next_step=(
-                    "Przejrzyj ten issue cluster w `act_review_merchant_feed_issues`; "
+                    "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; "
                     "najpierw przygotuj payload preview, bez automatycznej zmiany feedu."
                 ),
             )
@@ -322,10 +347,79 @@ def _facts_by_names(facts: list[MetricFact], names: set[str]) -> list[MetricFact
     return [fact for fact in facts if fact.name in names]
 
 
+def _merchant_health_metric_facts(
+    latest_refresh: ConnectorRefreshRun | None,
+    facts: list[MetricFact],
+) -> list[MetricFact]:
+    summary_facts = _metric_facts_from_refresh_summary(
+        latest_refresh,
+        MERCHANT_HEALTH_METRIC_NAMES,
+    )
+    if summary_facts:
+        return summary_facts
+    return _dedupe_metric_facts(_facts_by_names(facts, MERCHANT_HEALTH_METRIC_NAMES))
+
+
+def _metric_facts_from_refresh_summary(
+    latest_refresh: ConnectorRefreshRun | None,
+    names: set[str],
+) -> list[MetricFact]:
+    if latest_refresh is None:
+        return []
+    evidence_id = (
+        latest_refresh.evidence_ids[-1]
+        if latest_refresh.evidence_ids
+        else connector_evidence_id(MERCHANT_CONNECTOR_ID)
+    )
+    facts: list[MetricFact] = []
+    for name in names:
+        value = latest_refresh.metric_summary.get(name)
+        if value is None:
+            continue
+        facts.append(
+            MetricFact(
+                name=name,
+                value=value,
+                period="connector_refresh",
+                source_connector=MERCHANT_CONNECTOR_ID,
+                evidence_id=evidence_id,
+            )
+        )
+    return sorted(facts, key=lambda fact: fact.name)
+
+
+def _dedupe_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
+    seen: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
+    result: list[MetricFact] = []
+    for fact in facts:
+        key = (fact.name, tuple(sorted(fact.dimensions.items())))
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(fact)
+    return result
+
+
 def _numeric_metric(facts: list[MetricFact], name: str) -> int | None:
     for fact in facts:
         if fact.name == name and isinstance(fact.value, int | float):
             return int(fact.value)
+    return None
+
+
+def _numeric_metric_or_refresh_summary(
+    facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+    name: str,
+) -> int | None:
+    value = _numeric_metric(facts, name)
+    if value is not None:
+        return value
+    if latest_refresh is None:
+        return None
+    summary_value = latest_refresh.metric_summary.get(name)
+    if isinstance(summary_value, int | float):
+        return int(summary_value)
     return None
 
 
@@ -345,7 +439,20 @@ def _refresh_or_connector_evidence_ids(latest_refresh: ConnectorRefreshRun | Non
 
 def _metric_sentence(facts: list[MetricFact]) -> str:
     samples = ", ".join(f"{fact.name}={fact.value}" for fact in facts[:6])
-    return f"Metric facts: {samples}."
+    return f"Metryki Merchant: {samples}."
+
+
+def _pl_count(count: int, one: str, few: str, many: str) -> str:
+    absolute = abs(count)
+    last_digit = absolute % 10
+    last_two_digits = absolute % 100
+    if absolute == 1:
+        form = one
+    elif 2 <= last_digit <= 4 and not 12 <= last_two_digits <= 14:
+        form = few
+    else:
+        form = many
+    return f"{count} {form}"
 
 
 def _unique(values: Iterable[object]) -> list[str]:

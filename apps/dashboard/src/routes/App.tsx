@@ -2395,7 +2395,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
   const issueMetricFacts = data.sections
     .flatMap((section) => section.metric_facts)
     .filter((fact) => fact.name === "issue_product_count");
-  const affectedProducts = data.issue_clusters.length
+  const reportedIssueOccurrences = data.issue_clusters.length
     ? data.issue_clusters.reduce((sum, cluster) => sum + cluster.product_count, 0)
     : issueMetricFacts.reduce((sum, fact) => {
         return sum + (typeof fact.value === "number" ? fact.value : 0);
@@ -2427,7 +2427,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Produkty" value={data.product_count ?? 0} />
           <MetricTile label="Klastry" value={data.issue_clusters.length || issueItems.length} />
-          <MetricTile label="Affected" value={affectedProducts} />
+          <MetricTile label="Zgłoszenia" value={reportedIssueOccurrences} />
         </div>
       </div>
 
@@ -2441,6 +2441,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                     <h3 className="text-sm font-semibold text-ink">
                       {cluster.issue_type}
                       {cluster.affected_attribute ? ` / ${cluster.affected_attribute}` : ""}
+                      {` / ${merchantReportingContextLabel(cluster.reporting_context)}`}
                     </h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
                       {cluster.severity} / {cluster.resolution ?? "brak resolution"}
@@ -2449,9 +2450,18 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   <StatusBadge value={cluster.risk} />
                 </div>
                 <p className="mt-2 text-sm leading-6 text-slate-700">
-                  Dotyczy {cluster.product_count} produktów
+                  Raport pokazuje{" "}
+                  {formatPolishCount(
+                    cluster.product_count,
+                    "zgłoszenie",
+                    "zgłoszenia",
+                    "zgłoszeń"
+                  )}{" "}
+                  tego problemu
                   {cluster.country ? ` w kraju ${cluster.country}` : ""}
-                  {cluster.reporting_context ? ` / ${cluster.reporting_context}` : ""}.
+                  {cluster.reporting_context
+                    ? ` / ${merchantReportingContextLabel(cluster.reporting_context)}`
+                    : " / wszystkie konteksty"}.
                 </p>
                 {cluster.sample_unavailable_reason ? (
                   <p className="mt-2 text-xs leading-5 text-slate-600">
@@ -2461,11 +2471,19 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                 <p className="mt-2 text-sm font-medium text-ink">{cluster.next_step}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
                   <span className="rounded border border-line bg-white px-2 py-1">
-                    produkty: {cluster.product_count}
+                    zgłoszenia: {cluster.product_count}
                   </span>
                   {cluster.country ? (
                     <span className="rounded border border-line bg-white px-2 py-1">
                       kraj: {cluster.country}
+                    </span>
+                  ) : null}
+                  <span className="rounded border border-line bg-white px-2 py-1">
+                    kontekst: {merchantReportingContextLabel(cluster.reporting_context)}
+                  </span>
+                  {cluster.resolution ? (
+                    <span className="rounded border border-line bg-white px-2 py-1">
+                      resolution: {cluster.resolution}
                     </span>
                   ) : null}
                   {cluster.action_id ? (
@@ -2525,6 +2543,28 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
       </div>
     </section>
   );
+}
+
+function merchantReportingContextLabel(value: string | null | undefined) {
+  if (!value) return "wszystkie konteksty";
+  return value;
+}
+
+function formatPolishCount(count: number, one: string, few: string, many: string) {
+  const absolute = Math.abs(count);
+  const lastDigit = absolute % 10;
+  const lastTwoDigits = absolute % 100;
+  if (absolute === 1) {
+    return `${count} ${one}`;
+  }
+  if (
+    lastDigit >= 2 &&
+    lastDigit <= 4 &&
+    !(lastTwoDigits >= 12 && lastTwoDigits <= 14)
+  ) {
+    return `${count} ${few}`;
+  }
+  return `${count} ${many}`;
 }
 
 function MerchantDiagnosticCard({ section }: { section: MerchantDiagnosticSection }) {

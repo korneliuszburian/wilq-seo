@@ -33,6 +33,12 @@ Data: 2026-06-18
   blocked claims i `act_review_merchant_feed_issues`. Dashboard `/merchant`
   pokazuje klastry jako primary review queue, a tactical items tylko jako
   fallback.
+- Merchant diagnostics nie miesza już unikalnych produktów z wystąpieniami
+  problemu w raportach. Top-level `product_count` i `issue_count` fallbackują do
+  latest refresh summary, gdy metric store ma tylko issue-level facts. Dashboard
+  `/merchant` używa etykiet `Zgłoszenia`, `kontekst` i `Metryki Merchant`, nie
+  angielskiego `Affected`/`Metric facts`. Product-level sample IDs/titles nadal
+  są jawnie niedostępne w obecnym read contract.
 - Content URL normalization jest wdrożony lokalnie w tactical/content API:
   WordPress inventory jest pobierane pełniej z DuckDB, GSC full URL i GA4
   landing path są normalizowane do jednego path key, a decision queue pokazuje
@@ -128,6 +134,12 @@ Data: 2026-06-18
 - `uv run pytest tests/test_api_contracts.py -q -k 'ads_diagnostics_exposes_live_campaign_metric_facts or ads_diagnostics_exposes_oauth_blocker_without_fake_metrics'`
 - `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
 - `scripts/verify.sh`
+- `uv run ruff check wilq/briefing/merchant_diagnostics.py tests/test_api_contracts.py`
+- `uv run mypy wilq/briefing/merchant_diagnostics.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'merchant_diagnostics_exposes_feed_issue_queue'`
+- `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
+- `scripts/verify.sh`
 
 ```text
 scripts/verify.sh passed
@@ -157,6 +169,16 @@ Playwright e2e: 8 passed
 dashboard production build: passed
 ```
 
+Po Merchant occurrence wording/API fallback 2026-06-18:
+
+```text
+scripts/verify.sh passed
+backend API contracts: 98 passed
+dashboard route tests: 12 passed
+Playwright e2e: 8 passed
+dashboard production build: passed
+```
+
 ## Current Gaps
 
 1. Every WILQ skill must be tested against a real Polish marketer prompt and
@@ -172,8 +194,8 @@ dashboard production build: passed
    URL matching now handles large WordPress inventories and GA4 landing paths,
    but decisions still need richer scoring for query intent, cannibalization and
    final marketer usefulness.
-6. Merchant issue clusters currently expose aggregate issue dimensions and
-   product counts, but not sample product IDs/titles. The dashboard states this
+6. Merchant issue clusters expose aggregate issue dimensions and report
+   occurrences, but not sample product IDs/titles. The dashboard states this
    limit explicitly instead of pretending to show product-level fixes.
 
 ## Performance Snapshot

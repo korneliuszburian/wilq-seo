@@ -140,6 +140,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Status Merchant Center" })).toBeVisible();
     await expect(page.getByText("Merchant Center: feed/product health")).toBeVisible();
     await expect(page.getByText("Merchant Center: kolejka feed/product issues")).toBeVisible();
+    await expect(page.getByText("Zgłoszenia", { exact: true })).toBeVisible();
+    await expect(page.getByText("Affected", { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/zgłoszenia:/).first()).toBeVisible();
+    await expect(page.getByText(/kontekst:/).first()).toBeVisible();
     await expect(page.getByText(/Merchant: .*availability_updated/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "ActionObject focus" })).toBeVisible();
     await expect(
