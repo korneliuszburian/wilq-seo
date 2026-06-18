@@ -265,3 +265,19 @@ but no ranking/GBP facts, and blocks unsupported claims. Product gap found:
 daily action candidates still include LinkedIn/Facebook draft ActionObjects
 from wider `marketing_brief.action_ids`, while `CommandCenter.action_plan` is
 cleaner and has only Merchant/Content/GA4 core actions.
+
+Eighth non-interactive Codex eval completed:
+
+```text
+skill: wilq-campaign-builder
+result: passed
+artifact: .local-lab/evals/codex-skill/20260618T104154Z/wilq-campaign-builder/result.json
+```
+
+Interpretation: safe blocker pass. It returned `pl-PL`, `api_used=true`,
+required connectors `google_ads`, `google_analytics_4`,
+`google_search_console`, and 3 evidence IDs. It correctly sets `blocked=true`
+because WILQ does not expose a campaign-specific ActionObject, payload preview,
+keywords, assets, budget or campaign structure. Next product slice for this
+skill is not prompt polish; it is an API/action contract for safe campaign
+drafts.

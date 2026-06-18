@@ -545,6 +545,12 @@ Current eval progress:
   LinkedIn/Facebook draft ActionObjects can leak into daily action candidates
   from the wider `marketing_brief.action_ids`; daily primary actions should stay
   focused on core marketer decisions unless social is explicitly requested.
+- `wilq-campaign-builder`: passed at
+  `.local-lab/evals/codex-skill/20260618T104154Z/wilq-campaign-builder/result.json`.
+  This is a safety/blocker pass, not campaign creation proof. It confirms
+  Ads/GA4/GSC evidence access, then blocks campaign candidate and payload
+  preview because WILQ lacks a campaign-specific ActionObject, keyword/asset
+  evidence, budget facts and validated campaign payload contract.
 
 ### 4. Performance Slice
 
