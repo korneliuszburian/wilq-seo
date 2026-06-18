@@ -6578,7 +6578,7 @@ Current remaining next work before calling the overnight goal stable:
 
 ## 55. Slice 2026-06-18 - marketer demo path and visible placeholder cleanup
 
-Status: implementation and verification complete; commit/push pending.
+Status: committed and pushed as `73129ab feat(dashboard): add marketer demo path`.
 
 Resume instructions:
 
@@ -6665,15 +6665,11 @@ curl -sS http://127.0.0.1:8000/api/dashboard/command-center | \
   jq '{primary_next_step, demo_script:[.demo_script[] | {id, route, status, evidence_count:(.evidence_ids|length), action_ids}]}'
 ```
 
-Remaining before closing this slice:
-
-1. Commit with Conventional Commit, expected message:
+Closed with commit:
 
 ```text
-feat(dashboard): add marketer demo path
+73129ab feat(dashboard): add marketer demo path
 ```
-
-2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. This slice improves the
 overnight demo path, but remaining work still includes Ads OAuth recovery or
@@ -6683,7 +6679,7 @@ generic operating surfaces only when backed by WILQ API evidence.
 
 ## 56. Slice 2026-06-18 - marketer action plan from live evidence
 
-Status: implementation and verification complete; commit/push pending.
+Status: committed and pushed as `0a8adce feat(dashboard): add marketer action plan`.
 
 Resume instructions:
 
@@ -6762,17 +6758,94 @@ Results:
 * Production dashboard build: passed.
 * Full product gate `scripts/verify.sh`: passed.
 
-Remaining before committing this slice:
-
-1. Commit with Conventional Commit, expected message:
+Closed with commit:
 
 ```text
-feat(dashboard): add marketer action plan
+0a8adce feat(dashboard): add marketer action plan
 ```
-
-2. Push to `origin/main`.
 
 Goal 001 is still not complete after this slice. Remaining work still includes
 Ads OAuth recovery or final blocked-state handoff, browser screenshot proof,
 deeper per-route tactical UX, and any remaining generic operating surface that
 is visible in the demo path.
+
+## 57. Slice 2026-06-18 - browser proof for marketer demo path
+
+Status: implementation and verification complete; commit/push pending.
+
+Product intent:
+
+* Add repeatable browser proof after the route audit and action-plan slices.
+* This is not a substitute for API/product behavior. Screenshots prove that the
+  already API-backed demo path is visible to the marketer in the browser.
+* Proof must cover the same demo path returned by WILQ API:
+  `/command-center`, `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor`,
+  `/localo`.
+
+Implemented in this slice so far:
+
+* Added `apps/dashboard/e2e/dashboard-demo-proof.spec.ts`.
+* The spec asserts:
+  * `Plan działań marketera` is visible on Command Center,
+  * Merchant/Content/GA4 ready actions are visible,
+  * Ads OAuth and Localo access blockers are visible,
+  * evidence/action links are present,
+  * Localo does not show invented local ranking text.
+* The spec captures local screenshots under:
+
+```text
+.local-lab/proof/dashboard-demo/<timestamp>/
+```
+
+Latest local proof path from full `scripts/verify.sh`:
+
+```text
+.local-lab/proof/dashboard-demo/2026-06-18T03-31-04-397Z/
+```
+
+Generated files:
+
+```text
+01-command-center-action-plan.png
+02-merchant-feed-issues.png
+03-content-planner-queue.png
+04-ga4-landing-quality.png
+05-ads-oauth-blocker.png
+06-localo-access-blocker.png
+README.md
+```
+
+Verification run:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard exec playwright test e2e/dashboard-demo-proof.spec.ts
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 scripts/verify.sh
+```
+
+Results:
+
+* Dashboard lint: passed.
+* Dashboard typecheck: passed.
+* Browser demo proof spec: `1 passed`.
+* Backend API contracts: `80 passed` in full verify.
+* Dashboard route tests: `12 passed`.
+* Skill API smoke: passed.
+* Playwright e2e: `8 passed`.
+* Production dashboard build: passed.
+* Full product gate `scripts/verify.sh`: passed.
+
+Remaining before committing this slice:
+
+1. Commit with Conventional Commit, expected message:
+
+```text
+test(dashboard): add marketer demo browser proof
+```
+
+2. Push to `origin/main`.
+
+Goal 001 is still not complete after this slice. Remaining work still includes
+Ads OAuth recovery or final blocked-state handoff, richer non-interactive Codex
+proof for upgraded daily/action-plan behavior, and deeper per-route tactical UX.
