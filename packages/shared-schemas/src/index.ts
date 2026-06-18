@@ -270,6 +270,36 @@ export const AdsCampaignReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsSearchTermMetricRowSchema = z.object({
+  search_term: z.string(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  ad_group_id: z.string().nullable().optional(),
+  ad_group_name: z.string().nullable().optional(),
+  search_term_status: z.string().nullable().optional(),
+  clicks: z.number().nullable().optional(),
+  impressions: z.number().nullable().optional(),
+  cost_micros: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsSearchTermsReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  search_term_rows: z.array(AdsSearchTermMetricRowSchema),
+  next_step: z.string()
+});
+
 export const AdsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -278,6 +308,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
+  search_terms_read_contract: AdsSearchTermsReadContractSchema,
   sections: z.array(AdsDiagnosticSectionSchema),
   blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
   evidence_ids: z.array(z.string()),

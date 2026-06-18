@@ -1390,6 +1390,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     monkeypatch.setenv("GOOGLE_ADS_CUSTOMER_ID", "123-456-7890")
     monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "999-888-7777")
 
+    search_stream_queries: list[str] = []
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "oauth2.googleapis.com":
             assert "grant_type=refresh_token" in request.content.decode()
@@ -1399,8 +1401,37 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         assert request.headers["developer-token"] == "developer-token-test"
         assert request.headers["login-customer-id"] == "9998887777"
         assert request.headers["authorization"] == "Bearer ya29.mocktoken"
-        assert "FROM campaign" in request.content.decode()
-        assert "campaign.name" in request.content.decode()
+        query = json.loads(request.content.decode())["query"]
+        search_stream_queries.append(query)
+        if "FROM campaign" in query:
+            assert "campaign.name" in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "campaign": {"id": "101", "name": "Brand Search"},
+                                "metrics": {
+                                    "clicks": "2",
+                                    "impressions": "10",
+                                    "costMicros": "3000000",
+                                }
+                            },
+                            {
+                                "campaign": {"id": "102", "name": "PMax Feed"},
+                                "metrics": {
+                                    "clicks": "1",
+                                    "impressions": "5",
+                                    "costMicros": "1000000",
+                                }
+                            },
+                        ]
+                    }
+                ],
+            )
+        assert "FROM search_term_view" in query
+        assert "search_term_view.search_term" in query
         return httpx.Response(
             200,
             json=[
@@ -1408,19 +1439,16 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     "results": [
                         {
                             "campaign": {"id": "101", "name": "Brand Search"},
+                            "adGroup": {"id": "201", "name": "BDO"},
+                            "searchTermView": {
+                                "searchTerm": "bdo rejestracja",
+                                "status": "ADDED",
+                            },
                             "metrics": {
-                                "clicks": "2",
-                                "impressions": "10",
-                                "costMicros": "3000000",
-                            }
-                        },
-                        {
-                            "campaign": {"id": "102", "name": "PMax Feed"},
-                            "metrics": {
-                                "clicks": "1",
-                                "impressions": "5",
-                                "costMicros": "1000000",
-                            }
+                                "clicks": "4",
+                                "impressions": "20",
+                                "costMicros": "5000000",
+                            },
                         },
                     ]
                 }
@@ -1439,12 +1467,30 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["clicks"] == 3
     assert result.metric_summary["impressions"] == 15
     assert result.metric_summary["cost_micros"] == 4000000
+    assert result.metric_summary["search_term_row_count"] == 1
+    assert result.metric_summary["search_term_clicks"] == 4
+    assert result.metric_summary["search_term_impressions"] == 20
+    assert result.metric_summary["search_term_cost_micros"] == 5000000
+    assert any("FROM campaign" in query for query in search_stream_queries)
+    assert any("FROM search_term_view" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
     }
     assert result.metric_facts[0].name == "clicks"
     assert result.metric_facts[0].value == 2
+    search_term_fact = next(
+        fact for fact in result.metric_facts if fact.name == "search_term_clicks"
+    )
+    assert search_term_fact.value == 4
+    assert search_term_fact.dimensions == {
+        "campaign_id": "101",
+        "campaign_name": "Brand Search",
+        "ad_group_id": "201",
+        "ad_group_name": "BDO",
+        "search_term": "bdo rejestracja",
+        "search_term_status": "ADDED",
+    }
     serialized = json.dumps(result.metric_summary)
     assert "developer-token-test" not in serialized
     assert "refresh-token-test" not in serialized
@@ -1850,6 +1896,10 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     )
     assert campaign_section["status"] == "blocked"
     assert campaign_section["metric_facts"] == []
+    search_terms_contract = payload["search_terms_read_contract"]
+    assert search_terms_contract["status"] == "blocked"
+    assert "search_term_view" in search_terms_contract["missing_read_contracts"]
+    assert search_terms_contract["search_term_rows"] == []
     handoff = payload["blocked_handoff"]
     assert handoff["status"] == "blocked"
     assert handoff["title"] == "Google Ads: finalny handoff blockera OAuth"
@@ -1893,6 +1943,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "clicks": 9,
                 "impressions": 90,
                 "cost_micros": 12000000,
+                "search_term_row_count": 1,
+                "search_term_clicks": 4,
+                "search_term_impressions": 40,
+                "search_term_cost_micros": 7000000,
             },
             metric_facts=[
                 VendorMetricFact(
@@ -1909,6 +1963,42 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     "cost_micros",
                     12000000,
                     {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "search_term_clicks",
+                    4,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "201",
+                        "ad_group_name": "BDO",
+                        "search_term": "bdo rejestracja",
+                        "search_term_status": "ADDED",
+                    },
+                ),
+                VendorMetricFact(
+                    "search_term_impressions",
+                    40,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "201",
+                        "ad_group_name": "BDO",
+                        "search_term": "bdo rejestracja",
+                        "search_term_status": "ADDED",
+                    },
+                ),
+                VendorMetricFact(
+                    "search_term_cost_micros",
+                    7000000,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "201",
+                        "ad_group_name": "BDO",
+                        "search_term": "bdo rejestracja",
+                        "search_term_status": "ADDED",
+                    },
                 ),
             ],
         ),
@@ -1933,8 +2023,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     read_contract = payload["campaign_read_contract"]
     assert read_contract["status"] == "ready"
     assert read_contract["allowed_metrics"] == ["clicks", "impressions", "cost_micros"]
-    assert "search_term_view" in read_contract["missing_read_contracts"]
     assert "ROAS" in read_contract["blocked_claims"]
+    assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
         {
             "campaign_id": "101",
@@ -1965,6 +2055,41 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         for fact in campaign_section["metric_facts"]
     )
     assert "act_configure_google_ads_env" not in payload["action_ids"]
+    search_terms_contract = payload["search_terms_read_contract"]
+    assert search_terms_contract["status"] == "ready"
+    assert search_terms_contract["allowed_metrics"] == [
+        "search_term",
+        "campaign",
+        "ad_group",
+        "status",
+        "clicks",
+        "impressions",
+        "cost_micros",
+    ]
+    assert "90_day_safety_check" in search_terms_contract["missing_read_contracts"]
+    assert "negative keyword apply" in search_terms_contract["blocked_claims"]
+    assert search_terms_contract["search_term_rows"] == [
+        {
+            "search_term": "bdo rejestracja",
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "ad_group_id": "201",
+            "ad_group_name": "BDO",
+            "search_term_status": "ADDED",
+            "clicks": 4,
+            "impressions": 40,
+            "cost_micros": 7000000,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "metric_facts": search_terms_contract["search_term_rows"][0]["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+        }
+    ]
+    search_terms_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_search_terms"
+    )
+    assert search_terms_section["status"] == "ready"
+    assert search_terms_section["title"] == "Search terms read contract"
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(

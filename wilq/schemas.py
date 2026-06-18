@@ -499,6 +499,36 @@ class AdsCampaignReadContract(BaseModel):
     next_step: str
 
 
+class AdsSearchTermMetricRow(BaseModel):
+    search_term: str
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    ad_group_id: str | None = None
+    ad_group_name: str | None = None
+    search_term_status: str | None = None
+    clicks: int | None = None
+    impressions: int | None = None
+    cost_micros: int | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsSearchTermsReadContract(BaseModel):
+    id: str = "ads_search_terms_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -507,6 +537,7 @@ class AdsDiagnosticsResponse(BaseModel):
     latest_refresh: ConnectorRefreshRun | None = None
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
+    search_terms_read_contract: AdsSearchTermsReadContract
     sections: list[AdsDiagnosticSection] = Field(default_factory=list)
     blocked_handoff: AdsBlockedHandoff | None = None
     evidence_ids: list[str] = Field(default_factory=list)

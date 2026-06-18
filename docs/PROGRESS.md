@@ -51,15 +51,32 @@ Data: 2026-06-18
 - Ads Doctor ma pierwszy typed read contract:
   `/api/ads/diagnostics.campaign_read_contract`. Kontrakt grupuje live Google
   Ads metric facts do campaign rows z `campaign_id`, `campaign_name`, `clicks`,
-  `impressions`, `cost_micros`, evidence IDs i blocked claims. Live API proof
-  po restarcie `:8000` pokazał `status=ready`, `rows=18`, allowed metrics
-  `clicks/impressions/cost_micros` oraz brakujące read contracts:
-  `search_term_view`, `conversions`, `conversion_value`, `recommendations`,
-  `change_history`, `budget_pacing`, `impression_share`. Nadal nie wolno
-  claimować CPA, ROAS, search terms, wasted budget ani negative keyword
-  candidates. Pełny `scripts/verify.sh` przeszedł po tej zmianie: backend API
-  contracts 97 passed, dashboard route tests 12 passed, Playwright e2e 8
-  passed i dashboard production build passed.
+  `impressions`, `cost_micros`, evidence IDs i blocked claims.
+- Ads Doctor ma drugi typed read contract:
+  `/api/ads/diagnostics.search_terms_read_contract`. Google Ads `vendor_read`
+  odpytuje read-only `search_term_view` i zapisuje `search_term_clicks`,
+  `search_term_impressions`, `search_term_cost_micros` z wymiarami
+  `campaign_id`, `campaign_name`, `ad_group_id`, `ad_group_name`,
+  `search_term`, `search_term_status`. Dashboard `/ads-doctor` pokazuje osobny
+  panel `Search terms read-only`. To odblokowuje uczciwy przegląd zapytań, ale
+  nie odblokowuje waste/negative keyword claims bez konwersji,
+  `90_day_safety_check` i walidowanego ActionObject.
+- Live Google Ads proof po restarcie API: `uv run wilq connectors refresh
+  google_ads --mode vendor_read --reason "Goal 001 search terms read contract
+  proof"` zakończył się `completed`, `refresh_google_ads_13c265d9a0aa`,
+  `row_count=18`, `search_term_row_count=50`, `search_term_clicks=8`,
+  `search_term_impressions=71`, `search_term_cost_micros=48090179`. Następnie
+  `/api/ads/diagnostics.search_terms_read_contract` zwrócił `status=ready`,
+  `rows=50` i nadal blokuje `search-term waste`, `negative keyword candidates`,
+  `negative keyword apply`, `CPA`.
+- Nadal nie wolno claimować CPA, ROAS, wasted budget, negative keyword
+  candidates, budget scaling ani conversion drop bez osobnych read contracts.
+- Command Center nie renderuje już zdublowanego zestawu kafli
+  `Decyzje/Blockery/Źródła`; globalne stats zostają tylko w nagłówku strony.
+  Test dashboardu ma regresję `Decyzje` count = 1.
+- Pełny `scripts/verify.sh` przeszedł po Ads search terms i Command Center
+  duplicate-stats slice: backend API contracts 97 passed, dashboard route
+  tests 12 passed, Playwright e2e 8 passed i dashboard production build passed.
 
 ## Latest Verified Checks
 
@@ -75,6 +92,8 @@ Data: 2026-06-18
 - `pnpm --filter @wilq/dashboard lint`
 - `pnpm --filter @wilq/dashboard typecheck`
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts`
+- `scripts/verify.sh`
 - `uv run ruff check wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/storage/metric_store.py wilq/security/redaction.py wilq/schemas.py tests/test_api_contracts.py`
 - `uv run mypy wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/storage/metric_store.py wilq/security/redaction.py wilq/schemas.py tests/test_api_contracts.py`
 - `uv run pytest tests/test_api_contracts.py -q -k 'redaction_preserves_env_names_but_redacts_token_values or content_diagnostics_exposes_query_page_inventory_queue or marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match or marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching'`
@@ -88,6 +107,12 @@ Data: 2026-06-18
 - `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
 - `uv run ruff check wilq/schemas.py wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py`
 - `uv run mypy wilq/schemas.py wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py`
+- `uv run ruff check wilq/connectors/google_ads/client.py wilq/schemas.py wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py`
+- `uv run mypy wilq/connectors/google_ads/client.py wilq/schemas.py wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'google_ads_vendor_read_uses_oauth_and_search_stream or ads_diagnostics_exposes_live_campaign_metric_facts or ads_diagnostics_exposes_oauth_blocker_without_fake_metrics'`
+- `pnpm --filter @wilq/dashboard lint`
+- `pnpm --filter @wilq/dashboard typecheck`
+- `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
 - `uv run pytest tests/test_api_contracts.py -q -k 'ads_diagnostics_exposes_live_campaign_metric_facts or ads_diagnostics_exposes_oauth_blocker_without_fake_metrics'`
 - `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
 - `scripts/verify.sh`

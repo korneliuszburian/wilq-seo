@@ -41,6 +41,22 @@ WHERE segments.date DURING LAST_7_DAYS
   AND campaign.status != 'REMOVED'
 """.strip()
 
+SEARCH_TERM_SUMMARY_QUERY = """
+SELECT
+  campaign.id,
+  campaign.name,
+  ad_group.id,
+  ad_group.name,
+  search_term_view.search_term,
+  search_term_view.status,
+  metrics.clicks,
+  metrics.impressions,
+  metrics.cost_micros
+FROM search_term_view
+WHERE segments.date DURING LAST_30_DAYS
+LIMIT 50
+""".strip()
+
 CUSTOMER_CLIENT_QUERY = """
 SELECT
   customer_client.client_customer,
@@ -91,6 +107,13 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
+            search_term_summary, search_term_facts = _fetch_search_term_summary(
+                client,
+                credentials,
+                access_token,
+            )
+            metric_summary.update(search_term_summary)
+            metric_facts.extend(search_term_facts)
         except httpx.HTTPStatusError as exc:
             detail = _sanitized_http_error_detail(exc.response)
             if detail and "ads_error=queryError.REQUESTED_METRICS_FOR_MANAGER" in detail:
@@ -133,7 +156,8 @@ def refresh_google_ads_campaign_summary(
         status=ConnectorRefreshStatus.completed,
         summary=(
             "Google Ads vendor read completed through googleAds:searchStream. "
-            f"Rows: {metric_summary['row_count']}."
+            f"Campaign rows: {metric_summary['row_count']}; "
+            f"search term rows: {metric_summary.get('search_term_row_count', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -296,6 +320,27 @@ def _fetch_campaign_summary(
     return _summarize_search_stream_response(response.json())
 
 
+def _fetch_search_term_summary(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    customer_id = credentials["customer_id"]
+    response = client.post(
+        f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+        f"{customer_id}/googleAds:searchStream",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "developer-token": str(credentials["developer_token"]),
+            "login-customer-id": str(credentials["login_customer_id"]),
+            "Content-Type": "application/json",
+        },
+        json={"query": SEARCH_TERM_SUMMARY_QUERY},
+    )
+    response.raise_for_status()
+    return _summarize_search_term_response(response.json())
+
+
 def _fetch_customer_client_summary(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
@@ -407,6 +452,43 @@ def _summarize_search_stream_response(
     )
 
 
+def _summarize_search_term_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    clicks = 0
+    impressions = 0
+    cost_micros = 0
+    metric_facts: list[VendorMetricFact] = []
+    for row in rows:
+        metrics = row.get("metrics", {})
+        row_clicks = _int_metric(metrics.get("clicks"))
+        row_impressions = _int_metric(metrics.get("impressions"))
+        row_cost_micros = _int_metric(metrics.get("costMicros", metrics.get("cost_micros")))
+        clicks += row_clicks
+        impressions += row_impressions
+        cost_micros += row_cost_micros
+        dimensions = _search_term_dimensions(row)
+        if dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact("search_term_clicks", row_clicks, dimensions),
+                    VendorMetricFact("search_term_impressions", row_impressions, dimensions),
+                    VendorMetricFact("search_term_cost_micros", row_cost_micros, dimensions),
+                ]
+            )
+    return (
+        {
+            "search_term_query": "search_term_last_30_days",
+            "search_term_row_count": len(rows),
+            "search_term_clicks": clicks,
+            "search_term_impressions": impressions,
+            "search_term_cost_micros": cost_micros,
+        },
+        metric_facts,
+    )
+
+
 def _search_stream_rows(payload: Any) -> list[dict[str, Any]]:
     if not isinstance(payload, list):
         return []
@@ -457,4 +539,25 @@ def _campaign_dimensions(campaign: Any) -> dict[str, str]:
     campaign_name = campaign.get("name")
     if isinstance(campaign_name, str) and campaign_name:
         dimensions["campaign_name"] = campaign_name
+    return dimensions
+
+
+def _search_term_dimensions(row: dict[str, Any]) -> dict[str, str]:
+    dimensions = _campaign_dimensions(row.get("campaign", {}))
+    ad_group = row.get("adGroup", row.get("ad_group", {}))
+    if isinstance(ad_group, dict):
+        ad_group_id = ad_group.get("id")
+        if ad_group_id is not None:
+            dimensions["ad_group_id"] = str(ad_group_id)
+        ad_group_name = ad_group.get("name")
+        if isinstance(ad_group_name, str) and ad_group_name:
+            dimensions["ad_group_name"] = ad_group_name
+    search_term_view = row.get("searchTermView", row.get("search_term_view", {}))
+    if isinstance(search_term_view, dict):
+        search_term = search_term_view.get("searchTerm", search_term_view.get("search_term"))
+        if isinstance(search_term, str) and search_term:
+            dimensions["search_term"] = search_term
+        status = search_term_view.get("status")
+        if isinstance(status, str) and status:
+            dimensions["search_term_status"] = status
     return dimensions

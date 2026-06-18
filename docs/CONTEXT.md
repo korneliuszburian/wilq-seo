@@ -102,13 +102,18 @@ Current Ads Doctor contract truth:
   claims.
 - It explicitly limits allowed metrics to `clicks`, `impressions` and
   `cost_micros`.
-- It explicitly lists missing read contracts: `search_term_view`,
-  `conversions`, `conversion_value`, `recommendations`, `change_history`,
-  `budget_pacing` and `impression_share`.
-- Live local proof after restarting API on `:8000` showed 18 campaign rows.
-- Do not claim CPA, ROAS, search terms, wasted budget, negative keyword
-  candidates, budget scaling or conversion drops until those read contracts
-  exist.
+- `/api/ads/diagnostics.search_terms_read_contract` is typed and rendered on
+  `/ads-doctor`.
+- Google Ads `vendor_read` now queries `search_term_view` read-only and stores
+  `search_term_clicks`, `search_term_impressions` and
+  `search_term_cost_micros` with campaign, ad group, search term and status
+  dimensions.
+- Search terms rows are for read-only review only. Do not claim search-term
+  waste, CPA, ROAS or negative keyword candidates until conversions,
+  conversion value, keyword/match context, 90-day safety check and validated
+  ActionObject contracts exist.
+- Still missing read contracts: conversions, conversion value,
+  recommendations, change history, budget pacing and impression share.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

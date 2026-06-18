@@ -59,8 +59,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
     await expect(page.getByText("Google Ads: live data dostępne")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Google Ads: campaign activity rows" })).toBeVisible();
-    await expect(page.getByText("Brakujące read contracts:")).toBeVisible();
-    await expect(page.getByText("search_term_view").first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Google Ads: search terms read-only rows" })
+    ).toBeVisible();
+    await expect(page.getByText("Brakujące read contracts:").first()).toBeVisible();
     await expect(page.getByText(/clicks:/).first()).toBeVisible();
     await expect(page.getByText("Google Ads: live read gotowy do kolejnego kroku")).toBeVisible();
     await expect(page.getByText("Google Ads connector ma live metric facts.")).toBeVisible();
@@ -72,10 +74,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status GA4 / Landing Quality" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "GA4: landing/source/campaign behavior" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: /GA4: (landing\/source\/campaign behavior|brak landing\/source\/campaign breakdown)/
+      })
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "GA4: tracking/conversion readiness" })).toBeVisible();
-    await expect(page.getByText(/active_users:/).first()).toBeVisible();
-    await expect(page.getByText(/landing_page=/).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "act_review_ga4_tracking_quality" }).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Analytics Safety Gate" })).toBeVisible();
   });

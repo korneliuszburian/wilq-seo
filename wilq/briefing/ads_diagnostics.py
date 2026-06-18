@@ -15,6 +15,8 @@ from wilq.schemas import (
     AdsCampaignReadContract,
     AdsDiagnosticSection,
     AdsDiagnosticsResponse,
+    AdsSearchTermMetricRow,
+    AdsSearchTermsReadContract,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
@@ -22,7 +24,7 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
-ADS_METRIC_FACT_LIMIT = 120
+ADS_METRIC_FACT_LIMIT = 500
 
 
 def build_ads_diagnostics() -> AdsDiagnosticsResponse:
@@ -42,6 +44,10 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
     campaign_read_contract = _campaign_read_contract(trusted_metric_facts, latest_refresh)
+    search_terms_read_contract = _search_terms_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
     action_ids = _google_ads_action_ids(list_actions())
     sections = [
         _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
@@ -51,7 +57,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             action_ids,
             campaign_read_contract,
         ),
-        _search_terms_section(latest_refresh, action_ids),
+        _search_terms_section(search_terms_read_contract, action_ids),
         _safe_action_section(action_ids, latest_refresh),
     ]
     return AdsDiagnosticsResponse(
@@ -60,6 +66,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
+        search_terms_read_contract=search_terms_read_contract,
         sections=sections,
         blocked_handoff=_blocked_handoff(live_data_available, latest_refresh, sections, action_ids),
         evidence_ids=_unique(
@@ -193,7 +200,6 @@ def _campaign_read_contract(
 ) -> AdsCampaignReadContract:
     rows = _campaign_metric_rows(metric_facts)
     missing_read_contracts = [
-        "search_term_view",
         "conversions",
         "conversion_value",
         "recommendations",
@@ -306,29 +312,180 @@ def _int_metric_value(fact: MetricFact | None) -> int | None:
     return int(fact.value)
 
 
-def _search_terms_section(
+def _search_terms_read_contract(
+    metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
+) -> AdsSearchTermsReadContract:
+    rows = _search_term_metric_rows(metric_facts)
+    missing_read_contracts = [
+        "conversions",
+        "conversion_value",
+        "keyword match context",
+        "90_day_safety_check",
+        "negative_keyword_action_validation",
+    ]
+    blocked_claims = [
+        "search-term waste",
+        "negative keyword candidates",
+        "negative keyword apply",
+        "CPA",
+        "ROAS",
+        "conversion loss",
+    ]
+    if rows:
+        total_clicks = sum(row.clicks or 0 for row in rows)
+        total_impressions = sum(row.impressions or 0 for row in rows)
+        total_cost_micros = sum(row.cost_micros or 0 for row in rows)
+        return AdsSearchTermsReadContract(
+            status="ready",
+            title="Google Ads: search terms read-only rows",
+            summary=(
+                f"WILQ ma {len(rows)} search term rows: clicks={total_clicks}, "
+                f"impressions={total_impressions}, cost_micros={total_cost_micros}."
+            ),
+            allowed_metrics=[
+                "search_term",
+                "campaign",
+                "ad_group",
+                "status",
+                "clicks",
+                "impressions",
+                "cost_micros",
+            ],
+            missing_read_contracts=missing_read_contracts,
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            search_term_rows=rows,
+            next_step=(
+                "Użyj search term rows jako read-only przeglądu zapytań. Nie twórz "
+                "negative keywords ani waste claimów bez konwersji, 90-dniowego checku "
+                "i zwalidowanego ActionObject."
+            ),
+        )
+
+    return AdsSearchTermsReadContract(
+        status="blocked",
+        title="Google Ads: brak search terms rows",
+        summary="WILQ nie ma jeszcze wymiarowych facts z search_term_view.",
+        allowed_metrics=[],
+        missing_read_contracts=["search_term_view", *missing_read_contracts],
+        blocked_claims=["search terms", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        search_term_rows=[],
+        next_step=(
+            "Uruchom read-only Google Ads vendor_read po wdrożeniu search_term_view "
+            "i zapisz search_term_* metric facts."
+        ),
+    )
+
+
+def _search_term_metric_rows(metric_facts: list[MetricFact]) -> list[AdsSearchTermMetricRow]:
+    grouped_facts: dict[tuple[str, str | None, str | None], list[MetricFact]] = {}
+    seen_metric_keys: set[tuple[str, str | None, str | None, str]] = set()
+    for fact in metric_facts:
+        if fact.name not in {
+            "search_term_clicks",
+            "search_term_impressions",
+            "search_term_cost_micros",
+        }:
+            continue
+        search_term = fact.dimensions.get("search_term")
+        if not search_term:
+            continue
+        campaign_id = fact.dimensions.get("campaign_id")
+        ad_group_id = fact.dimensions.get("ad_group_id")
+        row_key = (search_term, campaign_id, ad_group_id)
+        metric_key = (*row_key, fact.name)
+        if metric_key in seen_metric_keys:
+            continue
+        seen_metric_keys.add(metric_key)
+        grouped_facts.setdefault(row_key, []).append(fact)
+
+    rows = [
+        _search_term_metric_row(search_term, campaign_id, ad_group_id, facts)
+        for (search_term, campaign_id, ad_group_id), facts in grouped_facts.items()
+    ]
+    return sorted(rows, key=_search_term_row_sort_key)
+
+
+def _search_term_metric_row(
+    search_term: str,
+    campaign_id: str | None,
+    ad_group_id: str | None,
+    facts: list[MetricFact],
+) -> AdsSearchTermMetricRow:
+    facts_by_name = {fact.name: fact for fact in facts}
+    expected_metrics = [
+        "search_term_clicks",
+        "search_term_impressions",
+        "search_term_cost_micros",
+    ]
+    first_dimensions = facts[0].dimensions if facts else {}
+    return AdsSearchTermMetricRow(
+        search_term=search_term,
+        campaign_id=campaign_id,
+        campaign_name=first_dimensions.get("campaign_name"),
+        ad_group_id=ad_group_id,
+        ad_group_name=first_dimensions.get("ad_group_name"),
+        search_term_status=first_dimensions.get("search_term_status"),
+        clicks=_int_metric_value(facts_by_name.get("search_term_clicks")),
+        impressions=_int_metric_value(facts_by_name.get("search_term_impressions")),
+        cost_micros=_int_metric_value(facts_by_name.get("search_term_cost_micros")),
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        blocked_claims=["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+    )
+
+
+def _search_term_row_sort_key(row: AdsSearchTermMetricRow) -> tuple[int, int, str]:
+    return (-(row.cost_micros or 0), -(row.clicks or 0), row.search_term)
+
+
+def _search_terms_section(
+    search_terms_read_contract: AdsSearchTermsReadContract,
     action_ids: list[str],
 ) -> AdsDiagnosticSection:
-    evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
+    if search_terms_read_contract.search_term_rows:
+        metric_facts = [
+            fact for row in search_terms_read_contract.search_term_rows for fact in row.metric_facts
+        ]
+        return AdsDiagnosticSection(
+            id="ads_search_terms",
+            title="Search terms read contract",
+            status="ready",
+            summary=search_terms_read_contract.summary,
+            diagnosis=(
+                "WILQ ma read-only search term rows z Google Ads. To jeszcze nie "
+                "odblokowuje negative keywords: brakuje konwersji, 90-dniowego checku "
+                "i zwalidowanego ActionObject."
+            ),
+            next_step=search_terms_read_contract.next_step,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=search_terms_read_contract.evidence_ids,
+            metric_facts=metric_facts[:12],
+            action_ids=action_ids,
+            blocked_claims=search_terms_read_contract.blocked_claims,
+            risk=ActionRisk.medium,
+        )
+
     return AdsDiagnosticSection(
         id="ads_search_terms",
         title="Search terms i waste",
-        status="missing",
-        summary="Google Ads adapter nie ma jeszcze search-term read contract.",
+        status="blocked",
+        summary=search_terms_read_contract.summary,
         diagnosis=(
             "BDOS-klasa wymaga search terms, kosztu, konwersji i 90-dniowego checku "
-            "ochronnego przed wykluczeniami. Obecny adapter nie może z tego tworzyć "
-            "negative keyword candidates."
+            "ochronnego przed wykluczeniami. WILQ nie może z tego tworzyć negative "
+            "keyword candidates bez kompletnego evidence."
         ),
-        next_step=(
-            "Dodaj query contract dla search_term_view i walidację kandydatów "
-            "negative keywords jako prepare-only ActionObject."
-        ),
+        next_step=search_terms_read_contract.next_step,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=evidence_ids,
+        evidence_ids=search_terms_read_contract.evidence_ids,
         action_ids=action_ids,
-        blocked_claims=["negative keyword candidates", "ngram waste", "query exclusions"],
+        blocked_claims=search_terms_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
 

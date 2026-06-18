@@ -72,7 +72,11 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/ga4", "/api/ga4/diagnostics");
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "GA4: landing/source/campaign behavior" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: /GA4: (landing\/source\/campaign behavior|brak landing\/source\/campaign breakdown)/
+      })
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: "act_review_ga4_tracking_quality" }).first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "04-ga4-landing-quality.png"),

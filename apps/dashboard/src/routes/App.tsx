@@ -1052,11 +1052,6 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
             {data.primary_next_step}
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Decyzje" value={data.daily_decisions.length} />
-          <MetricTile label="Blockery" value={data.blocker_count} />
-          <MetricTile label="Źródła" value={uniqueValues(data.daily_decisions.flatMap((item) => item.source_connectors)).length} />
-        </div>
       </div>
       <div className="grid gap-3 xl:grid-cols-2">
         {data.daily_decisions.map((item) => (
@@ -1150,6 +1145,9 @@ function CommandCenter() {
 
   if (isLoading) return <LoadingBand />;
   if (error || !data) return <ErrorState />;
+  const sourceCount = uniqueValues(
+    data.daily_decisions.flatMap((item) => item.source_connectors)
+  ).length;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -1161,7 +1159,7 @@ function CommandCenter() {
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Decyzje" value={data.daily_decisions.length} />
           <MetricTile label="Blockery" value={data.blocker_count} />
-          <MetricTile label="Źródła" value={uniqueValues(data.daily_decisions.flatMap((item) => item.source_connectors)).length} />
+          <MetricTile label="Źródła" value={sourceCount} />
         </div>
       </div>
 
@@ -1445,6 +1443,7 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
 type AdsDiagnosticSection = AdsDiagnosticsResponse["sections"][number];
 type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
 type AdsCampaignReadContract = AdsDiagnosticsResponse["campaign_read_contract"];
+type AdsSearchTermsReadContract = AdsDiagnosticsResponse["search_terms_read_contract"];
 
 function AdsDoctorSurface() {
   const diagnostics = useQuery({
@@ -1526,6 +1525,8 @@ function AdsDoctorSurface() {
 
       <AdsCampaignReadContractPanel contract={data.campaign_read_contract} />
 
+      <AdsSearchTermsReadContractPanel contract={data.search_terms_read_contract} />
+
       <div className="grid gap-4 xl:grid-cols-2">
         {data.sections.map((section) => (
           <AdsDiagnosticCard key={section.id} section={section} />
@@ -1586,6 +1587,74 @@ function AdsCampaignReadContractPanel({ contract }: { contract: AdsCampaignReadC
         </div>
       ) : (
         <BlockerNotice message="Brak wymiarowych campaign rows. Ads Doctor nie może analizować kampanii bez vendor_read." />
+      )}
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine label="Wolno użyć metryk" values={contract.allowed_metrics} />
+        <TraceLine label="Brakujące read contracts" values={contract.missing_read_contracts} />
+        <LinkedTraceLine label="Evidence" values={contract.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Zablokowane claimy" values={contract.blocked_claims} />
+      </div>
+    </section>
+  );
+}
+
+function AdsSearchTermsReadContractPanel({ contract }: { contract: AdsSearchTermsReadContract }) {
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Search terms read-only
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{contract.title}</h2>
+        </div>
+        <StatusBadge value={contract.status} />
+      </div>
+      <p className="text-sm leading-6 text-slate-700">{contract.summary}</p>
+      <p className="mt-2 text-sm font-medium text-ink">{contract.next_step}</p>
+
+      {contract.search_term_rows.length > 0 ? (
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-line text-xs uppercase tracking-normal text-slate-500">
+              <tr>
+                <th className="py-2 pr-4 font-semibold">Search term</th>
+                <th className="py-2 pr-4 font-semibold">Kampania</th>
+                <th className="py-2 pr-4 font-semibold">Ad group</th>
+                <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
+                <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
+                <th className="py-2 pr-4 font-semibold">Koszt micros</th>
+                <th className="py-2 pr-4 font-semibold">Evidence</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {contract.search_term_rows.map((row) => (
+                <tr
+                  key={`${row.search_term}-${row.campaign_id ?? "unknown"}-${
+                    row.ad_group_id ?? "unknown"
+                  }`}
+                >
+                  <td className="py-2 pr-4 font-medium text-ink">{row.search_term}</td>
+                  <td className="py-2 pr-4 text-slate-700">
+                    {row.campaign_name ?? row.campaign_id ?? "brak"}
+                  </td>
+                  <td className="py-2 pr-4 text-slate-700">
+                    {row.ad_group_name ?? row.ad_group_id ?? "brak"}
+                  </td>
+                  <td className="py-2 pr-4 text-slate-700">{row.clicks ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">{row.impressions ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-slate-700">{row.cost_micros ?? "brak"}</td>
+                  <td className="py-2 pr-4 text-xs text-slate-600">
+                    {row.evidence_ids.length} ID
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <BlockerNotice message="Brak wymiarowych search term rows. Ads Doctor nie może analizować zapytań ani waste bez search_term_view evidence." />
       )}
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">

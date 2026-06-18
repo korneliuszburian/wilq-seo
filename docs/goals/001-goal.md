@@ -375,14 +375,26 @@ Work in this order:
    Current local status: `/api/ads/diagnostics.campaign_read_contract` is typed
    and live. It groups Google Ads metric facts into campaign rows with
    `campaign_id`, `campaign_name`, `clicks`, `impressions`, `cost_micros`,
-   evidence IDs and blocked claims. It also exposes allowed metrics and missing
-   read contracts (`search_term_view`, conversions, conversion value,
-   recommendations, change history, budget pacing and impression share). Live
-   `:8000` proof after API restart showed 18 campaign rows. Dashboard
-   `/ads-doctor` renders the read contract as a dedicated panel. Full
-   `scripts/verify.sh` passed on 2026-06-18 after this slice: backend API
-   contracts 97 passed, dashboard route tests 12 passed, Playwright e2e 8
-   passed and dashboard production build passed.
+   evidence IDs and blocked claims.
+
+   Current local status: `/api/ads/diagnostics.search_terms_read_contract` is
+   now typed too. Google Ads `vendor_read` queries `search_term_view` read-only
+   and stores `search_term_clicks`, `search_term_impressions` and
+   `search_term_cost_micros` metric facts with campaign/ad group/search term
+   dimensions. Dashboard `/ads-doctor` renders this as a second dedicated
+   read-only panel. Live read `refresh_google_ads_13c265d9a0aa` completed on
+   2026-06-18 with 18 campaign rows and 50 search term rows. This unlocks
+   honest search term review, not automatic waste or negative keyword claims.
+   Negative keyword candidates and waste diagnosis remain blocked until
+   conversions, conversion value, keyword/match context, 90-day safety check
+   and ActionObject validation exist.
+
+   Still missing for BDOS-class Ads value: conversions, conversion value,
+   recommendations, change history, budget pacing, impression share and
+   prepare-only negative keyword ActionObjects. Full `scripts/verify.sh`
+   passed after this search terms and Command Center duplicate-stats slice:
+   backend API contracts 97 passed, dashboard route tests 12 passed,
+   Playwright e2e 8 passed and dashboard production build passed.
 
 7. **Later P2/P3 data contracts.**
    Localo needs rankings, GBP visibility, competitors and reviews before local

@@ -223,7 +223,7 @@ const adsDiagnostics = {
     title: "Google Ads: campaign activity rows",
     summary: "WILQ ma 1 campaign rows: clicks=107, impressions=2783, cost_micros=164591174.",
     allowed_metrics: ["clicks", "impressions", "cost_micros"],
-    missing_read_contracts: ["search_term_view", "conversions", "recommendations"],
+    missing_read_contracts: ["conversions", "recommendations"],
     blocked_claims: ["CPA", "ROAS", "search terms", "wasted budget"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -251,6 +251,71 @@ const adsDiagnostics = {
       }
     ],
     next_step: "Użyj campaign rows do przeglądu aktywności."
+  },
+  search_terms_read_contract: {
+    id: "ads_search_terms_read_contract",
+    status: "ready",
+    title: "Google Ads: search terms read-only rows",
+    summary: "WILQ ma 1 search term rows: clicks=12, impressions=140, cost_micros=9000000.",
+    allowed_metrics: [
+      "search_term",
+      "campaign",
+      "ad_group",
+      "status",
+      "clicks",
+      "impressions",
+      "cost_micros"
+    ],
+    missing_read_contracts: [
+      "conversions",
+      "conversion_value",
+      "90_day_safety_check",
+      "negative_keyword_action_validation"
+    ],
+    blocked_claims: [
+      "search-term waste",
+      "negative keyword candidates",
+      "negative keyword apply",
+      "CPA",
+      "ROAS"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    search_term_rows: [
+      {
+        search_term: "bdo rejestracja",
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        ad_group_id: "456",
+        ad_group_name: "BDO",
+        search_term_status: "ADDED",
+        clicks: 12,
+        impressions: 140,
+        cost_micros: 9000000,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [
+          {
+            name: "search_term_clicks",
+            value: 12,
+            period: "connector_refresh",
+            source_connector: "google_ads",
+            evidence_id: "ev_refresh_refresh_google_ads_test",
+            dimensions: {
+              campaign_id: "123",
+              campaign_name: "Ekologus Search",
+              ad_group_id: "456",
+              ad_group_name: "BDO",
+              search_term: "bdo rejestracja",
+              search_term_status: "ADDED"
+            },
+            unit: null
+          }
+        ],
+        missing_metrics: [],
+        blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+      }
+    ],
+    next_step: "Użyj search term rows jako read-only przeglądu zapytań."
   },
   sections: [
     {
@@ -1355,6 +1420,7 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.")
     ).toBeInTheDocument();
+    expect(screen.getAllByText("Decyzje")).toHaveLength(1);
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Przejrzyj produkty z problemami w Merchant Center")).toBeInTheDocument();
     expect(screen.getAllByText("Prompt do Codex").length).toBeGreaterThan(0);
@@ -1426,9 +1492,12 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Google Ads: campaign activity rows")).toBeInTheDocument();
     expect(screen.getByText("Read contract Ads")).toBeInTheDocument();
-    expect(screen.getByText("Ekologus Search")).toBeInTheDocument();
-    expect(screen.getByText(/Brakujące read contracts/)).toBeInTheDocument();
-    expect(screen.getAllByText(/search_term_view/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ekologus Search").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Brakujące read contracts/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Google Ads: search terms read-only rows")).toBeInTheDocument();
+    expect(screen.getByText("Search terms read-only")).toBeInTheDocument();
+    expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();
+    expect(screen.getByText(/90_day_safety_check/)).toBeInTheDocument();
     expect(screen.getByText("Campaign activity read contract")).toBeInTheDocument();
     expect(screen.getAllByText("Odnow Google Ads OAuth refresh token").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "act_1" })[0]).toHaveAttribute(
