@@ -103,7 +103,7 @@ function LoadingBand() {
   return (
     <div className="flex h-32 items-center gap-3 px-6 text-sm text-slate-600">
       <RefreshCw aria-hidden="true" className="animate-spin" size={18} />
-      Loading WILQ API state
+      Ładowanie stanu WILQ API
     </div>
   );
 }
@@ -1074,10 +1074,22 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
                   <Copy aria-hidden="true" size={15} />
-                  Prompt do Codex
+                  Jak Codex może pomóc
                 </div>
+                <p className="mt-2 text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  Prompt do Codex
+                </p>
                 <p className="mt-2 leading-6 text-slate-700">{item.codex_prompt}</p>
                 <TraceLine label="Skill" values={[item.skill_id]} />
+                <TraceLine
+                  label="Context-pack"
+                  values={item.codex_context_endpoint ? [item.codex_context_endpoint] : []}
+                />
+                {item.expected_codex_output ? (
+                  <p className="mt-2 leading-6 text-slate-700">
+                    Oczekiwany wynik: {item.expected_codex_output}
+                  </p>
+                ) : null}
               </div>
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
@@ -1118,20 +1130,20 @@ function SourceHealthSummary({ data }: { data: CommandCenterResponse }) {
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             To jest tylko skrót zdrowia źródeł. Pełne statusy connectorów, braki
-            uprawnień i credential labels są w Settings, nie w planie dnia.
+            uprawnień i etykiety źródeł dostępu są w ustawieniach, nie w planie dnia.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Connectory" value={data.connector_summary.total} />
-          <MetricTile label="Gotowe" value={data.connector_summary.configured} />
-          <MetricTile label="Braki" value={data.connector_summary.missing_credentials} />
+          <MetricTile label="Źródła" value={data.connector_summary.total} />
+          <MetricTile label="Aktywne" value={data.connector_summary.configured} />
+          <MetricTile label="Do naprawy" value={data.connector_summary.missing_credentials} />
         </div>
       </div>
       <a
         href="/settings"
         className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
       >
-        Otwórz Settings
+        Otwórz ustawienia
       </a>
     </section>
   );

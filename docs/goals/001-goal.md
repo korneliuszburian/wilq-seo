@@ -1073,3 +1073,29 @@ Latest Marketing Brief cleanup:
   `active_products=12`, `sessions=30` or `clicks=3`.
 - This does not change `/api/actions`; it only improves the evidence selected
   for the daily brief and Codex context.
+
+Latest Command Center Codex bridge cleanup:
+
+- Daily decision cards now visibly expose `Jak Codex może pomóc`, the matching
+  `skill_id`, `codex_prompt`, `codex_context_endpoint` and
+  `expected_codex_output`.
+- The first-screen source footer uses Polish operator wording:
+  `Źródła`, `Aktywne`, `Do naprawy`, `Otwórz ustawienia`.
+- Focused proof passed:
+  ```bash
+  pnpm --filter @wilq/dashboard lint
+  pnpm --filter @wilq/dashboard typecheck
+  pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+  WILQ_E2E_API_PORT=<dynamic> WILQ_E2E_DASHBOARD_PORT=<dynamic> CI= pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1
+  ```
+
+Important product note:
+
+- The Codex bridge is necessary but not sufficient. It only connects a dashboard
+  decision to a WILQ skill. It is not yet the marketer value by itself.
+- The next useful slice must audit the primary dashboard routes
+  `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and `/localo`, then
+  replace technical inventory with real metric-backed decisions.
+- Every route should preserve evidence/action traceability while making the
+  marketer-facing hierarchy obvious: real metric, diagnosis, safe next action,
+  blocked claims and matching Codex skill/prompt.

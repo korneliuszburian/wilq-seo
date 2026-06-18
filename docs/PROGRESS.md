@@ -876,3 +876,36 @@ shared runtime/cache, Merchant issue-level triage and URL normalization slices:
 Skill repair is not done. It happens per workflow after the matching API/read
 contract exists. Do not repair missing product behavior inside skill
 references.
+
+## 2026-06-18 - Command Center Codex Bridge Polish UI
+
+What changed:
+
+- Command Center daily decision cards now expose the full Codex bridge already
+  present in the API model:
+  - `skill_id`;
+  - `codex_prompt`;
+  - `codex_context_endpoint`;
+  - `expected_codex_output`.
+- The card copy now explicitly labels this area as `Jak Codex może pomóc`, so
+  the marketer sees how the dashboard decision maps into a WILQ skill workflow.
+- Command Center loading/footer copy was tightened in Polish:
+  - `Ładowanie stanu WILQ API`;
+  - `Otwórz ustawienia`;
+  - `Źródła`, `Aktywne`, `Do naprawy` instead of connector/debug wording.
+
+Focused proof:
+
+```bash
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=<dynamic> WILQ_E2E_DASHBOARD_PORT=<dynamic> CI= pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1
+```
+
+Result:
+
+- Dashboard lint passed.
+- Dashboard typecheck passed.
+- Dashboard route tests: `12 passed`.
+- Controlled Playwright dashboard API smoke: `7 passed`.

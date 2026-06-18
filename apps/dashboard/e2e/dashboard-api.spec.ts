@@ -30,7 +30,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toHaveCount(0);
+    await expect(page.getByText("Jak Codex może pomóc").first()).toBeVisible();
     await expect(page.getByText("Prompt do Codex").first()).toBeVisible();
+    await expect(page.getByText("Context-pack: /api/codex/context-pack").first()).toBeVisible();
+    await expect(page.getByText(/Oczekiwany wynik:/).first()).toBeVisible();
     await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Ułóż kolejkę refresh/merge/create dla treści SEO" })

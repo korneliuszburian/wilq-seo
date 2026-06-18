@@ -1457,11 +1457,16 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
     expect(screen.getByText("Przejrzyj produkty z problemami w Merchant Center")).toBeInTheDocument();
     expect(screen.getAllByText("Prompt do Codex").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Jak Codex może pomóc").length).toBeGreaterThan(0);
     expect(screen.getByText("Skill: wilq-merchant-feed-operator")).toBeInTheDocument();
+    expect(screen.getAllByText("Context-pack: /api/codex/context-pack").length).toBeGreaterThan(0);
+    expect(
+      screen.getByText("Oczekiwany wynik: Polski brief feed issue review z evidence IDs.")
+    ).toBeInTheDocument();
     expect(screen.getByText("Ułóż kolejkę refresh/merge/create dla treści SEO")).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj kampanie Google Ads z live metryk")).toBeInTheDocument();
     expect(screen.getByText("Źródła i ograniczenia")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Otwórz Settings" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Otwórz ustawienia" })).toBeInTheDocument();
     expect(screen.queryByText("Plan działań marketera")).not.toBeInTheDocument();
     expect(screen.queryByText("Dzisiejszy panel operatora")).not.toBeInTheDocument();
     expect(screen.queryByText("Blockery i świeżość źródeł")).not.toBeInTheDocument();
