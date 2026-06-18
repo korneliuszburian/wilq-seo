@@ -1030,3 +1030,83 @@ Remaining product risk:
   Continue with `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and
   `/localo`, checking each route for technical wording, stale readiness cards,
   duplicate intent and missing Codex/action bridge.
+
+## 2026-06-19 - Actions And Opportunities Route Cleanup
+
+What changed:
+
+- `/actions` is no longer a generic registry dump. It starts from
+  `ActionObjecty do przeglądu`, shows only ActionObjects plus related evidence,
+  and does not prepend `OPPORTUNITIES`, `Evidence Registry` or
+  `Connector Refresh Runs`.
+- `/api/actions` no longer resurrects `act_configure_google_ads_env` after a
+  later Google Ads `status_probe` when a completed Google Ads `vendor_read`
+  already exists. The live-data check now selects the latest evidence-bearing
+  `vendor_read`, not the latest refresh of any mode.
+- `/opportunities` is explicitly a pomocniczy rejestr, not a marketer decision
+  queue. The UI now uses Polish labels (`Dowody`, `Źródła`, `Reguły`,
+  `Playbooki`) and no longer uses English readiness/inventory wording in the
+  visible route copy.
+- Backend opportunity titles were normalized from English readiness titles to
+  Polish registry/blocker titles such as `Google Ads: rejestr reguł i
+  playbooków` and `LinkedIn: brak dostępu do organizacji blokuje publikację`.
+- Dashboard ESLint ignores Playwright artifacts (`test-results`,
+  `playwright-report`) so lint does not depend on whether e2e artifacts already
+  exist locally.
+
+Browser proof:
+
+- `agent-browser` `/opportunities` after a 15s settle:
+  - headings start with `Rejestr kart opportunities`;
+  - suspect hits are empty for `technical playbook inventory`,
+    `Evidence użyte`, `Kolejka decyzji`, `connector ready for`,
+    `requires evidence before`, `Run a read-only refresh`,
+    `LinkedIn publishing evidence`, `Facebook Page publishing evidence`.
+- `agent-browser` `/actions` after a 15s settle:
+  - headings start with `ActionObjecty do przeglądu`;
+  - suspect hits are empty for `OPPORTUNITIES`, `Connector Refresh Runs`,
+    `Evidence Registry`, `Odnow Google Ads OAuth refresh token`,
+    `Handoff blockera Ads`, `act_configure_google_ads_env`.
+
+Focused proof passed:
+
+```bash
+uv run ruff check wilq/opportunities/engine.py wilq/actions/service.py tests/test_api_contracts.py
+uv run mypy wilq/opportunities/engine.py wilq/actions/service.py
+uv run pytest tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts
+```
+
+Full proof passed:
+
+```bash
+scripts/verify.sh
+```
+
+Full gate result:
+
+- Backend API contracts: `98 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- Dashboard production build: passed.
+
+Result:
+
+- API focused pytest passed.
+- Dashboard lint/typecheck passed.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+
+Remaining product risk:
+
+- `/actions` is still a technical review surface and shows payload previews by
+  design; marketer-first work belongs in Command Center and dedicated routes.
+- `/opportunities` is no longer pretending to be the plan of the day, but it
+  remains a supporting registry. Do not promote it back into Command Center as
+  a decision queue.
+- Continue route audit on `/merchant`, `/content-planner`, `/ga4`,
+  `/ads-doctor` and `/localo` for stale copy, duplicate intent, missing
+  Codex/action bridge and performance cost.

@@ -164,14 +164,17 @@ Do not rebuild these from scratch:
 
 These are the current reasons Goal 001 is not complete:
 
-1. **Dashboard still contains stale/sloppy states in places.**
-   It must not show `ready` and stale OAuth blocker language for the same
-   connector. Google Ads live state should show live review, not OAuth repair.
+1. **Dashboard route audit is not finished.**
+   Command Center, `/actions` and `/opportunities` have been cleaned up for the
+   current stale Ads/Localo/readiness issues. Remaining route work must continue
+   top-to-bottom on `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and
+   `/localo`, looking for duplicate intent, stale copy, missing Codex bridge and
+   technical wording that masquerades as marketer insight.
 
-2. **Command Center still over-exposes developer-ish internals.**
+2. **Command Center and supporting registries must stay separated.**
    Evidence IDs and ActionObjects are required, but the marketer needs a clear
-   "what to do now and why" hierarchy. Raw connector/status/readiness cards must
-   not masquerade as marketing insight.
+   "what to do now and why" hierarchy. Raw connector/status/readiness cards and
+   opportunity/action registries must not masquerade as marketing insight.
 
    Hard block: first-screen Command Center must not render readiness-only cards
    such as `connector_configured=true`, `Connector ... ready for ... refresh`,
@@ -179,10 +182,10 @@ These are the current reasons Goal 001 is not complete:
    Those belong in lower diagnostic/settings surfaces unless converted into a
    real decision, blocker or action.
 
-   Fresh audit correction: introduce canonical `DailyDecision` as the primary
-   Command Center model. `operator_brief`, `action_plan`, `marketing_brief`,
-   diagnostics and `/api/actions` may remain supporting surfaces, but the first
-   screen and `wilq-daily-command` need one daily decision contract.
+   Fresh audit correction: canonical `DailyDecision` is the primary Command
+   Center model. `operator_brief`, `action_plan`, `marketing_brief`,
+   diagnostics, `/api/actions` and `/api/opportunities` are supporting
+   surfaces, not competing first-screen decision queues.
 
 3. **Ads Doctor is only partially useful.**
    Campaign-level activity facts now have an explicit read contract, but search
@@ -345,6 +348,16 @@ Work in this order:
    this cleanup. Full `scripts/verify.sh` passed on 2026-06-18 for the current
    checkout: backend API contracts 97 passed, dashboard route tests 12 passed,
    Playwright e2e 8 passed and dashboard production build passed.
+
+   Follow-up completed on 2026-06-19: `/actions` starts from
+   `ActionObjecty do przeglądu` and related evidence instead of generic
+   registry dumps. `/api/actions` no longer resurrects
+   `act_configure_google_ads_env` after a later Ads `status_probe` when a live
+   Ads `vendor_read` exists. `/opportunities` is explicitly a supporting
+   registry with Polish labels and no old readiness/inventory copy. Browser
+   proof with `agent-browser` found no stale Ads OAuth action, no generic
+   registry dump on `/actions`, and no old readiness phrases on
+   `/opportunities`. Focused Playwright e2e passed: `9 passed`.
 
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when
@@ -942,69 +955,83 @@ Commit rules:
 
 ## Immediate Next Tasks
 
-1. **Remove remaining Command Center readiness slop.**
-   First-screen `/command-center` must stop rendering connector readiness as
-   marketing insight. Keep real metric facts, tactical queue, ActionObjects and
-   honest blockers.
+1. **Continue route audit beyond Command Center/actions/opportunities.**
+   Next routes: `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and
+   `/localo`. Use `agent-browser` after the page settles. For each route,
+   remove or demote visible sections that cannot answer: `co widzę`,
+   `co to znaczy`, `co zrobić teraz`, `czego nie wolno twierdzić`, and
+   `jak Codex może pomóc`.
 
-2. **Clean remaining stale Ads/Localo state in product surfaces.**
-   Current status after the latest slice: `/api/ads/diagnostics` returns
-   `blocked_handoff=null` when live Ads data exists; `/ads-doctor` shows live
-   read contracts plus `Bezpieczne akcje Ads`, not OAuth handoff copy; Localo
-   access-ready route does not show a global `Taktyki z WILQ API` queue or
-   fake `24 Taktyki` count. Continue auditing Command Center, action plan and
-   skill outputs for any remaining stale OAuth/access wording. Keep direct
-   `/actions/act_configure_google_ads_env` available for troubleshooting only.
+2. **Keep supporting registries out of first-screen decision flow.**
+   `/actions` is now ActionObject review, and `/opportunities` is now a
+   supporting registry. Do not reintroduce them as duplicated Command Center
+   decision queues unless a typed API model adds a new, useful marketer
+   decision.
 
-3. **Continue API surface audit from `/api/actions` and `/api/dashboard/command-center`.**
-   `/api/marketing/brief` has been narrowed and deduped for the current slice.
-   Continue by removing or demoting any ActionObject/Command Center item that
-   repeats the same intent in multiple sections without adding a new decision,
-   validation path or Codex bridge.
+3. **Improve route usefulness, not just wording.**
+   For every route cleanup, prefer typed API/view-model changes over copy-only
+   patches. If a card has only connector readiness, convert it into a real
+   decision, honest blocker, ActionObject validation path or remove it from the
+   marketer route.
 
-4. **Run focused verification for the active slice.**
-   Required:
+4. **Run focused verification after every route slice.**
+   Minimum:
    ```bash
-  uv run ruff check wilq/briefing/command_center.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
-  uv run mypy wilq/briefing/command_center.py wilq/briefing/marketing_brief.py tests/test_api_contracts.py
-  uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or command_center_treats_localo_mcp_initialize_as_access_ready or marketing_brief_exposes_metric_backed_prepare_actions'
-  pnpm --filter @wilq/dashboard lint
-  pnpm --filter @wilq/dashboard typecheck
-  pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+   uv run ruff check <touched-python-files>
+   uv run mypy <touched-python-files>
+   uv run pytest tests/test_api_contracts.py -q -k '<relevant-tests>'
+   pnpm --filter @wilq/dashboard lint
+   pnpm --filter @wilq/dashboard typecheck
+   pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+   WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts
    ```
 
-5. **Audit Command Center top-to-bottom.**
-   Use the running dashboard and `agent-browser` after the page settles. Remove,
-   rewrite or demote every visible section that cannot answer:
-   `co widzę`, `co to znaczy`, `co zrobić teraz`, `czego nie wolno twierdzić`,
-   and `jak Codex może pomóc`.
-
-6. **Run full verification.**
-   Required before commit:
+5. **Run full verification before commit.**
+   Required:
    ```bash
    scripts/verify.sh
    ```
 
-7. **Run a real Codex/API proof.**
+6. **Run a real Codex/API proof.**
    Use `codex exec` or Codex Desktop/CLI against the local WILQ API. Plain
    static prompt evaluation is not enough. The proof must show API use, Polish
    output, evidence IDs, source connectors, blocked claims and safe next actions.
    First proof exists for `wilq-content-strategist`; continue with the remaining
    skills and strengthen eval cases to score usefulness, not only schema pass.
 
-8. **Run full product gate.**
-   ```bash
-   scripts/verify.sh
-   ```
-
-9. **Commit semantically and push.**
+7. **Commit semantically and push.**
    Use Conventional Commits only. Do not commit `.env`, `.local-lab`, test
    traces or secrets.
 
-10. **Run plug-and-play Codex acceptance session.**
+8. **Run plug-and-play Codex acceptance session.**
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 `/actions` + `/opportunities` cleanup:
+
+```bash
+uv run ruff check wilq/opportunities/engine.py wilq/actions/service.py tests/test_api_contracts.py
+uv run mypy wilq/opportunities/engine.py wilq/actions/service.py
+uv run pytest tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts -q
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts
+```
+
+Result:
+
+- API focused pytest: passed.
+- Dashboard lint/typecheck: passed.
+- Dashboard route tests: 13 passed.
+- Playwright e2e: 9 passed.
+- `agent-browser` proof: `/actions` has no generic registry dump or stale Ads
+  OAuth repair action; `/opportunities` has no old readiness/English blocker
+  phrases.
+- Full `scripts/verify.sh`: passed after this slice with backend API contracts
+  `98 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
+  and dashboard production build passed.
 
 Already passed after the current stale-state cleanup started:
 

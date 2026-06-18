@@ -16,6 +16,7 @@ from wilq.schemas import (
     ActionStatus,
     ActionValidationResult,
     AuditEvent,
+    ConnectorRefreshMode,
     ConnectorRefreshStatus,
     MetricFact,
     OpportunityDomain,
@@ -222,10 +223,13 @@ def get_action(action_id: str) -> ActionObject | None:
 
 
 def _google_ads_live_data_available() -> bool:
-    latest_runs = list_connector_refresh_runs(connector_id="google_ads")
-    if not latest_runs:
+    latest_run = None
+    for run in list_connector_refresh_runs(connector_id="google_ads"):
+        if run.mode == ConnectorRefreshMode.vendor_read:
+            latest_run = run
+            break
+    if latest_run is None:
         return False
-    latest_run = latest_runs[0]
     return (
         latest_run.status == ConnectorRefreshStatus.completed
         and latest_run.vendor_data_collected

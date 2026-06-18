@@ -135,6 +135,18 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Audit event: apply_blocked")).toBeVisible();
   });
 
+  test("actions route starts with ActionObjects instead of registry dumps", async ({ page }) => {
+    await page.goto("/actions");
+
+    await expect(page.getByRole("heading", { name: "Actions", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "ActionObjecty do przeglądu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody powiązane z akcjami" })).toBeVisible();
+    await expect(page.getByText("Do walidacji")).toBeVisible();
+    await expect(page.getByText("Odnow Google Ads OAuth refresh token")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "OPPORTUNITIES" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Connector Refresh Runs" })).toHaveCount(0);
+  });
+
   test("merchant route renders live Merchant Diagnostics evidence links", async ({ page }) => {
     await page.goto("/merchant");
 

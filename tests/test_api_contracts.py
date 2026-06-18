@@ -2207,6 +2207,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
 
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    assert "act_configure_google_ads_env" not in {
+        action["id"] for action in actions_response.json()
+    }
+
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     brief_action_ids = {

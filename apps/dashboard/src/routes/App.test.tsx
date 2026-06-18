@@ -1495,8 +1495,24 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByText("Google Ads diagnostics blocked until credentials are configured")).toBeInTheDocument()
     );
-    expect(screen.getByText("Kolejka decyzji")).toBeInTheDocument();
-    expect(screen.getByText("Evidence użyte przez opportunities")).toBeInTheDocument();
+    expect(screen.getByText("Rejestr kart opportunities")).toBeInTheDocument();
+    expect(screen.getByText("Aktywne")).toBeInTheDocument();
+    expect(screen.queryByText("Kolejka decyzji")).not.toBeInTheDocument();
+    expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
+    expect(screen.queryByText("Evidence użyte przez opportunities")).not.toBeInTheDocument();
+  });
+
+  it("actions route starts from ActionObjects instead of registry dumps", async () => {
+    renderApp("/actions");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Actions" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("ActionObjecty do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Dowody powiązane z akcjami")).toBeInTheDocument();
+    expect(screen.getByText("Do walidacji")).toBeInTheDocument();
+    expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });
 
   it("action detail route renders", async () => {

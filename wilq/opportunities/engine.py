@@ -13,6 +13,18 @@ from wilq.schemas import (
     OpportunityDomain,
 )
 
+CONNECTOR_LABELS = {
+    "google_ads": "Google Ads",
+    "google_search_console": "Google Search Console",
+    "google_analytics_4": "GA4",
+    "google_merchant_center": "Merchant Center",
+    "ahrefs": "Ahrefs",
+    "localo": "Localo",
+    "wordpress_ekologus": "WordPress ekologus.pl",
+    "linkedin": "LinkedIn",
+    "facebook": "Facebook",
+}
+
 OPPORTUNITY_TYPES = (
     "google_ads_waste",
     "google_ads_negative_keywords",
@@ -63,8 +75,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="google_ads",
         domain=OpportunityDomain.google_ads,
         opportunity_type="google_ads_waste",
-        blocked_title="Google Ads evidence pipeline blocked by missing credentials",
-        ready_title="Google Ads connector ready for first search-term refresh",
+        blocked_title="Google Ads: brak credentiali blokuje odczyt evidence",
+        ready_title="Google Ads: wymagane fresh evidence przed rekomendacją",
         playbook_ids=(
             "google_ads_search_playbook",
             "google_ads_negative_keywords_playbook",
@@ -81,8 +93,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="google_search_console",
         domain=OpportunityDomain.gsc_seo,
         opportunity_type="gsc_ctr_opportunity",
-        blocked_title="GSC query/page evidence pipeline blocked by missing credentials",
-        ready_title="GSC connector ready for query/page opportunity refresh",
+        blocked_title="GSC: brak credentiali blokuje odczyt query/page",
+        ready_title="GSC: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("gsc_seo_content_playbook",),
         expert_rule_ids=("seo_gsc_opportunities_v1", "seo_query_page_matrix_v1"),
     ),
@@ -90,8 +102,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="google_analytics_4",
         domain=OpportunityDomain.ga4,
         opportunity_type="ga4_tracking_gap",
-        blocked_title="GA4 behavior diagnostics blocked by missing property access",
-        ready_title="GA4 connector ready for behavior diagnostics refresh",
+        blocked_title="GA4: brak dostępu blokuje diagnostykę zachowania",
+        ready_title="GA4: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("ga4_behavior_diagnostics_playbook",),
         expert_rule_ids=("ga4_diagnostics_v1",),
     ),
@@ -99,8 +111,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="google_merchant_center",
         domain=OpportunityDomain.merchant,
         opportunity_type="merchant_feed_issue",
-        blocked_title="Merchant feed diagnostics blocked by missing account access",
-        ready_title="Merchant connector ready for feed diagnostics refresh",
+        blocked_title="Merchant Center: brak dostępu blokuje diagnostykę feedu",
+        ready_title="Merchant Center: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("merchant_feed_optimization_playbook", "google_ads_pmax_playbook"),
         expert_rule_ids=("merchant_feed_rules_v1", "merchant_product_diagnostics_v1"),
         risk=ActionRisk.medium,
@@ -109,8 +121,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="ahrefs",
         domain=OpportunityDomain.ahrefs,
         opportunity_type="ahrefs_content_gap",
-        blocked_title="Ahrefs content-gap evidence blocked by missing API token",
-        ready_title="Ahrefs connector ready for competitor gap refresh",
+        blocked_title="Ahrefs: brak tokena blokuje content-gap evidence",
+        ready_title="Ahrefs: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("ahrefs_content_gap_playbook",),
         expert_rule_ids=("content_brief_rules_v1",),
     ),
@@ -118,8 +130,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="localo",
         domain=OpportunityDomain.localo,
         opportunity_type="localo_visibility_drop",
-        blocked_title="Local visibility evidence blocked by missing Localo access",
-        ready_title="Localo connector ready for local visibility refresh",
+        blocked_title="Localo: brak dostępu blokuje lokalną widoczność",
+        ready_title="Localo: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("localo_local_seo_playbook",),
         expert_rule_ids=("local_visibility_v1", "local_reviews_v1"),
     ),
@@ -127,8 +139,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="wordpress_ekologus",
         domain=OpportunityDomain.wordpress,
         opportunity_type="wordpress_content_refresh",
-        blocked_title="WordPress content inventory blocked by missing ekologus.pl access",
-        ready_title="WordPress ekologus.pl ready for content inventory refresh",
+        blocked_title="WordPress ekologus.pl: brak dostępu blokuje inventory treści",
+        ready_title="WordPress ekologus.pl: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("wordpress_content_refresh_playbook", "gsc_seo_content_playbook"),
         expert_rule_ids=("content_duplication_rules_v1", "content_brief_rules_v1"),
         risk=ActionRisk.medium,
@@ -137,8 +149,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="linkedin",
         domain=OpportunityDomain.social,
         opportunity_type="social_post_candidate",
-        blocked_title="LinkedIn publishing evidence blocked by missing organization access",
-        ready_title="LinkedIn connector ready for social publishing review",
+        blocked_title="LinkedIn: brak dostępu do organizacji blokuje publikację",
+        ready_title="LinkedIn: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("linkedin_content_playbook",),
         expert_rule_ids=("linkedin_rules_v1", "content_social_limits_v1"),
         risk=ActionRisk.medium,
@@ -147,8 +159,8 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
         connector_id="facebook",
         domain=OpportunityDomain.social,
         opportunity_type="social_post_candidate",
-        blocked_title="Facebook Page publishing evidence blocked by missing Page access",
-        ready_title="Facebook connector ready for Page publishing review",
+        blocked_title="Facebook: brak dostępu do strony blokuje publikację",
+        ready_title="Facebook: wymagane fresh evidence przed rekomendacją",
         playbook_ids=("facebook_content_playbook",),
         expert_rule_ids=("facebook_rules_v1", "content_social_limits_v1"),
         risk=ActionRisk.medium,
@@ -215,7 +227,7 @@ def _diagnosis(
     if live_refresh_available:
         return (
             f"{connector_id} ma zakończony odczyt vendor_read w WILQ. Ta karta jest "
-            f"technicznym inventory reguł/playbooków ({playbooks}), nie gotową "
+            f"pomocniczym rejestrem reguł/playbooków ({playbooks}), nie gotową "
             "rekomendacją marketingową."
         )
     if configured:
@@ -262,8 +274,9 @@ def _title(
     if not configured:
         return blueprint.blocked_title
     if live_refresh_available:
-        return f"{blueprint.connector_id}: technical playbook inventory"
-    return blueprint.ready_title.replace("connector ready for", "requires evidence before")
+        connector_label = CONNECTOR_LABELS.get(blueprint.connector_id, blueprint.connector_id)
+        return f"{connector_label}: rejestr reguł i playbooków"
+    return blueprint.ready_title
 
 
 def _opportunity_metrics(

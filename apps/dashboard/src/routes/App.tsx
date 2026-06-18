@@ -166,15 +166,15 @@ function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Evidence: {opportunity.evidence_ids.join(", ")}</div>
-            <div>Source: {opportunity.source_connectors.join(", ")}</div>
-            <div>Rules: {opportunity.expert_rule_ids.slice(0, 3).join(", ") || "none"}</div>
-            <div>Playbooks: {opportunity.playbook_ids.slice(0, 2).join(", ") || "none"}</div>
+            <div>Dowody: {opportunity.evidence_ids.join(", ")}</div>
+            <div>Źródła: {opportunity.source_connectors.join(", ")}</div>
+            <div>Reguły: {opportunity.expert_rule_ids.slice(0, 3).join(", ") || "brak"}</div>
+            <div>Playbooki: {opportunity.playbook_ids.slice(0, 2).join(", ") || "brak"}</div>
           </div>
           {opportunity.is_fixture ? (
             <div className="mt-3 flex items-center gap-2 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
               <AlertCircle aria-hidden="true" size={15} />
-              Seed state, not real Ekologus performance data
+              Dane seed, nie realny performance Ekologus
             </div>
           ) : null}
         </article>
@@ -185,7 +185,7 @@ function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
 
 function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
   if (evidenceItems.length === 0) {
-    return <p className="text-sm text-slate-600">No evidence records are available yet.</p>;
+    return <p className="text-sm text-slate-600">Brak zapisanych dowodów w WILQ API.</p>;
   }
 
   return (
@@ -210,7 +210,7 @@ function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {
 
 function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] }) {
   if (runs.length === 0) {
-    return <p className="text-sm text-slate-600">No connector refresh runs yet.</p>;
+    return <p className="text-sm text-slate-600">Brak zapisanych odczytów connectorów.</p>;
   }
 
   return (
@@ -227,9 +227,9 @@ function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] }) {
           <p className="mt-3 text-sm leading-6 text-slate-700">{run.summary}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Mode: {run.mode}</div>
-            <div>Vendor data: {run.vendor_data_collected ? "yes" : "no"}</div>
-            <div>External call: {run.external_call_attempted ? "yes" : "no"}</div>
-            <div>Evidence: {run.evidence_ids.join(", ")}</div>
+            <div>Dane vendora: {run.vendor_data_collected ? "tak" : "nie"}</div>
+            <div>Zewnętrzny odczyt: {run.external_call_attempted ? "tak" : "nie"}</div>
+            <div>Dowody: {run.evidence_ids.join(", ")}</div>
           </div>
           {Object.keys(run.metric_summary).length > 0 ? (
             <pre className="mt-3 max-h-32 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
@@ -243,6 +243,10 @@ function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] }) {
 }
 
 function ActionList({ actions }: { actions: ActionObject[] }) {
+  if (actions.length === 0) {
+    return <p className="text-sm text-slate-600">Brak ActionObjectów dla tej powierzchni.</p>;
+  }
+
   return (
     <div className="grid gap-3 xl:grid-cols-2">
       {actions.map((action) => (
@@ -262,8 +266,8 @@ function ActionList({ actions }: { actions: ActionObject[] }) {
             <StatusBadge value={action.risk} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Evidence: {action.evidence_ids.join(", ")}</div>
-            <div>Audit events: {action.audit_events.length}</div>
+            <div>Dowody: {action.evidence_ids.join(", ")}</div>
+            <div>Zdarzenia audytu: {action.audit_events.length}</div>
           </div>
           <pre className="mt-3 max-h-40 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
             {JSON.stringify(action.payload, null, 2)}
@@ -276,7 +280,7 @@ function ActionList({ actions }: { actions: ActionObject[] }) {
 
 function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
   if (rules.length === 0) {
-    return <p className="text-sm text-slate-600">No expert rules mapped to this surface yet.</p>;
+    return <p className="text-sm text-slate-600">Brak reguł eksperckich dla tej powierzchni.</p>;
   }
 
   return (
@@ -290,12 +294,12 @@ function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
                 {rule.domain} / v{rule.version}
               </p>
             </div>
-            {rule.requires_evidence ? <StatusBadge value="evidence required" /> : null}
+            {rule.requires_evidence ? <StatusBadge value="wymaga dowodów" /> : null}
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{rule.output_contract}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Anchor: {rule.source_anchor}</div>
-            <div>Actions: {rule.recommended_actions.slice(0, 3).join(", ") || "none"}</div>
+            <div>Źródło reguły: {rule.source_anchor}</div>
+            <div>Akcje: {rule.recommended_actions.slice(0, 3).join(", ") || "brak"}</div>
           </div>
         </article>
       ))}
@@ -1213,22 +1217,22 @@ function OpportunitiesSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Opportunities</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Lista decyzji z WILQ API. Każda karta musi mieć evidence IDs, źródła i reguły;
-            readiness albo seed data nie są rekomendacją marketingową. To jest techniczne
-            inventory; konkretna praca marketera ma trafiać do widoków Ads, GA4,
+            Rejestr opportunities z WILQ API. Każda karta musi mieć dowody, źródła i reguły;
+            sama gotowość connectora albo dane testowe nie są rekomendacją marketingową.
+            To jest pomocniczy rejestr; konkretna praca marketera ma trafiać do widoków Ads, GA4,
             Merchant, Content i Localo.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Karty" value={items.length} />
-          <MetricTile label="Live" value={liveItems.length} />
-          <MetricTile label="Evidence" value={evidenceIds.size} />
+          <MetricTile label="Aktywne" value={liveItems.length} />
+          <MetricTile label="Dowody" value={evidenceIds.size} />
         </div>
       </div>
 
       <div className="grid gap-8">
         <section>
-          <SectionHeading title="Kolejka decyzji" />
+          <SectionHeading title="Rejestr kart opportunities" />
           <OpportunityList opportunities={items} />
         </section>
         <section>
@@ -1242,10 +1246,58 @@ function OpportunitiesSurface() {
           />
         </section>
         <section>
-          <SectionHeading title="Evidence użyte przez opportunities" />
+          <SectionHeading title="Dowody użyte przez karty" />
           <EvidenceList
             evidenceItems={(evidence.data ?? []).filter((item) => evidenceIds.has(item.id)).slice(0, 12)}
           />
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function ActionsSurface() {
+  const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
+  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
+
+  if (actions.isLoading || evidence.isLoading) return <LoadingBand />;
+  if (actions.error || evidence.error) return <ErrorState />;
+
+  const items = actions.data ?? [];
+  const evidenceIds = new Set(items.flatMap((action) => action.evidence_ids));
+  const relatedEvidence = (evidence.data ?? [])
+    .filter((item) => evidenceIds.has(item.id))
+    .slice(0, 12);
+  const needsValidation = items.filter(
+    (action) => action.validation_status !== "valid"
+  );
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Actions</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            ActionObjecty z WILQ API. To jest kolejka bezpiecznych kandydatów działań:
+            każda karta ma dowody, tryb, ryzyko, status walidacji i payload preview.
+            Apply pozostaje zablokowany bez walidacji, jawnej zgody i audytu.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="ActionObjects" value={items.length} />
+          <MetricTile label="Do walidacji" value={needsValidation.length} />
+          <MetricTile label="Dowody" value={evidenceIds.size} />
+        </div>
+      </div>
+
+      <div className="grid gap-8">
+        <section>
+          <SectionHeading title="ActionObjecty do przeglądu" />
+          <ActionList actions={items} />
+        </section>
+        <section>
+          <SectionHeading title="Dowody powiązane z akcjami" />
+          <EvidenceList evidenceItems={relatedEvidence} />
         </section>
       </div>
     </main>
@@ -3061,7 +3113,7 @@ const opportunityDetailRoute = createRoute({
 const actionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/actions",
-  component: () => <GenericSurface routeName="/actions" />
+  component: ActionsSurface
 });
 const workflowsRoute = createRoute({
   getParentRoute: () => rootRoute,
