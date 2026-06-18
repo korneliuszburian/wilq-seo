@@ -410,6 +410,16 @@ Tasks:
   `act_review_merchant_feed_issues` as the safe pending-validation review path.
   Remaining quality gap: future Merchant evals should assert issue-level
   clustering and explicit ActionObject validation proof.
+- 2026-06-18 follow-up: third real non-interactive Codex eval passed for
+  `wilq-ga4-analyst`:
+  `.local-lab/evals/codex-skill/20260618T101220Z/wilq-ga4-analyst/result.json`.
+  It proves `pl-PL`, Polish diacritics, `api_used=true`,
+  `google_analytics_4` evidence IDs and
+  `act_review_ga4_tracking_quality` as the safe pending-validation review path.
+  It correctly blocks ROAS/revenue/conversion claims without stronger evidence.
+  Remaining quality gap: future GA4 evals should assert ranked
+  landing/source/campaign diagnostic items and explicit ActionObject validation
+  proof.
 - Performance direction: follow TanStack/React guidance by avoiding client
   waterfalls and duplicated data models. Do not patch this with random
   `useMemo`; next performance slice should build a lightweight daily-decision

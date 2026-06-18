@@ -238,3 +238,74 @@ Verdict:
 Useful and stronger than the first content non-interactive eval. It gives a
 clear Polish operator next step backed by Merchant evidence and a safe
 ActionObject.
+
+## 2026-06-18 - wilq-ga4-analyst
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case `wilq-ga4-analyst`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260618T101220Z/wilq-ga4-analyst/result.json
+trace: .local-lab/evals/codex-skill/20260618T101220Z/wilq-ga4-analyst/trace.jsonl
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `google_analytics_4`.
+- Evidence IDs included 12 GA4/status IDs, including:
+  `ev_refresh_refresh_google_analytics_4_681b6bcefc85`,
+  `ev_refresh_refresh_google_analytics_4_a45fa03e453b`,
+  `ev_connector_google_analytics_4_status`.
+- Opportunity IDs:
+  `opp_connector_google_analytics_4`,
+  `opp_connector_wordpress_ekologus`.
+- Action candidate:
+  `act_review_ga4_tracking_quality` with `pending_validation`.
+- Key live facts surfaced by the skill:
+  `live_data_available=true`, `blocker_count=0`,
+  `landing_group_count=10`, `low_engagement_count=0`,
+  `wordpress_match_count=0`, plus `active_users=20` and `sessions=30` from the
+  current brief context.
+- `operator_usefulness_score=4`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill correctly treats GA4 as behavior/tracking review, not as direct
+  profitability proof.
+- It explicitly blocks `ROAS`, `revenue`, `conversion rate`,
+  `conversion drop`, attribution verdicts and funnel diagnosis without stronger
+  conversion evidence.
+- The next step points to `/ga4` and review of
+  `act_review_ga4_tracking_quality`.
+
+Product gaps found:
+
+1. The eval is safe and useful, but still not detailed enough for BDOS-class
+   GA4 work. It does not force a ranked landing/source/campaign queue, even
+   though `ga4_diagnostics` exposes `landing_group_count=10`.
+2. `validation_state=pending_validation` is correct for this harness because it
+   does not call `POST /api/actions/act_review_ga4_tracking_quality/validate`.
+   A future manual eval should include the validation call and record the
+   result.
+3. The skill should eventually distinguish tracking problems, weak landing
+   match and campaign/source issues with a stricter output case. Current eval
+   proves safe review, not deep GA4 diagnosis.
+
+Verdict:
+
+Useful as a guardrailed GA4 readiness and behavior-review skill. It is not yet a
+deep landing/source/campaign analyst until eval cases require concrete ranked
+diagnostic items.
