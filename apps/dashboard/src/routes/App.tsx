@@ -18,19 +18,12 @@ import {
 import {
   AlertCircle,
   AlertTriangle,
-  BarChart3,
   CheckCircle2,
   ClipboardCheck,
-  Database,
+  Copy,
   FileJson,
-  FileText,
-  MapPin,
-  Megaphone,
   RefreshCw,
-  Search,
-  ShieldAlert,
-  WalletCards,
-  type LucideIcon
+  ShieldAlert
 } from "lucide-react";
 
 import {
@@ -57,8 +50,6 @@ import {
   getKnowledgePlaybooks,
   getMarketingBrief,
   getMerchantDiagnostics,
-  getMetricFacts,
-  getMetricStoreStatus,
   getOpportunities,
   getTacticalQueue,
   applyAction,
@@ -67,12 +58,10 @@ import {
   getWorkflows,
   KnowledgeCard,
   CommandCenterResponse,
-  MarketingBrief,
   MarketingBriefItem,
   MarketingPlaybook,
   MerchantDiagnosticsResponse,
   MetricFact,
-  MetricStoreStatus,
   Opportunity,
   TacticalQueueResponse,
   Workflow,
@@ -391,181 +380,6 @@ function PlaybookList({ playbooks }: { playbooks: MarketingPlaybook[] }) {
   );
 }
 
-type OperatingDecisionSection = {
-  key: string;
-  title: string;
-  description: string;
-  emptyMessage: string;
-  icon: LucideIcon;
-};
-
-const operatingDecisionSections: OperatingDecisionSection[] = [
-  {
-    key: "money_leaks",
-    title: "Budżet i ryzyko wydatków",
-    description: "Ads, Merchant i kampanie, które mogą palić budżet albo wymagają świeżych danych.",
-    emptyMessage: "Brak potwierdzonych money leaks. WILQ potrzebuje live Ads/Merchant evidence.",
-    icon: WalletCards
-  },
-  {
-    key: "traffic_wins",
-    title: "Szanse na ruch",
-    description: "GSC, GA4 i SEO okazje, które mogą podnieść wartościowy ruch.",
-    emptyMessage: "Brak potwierdzonych traffic wins. Uruchom read-only refresh GSC/GA4/Ahrefs.",
-    icon: Search
-  },
-  {
-    key: "content_to_rewrite",
-    title: "Treści do poprawy",
-    description: "Strony i wpisy, które mają dostać refresh, merge albo zmianę intentu.",
-    emptyMessage: "Brak kolejki rewrite. Potrzebne są GSC query/page, GA4 landing i WordPress inventory.",
-    icon: FileText
-  },
-  {
-    key: "content_to_create",
-    title: "Treści do stworzenia",
-    description: "Nowe landing pages, artykuły i tematy wynikające z Ads/GSC/Ahrefs/Merchant.",
-    emptyMessage: "Brak evidence-backed briefów. WILQ nie tworzy tematów bez danych źródłowych.",
-    icon: ClipboardCheck
-  },
-  {
-    key: "local_visibility_moves",
-    title: "Widoczność lokalna",
-    description: "Localo/GBP ruchy i blockery widoczności lokalnej.",
-    emptyMessage: "Brak lokalnych rekomendacji. Potrzebne są świeże dane Localo/GBP.",
-    icon: MapPin
-  },
-  {
-    key: "social_queue",
-    title: "Social queue",
-    description: "LinkedIn/Facebook kandydaci i permission blockery.",
-    emptyMessage: "Brak postów do przygotowania. Social wymaga evidence-backed claimów i uprawnień.",
-    icon: Megaphone
-  }
-];
-
-function DecisionSection({
-  section,
-  opportunities
-}: {
-  section: OperatingDecisionSection;
-  opportunities: Opportunity[];
-}) {
-  const Icon = section.icon;
-
-  return (
-    <section>
-      <div className="mb-3 flex items-start gap-3">
-        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-          <Icon aria-hidden="true" size={18} />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            {section.title}
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">{section.description}</p>
-        </div>
-      </div>
-      {opportunities.length === 0 ? (
-        <BlockerNotice message={section.emptyMessage} />
-      ) : (
-        <div className="grid gap-3 xl:grid-cols-2">
-          {opportunities.map((opportunity) => (
-            <DecisionOpportunityCard key={opportunity.id} opportunity={opportunity} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function DecisionOpportunityCard({ opportunity }: { opportunity: Opportunity }) {
-  const readinessOnly =
-    opportunity.metrics.length === 0 ||
-    opportunity.metrics.every((metric) => metric.name === "connector_configured");
-
-  return (
-    <article className="rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold">{opportunity.title}</h3>
-          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {opportunity.domain} / {opportunity.type}
-          </p>
-        </div>
-        <StatusBadge value={opportunity.risk} />
-      </div>
-      <p className="mt-3 text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
-      <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
-      {readinessOnly ? (
-        <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-wait">
-          To jeszcze nie jest rekomendacja performance. WILQ ma tylko readiness/status i czeka na
-          vendor_read z realnymi metrykami.
-        </div>
-      ) : null}
-      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <TraceLine label="Evidence" values={opportunity.evidence_ids} />
-        <TraceLine label="Źródła" values={opportunity.source_connectors} />
-        <TraceLine label="Reguły" values={opportunity.expert_rule_ids.slice(0, 3)} />
-        <TraceLine label="Akcje" values={opportunity.action_ids} empty="brak gotowej akcji" />
-      </div>
-      {opportunity.metrics.length > 0 ? (
-        <MetricFactChips facts={opportunity.metrics.slice(0, 4)} />
-      ) : null}
-    </article>
-  );
-}
-
-function ActionQueue({ actions }: { actions: ActionObject[] }) {
-  if (actions.length === 0) {
-    return (
-      <BlockerNotice message="Brak kandydatów ActionObject. Najpierw potrzebne są evidence-backed opportunities." />
-    );
-  }
-
-  return (
-    <section>
-      <div className="mb-3 flex items-start gap-3">
-        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-          <ShieldAlert aria-hidden="true" size={18} />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Kandydaci działań API
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Każdy write path wymaga walidacji ActionObject i audytu przed wykonaniem.
-          </p>
-        </div>
-      </div>
-      <div className="grid gap-3 xl:grid-cols-2">
-        {actions.map((action) => (
-          <article key={action.id} className="rounded-md border border-line bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold">{action.title}</h3>
-                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {action.connector} / {action.mode}
-                </p>
-              </div>
-              <StatusBadge value={action.status} />
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadge value={action.validation_status} />
-              <StatusBadge value={action.risk} />
-            </div>
-            <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-              <TraceLine label="ActionObject" values={[action.id]} />
-              <TraceLine label="Evidence" values={action.evidence_ids} />
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
     return (
@@ -753,7 +567,7 @@ function ActionApplyResultPanel({
 
 function ConnectorBlockers({ connectors }: { connectors: ConnectorStatus[] }) {
   const blockers = connectors.filter(
-    (connector) => connector.status !== "configured" || connector.freshness.state !== "fresh"
+    (connector) => connector.status !== "configured" || connector.missing_credentials.length > 0
   );
 
   return (
@@ -775,8 +589,7 @@ function ConnectorBlockers({ connectors }: { connectors: ConnectorStatus[] }) {
                 <StatusBadge value={connector.status} />
               </div>
               <p className="mt-3 text-xs leading-5 text-slate-600">
-                Freshness: {connector.freshness.state}
-                {connector.freshness.notes ? ` - ${connector.freshness.notes}` : ""}
+                Status dostępu: {connector.status}
               </p>
               {connector.missing_credentials.length > 0 ? (
                 <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
@@ -791,89 +604,12 @@ function ConnectorBlockers({ connectors }: { connectors: ConnectorStatus[] }) {
   );
 }
 
-function MetricInventory({
-  facts,
-  status,
-  isLoading,
-  isError
-}: {
-  facts: MetricFact[];
-  status?: MetricStoreStatus;
-  isLoading: boolean;
-  isError: boolean;
-}) {
-  const visibleFacts = [...facts].sort((a, b) => {
-    const aDimensions = Object.keys(a.dimensions ?? {}).length;
-    const bDimensions = Object.keys(b.dimensions ?? {}).length;
-    return bDimensions - aDimensions;
-  });
-
-  return (
-    <section>
-      <div className="mb-3 flex items-start gap-3">
-        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-          <Database aria-hidden="true" size={18} />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Realne metric facts zapisane lokalnie
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Dane z connector refreshy w DuckDB; to nie zastępuje freshness ani evidence IDs.
-          </p>
-        </div>
-      </div>
-      {isError ? (
-        <BlockerNotice message="Nie udało się odczytać /api/metrics. Dashboard nie może udawać lokalnych metryk." />
-      ) : isLoading ? (
-        <div className="rounded-md border border-line bg-white p-4 text-sm text-slate-600">
-          Ładowanie metric store...
-        </div>
-      ) : facts.length === 0 ? (
-        <BlockerNotice message="Brak metric facts. Uruchom vendor_read dla skonfigurowanych connectorów." />
-      ) : (
-        <div className="rounded-md border border-line bg-white p-4">
-          <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3">
-            <MetricTile label="Facts" value={status?.metric_fact_count ?? facts.length} />
-            <MetricTile label="Connectors" value={status?.connector_count ?? 0} />
-            <MetricTile label="Refresh runs" value={status?.refresh_run_count ?? 0} />
-          </div>
-          <div className="grid gap-2 md:grid-cols-2">
-            {visibleFacts.slice(0, 8).map((fact, index) => (
-              <div key={`${fact.evidence_id}-${fact.name}-${index}`} className="rounded border border-line p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-medium">{fact.name}</span>
-                  <span className="text-sm font-semibold">{formatMetricFactValue(fact)}</span>
-                </div>
-                <div className="mt-2 text-xs text-slate-600">
-                  {fact.source_connector} / {fact.period}
-                </div>
-                {Object.keys(fact.dimensions ?? {}).length > 0 ? (
-                  <div className="mt-1 text-xs text-slate-600">
-                    Wymiar: {formatMetricDimensions(fact)}
-                  </div>
-                ) : null}
-                <div className="mt-1 text-xs text-slate-600">
-                  {formatMetricDelta(fact)} / {fact.freshness_label ?? fact.freshness_state ?? "unknown"}
-                </div>
-                <div className="mt-1 break-words text-xs text-slate-500">
-                  Evidence: {fact.evidence_id}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
-
 function MetricFactChips({ facts }: { facts: MetricFact[] }) {
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      {facts.map((fact) => (
+      {facts.map((fact, index) => (
         <span
-          key={`${fact.name}-${fact.evidence_id}`}
+          key={metricFactKey(fact, index)}
           className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
         >
           {fact.name}: {formatMetricFactValue(fact)}
@@ -884,6 +620,21 @@ function MetricFactChips({ facts }: { facts: MetricFact[] }) {
       ))}
     </div>
   );
+}
+
+function metricFactKey(fact: MetricFact, index: number) {
+  const dimensions = Object.entries(fact.dimensions ?? {})
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("|");
+  return [
+    fact.source_connector,
+    fact.period,
+    fact.name,
+    fact.evidence_id,
+    dimensions,
+    index,
+  ].join("::");
 }
 
 function TraceLine({
@@ -966,64 +717,6 @@ function formatMetricDimensions(fact: MetricFact) {
     .join(", ");
 }
 
-function MarketingBriefPanel({
-  brief,
-  isLoading,
-  isError
-}: {
-  brief?: MarketingBrief;
-  isLoading: boolean;
-  isError: boolean;
-}) {
-  if (isError) {
-    return (
-      <BlockerNotice message="Nie udało się odczytać /api/marketing/brief. Command Center nie może udawać briefu." />
-    );
-  }
-  if (isLoading || !brief) {
-    return (
-      <div className="rounded-md border border-line bg-white p-4 text-sm text-slate-600">
-        Ładowanie dzisiejszego briefu WILQ...
-      </div>
-    );
-  }
-
-  const visibleItems = brief.sections.flatMap((section) => section.items).slice(0, 6);
-
-  return (
-    <section>
-      <div className="mb-3 flex items-start gap-3">
-        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-          <ClipboardCheck aria-hidden="true" size={18} />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Dzisiejszy brief WILQ
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">{brief.strict_instruction}</p>
-        </div>
-      </div>
-      <div className="rounded-md border border-line bg-white p-4">
-        <div className="mb-4 grid gap-3 text-sm sm:grid-cols-4">
-          <MetricTile label="Rekomendacje" value={brief.recommendation_count} />
-          <MetricTile label="Blockery" value={brief.blocker_count} />
-          <MetricTile label="Evidence IDs" value={brief.evidence_ids.length} />
-          <MetricTile label="ActionObjects" value={brief.action_ids.length} />
-        </div>
-        {visibleItems.length === 0 ? (
-          <BlockerNotice message="Brief nie ma jeszcze itemów. Uruchom read-only vendor_read dla skonfigurowanych connectorów." />
-        ) : (
-          <div className="grid gap-3 xl:grid-cols-2">
-            {visibleItems.map((item) => (
-              <MarketingBriefCard key={item.id} item={item} />
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
 function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
   return (
     <article className="rounded-md border border-line p-4">
@@ -1031,7 +724,7 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
         <div>
           <h3 className="text-sm font-semibold">{item.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {item.kind} / priority {item.priority}
+            {item.kind} / {priorityLabel(item.priority)}
           </p>
         </div>
         <StatusBadge value={item.risk} />
@@ -1054,8 +747,6 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
 }
 
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
-type CommandCenterBriefItem = CommandCenterResponse["operator_brief"][number];
-type CommandCenterDemoStep = CommandCenterResponse["demo_script"][number];
 type CommandCenterActionPlanItem = CommandCenterResponse["action_plan"][number];
 
 const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> = {
@@ -1064,6 +755,7 @@ const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> = {
   content_merge: "scalenie treści",
   content_block: "blokada treści",
   landing_page_quality: "jakość landing page",
+  tracking_gap: "problem pomiaru",
   merchant_feed_triage: "triage feedu",
   traffic_quality_review: "jakość ruchu"
 };
@@ -1095,6 +787,8 @@ function TacticalQueuePanel({
   connectorIds,
   limit = 8,
   title = "Konkretne zadania z danych",
+  hideTrackingGaps = false,
+  compact = false,
   isLoading,
   isError
 }: {
@@ -1102,6 +796,8 @@ function TacticalQueuePanel({
   connectorIds?: string[];
   limit?: number;
   title?: string;
+  hideTrackingGaps?: boolean;
+  compact?: boolean;
   isLoading: boolean;
   isError: boolean;
 }) {
@@ -1118,13 +814,15 @@ function TacticalQueuePanel({
     );
   }
 
-  const items = queue.items
+  const filteredItems = queue.items
     .filter((item) =>
       connectorIds
         ? item.source_connectors.some((connector) => connectorIds.includes(connector))
         : true
     )
-    .slice(0, limit);
+    .filter((item) => !(hideTrackingGaps && item.intent === "tracking_gap"));
+  const compactGroups = compact ? compactTacticalGroups(filteredItems).slice(0, limit) : [];
+  const items = compact ? [] : filteredItems.slice(0, limit);
 
   return (
     <section>
@@ -1135,18 +833,25 @@ function TacticalQueuePanel({
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródło,
-            evidence IDs, ActionObject i claimy, których WILQ nie wolno dopowiadać.
+            {compact
+              ? "Skondensowana kolejka decyzji z WILQ API. Duplikaty query/page są zgrupowane; pełny drilldown jest w dedykowanych widokach."
+              : "Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródło, evidence IDs, ActionObject i claimy, których WILQ nie wolno dopowiadać."}
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Taktyki" value={queue.items.length} />
-          <MetricTile label="Evidence" value={queue.evidence_ids.length} />
-          <MetricTile label="Akcje" value={queue.action_ids.length} />
+          <MetricTile label={compact ? "Decyzje" : "Taktyki"} value={compact ? compactGroups.length : queue.items.length} />
+          <MetricTile label="Evidence" value={uniqueValues(filteredItems.flatMap((item) => item.evidence_ids)).length} />
+          <MetricTile label="Akcje" value={uniqueValues(filteredItems.flatMap((item) => item.action_ids)).length} />
         </div>
       </div>
-      {items.length === 0 ? (
+      {compact && compactGroups.length > 0 ? (
+        <div className="grid gap-3 xl:grid-cols-2">
+          {compactGroups.map((group) => (
+            <CompactTacticalCard key={group.id} group={group} />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <BlockerNotice message="Brak taktyk dla tej trasy. Potrzebne są wymiarowe metric facts z WILQ API." />
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
@@ -1159,6 +864,153 @@ function TacticalQueuePanel({
   );
 }
 
+type CompactTacticalGroup = {
+  id: string;
+  title: string;
+  meta: string;
+  diagnosis: string;
+  nextStep: string;
+  sourceConnectors: string[];
+  evidenceIds: string[];
+  actionIds: string[];
+  blockedClaims: string[];
+  risk: TacticalQueueItem["risk"];
+};
+
+function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
+  return (
+    <article className="rounded-md border border-line bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{group.title}</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">{group.meta}</p>
+        </div>
+        <StatusBadge value={group.risk} />
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-700">{group.diagnosis}</p>
+      <p className="mt-3 text-sm font-medium text-ink">{group.nextStep}</p>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+        <LinkedTraceLine label="Evidence" values={group.evidenceIds.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Źródła" values={group.sourceConnectors} />
+        <LinkedTraceLine label="Akcje" values={group.actionIds} kind="actions" empty="brak" />
+        <TraceLine label="Blokady claimów" values={group.blockedClaims} />
+      </div>
+    </article>
+  );
+}
+
+function compactTacticalGroups(items: TacticalQueueItem[]): CompactTacticalGroup[] {
+  const groups = new Map<string, TacticalQueueItem[]>();
+  for (const item of items) {
+    const key = compactTacticalGroupKey(item);
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+  return Array.from(groups.values())
+    .map((groupItems) => compactTacticalGroup(groupItems))
+    .sort((left, right) => prioritySortValue(left.meta) - prioritySortValue(right.meta));
+}
+
+function compactTacticalGroupKey(item: TacticalQueueItem) {
+  if (item.domain === "gsc_seo" && item.dimensions.page) {
+    return `${item.domain}:${item.intent}:${item.dimensions.page}`;
+  }
+  if (item.domain === "ga4") {
+    return `${item.domain}:${item.intent}:${item.dimensions.landing_page ?? ""}:${item.dimensions.source_medium ?? ""}`;
+  }
+  if (item.domain === "merchant") {
+    return `${item.domain}:${item.intent}:${item.dimensions.issue_type ?? ""}:${item.dimensions.affected_attribute ?? ""}:${item.dimensions.country ?? ""}`;
+  }
+  return item.id;
+}
+
+function compactTacticalGroup(items: TacticalQueueItem[]): CompactTacticalGroup {
+  const first = items[0];
+  const facts = items.flatMap((item) => item.metric_facts);
+  const queries = uniqueValues(items.map((item) => item.dimensions.query).filter(Boolean));
+  const clicks = sumMetricFacts(facts, "clicks");
+  const impressions = sumMetricFacts(facts, "impressions");
+  return {
+    id: compactTacticalGroupKey(first),
+    title: compactTacticalTitle(first, items.length),
+    meta: `${tacticalDomainLabels[first.domain] ?? first.domain} / ${tacticalIntentLabels[first.intent]} / ${priorityLabel(first.priority)}`,
+    diagnosis: compactTacticalDiagnosis(first, queries, clicks, impressions, items.length),
+    nextStep: first.next_step,
+    sourceConnectors: uniqueValues(items.flatMap((item) => item.source_connectors)),
+    evidenceIds: uniqueValues(items.flatMap((item) => item.evidence_ids)),
+    actionIds: uniqueValues(items.flatMap((item) => item.action_ids)),
+    blockedClaims: uniqueValues(items.flatMap((item) => item.blocked_claims)),
+    risk: first.risk
+  };
+}
+
+function compactTacticalTitle(item: TacticalQueueItem, groupSize: number) {
+  if (item.domain === "gsc_seo" && item.dimensions.page) {
+    const action = item.intent === "content_refresh" ? "odśwież" : "zweryfikuj treść";
+    return `SEO: ${action} ${shortPath(item.dimensions.page)} (${groupSize} ${polishQueryLabel(groupSize)})`;
+  }
+  if (item.domain === "ga4") {
+    return `GA4: sprawdź ${item.dimensions.landing_page ?? "landing"} / ${item.dimensions.source_medium ?? "źródło"}`;
+  }
+  if (item.domain === "merchant") {
+    return `Merchant: sprawdź ${item.dimensions.issue_type ?? "issue"} / ${item.dimensions.affected_attribute ?? "atrybut"}`;
+  }
+  return item.title;
+}
+
+function compactTacticalDiagnosis(
+  item: TacticalQueueItem,
+  queries: string[],
+  clicks: number | null,
+  impressions: number | null,
+  groupSize: number
+) {
+  if (item.domain === "gsc_seo") {
+    const queryText = queries.length > 0 ? ` Query: ${queries.slice(0, 4).join(", ")}.` : "";
+    const metrics = [
+      clicks === null ? null : `clicks=${formatCompactNumber(clicks)}`,
+      impressions === null ? null : `impressions=${formatCompactNumber(impressions)}`
+    ]
+      .filter(Boolean)
+      .join(", ");
+    return `${groupSize} powiązanych zapytań prowadzi do tej samej strony.${queryText}${metrics ? ` Suma widocznych metryk: ${metrics}.` : ""}`;
+  }
+  return item.diagnosis;
+}
+
+function sumMetricFacts(facts: MetricFact[], name: string) {
+  const values = facts
+    .filter((fact) => fact.name === name && typeof fact.value === "number")
+    .map((fact) => Number(fact.value));
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0);
+}
+
+function formatCompactNumber(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function shortPath(value: string) {
+  try {
+    const parsed = new URL(value);
+    return parsed.pathname === "/" ? parsed.hostname : parsed.pathname;
+  } catch {
+    return value;
+  }
+}
+
+function polishQueryLabel(count: number) {
+  if (count === 1) return "zapytanie";
+  if (count >= 2 && count <= 4) return "zapytania";
+  return "zapytań";
+}
+
+function prioritySortValue(meta: string) {
+  if (meta.includes("najpierw")) return 0;
+  if (meta.includes("wysoki priorytet")) return 1;
+  if (meta.includes("do sprawdzenia")) return 2;
+  return 3;
+}
+
 function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
   return (
     <article className="rounded-md border border-line bg-white p-4">
@@ -1167,7 +1019,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
           <h3 className="text-sm font-semibold">{item.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {tacticalDomainLabels[item.domain] ?? item.domain} /{" "}
-            {tacticalIntentLabels[item.intent]} / priority {item.priority}
+            {tacticalIntentLabels[item.intent]} / {priorityLabel(item.priority)}
           </p>
         </div>
         <StatusBadge value={item.risk} />
@@ -1218,9 +1070,16 @@ function tacticalContextPairs(item: TacticalQueueItem): Array<[string, string]> 
     .map((key) => [key, item.dimensions[key]]);
 }
 
+function priorityLabel(priority: number) {
+  if (priority <= 12) return "najpierw";
+  if (priority <= 25) return "wysoki priorytet";
+  if (priority <= 45) return "do sprawdzenia";
+  return "niżej w kolejce";
+}
+
 function DailyOperatorBrief({ data }: { data: CommandCenterResponse }) {
   return (
-    <section>
+    <section className="rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex items-start gap-3">
         <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
           <ClipboardCheck aria-hidden="true" size={18} />
@@ -1233,61 +1092,11 @@ function DailyOperatorBrief({ data }: { data: CommandCenterResponse }) {
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3">
-        <MetricTile label="Taktyki" value={data.tactical_item_count} />
+      <div className="mb-4 grid gap-3 text-sm sm:grid-cols-2">
+        <MetricTile label="Decyzje" value={data.action_plan.length} />
         <MetricTile label="Blockery" value={data.blocker_count} />
-        <MetricTile label="Akcje" value={data.active_actions.length} />
-      </div>
-
-      <div className="grid gap-3 xl:grid-cols-2">
-        {data.operator_brief.map((item) => (
-          <DailyOperatorBriefCard key={item.id} item={item} />
-        ))}
       </div>
     </section>
-  );
-}
-
-function DailyOperatorBriefCard({ item }: { item: CommandCenterBriefItem }) {
-  return (
-    <article className="rounded-md border border-line bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            priority {item.priority}
-          </div>
-          <h3 className="mt-1 text-base font-semibold tracking-normal">{item.title}</h3>
-        </div>
-        <StatusBadge value={item.status} />
-      </div>
-      <p className="mt-3 text-sm leading-6 text-slate-700">{item.summary}</p>
-      <p className="mt-2 text-sm font-medium text-ink">{item.next_step}</p>
-
-      {Object.keys(item.metric_tiles).length > 0 ? (
-        <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
-          {Object.entries(item.metric_tiles).map(([label, value]) => (
-            <div key={label} className="rounded-md border border-line bg-slate-50 p-2">
-              <div className="uppercase tracking-normal text-slate-500">{label}</div>
-              <div className="mt-1 font-semibold text-ink">{String(value)}</div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <TraceLine label="Źródła" values={item.source_connectors} />
-        <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
-        <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
-        <TraceLine label="Zablokowane claimy" values={item.blocked_claims} />
-      </div>
-
-      <a
-        href={item.route}
-        className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
-      >
-        Otwórz widok
-      </a>
-    </article>
   );
 }
 
@@ -1314,7 +1123,7 @@ function MarketerActionPlan({ items }: { items: CommandCenterActionPlanItem[] })
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  {item.category} / priority {item.priority}
+                  {item.category} / {priorityLabel(item.priority)}
                 </div>
                 <h3 className="mt-1 text-base font-semibold tracking-normal">{item.title}</h3>
               </div>
@@ -1322,9 +1131,36 @@ function MarketerActionPlan({ items }: { items: CommandCenterActionPlanItem[] })
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">{item.why_it_matters}</p>
             <p className="mt-2 text-sm font-medium text-ink">{item.operator_action}</p>
+            {item.skill_id && item.codex_prompt ? (
+              <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
+                <div className="flex items-center gap-2 font-semibold text-action">
+                  <Copy aria-hidden="true" size={15} />
+                  Jak Codex ma pomóc
+                </div>
+                <p className="mt-2 leading-6 text-slate-700">{item.codex_prompt}</p>
+                <div className="mt-2 grid gap-1 text-xs text-slate-600">
+                  <div>Skill: {item.skill_id}</div>
+                  {item.codex_context_endpoint ? (
+                    <div>Kontekst: {item.codex_context_endpoint}</div>
+                  ) : null}
+                  {item.expected_codex_output ? (
+                    <div>Wynik: {item.expected_codex_output}</div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
               <TraceLine label="Źródła" values={item.source_connectors} />
-              <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
+              <div>
+                Evidence: {item.evidence_ids.length} ID
+                {item.evidence_ids.length === 1 ? "" : "s"}
+              </div>
+              <LinkedTraceLine
+                label="Przykładowe evidence"
+                values={item.evidence_ids.slice(0, 2)}
+                kind="evidence"
+                empty="brak"
+              />
               <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
               <TraceLine label="Zablokowane claimy" values={item.blocked_claims} />
             </div>
@@ -1341,79 +1177,18 @@ function MarketerActionPlan({ items }: { items: CommandCenterActionPlanItem[] })
   );
 }
 
-function MarketerDemoScript({ steps }: { steps: CommandCenterDemoStep[] }) {
-  return (
-    <section>
-      <div className="mb-3 flex items-start gap-3">
-        <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-          <FileText aria-hidden="true" size={18} />
-        </div>
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Demo dla marketera
-          </h2>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Kolejność pokazu z WILQ API: co ekran udowadnia, jaki prompt ma sens i gdzie
-            są evidence IDs oraz ActionObjecty.
-          </p>
-        </div>
-      </div>
-      <div className="grid gap-3 xl:grid-cols-2">
-        {steps.map((step, index) => (
-          <article key={step.id} className="rounded-md border border-line bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                  krok {index + 1}
-                </div>
-                <h3 className="mt-1 text-base font-semibold tracking-normal">{step.label}</h3>
-              </div>
-              <StatusBadge value={step.status} />
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">{step.what_it_proves}</p>
-            <p className="mt-2 text-sm font-medium text-ink">{step.operator_prompt}</p>
-            <div className="mt-3 grid gap-2 text-xs text-slate-600">
-              <TraceLine label="Źródłowe karty" values={step.source_item_ids} />
-              <LinkedTraceLine label="Evidence" values={step.evidence_ids} kind="evidence" />
-              <LinkedTraceLine label="Akcje" values={step.action_ids} kind="actions" empty="brak" />
-            </div>
-            <a
-              href={step.route}
-              className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
-            >
-              Otwórz krok
-            </a>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function CommandCenter() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["command-center"],
     queryFn: getCommandCenter
   });
-  const marketingBrief = useQuery({
-    queryKey: ["marketing-brief"],
-    queryFn: getMarketingBrief
-  });
-  const metricFacts = useQuery({
-    queryKey: ["metric-facts", 80],
-    queryFn: () => getMetricFacts(80)
-  });
-  const metricStoreStatus = useQuery({
-    queryKey: ["metric-store-status"],
-    queryFn: getMetricStoreStatus
-  });
-  const tacticalQueue = useQuery({
-    queryKey: ["tactical-queue"],
-    queryFn: getTacticalQueue
-  });
 
   if (isLoading) return <LoadingBand />;
   if (error || !data) return <ErrorState />;
+
+  const actionPlanSources = uniqueValues(
+    data.action_plan.flatMap((item) => item.source_connectors)
+  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -1423,9 +1198,9 @@ function CommandCenter() {
           <p className="mt-1 text-sm text-slate-600">{data.strict_instruction}</p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Connectors" value={data.connector_summary.total} />
-          <MetricTile label="Configured" value={data.connector_summary.configured} />
-          <MetricTile label="Missing" value={data.connector_summary.missing_credentials} />
+          <MetricTile label="Decyzje" value={data.action_plan.length} />
+          <MetricTile label="Blockery" value={data.blocker_count} />
+          <MetricTile label="Źródła" value={actionPlanSources.length} />
         </div>
       </div>
 
@@ -1433,57 +1208,6 @@ function CommandCenter() {
         <DailyOperatorBrief data={data} />
 
         <MarketerActionPlan items={data.action_plan} />
-
-        <TacticalQueuePanel
-          queue={tacticalQueue.data}
-          limit={6}
-          title="Dzisiejsze konkretne taktyki"
-          isLoading={tacticalQueue.isLoading}
-          isError={Boolean(tacticalQueue.error)}
-        />
-
-        <MarketerDemoScript steps={data.demo_script} />
-
-        <MarketingBriefPanel
-          brief={marketingBrief.data}
-          isLoading={marketingBrief.isLoading}
-          isError={Boolean(marketingBrief.error)}
-        />
-
-        <section>
-          <div className="mb-3 flex items-start gap-3">
-            <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
-              <BarChart3 aria-hidden="true" size={18} />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-                Priorytety dnia
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Najważniejsze karty z WILQ API. Readiness nie jest jeszcze rekomendacją
-                marketingową.
-              </p>
-            </div>
-          </div>
-          <OpportunityList opportunities={data.sections.todays_moves ?? []} />
-        </section>
-
-        {operatingDecisionSections.map((section) => (
-          <DecisionSection
-            key={section.key}
-            section={section}
-            opportunities={data.sections[section.key] ?? []}
-          />
-        ))}
-
-        <ActionQueue actions={data.active_actions} />
-
-        <MetricInventory
-          facts={metricFacts.data ?? []}
-          status={metricStoreStatus.data}
-          isLoading={metricFacts.isLoading || metricStoreStatus.isLoading}
-          isError={Boolean(metricFacts.error || metricStoreStatus.error)}
-        />
 
         <ConnectorBlockers connectors={data.connector_health} />
       </div>
@@ -1511,7 +1235,9 @@ function OpportunitiesSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">Opportunities</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Lista decyzji z WILQ API. Każda karta musi mieć evidence IDs, źródła i reguły;
-            readiness albo seed data nie są jeszcze rekomendacją marketingową.
+            readiness albo seed data nie są rekomendacją marketingową. To jest techniczne
+            inventory; konkretna praca marketera ma trafiać do widoków Ads, GA4,
+            Merchant, Content i Localo.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -1699,13 +1425,13 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/localo": {
     title: "Localo",
     description:
-      "Widok lokalnej widoczności oparty o WILQ readiness i przyszłe Localo MCP evidence. Aktualnie pokazuje blocker OAuth, jeśli brakuje dostępu.",
+      "Widok lokalnej widoczności oparty o WILQ readiness i Localo MCP evidence. OAuth access może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych ranking/GBP facts.",
     focusTitle: "Local Visibility Focus",
     emptyMessage:
-      "Brak Localo evidence w /api/marketing/brief. WILQ nie pokaże lokalnych rankingów ani GBP rekomendacji bez Localo access token.",
+      "Brak konkretnych Localo ranking/GBP facts w /api/marketing/brief. WILQ może pokazać status access, ale nie dopowiada lokalnych wyników bez evidence.",
     safetyTitle: "Local Visibility Safety Gate",
     safetyText:
-      "GBP posty i lokalne działania wymagają evidence, payload preview, walidacji ActionObject i audytu. Brak LOCALO_ACCESS_TOKEN jest blockerem, nie metryką.",
+      "GBP posty i lokalne działania wymagają evidence, payload preview, walidacji ActionObject i audytu. MCP initialize=200 potwierdza access, ale nie zastępuje rankingów, GBP performance ani competitor facts.",
     connectorIds: ["localo"],
     textNeedles: []
   },
@@ -2006,6 +1732,8 @@ function Ga4DiagnosticSurface() {
         ) : null}
       </section>
 
+      <Ga4OperatorSummary data={data} />
+
       <div className="grid gap-4 xl:grid-cols-2">
         {data.sections.map((section) => (
           <Ga4DiagnosticCard key={section.id} section={section} />
@@ -2040,6 +1768,105 @@ function Ga4DiagnosticSurface() {
         />
       </section>
     </main>
+  );
+}
+
+function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
+  const tacticalItems = data.sections.flatMap((section) => section.tactical_items);
+  const uniqueItems = Array.from(new Map(tacticalItems.map((item) => [item.id, item])).values());
+  const topItems = uniqueItems
+    .slice()
+    .sort((left, right) => left.priority - right.priority)
+    .slice(0, 4);
+  const notSetCount = uniqueItems.filter(
+    (item) =>
+      item.dimensions.landing_page === "(not set)" ||
+      item.dimensions.source_medium === "(not set)" ||
+      item.dimensions.campaign_name === "(not set)"
+  ).length;
+  const wordpressMissingCount = uniqueItems.filter(
+    (item) => item.dimensions.wordpress_match === "missing"
+  ).length;
+  const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");
+  const actionIds = data.action_ids.length ? data.action_ids : ["act_review_ga4_tracking_quality"];
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Operator GA4
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">
+            Co marketer ma sprawdzić teraz w jakości ruchu
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ pokazuje landing/source/campaign behavior i wskazuje grupy do kontroli
+            jakości ruchu. Brak conversion-like facts oznacza, że nie wolno wyciągać
+            wniosków o ROAS, revenue, spadku konwersji ani winie kampanii.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Landing" value={data.landing_group_count} />
+          <MetricTile label="(not set)" value={notSetCount} />
+          <MetricTile label="WP missing" value={wordpressMissingCount} />
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-3">
+          {topItems.length > 0 ? (
+            topItems.map((item) => (
+              <article key={item.id} className="rounded-md border border-line bg-slate-50 p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
+                    <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                      {tacticalIntentLabels[item.intent]} / {priorityLabel(item.priority)}
+                    </p>
+                  </div>
+                  <StatusBadge value={item.risk} />
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
+                <p className="mt-2 text-sm font-medium text-ink">{item.next_step}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+                  {tacticalContextPairs(item).map(([key, value]) => (
+                    <span key={key} className="rounded border border-line bg-white px-2 py-1">
+                      {tacticalDimensionLabels[key] ?? key}: {value}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))
+          ) : (
+            <BlockerNotice message="Brak GA4 tactical items. Najpierw uruchom read-only GA4 vendor_read." />
+          )}
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb analityki</h3>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600">
+            <TraceLine
+              label="Tracking readiness"
+              values={trackingSection ? [trackingSection.status, trackingSection.summary] : []}
+              empty="brak"
+            />
+            <LinkedTraceLine label="Evidence" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
+            <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
+            <TraceLine
+              label="Nie wolno claimować"
+              values={data.sections.flatMap((section) => section.blocked_claims)}
+            />
+          </div>
+          <a
+            href={`/actions/${actionIds[0]}`}
+            className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
+          >
+            Waliduj ActionObject
+          </a>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -2244,7 +2071,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
                   <div>
                     <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                      {tacticalIntentLabels[item.intent]} / priority {item.priority}
+                      {tacticalIntentLabels[item.intent]} / {priorityLabel(item.priority)}
                     </p>
                   </div>
                   <StatusBadge value={item.risk} />
@@ -2489,7 +2316,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   <div>
                     <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
                     <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                      {tacticalIntentLabels[item.intent]} / priority {item.priority}
+                      {tacticalIntentLabels[item.intent]} / {priorityLabel(item.priority)}
                     </p>
                   </div>
                   <StatusBadge value={item.risk} />

@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Merchant Feed Operator"
-  short_description: "Merchant feed issue workflow"
-  default_prompt: "Use $wilq-merchant-feed-operator to inspect Merchant Center evidence and feed action candidates."
+  short_description: "Diagnozuje Merchant Center, produkty i feed issues"
+  default_prompt: "Użyj $wilq-merchant-feed-operator: sprawdź feed produktowy Ekologus i przygotuj bezpieczną kolejkę review problemów."

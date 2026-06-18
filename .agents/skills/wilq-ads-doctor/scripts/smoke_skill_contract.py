@@ -70,9 +70,9 @@ def main() -> int:
         raise SystemExit("Ads blocked_handoff must include google_ads source connector")
     if not blocked_handoff.get("evidence_ids"):
         raise SystemExit("Ads blocked_handoff must include evidence IDs")
-    if not blocked_handoff.get("action_ids"):
-        raise SystemExit("Ads blocked_handoff must include action IDs")
     if ads_diagnostics.get("live_data_available") is False:
+        if not blocked_handoff.get("action_ids"):
+            raise SystemExit("Blocked Ads handoff must include action IDs")
         blocked_claims = set(blocked_handoff.get("blocked_claims", []))
         if not {"ROAS", "search terms"} <= blocked_claims:
             raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")

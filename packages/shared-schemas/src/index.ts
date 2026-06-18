@@ -190,6 +190,7 @@ export const TacticalQueueItemSchema = z.object({
     "content_merge",
     "content_block",
     "landing_page_quality",
+    "tracking_gap",
     "merchant_feed_triage",
     "traffic_quality_review"
   ]),
@@ -463,6 +464,10 @@ export const CommandCenterActionPlanItemSchema = z.object({
   category: z.string(),
   why_it_matters: z.string(),
   operator_action: z.string(),
+  skill_id: z.string().nullable().optional(),
+  codex_prompt: z.string().nullable().optional(),
+  codex_context_endpoint: z.string().nullable().optional(),
+  expected_codex_output: z.string().nullable().optional(),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),

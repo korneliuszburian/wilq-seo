@@ -1,16 +1,16 @@
 # WILQ Content Strategist Output Contract
 
-## Purpose
+## Cel
 
 Cross-channel content planning from API evidence, existing inventory and knowledge cards.
 
-Expected outcome: Prioritized content plan with evidence IDs, source connectors, existing-content checks and action candidates.
+Oczekiwany wynik: priorytetowy content plan z evidence IDs, source connectors, kontrolą istniejących treści i kandydatami działań.
 
-## Required API Context
+## Wymagany kontekst API
 
-Fetch `GET /api/content/diagnostics` first. Then fetch `POST /api/codex/context-pack` with `{"skill":"wilq-content-strategist"}` and confirm embedded `content_diagnostics` exists. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
+Najpierw pobierz `GET /api/content/diagnostics`. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-content-strategist"}` i potwierdź, że istnieje osadzone `content_diagnostics`. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
-Required connectors:
+Wymagane connectory:
 
 - `google_search_console`
 - `google_analytics_4`
@@ -18,33 +18,33 @@ Required connectors:
 - `wordpress_ekologus`
 - `wordpress_sklep`
 
-## Response Shape
+## Kształt odpowiedzi
 
-Return these sections when the user asks this skill to operate:
+Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Polish language contract: respond to the Ekologus marketer in Polish with Polish diacritics. Use Polish operator-facing labels such as `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` and `Następny krok`. Keep API identifiers, connector IDs, evidence IDs, opportunity IDs and ActionObject IDs unchanged.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. API identifiers, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
 
 
-1. `Status`: API reachability, connector readiness and known blockers.
+1. `Status`: zasięg API, gotowość connectorów i znane blockery.
 2. `Dowody`: `content_diagnostics` section IDs, tactical item IDs, evidence IDs, connector IDs, freshness notes, query/page facts and WordPress inventory match status from WILQ API only.
 3. `Diagnoza`: what the evidence supports for refresh/create/merge/block, with uncertainty if the evidence is aggregate, stale or incomplete.
-4. `Kandydaci działań`: tactical queue item IDs, opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
-5. `Walidacja`: result or required call to `POST /api/actions/{action_id}/validate` before apply/execution.
-6. `Następny krok`: the smallest safe operator action.
+4. `Kandydaci działań`: tactical queue item IDs, opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
+5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
+6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
-## Refusal Conditions
+## Warunki odmowy lub downgrade do blockera
 
-Refuse or downgrade to a blocker report when:
+Odmów albo obniż odpowiedź do blocker report, gdy:
 
-- WILQ API is unreachable.
-- Required connector status is `missing_credentials`, `disabled` or failed for the requested operation.
-- The requested metric or action is not present in context-pack, evidence, connector refresh runs, expert rules or action objects.
-- `content_diagnostics.live_data_available=false` and the user asks for a content plan instead of readiness/blocker status.
-- The user asks for write execution without a validated ActionObject and explicit approval.
+- WILQ API jest niedostępne.
+- Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
+- Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
+- `content_diagnostics.live_data_available=false`, a użytkownik prosi o content plan zamiast readiness/blocker status.
+- Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
 
-## Evidence Rules
+## Reguły evidence
 
-No evidence ID means no recommendation. No source connector means no recommendation. No validated payload means no apply. No audit event means no write.
+Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak zwalidowanego payload oznacza brak apply. Brak audit event oznacza brak write.
 
 ## Content Safety
 

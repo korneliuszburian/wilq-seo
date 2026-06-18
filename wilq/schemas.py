@@ -412,6 +412,7 @@ class TacticalQueueItem(BaseModel):
         "content_merge",
         "content_block",
         "landing_page_quality",
+        "tracking_gap",
         "merchant_feed_triage",
         "traffic_quality_review",
     ]
@@ -617,6 +618,10 @@ class CommandCenterActionPlanItem(BaseModel):
     category: str
     why_it_matters: str
     operator_action: str
+    skill_id: str | None = None
+    codex_prompt: str | None = None
+    codex_context_endpoint: str | None = None
+    expected_codex_output: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

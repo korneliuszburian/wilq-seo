@@ -13,6 +13,7 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ConnectorStatus,
+    ConnectorStatusValue,
     ConnectorSummary,
     MarketingBrief,
     MarketingBriefItem,
@@ -39,6 +40,17 @@ CONNECTOR_LABELS = {
     "facebook": "Facebook",
 }
 
+OPTIONAL_BRIEF_BLOCKER_CONNECTORS = {"facebook", "google_sheets", "linkedin"}
+CORE_BRIEF_ACTION_CONNECTORS = {
+    "google_ads",
+    "google_analytics_4",
+    "google_merchant_center",
+    "google_search_console",
+    "localo",
+    "wordpress_ekologus",
+    "wordpress_sklep",
+}
+
 
 def build_marketing_brief() -> MarketingBrief:
     connectors = list_connector_statuses()
@@ -46,6 +58,7 @@ def build_marketing_brief() -> MarketingBrief:
     metric_facts = metric_store().list_metric_facts(limit=200)
     actions = list_actions()
     latest_runs = _latest_run_by_connector(refresh_runs)
+    latest_runs = _prefer_successful_localo_access_probe(latest_runs, refresh_runs)
 
     business_metric_facts = [
         fact
@@ -53,6 +66,7 @@ def build_marketing_brief() -> MarketingBrief:
         if not _is_probe_only_fact(fact)
         and _metric_fact_allowed_by_latest_refresh(fact, latest_runs)
     ]
+    business_metric_facts = _latest_metric_facts_by_identity(business_metric_facts)
     metric_items = _metric_items(business_metric_facts)
     blocker_items = _blocker_items(connectors, latest_runs)
     action_items = _action_items(actions)
@@ -126,6 +140,35 @@ def _latest_run_by_connector(
     return latest
 
 
+def _prefer_successful_localo_access_probe(
+    latest_runs: dict[str, ConnectorRefreshRun],
+    refresh_runs: list[ConnectorRefreshRun],
+) -> dict[str, ConnectorRefreshRun]:
+    successful_probe = _latest_successful_localo_mcp_run(refresh_runs)
+    if successful_probe is None:
+        return latest_runs
+    return {**latest_runs, "localo": successful_probe}
+
+
+def _latest_successful_localo_mcp_run(
+    refresh_runs: list[ConnectorRefreshRun],
+) -> ConnectorRefreshRun | None:
+    localo_runs = [run for run in refresh_runs if run.connector_id == "localo"]
+    sorted_runs = sorted(
+        localo_runs,
+        key=lambda run: run.completed_at or run.started_at,
+        reverse=True,
+    )
+    for run in sorted_runs:
+        if (
+            run.status == ConnectorRefreshStatus.completed
+            and run.metric_summary.get("api") == "localo_mcp_oauth_probe"
+            and run.metric_summary.get("mcp_initialize_status") == 200
+        ):
+            return run
+    return None
+
+
 def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
     grouped: dict[str, list[MetricFact]] = defaultdict(list)
     for fact in metric_facts:
@@ -151,6 +194,30 @@ def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
             )
         )
     return sorted(items, key=lambda item: item.priority)
+
+
+def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
+    latest_by_key: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
+    for fact in metric_facts:
+        key = (
+            fact.source_connector,
+            fact.name,
+            tuple(sorted(fact.dimensions.items())),
+        )
+        current = latest_by_key.get(key)
+        if current is None or _metric_fact_sort_time(fact) > _metric_fact_sort_time(current):
+            latest_by_key[key] = fact
+    return sorted(
+        latest_by_key.values(),
+        key=lambda fact: _metric_fact_sort_time(fact),
+        reverse=True,
+    )
+
+
+def _metric_fact_sort_time(fact: MetricFact) -> str:
+    if fact.collected_at is None:
+        return ""
+    return fact.collected_at.isoformat()
 
 
 def _representative_metric_facts(metric_facts: list[MetricFact], limit: int) -> list[MetricFact]:
@@ -204,6 +271,10 @@ def _blocker_items(
 ) -> list[MarketingBriefItem]:
     blockers: list[MarketingBriefItem] = []
     for connector in connectors:
+        if connector.status == ConnectorStatusValue.disabled:
+            continue
+        if connector.id in OPTIONAL_BRIEF_BLOCKER_CONNECTORS:
+            continue
         latest_run = latest_runs.get(connector.id)
         has_blocked_run = latest_run is not None and latest_run.status in {
             ConnectorRefreshStatus.blocked,
@@ -242,7 +313,10 @@ def _blocker_items(
 
 def _action_items(actions: list[ActionObject]) -> list[MarketingBriefItem]:
     items: list[MarketingBriefItem] = []
-    for index, action in enumerate(actions, start=1):
+    core_actions = [
+        action for action in actions if action.connector in CORE_BRIEF_ACTION_CONNECTORS
+    ]
+    for index, action in enumerate(core_actions, start=1):
         items.append(
             MarketingBriefItem(
                 id=f"brief_action_{action.id}",
@@ -343,11 +417,28 @@ def _metric_headline(connector_id: str, facts: list[MetricFact]) -> str:
 
 
 def _metric_summary(connector_id: str, facts: list[MetricFact]) -> str:
-    sample = ", ".join(f"{fact.name}={_format_value(fact)}" for fact in facts[:4])
+    sample = ", ".join(_metric_summary_parts(facts[:6])[:4])
     return (
         f"WILQ ma realne metric facts z connectora {_connector_label(connector_id)}: "
         f"{sample}. Każda metryka ma evidence ID."
     )
+
+
+def _metric_summary_parts(facts: list[MetricFact]) -> list[str]:
+    by_name: dict[str, list[MetricFact]] = defaultdict(list)
+    for fact in facts:
+        by_name[fact.name].append(fact)
+    parts: list[str] = []
+    for name, named_facts in by_name.items():
+        if len(named_facts) == 1:
+            parts.append(f"{name}={_format_value(named_facts[0])}")
+            continue
+        values = {_format_value(fact) for fact in named_facts}
+        if len(values) == 1:
+            parts.append(f"{name}={next(iter(values))} w {len(named_facts)} wymiarach")
+        else:
+            parts.append(f"{name}: {len(named_facts)} wartości")
+    return parts
 
 
 def _metric_next_step(connector_id: str) -> str:
@@ -365,6 +456,8 @@ def _metric_next_step(connector_id: str) -> str:
 
 
 def _blocker_reason(connector: ConnectorStatus, run: ConnectorRefreshRun | None) -> str:
+    if connector.id == "localo" and run and _localo_access_token_blocked(run):
+        return "OAuth MCP wymaga dokończenia autoryzacji access tokenem"
     if run and run.errors:
         return run.errors[0]
     if run and run.summary:
@@ -381,6 +474,12 @@ def _blocker_summary(
     run: ConnectorRefreshRun | None,
     reason: str,
 ) -> str:
+    if connector.id == "localo" and run and _localo_access_token_blocked(run):
+        return (
+            f"Ostatni refresh {run.id} potwierdza, że Localo MCP endpoint działa, "
+            "Organization ID i MCP secret są skonfigurowane, ale initialize zwraca 401 "
+            "bez wynikowego OAuth access tokenu."
+        )
     if run:
         return (
             f"Ostatni refresh {run.id} zakończył się statusem {run.status}. "
@@ -392,11 +491,24 @@ def _blocker_summary(
 def _blocker_next_step(connector_id: str, reason: str) -> str:
     if connector_id == "google_ads":
         return "Odśwież Google Ads OAuth przez ActionObject i nie pokazuj Ads rekomendacji."
-    if connector_id == "localo" and "LOCALO_ACCESS_TOKEN" in reason:
-        return "Dodaj Localo OAuth helper i uzyskaj lokalny LOCALO_ACCESS_TOKEN."
+    if connector_id == "localo" and (
+        "LOCALO_ACCESS_TOKEN" in reason or "OAuth MCP" in reason
+    ):
+        return (
+            "Dokończ Localo OAuth authorization_code + PKCE i zapisz wynikowy "
+            "access token lokalnie jako LOCALO_ACCESS_TOKEN."
+        )
     if connector_id == "localo":
         return "Dokończ Localo MCP OAuth i dopiero potem pokazuj local visibility facts."
     return "Uzupełnij wskazany blocker albo zostaw tę rekomendację zablokowaną."
+
+
+def _localo_access_token_blocked(run: ConnectorRefreshRun) -> bool:
+    serialized_errors = " ".join(run.errors)
+    return (
+        "LOCALO_ACCESS_TOKEN" in serialized_errors
+        or run.metric_summary.get("access_token_present") == 0
+    )
 
 
 def _format_value(fact: MetricFact) -> str:

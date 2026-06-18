@@ -1,47 +1,47 @@
 # WILQ Merchant Feed Operator Output Contract
 
-## Purpose
+## Cel
 
 Merchant Center product status, feed issue and product visibility triage.
 
-Expected outcome: Feed issue summary and product action candidates with Merchant evidence IDs and validation blockers.
+Oczekiwany wynik: podsumowanie feed issues i kandydaci działań produktowych z Merchant evidence IDs oraz validation blockers.
 
-## Required API Context
+## Wymagany kontekst API
 
-Fetch `GET /api/merchant/diagnostics` before producing Merchant/feed analysis. Then fetch `POST /api/codex/context-pack` with `{"skill":"wilq-merchant-feed-operator"}` and use the embedded `merchant_diagnostics` object as a consistency check. Use `GET /api/connectors/{connector}/status` for each required connector when readiness matters.
+Pobierz `GET /api/merchant/diagnostics` przed analizą Merchant/feed. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-merchant-feed-operator"}` i użyj osadzonego `merchant_diagnostics` jako consistency check. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
-Required connectors:
+Wymagane connectory:
 
 - `google_merchant_center`
 
-## Response Shape
+## Kształt odpowiedzi
 
-Return these sections when the user asks this skill to operate:
+Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Polish language contract: respond to the Ekologus marketer in Polish with Polish diacritics. Use Polish operator-facing labels such as `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` and `Następny krok`. Keep API identifiers, connector IDs, evidence IDs, opportunity IDs and ActionObject IDs unchanged.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. API identifiers, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
 
 
-1. `Status`: API reachability, connector readiness and known blockers.
+1. `Status`: zasięg API, gotowość connectorów i znane blockery.
 2. `Dowody`: Merchant diagnostics section IDs, evidence IDs, connector IDs, latest refresh state, issue dimensions, freshness notes and metric summaries from WILQ API only.
 3. `Diagnoza`: what `/api/merchant/diagnostics` supports, with uncertainty if the evidence is aggregate, stale, incomplete or blocked by permissions.
-4. `Kandydaci działań`: opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
-5. `Walidacja`: result or required call to `POST /api/actions/{action_id}/validate` before apply/execution.
-6. `Następny krok`: the smallest safe operator action.
+4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
+5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
+6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
-## Refusal Conditions
+## Warunki odmowy lub downgrade do blockera
 
-Refuse or downgrade to a blocker report when:
+Odmów albo obniż odpowiedź do blocker report, gdy:
 
-- WILQ API is unreachable.
-- Required connector status is `missing_credentials`, `disabled` or failed for the requested operation.
+- WILQ API jest niedostępne.
+- Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
 - `/api/merchant/diagnostics` returns `live_data_available=false` and the user asks for feed issue actions, approval state, product visibility or product fixes.
-- The requested metric or action is not present in context-pack, evidence, connector refresh runs, expert rules or action objects.
-- The user asks for write execution without a validated ActionObject and explicit approval.
+- Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
+- Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
 
 ## Merchant Safety
 
 Use `act_review_merchant_feed_issues` only as a prepare/review candidate unless WILQ API exposes a validated apply-mode Merchant action. Do not claim that an approval was restored, a product was fixed, revenue recovered, or the primary feed changed without an audit event.
 
-## Evidence Rules
+## Reguły evidence
 
-No evidence ID means no recommendation. No source connector means no recommendation. No validated payload means no apply. No audit event means no write.
+Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak zwalidowanego payload oznacza brak apply. Brak audit event oznacza brak write.

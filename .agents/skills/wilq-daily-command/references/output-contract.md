@@ -1,16 +1,16 @@
 # WILQ Daily Command Output Contract
 
-## Purpose
+## Cel
 
 Daily command-center triage across connectors, evidence, opportunities, actions, expert rules and knowledge cards.
 
-Expected outcome: A concise operating brief with source connector status,
+Oczekiwany wynik: A concise operating brief with source connector status,
 CommandCenter action-plan items, evidence IDs, opportunity IDs, action IDs,
 blockers and next safe steps.
 
-## Required API Context
+## Wymagany kontekst API
 
-Fetch `GET /api/dashboard/command-center` before producing marketing analysis.
+Pobierz `GET /api/dashboard/command-center` przed analizą marketingową.
 This is the canonical first-screen operator view model used by dashboard and
 Codex skills.
 
@@ -27,10 +27,9 @@ action IDs. The embedded `marketing_brief` in the context pack must match
 `GET /api/marketing/brief` for language, section IDs, blocker count,
 recommendation count, evidence IDs and action IDs.
 
-Use `GET /api/connectors/{connector}/status` for each required connector when
-readiness matters.
+Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
-Required connectors:
+Wymagane connectory:
 
 - `google_ads`
 - `google_search_console`
@@ -41,29 +40,29 @@ Required connectors:
 - `wordpress_ekologus`
 - `wordpress_sklep`
 
-## Response Shape
+## Kształt odpowiedzi
 
-Return these sections when the user asks this skill to operate:
+Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Polish language contract: respond to the Ekologus marketer in Polish with Polish diacritics. Use Polish operator-facing labels such as `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` and `Następny krok`. Keep API identifiers, connector IDs, evidence IDs, opportunity IDs and ActionObject IDs unchanged.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. API identifiers, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
 
 
-1. `Status`: API reachability, connector readiness, `CommandCenter.operator_brief` and `CommandCenter.action_plan` status and known blockers.
+1. `Status`: zasięg API, gotowość connectorów, status `CommandCenter.operator_brief` i `CommandCenter.action_plan` oraz znane blockery.
 2. `Dowody`: evidence IDs, connector IDs, freshness notes and metric summaries from `CommandCenter`/`MarketingBrief`/WILQ API only.
 3. `Diagnoza`: what the operator brief and action plan support, with uncertainty if the evidence is aggregate, stale or incomplete.
-4. `Kandydaci działań`: `action_plan.action_ids`, `operator_brief.action_ids`, opportunity IDs and ActionObject IDs when available; otherwise describe the missing API/evidence needed to create them.
-5. `Walidacja`: result or required call to `POST /api/actions/{action_id}/validate` before apply/execution.
-6. `Następny krok`: the smallest safe operator action.
+4. `Kandydaci działań`: `action_plan.action_ids`, `operator_brief.action_ids`, opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
+5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
+6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
-## Refusal Conditions
+## Warunki odmowy lub downgrade do blockera
 
-Refuse or downgrade to a blocker report when:
+Odmów albo obniż odpowiedź do blocker report, gdy:
 
-- WILQ API is unreachable.
-- Required connector status is `missing_credentials`, `disabled` or failed for the requested operation.
-- The requested metric or action is not present in context-pack, evidence, connector refresh runs, expert rules or action objects.
-- The user asks for write execution without a validated ActionObject and explicit approval.
+- WILQ API jest niedostępne.
+- Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
+- Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
+- Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
 
-## Evidence Rules
+## Reguły evidence
 
-No evidence ID means no recommendation. No source connector means no recommendation. No validated payload means no apply. No audit event means no write.
+Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak zwalidowanego payload oznacza brak apply. Brak audit event oznacza brak write.

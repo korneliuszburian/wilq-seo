@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
@@ -16,21 +17,28 @@ from wilq.schemas import (
     AdsDiagnosticsResponse,
     CommandCenterActionPlanItem,
     CommandCenterBriefItem,
-    CommandCenterDemoStep,
+    ConnectorRefreshRun,
+    ConnectorRefreshStatus,
     ConnectorStatus,
-    ConnectorStatusValue,
     ContentDiagnosticsResponse,
     Ga4DiagnosticsResponse,
     MerchantDiagnosticsResponse,
 )
+from wilq.storage.local_state import local_state_store
 
 
 def build_command_center_brief() -> tuple[list[CommandCenterBriefItem], str, int]:
-    ads = build_ads_diagnostics()
-    merchant = build_merchant_diagnostics()
-    content = build_content_diagnostics()
-    ga4 = build_ga4_diagnostics()
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        ads_future = executor.submit(build_ads_diagnostics)
+        merchant_future = executor.submit(build_merchant_diagnostics)
+        content_future = executor.submit(build_content_diagnostics)
+        ga4_future = executor.submit(build_ga4_diagnostics)
+        ads = ads_future.result()
+        merchant = merchant_future.result()
+        content = content_future.result()
+        ga4 = ga4_future.result()
     localo = get_connector_status("localo")
+    localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
         _ads_item(ads),
         _merchant_item(merchant),
@@ -38,58 +46,19 @@ def build_command_center_brief() -> tuple[list[CommandCenterBriefItem], str, int
         _ga4_item(ga4),
     ]
     if localo is not None:
-        items.append(_localo_item(localo))
+        items.append(_localo_item(localo, localo_runs))
     sorted_items = sorted(items, key=lambda item: item.priority)
     blocker_count = sum(1 for item in sorted_items if item.status == "blocked")
     return sorted_items, _primary_next_step(sorted_items), blocker_count
 
 
-def build_command_center_demo_script(
-    items: list[CommandCenterBriefItem],
-) -> list[CommandCenterDemoStep]:
-    items_by_id = {item.id: item for item in items}
-    ordered_item_ids = [
-        "daily_merchant_feed",
-        "daily_content_queue",
-        "daily_ga4_landing_quality",
-        "daily_ads_status",
-        "daily_localo_readiness",
-    ]
-    steps = [
-        CommandCenterDemoStep(
-            id="demo_start_command_center",
-            label="Start: plan dnia WILQ",
-            route="/command-center",
-            status="ready",
-            what_it_proves=(
-                "WILQ zbiera gotowe źródła, blockery, evidence IDs i ActionObjecty "
-                "w jeden polski plan pracy."
-            ),
-            operator_prompt=(
-                "Pokaż dzisiejszy priorytet, gotowe źródła, blockery i akcje, "
-                "których nie wolno wykonać bez walidacji."
-            ),
-            source_item_ids=[item.id for item in items],
-            evidence_ids=_limited_ids(
-                [evidence for item in items for evidence in item.evidence_ids],
-                10,
-            ),
-            action_ids=_limited_ids([action for item in items for action in item.action_ids], 10),
-        )
-    ]
-    for item_id in ordered_item_ids:
-        item = items_by_id.get(item_id)
-        if item is None:
-            continue
-        steps.append(_demo_step_from_item(item))
-    return steps
-
-
 def build_command_center_action_plan(
     items: list[CommandCenterBriefItem],
+    tactical_items: list[Any] | None = None,
 ) -> list[CommandCenterActionPlanItem]:
     items_by_id = {item.id: item for item in items}
-    tactical_items = build_tactical_queue().items
+    if tactical_items is None:
+        tactical_items = build_tactical_queue().items
     plan: list[CommandCenterActionPlanItem] = []
     for item_id in (
         "daily_merchant_feed",
@@ -100,6 +69,8 @@ def build_command_center_action_plan(
     ):
         item = items_by_id.get(item_id)
         if item is None:
+            continue
+        if item.id == "daily_localo_readiness" and item.status == "ready":
             continue
         plan.append(_action_plan_item(item, tactical_items))
     return plan
@@ -123,7 +94,11 @@ def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
     )
     return CommandCenterBriefItem(
         id="daily_ads_status",
-        title="Ads: blocker OAuth przed analizą spendu",
+        title=(
+            "Ads: live campaign metrics dostępne"
+            if data.live_data_available
+            else "Ads: blocker OAuth przed analizą spendu"
+        ),
         route="/ads-doctor",
         status="ready" if data.live_data_available else "blocked",
         priority=30 if data.live_data_available else 5,
@@ -132,8 +107,19 @@ def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
         source_connectors=["google_ads"],
         evidence_ids=_limited_ids(data.evidence_ids),
         action_ids=data.action_ids,
-        metric_tiles={"blockery": data.blocker_count},
-        blocked_claims=["spend", "CPA", "ROAS", "search terms", "wasted budget"],
+        metric_tiles=(
+            {
+                "sekcje": len(data.sections),
+                "blockery": data.blocker_count,
+            }
+            if data.live_data_available
+            else {"blockery": data.blocker_count}
+        ),
+        blocked_claims=(
+            ["CPA", "ROAS", "search terms", "wasted budget"]
+            if data.live_data_available
+            else ["spend", "CPA", "ROAS", "search terms", "wasted budget"]
+        ),
         risk=ActionRisk.medium,
     )
 
@@ -221,32 +207,69 @@ def _ga4_item(data: Ga4DiagnosticsResponse) -> CommandCenterBriefItem:
     )
 
 
-def _localo_item(connector: ConnectorStatus) -> CommandCenterBriefItem:
-    is_ready = (
-        connector.configured
-        and connector.status == ConnectorStatusValue.configured
-        and connector.freshness.state == "fresh"
+def _localo_item(
+    connector: ConnectorStatus,
+    runs: list[ConnectorRefreshRun],
+) -> CommandCenterBriefItem:
+    successful_mcp_run = _latest_successful_localo_mcp_run(runs)
+    latest_run = runs[0] if runs else None
+    oauth_access_ready = successful_mcp_run is not None
+    missing = (
+        ", ".join(connector.missing_credentials)
+        if connector.missing_credentials
+        else "brak świeżego vendor_read proof z Localo MCP"
     )
-    missing = ", ".join(connector.missing_credentials) or "brak świeżego Localo evidence"
+    evidence_ids = [connector_evidence_id("localo")]
+    if successful_mcp_run is not None:
+        evidence_ids = successful_mcp_run.evidence_ids
+    elif latest_run is not None:
+        evidence_ids = latest_run.evidence_ids
     return CommandCenterBriefItem(
         id="daily_localo_readiness",
-        title="Localo: lokalna widoczność jako blocker",
+        title=(
+            "Localo: MCP access działa, brak jeszcze ranking/GBP facts"
+            if oauth_access_ready
+            else "Localo: access blocker przed lokalnymi rekomendacjami"
+        ),
         route="/localo",
-        status="ready" if is_ready else "blocked",
-        priority=45 if is_ready else 20,
+        status="ready" if oauth_access_ready else "blocked",
+        priority=60 if oauth_access_ready else 20,
         summary=(
-            "Localo jest gotowe do local visibility review."
-            if is_ready
+            "Localo MCP initialize zwrócił 200. To potwierdza access, ale WILQ "
+            "nie ma jeszcze konkretnych rankingów, GBP visibility ani konkurencji."
+            if oauth_access_ready
             else f"Localo nie ma pełnego dostępu: {missing}."
         ),
-        next_step="Otwórz /localo i dokończ dostęp zanim WILQ pokaże lokalne metryki.",
+        next_step=(
+            "Otwórz /localo tylko jako status źródła; lokalne rekomendacje wymagają "
+            "kolejnego read contractu z konkretnymi ranking/GBP facts."
+            if oauth_access_ready
+            else "Otwórz /localo i dokończ OAuth access token przez Localo MCP."
+        ),
         source_connectors=["localo"],
-        evidence_ids=[connector_evidence_id("localo")],
+        evidence_ids=_limited_ids(evidence_ids),
         action_ids=[],
-        metric_tiles={"missing credentials": len(connector.missing_credentials)},
+        metric_tiles={
+            "MCP access": 1 if oauth_access_ready else 0,
+            "ranking facts": 0,
+            "GBP facts": 0,
+        },
         blocked_claims=["local ranking", "GBP performance", "local visibility uplift"],
-        risk=ActionRisk.medium,
+        risk=ActionRisk.low if oauth_access_ready else ActionRisk.medium,
     )
+
+
+def _latest_successful_localo_mcp_run(
+    runs: list[ConnectorRefreshRun],
+) -> ConnectorRefreshRun | None:
+    for run in runs:
+        if (
+            run.status == ConnectorRefreshStatus.completed
+            and run.metric_summary.get("api") == "localo_mcp_oauth_probe"
+            and run.metric_summary.get("mcp_initialize_status") == 200
+        ):
+            return run
+    return None
 
 
 def _first_blocked_section(sections: Iterable[Any]) -> Any | None:
@@ -281,61 +304,6 @@ def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
     return "Najpierw usuń blocker dostępu z najwyższym priorytetem."
 
 
-def _demo_step_from_item(item: CommandCenterBriefItem) -> CommandCenterDemoStep:
-    return CommandCenterDemoStep(
-        id=f"demo_{item.id}",
-        label=_demo_label(item),
-        route=item.route,
-        status="ready" if item.status == "ready" else "blocked",
-        what_it_proves=_demo_proof(item),
-        operator_prompt=item.next_step,
-        source_item_ids=[item.id],
-        evidence_ids=item.evidence_ids,
-        action_ids=item.action_ids,
-    )
-
-
-def _demo_label(item: CommandCenterBriefItem) -> str:
-    if item.id == "daily_merchant_feed":
-        return "Merchant Center: dowód feedu produktów"
-    if item.id == "daily_content_queue":
-        return "Content Planner: kolejka treści"
-    if item.id == "daily_ga4_landing_quality":
-        return "GA4: jakość ruchu"
-    if item.id == "daily_ads_status":
-        return "Ads Doctor: blocker OAuth"
-    if item.id == "daily_localo_readiness":
-        return "Localo: blocker lokalnej widoczności"
-    return item.title
-
-
-def _demo_proof(item: CommandCenterBriefItem) -> str:
-    if item.id == "daily_merchant_feed":
-        return (
-            "Merchant Center daje realne product/feed metryki, issue count i review-safe "
-            "ActionObject bez automatycznej edycji feedu."
-        )
-    if item.id == "daily_content_queue":
-        return (
-            "GSC i WordPress inventory tworzą kolejkę content refresh/create/merge/block "
-            "bez obietnic wzrostu pozycji."
-        )
-    if item.id == "daily_ga4_landing_quality":
-        return (
-            "GA4 wskazuje jakość landing/source/campaign i blokuje ROAS/revenue claimy, "
-            "jeśli nie ma takich danych w evidence."
-        )
-    if item.id == "daily_ads_status":
-        return (
-            "Ads Doctor nie zmyśla spendu ani search terms: pokazuje OAuth blocker i "
-            "bezpieczny ActionObject naprawy dostępu."
-        )
-    if item.id == "daily_localo_readiness":
-        return (
-            "Localo jest jawnie oznaczone jako dostęp/readiness blocker, dopóki WILQ "
-            "nie ma świeżego evidence lokalnej widoczności."
-        )
-    return item.summary
 
 
 def _action_plan_item(
@@ -357,6 +325,17 @@ def _action_plan_item(
                 "widoczność produktów, ale wymaga ręcznego review przed zmianami."
             ),
             operator_action="Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+            skill_id="wilq-merchant-feed-operator",
+            codex_prompt=(
+                "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center "
+                "dla Ekologus, pogrupuj feed/product issues, wskaż najbezpieczniejszą "
+                "kolejkę review i nie twierdź, że approval albo revenue zostały odzyskane."
+            ),
+            codex_context_endpoint="/api/codex/context-pack",
+            expected_codex_output=(
+                "Polski brief feed issue review z evidence IDs, ActionObject "
+                "i blockerami claimów."
+            ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
             action_ids=item.action_ids,
@@ -364,7 +343,7 @@ def _action_plan_item(
             risk=item.risk,
         )
     if item.id == "daily_content_queue":
-        top_titles = ", ".join(tactic.title for tactic in related_tactics[:3])
+        tactic_summary = _content_tactic_summary(related_tactics)
         return CommandCenterActionPlanItem(
             id="plan_prepare_content_refresh_queue",
             title="Ułóż kolejkę refresh/merge/create dla treści SEO",
@@ -375,9 +354,20 @@ def _action_plan_item(
             why_it_matters=(
                 f"WILQ ma {item.metric_tiles.get('query/page', 0)} query/page kandydatów i "
                 f"{item.metric_tiles.get('WP match', 0)} dopasowań WordPress. "
-                f"Pierwsze taktyki: {top_titles or 'brak taktyk w kolejce'}."
+                f"{tactic_summary}"
             ),
             operator_action="Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+            skill_id="wilq-content-strategist",
+            codex_prompt=(
+                "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh, "
+                "merge, create albo block dla Ekologus na podstawie GSC, WordPress, "
+                "GA4 i Ahrefs evidence. Nie obiecuj leadów, revenue ani wzrostów pozycji."
+            ),
+            codex_context_endpoint="/api/codex/context-pack",
+            expected_codex_output=(
+                "Polska kolejka content decyzji z evidence IDs, source connectors "
+                "i następnym krokiem."
+            ),
             source_connectors=item.source_connectors,
             evidence_ids=_merge_ids(item.evidence_ids, related_tactics),
             action_ids=item.action_ids,
@@ -385,7 +375,12 @@ def _action_plan_item(
             risk=item.risk,
         )
     if item.id == "daily_ga4_landing_quality":
-        top_titles = ", ".join(tactic.title for tactic in related_tactics[:2])
+        review_tactics = [
+            tactic
+            for tactic in related_tactics
+            if getattr(tactic, "intent", None) != "tracking_gap"
+        ]
+        tactic_summary = _ga4_tactic_summary(review_tactics)
         return CommandCenterActionPlanItem(
             id="plan_review_ga4_landing_quality",
             title="Sprawdź jakość ruchu i landing page w GA4",
@@ -396,16 +391,58 @@ def _action_plan_item(
             why_it_matters=(
                 f"WILQ widzi {item.metric_tiles.get('landing groups', 0)} grup landing/source "
                 f"i {item.metric_tiles.get('low engagement', 0)} niskiej jakości grupy. "
-                f"Pierwsze taktyki: {top_titles or 'brak taktyk w kolejce'}."
+                f"{tactic_summary}"
             ),
             operator_action="Otwórz /ga4 i waliduj jakość ruchu bez ROAS/revenue claimów.",
+            skill_id="wilq-ga4-analyst",
+            codex_prompt=(
+                "Użyj skilla wilq-ga4-analyst. Sprawdź jakość ruchu Ekologus po "
+                "landing/source/campaign, rozdziel problem marketingowy od problemu "
+                "pomiaru i nie wyciągaj wniosków o ROAS, revenue ani konwersjach bez evidence."
+            ),
+            codex_context_endpoint="/api/codex/context-pack",
+            expected_codex_output=(
+                "Polska diagnoza GA4 z landing/source/campaign facts, tracking "
+                "blockerami i ActionObject."
+            ),
             source_connectors=item.source_connectors,
-            evidence_ids=_merge_ids(item.evidence_ids, related_tactics),
+            evidence_ids=_merge_ids(item.evidence_ids, review_tactics),
             action_ids=item.action_ids,
             blocked_claims=item.blocked_claims,
             risk=item.risk,
         )
     if item.id == "daily_ads_status":
+        if item.status == "ready":
+            return CommandCenterActionPlanItem(
+                id="plan_review_ads_campaign_metrics",
+                title="Przejrzyj kampanie Google Ads z live metryk",
+                route=item.route,
+                status="ready",
+                priority=16,
+                category="Google Ads",
+                why_it_matters=(
+                    "Google Ads OAuth, MCC login i child customer działają. WILQ ma "
+                    "świeże campaign metric facts, ale search terms/CPA/ROAS nadal "
+                    "wymagają osobnych read contractów."
+                ),
+                operator_action="Otwórz /ads-doctor i analizuj tylko metryki widoczne w evidence.",
+                skill_id="wilq-ads-doctor",
+                codex_prompt=(
+                    "Użyj skilla wilq-ads-doctor. Pokaż przestrzeń do poprawy adsów "
+                    "w Ekologus na podstawie dostępnych campaign metric facts. Wyraźnie "
+                    "zablokuj CPA, ROAS, search terms i wasted budget, jeśli nie ma ich w evidence."
+                ),
+                codex_context_endpoint="/api/codex/context-pack",
+                expected_codex_output=(
+                    "Polska diagnoza Ads z tym, co już wiadomo, czego nie wolno "
+                    "twierdzić i co odczytać dalej."
+                ),
+                source_connectors=item.source_connectors,
+                evidence_ids=item.evidence_ids,
+                action_ids=item.action_ids,
+                blocked_claims=item.blocked_claims,
+                risk=ActionRisk.medium,
+            )
         return CommandCenterActionPlanItem(
             id="plan_fix_ads_oauth_before_spend_analysis",
             title="Napraw Google Ads OAuth zanim padną wnioski o spendzie",
@@ -418,6 +455,15 @@ def _action_plan_item(
                 "terms bez świeżego Ads evidence."
             ),
             operator_action="Otwórz /ads-doctor i wykonaj repair path z ActionObject.",
+            skill_id="wilq-ads-doctor",
+            codex_prompt=(
+                "Użyj skilla wilq-ads-doctor. Zweryfikuj Ads blocker dla Ekologus "
+                "i przygotuj repair path bez diagnozowania spendu, CPA, ROAS ani search terms."
+            ),
+            codex_context_endpoint="/api/codex/context-pack",
+            expected_codex_output=(
+                "Polski blocker handoff z evidence IDs i bez zmyślonych metryk Ads."
+            ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
             action_ids=item.action_ids,
@@ -425,6 +471,39 @@ def _action_plan_item(
             risk=ActionRisk.medium,
         )
     if item.id == "daily_localo_readiness":
+        if item.status == "ready":
+            return CommandCenterActionPlanItem(
+                id="plan_localo_access_ready_wait_for_visibility_facts",
+                title="Localo access działa; nie ma jeszcze ranking/GBP facts",
+                route=item.route,
+                status="ready",
+                priority=60,
+                category="Localo",
+                why_it_matters=(
+                    "WILQ potwierdził Localo MCP initialize=200, więc to nie jest już "
+                    "blokada OAuth. Nadal brakuje konkretnych local ranking, GBP visibility "
+                    "i competitor facts, więc lokalnych rekomendacji nie wolno dopowiadać."
+                ),
+                operator_action=(
+                    "Nie pokazuj tego jako pilnego zadania marketera. Traktuj /localo "
+                    "jako status źródła do czasu dodania read contractu dla ranking/GBP facts."
+                ),
+                skill_id="wilq-localo-operator",
+                codex_prompt=(
+                    "Użyj skilla wilq-localo-operator. Potwierdź Localo MCP access dla "
+                    "Ekologus i wskaż, jakich konkretnych ranking/GBP facts brakuje do "
+                    "lokalnych rekomendacji. Nie twierdź nic o lokalnej widoczności bez evidence."
+                ),
+                codex_context_endpoint="/api/codex/context-pack",
+                expected_codex_output=(
+                    "Polski status Localo: access działa, ranking/GBP evidence jeszcze brak."
+                ),
+                source_connectors=item.source_connectors,
+                evidence_ids=item.evidence_ids,
+                action_ids=item.action_ids,
+                blocked_claims=item.blocked_claims,
+                risk=ActionRisk.low,
+            )
         return CommandCenterActionPlanItem(
             id="plan_finish_localo_access_before_local_visibility",
             title="Dokończ Localo access przed lokalnymi rekomendacjami",
@@ -437,6 +516,16 @@ def _action_plan_item(
                 "claimy o rankingach i GBP performance."
             ),
             operator_action="Otwórz /localo i pokaż blocker dostępu zamiast metryk lokalnych.",
+            skill_id="wilq-localo-operator",
+            codex_prompt=(
+                "Użyj skilla wilq-localo-operator. Sprawdź stan Localo dla Ekologus "
+                "i pokaż tylko readiness/blockery, dopóki WILQ nie ma świeżego evidence "
+                "lokalnej widoczności, rankingów albo GBP."
+            ),
+            codex_context_endpoint="/api/codex/context-pack",
+            expected_codex_output=(
+                "Polski Localo readiness report z blockerami i bez claimów o rankingach."
+            ),
             source_connectors=item.source_connectors,
             evidence_ids=item.evidence_ids,
             action_ids=item.action_ids,
@@ -452,6 +541,13 @@ def _action_plan_item(
         category="WILQ",
         why_it_matters=item.summary,
         operator_action=item.next_step,
+        skill_id="wilq-daily-command",
+        codex_prompt=(
+            "Użyj skilla wilq-daily-command. Skondensuj ten element Command Center "
+            "do decyzji marketera po polsku, używając tylko WILQ API evidence."
+        ),
+        codex_context_endpoint="/api/codex/context-pack",
+        expected_codex_output="Polska decyzja operatora z evidence IDs i następnym krokiem.",
         source_connectors=item.source_connectors,
         evidence_ids=item.evidence_ids,
         action_ids=item.action_ids,
@@ -467,6 +563,66 @@ def _related_tactical_items(item: CommandCenterBriefItem, tactical_items: list[A
         for tactic in tactical_items
         if source_connectors.intersection(set(tactic.source_connectors))
     ]
+
+
+def _content_tactic_summary(tactical_items: list[Any]) -> str:
+    pages: dict[str, int] = {}
+    for tactic in tactical_items:
+        page = getattr(tactic, "dimensions", {}).get("page")
+        if not page:
+            continue
+        pages[page] = pages.get(page, 0) + 1
+    if not pages:
+        return "Brak skondensowanej kolejki contentowej."
+    summary_parts = [
+        f"{_short_page_label(page)} ({query_count} {_polish_query_label(query_count)})"
+        for page, query_count in list(pages.items())[:3]
+    ]
+    return "Skondensowane tematy: " + ", ".join(summary_parts) + "."
+
+
+def _ga4_tactic_summary(tactical_items: list[Any]) -> str:
+    landings: dict[str, int] = {}
+    for tactic in tactical_items:
+        landing = getattr(tactic, "dimensions", {}).get("landing_page")
+        if not landing:
+            continue
+        landings[landing] = landings.get(landing, 0) + 1
+    if not landings:
+        return "Brak gotowych taktyk jakości ruchu; tracking gaps sprawdź w /ga4."
+    summary_parts = [
+        f"{_short_landing_label(landing)} ({count} {_polish_group_label(count)})"
+        for landing, count in list(landings.items())[:3]
+    ]
+    return "Skondensowane obszary jakości ruchu: " + ", ".join(summary_parts) + "."
+
+
+def _short_page_label(page: str) -> str:
+    if "://" not in page:
+        return page
+    return page.split("://", maxsplit=1)[1].removeprefix("www.").rstrip("/") or page
+
+
+def _short_landing_label(landing: str) -> str:
+    if landing == "/":
+        return "strona główna"
+    return landing[:64]
+
+
+def _polish_group_label(count: int) -> str:
+    if count == 1:
+        return "grupa"
+    if 2 <= count <= 4:
+        return "grupy"
+    return "grup"
+
+
+def _polish_query_label(query_count: int) -> str:
+    if query_count == 1:
+        return "zapytanie"
+    if 2 <= query_count <= 4:
+        return "zapytania"
+    return "zapytań"
 
 
 def _action_plan_status(item: CommandCenterBriefItem) -> Literal["ready", "blocked"]:

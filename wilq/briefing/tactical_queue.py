@@ -32,6 +32,7 @@ TacticalIntent = Literal[
     "content_merge",
     "content_block",
     "landing_page_quality",
+    "tracking_gap",
     "merchant_feed_triage",
     "traffic_quality_review",
 ]
@@ -205,13 +206,20 @@ def _ga4_quality_items(
         active_users = _numeric_fact(group_facts, "active_users")
         sessions = _numeric_fact(group_facts, "sessions")
         engagement_rate = _numeric_fact(group_facts, "engagement_rate")
+        has_not_set_dimension = _has_not_set_dimension(
+            landing_page,
+            source_medium,
+            campaign_name,
+        )
         wordpress_match = _find_wordpress_match(wordpress_index, landing_page)
         wordpress_fact = wordpress_match.fact
-        intent: TacticalIntent = (
-            "landing_page_quality"
-            if engagement_rate is not None and engagement_rate < 0.2
-            else "traffic_quality_review"
-        )
+        intent: TacticalIntent
+        if has_not_set_dimension:
+            intent = "tracking_gap"
+        elif engagement_rate is not None and engagement_rate < 0.2:
+            intent = "landing_page_quality"
+        else:
+            intent = "traffic_quality_review"
         priority = _ga4_priority(active_users, engagement_rate, index)
         item_facts = [*group_facts[:6], *([wordpress_fact] if wordpress_fact else [])]
         source_connectors = ["google_analytics_4"]
@@ -220,7 +228,11 @@ def _ga4_quality_items(
         items.append(
             TacticalQueueItem(
                 id=f"tq_ga4_{_stable_slug(landing_page)}_{_stable_slug(source_medium)}",
-                title=f"GA4: {landing_page} / {source_medium}",
+                title=(
+                    f"Problem pomiaru GA4: {landing_page} / {source_medium}"
+                    if has_not_set_dimension
+                    else f"GA4: {landing_page} / {source_medium}"
+                ),
                 domain=OpportunityDomain.ga4,
                 intent=intent,
                 priority=priority,
@@ -243,10 +255,7 @@ def _ga4_quality_items(
                     engagement_rate,
                     wordpress_match=wordpress_match,
                 ),
-                next_step=(
-                    "Sprawdź landing page, message match i tracking. Nie oceniaj kampanii "
-                    "po samych użytkownikach bez konwersji."
-                ),
+                next_step=_ga4_next_step(has_not_set_dimension),
                 blocked_claims=["conversion rate", "ROAS", "revenue", "profitability"],
                 action_ids=action_ids_by_connector.get("google_analytics_4", []),
             )
@@ -597,10 +606,36 @@ def _ga4_diagnosis(
     wordpress_match: WordPressMatch,
 ) -> str:
     wordpress_note = _wordpress_match_note(wordpress_match)
+    if _has_not_set_dimension(landing_page, source_medium, campaign_name):
+        return (
+            "GA4 ma brakujące wymiary raportu: "
+            f"landing_page=`{landing_page}`, source_medium=`{source_medium}`, "
+            f"campaign_name=`{campaign_name}`. To jest problem pomiaru/atrybucji, "
+            f"nie zwykła taktyka landing page. active_users={active_users or 0}, "
+            f"sessions={sessions or 0}, engagement_rate={engagement_rate or 0}. "
+            f"{wordpress_note}"
+        )
     return (
         f"Landing `{landing_page}` z `{source_medium}` i kampanii `{campaign_name}` ma "
         f"active_users={active_users or 0}, sessions={sessions or 0}, "
         f"engagement_rate={engagement_rate or 0}. {wordpress_note}"
+    )
+
+
+def _has_not_set_dimension(*values: str) -> bool:
+    return any(value.strip().lower() == "(not set)" for value in values)
+
+
+def _ga4_next_step(has_not_set_dimension: bool) -> str:
+    if has_not_set_dimension:
+        return (
+            "Napraw pomiar GA4: sprawdź landing page attribution, source/medium, "
+            "UTM-y i konfigurację raportu. Nie traktuj tego jako rekomendacji "
+            "marketingowej dla strony."
+        )
+    return (
+        "Sprawdź landing page, message match i tracking. Nie oceniaj kampanii "
+        "po samych użytkownikach bez konwersji."
     )
 
 

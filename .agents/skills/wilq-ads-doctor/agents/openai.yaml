@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Ads Doctor"
-  short_description: "Google Ads diagnostics workflow"
-  default_prompt: "Use $wilq-ads-doctor to inspect Google Ads evidence and draft validated action candidates."
+  short_description: "Diagnozuje Google Ads i przestrzeń do poprawy kampanii"
+  default_prompt: "Użyj $wilq-ads-doctor: pokaż przestrzeń do polepszenia adsów w Ekologus, znajdź ostatnie kampanie i ich efekty, nie wymyślaj metryk."

@@ -1,27 +1,48 @@
 ---
 name: wilq-daily-command
-description: Run the daily WILQ operating brief from WILQ API context. Use when starting a marketing work session, checking today's connector readiness, listing top opportunities, summarizing available actions, or preparing the next evidence-backed operator steps for Ekologus. Must call WILQ API and must not invent metrics.
+description: Uruchamia dzienny polski WILQ operating brief dla Ekologus z WILQ API evidence. Użyj, gdy marketer pyta "co mam dziś zrobić?", "pokaż plan dnia", "gdzie są największe szanse i blockery?", "podsumuj działania z Ads/GA4/GSC/Merchant/Localo", albo chce priorytetowy daily command center. Musi wywołać WILQ API i nie wolno zmyślać metryk.
 ---
 
 # WILQ Daily Command
 
-## Operating Rule
+## Skill Contract
 
-Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fetch live/product context from WILQ API before making marketing claims. If the API is unavailable or evidence is missing, report the blocker instead of filling gaps.
+<operating_rule>
 
-## Workflow
+Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed claimami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje evidence, zwróć blocker zamiast wypełniać luki.
 
-1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `GET /api/dashboard/command-center` first. This is the canonical first-screen operator view model for Polish marketer output.
-4. Call `GET /api/marketing/brief` for supporting daily sections and metric summaries.
+</operating_rule>
+
+## Trigger Contract
+
+<triggers>
+
+- "Co dziś powinien zrobić marketer Ekologus?"
+- "Pokaż mi dzisiejszy plan działań z WILQ."
+- "Gdzie mamy największą przestrzeń do poprawy: Ads, content, feed czy lokal?"
+- "Zrób brief dnia dla ekologus.pl z realnych metryk."
+
+</triggers>
+
+## Workflow Contract
+
+<workflow>
+
+1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
+2. Uruchom `uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
+3. Wywołaj najpierw `GET /api/dashboard/command-center`. To jest kanoniczny first-screen view model operatora dla polskiego marketera.
+4. Wywołaj `GET /api/marketing/brief` dla wspierających daily sections i metric summaries.
 5. Call `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` to get wider evidence, opportunities, actions, expert rules and knowledge cards.
 6. The `command_center` embedded in the context pack must agree with `GET /api/dashboard/command-center` on `operator_brief`, `demo_script`, `action_plan`, `primary_next_step`, blocker count, tactical item count and action IDs. The embedded `marketing_brief` must agree with `GET /api/marketing/brief` on language, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
-7. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-8. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-9. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+7. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
+8. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+9. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
 
-## Allowed API Endpoints
+</workflow>
+
+## API Contract
+
+<allowed_endpoints>
 
 - `GET /api/health`
 - `GET /api/system/status`
@@ -43,9 +64,13 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 - `GET /api/expert/rules`
 - `GET /api/expert/capabilities`
 
-## Required Evidence
+</allowed_endpoints>
 
-Required connector surfaces for this skill:
+## Evidence Contract
+
+<evidence_requirements>
+
+Wymagane powierzchnie connectorów dla tego skilla:
 
 - `google_ads`
 - `google_search_console`
@@ -56,23 +81,29 @@ Required connector surfaces for this skill:
 - `wordpress_ekologus`
 - `wordpress_sklep`
 
-Every recommendation must include source connector IDs and evidence IDs from WILQ API. If evidence is aggregated, stale, missing or blocked by credentials, say that directly.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+
+</evidence_requirements>
 
 ## Output Contract
 
-Follow `references/output-contract.md`. Keep output short enough for an operator to act on: status, evidence, diagnosis, validated action candidates, blockers and next safe steps.
+<output_contract>
 
-Polish language contract: produce all operator-facing responses in Polish with Polish diacritics. Keep API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths and enum values unchanged.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, zwalidowani kandydaci działań, blockery i następne bezpieczne kroki.
 
-## Safety
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths i enum values zostaw bez zmian.
 
-- Never invent metrics, rankings, product counts, campaign state, content inventory, social permissions or Localo findings.
-- Never print secrets, credential paths, token values or raw vendor response bodies.
-- Never call write/apply endpoints unless WILQ API exposes the action, validation passes and the user explicitly asks for execution.
-- Never bypass ActionObject validation, evidence IDs or audit requirements.
+</output_contract>
 
-## Goal 001 Status
+## Safety Contract
 
-This is fully wired in Goal 001 through `GET /api/dashboard/command-center`,
-`GET /api/marketing/brief` and `POST /api/codex/context-pack`. Use the smoke
-script before claiming the skill path works.
+<safety_rules>
+
+<!-- no-invented-metrics guardrail: do not invent metrics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+
+- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
+- Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
+- Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
+- Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.
+</safety_rules>

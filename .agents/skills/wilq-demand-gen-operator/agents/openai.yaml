@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Demand Gen Operator"
-  short_description: "Demand Gen migration workflow"
-  default_prompt: "Use $wilq-demand-gen-operator to inspect Demand Gen readiness and migration action candidates."
+  short_description: "Sprawdza Demand Gen, kreacje i jakość ruchu"
+  default_prompt: "Użyj $wilq-demand-gen-operator: oceń Demand Gen dla Ekologus przez Ads + GA4 evidence i przygotuj tylko bezpieczne do review kroki."

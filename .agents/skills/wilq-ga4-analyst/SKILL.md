@@ -1,25 +1,46 @@
 ---
 name: wilq-ga4-analyst
-description: Analyze GA4 behavior and conversion diagnostics through WILQ API evidence. Use for landing-page quality, engagement, campaign traffic quality, tracking gaps, conversion diagnostics, or behavior summaries. Must cite GA4 evidence IDs and must not invent analytics values.
+description: Analizuje zachowanie GA4 dla Ekologus przez WILQ API evidence. Użyj, gdy marketer pyta "które landing pages działają słabo?", "czy ruch z kampanii ma sens?", "czemu użytkownicy nie angażują się?", "czy tracking jest zepsuty?", "porównaj źródła ruchu", albo pyta o engagement, sessions, jakość campaign/source, conversion diagnostics lub tracking gaps. Musi cytować GA4 evidence IDs i nie wolno zmyślać wartości analytics.
 ---
 
 # WILQ GA4 Analyst
 
-## Operating Rule
+## Skill Contract
 
-Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fetch live/product context from WILQ API before making marketing claims. If the API is unavailable or evidence is missing, report the blocker instead of filling gaps.
+<operating_rule>
 
-## Workflow
+Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed claimami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje evidence, zwróć blocker zamiast wypełniać luki.
 
-1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `GET /api/ga4/diagnostics` before summarizing GA4 behavior, landing quality, conversion readiness or tracking blockers.
+</operating_rule>
+
+## Trigger Contract
+
+<triggers>
+
+- "Które landing pages w Ekologus są najsłabsze?"
+- "Sprawdź jakość ruchu z kampanii i źródeł."
+- "Czy GA4 pokazuje problem marketingowy czy problem pomiaru?"
+- "Znajdź tracking gaps, zanim ocenimy kampanie."
+
+</triggers>
+
+## Workflow Contract
+
+<workflow>
+
+1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
+2. Uruchom `uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
+3. Wywołaj `GET /api/ga4/diagnostics` przed podsumowaniem GA4 behavior, jakości landingów, conversion readiness lub tracking blockers.
 4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-ga4-analyst"}` and confirm the embedded `ga4_diagnostics` contract matches the route.
-5. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-6. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-7. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
+6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
 
-## Allowed API Endpoints
+</workflow>
+
+## API Contract
+
+<allowed_endpoints>
 
 - `GET /api/health`
 - `GET /api/system/status`
@@ -38,29 +59,39 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 - `POST /api/actions/{action_id}/validate`
 - `POST /api/connectors/{connector}/refresh with mode=vendor_read only when the connector is configured and the task explicitly needs a fresh read.`
 
-## Required Evidence
+</allowed_endpoints>
 
-Required connector surfaces for this skill:
+## Evidence Contract
+
+<evidence_requirements>
+
+Wymagane powierzchnie connectorów dla tego skilla:
 
 - `google_analytics_4`
 
-Every recommendation must include source connector IDs and evidence IDs from WILQ API. If evidence is aggregated, stale, missing or blocked by credentials, say that directly.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+
+</evidence_requirements>
 
 ## Output Contract
 
-Follow `references/output-contract.md`. Keep output short enough for an operator to act on: status, evidence, diagnosis, validated action candidates, blockers and next safe steps.
+<output_contract>
 
-Polish language contract: produce all operator-facing responses in Polish with Polish diacritics. Keep API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths and enum values unchanged.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, zwalidowani kandydaci działań, blockery i następne bezpieczne kroki.
 
-## Safety
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths i enum values zostaw bez zmian.
 
-- Never invent metrics, rankings, product counts, campaign state, content inventory, social permissions or Localo findings.
-- Never print secrets, credential paths, token values or raw vendor response bodies.
-- Never call write/apply endpoints unless WILQ API exposes the action, validation passes and the user explicitly asks for execution.
-- Never bypass ActionObject validation, evidence IDs or audit requirements.
+</output_contract>
 
-## Goal 001 Status
+## Safety Contract
 
-Goal 001 route model: `/api/ga4/diagnostics` is the canonical GA4 behavior,
-landing/source/campaign and tracking-readiness surface. Use it before producing
-operator-facing GA4 analysis.
+<safety_rules>
+
+<!-- no-invented-metrics guardrail: do not invent metrics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+
+- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
+- Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
+- Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
+- Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.
+</safety_rules>

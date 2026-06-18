@@ -1,24 +1,45 @@
 ---
 name: wilq-localo-operator
-description: Operate Localo/local visibility workflows through WILQ API readiness and future MCP evidence. Use for local ranking, Google Business Profile visibility, Localo tasks, local competitor checks, or GBP post candidates. Must not claim Localo metrics unless WILQ API evidence exists.
+description: Obsługuje workflow Localo i lokalnej widoczności dla Ekologus przez WILQ API readiness i Localo MCP evidence. Użyj, gdy marketer pyta "jak poprawić lokalną widoczność?", "sprawdź Localo/GBP", "które lokalne frazy spadły?", "porównaj widoczność z konkurencją", "zrób lokalny SEO plan", albo pyta o lokalne rankingi, widoczność Google Business Profile, reviews, lokalnych konkurentów, kandydatów GBP post lub Localo access blockers. Nie wolno claimować Localo metrics bez WILQ API evidence.
 ---
 
 # WILQ Localo Operator
 
-## Operating Rule
+## Skill Contract
 
-Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fetch live/product context from WILQ API before making marketing claims. If the API is unavailable or evidence is missing, report the blocker instead of filling gaps.
+<operating_rule>
 
-## Workflow
+Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed claimami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje evidence, zwróć blocker zamiast wypełniać luki.
 
-1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `POST /api/codex/context-pack` with `{"skill":"wilq-localo-operator"}` before summarizing metrics, opportunities or action candidates.
-4. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-5. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-6. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+</operating_rule>
 
-## Allowed API Endpoints
+## Trigger Contract
+
+<triggers>
+
+- "Jak poprawić lokalną widoczność Ekologus?"
+- "Sprawdź Localo i GBP, ale bez zmyślania rankingów."
+- "Czy mamy evidence lokalnych spadków albo konkurencji?"
+- "Pokaż blocker Localo i co trzeba zrobić dalej."
+
+</triggers>
+
+## Workflow Contract
+
+<workflow>
+
+1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
+2. Uruchom `uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
+3. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-localo-operator"}` przed podsumowaniem metryk, opportunities lub kandydatów działań.
+4. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
+5. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+6. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+
+</workflow>
+
+## API Contract
+
+<allowed_endpoints>
 
 - `GET /api/health`
 - `GET /api/system/status`
@@ -35,27 +56,39 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 - `POST /api/actions/{action_id}/validate`
 - `POST /api/connectors/{connector}/refresh with mode=vendor_read only when the connector is configured and the task explicitly needs a fresh read.`
 
-## Required Evidence
+</allowed_endpoints>
 
-Required connector surfaces for this skill:
+## Evidence Contract
+
+<evidence_requirements>
+
+Wymagane powierzchnie connectorów dla tego skilla:
 
 - `localo`
 
-Every recommendation must include source connector IDs and evidence IDs from WILQ API. If evidence is aggregated, stale, missing or blocked by credentials, say that directly.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+
+</evidence_requirements>
 
 ## Output Contract
 
-Follow `references/output-contract.md`. Keep output short enough for an operator to act on: status, evidence, diagnosis, validated action candidates, blockers and next safe steps.
+<output_contract>
 
-Polish language contract: produce all operator-facing responses in Polish with Polish diacritics. Keep API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths and enum values unchanged.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, zwalidowani kandydaci działań, blockery i następne bezpieczne kroki.
 
-## Safety
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths i enum values zostaw bez zmian.
 
-- Never invent metrics, rankings, product counts, campaign state, content inventory, social permissions or Localo findings.
-- Never print secrets, credential paths, token values or raw vendor response bodies.
-- Never call write/apply endpoints unless WILQ API exposes the action, validation passes and the user explicitly asks for execution.
-- Never bypass ActionObject validation, evidence IDs or audit requirements.
+</output_contract>
 
-## Goal 001 Status
+## Safety Contract
 
-Goal 001 status: `LOCALO_API_TOKEN` and `LOCALO_ORGANIZATION_ID` are configured. The current known blocker for Localo/local visibility metrics is incomplete MCP OAuth authorization: missing `LOCALO_ACCESS_TOKEN`. Do not claim Localo ranking, GBP or competitor metrics until WILQ API returns Localo evidence IDs beyond the OAuth probe.
+<safety_rules>
+
+<!-- no-invented-metrics guardrail: do not invent metrics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+
+- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
+- Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
+- Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
+- Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.
+</safety_rules>

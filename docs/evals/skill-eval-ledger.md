@@ -1,0 +1,240 @@
+# WILQ Skill Eval Ledger
+
+Ten plik zapisuje realne przebiegi testowania skillów. Każdy wpis ma pokazać,
+czy skill faktycznie pomaga polskiemu marketerowi, a nie tylko przechodzi schema
+smoke.
+
+## Eval Protocol
+
+For each skill:
+
+1. Use a realistic Polish marketer prompt.
+2. Confirm the skill reads its `SKILL.md` and required `references/`.
+3. Confirm WILQ API calls happened through allowed endpoints.
+4. Capture main evidence IDs, source connectors and ActionObject IDs.
+5. Judge output usefulness:
+   - Czy odpowiedź mówi po polsku i z polskimi znakami?
+   - Czy daje decyzję lub kolejkę działań?
+   - Czy blokuje unsupported claims?
+   - Czy nie wymyśla metryk?
+   - Czy wskazuje konkretny następny krok?
+6. Run deterministic smoke and, where possible, non-interactive Codex eval:
+
+```bash
+uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
+```
+
+## 2026-06-18 - wilq-content-strategist
+
+Prompt:
+
+```text
+Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh, merge,
+create albo block dla Ekologus na podstawie GSC, WordPress, GA4 i Ahrefs
+evidence. Nie obiecuj leadów, revenue ani wzrostów pozycji.
+```
+
+Observed behavior:
+
+- Skill read `.agents/skills/wilq-content-strategist/SKILL.md`.
+- Skill read `references/output-contract.md`.
+- Skill checked connector statuses for:
+  `google_search_console`, `google_analytics_4`, `ahrefs`,
+  `wordpress_ekologus`, `wordpress_sklep`.
+- Skill called:
+  - `GET /api/content/diagnostics`
+  - `POST /api/codex/context-pack` with `{"skill":"wilq-content-strategist"}`
+  - `uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+  - `POST /api/actions/act_prepare_content_refresh_queue/validate`
+  - `GET /api/actions/act_prepare_content_refresh_queue`
+  - `GET /api/marketing/tactical-queue`
+
+Useful output:
+
+- Built a real queue:
+  1. refresh BDO page,
+  2. merge/create-after-inventory-check for Zielony Ład cluster,
+  3. low-priority refresh for homepage/brand,
+  4. block GA4 `(not set)` as content task,
+  5. block GA4 landing pages without WordPress match until inventory mapping improves.
+- Correctly used evidence IDs including:
+  `ev_refresh_refresh_google_search_console_554550c44ec7`,
+  `ev_refresh_refresh_wordpress_ekologus_25f9090bdfe6`,
+  `ev_refresh_refresh_wordpress_sklep_df9826df2137`,
+  `ev_refresh_refresh_google_analytics_4_681b6bcefc85`,
+  `ev_refresh_refresh_ahrefs_dbd57a972ce1`.
+- Correctly validated `act_prepare_content_refresh_queue` as `valid=true`.
+- Correctly blocked lead/revenue/ranking promises.
+- Correctly identified that GA4 `(not set)` is tracking/attribution, not a
+  content recommendation.
+
+Product gaps found:
+
+1. `POST /api/codex/context-pack` was too large for efficient skill operation.
+   The first run pulled a huge context and had to narrow it manually.
+2. WordPress inventory matching misses URLs visible in GSC/GA4. This weakens
+   create/refresh/merge confidence.
+3. Ahrefs currently contributes mostly aggregate authority facts, not
+   URL/query-level content gap evidence.
+4. GA4 landing path to WordPress URL mapping needs a stronger normalizer before
+   it can confidently feed content actions.
+
+Verdict:
+
+Useful. The skill produced a marketer-readable queue and blocked unsupported
+claims. It should be used as the first reference pattern for the remaining
+manual skill evals.
+
+Follow-up implemented:
+
+- Added skill-scoped context-pack behavior for non-daily skills.
+- `wilq-content-strategist` context-pack shrank from about 940 KB to 154 KB and
+  from about 8.1 s to 2.68 s locally.
+- Smoke still passes and now returns only content-adjacent action IDs:
+  `act_review_ga4_tracking_quality`,
+  `act_prepare_content_refresh_queue`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260618T093647Z/wilq-content-strategist/result.json
+trace: .local-lab/evals/codex-skill/20260618T093647Z/wilq-content-strategist/trace.jsonl
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors:
+  `google_search_console`, `google_analytics_4`, `ahrefs`,
+  `wordpress_ekologus`, `wordpress_sklep`.
+- Evidence IDs included:
+  `ev_refresh_refresh_google_search_console_554550c44ec7`,
+  `ev_refresh_refresh_wordpress_ekologus_25f9090bdfe6`,
+  `ev_refresh_refresh_wordpress_ekologus_24cdff62889e`,
+  `ev_refresh_refresh_ahrefs_20c8716fd228`,
+  `ev_refresh_refresh_google_analytics_4_f7e927dd982b`.
+- Action candidate:
+  `act_prepare_content_refresh_queue` with `pending_validation`.
+- `operator_usefulness_score=4`.
+- No safety findings, no allowed endpoint violation.
+
+Quality note:
+
+This eval proves schema discipline, Polish output, WILQ API usage and evidence
+grounding. It does not yet prove the richer manual behavior from the first run,
+where Codex produced a concrete BDO/Zielony Lad/GA4 block queue. The next
+generation of eval cases should require `refresh`, `merge/create-after-
+inventory-check` and `block` decision items, not only broad recommendations.
+
+## 2026-06-18 - deterministic smoke suite after scoped context-pack
+
+Command:
+
+```bash
+for skill_dir in .agents/skills/wilq-*; do
+  # uses smoke_context_pack.py for wilq-daily-command,
+  # smoke_skill_contract.py for every other skill
+done
+```
+
+Result:
+
+```text
+12/12 WILQ skill smoke scripts passed
+summary artifact: .local-lab/evals/skill-smoke-summary-20260618T093210Z.jsonl
+```
+
+Summary:
+
+| Skill | Evidence | Actions | Notes |
+| --- | ---: | ---: | --- |
+| `wilq-ads-doctor` | 80 | 0 | Live Ads mode, no OAuth repair action in main flow. |
+| `wilq-ahrefs-gap-finder` | 80 | 1 | Content refresh action available as adjacent SEO action. |
+| `wilq-campaign-builder` | 80 | 2 | Merchant + GA4 prepare actions only; no campaign apply action. |
+| `wilq-content-strategist` | 80 | 2 | Content/GA4 actions, scoped context. |
+| `wilq-custom-segments` | 80 | 0 | No safe segment ActionObject yet. |
+| `wilq-daily-command` | 979 | 5 | Full context intentionally preserved. |
+| `wilq-demand-gen-operator` | 80 | 2 | Ads/GA4/Merchant readiness, no Demand Gen write action. |
+| `wilq-ga4-analyst` | 80 | 2 | GA4 + content adjacent actions. |
+| `wilq-gsc-content-doctor` | 80 | 1 | Content refresh action. |
+| `wilq-localo-operator` | 80 | 0 | Access ready, ranking/GBP facts still missing. |
+| `wilq-merchant-feed-operator` | 80 | 1 | Merchant feed review action. |
+| `wilq-social-publisher` | 80 | 5 | Draft actions exist; publishing remains blocked. |
+
+Next eval need:
+
+- Run `scripts/codex_skill_eval.sh --skill <skill>` for each skill and compare
+  final JSON usefulness, not only smoke contract health.
+
+## 2026-06-18 - wilq-merchant-feed-operator
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-merchant-feed-operator`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260618T094236Z/wilq-merchant-feed-operator/result.json
+trace: .local-lab/evals/codex-skill/20260618T094236Z/wilq-merchant-feed-operator/trace.jsonl
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `google_merchant_center`.
+- Evidence IDs:
+  `ev_refresh_refresh_google_merchant_center_e34029f9f3a7`,
+  `ev_connector_google_merchant_center_status`.
+- Opportunity ID: `opp_connector_google_merchant_center`.
+- Action candidate:
+  `act_review_merchant_feed_issues` with `pending_validation`.
+- Key live facts surfaced by the skill:
+  `product_count=10900`, `issue_count=15`,
+  `live_data_available=true`, `blocker_count=0`.
+- `operator_usefulness_score=5`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill framed Merchant Center as a feed/product evidence review workflow,
+  not as an automatic fix.
+- The next step points to `/merchant` and validation of
+  `act_review_merchant_feed_issues`.
+- The answer correctly blocks product data mutation, apply and approval/revenue
+  recovery claims until validation and explicit operator approval exist.
+
+Product gaps found:
+
+1. The eval proves the high-level Merchant workflow well, but still does not
+   force issue-level clustering such as `availability_updated` or affected
+   attribute details. Add stricter case assertions if we want BDOS-level feed
+   triage proof.
+2. `validation_state=pending_validation` is correct for this harness because it
+   does not call `POST /api/actions/act_review_merchant_feed_issues/validate`.
+   A future manual eval should include the validation call and record the
+   validation result.
+
+Verdict:
+
+Useful and stronger than the first content non-interactive eval. It gives a
+clear Polish operator next step backed by Merchant evidence and a safe
+ActionObject.

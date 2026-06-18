@@ -4,6 +4,17 @@
 
 This repository builds WILQ Marketing Operating System for Ekologus. WILQ is the marketer. Codex Desktop/CLI is the primary operator runtime.
 
+## Recovery index
+
+After context loss, read:
+
+1. `docs/CONTEXT.md` - durable index of current runtime, skill eval harness and key docs.
+2. `docs/PROGRESS.md` - latest short progress ledger and current gaps.
+3. `docs/goals/001-goal.md` - only active goal and next queue.
+4. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.
+
+Keep progress and skill eval findings in those docs instead of bloating AGENTS.md.
+
 ## Product philosophy
 
 Build an API-first marketing operating system, not a prompt pack, static report generator, or artifact factory. The WILQ API is the system brain. MCP servers are adapters, not the system brain.
@@ -24,13 +35,21 @@ Use `uv run ...` for Python commands that import the WILQ API. Do not use system
 
 Use typed schemas before prose. Keep connector logic in connector modules, action logic in action services, expert rules in structured files, and operator workflows in Codex skills only after the API surface exists.
 
+## Engineering discipline
+
+Think before coding. State assumptions and surface tradeoffs when scope is
+ambiguous. Prefer the minimum code that solves the current goal; do not add
+speculative flexibility, unrelated refactors or adjacent cleanup. Every changed
+line should trace to the active goal or the user request. Define success as a
+verifiable check, then loop until the check passes or the blocker is explicit.
+
 ## Evidence and metrics rules
 
 Every marketing recommendation requires evidence IDs and source connectors. Missing connector credentials must be exposed honestly without printing values. Mock or seed data may support tests, but must never be represented as real Ekologus state.
 
 Connector `vendor_read` adapters must be read-only and must persist redacted refresh runs. They may store aggregate metric summaries, freshness, evidence IDs, status, and sanitized error labels. They must not store raw tokens, raw query/page/user data, full vendor response bodies, campaign text dumps, or credential paths.
 
-Known current Google Ads state: the repo-local `.env` and access pack contain a full Google Ads credential tuple, and the WILQ API can reach Google's OAuth token endpoint, but the current refresh token returns `400 invalid_grant` for the `adwords` scope. Treat this as an external OAuth/token issue, not a missing `.env` or API bootstrap issue.
+Known current Google Ads state: the repo-local `.env` contains a full Google Ads credential tuple, and the WILQ API can reach Google's OAuth token endpoint. If `vendor_read` returns `oauth_error=deleted_client`, first check whether `.env` `GOOGLE_ADS_CLIENT_ID` matches the OAuth client JSON used to generate the refresh token. On 2026-06-18, WILQ synced `.env` `GOOGLE_ADS_CLIENT_ID` and `GOOGLE_ADS_CLIENT_SECRET` from the documented OAuth client JSON, then the user completed fresh Google Ads consent/exchange as `marketing@rekurencja.com`; after that, OAuth token refresh passed. `596-895-8639 Agencja Proud Media` is the MCC/login customer, not the metrics customer. WILQ discovered the `Ekologus NOWY` child account and set `GOOGLE_ADS_CUSTOMER_ID` to that child while keeping `GOOGLE_ADS_LOGIN_CUSTOMER_ID=5968958639`; live Google Ads `vendor_read` then completed and collected campaign metrics. Treat future Ads failures as Ads API/customer/readiness state, not as missing `.env` credentials unless status reports missing credential names.
 
 ## API-first rules
 
@@ -100,6 +119,11 @@ scripts/verify.sh
 - After changing `pyproject.toml` entrypoints or build metadata, run `uv sync --all-extras` before expecting `uv run wilq ...` to exist.
 - The canonical goal file is `docs/goals/001-goal.md`. Do not recreate old duplicate numbered goal files.
 - Redaction must preserve audit identifiers such as evidence IDs, action IDs, workflow IDs, job IDs and connector refresh run IDs. Redact secret values, not product traceability.
+- Skill eval progress belongs in `docs/evals/skill-eval-ledger.md`; current
+  slice status belongs in `docs/PROGRESS.md`. Do not keep these only in chat.
+- `POST /api/codex/context-pack` can be much slower than narrow diagnostics
+  because it embeds many surfaces at once. Prefer skill-scoped context packs or
+  narrow endpoint reads when evaluating a single skill.
 - `scripts/verify.sh` is the final local gate for this repo. It intentionally uses WILQ API, skill smokes, CLI smokes and dashboard build as one product surface.
 
 ## Local credential paths
@@ -112,11 +136,40 @@ credential values, token prefixes, JSON bodies, or copied OAuth redirect codes.
 - Access-pack fallback path: `/home/krn/ekologus-access-pack-20260617-120758`
 - Local WILQ private directory: `/home/krn/.local/wilq`
 - Google Ads OAuth desktop client JSON: `/home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json`
+- Google OAuth operator account: `marketing@rekurencja.com`
+- Google Application Default Credentials path for the operator account:
+  `/home/krn/.config/gcloud/application_default_credentials.json`
+- Legacy/fallback service-account JSON path:
+  `/home/krn/.local/wilq/rekurencja-ads-2278b83f8063.json`
 - Google Ads OAuth helper module: `wilq/connectors/google_ads/oauth.py`
 - Google Ads OAuth helper commands:
   - `uv run wilq google-ads oauth-url --client-secret-file /home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json`
   - `uv run wilq google-ads oauth-exchange --client-secret-file /home/krn/.local/wilq/client_secret_504856024095-0r6gpqoln9u6uvv474rqmeifk2urqgb7.apps.googleusercontent.com.json --redirect-url '<final localhost URL>' --write-env`
 - Google Ads live proof command after OAuth repair: `uv run wilq connectors refresh google_ads --mode vendor_read --reason "Goal 001 Google Ads live data proof"`
+- Important Google Ads OAuth gotcha: when using `--client-secret-file`, the helper must keep `.env` `GOOGLE_ADS_CLIENT_ID`, `GOOGLE_ADS_CLIENT_SECRET` and `GOOGLE_ADS_REFRESH_TOKEN` from the same OAuth client pair. A mismatched pair can surface as `oauth_error=deleted_client` even when all credential names are present.
+- Current Google Ads post-OAuth gotcha: fresh consent/exchange for
+  `marketing@rekurencja.com` succeeded on 2026-06-18 and wrote
+  `GOOGLE_ADS_REFRESH_TOKEN` plus the matching client pair. The MCC account
+  `596-895-8639 Agencja Proud Media` must be used as `GOOGLE_ADS_LOGIN_CUSTOMER_ID`.
+  Campaign metrics cannot be requested on the MCC itself; Google returns
+  `REQUESTED_METRICS_FOR_MANAGER`. WILQ discovered the `Ekologus NOWY` child
+  account through `customer_client` and uses that child as `GOOGLE_ADS_CUSTOMER_ID`
+  for metrics.
+- Localo organization/client ID: `xIvP48wNIbsMtOWbGRQ5_w`
+- Localo MCP server URL: `https://api.localo.com/api/mcp`
+- Localo readiness distinction: Localo UI gives MCP Server URL, OAuth Client
+  ID/Organization ID and OAuth Client Secret/Create Token. Those map to
+  `LOCALO_ORGANIZATION_ID` and `LOCALO_API_TOKEN`; they are not the final bearer
+  access token. On 2026-06-18, the Localo OAuth authorization_code + PKCE flow
+  completed and wrote `LOCALO_ACCESS_TOKEN` locally. Live proof
+  `refresh_localo_f1d5b9fed00c` completed MCP initialize with status 200.
+  Do not claim Localo ranking, GBP or competitor metrics until WILQ API exposes
+  Localo evidence beyond the OAuth/initialize probe.
+- Localo OAuth helper module: `wilq/connectors/localo/oauth.py`
+- Localo OAuth helper commands:
+  - `uv run wilq localo oauth-url`
+  - `uv run wilq localo oauth-exchange --redirect-url '<final localhost URL>' --code-verifier '<code_verifier from oauth-url>' --write-env`
+- Localo live proof command after OAuth repair: `uv run wilq connectors refresh localo --mode vendor_read --reason "Goal 001 Localo live data proof"`
 
 ## Testing instructions
 

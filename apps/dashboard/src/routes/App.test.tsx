@@ -204,41 +204,66 @@ const adsDiagnostics = {
   latest_refresh: {
     ...connectorRefreshRuns[0],
     mode: "vendor_read",
-    status: "failed",
+    status: "completed",
     external_call_attempted: true,
-    summary: "Google Ads OAuth token refresh failed with HTTP 401.",
-    errors: ["Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client)."]
+    vendor_data_collected: true,
+    summary: "Google Ads vendor read completed through googleAds:searchStream. Rows: 18.",
+    errors: [],
+    metric_summary: {
+      row_count: 18,
+      clicks: 107,
+      impressions: 2783,
+      cost_micros: 164591174
+    }
   },
-  live_data_available: false,
+  live_data_available: true,
   sections: [
     {
-      id: "ads_oauth_blocker",
-      title: "Google Ads: OAuth blokuje live metryki",
-      status: "blocked",
-      summary: "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client).",
-      diagnosis:
-        "Ads Doctor nie może uczciwie pokazać spendu, CPA, ROAS ani search terms bez poprawnego OAuth.",
-      next_step:
-        "Użyj ActionObject `act_configure_google_ads_env`, odśwież token i uruchom vendor_read.",
+      id: "ads_live_data_status",
+      title: "Google Ads: live data dostępne",
+      status: "ready",
+      summary: "WILQ ma zapisane metric facts z read-only Google Ads vendor_read.",
+      diagnosis: "Ads Doctor może pokazać campaign metrics, ale nie search terms/CPA/ROAS.",
+      next_step: "Analizuj tylko widoczne metric facts i evidence IDs.",
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
-      metric_facts: [],
+      metric_facts: [
+        {
+          name: "clicks",
+          value: 107,
+          period: "connector_refresh",
+          source_connector: "google_ads",
+          evidence_id: "ev_refresh_refresh_google_ads_test",
+          dimensions: { campaign_id: "123", campaign_name: "Ekologus Search" },
+          unit: null
+        }
+      ],
       action_ids: ["act_1"],
-      blocked_claims: ["wasted spend", "CPA", "ROAS", "search terms"],
+      blocked_claims: ["CPA", "ROAS", "search terms"],
       risk: "medium"
     },
     {
       id: "ads_campaign_overview",
       title: "Campaign overview",
-      status: "blocked",
-      summary: "Brak campaign metric facts z Google Ads.",
-      diagnosis: "Nie ma live campaign rows, więc dashboard nie pokazuje spendu.",
-      next_step: "Napraw OAuth i wykonaj read-only Google Ads vendor_read.",
+      status: "ready",
+      summary: "Metric facts: clicks=107, impressions=2783.",
+      diagnosis: "Są live campaign rows, ale search terms wymagają osobnego read contract.",
+      next_step: "Sprawdź kampanie bez claimów CPA/ROAS.",
       source_connectors: ["google_ads"],
-      evidence_ids: ["ev_connector_google_ads_status"],
-      metric_facts: [],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [
+        {
+          name: "impressions",
+          value: 2783,
+          period: "connector_refresh",
+          source_connector: "google_ads",
+          evidence_id: "ev_refresh_refresh_google_ads_test",
+          dimensions: { campaign_id: "123", campaign_name: "Ekologus Search" },
+          unit: null
+        }
+      ],
       action_ids: ["act_1"],
-      blocked_claims: ["spend", "clicks", "impressions"],
+      blocked_claims: ["CPA", "ROAS", "search terms"],
       risk: "medium"
     }
   ],
@@ -414,18 +439,19 @@ const marketingBrief = {
       description: "Blockery.",
       items: [
         {
-          id: "brief_blocker_localo",
-          title: "Localo: brakuje LOCALO_ACCESS_TOKEN",
-          kind: "blocker",
+          id: "brief_status_localo_access_ready",
+          title: "Localo: MCP access działa, brak jeszcze ranking/GBP facts",
+          kind: "metric",
           priority: 90,
           source_connectors: ["localo"],
-          evidence_ids: ["ev_connector_localo_status"],
+          evidence_ids: ["ev_refresh_refresh_localo_f1d5b9fed00c"],
           metric_facts: [],
           action_ids: [],
-          summary: "Localo MCP OAuth authorization is incomplete.",
-          next_step: "Dokończ OAuth i odśwież local visibility evidence.",
-          risk: "medium",
-          blocker_reason: "missing LOCALO_ACCESS_TOKEN"
+          summary:
+            "Localo MCP initialize=200 potwierdza access. Brakuje jeszcze ranking/GBP facts.",
+          next_step: "Nie pokazuj lokalnych rekomendacji bez konkretnych ranking/GBP facts.",
+          risk: "low",
+          blocker_reason: null
         },
         {
           id: "brief_blocker_linkedin",
@@ -931,17 +957,17 @@ function mockFetch() {
             operator_brief: [
               {
                 id: "daily_ads_status",
-                title: "Ads: blocker OAuth przed analizą spendu",
+                title: "Ads: live campaign metrics dostępne",
                 route: "/ads-doctor",
-                status: "blocked",
-                priority: 5,
-                summary: "Google Ads OAuth token refresh HTTP 401 (oauth_error=deleted_client).",
-                next_step: "Otwórz /ads-doctor i napraw OAuth przez `act_configure_google_ads_env`.",
+                status: "ready",
+                priority: 30,
+                summary: "Google Ads ma live metric facts.",
+                next_step: "Otwórz /ads-doctor i przejdź do read-only performance review.",
                 source_connectors: ["google_ads"],
-                evidence_ids: ["ev_connector_google_ads_status"],
-                action_ids: ["act_configure_google_ads_env"],
-                metric_tiles: { blockery: 3 },
-                blocked_claims: ["spend", "CPA", "ROAS"],
+                evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+                action_ids: [],
+                metric_tiles: { sekcje: 4, blockery: 1 },
+                blocked_claims: ["CPA", "ROAS", "search terms"],
                 risk: "medium"
               },
               {
@@ -1001,7 +1027,7 @@ function mockFetch() {
                 operator_prompt: "Pokaż dzisiejszy priorytet i akcje do walidacji.",
                 source_item_ids: ["daily_ads_status", "daily_merchant_feed"],
                 evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_merchant_feed"],
-                action_ids: ["act_configure_google_ads_env", "act_review_merchant_feed_issues"]
+                action_ids: ["act_review_merchant_feed_issues"]
               },
               {
                 id: "demo_daily_merchant_feed",
@@ -1027,6 +1053,11 @@ function mockFetch() {
                 why_it_matters:
                   "WILQ widzi 10900 produktów i 23 feed/product issues. To wymaga review.",
                 operator_action: "Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+                skill_id: "wilq-merchant-feed-operator",
+                codex_prompt:
+                  "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
+                codex_context_endpoint: "/api/codex/context-pack",
+                expected_codex_output: "Polski brief feed issue review z evidence IDs.",
                 source_connectors: ["google_merchant_center"],
                 evidence_ids: ["ev_refresh_merchant_feed"],
                 action_ids: ["act_review_merchant_feed_issues"],
@@ -1042,6 +1073,11 @@ function mockFetch() {
                 category: "Content + SEO",
                 why_it_matters: "WILQ ma query/page kandydatów i dopasowania WordPress.",
                 operator_action: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+                skill_id: "wilq-content-strategist",
+                codex_prompt:
+                  "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
+                codex_context_endpoint: "/api/codex/context-pack",
+                expected_codex_output: "Polska kolejka content decyzji.",
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
@@ -1049,18 +1085,18 @@ function mockFetch() {
                 risk: "low"
               },
               {
-                id: "plan_fix_ads_oauth_before_spend_analysis",
-                title: "Napraw Google Ads OAuth zanim padną wnioski o spendzie",
+                id: "plan_review_ads_campaign_metrics",
+                title: "Przejrzyj kampanie Google Ads z live metryk",
                 route: "/ads-doctor",
-                status: "blocked",
-                priority: 5,
+                status: "ready",
+                priority: 16,
                 category: "Google Ads",
-                why_it_matters: "Ads Doctor ma blocker OAuth.",
-                operator_action: "Otwórz /ads-doctor i wykonaj repair path z ActionObject.",
+                why_it_matters: "Google Ads OAuth, MCC login i child customer działają.",
+                operator_action: "Otwórz /ads-doctor i analizuj tylko metryki widoczne w evidence.",
                 source_connectors: ["google_ads"],
-                evidence_ids: ["ev_connector_google_ads_status"],
-                action_ids: ["act_configure_google_ads_env"],
-                blocked_claims: ["spend", "CPA", "ROAS"],
+                evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+                action_ids: [],
+                blocked_claims: ["CPA", "ROAS", "search terms"],
                 risk: "medium"
               }
             ],
@@ -1173,35 +1209,32 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Ads: blocker OAuth przed analizą spendu")).toBeInTheDocument();
-    expect(screen.getAllByText("Merchant: feed/product issues do przeglądu").length).toBeGreaterThan(0);
-    expect(screen.getByText("Content: GSC query/page + WordPress inventory")).toBeInTheDocument();
-    expect(screen.getByText("GA4: landing/source/campaign quality review")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Dzisiejsze konkretne taktyki")).toBeInTheDocument();
-    expect(screen.getByText("GA4: /oferta/ / google / cpc")).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Merchant: NOT_IMPACTED / availability_updated / PL").length
-    ).toBeGreaterThan(0);
-    expect(screen.getAllByText("Kontekst").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
-    expect(screen.getByText(/Issue: availability_updated/)).toBeInTheDocument();
-    expect(screen.getByText("Demo dla marketera")).toBeInTheDocument();
-    expect(screen.getByText("Start: plan dnia WILQ")).toBeInTheDocument();
-    expect(
-      screen.getByText("Merchant Center daje realne product/feed metryki i ActionObject review.")
-    ).toBeInTheDocument();
     expect(screen.getByText("Plan działań marketera")).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj produkty z problemami w Merchant Center")).toBeInTheDocument();
+    expect(screen.getAllByText("Jak Codex ma pomóc").length).toBeGreaterThan(0);
+    expect(screen.getByText("Skill: wilq-merchant-feed-operator")).toBeInTheDocument();
     expect(screen.getByText("Ułóż kolejkę refresh/merge/create dla treści SEO")).toBeInTheDocument();
-    expect(screen.getByText("Napraw Google Ads OAuth zanim padną wnioski o spendzie")).toBeInTheDocument();
-    expect(screen.getByText("Priorytety dnia")).toBeInTheDocument();
-    expect(screen.getByText("Dzisiejszy brief WILQ")).toBeInTheDocument();
-    expect(screen.getByText("WordPress: content_object_count = 16")).toBeInTheDocument();
-    expect(screen.getByText("Budżet i ryzyko wydatków")).toBeInTheDocument();
-    expect(screen.getByText("Kandydaci działań API")).toBeInTheDocument();
-    expect(screen.getByText("Dzisiejsze konkretne taktyki")).toBeInTheDocument();
-    expect(screen.getAllByText("GA4: /oferta/ / google / cpc").length).toBeGreaterThan(0);
+    expect(screen.getByText("Przejrzyj kampanie Google Ads z live metryk")).toBeInTheDocument();
+    expect(screen.queryByText("Dzisiejsze konkretne taktyki")).not.toBeInTheDocument();
+    expect(screen.queryByText("Realne metric facts zapisane lokalnie")).not.toBeInTheDocument();
+    expect(screen.queryByText("GA4: /oferta/ / google / cpc")).not.toBeInTheDocument();
+    expect(screen.queryByText("Merchant: NOT_IMPACTED / availability_updated / PL")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kontekst")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Źródło: google \/ cpc/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Issue: availability_updated/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Priorytety dnia")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dzisiejszy brief WILQ")).not.toBeInTheDocument();
+    expect(screen.queryByText("Budżet i ryzyko wydatków")).not.toBeInTheDocument();
+    expect(screen.queryByText("Kandydaci działań API")).not.toBeInTheDocument();
+    expect(screen.queryByText(/connector_configured/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No performance metrics have been collected/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Run a read-only/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Demo dla marketera")).not.toBeInTheDocument();
+    expect(screen.queryByText(/priority \d+/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("GA4: (not set) / (not set)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Merchant: feed/product issues do przeglądu")).not.toBeInTheDocument();
+    expect(screen.queryByText("Content: GSC query/page + WordPress inventory")).not.toBeInTheDocument();
   });
 
   it("connector status renders", async () => {
@@ -1228,19 +1261,18 @@ describe("WILQ dashboard", () => {
     );
   });
 
-  it("ads doctor route renders dedicated OAuth diagnostics", async () => {
+  it("ads doctor route renders live metric-backed diagnostics", async () => {
     renderApp("/ads-doctor");
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Ads Doctor" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Google Ads: OAuth blokuje live metryki")).toBeInTheDocument();
-    expect(screen.getByText("Handoff blockera Ads")).toBeInTheDocument();
-    expect(screen.getByText("Google Ads: finalny handoff blockera OAuth")).toBeInTheDocument();
+    expect(screen.getByText("Google Ads: live data dostępne")).toBeInTheDocument();
+    expect(screen.getByText(/clicks: \d+/)).toBeInTheDocument();
+    expect(screen.getAllByText(/campaign_id=123/).length).toBeGreaterThan(0);
     expect(screen.getByText("Co wolno pokazać w demo")).toBeInTheDocument();
     expect(
       screen.getByText("WILQ nie zmyśla Ads metryk bez vendor evidence.")
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/oauth_error=deleted_client/).length).toBeGreaterThan(0);
     expect(screen.getByText("Campaign overview")).toBeInTheDocument();
     expect(screen.getAllByText("Odnow Google Ads OAuth refresh token").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("link", { name: "act_1" })[0]).toHaveAttribute(
@@ -1315,6 +1347,12 @@ describe("WILQ dashboard", () => {
     renderApp("/ga4");
     await waitFor(() => expect(screen.getByRole("heading", { name: /^GA4$/ })).toBeInTheDocument());
     expect(screen.getByText("Status GA4 / Landing Quality")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
+    expect(screen.getByText(/Brak conversion-like facts oznacza/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Landing: \/oferta\//).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Źródło: google \/ cpc/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Tracking readiness/)).toBeInTheDocument();
     expect(screen.getByText("GA4: landing/source/campaign behavior")).toBeInTheDocument();
     expect(screen.getByText("GA4: tracking/conversion readiness")).toBeInTheDocument();
     expect(
@@ -1366,7 +1404,9 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument()
     );
     expect(screen.getByText("Local Visibility Focus")).toBeInTheDocument();
-    expect(screen.getByText("Localo: brakuje LOCALO_ACCESS_TOKEN")).toBeInTheDocument();
+    expect(
+      screen.getByText("Localo: MCP access działa, brak jeszcze ranking/GBP facts")
+    ).toBeInTheDocument();
 
     cleanup();
     testQueryClient.clear();

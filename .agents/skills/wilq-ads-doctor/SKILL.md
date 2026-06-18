@@ -1,25 +1,47 @@
 ---
 name: wilq-ads-doctor
-description: Inspect Google Ads diagnostics through WILQ API evidence and action contracts. Use when asked about wasted spend, search terms, campaign quality, negative keywords, quality score, ad strength, recommendations, or Ads action validation for Ekologus. Must not invent Ads metrics or bypass ActionObject validation.
+description: Diagnozuje Google Ads dla Ekologus przez WILQ API evidence i bezpieczne kontrakty ActionObject. Użyj, gdy marketer pyta "pokaż przestrzeń do polepszenia adsów", "znajdź ostatnie kampanie i ich efekty", "co pali budżet?", "sprawdź search terms", "czy dodać negative keywords?", "czemu kampania nie dowozi?", albo pyta o rekomendacje Ads, jakość kampanii, CPA/ROAS/spend, campaign review lub walidację Ads ActionObject. Nie wolno zmyślać Ads metryk ani omijać walidacji ActionObject.
 ---
 
 # WILQ Ads Doctor
 
-## Operating Rule
+## Skill Contract
 
-Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fetch live/product context from WILQ API before making marketing claims. If the API is unavailable or evidence is missing, report the blocker instead of filling gaps.
+<operating_rule>
 
-## Workflow
+Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed claimami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje evidence, zwróć blocker zamiast wypełniać luki.
 
-1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `GET /api/ads/diagnostics` before diagnosing Google Ads readiness, wasted spend, search terms, campaign quality, recommendations or negative keywords.
-4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-ads-doctor"}` and confirm `ads_diagnostics` matches the Ads diagnostics endpoint, including `blocked_handoff`.
-5. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-6. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-7. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+</operating_rule>
 
-## Allowed API Endpoints
+## Trigger Contract
+
+<triggers>
+
+- "Pokaż mi przestrzeń do polepszenia adsów w Ekologus."
+- "Znajdź ostatnie kampanie i ich efekty."
+- "Co teraz pali budżet w Google Ads?"
+- "Sprawdź search terms i przygotuj negative keywords, jeśli evidence na to pozwala."
+- "Czy możemy ocenić CPA, ROAS albo wasted spend na podstawie obecnych danych?"
+
+</triggers>
+
+## Workflow Contract
+
+<workflow>
+
+1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
+2. Uruchom `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
+3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, wasted spend, search terms, jakości kampanii, rekomendacji lub negative keywords.
+4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także `blocked_handoff`.
+5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
+6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+
+</workflow>
+
+## API Contract
+
+<allowed_endpoints>
 
 - `GET /api/health`
 - `GET /api/system/status`
@@ -37,27 +59,39 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 - `POST /api/actions/{action_id}/validate`
 - `POST /api/connectors/{connector}/refresh with mode=vendor_read only when the connector is configured and the task explicitly needs a fresh read.`
 
-## Required Evidence
+</allowed_endpoints>
 
-Required connector surfaces for this skill:
+## Evidence Contract
+
+<evidence_requirements>
+
+Wymagane powierzchnie connectorów dla tego skilla:
 
 - `google_ads`
 
-Every recommendation must include source connector IDs and evidence IDs from WILQ API. If `/api/ads/diagnostics` reports `live_data_available=false`, return `blocked_handoff`, the OAuth/API blocker and blocked claims instead of diagnosing spend, CPA, ROAS, search terms or negative keywords.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli `/api/ads/diagnostics` zwraca `live_data_available=false`, zwróć `blocked_handoff`, OAuth/API blocker i blocked claims zamiast diagnozować spend, CPA, ROAS, search terms lub negative keywords.
+
+</evidence_requirements>
 
 ## Output Contract
 
-Follow `references/output-contract.md`. Keep output short enough for an operator to act on: status, evidence, diagnosis, validated action candidates, blockers and next safe steps.
+<output_contract>
 
-Polish language contract: produce all operator-facing responses in Polish with Polish diacritics. Keep API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths and enum values unchanged.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, zwalidowani kandydaci działań, blockery i następne bezpieczne kroki.
 
-## Safety
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths i enum values zostaw bez zmian.
 
-- Never invent metrics, rankings, product counts, campaign state, content inventory, social permissions or Localo findings.
-- Never print secrets, credential paths, token values or raw vendor response bodies.
-- Never call write/apply endpoints unless WILQ API exposes the action, validation passes and the user explicitly asks for execution.
-- Never bypass ActionObject validation, evidence IDs or audit requirements.
+</output_contract>
 
-## Goal 001 Status
+## Safety Contract
 
-Goal 001 status: `/api/ads/diagnostics` is the canonical Ads Doctor view model. Google Ads OAuth currently returns the redacted blocker `oauth_error=deleted_client`, so live campaign/search-term/recommendation metrics are still unavailable until a fresh working `adwords` token is installed.
+<safety_rules>
+
+<!-- no-invented-metrics guardrail: do not invent metrics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+
+- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
+- Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
+- Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
+- Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.
+</safety_rules>

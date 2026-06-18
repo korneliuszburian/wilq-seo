@@ -51,6 +51,14 @@ def main() -> int:
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
+    request_json(
+        args.api_base,
+        "POST",
+        "/api/connectors/localo/refresh",
+        {"mode": "vendor_read", "reason": "Localo skill smoke MCP OAuth blocker proof"},
+    )
+    pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
+
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
         {
@@ -75,10 +83,6 @@ def main() -> int:
         if item.get("kind") == "blocker"
         and any(connector in REQUIRED_CONNECTORS for connector in item.get("source_connectors", []))
     ]
-    if not localo_blockers:
-        raise SystemExit("MarketingBrief does not expose a Localo blocker item")
-    if not any("LOCALO_ACCESS_TOKEN" in json.dumps(item) for item in localo_blockers):
-        raise SystemExit("Localo blocker does not name missing LOCALO_ACCESS_TOKEN")
     if any(item.get("metric_facts") for item in localo_blockers):
         raise SystemExit("Localo blocker must not expose Localo ranking metric facts")
 
@@ -100,6 +104,22 @@ def main() -> int:
             raise SystemExit("Blocked Localo OAuth probe must report access_token_present=0")
         if metric_summary.get("mcp_initialize_status") != 401:
             raise SystemExit("Blocked Localo OAuth probe must report MCP initialize 401")
+        if not localo_blockers:
+            raise SystemExit("MarketingBrief does not expose a Localo blocker item")
+        if not any("LOCALO_ACCESS_TOKEN" in json.dumps(item) for item in localo_blockers):
+            raise SystemExit("Localo blocker does not name missing LOCALO_ACCESS_TOKEN")
+    if latest_localo_run.get("status") == "completed":
+        if metric_summary.get("mcp_initialize_status") != 200:
+            raise SystemExit("Completed Localo OAuth probe must report MCP initialize 200")
+        localo_metric_facts = [
+            item
+            for item in brief_items
+            if item.get("kind") != "blocker" and item.get("metric_facts")
+        ]
+        if localo_metric_facts:
+            raise SystemExit(
+                "Localo OAuth probe is not ranking/GBP evidence and must not create metric facts"
+            )
 
     connector_results = []
     for connector in REQUIRED_CONNECTORS:

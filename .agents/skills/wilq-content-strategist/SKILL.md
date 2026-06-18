@@ -1,25 +1,46 @@
 ---
 name: wilq-content-strategist
-description: Plan content strategy from WILQ API evidence, knowledge cards, GSC, GA4, Ahrefs, Merchant and WordPress inventory. Use when asked what to create, refresh, merge, rewrite, or avoid duplicating. Must use evidence IDs, source connectors and knowledge cards, not generic content brainstorming.
+description: Planuje strategię treści Ekologus z WILQ API evidence, knowledge cards, GSC, GA4, Ahrefs, Merchant i WordPress inventory. Użyj, gdy marketer pyta "co napisać albo odświeżyć?", "zrób content plan", "przygotuj brief SEO", "jakie treści dadzą największą szansę?", "co zrobić z tym URL/query?", albo chce decyzje create/refresh/merge/rewrite/block, landing briefs, kierunek CTA/H1/H2 lub ochronę przed duplikacją. Musi używać evidence IDs, source connectors i knowledge cards, nie generycznego brainstormingu.
 ---
 
 # WILQ Content Strategist
 
-## Operating Rule
+## Skill Contract
 
-Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fetch live/product context from WILQ API before making marketing claims. If the API is unavailable or evidence is missing, report the blocker instead of filling gaps.
+<operating_rule>
 
-## Workflow
+Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tylko o prompt. Przed claimami marketingowymi pobierz kontekst z WILQ API. Jeśli API jest niedostępne albo brakuje evidence, zwróć blocker zamiast wypełniać luki.
 
-1. Read `references/output-contract.md` when producing the final response or action plan.
-2. Run `python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` when validating the skill/API path.
-3. Call `GET /api/content/diagnostics` before building a content plan or queue.
+</operating_rule>
+
+## Trigger Contract
+
+<triggers>
+
+- "Co napisać lub odświeżyć dla ekologus.pl, żeby realnie pomóc marketerowi?"
+- "Przygotuj brief SEO dla tej karty z Command Center."
+- "Zrób kolejkę refresh/create/merge/block z GSC, GA4 i WordPress."
+- "Jak przełożyć dane z Ads/Merchant/GSC na treści i CTA?"
+
+</triggers>
+
+## Workflow Contract
+
+<workflow>
+
+1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
+2. Uruchom `uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
+3. Wywołaj `GET /api/content/diagnostics` przed budową content planu lub kolejki.
 4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-content-strategist"}` and confirm embedded `content_diagnostics` exists.
-5. Use connector refresh endpoints only for explicit read-only refreshes, and only when the connector is configured.
-6. Validate any existing ActionObject through `POST /api/actions/{action_id}/validate` before recommending apply/execution.
-7. Return IDs: source connector IDs, evidence IDs, opportunity IDs and action IDs wherever the API provides them.
+5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
+6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
 
-## Allowed API Endpoints
+</workflow>
+
+## API Contract
+
+<allowed_endpoints>
 
 - `GET /api/health`
 - `GET /api/system/status`
@@ -38,9 +59,13 @@ Use this skill as a WILQ API operator workflow, not as a prompt-only report. Fet
 - `POST /api/actions/{action_id}/validate`
 - `POST /api/connectors/{connector}/refresh with mode=vendor_read only when the connector is configured and the task explicitly needs a fresh read.`
 
-## Required Evidence
+</allowed_endpoints>
 
-Required connector surfaces for this skill:
+## Evidence Contract
+
+<evidence_requirements>
+
+Wymagane powierzchnie connectorów dla tego skilla:
 
 - `google_search_console`
 - `google_analytics_4`
@@ -48,21 +73,29 @@ Required connector surfaces for this skill:
 - `wordpress_ekologus`
 - `wordpress_sklep`
 
-Every recommendation must include source connector IDs and evidence IDs from WILQ API. If evidence is aggregated, stale, missing or blocked by credentials, say that directly.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+
+</evidence_requirements>
 
 ## Output Contract
 
-Follow `references/output-contract.md`. Keep output short enough for an operator to act on: status, evidence, diagnosis, validated action candidates, blockers and next safe steps.
+<output_contract>
 
-Polish language contract: produce all operator-facing responses in Polish with Polish diacritics. Keep API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths and enum values unchanged.
+Trzymaj się `references/output-contract.md`. Odpowiedź ma być na tyle krótka, żeby operator mógł działać: status, dowody, diagnoza, zwalidowani kandydaci działań, blockery i następne bezpieczne kroki.
 
-## Safety
+Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi znakami. API IDs, connector IDs, evidence IDs, opportunity IDs, ActionObject IDs, endpoint paths i enum values zostaw bez zmian.
 
-- Never invent metrics, rankings, product counts, campaign state, content inventory, social permissions or Localo findings.
-- Never print secrets, credential paths, token values or raw vendor response bodies.
-- Never call write/apply endpoints unless WILQ API exposes the action, validation passes and the user explicitly asks for execution.
-- Never bypass ActionObject validation, evidence IDs or audit requirements.
+</output_contract>
 
-## Goal 001 Status
+## Safety Contract
 
-Goal 001 status: content strategy must use `/api/content/diagnostics` for query/page matrix, WordPress inventory protection, tactical items and `act_prepare_content_refresh_queue`.
+<safety_rules>
+
+<!-- no-invented-metrics guardrail: do not invent metrics. -->
+<!-- Polish language contract: operator-facing responses must be in Polish with Polish diacritics. -->
+
+- Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
+- Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
+- Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
+- Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.
+</safety_rules>

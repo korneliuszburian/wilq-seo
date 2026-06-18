@@ -15,6 +15,8 @@ from wilq.credentials.runtime import load_local_env, local_env_path, variable_va
 AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 DEFAULT_REDIRECT_URI = "http://127.0.0.1:8085/oauth2callback"
 REFRESH_TOKEN_ENV = "GOOGLE_ADS_REFRESH_TOKEN"  # nosec B105
+CLIENT_ID_ENV = "GOOGLE_ADS_CLIENT_ID"
+CLIENT_SECRET_ENV = "GOOGLE_ADS_CLIENT_SECRET"  # nosec B105  # pragma: allowlist secret
 
 
 def google_ads_oauth_authorization_url(
@@ -78,6 +80,8 @@ def exchange_google_ads_oauth_code(
     ]
     if missing:
         raise RuntimeError(f"Missing credential names: {', '.join(missing)}.")
+    if client_id is None or client_secret is None:
+        raise RuntimeError("Missing Google Ads OAuth client pair.")
 
     owns_client = http_client is None
     client = http_client or httpx.Client(timeout=30)
@@ -113,12 +117,16 @@ def exchange_google_ads_oauth_code(
 
     target_env = env_file or local_env_path()
     if write_env:
+        if client_secret_file:
+            _upsert_env_value(target_env, CLIENT_ID_ENV, client_id)
+            _upsert_env_value(target_env, CLIENT_SECRET_ENV, client_secret)
         _upsert_env_value(target_env, REFRESH_TOKEN_ENV, refresh_token)
 
     return {
         "status": "completed",
         "refresh_token_received": True,  # nosec B105
         "env_written": write_env,
+        "oauth_client_env_written": bool(write_env and client_secret_file),
         "env_file": str(target_env) if write_env else None,
         "env_var": REFRESH_TOKEN_ENV,
         "next_step": (

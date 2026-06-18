@@ -33,6 +33,7 @@ from wilq.schemas import (
     OpportunityDomain,
 )
 from wilq.security.redaction import redact_mapping
+from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 client = TestClient(app)
@@ -102,6 +103,7 @@ def clear_localo_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "action_candidates.sqlite3"))
     monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "action_candidates.duckdb"))
     runs = [
         ConnectorRefreshRun(
@@ -324,6 +326,7 @@ def test_localo_status_requires_api_token_and_organization_id(
     monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
     clear_localo_env(monkeypatch)
     monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
 
     response = client.get("/api/connectors/localo/status")
 
@@ -331,8 +334,12 @@ def test_localo_status_requires_api_token_and_organization_id(
     connector = response.json()
     assert connector["status"] == "missing_credentials"
     assert connector["configured"] is False
-    assert connector["required_env"] == ["LOCALO_API_TOKEN", "LOCALO_ORGANIZATION_ID"]
-    assert connector["missing_credentials"] == ["LOCALO_ORGANIZATION_ID"]
+    assert connector["required_env"] == [
+        "LOCALO_API_TOKEN",
+        "LOCALO_ORGANIZATION_ID",
+        "LOCALO_ACCESS_TOKEN",
+    ]
+    assert connector["missing_credentials"] == ["LOCALO_ACCESS_TOKEN"]
 
 
 def test_connector_status_does_not_expose_secret_values(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -674,9 +681,8 @@ def test_command_center_returns_valid_shape() -> None:
     data = response.json()
     assert data["strict_instruction"]
     assert data["connector_summary"]["total"] >= 12
-    assert "todays_moves" in data["sections"]
-    assert data["demo_script"]
-    assert data["demo_script"][0]["route"] == "/command-center"
+    assert data["sections"] == {}
+    assert data["demo_script"] == []
     assert data["action_plan"]
     assert data["action_plan"][0]["evidence_ids"]
 
@@ -723,6 +729,9 @@ def test_marketing_brief_aggregates_metric_facts_and_blockers(
     assert ahrefs_item["metric_facts"]
     blocker_items = sections["what_blocks_us"]["items"]
     assert any(item["source_connectors"] == ["google_ads"] for item in blocker_items)
+    assert all(item["source_connectors"] != ["google_sheets"] for item in blocker_items)
+    assert all(item["source_connectors"] != ["linkedin"] for item in blocker_items)
+    assert all(item["source_connectors"] != ["facebook"] for item in blocker_items)
     assert all(
         item["kind"] in {"metric", "blocker", "action", "recommendation"}
         for section in sections.values()
@@ -757,6 +766,8 @@ def test_marketing_brief_exposes_metric_backed_prepare_actions(
         assert item["evidence_ids"]
         assert item["metric_facts"]
         assert item["risk"] in {"low", "medium"}
+    assert "act_prepare_linkedin_social_drafts" not in action_items
+    assert "act_prepare_facebook_social_drafts" not in action_items
 
 
 def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
@@ -875,16 +886,29 @@ def test_command_center_exposes_polish_operator_brief(
         in brief_by_id["daily_ga4_landing_quality"]["action_ids"]
     )
     assert all(item["evidence_ids"] for item in payload["operator_brief"])
-    demo_by_id = {item["id"]: item for item in payload["demo_script"]}
-    assert "demo_start_command_center" in demo_by_id
-    assert demo_by_id["demo_start_command_center"]["route"] == "/command-center"
-    assert demo_by_id["demo_daily_merchant_feed"]["route"] == "/merchant"
-    assert "act_review_merchant_feed_issues" in demo_by_id["demo_daily_merchant_feed"]["action_ids"]
+    assert payload["demo_script"] == []
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
     assert plan_by_id["plan_review_merchant_feed_issues"]["route"] == "/merchant"
+    assert plan_by_id["plan_review_merchant_feed_issues"]["skill_id"] == (
+        "wilq-merchant-feed-operator"
+    )
+    assert "Użyj skilla wilq-merchant-feed-operator" in plan_by_id[
+        "plan_review_merchant_feed_issues"
+    ]["codex_prompt"]
+    assert plan_by_id["plan_review_merchant_feed_issues"]["codex_context_endpoint"] == (
+        "/api/codex/context-pack"
+    )
     assert plan_by_id["plan_prepare_content_refresh_queue"]["route"] == "/content-planner"
+    assert plan_by_id["plan_prepare_content_refresh_queue"]["skill_id"] == (
+        "wilq-content-strategist"
+    )
     assert plan_by_id["plan_review_ga4_landing_quality"]["route"] == "/ga4"
+    assert plan_by_id["plan_review_ga4_landing_quality"]["skill_id"] == "wilq-ga4-analyst"
+    assert "GA4:" not in plan_by_id["plan_review_ga4_landing_quality"]["why_it_matters"]
     assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["status"] == "blocked"
+    assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["skill_id"] == (
+        "wilq-ads-doctor"
+    )
     assert "spend" in plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["blocked_claims"]
 
     context_response = client.post(
@@ -894,16 +918,64 @@ def test_command_center_exposes_polish_operator_brief(
     assert context_response.status_code == 200
     context_command = context_response.json()["command_center"]
     assert context_command["operator_brief"] == payload["operator_brief"]
-    assert context_command["demo_script"] == payload["demo_script"]
+    assert context_command["demo_script"] == []
     context_plan_by_id = {item["id"]: item for item in context_command["action_plan"]}
     assert set(context_plan_by_id) == set(plan_by_id)
     for item_id, item in plan_by_id.items():
         context_item = context_plan_by_id[item_id]
         assert context_item["route"] == item["route"]
         assert context_item["status"] == item["status"]
+        assert context_item["skill_id"] == item["skill_id"]
+        assert context_item["codex_prompt"] == item["codex_prompt"]
         assert context_item["evidence_ids"] == item["evidence_ids"]
         assert context_item["action_ids"] == item["action_ids"]
     assert context_command["primary_next_step"] == payload["primary_next_step"]
+
+
+def test_command_center_treats_localo_mcp_initialize_as_access_ready(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "localo_command.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "localo_command.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+    monkeypatch.setenv("LOCALO_ACCESS_TOKEN", "localo-access-test")
+    localo_run = ConnectorRefreshRun(
+        id="refresh_localo_access_ready_test",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_localo_access_ready_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "api": "localo_mcp_oauth_probe",
+            "mcp_initialize_status": 200,
+            "authorization_code_supported": 1,
+            "pkce_s256_supported": 1,
+            "access_token_present": 1,
+        },
+        summary="Localo MCP initialize completed with local OAuth access token.",
+    )
+    local_state_store().save_connector_refresh_run(localo_run)
+    metric_store().status()
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
+    localo_brief = brief_by_id["daily_localo_readiness"]
+    assert localo_brief["status"] == "ready"
+    assert "MCP access działa" in localo_brief["title"]
+    assert localo_brief["metric_tiles"]["MCP access"] == 1
+    assert localo_brief["metric_tiles"]["ranking facts"] == 0
+    plan_by_id = {item["id"]: item for item in payload["action_plan"]}
+    assert "plan_localo_access_ready_wait_for_visibility_facts" not in plan_by_id
+    assert "plan_finish_localo_access_before_local_visibility" not in plan_by_id
 
 
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
@@ -1032,6 +1104,8 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
     assert "ads_search_terms_v1" in google_ads["expert_rule_ids"]
     assert google_ads["is_fixture"] is False
     assert "No performance metrics" not in google_ads["title"]
+    assert "connector_configured" not in json.dumps(google_ads)
+    assert "Run a read-only" not in json.dumps(google_ads)
 
 
 def test_actions_reference_registered_evidence_ids() -> None:
@@ -1168,6 +1242,101 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert "refresh-token-test" not in serialized
 
 
+def test_google_ads_vendor_read_discovers_child_accounts_for_manager_customer(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", "developer-token-test")
+    monkeypatch.setenv("GOOGLE_ADS_CLIENT_ID", "client-id-test")
+    monkeypatch.setenv(
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "client-secret-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv(
+        "GOOGLE_ADS_REFRESH_TOKEN",
+        "refresh-token-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv("GOOGLE_ADS_CUSTOMER_ID", "596-895-8639")
+    monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "596-895-8639")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "oauth2.googleapis.com":
+            return httpx.Response(200, json={"access_token": "ya29.mocktoken"})
+        body = request.content.decode()
+        if "FROM customer_client" in body:
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "customerClient": {
+                                    "clientCustomer": "customers/1112223333",
+                                    "manager": False,
+                                    "level": "1",
+                                    "status": "ENABLED",
+                                }
+                            }
+                        ]
+                    }
+                ],
+                request=request,
+            )
+        return httpx.Response(
+            400,
+            json=[
+                {
+                    "error": {
+                        "code": 400,
+                        "status": "INVALID_ARGUMENT",
+                        "details": [
+                            {
+                                "requestId": "safe-request-id",
+                                "errors": [
+                                    {
+                                        "errorCode": {
+                                            "queryError": "REQUESTED_METRICS_FOR_MANAGER"
+                                        }
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                }
+            ],
+            request=request,
+        )
+
+    result = refresh_google_ads_campaign_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    serialized = json.dumps(
+        {
+            "summary": result.summary,
+            "errors": result.errors,
+            "metric_summary": result.metric_summary,
+            "metric_facts": [
+                {"name": fact.name, "value": fact.value, "dimensions": fact.dimensions}
+                for fact in result.metric_facts
+            ],
+        }
+    )
+    assert result.status == ConnectorRefreshStatus.blocked
+    assert result.external_call_attempted is True
+    assert result.vendor_data_collected is True
+    assert result.metric_summary["customer_client_count"] == 1
+    assert result.metric_summary["non_manager_customer_client_count"] == 1
+    assert result.metric_facts[0].name == "customer_client_available"
+    assert result.metric_facts[0].dimensions["child_customer_id"] == "1112223333"
+    assert "REQUESTED_METRICS_FOR_MANAGER" in serialized
+    assert "client-secret-test" not in serialized
+    assert "refresh-token-test" not in serialized
+
+
 def test_google_ads_vendor_read_reports_sanitized_oauth_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1221,6 +1390,132 @@ def test_google_ads_vendor_read_reports_sanitized_oauth_error(
     assert "Raw OAuth detail" not in serialized
     assert "refresh-token-test" not in serialized
     assert "client-secret-test" not in serialized
+
+
+def test_google_ads_vendor_read_reports_sanitized_search_stream_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", "developer-token-test")
+    monkeypatch.setenv("GOOGLE_ADS_CLIENT_ID", "client-id-test")
+    monkeypatch.setenv(
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "client-secret-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv(
+        "GOOGLE_ADS_REFRESH_TOKEN",
+        "refresh-token-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv("GOOGLE_ADS_CUSTOMER_ID", "123-456-7890")
+    monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "999-888-7777")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "oauth2.googleapis.com":
+            return httpx.Response(200, json={"access_token": "ya29.mocktoken"})
+        return httpx.Response(
+            400,
+            json={
+                "error": {
+                    "code": 400,
+                    "status": "INVALID_ARGUMENT",
+                    "details": [
+                        {
+                            "requestId": "safe-request-id",
+                            "errors": [
+                                {
+                                    "errorCode": {"queryError": "BAD_FIELD_NAME"},
+                                    "message": (
+                                        "Raw detail mentioning refresh-token-test and "
+                                        "client-secret-test."
+                                    ),
+                                }
+                            ],
+                        }
+                    ],
+                }
+            },
+            request=request,
+        )
+
+    result = refresh_google_ads_campaign_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    serialized = json.dumps({"summary": result.summary, "errors": result.errors})
+    assert result.status == ConnectorRefreshStatus.failed
+    assert "api_code=400" in serialized
+    assert "api_status=INVALID_ARGUMENT" in serialized
+    assert "request_id=safe-request-id" in serialized
+    assert "ads_error=queryError.BAD_FIELD_NAME" in serialized
+    assert "Raw detail" not in serialized
+    assert "refresh-token-test" not in serialized
+    assert "client-secret-test" not in serialized
+
+
+def test_google_ads_vendor_read_reports_sanitized_search_stream_list_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_ADS_DEVELOPER_TOKEN", "developer-token-test")
+    monkeypatch.setenv("GOOGLE_ADS_CLIENT_ID", "client-id-test")
+    monkeypatch.setenv(
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "client-secret-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv(
+        "GOOGLE_ADS_REFRESH_TOKEN",
+        "refresh-token-test",  # pragma: allowlist secret
+    )
+    monkeypatch.setenv("GOOGLE_ADS_CUSTOMER_ID", "123-456-7890")
+    monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "999-888-7777")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "oauth2.googleapis.com":
+            return httpx.Response(200, json={"access_token": "ya29.mocktoken"})
+        return httpx.Response(
+            400,
+            json=[
+                {
+                    "error": {
+                        "code": 400,
+                        "status": "INVALID_ARGUMENT",
+                        "details": [
+                            {
+                                "requestId": "safe-request-id",
+                                "errors": [
+                                    {
+                                        "errorCode": {
+                                            "authorizationError": "USER_PERMISSION_DENIED"
+                                        },
+                                        "message": "Raw detail mentioning refresh-token-test.",
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                }
+            ],
+            request=request,
+        )
+
+    result = refresh_google_ads_campaign_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    serialized = json.dumps({"summary": result.summary, "errors": result.errors})
+    assert result.status == ConnectorRefreshStatus.failed
+    assert "api_code=400" in serialized
+    assert "api_status=INVALID_ARGUMENT" in serialized
+    assert "request_id=safe-request-id" in serialized
+    assert "ads_error=authorizationError.USER_PERMISSION_DENIED" in serialized
+    assert "Raw detail" not in serialized
+    assert "refresh-token-test" not in serialized
 
 
 def test_google_ads_vendor_read_endpoint_persists_metric_summary(
@@ -1442,7 +1737,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         and fact["dimensions"].get("campaign_name") == "Brand Search"
         for fact in campaign_section["metric_facts"]
     )
-    assert "act_configure_google_ads_env" in payload["action_ids"]
+    assert "act_configure_google_ads_env" not in payload["action_ids"]
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(
@@ -2161,6 +2456,7 @@ def test_localo_vendor_read_routes_through_mcp_probe(
     clear_localo_env(monkeypatch)
     monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
     monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+    monkeypatch.setenv("LOCALO_ACCESS_TOKEN", "localo-access-test")
 
     monkeypatch.setattr(
         "wilq.connectors.refresh.refresh_localo_visibility_summary",
@@ -2174,7 +2470,7 @@ def test_localo_vendor_read_routes_through_mcp_probe(
                 "mcp_initialize_status": 401,
                 "authorization_code_supported": 1,
                 "pkce_s256_supported": 1,
-                "access_token_present": 0,
+                "access_token_present": 1,
             },
             errors=["Localo MCP OAuth authorization is incomplete."],
         ),
@@ -2191,7 +2487,7 @@ def test_localo_vendor_read_routes_through_mcp_probe(
     assert run["external_call_attempted"] is True
     assert run["vendor_data_collected"] is False
     assert run["metric_summary"]["api"] == "localo_mcp_oauth_probe"
-    assert run["metric_summary"]["access_token_present"] == 0
+    assert run["metric_summary"]["access_token_present"] == 1
 
 
 def test_wordpress_vendor_read_uses_rest_content_inventory(
@@ -2467,7 +2763,12 @@ def test_codex_context_pack_contains_no_metric_invention_instruction(
     assert "sk-supersecretvalue1234567890" not in serialized
 
 
-def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
+def test_codex_context_pack_embeds_marketing_brief_contract(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "context_pack.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "context_pack.duckdb"))
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     brief = brief_response.json()
@@ -2510,6 +2811,35 @@ def test_codex_context_pack_embeds_marketing_brief_contract() -> None:
     assert context_payload["merchant_diagnostics"]["action_ids"] == merchant_diagnostics[
         "action_ids"
     ]
+
+
+def test_codex_context_pack_scopes_content_strategist_payload() -> None:
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-content-strategist"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-content-strategist"
+    assert "content_diagnostics" in data
+    assert "ads_diagnostics" not in data
+    assert "merchant_diagnostics" not in data
+    assert "command_center" not in data
+    assert len(data["evidence_summaries"]) <= 80
+    connector_ids = {connector["id"] for connector in data["connector_status"]}
+    assert connector_ids.issubset(
+        {
+            "google_search_console",
+            "google_analytics_4",
+            "ahrefs",
+            "wordpress_ekologus",
+            "wordpress_sklep",
+        }
+    )
+    assert data["content_diagnostics"]["language"] == "pl-PL"
+    assert data["content_diagnostics"]["evidence_ids"]
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

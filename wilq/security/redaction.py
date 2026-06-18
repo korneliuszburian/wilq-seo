@@ -33,6 +33,15 @@ SAFE_IDENTIFIER_KEYS = {
     "workflow_id",
     "workflow_run_id",
 }
+SAFE_SECRET_TELEMETRY_KEYS = {
+    "access_token_present",
+    "access_token_received",
+    "client_secret_configured",
+    "client_secret_file_used",
+    "oauth_client_env_written",
+    "refresh_token_received",
+    "secrets_redacted",
+}
 
 
 def is_secret_key(key: str) -> bool:
@@ -61,7 +70,9 @@ def _looks_like_env_name(value: str) -> bool:
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:
     redacted: dict[str, Any] = {}
     for key, value in data.items():
-        if key in SAFE_IDENTIFIER_KEYS:
+        if key in SAFE_IDENTIFIER_KEYS or (
+            key in SAFE_SECRET_TELEMETRY_KEYS and isinstance(value, bool | int)
+        ):
             redacted[key] = value
         elif is_secret_key(key):
             redacted[key] = "[REDACTED]" if value else value

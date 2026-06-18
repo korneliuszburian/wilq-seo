@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from wilq.actions.payloads import validate_action_payload
+from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
@@ -14,6 +15,7 @@ from wilq.schemas import (
     ActionStatus,
     ActionValidationResult,
     AuditEvent,
+    ConnectorRefreshStatus,
     MetricFact,
     OpportunityDomain,
 )
@@ -93,11 +95,24 @@ ACTION_METRIC_FACT_LIMIT = 120
 
 def list_actions() -> list[ActionObject]:
     actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
+    if _google_ads_live_data_available():
+        actions.pop("act_configure_google_ads_env", None)
     return list(actions.values())
 
 
 def get_action(action_id: str) -> ActionObject | None:
     return {**_STATIC_ACTIONS, **seed_metric_action_candidates()}.get(action_id)
+
+
+def _google_ads_live_data_available() -> bool:
+    latest_runs = list_connector_refresh_runs(connector_id="google_ads")
+    if not latest_runs:
+        return False
+    latest_run = latest_runs[0]
+    return (
+        latest_run.status == ConnectorRefreshStatus.completed
+        and latest_run.vendor_data_collected
+    )
 
 
 def seed_metric_action_candidates() -> dict[str, ActionObject]:
@@ -253,7 +268,31 @@ def _action_metric_facts() -> list[MetricFact]:
             )
             if not _is_probe_only_fact(fact)
         )
-    return facts
+    return _latest_metric_facts_by_identity(facts)
+
+
+def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
+    latest_by_key: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
+    for fact in metric_facts:
+        key = (
+            fact.source_connector,
+            fact.name,
+            tuple(sorted(fact.dimensions.items())),
+        )
+        current = latest_by_key.get(key)
+        if current is None or _metric_fact_sort_time(fact) > _metric_fact_sort_time(current):
+            latest_by_key[key] = fact
+    return sorted(
+        latest_by_key.values(),
+        key=lambda fact: _metric_fact_sort_time(fact),
+        reverse=True,
+    )
+
+
+def _metric_fact_sort_time(fact: MetricFact) -> str:
+    if fact.collected_at is None:
+        return ""
+    return fact.collected_at.isoformat()
 
 
 def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObject]:

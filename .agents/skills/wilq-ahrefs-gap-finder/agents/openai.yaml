@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Ahrefs Gap Finder"
-  short_description: "Ahrefs opportunity gap workflow"
-  default_prompt: "Use $wilq-ahrefs-gap-finder to inspect Ahrefs evidence and identify defensible gap opportunities."
+  short_description: "Wyszukuje SEO/content/backlink gaps z Ahrefs evidence"
+  default_prompt: "Użyj $wilq-ahrefs-gap-finder: sprawdź, gdzie konkurencja ma przewagę SEO i czy Ahrefs potwierdza content gap."

@@ -10,27 +10,40 @@ test.describe("WILQ dashboard API-backed smoke", () => {
       }
     });
 
+    const commandCenterResponse = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/dashboard/command-center" && response.status() === 200;
+    });
     await page.goto("/command-center");
+    await commandCenterResponse;
 
     await expect(page.getByRole("heading", { name: "Command Center" })).toBeVisible();
     await expect(
       page.getByText("WILQ pokazuje tylko metryki z API/evidence.").first()
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dzisiejszy panel operatora" })).toBeVisible();
-    await expect(page.getByText("Merchant: feed/product issues do przeglądu")).toBeVisible();
-    await expect(page.getByText("Content: GSC query/page + WordPress inventory")).toBeVisible();
-    await expect(page.getByText("GA4: landing/source/campaign quality review")).toBeVisible();
-    await expect(page.getByText("Ads: blocker OAuth przed analizą spendu")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toBeVisible();
+    await expect(page.getByText("Merchant: feed/product issues do przeglądu")).toHaveCount(0);
+    await expect(page.getByText("Content: GSC query/page + WordPress inventory")).toHaveCount(0);
+    await expect(page.getByText("GA4: landing/source/campaign quality review")).toHaveCount(0);
+    await expect(page.getByText("Ads: live campaign metrics dostępne")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toBeVisible();
-    await expect(page.getByText("Kontekst").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Realne metric facts zapisane lokalnie" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toHaveCount(0);
+    await expect(page.getByText("Kontekst: /api/codex/context-pack").first()).toBeVisible();
+    await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { name: /GSC: .* ->/ }).first()
+      page.getByRole("heading", { name: "Ułóż kolejkę refresh/merge/create dla treści SEO" })
     ).toBeVisible();
+    await expect(page.getByText("Skill: wilq-content-strategist")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toHaveCount(0);
+    await expect(page.getByText("connector_configured")).toHaveCount(0);
+    await expect(page.getByText("No performance metrics have been collected")).toHaveCount(0);
+    await expect(page.getByText("Run a read-only")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
+    await expect(page.getByText(/priority \d+/i)).toHaveCount(0);
+    await expect(page.getByText("GA4: (not set) / (not set)")).toHaveCount(0);
 
     await expect
       .poll(() => apiResponses.includes("200 /api/dashboard/command-center"))
@@ -38,15 +51,16 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     expect(apiResponses.every((entry) => entry.startsWith("200 "))).toBe(true);
   });
 
-  test("ads doctor route exposes dedicated OAuth diagnostics", async ({ page }) => {
+  test("ads doctor route exposes live metric-backed diagnostics", async ({ page }) => {
     await page.goto("/ads-doctor");
 
     await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
-    await expect(page.getByText("Google Ads: OAuth blokuje live metryki")).toBeVisible();
-    await expect(page.getByText(/oauth_error=/).first()).toBeVisible();
-    await expect(page.getByText("Campaign overview")).toBeVisible();
-    await expect(page.getByRole("link", { name: "act_configure_google_ads_env" }).first()).toBeVisible();
+    await expect(page.getByText("Google Ads: live data dostępne")).toBeVisible();
+    await expect(page.getByText(/clicks:/).first()).toBeVisible();
+    await expect(page.getByText("Google Ads: live read gotowy do kolejnego kroku")).toBeVisible();
+    await expect(page.getByText("Google Ads connector ma live metric facts.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "ev_connector_google_ads_status" }).first()).toBeVisible();
   });
 
   test("ga4 route exposes metric-backed workflow focus", async ({ page }) => {
@@ -81,14 +95,14 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   });
 
   test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
-    await page.goto("/actions/act_configure_google_ads_env");
+    await page.goto("/actions/act_review_merchant_feed_issues");
 
     await expect(
-      page.getByRole("heading", { name: "Odnow Google Ads OAuth refresh token" })
+      page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Evidence And Diagnosis" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Payload Preview" })).toBeVisible();
-    await expect(page.getByText("Evidence: ev_connector_google_ads_status")).toBeVisible();
+    await expect(page.getByText(/Evidence: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
     await expect(page.getByText("Jawne potwierdzenie apply")).toBeVisible();
     await page.getByRole("button", { name: "Potwierdź apply" }).click();
     await expect(page.getByText("Apply: blocked")).toBeVisible();
@@ -126,15 +140,14 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Source connector: google_merchant_center")).toBeVisible();
   });
 
-  test("localo route exposes OAuth blocker without invented local metrics", async ({ page }) => {
+  test("localo route exposes access readiness without invented local metrics", async ({ page }) => {
     await page.goto("/localo");
 
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Local Visibility Focus" })).toBeVisible();
-    await expect(page.getByText(/LOCALO_ACCESS_TOKEN/).first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "ev_connector_localo_status" }).first()).toBeVisible();
+    await expect(page.getByText(/Brak konkretnych Localo ranking\/GBP facts/)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Local Visibility Safety Gate" })).toBeVisible();
-    await expect(page.getByText(/Brak LOCALO_ACCESS_TOKEN jest blockerem/)).toBeVisible();
+    await expect(page.getByText(/MCP initialize=200 potwierdza access/)).toBeVisible();
+    await expect(page.getByText(/LOCALO_ACCESS_TOKEN/)).toHaveCount(0);
     await expect(page.getByText(/local ranking/i)).toHaveCount(0);
     await expect(page.getByText(/pozycja lokalna/i)).toHaveCount(0);
   });

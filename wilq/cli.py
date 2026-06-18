@@ -12,6 +12,11 @@ from wilq.connectors.google_ads.oauth import (
     exchange_google_ads_oauth_code,
     google_ads_oauth_authorization_url,
 )
+from wilq.connectors.localo.oauth import (
+    DEFAULT_LOCALO_REDIRECT_URI,
+    exchange_localo_oauth_code,
+    localo_oauth_authorization_url,
+)
 from wilq.connectors.refresh import run_connector_refresh
 from wilq.connectors.registry import list_connector_statuses
 from wilq.credentials.runtime import credential_runtime_status
@@ -27,10 +32,12 @@ connectors_app = typer.Typer(help="Connector readiness and refresh commands.")
 metrics_app = typer.Typer(help="DuckDB analytics metric store commands.")
 jobs_app = typer.Typer(help="Local job orchestration commands.")
 google_ads_app = typer.Typer(help="Google Ads OAuth and operator setup commands.")
+localo_app = typer.Typer(help="Localo MCP OAuth setup commands.")
 app.add_typer(connectors_app, name="connectors")
 app.add_typer(metrics_app, name="metrics")
 app.add_typer(jobs_app, name="jobs")
 app.add_typer(google_ads_app, name="google-ads")
+app.add_typer(localo_app, name="localo")
 
 
 @app.command()
@@ -172,6 +179,52 @@ def google_ads_oauth_exchange(
             redirect_uri=redirect_uri,
             write_env=write_env,
             client_secret_file=client_secret_file,
+        )
+    )
+
+
+@localo_app.command("oauth-url")
+def localo_oauth_url(
+    redirect_uri: Annotated[
+        str,
+        typer.Option("--redirect-uri", help="Loopback redirect URI for Localo OAuth."),
+    ] = DEFAULT_LOCALO_REDIRECT_URI,
+) -> None:
+    """Print a Localo MCP OAuth consent URL without credential values."""
+    _print_json(localo_oauth_authorization_url(redirect_uri=redirect_uri))
+
+
+@localo_app.command("oauth-exchange")
+def localo_oauth_exchange(
+    code_verifier: Annotated[
+        str,
+        typer.Option("--code-verifier", help="PKCE code_verifier from localo oauth-url."),
+    ],
+    redirect_url: Annotated[
+        str | None,
+        typer.Option("--redirect-url", help="Final localhost redirect URL containing ?code=."),
+    ] = None,
+    code: Annotated[
+        str | None,
+        typer.Option("--code", help="OAuth authorization code if copied separately."),
+    ] = None,
+    redirect_uri: Annotated[
+        str,
+        typer.Option("--redirect-uri", help="Same redirect URI used by oauth-url."),
+    ] = DEFAULT_LOCALO_REDIRECT_URI,
+    write_env: Annotated[
+        bool,
+        typer.Option("--write-env", help="Write LOCALO_ACCESS_TOKEN to local .env."),
+    ] = False,
+) -> None:
+    """Exchange Localo OAuth code and optionally update local .env."""
+    _print_json(
+        exchange_localo_oauth_code(
+            code=code,
+            redirect_url=redirect_url,
+            redirect_uri=redirect_uri,
+            code_verifier=code_verifier,
+            write_env=write_env,
         )
     )
 

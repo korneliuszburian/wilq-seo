@@ -1,10 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+verify_tmp_dir="$(mktemp -d)"
+skill_api_pid=""
+cleanup() {
+  if [ -n "$skill_api_pid" ]; then
+    kill "$skill_api_pid" >/dev/null 2>&1 || true
+  fi
+  rm -rf "$verify_tmp_dir"
+}
+trap cleanup EXIT
+
+verify_state_db="$verify_tmp_dir/wilq-verify.sqlite3"
+verify_metric_db="$verify_tmp_dir/wilq-verify.duckdb"
+skill_api_port="$(
+  uv run python - <<'PY'
+import socket
+
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+    print(sock.getsockname()[1])
+PY
+)"
+
 scripts/quality.sh
 scripts/security.sh
 
-uv run python - <<'PY'
+WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" uv run python - <<'PY'
 from fastapi.testclient import TestClient
 from apps.api.wilq_api.main import app
 
@@ -23,8 +45,8 @@ for path in [
 print("API smoke passed")
 PY
 
-uv run wilq jobs status >/dev/null
-uv run wilq jobs list >/dev/null
+WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" uv run wilq jobs status >/dev/null
+WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" uv run wilq jobs list >/dev/null
 
 uv run python - <<'PY'
 from pathlib import Path
@@ -66,26 +88,23 @@ for name in sorted(expected):
 print("Skill structure smoke passed")
 PY
 
-skill_api_base="http://127.0.0.1:8765"
-skill_api_pid=""
+skill_api_base="http://127.0.0.1:${skill_api_port}"
 skill_api_log="${TMPDIR:-/tmp}/wilq-skill-api.log"
-if ! curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null 2>&1; then
-  .venv/bin/uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port 8765 >"$skill_api_log" 2>&1 &
-  skill_api_pid="$!"
-  trap 'if [ -n "$skill_api_pid" ]; then kill "$skill_api_pid" >/dev/null 2>&1 || true; fi' EXIT
-  for _ in $(seq 1 30); do
-    if curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null 2>&1; then
-      break
-    fi
-    sleep 0.5
-  done
-fi
+WILQ_STATE_DB="$verify_state_db" WILQ_METRIC_DB="$verify_metric_db" \
+  .venv/bin/uvicorn apps.api.wilq_api.main:app --host 127.0.0.1 --port "$skill_api_port" >"$skill_api_log" 2>&1 &
+skill_api_pid="$!"
+for _ in $(seq 1 30); do
+  if curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 0.5
+done
 curl -fsS --max-time 2 "$skill_api_base/api/health" >/dev/null
 scripts/eval_marketing_brief.sh --api-base "$skill_api_base" >/dev/null
 API_BASE="$skill_api_base" scripts/eval_action_validation.sh >/dev/null
 uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base "$skill_api_base" >/dev/null
 for skill_script in .agents/skills/wilq-*/scripts/smoke_skill_contract.py; do
-  uv run python "$skill_script" --api-base "$skill_api_base" >/dev/null
+  timeout 90s uv run python "$skill_script" --api-base "$skill_api_base" >/dev/null
 done
 echo "Skill API smoke passed"
 

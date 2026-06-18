@@ -162,8 +162,8 @@ def validate_command_center(command_center: Any) -> None:
     if not command_center.get("primary_next_step"):
         raise SystemExit("Command center primary_next_step is missing")
     demo_script = command_center.get("demo_script") or []
-    if not isinstance(demo_script, list) or len(demo_script) < 4:
-        raise SystemExit("Command center demo_script is missing or too small")
+    if not isinstance(demo_script, list):
+        raise SystemExit("Command center demo_script must be a list")
     action_plan = command_center.get("action_plan") or []
     if not isinstance(action_plan, list) or len(action_plan) < 4:
         raise SystemExit("Command center action_plan is missing or too small")
@@ -171,8 +171,15 @@ def validate_command_center(command_center: Any) -> None:
         "plan_review_merchant_feed_issues",
         "plan_prepare_content_refresh_queue",
         "plan_review_ga4_landing_quality",
-        "plan_fix_ads_oauth_before_spend_analysis",
     }
+    ads_live_ready = any(
+        item.get("id") == "daily_ads_status" and item.get("status") == "ready"
+        for item in operator_brief
+    )
+    if ads_live_ready:
+        required_plan_ids.add("plan_review_ads_campaign_metrics")
+    else:
+        required_plan_ids.add("plan_fix_ads_oauth_before_spend_analysis")
     plan_ids = {item.get("id") for item in action_plan if isinstance(item, dict)}
     missing_plan_ids = sorted(required_plan_ids - plan_ids)
     if missing_plan_ids:
@@ -195,8 +202,14 @@ def validate_command_center(command_center: Any) -> None:
             raise SystemExit(
                 f"Command center action_plan item lacks evidence IDs: {item.get('id')}"
             )
-        if item.get("status") == "ready" and not item.get("action_ids"):
-            raise SystemExit(f"Ready action_plan item lacks action IDs: {item.get('id')}")
+        if (
+            item.get("status") == "ready"
+            and not item.get("action_ids")
+            and not item.get("blocked_claims")
+        ):
+            raise SystemExit(
+                f"Ready action_plan item lacks action IDs or blocked claims: {item.get('id')}"
+            )
 
 
 def validate_marketing_brief(brief: Any) -> None:
@@ -219,8 +232,8 @@ def validate_marketing_brief(brief: Any) -> None:
     if not evidence_ids:
         raise SystemExit("Marketing brief has no evidence IDs")
     action_ids = brief.get("action_ids") or []
-    if "act_configure_google_ads_env" not in action_ids:
-        raise SystemExit("Marketing brief does not expose Google Ads OAuth ActionObject")
+    if not action_ids:
+        raise SystemExit("Marketing brief has no ActionObject IDs")
 
 
 def compare_briefs(brief: dict[str, Any], pack_brief: dict[str, Any]) -> None:

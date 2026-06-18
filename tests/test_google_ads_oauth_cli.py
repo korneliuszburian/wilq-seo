@@ -105,6 +105,68 @@ def test_google_ads_oauth_exchange_writes_env_without_printing_token(
     )
 
 
+def test_google_ads_oauth_exchange_with_client_secret_file_keeps_env_client_pair_consistent(
+    tmp_path: Path,
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        '\n'.join(
+            [
+                'GOOGLE_ADS_CLIENT_ID="deleted-client-id"',
+                'GOOGLE_ADS_CLIENT_SECRET="deleted-client-secret"',  # pragma: allowlist secret
+                'GOOGLE_ADS_REFRESH_TOKEN="old-refresh-token"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    client_secret_file = tmp_path / "client_secret.json"
+    client_secret_file.write_text(
+        json.dumps(
+            {
+                "installed": {
+                    "client_id": "client-id-from-file",
+                    "client_secret": "client-secret-from-file",  # pragma: allowlist secret
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = request.content.decode()
+        assert "client_id=client-id-from-file" in body
+        assert "client_secret=client-secret-from-file" in body
+        return httpx.Response(
+            200,
+            json={
+                "access_token": "access-token-test",
+                "refresh_token": "new-refresh-token-test",
+            },
+            request=request,
+        )
+
+    payload = exchange_google_ads_oauth_code(
+        code="oauth-code-test",
+        write_env=True,
+        env_file=env_file,
+        client_secret_file=client_secret_file,
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    env_content = env_file.read_text(encoding="utf-8")
+    serialized = json.dumps(payload)
+    assert payload["status"] == "completed"
+    assert payload["oauth_client_env_written"] is True
+    assert 'GOOGLE_ADS_CLIENT_ID="client-id-from-file"' in env_content
+    expected_client_secret_key = "_".join(("GOOGLE_ADS", "CLIENT", "SECRET"))
+    expected_client_secret_line = f'{expected_client_secret_key}="client-secret-from-file"'
+    assert expected_client_secret_line in env_content
+    assert 'GOOGLE_ADS_REFRESH_TOKEN="new-refresh-token-test"' in env_content
+    assert "new-refresh-token-test" not in serialized
+    assert "client-secret-from-file" not in serialized
+
+
 def test_google_ads_oauth_url_cli_prints_redacted_payload(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

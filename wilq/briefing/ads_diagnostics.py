@@ -198,8 +198,8 @@ def _search_terms_section(
             "negative keyword candidates."
         ),
         next_step=(
-            "Po naprawie OAuth dodaj query contract dla search_term_view i walidację "
-            "kandydatów negative keywords jako prepare-only ActionObject."
+            "Dodaj query contract dla search_term_view i walidację kandydatów "
+            "negative keywords jako prepare-only ActionObject."
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=evidence_ids,

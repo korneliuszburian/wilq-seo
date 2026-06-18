@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Custom Segments"
-  short_description: "Custom audience segment workflow"
-  default_prompt: "Use $wilq-custom-segments to propose evidence-backed Google Ads custom segment candidates."
+  short_description: "Tworzy custom segments tylko z realnych źródeł"
+  default_prompt: "Użyj $wilq-custom-segments: zaproponuj custom segments dla Ekologus wyłącznie z search terms, Keyword Planner albo WILQ evidence."

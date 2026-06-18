@@ -41,6 +41,17 @@ WHERE segments.date DURING LAST_7_DAYS
   AND campaign.status != 'REMOVED'
 """.strip()
 
+CUSTOMER_CLIENT_QUERY = """
+SELECT
+  customer_client.client_customer,
+  customer_client.manager,
+  customer_client.level,
+  customer_client.status
+FROM customer_client
+WHERE customer_client.level <= 1
+LIMIT 50
+""".strip()
+
 
 def refresh_google_ads_campaign_summary(
     request: ConnectorRefreshRequest,
@@ -81,6 +92,36 @@ def refresh_google_ads_campaign_summary(
                 access_token,
             )
         except httpx.HTTPStatusError as exc:
+            detail = _sanitized_http_error_detail(exc.response)
+            if detail and "ads_error=queryError.REQUESTED_METRICS_FOR_MANAGER" in detail:
+                try:
+                    metric_summary, metric_facts = _fetch_customer_client_summary(
+                        client,
+                        credentials,
+                        access_token,
+                        blocked_detail=detail,
+                    )
+                except httpx.HTTPStatusError as fallback_exc:
+                    return _http_failure_result("customerClient discovery", fallback_exc)
+                except httpx.HTTPError as fallback_exc:
+                    return _transport_failure_result("customerClient discovery", fallback_exc)
+                return VendorReadResult(
+                    status=ConnectorRefreshStatus.blocked,
+                    summary=(
+                        "Google Ads OAuth and manager access are working, but campaign metrics "
+                        "were requested on a manager account. Set GOOGLE_ADS_CUSTOMER_ID to a "
+                        "non-manager child account and keep GOOGLE_ADS_LOGIN_CUSTOMER_ID as the "
+                        "manager account."
+                    ),
+                    external_call_attempted=True,
+                    vendor_data_collected=True,
+                    metric_summary=metric_summary,
+                    metric_facts=metric_facts,
+                    errors=[
+                        "Google Ads manager account cannot return campaign metrics "
+                        f"({detail})."
+                    ],
+                )
             return _http_failure_result("searchStream", exc)
         except httpx.HTTPError as exc:
             return _transport_failure_result("searchStream", exc)
@@ -127,11 +168,23 @@ def _sanitized_http_error_detail(response: httpx.Response) -> str | None:
         payload = response.json()
     except ValueError:
         return None
-    if not isinstance(payload, dict):
-        return None
-
-    error = payload.get("error")
     details: list[str] = []
+    if isinstance(payload, list):
+        for item in payload:
+            if isinstance(item, dict):
+                _append_error_payload_details(details, item.get("error"))
+            if details:
+                break
+    elif isinstance(payload, dict):
+        error = payload.get("error")
+        _append_error_payload_details(details, error)
+
+    if not details:
+        return None
+    return ", ".join(details)
+
+
+def _append_error_payload_details(details: list[str], error: Any) -> None:
     if isinstance(error, str):
         _append_safe_detail(details, "oauth_error", error)
     elif isinstance(error, dict):
@@ -141,10 +194,39 @@ def _sanitized_http_error_detail(response: httpx.Response) -> str | None:
             details.append(f"api_code={code}")
         if isinstance(status, str):
             _append_safe_detail(details, "api_status", status)
+        nested_details = error.get("details")
+        if isinstance(nested_details, list):
+            for nested_detail in nested_details:
+                if not isinstance(nested_detail, dict):
+                    continue
+                for key in ("requestId", "request_id"):
+                    value = nested_detail.get(key)
+                    if isinstance(value, str):
+                        _append_safe_detail(details, "request_id", value)
+                        break
+                errors = nested_detail.get("errors")
+                if isinstance(errors, list):
+                    _append_google_ads_error_details(details, errors)
+                if details:
+                    break
 
-    if not details:
-        return None
-    return ", ".join(details)
+
+def _append_google_ads_error_details(
+    details: list[str],
+    errors: list[Any],
+) -> None:
+    for google_ads_error in errors:
+        if not isinstance(google_ads_error, dict):
+            continue
+        error_code = google_ads_error.get("errorCode")
+        if isinstance(error_code, dict):
+            for category, code in error_code.items():
+                if isinstance(category, str) and isinstance(code, str):
+                    _append_safe_detail(details, "ads_error", f"{category}.{code}")
+                    return
+        message = google_ads_error.get("message")
+        if isinstance(message, str):
+            _append_safe_detail(details, "ads_message", message)
 
 
 def _append_safe_detail(details: list[str], name: str, value: str) -> None:
@@ -214,6 +296,78 @@ def _fetch_campaign_summary(
     return _summarize_search_stream_response(response.json())
 
 
+def _fetch_customer_client_summary(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+    *,
+    blocked_detail: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    customer_id = credentials["customer_id"]
+    response = client.post(
+        f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+        f"{customer_id}/googleAds:searchStream",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "developer-token": str(credentials["developer_token"]),
+            "login-customer-id": str(credentials["login_customer_id"]),
+            "Content-Type": "application/json",
+        },
+        json={"query": CUSTOMER_CLIENT_QUERY},
+    )
+    response.raise_for_status()
+    return _summarize_customer_client_response(response.json(), blocked_detail)
+
+
+def _summarize_customer_client_response(
+    payload: Any,
+    blocked_detail: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    child_count = 0
+    manager_child_count = 0
+    metric_facts: list[VendorMetricFact] = []
+    for row in rows:
+        customer_client = row.get("customerClient", row.get("customer_client", {}))
+        if not isinstance(customer_client, dict):
+            continue
+        child_count += 1
+        manager = _bool_metric(customer_client.get("manager"))
+        if manager:
+            manager_child_count += 1
+        child_customer_id = _customer_resource_id(customer_client.get("clientCustomer"))
+        dimensions = {
+            key: value
+            for key, value in {
+                "child_customer_id": child_customer_id,
+                "manager": "true" if manager else "false",
+                "level": str(customer_client.get("level", "")),
+                "status": str(customer_client.get("status", "")),
+            }.items()
+            if value
+        }
+        if dimensions:
+            metric_facts.append(
+                VendorMetricFact(
+                    "customer_client_available",
+                    1,
+                    dimensions,
+                    period="account_inventory",
+                )
+            )
+    return (
+        {
+            "api_version": GOOGLE_ADS_API_VERSION,
+            "query": "customer_client_level_1",
+            "manager_metrics_blocker": blocked_detail,
+            "customer_client_count": child_count,
+            "manager_customer_client_count": manager_child_count,
+            "non_manager_customer_client_count": max(0, child_count - manager_child_count),
+        },
+        metric_facts,
+    )
+
+
 def _summarize_search_stream_response(
     payload: Any,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
@@ -265,6 +419,20 @@ def _search_stream_rows(payload: Any) -> list[dict[str, Any]]:
             continue
         rows.extend(row for row in results if isinstance(row, dict))
     return rows
+
+
+def _customer_resource_id(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    return value.rsplit("/", 1)[-1].strip() or None
+
+
+def _bool_metric(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() == "true"
+    return False
 
 
 def _int_metric(value: Any) -> int:

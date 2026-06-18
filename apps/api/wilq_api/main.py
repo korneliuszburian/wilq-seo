@@ -14,8 +14,6 @@ from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.command_center import (
     build_command_center_action_plan,
     build_command_center_brief,
-    build_command_center_demo_script,
-    tactical_item_count,
 )
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
@@ -54,6 +52,7 @@ from wilq.knowledge.compilers.playbook_compiler import (
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
     ActionApplyRequest,
+    ActionObject,
     AdsDiagnosticsResponse,
     AuditEvent,
     CodexRun,
@@ -128,6 +127,7 @@ class ContextPackRequest(BaseModel):
     skill: str | None = None
     focus: str | None = None
     max_opportunities: int = Field(default=5, ge=1, le=25)
+    full_context: bool = False
 
 
 def connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
@@ -144,6 +144,9 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
     connectors = list_connector_statuses()
     opportunities = list_opportunities()
     max_opportunities = request.max_opportunities if request else 5
+    skill = request.skill if request else None
+    if request and skill and skill != "wilq-daily-command" and not request.full_context:
+        return _skill_scoped_context_pack(request, connectors, opportunities)
     pack = {
         "current_product_rules": [
             "No evidence ID -> no recommendation.",
@@ -181,6 +184,262 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
     return redact_mapping(pack)
+
+
+SKILL_CONNECTOR_SCOPES: dict[str, set[str]] = {
+    "wilq-ads-doctor": {"google_ads"},
+    "wilq-ahrefs-gap-finder": {"ahrefs", "google_search_console", "wordpress_ekologus"},
+    "wilq-campaign-builder": {
+        "google_ads",
+        "google_analytics_4",
+        "google_search_console",
+        "google_merchant_center",
+    },
+    "wilq-content-strategist": {
+        "google_search_console",
+        "google_analytics_4",
+        "ahrefs",
+        "wordpress_ekologus",
+        "wordpress_sklep",
+    },
+    "wilq-custom-segments": {"google_ads", "google_search_console"},
+    "wilq-demand-gen-operator": {
+        "google_ads",
+        "google_analytics_4",
+        "google_merchant_center",
+    },
+    "wilq-ga4-analyst": {"google_analytics_4", "wordpress_ekologus"},
+    "wilq-gsc-content-doctor": {
+        "google_search_console",
+        "wordpress_ekologus",
+        "wordpress_sklep",
+    },
+    "wilq-localo-operator": {"localo"},
+    "wilq-merchant-feed-operator": {"google_merchant_center"},
+    "wilq-social-publisher": {
+        "facebook",
+        "google_analytics_4",
+        "google_merchant_center",
+        "google_search_console",
+        "linkedin",
+        "wordpress_ekologus",
+    },
+}
+
+SKILL_KEYWORD_SCOPES: dict[str, set[str]] = {
+    "wilq-ads-doctor": {"ads", "google_ads", "negative", "search", "pmax"},
+    "wilq-ahrefs-gap-finder": {"ahrefs", "gap", "content", "seo"},
+    "wilq-campaign-builder": {"ads", "campaign", "pmax", "search", "shopping"},
+    "wilq-content-strategist": {"content", "seo", "gsc", "wordpress", "ahrefs"},
+    "wilq-custom-segments": {"custom", "segment", "audience", "ads"},
+    "wilq-demand-gen-operator": {"demand", "creative", "ga4", "ads"},
+    "wilq-ga4-analyst": {"ga4", "analytics", "behavior", "landing"},
+    "wilq-gsc-content-doctor": {"gsc", "seo", "content", "wordpress"},
+    "wilq-localo-operator": {"localo", "local", "gbp"},
+    "wilq-merchant-feed-operator": {"merchant", "feed", "shopping", "product"},
+    "wilq-social-publisher": {"social", "linkedin", "facebook", "content"},
+}
+
+
+def _skill_scoped_context_pack(
+    request: ContextPackRequest,
+    connectors: list[ConnectorStatus],
+    opportunities: list[Opportunity],
+) -> dict[str, Any]:
+    skill = request.skill or "unknown"
+    scoped_connectors = SKILL_CONNECTOR_SCOPES.get(skill, set())
+    if not scoped_connectors:
+        scoped_connectors = {connector.id for connector in connectors if connector.configured}
+    max_opportunities = request.max_opportunities
+
+    actions = list_actions()
+    diagnostics = _diagnostics_for_skill(skill)
+    evidence_ids = _evidence_ids_from_context(diagnostics, actions, scoped_connectors)
+    scoped_actions = _actions_for_scope(actions, scoped_connectors, evidence_ids)
+    evidence_ids.update(
+        evidence_id
+        for action in scoped_actions
+        for evidence_id in action.evidence_ids
+    )
+    scoped_opportunities = [
+        opportunity
+        for opportunity in opportunities
+        if _connectors_intersect(opportunity.source_connectors, scoped_connectors)
+    ][:max_opportunities]
+    evidence_ids.update(
+        evidence_id
+        for opportunity in scoped_opportunities
+        for evidence_id in opportunity.evidence_ids
+    )
+
+    pack = {
+        "context_scope": {
+            "mode": "skill",
+            "skill": skill,
+            "full_context_available": True,
+            "full_context_request": {"skill": skill, "full_context": True},
+            "source_connectors": sorted(scoped_connectors),
+        },
+        "current_product_rules": [
+            "No evidence ID -> no recommendation.",
+            "No source connector -> no recommendation.",
+            "No validated payload -> no apply.",
+            "No audit event -> no write.",
+            "No WILQ API call -> Codex must not invent metrics.",
+        ],
+        "available_connectors": [connector.id for connector in connectors],
+        "connector_status": [
+            connector.model_dump(mode="json")
+            for connector in connectors
+            if connector.id in scoped_connectors
+        ],
+        "top_opportunities": [
+            opportunity.model_dump(mode="json") for opportunity in scoped_opportunities
+        ],
+        "active_action_objects": [
+            action.model_dump(mode="json") for action in scoped_actions
+        ],
+        "connector_refresh_runs": [
+            run.model_dump(mode="json")
+            for run in list_connector_refresh_runs()[:25]
+            if run.connector_id in scoped_connectors
+        ][:10],
+        "evidence_summaries": [
+            evidence.model_dump(mode="json")
+            for evidence in list_evidence()
+            if evidence.id in evidence_ids or evidence.source_connector in scoped_connectors
+        ][:80],
+        "knowledge_card_summaries": [
+            card.model_dump(mode="json")
+            for card in _knowledge_cards_for_skill(skill)
+        ],
+        "expert_rule_summaries": [
+            rule.model_dump(mode="json")
+            for rule in _expert_rules_for_skill(skill)
+        ],
+        "expert_capabilities": [
+            capability.model_dump(mode="json")
+            for capability in list_expert_capabilities()
+            if _text_matches_scope(
+                [
+                    capability.id,
+                    capability.domain,
+                    capability.source_rule_id,
+                    capability.output_contract,
+                ],
+                SKILL_KEYWORD_SCOPES.get(skill, set()),
+            )
+        ],
+        "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
+        **diagnostics,
+    }
+    return redact_mapping(pack)
+
+
+def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
+    if skill in {"wilq-content-strategist", "wilq-gsc-content-doctor"}:
+        return {"content_diagnostics": build_content_diagnostics().model_dump(mode="json")}
+    if skill == "wilq-ads-doctor":
+        return {"ads_diagnostics": build_ads_diagnostics().model_dump(mode="json")}
+    if skill == "wilq-merchant-feed-operator":
+        return {"merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json")}
+    if skill == "wilq-ga4-analyst":
+        return {"ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json")}
+    if skill == "wilq-demand-gen-operator":
+        return {
+            "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
+            "ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json"),
+            "merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json"),
+        }
+    if skill in {"wilq-campaign-builder", "wilq-custom-segments"}:
+        return {
+            "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
+            "content_diagnostics": build_content_diagnostics().model_dump(mode="json"),
+        }
+    if skill == "wilq-social-publisher":
+        return {
+            "marketing_brief": build_marketing_brief().model_dump(mode="json"),
+            "tactical_queue": build_tactical_queue().model_dump(mode="json"),
+        }
+    return {"marketing_brief": build_marketing_brief().model_dump(mode="json")}
+
+
+def _evidence_ids_from_context(
+    diagnostics: dict[str, Any],
+    actions: list[ActionObject],
+    scoped_connectors: set[str],
+) -> set[str]:
+    evidence_ids: set[str] = set()
+    for value in diagnostics.values():
+        evidence_ids.update(_collect_values_by_key(value, "evidence_ids"))
+    for action in actions:
+        if action.connector in scoped_connectors:
+            evidence_ids.update(action.evidence_ids)
+    return evidence_ids
+
+
+def _collect_values_by_key(value: Any, key: str) -> set[str]:
+    values: set[str] = set()
+    if isinstance(value, dict):
+        for item_key, item_value in value.items():
+            if item_key == key and isinstance(item_value, list):
+                values.update(str(item) for item in item_value if item)
+            else:
+                values.update(_collect_values_by_key(item_value, key))
+    elif isinstance(value, list):
+        for item in value:
+            values.update(_collect_values_by_key(item, key))
+    return values
+
+
+def _actions_for_scope(
+    actions: list[ActionObject],
+    scoped_connectors: set[str],
+    evidence_ids: set[str],
+) -> list[ActionObject]:
+    del evidence_ids
+    return [action for action in actions if action.connector in scoped_connectors]
+
+
+def _knowledge_cards_for_skill(skill: str) -> list[KnowledgeCard]:
+    keywords = SKILL_KEYWORD_SCOPES.get(skill, set())
+    return [
+        card
+        for card in compile_playbook_cards()
+        if _text_matches_scope(
+            [card.id, card.card_type, card.title, card.summary, card.source_id],
+            keywords,
+        )
+    ][:8]
+
+
+def _expert_rules_for_skill(skill: str) -> list[ExpertRuleSummary]:
+    keywords = SKILL_KEYWORD_SCOPES.get(skill, set())
+    return [
+        rule
+        for rule in list_expert_rule_summaries(limit=50)
+        if _text_matches_scope(
+            [
+                rule.id,
+                rule.name,
+                rule.domain,
+                rule.source_anchor,
+                rule.output_contract,
+            ],
+            keywords,
+        )
+    ][:8]
+
+
+def _text_matches_scope(values: list[str], keywords: set[str]) -> bool:
+    if not keywords:
+        return True
+    haystack = " ".join(values).lower()
+    return any(keyword.lower() in haystack for keyword in keywords)
+
+
+def _connectors_intersect(values: list[str], scoped_connectors: set[str]) -> bool:
+    return bool(set(values).intersection(scoped_connectors))
 
 
 @app.get("/")
@@ -265,8 +524,8 @@ def connector_refresh(
 @app.get("/api/dashboard/command-center", response_model=CommandCenterResponse)
 def command_center() -> CommandCenterResponse:
     connectors = list_connector_statuses()
-    opportunities = list_opportunities()
     operator_brief, primary_next_step, blocker_count = build_command_center_brief()
+    tactical_queue = build_tactical_queue()
     return CommandCenterResponse(
         strict_instruction=(
             "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
@@ -274,27 +533,13 @@ def command_center() -> CommandCenterResponse:
         ),
         primary_next_step=primary_next_step,
         blocker_count=blocker_count,
-        tactical_item_count=tactical_item_count(),
+        tactical_item_count=len(tactical_queue.items),
         operator_brief=operator_brief,
-        demo_script=build_command_center_demo_script(operator_brief),
-        action_plan=build_command_center_action_plan(operator_brief),
+        demo_script=[],
+        action_plan=build_command_center_action_plan(operator_brief, tactical_queue.items),
         connector_summary=connector_summary(connectors),
-        sections={
-            "todays_moves": opportunities[:2],
-            "money_leaks": [item for item in opportunities if item.domain.value == "google_ads"],
-            "traffic_wins": [
-                item for item in opportunities if item.domain.value in {"gsc_seo", "ga4"}
-            ],
-            "content_to_rewrite": [],
-            "content_to_create": [],
-            "local_visibility_moves": [
-                item for item in opportunities if item.domain.value == "localo"
-            ],
-            "social_queue": [item for item in opportunities if item.domain.value == "social"],
-            "codex_operator_status": [],
-            "connector_health": [],
-        },
-        active_actions=list_actions(),
+        sections={},
+        active_actions=[],
         connector_health=connectors,
         codex_operator_status=codex_runtime_status(),
     )

@@ -1,4 +1,4 @@
 interface:
   display_name: "WILQ Localo Operator"
-  short_description: "Local visibility operator workflow"
-  default_prompt: "Use $wilq-localo-operator to inspect Localo readiness and local visibility action candidates."
+  short_description: "Obsługuje Localo, GBP i lokalną widoczność"
+  default_prompt: "Użyj $wilq-localo-operator: sprawdź lokalną widoczność Ekologus albo pokaż blocker Localo, jeśli nie ma świeżego evidence."

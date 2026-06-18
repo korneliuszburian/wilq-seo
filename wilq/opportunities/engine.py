@@ -2,9 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
-from wilq.schemas import ActionRisk, MetricFact, Opportunity, OpportunityDomain
+from wilq.schemas import (
+    ActionRisk,
+    ConnectorRefreshStatus,
+    MetricFact,
+    Opportunity,
+    OpportunityDomain,
+)
 
 OPPORTUNITY_TYPES = (
     "google_ads_waste",
@@ -156,7 +163,8 @@ def list_opportunities() -> list[Opportunity]:
         connector = statuses[blueprint.connector_id]
         evidence_id = connector_evidence_id(connector.id)
         missing = connector.missing_credentials
-        title = blueprint.ready_title if connector.configured else blueprint.blocked_title
+        latest_live_run = _latest_live_refresh(connector.id)
+        title = _title(blueprint, connector.configured, latest_live_run is not None)
         opportunities.append(
             Opportunity(
                 id=f"opp_connector_{connector.id}",
@@ -165,23 +173,21 @@ def list_opportunities() -> list[Opportunity]:
                 domain=blueprint.domain,
                 source_connectors=[connector.id],
                 evidence_ids=[evidence_id],
-                metrics=[
-                    MetricFact(
-                        name="connector_configured",
-                        value=str(connector.configured).lower(),
-                        period="current",
-                        source_connector=connector.id,
-                        evidence_id=evidence_id,
-                    )
-                ],
+                metrics=_opportunity_metrics(connector.id, connector.configured, evidence_id),
                 human_diagnosis=_diagnosis(
                     connector.id,
                     connector.configured,
                     missing,
                     blueprint.playbook_ids,
                     blueprint.expert_rule_ids,
+                    latest_live_run is not None,
                 ),
-                recommended_action=_recommended_action(connector.id, connector.configured, missing),
+                recommended_action=_recommended_action(
+                    connector.id,
+                    connector.configured,
+                    missing,
+                    latest_live_run is not None,
+                ),
                 risk=blueprint.risk,
                 action_ids=list(blueprint.action_ids) if not connector.configured else [],
                 expert_rule_ids=list(blueprint.expert_rule_ids),
@@ -202,18 +208,26 @@ def _diagnosis(
     missing_credentials: list[str],
     playbook_ids: tuple[str, ...],
     expert_rule_ids: tuple[str, ...],
+    live_refresh_available: bool,
 ) -> str:
     playbooks = ", ".join(playbook_ids)
     rules = ", ".join(expert_rule_ids)
+    if live_refresh_available:
+        return (
+            f"{connector_id} ma zakończony odczyt vendor_read w WILQ. Ta karta jest "
+            f"technicznym inventory reguł/playbooków ({playbooks}), nie gotową "
+            "rekomendacją marketingową."
+        )
     if configured:
         return (
-            f"Connector {connector_id} has credential names available, so WILQ can run the "
-            f"next API refresh before applying playbooks {playbooks}. No performance metrics "
-            "have been collected in this response."
+            f"{connector_id} ma nazwy credentiali w runtime, ale ta karta nie zawiera "
+            f"jeszcze świeżych metryk performance. Najpierw użyj dedykowanego widoku "
+            "diagnostycznego albo refreshu connectora, potem dopiero playbooków: "
+            f"{playbooks}."
         )
     return (
-        f"Connector {connector_id} cannot provide evidence for playbooks {playbooks} or "
-        f"expert rules {rules} until missing credential names are configured: "
+        f"{connector_id} nie dostarcza evidence dla playbooków {playbooks} ani reguł "
+        f"{rules}, dopóki brakuje credentiali: "
         f"{', '.join(missing_credentials)}."
     )
 
@@ -222,10 +236,54 @@ def _recommended_action(
     connector_id: str,
     configured: bool,
     missing_credentials: list[str],
+    live_refresh_available: bool,
 ) -> str:
+    if live_refresh_available:
+        return (
+            f"Otwórz dedykowany widok diagnostyczny dla {connector_id}; "
+            "nie traktuj tej karty jako insightu."
+        )
     if configured:
-        return f"Run a read-only {connector_id} refresh to collect real evidence IDs."
+        return (
+            f"Uruchom read-only refresh dla {connector_id}, jeśli dedykowany widok "
+            "nie ma świeżego evidence."
+        )
     return (
-        f"Configure required {connector_id} credential names, then refresh connector data: "
+        f"Skonfiguruj wymagane credentiale dla {connector_id}, potem odśwież dane: "
         f"{', '.join(missing_credentials)}."
     )
+
+
+def _title(
+    blueprint: OpportunityBlueprint,
+    configured: bool,
+    live_refresh_available: bool,
+) -> str:
+    if not configured:
+        return blueprint.blocked_title
+    if live_refresh_available:
+        return f"{blueprint.connector_id}: technical playbook inventory"
+    return blueprint.ready_title.replace("connector ready for", "requires evidence before")
+
+
+def _opportunity_metrics(
+    connector_id: str,
+    configured: bool,
+    evidence_id: str,
+) -> list[MetricFact]:
+    return [
+        MetricFact(
+            name="connector_runtime_configured",
+            value="yes" if configured else "no",
+            period="current",
+            source_connector=connector_id,
+            evidence_id=evidence_id,
+        )
+    ]
+
+
+def _latest_live_refresh(connector_id: str) -> object | None:
+    for run in list_connector_refresh_runs(connector_id=connector_id):
+        if run.status == ConnectorRefreshStatus.completed and run.vendor_data_collected:
+            return run
+    return None
