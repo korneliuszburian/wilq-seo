@@ -63,6 +63,8 @@ The dashboard must call WILQ API through typed frontend boundaries. It must show
 
 Use `$skill-creator` for new skills and major skill updates. Skills must be small operator workflows over WILQ API, not prompt dumps. Long knowledge goes to `references/`, deterministic helpers go to `scripts/`, and every skill must define trigger, allowed endpoints, evidence requirements, output contract, safety rules and smoke test.
 
+Do not patch product logic, business decisions, dedupe rules, ranking rules, edge-case fixes, or dashboard cleanup logic inside skill references. If a skill needs a smarter decision, implement the typed WILQ API/schema/view-model first, then make the skill consume that field. Skill references may describe how to use an API contract, but must not become the place where the product behavior is invented or repaired.
+
 Create or update WILQ skills only after the API endpoints, context-pack contract, connector status contract, and action validation path they call are implemented. Goal 001 skills now live under `.agents/skills/`: `wilq-daily-command` is wired to WILQ API, while the remaining WILQ operator skills are production-shaped stubs with endpoint, evidence, output and smoke-test contracts.
 
 Every WILQ skill must be testable through deterministic smoke scripts and non-interactive Codex evals. Use `scripts/codex_skill_eval.sh` for `codex exec` schema-output checks. Local API evals need network-enabled sandboxing, so the harness defaults to `workspace-write` with network access and a prompt-level no-edit rule. Use `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1` when global MCP/user config causes unrelated transport failures.

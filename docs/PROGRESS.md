@@ -36,14 +36,11 @@ Data: 2026-06-18
 - `uv run mypy wilq/briefing/marketing_brief.py`
 - `uv run pytest tests/test_api_contracts.py::test_marketing_brief_aggregates_metric_facts_and_blockers tests/test_api_contracts.py::test_marketing_brief_exposes_metric_backed_prepare_actions -q`
 - `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000`
-
-Full `scripts/verify.sh` is still pending after the latest changes.
-
-Update after final gate:
+- `scripts/verify.sh`
 
 ```text
 scripts/verify.sh passed
-backend API contracts: 90 passed
+backend API contracts: 93 passed
 dashboard route tests: 12 passed
 Playwright e2e: 8 passed
 dashboard production build: passed
@@ -472,3 +469,105 @@ Non-interactive Codex eval artifact:
 Eval result: `pl-PL`, Polish diacritics, `api_used=true`, 14 evidence IDs,
 core ActionObject candidates only, no safety findings and
 `operator_usefulness_score=5`.
+
+## In Progress: Content Decision Queue In API
+
+Status: implemented locally, not committed yet.
+
+Why:
+
+- A 2026-06-18 audit in `docs/audits/001-output.md` confirmed that WILQ must
+  move product decisions into typed API/view-model contracts, not skill
+  references.
+- `wilq-content-strategist` needed stronger usefulness, but the fix belongs in
+  `/api/content/diagnostics`, not prompt edge cases.
+
+Current result:
+
+- Added typed `ContentDecisionItem`.
+- Added `ContentDiagnosticsResponse.decision_queue`.
+- `/api/content/diagnostics` now exposes canonical content decisions:
+  `inventory_check_before_create`, `merge_create_after_inventory_check`,
+  `refresh_or_merge` when inventory confirms a page, and
+  `block_as_tracking_not_content` for GA4 tracking gaps.
+- `wilq-content-strategist` now consumes `content_diagnostics.decision_queue`
+  instead of recreating classification in skill references.
+- Redaction preserves `decision_type` / `decision_types` enum values in
+  context-pack while still redacting secrets.
+
+Live smoke after API restart:
+
+```bash
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Observed decision types:
+
+- `block_as_tracking_not_content`
+- `inventory_check_before_create`
+- `inventory_check_before_create`
+- `merge_create_after_inventory_check`
+- `inventory_check_before_create`
+
+Focused proof already passed:
+
+```bash
+uv run ruff check wilq/briefing/content_diagnostics.py wilq/security/redaction.py wilq/schemas.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/content_diagnostics.py wilq/security/redaction.py wilq/schemas.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py -q -k 'redaction_preserves_env_names_but_redacts_token_values or content_diagnostics_exposes_query_page_inventory_queue or codex_context_pack_embeds_marketing_brief_contract'
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+```
+
+Non-interactive Codex eval after this change:
+
+```txt
+.local-lab/evals/codex-skill/20260618T114810Z/wilq-content-strategist/result.json
+```
+
+Eval result: `pl-PL`, `api_used=true`, 11 evidence IDs,
+`operator_usefulness_score=4`, and recommendations based on
+`content_diagnostics.decision_queue`.
+
+Next before commit:
+
+- `docs/evals/skill-eval-ledger.md` is updated with the API decision queue
+  re-eval.
+- `docs/goals/001-goal.md` is updated with the audit-derived goal stack and
+  explicit skill repair track.
+- Focused checks and full `scripts/verify.sh` passed in the current worktree.
+- Commit with Conventional Commit, likely
+  `feat(content): expose content decision queue`.
+
+Clean-runtime verify finding:
+
+- `scripts/verify.sh` runs skill API smokes against an empty temporary
+  SQLite/DuckDB runtime. Core daily ActionObjects must still exist there as
+  review-only prepare actions with connector evidence, but content
+  `decision_queue` must stay empty until real GSC/GA4/WordPress facts exist.
+- `wilq/actions/service.py` now seeds core prepare ActionObjects and lets
+  metric-backed ActionObjects override them when real facts are available.
+- `wilq-content-strategist` smoke now distinguishes clean runtime from live
+  content facts; it must not require fake decisions in clean runtime.
+
+## Audit-Derived Next Stack
+
+Source:
+
+```text
+docs/audits/001-output.md
+```
+
+Current execution order after this uncommitted slice:
+
+1. Commit `content_diagnostics.decision_queue`.
+2. Build canonical `DailyDecision` for Command Center and
+   `wilq-daily-command`.
+3. Enforce performance budgets and scoped context-packs.
+4. Add Merchant issue-level triage.
+5. Fix Content/GSC/GA4/WordPress URL normalization.
+6. Add Ads read contracts before search-term, CPA, ROAS or wasted-budget
+   claims.
+
+Skill repair is not done. It happens per workflow after the matching API/read
+contract exists. Do not repair missing product behavior inside skill
+references.

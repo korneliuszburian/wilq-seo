@@ -23,6 +23,7 @@ from wilq.storage.metric_store import metric_store
 
 
 def seed_static_actions() -> dict[str, ActionObject]:
+    actions = seed_core_prepare_actions()
     action = ActionObject(
         id="act_configure_google_ads_env",
         title="Odnow Google Ads OAuth refresh token",
@@ -79,7 +80,122 @@ def seed_static_actions() -> dict[str, ActionObject]:
         validation_status="not_validated",
         created_by="system_seed",
     )
-    return {action.id: action}
+    actions[action.id] = action
+    return actions
+
+
+def seed_core_prepare_actions() -> dict[str, ActionObject]:
+    actions = [
+        ActionObject(
+            id="act_review_merchant_feed_issues",
+            title="Przygotuj kolejkę przeglądu feedu Merchant Center",
+            domain=OpportunityDomain.merchant,
+            connector="google_merchant_center",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=[connector_evidence_id("google_merchant_center")],
+            human_diagnosis=(
+                "Merchant Center jest core workflow WILQ. W clean runtime WILQ może "
+                "przygotować tylko review-safe kolejkę, dopóki read-only refresh nie "
+                "dostarczy issue-level metric facts."
+            ),
+            recommended_reason=(
+                "Uruchom read-only Merchant refresh albo użyj istniejących evidence, "
+                "potem waliduj payload preview przed jakąkolwiek zmianą feedu."
+            ),
+            payload={
+                "action_type": "merchant_feed_issue",
+                "connector": "google_merchant_center",
+                "mode": "prepare_only",
+                "source_metric_names": [],
+                "review_steps": [
+                    "collect_merchant_issue_facts",
+                    "group_issue_reasons",
+                    "prepare_feed_fix_preview",
+                    "require_human_confirm_before_apply",
+                ],
+                "blocked_claims": [
+                    "approval restored",
+                    "revenue recovered",
+                    "automatic feed edit",
+                ],
+                "destructive": False,
+            },
+            validation_status="not_validated",
+            created_by="system_core_seed",
+        ),
+        ActionObject(
+            id="act_review_ga4_tracking_quality",
+            title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
+            domain=OpportunityDomain.ga4,
+            connector="google_analytics_4",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.low,
+            status=ActionStatus.needs_validation,
+            evidence_ids=[connector_evidence_id("google_analytics_4")],
+            human_diagnosis=(
+                "GA4 jest core workflow WILQ. W clean runtime WILQ może tylko "
+                "przygotować tracking review i zablokować claimy o ROAS/revenue, "
+                "dopóki nie ma metric facts z landing/source/campaign."
+            ),
+            recommended_reason=(
+                "Zbierz read-only GA4 breakdown, potem sprawdź tracking i message "
+                "match bez oceniania kampanii po niepełnych danych."
+            ),
+            payload={
+                "action_type": "ga4_tracking_gap",
+                "connector": "google_analytics_4",
+                "mode": "prepare_only",
+                "source_metric_names": [],
+                "required_breakdowns": ["landing_page", "source_medium", "campaign"],
+                "blocked_claims": ["conversion_rate", "revenue", "roas"],
+                "destructive": False,
+            },
+            validation_status="not_validated",
+            created_by="system_core_seed",
+        ),
+        ActionObject(
+            id="act_prepare_content_refresh_queue",
+            title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
+            domain=OpportunityDomain.content,
+            connector="wordpress_ekologus",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=[
+                connector_evidence_id("wordpress_ekologus"),
+                connector_evidence_id("google_search_console"),
+            ],
+            human_diagnosis=(
+                "Content jest core workflow WILQ. W clean runtime WILQ może "
+                "przygotować tylko review-safe kolejkę, dopóki GSC/WordPress/GA4 "
+                "nie dostarczą URL/query evidence."
+            ),
+            recommended_reason=(
+                "Zbierz GSC query/page i WordPress inventory, potem klasyfikuj "
+                "refresh/merge/create/block bez obietnic leadów ani rankingów."
+            ),
+            payload={
+                "action_type": "wordpress_content_refresh",
+                "connector": "wordpress_ekologus",
+                "mode": "prepare_only",
+                "source_connectors": ["google_search_console", "wordpress_ekologus"],
+                "source_metric_names": [],
+                "queue_steps": [
+                    "collect_gsc_query_page_facts",
+                    "join_wordpress_inventory_with_gsc",
+                    "classify_refresh_create_merge_block",
+                    "require_human_confirm_before_wordpress_write",
+                ],
+                "blocked_claims": ["lead uplift", "revenue impact", "ranking guarantee"],
+                "destructive": False,
+            },
+            validation_status="not_validated",
+            created_by="system_core_seed",
+        ),
+    ]
+    return {action.id: action for action in actions}
 
 
 _STATIC_ACTIONS = seed_static_actions()

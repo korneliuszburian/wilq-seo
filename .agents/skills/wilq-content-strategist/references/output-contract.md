@@ -32,6 +32,12 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
+## Kolejka decyzji
+
+Użyj `content_diagnostics.decision_queue` z WILQ API jako kanonicznej kolejki
+contentowej. Skill nie powinien sam klasyfikować URL-i ani przepisywać reguł
+deduplikacji z promptu.
+
 ## Warunki odmowy lub downgrade do blockera
 
 Odmów albo obniż odpowiedź do blocker report, gdy:

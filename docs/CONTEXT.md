@@ -12,6 +12,24 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 5. `docs/research/wilq-marketing-source-map.md` - źródła marketingowe i techniczne.
 6. `docs/architecture/bdos-class-wilq-operating-system.md` - poprzeczka produktowa.
 7. `docs/architecture/codex-runtime.md` - Codex skills, hooks, evals i runtime.
+8. `docs/audits/001-output.md` - świeży audyt 2026-06-18: co zatrzymać, co
+   zacząć i pięć następnych slice'ów dla marketera.
+
+## Current Critical Direction
+
+Audit `docs/audits/001-output.md` is now folded into
+`docs/goals/001-goal.md`. The current order is:
+
+1. Finish the uncommitted `content_diagnostics.decision_queue` slice.
+2. Build canonical `DailyDecision` for Command Center.
+3. Enforce performance budgets and scoped context-packs.
+4. Add Merchant issue-level triage.
+5. Fix Content/GSC/GA4/WordPress URL normalization.
+6. Add Ads read contracts before any money-leak/CPA/ROAS/search-term claims.
+
+Do not repair product logic inside skill references. If a skill needs a better
+decision, add the typed WILQ API/schema/view-model field first and make the
+skill consume it.
 
 ## Current Runtime
 
@@ -206,3 +224,106 @@ nowe API/action contracts, czy pozostać blocker/readiness workflows.
 Command Center ma być "co marketer robi dziś", nie connector inventory.
 Codex skills mają być operacyjną warstwą nad WILQ API: najpierw API evidence,
 potem diagnoza, blokady claimów i bezpieczny następny krok po polsku.
+
+## Current Critical Direction - 2026-06-18 13:55
+
+Najważniejszy świeży audyt:
+
+```txt
+docs/audits/001-output.md
+```
+
+Wniosek audytu: architektura idzie w dobrym kierunku, ale WILQ jest nadal
+`safe operating shell`, nie pełny BDOS-class OS. Największy problem to nie
+liczba skillów, tylko brak jednego canonical operator view modelu i brak części
+read/action contracts. API ma być mózgiem; skills mają być cienkimi workflow po
+API.
+
+Twarda zasada zapisana w `AGENTS.md`: nie wolno łatać logiki produktu,
+deduplikacji, klasyfikacji decyzji, rankingów ani edge-case fixes w skill
+references. Jeśli skill potrzebuje mądrzejszej decyzji, najpierw implementujemy
+typed WILQ API/schema/view-model, a skill tylko konsumuje pole API.
+
+## Active Uncommitted Slice - Content Decision Queue
+
+Aktualny worktree ma aktywny, niecommitowany slice. Nie zaczynaj od zera.
+
+Cel slice'a:
+
+- Przenieść content decision logic z promptów/skilli do WILQ API.
+- Dodać typed `ContentDecisionItem` i `ContentDiagnosticsResponse.decision_queue`.
+- `wilq-content-strategist` ma używać `content_diagnostics.decision_queue`, nie
+  odtwarzać logiki w references.
+- Context-pack redaction ma zachowywać enumy `decision_type` /
+  `decision_types`, bo to trace IDs/enum values, nie sekrety.
+
+Zmienione pliki w toku:
+
+- `wilq/schemas.py`
+- `wilq/briefing/content_diagnostics.py`
+- `wilq/security/redaction.py`
+- `tests/test_api_contracts.py`
+- `.agents/skills/wilq-content-strategist/SKILL.md`
+- `.agents/skills/wilq-content-strategist/references/output-contract.md`
+- `.agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py`
+- `docs/evals/cases/wilq-skill-eval-cases.json`
+- `AGENTS.md`
+
+Live proof po restarcie API:
+
+```bash
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Wynik smoke:
+
+- `decision_types`:
+  - `block_as_tracking_not_content`
+  - `inventory_check_before_create`
+  - `inventory_check_before_create`
+  - `merge_create_after_inventory_check`
+  - `inventory_check_before_create`
+- `decision_queue` pochodzi z `/api/content/diagnostics`, nie ze skill
+  reference.
+- GA4 `(not set)` / `tracking_gap` jest blokowane jako content task.
+- Zielony Ład jest jednym klastrem
+  `merge_create_after_inventory_check`, nie siedmioma osobnymi rekomendacjami.
+- BDO i inne URL-e z `wordpress_match=missing` są
+  `inventory_check_before_create`, nie gotowym create/refresh.
+
+Focused checks, które już przeszły dla tego slice'a:
+
+```bash
+uv run ruff check wilq/briefing/content_diagnostics.py wilq/security/redaction.py wilq/schemas.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/content_diagnostics.py wilq/security/redaction.py wilq/schemas.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py -q -k 'redaction_preserves_env_names_but_redacts_token_values or content_diagnostics_exposes_query_page_inventory_queue or codex_context_pack_embeds_marketing_brief_contract'
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+```
+
+Non-interactive eval po poprawce:
+
+```txt
+.local-lab/evals/codex-skill/20260618T114810Z/wilq-content-strategist/result.json
+```
+
+Wynik evala:
+
+- `language=pl-PL`
+- `api_used=true`
+- 11 evidence IDs
+- `operator_usefulness_score=4`
+- rekomendacje używają `content_diagnostics.decision_queue`
+- zawiera `inventory_check_before_create`,
+  `merge_create_after_inventory_check`, `block_as_tracking_not_content`
+- `act_prepare_content_refresh_queue` pozostaje prepare-only i wymaga
+  walidacji przed apply.
+
+Następny krok po wznowieniu:
+
+1. Uzupełnić `docs/PROGRESS.md`, `docs/evals/skill-eval-ledger.md` i
+   `docs/goals/001-goal.md` o ten slice.
+2. Uruchomić focused checks jeszcze raz.
+3. Commit semantic, np.
+   `feat(content): expose content decision queue`.
+4. Potem wrócić do audytu `docs/audits/001-output.md`, najpierw Slice 1:
+   canonical `DailyDecision` dla Command Center.

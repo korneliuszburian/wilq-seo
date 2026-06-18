@@ -74,7 +74,7 @@
   {
     "skill": "wilq-content-strategist",
     "surface_path": "/content-planner",
-    "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników.",
+    "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników. Użyj content_diagnostics.decision_queue z WILQ API, w tym inventory_check_before_create, merge_create_after_inventory_check albo block_as_tracking_not_content, gdy API je zwraca.",
     "expected_connectors": [
       "google_search_console",
       "google_analytics_4",
@@ -88,7 +88,16 @@
       "ahrefs",
       "wordpress_ekologus"
     ],
-    "expected_terms_pl": ["Content Planner", "WordPress", "GSC", "content_diagnostics", "inventory"],
+    "expected_terms_pl": [
+      "Content Planner",
+      "WordPress",
+      "GSC",
+      "content_diagnostics",
+      "inventory",
+      "inventory_check_before_create",
+      "merge_create_after_inventory_check",
+      "block_as_tracking_not_content"
+    ],
     "expected_action_ids": ["act_prepare_content_refresh_queue"]
   },
   {

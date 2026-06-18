@@ -364,6 +364,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             ),
             "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "api_key": "sk-testsecretvalue1234567890",  # pragma: allowlist secret
+            "decision_type": "merge_create_after_inventory_check",
         }
     )
 
@@ -374,6 +375,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     )
     assert redacted["error"] == "[REDACTED]"
     assert redacted["api_key"] == "[REDACTED]"
+    assert redacted["decision_type"] == "merge_create_after_inventory_check"
 
 
 def test_google_first_party_status_accepts_authorized_user_credentials(
@@ -1966,6 +1968,12 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         item["dimensions"].get("wordpress_match") == "found"
         for item in inventory_section["tactical_items"]
     )
+    assert payload["decision_queue"]
+    first_decision = payload["decision_queue"][0]
+    assert first_decision["decision_type"] == "refresh_or_merge"
+    assert first_decision["wordpress_match"] == "found"
+    assert first_decision["evidence_ids"]
+    assert "act_prepare_content_refresh_queue" in first_decision["action_ids"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -1975,6 +1983,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     context_payload = context_response.json()
     assert context_payload["content_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
     assert context_payload["content_diagnostics"]["action_ids"] == payload["action_ids"]
+    context_decision = context_payload["content_diagnostics"]["decision_queue"][0]
+    assert context_decision["decision_type"] == first_decision["decision_type"]
+    assert context_decision["source_connectors"] == first_decision["source_connectors"]
+    assert context_decision["evidence_ids"] == first_decision["evidence_ids"]
+    assert context_decision["action_ids"] == first_decision["action_ids"]
     serialized = json.dumps(payload)
     assert "google_adc.json" not in serialized
     assert "app-password" not in serialized

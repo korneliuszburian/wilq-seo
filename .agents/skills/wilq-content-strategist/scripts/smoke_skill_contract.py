@@ -24,6 +24,7 @@ REQUIRED_CONTEXT_KEYS = {
     "active_action_objects",
     "content_diagnostics",
 }
+CONTENT_ACTION_ID = "act_prepare_content_refresh_queue"
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -72,6 +73,12 @@ def main() -> int:
         "action_ids"
     ):
         raise SystemExit("Context pack content_diagnostics action IDs differ from endpoint")
+    if decision_trace(pack.get("content_diagnostics", {}).get("decision_queue")) != decision_trace(
+        content_diagnostics.get("decision_queue")
+    ):
+        raise SystemExit("Context pack content_diagnostics decision_queue differs from endpoint")
+    decision_queue = content_diagnostics.get("decision_queue", [])
+    validate_content_decision_queue(content_diagnostics)
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -126,6 +133,12 @@ def main() -> int:
                     "query_page_count": content_diagnostics.get("query_page_count"),
                     "matched_inventory_count": content_diagnostics.get("matched_inventory_count"),
                     "blocker_count": content_diagnostics.get("blocker_count"),
+                    "decision_queue": decision_queue,
+                    "decision_types": [
+                        item.get("decision_type")
+                        for item in decision_queue
+                        if isinstance(item, dict)
+                    ],
                     "section_ids": [
                         section.get("id")
                         for section in content_diagnostics.get("sections", [])
@@ -165,6 +178,52 @@ def main() -> int:
         )
     )
     return 0
+
+
+def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None:
+    decision_queue = content_diagnostics.get("decision_queue", [])
+    live_data_available = bool(content_diagnostics.get("live_data_available"))
+    query_page_count = int(content_diagnostics.get("query_page_count") or 0)
+    if not live_data_available and query_page_count == 0:
+        if decision_queue:
+            raise SystemExit(
+                "Content diagnostics exposes decision_queue without live content facts"
+            )
+        return
+    if not decision_queue:
+        raise SystemExit("Content diagnostics decision_queue is empty")
+    if not all(isinstance(item, dict) for item in decision_queue):
+        raise SystemExit("Content diagnostics decision_queue must contain objects")
+    action_ids = set(content_diagnostics.get("action_ids") or [])
+    if CONTENT_ACTION_ID not in action_ids:
+        raise SystemExit(f"Content diagnostics missing {CONTENT_ACTION_ID}")
+    has_clustered_inventory_check = any(
+        decision.get("decision_type") == "merge_create_after_inventory_check"
+        for decision in decision_queue
+    )
+    if not has_clustered_inventory_check:
+        raise SystemExit("Content decision_queue lacks clustered merge/create inventory-check item")
+    if not any(
+        decision.get("decision_type") == "block_as_tracking_not_content"
+        for decision in decision_queue
+    ):
+        raise SystemExit("Content decision_queue lacks GA4 tracking-gap blocker decision")
+
+
+def decision_trace(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [
+        {
+            "id": item.get("id"),
+            "decision_type": item.get("decision_type"),
+            "source_connectors": item.get("source_connectors", []),
+            "evidence_ids": item.get("evidence_ids", []),
+            "action_ids": item.get("action_ids", []),
+        }
+        for item in value
+        if isinstance(item, dict)
+    ]
 
 
 if __name__ == "__main__":

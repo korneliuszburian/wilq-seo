@@ -20,6 +20,8 @@ SAFE_IDENTIFIER_KEYS = {
     "connector_refresh_run_ids",
     "credential_runtime",
     "credential_sources",
+    "decision_type",
+    "decision_types",
     "evidence_id",
     "evidence_ids",
     "job_id",

@@ -16,6 +16,7 @@ Every Codex session working on WILQ must read these files first:
 3. `docs/architecture/bdos-class-wilq-operating-system.md` - product bar.
 4. `docs/infra/001.md` - original product scope.
 5. `docs/architecture/codex-runtime.md` - skills, hooks, MCP and Codex evals.
+6. `docs/audits/001-output.md` - fresh 2026-06-18 audit and next-slice critique.
 
 Keep this file updated when connector readiness, live data status, blockers,
 verification state or next tasks change.
@@ -45,6 +46,11 @@ The expected loop is:
 Every marketer-facing response must be in Polish with Polish diacritics. Stable
 API IDs, connector IDs, evidence IDs, enum values and endpoint paths remain in
 their original form.
+
+Skills are thin operator workflows over WILQ API. Do not put product decision
+logic, dedupe rules, edge-case fixes or dashboard cleanup logic into skill
+references. If a skill needs a smarter decision, implement the typed
+API/schema/view-model first and make the skill consume that field.
 
 ## Research And Knowledge Contract
 
@@ -161,6 +167,11 @@ These are the current reasons Goal 001 is not complete:
    Those belong in lower diagnostic/settings surfaces unless converted into a
    real decision, blocker or action.
 
+   Fresh audit correction: introduce canonical `DailyDecision` as the primary
+   Command Center model. `operator_brief`, `action_plan`, `marketing_brief`,
+   diagnostics and `/api/actions` may remain supporting surfaces, but the first
+   screen and `wilq-daily-command` need one daily decision contract.
+
 3. **Ads Doctor is only partially useful.**
    Campaign-level facts exist, but search terms, recommendations, quality,
    budget pacing, impression share, CPA/ROAS and negative keyword workflows need
@@ -180,6 +191,10 @@ These are the current reasons Goal 001 is not complete:
    Goal 001 must show at least one source-backed chain:
    source -> knowledge card/rule -> API view model -> dashboard card ->
    non-interactive Codex skill output.
+
+   Current local slice moves this in the right direction for content:
+   `content_diagnostics.decision_queue` is typed API state, not skill-reference
+   logic. Finish and commit this before starting a new feature.
 
 6. **Localo and social remain limited-evidence surfaces.**
    Localo access is no longer an OAuth blocker, but local ranking/GBP/competitor
@@ -268,6 +283,123 @@ evidence IDs, ActionObject validation, audit logging or redaction.
 This is the current executable goal. Work through it in order and update this
 section whenever a step is completed, blocked or replaced by a better-proven
 next step.
+
+### Audit-Derived Goal Stack
+
+Source of truth for this stack:
+
+```txt
+docs/audits/001-output.md
+```
+
+The audit confirms the architecture direction is right: FastAPI/WILQ API is the
+brain, typed schemas and evidence IDs are the product contract, and dashboard
+plus Codex skills must consume the same API state. The audit also confirms the
+current weakness: WILQ still sometimes presents system readiness as marketer
+insight and several skills pass because they block safely, not because they
+produce high-value decisions.
+
+Work in this order:
+
+1. **Finish and commit current local slice: content decision queue.**
+   `content_diagnostics.decision_queue` must remain typed API state, not skill
+   reference logic. It must support `refresh_or_merge`,
+   `merge_create_after_inventory_check`, `inventory_check_before_create` and
+   `block_as_tracking_not_content`, with evidence IDs, source connectors,
+   ActionObject IDs and blocked claims. Commit only after focused checks pass.
+
+2. **Slice 1: Command Center as canonical `DailyDecision`.**
+   Introduce one first-screen decision model instead of competing
+   `operator_brief`, `action_plan`, `marketing_brief`, diagnostics and action
+   fragments. A `DailyDecision` must include:
+   `co_widzimy`, `dlaczego_to_ma_znaczenie`, `bezpieczny_next_step`,
+   `blocked_claims`, `evidence_ids`, `source_connectors`, `action_ids`,
+   `skill_id`, `codex_prompt` and `route`.
+
+3. **Slice 2: performance budget and scoped runtime.**
+   Command Center summary target: under 1s local and about 80-120 KB when
+   feasible. Non-daily skill context-pack target: under 2s and under 200 KB.
+   Full context-pack is a debug mode, not default runtime. Measure before and
+   after; do not hide performance issues with random frontend memoization.
+
+4. **Slice 3: Merchant issue-level triage.**
+   Convert Merchant from `products/issues` summary into issue clusters by
+   `issue_type`, `affected_attribute`, `country`, `reporting_context`, impact,
+   sample products if available, evidence IDs and
+   `act_review_merchant_feed_issues`. This is the strongest current demo win.
+
+5. **Slice 4: Content/GSC/GA4/WordPress URL normalizer.**
+   Normalize host, path, slash, sitemap, post/page type and GA4 landing path to
+   full WordPress URL. The goal is reliable `refresh/merge/create/block`
+   decisions and no duplicate content suggestions. GA4 `(not set)` remains a
+   tracking issue, not a content task.
+
+6. **Slice 5: Ads Doctor read contracts.**
+   Keep Ads as live campaign-level review until WILQ has explicit read
+   contracts for search terms, conversions, campaign budget/spend/clicks,
+   recommendations, change history and blocked-claim matrix. Do not call it a
+   money-leak optimizer until those facts exist.
+
+7. **Later P2/P3 data contracts.**
+   Localo needs rankings, GBP visibility, competitors and reviews before local
+   SEO claims. Ahrefs needs competitor pages/backlink/content-gap records before
+   gap claims. Custom Segments need real source terms. Campaign Builder needs
+   campaign ActionObjects and payload preview contracts. Demand Gen needs
+   creative/asset/landing-quality diagnostics. Social publishing stays explicit
+   workflow only.
+
+8. **Skill repair track: thin workflows after API contracts.**
+   Skill repair is not done. It is also not the last cosmetic step. It runs
+   immediately after the API/view-model contract for a workflow exists. The
+   order is:
+   - `wilq-daily-command` after canonical `DailyDecision`;
+   - `wilq-merchant-feed-operator` after Merchant issue-level triage;
+   - `wilq-content-strategist` and `wilq-gsc-content-doctor` after
+     `content_diagnostics.decision_queue` and URL normalization;
+   - `wilq-ga4-analyst` after ranked GA4 landing/source/campaign diagnostics
+     and clear tracking-gap separation;
+   - `wilq-ads-doctor` after campaign table, search terms/conversions and
+     blocked-claim matrix;
+   - `wilq-localo-operator`, `wilq-ahrefs-gap-finder`,
+     `wilq-custom-segments`, `wilq-campaign-builder`,
+     `wilq-demand-gen-operator` and `wilq-social-publisher` only after their
+     required read contracts or ActionObjects exist.
+
+   Repair means:
+   - `SKILL.md` has clean trigger intent, allowed endpoints, evidence
+     requirements, blocked claims and output contract;
+   - references contain durable domain guidance only, not product bug fixes,
+     dedupe rules or dashboard cleanup patches;
+   - deterministic smoke validates the API contract;
+   - `scripts/codex_skill_eval.sh --skill <skill>` proves Polish output,
+     WILQ API usage, evidence IDs, source connectors, ActionObject safety and
+     a useful marketer decision for that workflow.
+
+Stop doing, per audit:
+
+- Do not treat `configured`, `ready for refresh`, or `connector_configured=true`
+  as marketer insight.
+- Do not promote LinkedIn/Facebook/social draft actions in daily flow unless
+  the operator explicitly asks for social.
+- Do not develop skills ahead of read contracts. Better prompts cannot replace
+  missing API evidence.
+- Do not load the full context-pack as default skill runtime.
+- Do not put product decision repairs, dedupe rules or edge-case classifiers in
+  skill references. Move them to typed API/schema/view-model contracts first.
+- Do not call Ads Doctor a CPA/ROAS/search-term/wasted-budget optimizer until
+  those read contracts exist.
+
+Demo acceptance from the audit:
+
+- First screen shows 3-5 marketer decisions, not system status.
+- Every decision has evidence IDs, source connectors, blocked claims, route,
+  ActionObject where applicable and a Polish Codex prompt for the matching
+  skill.
+- Dashboard and the matching skill return the same evidence/action IDs for the
+  same marketer question.
+- Skills are evaluated for usefulness, not only schema pass:
+  Daily, Merchant, GA4, Content/GSC and Ads must each prove a concrete,
+  evidence-backed Polish operator answer.
 
 ### 0. Preflight Truth
 
@@ -440,6 +572,13 @@ Tasks:
   It proves `pl-PL`, Polish diacritics, `api_used=true`, 14 evidence IDs, core
   ActionObject candidates only, no safety findings and
   `operator_usefulness_score=5`.
+- 2026-06-18 active local slice: `content_diagnostics.decision_queue` moved
+  content classification into typed WILQ API. Fresh eval passed at
+  `.local-lab/evals/codex-skill/20260618T114810Z/wilq-content-strategist/result.json`.
+  It uses API decisions `inventory_check_before_create`,
+  `merge_create_after_inventory_check` and `block_as_tracking_not_content`.
+  This slice is not committed yet; see `docs/CONTEXT.md` and `docs/PROGRESS.md`
+  before resuming.
 - Performance direction: follow TanStack/React guidance by avoiding client
   waterfalls and duplicated data models. Do not patch this with random
   `useMemo`; next performance slice should build a lightweight daily-decision
@@ -738,11 +877,23 @@ Result:
 Full `scripts/verify.sh` passed after the current cleanup:
 
 ```text
-backend API contracts: 90 passed
+backend API contracts: 93 passed
 dashboard route tests: 12 passed
 Playwright e2e: 8 passed
 dashboard production build: passed
 ```
+
+Latest content decision queue verification:
+
+- Focused ruff, mypy and API contract tests passed for
+  `content_diagnostics.decision_queue`, redaction and skill smoke updates.
+- Full `scripts/verify.sh` passed after adding clean-runtime core prepare
+  ActionObjects and stabilizing `wilq-content-strategist` smoke.
+- Clean runtime rule: core daily prepare ActionObjects may exist with connector
+  evidence only, but content `decision_queue` must remain empty until real
+  GSC/GA4/WordPress metric facts exist. Live runtime still requires concrete
+  `inventory_check_before_create`, `merge_create_after_inventory_check` and
+  `block_as_tracking_not_content` decisions.
 
 Latest focused backend slice:
 

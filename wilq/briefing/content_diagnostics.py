@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Literal
 
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -13,6 +14,7 @@ from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    ContentDecisionItem,
     ContentDiagnosticSection,
     ContentDiagnosticsResponse,
     MetricFact,
@@ -30,6 +32,12 @@ CONTENT_CONNECTOR_IDS = (
 )
 PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
+ContentDecisionType = Literal[
+    "refresh_or_merge",
+    "merge_create_after_inventory_check",
+    "inventory_check_before_create",
+    "block_as_tracking_not_content",
+]
 
 
 def build_content_diagnostics() -> ContentDiagnosticsResponse:
@@ -42,12 +50,14 @@ def build_content_diagnostics() -> ContentDiagnosticsResponse:
     metric_facts = _content_metric_facts(CONTENT_CONNECTOR_IDS)
     live_data_available = _primary_content_data_available(metric_facts, latest_refreshes)
     trusted_facts = metric_facts if live_data_available else []
+    all_tactical_items = build_tactical_queue().items
     tactical_items = [
         item
-        for item in build_tactical_queue().items
+        for item in all_tactical_items
         if item.domain == OpportunityDomain.gsc_seo
         or item.source_connectors.count("wordpress_ekologus") > 0
     ]
+    decision_queue = _content_decision_queue(all_tactical_items)
     action_ids = _content_action_ids(list_actions())
     sections = [
         _query_page_section(latest_refreshes, trusted_facts, tactical_items, action_ids),
@@ -61,6 +71,7 @@ def build_content_diagnostics() -> ContentDiagnosticsResponse:
         live_data_available=live_data_available,
         query_page_count=_query_page_count(tactical_items),
         matched_inventory_count=_matched_inventory_count(tactical_items),
+        decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
             evidence_id for section in sections for evidence_id in section.evidence_ids
@@ -325,3 +336,154 @@ def _unique(values: Iterable[object]) -> list[str]:
         if text and text not in unique_values:
             unique_values.append(text)
     return unique_values
+
+
+def _content_decision_queue(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
+    decisions = [
+        *_gsc_content_decisions(items),
+        *_ga4_tracking_gap_decisions(items),
+    ]
+    return sorted(decisions, key=lambda decision: (decision.risk.value, decision.id))[:5]
+
+
+def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
+    page_groups: dict[str, list[TacticalQueueItem]] = {}
+    for item in _unique_tactical_items(items):
+        if item.domain != OpportunityDomain.gsc_seo:
+            continue
+        page = item.dimensions.get("page")
+        if page:
+            page_groups.setdefault(page, []).append(item)
+
+    decisions: list[ContentDecisionItem] = []
+    for page, page_items in page_groups.items():
+        first = page_items[0]
+        wordpress_match = first.dimensions.get("wordpress_match", "missing")
+        query_count = _int_dimension(first, "gsc_page_query_count", len(page_items))
+        queries = _unique(
+            item.dimensions.get("query")
+            for item in page_items
+            if item.dimensions.get("query")
+        )
+        metric_facts = _unique_metric_facts(
+            fact for item in page_items for fact in item.metric_facts
+        )
+        decision_type: ContentDecisionType
+        if wordpress_match == "found":
+            decision_type = "refresh_or_merge"
+            title = f"Odśwież lub scal istniejącą treść: {page}"
+            next_step = "Przygotuj refresh/merge brief na podstawie GSC i WordPress inventory."
+            rationale = "WordPress inventory potwierdza istniejącą stronę dla query z GSC."
+        elif query_count > 1:
+            decision_type = "merge_create_after_inventory_check"
+            title = f"Zweryfikuj klaster query przed tworzeniem treści: {page}"
+            next_step = "Sprawdź mapping URL i duplikaty w WordPress przed create/restore."
+            rationale = "Wiele query prowadzi do jednego URL, ale inventory nie potwierdza strony."
+        else:
+            decision_type = "inventory_check_before_create"
+            title = f"Sprawdź inventory przed briefem treści: {page}"
+            next_step = "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap."
+            rationale = "GSC pokazuje popyt, ale WordPress inventory nie potwierdza URL."
+        decisions.append(
+            ContentDecisionItem(
+                id=f"content_decision_{_slug(page)}",
+                decision_type=decision_type,
+                title=title,
+                page=page,
+                queries=queries,
+                query_count=query_count,
+                wordpress_match=wordpress_match,
+                source_connectors=_unique(
+                    connector for item in page_items for connector in item.source_connectors
+                ),
+                evidence_ids=_unique(
+                    evidence_id for item in page_items for evidence_id in item.evidence_ids
+                ),
+                metric_facts=metric_facts[:8],
+                action_ids=_unique(
+                    action_id for item in page_items for action_id in item.action_ids
+                ),
+                blocked_claims=_unique(
+                    claim for item in page_items for claim in item.blocked_claims
+                ),
+                rationale=rationale,
+                next_step=next_step,
+                risk=ActionRisk.medium if wordpress_match == "missing" else ActionRisk.low,
+            )
+        )
+    return decisions
+
+
+def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
+    tracking_gaps = [
+        item
+        for item in _unique_tactical_items(items)
+        if item.domain == OpportunityDomain.ga4 and item.intent == "tracking_gap"
+    ]
+    if not tracking_gaps:
+        return []
+    evidence_ids = _unique(
+        evidence_id for item in tracking_gaps for evidence_id in item.evidence_ids
+    )
+    metric_facts = _unique_metric_facts(
+        fact for item in tracking_gaps for fact in item.metric_facts
+    )
+    return [
+        ContentDecisionItem(
+            id="content_decision_ga4_tracking_gap_block",
+            decision_type="block_as_tracking_not_content",
+            title="Zablokuj GA4 tracking gaps jako zadania contentowe",
+            source_connectors=["google_analytics_4"],
+            evidence_ids=evidence_ids,
+            metric_facts=metric_facts[:8],
+            action_ids=_unique(
+                action_id for item in tracking_gaps for action_id in item.action_ids
+            ),
+            blocked_claims=_unique(
+                [
+                    *(claim for item in tracking_gaps for claim in item.blocked_claims),
+                    "content rewrite",
+                    "conversion uplift",
+                    "ROAS",
+                ]
+            ),
+            rationale=(
+                "GA4 `(not set)` i tracking_gap wskazują problem pomiaru, "
+                "nie gotową rekomendację treści."
+            ),
+            next_step="Przekaż do GA4 tracking review zamiast tworzyć content rewrite.",
+            risk=ActionRisk.medium,
+        )
+    ]
+
+
+def _unique_tactical_items(items: Iterable[TacticalQueueItem]) -> list[TacticalQueueItem]:
+    unique_items: dict[str, TacticalQueueItem] = {}
+    for item in items:
+        unique_items.setdefault(item.id, item)
+    return list(unique_items.values())
+
+
+def _unique_metric_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
+    unique_facts: dict[tuple[str, str, tuple[tuple[str, str], ...]], MetricFact] = {}
+    for fact in facts:
+        key = (
+            fact.source_connector,
+            fact.name,
+            tuple(sorted((str(key), str(value)) for key, value in fact.dimensions.items())),
+        )
+        unique_facts.setdefault(key, fact)
+    return list(unique_facts.values())
+
+
+def _int_dimension(item: TacticalQueueItem, key: str, fallback: int) -> int:
+    try:
+        return int(item.dimensions.get(key, fallback))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _slug(value: str) -> str:
+    return "".join(character if character.isalnum() else "_" for character in value.lower()).strip(
+        "_"
+    )[:80]

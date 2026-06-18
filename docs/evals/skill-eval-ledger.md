@@ -1144,3 +1144,48 @@ Product gap still open:
 
 - Future daily evals should validate ActionObjects before claiming execution
   readiness and compare the final response against the dashboard route snapshot.
+
+## 2026-06-18 - wilq-content-strategist API Decision Queue Re-Eval
+
+Artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260618T114810Z/wilq-content-strategist/result.json
+```
+
+Why rerun:
+
+- The earlier content strategist eval proved safety, but not sufficiently
+  concrete content decisions.
+- During the fix, product logic was almost placed in skill references. This was
+  corrected: `content_diagnostics.decision_queue` now lives in the typed WILQ
+  API, and the skill consumes it.
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- 11 evidence IDs returned.
+- `operator_usefulness_score=4`.
+- The response used API decision types:
+  `inventory_check_before_create`,
+  `merge_create_after_inventory_check`,
+  `block_as_tracking_not_content`.
+- `act_prepare_content_refresh_queue` stayed prepare-only and pending
+  validation.
+- No safety findings.
+
+Useful output:
+
+- Zielony Ład is treated as one cluster with
+  `merge_create_after_inventory_check`, not seven duplicate content tasks.
+- BDO and other pages with `wordpress_match=missing` are treated as
+  `inventory_check_before_create`, not automatic create/refresh.
+- GA4 tracking gaps are blocked as measurement tasks, not content rewrite
+  candidates.
+
+Product correction recorded:
+
+- Skills must not contain product decision repairs or edge-case classifiers in
+  references. Typed WILQ API/view-model contracts must own that logic.

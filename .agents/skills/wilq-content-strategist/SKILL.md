@@ -32,9 +32,10 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 2. Uruchom `uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
 3. Wywołaj `GET /api/content/diagnostics` przed budową content planu lub kolejki.
 4. Call `POST /api/codex/context-pack` with `{"skill":"wilq-content-strategist"}` and confirm embedded `content_diagnostics` exists.
-5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
-6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
-7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+5. Użyj `content_diagnostics.decision_queue` jako kanonicznej kolejki decyzji. Nie odtwarzaj klasyfikacji contentowej w promptach.
+6. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
+7. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+8. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
 
 </workflow>
 

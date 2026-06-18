@@ -534,6 +534,29 @@ class ContentDiagnosticSection(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class ContentDecisionItem(BaseModel):
+    id: str
+    decision_type: Literal[
+        "refresh_or_merge",
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+        "block_as_tracking_not_content",
+    ]
+    title: str
+    page: str | None = None
+    queries: list[str] = Field(default_factory=list)
+    query_count: int = 0
+    wordpress_match: str | None = None
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    rationale: str
+    next_step: str
+    risk: ActionRisk = ActionRisk.low
+
+
 class ContentDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -543,6 +566,7 @@ class ContentDiagnosticsResponse(BaseModel):
     live_data_available: bool
     query_page_count: int = 0
     matched_inventory_count: int = 0
+    decision_queue: list[ContentDecisionItem] = Field(default_factory=list)
     sections: list[ContentDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
