@@ -934,7 +934,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert context_command["primary_next_step"] == payload["primary_next_step"]
 
 
-def test_command_center_treats_localo_mcp_initialize_as_access_ready(
+def test_command_center_demotes_localo_access_ready_without_visibility_facts(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -970,14 +970,31 @@ def test_command_center_treats_localo_mcp_initialize_as_access_ready(
     assert response.status_code == 200
     payload = response.json()
     brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
-    localo_brief = brief_by_id["daily_localo_readiness"]
-    assert localo_brief["status"] == "ready"
-    assert "MCP access działa" in localo_brief["title"]
-    assert localo_brief["metric_tiles"]["MCP access"] == 1
-    assert localo_brief["metric_tiles"]["ranking facts"] == 0
+    assert "daily_localo_readiness" not in brief_by_id
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
     assert "plan_localo_access_ready_wait_for_visibility_facts" not in plan_by_id
     assert "plan_finish_localo_access_before_local_visibility" not in plan_by_id
+
+
+def test_command_center_keeps_localo_access_blocker_in_primary_brief(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "localo_blocker_command.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "localo_blocker_command.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    metric_store().status()
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
+    localo_brief = brief_by_id["daily_localo_readiness"]
+    assert localo_brief["status"] == "blocked"
+    assert "brak dostępu" in localo_brief["title"]
+    assert localo_brief["metric_tiles"]["MCP access"] == 0
 
 
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(

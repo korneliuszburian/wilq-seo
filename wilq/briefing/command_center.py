@@ -46,7 +46,9 @@ def build_command_center_brief() -> tuple[list[CommandCenterBriefItem], str, int
         _ga4_item(ga4),
     ]
     if localo is not None:
-        items.append(_localo_item(localo, localo_runs))
+        localo_item = _localo_item(localo, localo_runs)
+        if localo_item.status == "blocked":
+            items.append(localo_item)
     sorted_items = sorted(items, key=lambda item: item.priority)
     blocker_count = sum(1 for item in sorted_items if item.status == "blocked")
     return sorted_items, _primary_next_step(sorted_items), blocker_count
@@ -229,7 +231,7 @@ def _localo_item(
         title=(
             "Localo: MCP access działa, brak jeszcze ranking/GBP facts"
             if oauth_access_ready
-            else "Localo: access blocker przed lokalnymi rekomendacjami"
+            else "Localo: brak dostępu przed lokalnymi rekomendacjami"
         ),
         route="/localo",
         status="ready" if oauth_access_ready else "blocked",
@@ -506,7 +508,7 @@ def _action_plan_item(
             )
         return CommandCenterActionPlanItem(
             id="plan_finish_localo_access_before_local_visibility",
-            title="Dokończ Localo access przed lokalnymi rekomendacjami",
+            title="Dokończ dostęp Localo przed lokalnymi rekomendacjami",
             route=item.route,
             status="blocked",
             priority=20,

@@ -387,3 +387,25 @@ uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --
 Live API note: the previously running `uvicorn` process did not use `--reload`,
 so the first smoke still showed stale social action IDs. Restarted WILQ API on
 `127.0.0.1:8000`; the repeated smoke returned only the three core daily actions.
+
+## Localo Command Center Demotion
+
+Cleaned the next Command Center readiness-only card.
+
+Result:
+
+- Current Localo state is configured/access-ready, not an OAuth/access blocker.
+- Access-ready Localo no longer appears in primary `/api/dashboard/command-center`
+  `operator_brief`, because WILQ still has no ranking/GBP/competitor facts.
+- If Localo credentials are actually missing, Command Center still keeps a
+  `daily_localo_readiness` blocker card.
+- `/localo` remains the place for Localo readiness/access status until WILQ has
+  a concrete local visibility read contract.
+
+Focused proof:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/command_center.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or command_center_demotes_localo_access_ready_without_visibility_facts or command_center_keeps_localo_access_blocker_in_primary_brief'
+```

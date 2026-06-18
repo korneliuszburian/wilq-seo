@@ -747,3 +747,14 @@ Latest focused backend slice:
   uv run pytest tests/test_api_contracts.py -q -k 'marketing_brief_exposes_metric_backed_prepare_actions or codex_context_pack_embeds_marketing_brief_contract or daily_context_pack_excludes_social_draft_action_objects or social_context_pack_keeps_explicit_social_draft_action_objects or command_center_exposes_polish_operator_brief'
   uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
   ```
+
+Latest Command Center cleanup:
+
+- Localo is configured and access-ready, not an active OAuth/access blocker.
+- Because WILQ still lacks concrete Localo ranking/GBP/competitor facts,
+  access-ready Localo is no longer shown as a primary Command Center
+  `operator_brief` card or action-plan item.
+- Localo still appears as a primary Command Center card only when access is
+  genuinely missing, because that is an actionable blocker.
+- `/localo` and `wilq-localo-operator` remain the right surfaces for Localo
+  access/readiness status until a real Localo visibility read contract exists.
