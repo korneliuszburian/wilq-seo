@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 00:52 Europe/Warsaw.
+Last updated: 2026-06-20 01:16 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -169,6 +169,17 @@ Current connector truth:
   `/api/ads/diagnostics`, `/api/actions/act_prepare_ads_campaign_review_queue`
   and dashboard `/ads-doctor`; every preview keeps `api_mutation_ready=false`,
   `apply_allowed=false` and `destructive=false`.
+  Command Center now consumes those Ads diagnostics as a marketer decision,
+  not as generic connector readiness. Live `/api/dashboard/command-center`
+  proof after local stack restart: `daily_ads_status` title
+  `Ads: kolejki budżetu, rekomendacji i zapytań`, status `ready`,
+  priority `16`, metric tiles `kampanie=18`, `zapytania=50`,
+  `podgląd budżetu=18`, `rekomendacje=4`, `wykluczenia=6`, `segmenty=1`,
+  and ActionObjects `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` and
+  `act_prepare_negative_keyword_review_queue`. The `wilq-daily-command`
+  scoped context-pack carries the same Ads action-plan prompt.
   Latest live Ads proof: `refresh_google_ads_60956db2c42f` /
   `ev_refresh_refresh_google_ads_60956db2c42f` exposes
   `customer_currency_code=PLN`, 18 campaign rows, 50 30-day search-term rows,
@@ -216,10 +227,11 @@ Current connector truth:
   read/safety/apply contracts. Individual recommendation rows may still show
   `missing_metrics=["recommendation_impact"]` when Google Ads does not return
   impact metrics for that recommendation type; that is not an OAuth/API blocker.
-  Full `scripts/verify.sh` passed for the budget apply-preview slice on
-  2026-06-20: backend API contracts `116 passed`, dashboard route tests
-  `14 passed`, Playwright e2e `9 passed`, API smoke, skill structure smoke,
-  skill API smoke, security checks and dashboard production build passed.
+  Full `scripts/verify.sh` passed for the Command Center Ads review-queues
+  slice on 2026-06-20: backend API contracts `117 passed`, dashboard route
+  tests `14 passed`, Playwright e2e `9 passed`, API smoke, skill structure
+  smoke, skill API smoke, security checks and dashboard production build
+  passed.
   Source-backed decision lineage now exists for Ads diagnostics: sections and
   decision queue items expose `knowledge_card_ids` and `expert_rule_ids`.
   Current proof chain for the budget slice is
@@ -607,6 +619,20 @@ Work in this order:
    `scripts/verify.sh` passed after this slice with backend API contracts
    `100 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
    and dashboard production build passed.
+
+   Follow-up completed on 2026-06-20: Command Center Ads now consumes the same
+   Ads diagnostics as `/ads-doctor` and exposes concrete review queues instead
+   of generic `live metric facts` prose. `daily_ads_status` and
+   `plan_review_ads_campaign_metrics` show budget, recommendation, search-term,
+   negative keyword and custom segment review context with ActionObject IDs,
+   blocked claims and a Polish Codex prompt. Live proof after
+   `scripts/local_stack.sh restart`: `kampanie=18`, `zapytania=50`,
+   `podgląd budżetu=18`, `rekomendacje=4`, `wykluczenia=6`, `segmenty=1`.
+   Focused ruff, mypy and command-center API contract tests pass for this
+   slice. Full `scripts/verify.sh` passed with backend API contracts
+   `117 passed`, dashboard route tests `14 passed`, Playwright e2e `9 passed`,
+   API smoke, skill structure smoke, skill API smoke, security checks and
+   dashboard production build.
 
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when

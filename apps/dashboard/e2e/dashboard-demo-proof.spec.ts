@@ -35,7 +35,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       page.getByRole("heading", { name: "GA4: brak pełnego kontraktu interpretacji ruchu" })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Przejrzyj kampanie Google Ads z live metryk" })
+      page.getByRole("heading", { name: "Przejrzyj kolejki Ads do oceny bez apply" })
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Localo: MCP access działa, brak jeszcze ranking/GBP facts" })
@@ -44,7 +44,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
     await expect(page.getByText("act_review_merchant_feed_issues").first()).toBeVisible();
-    await expect(page.getByText("Przejrzyj kampanie Google Ads z live metryk")).toBeVisible();
+    await expect(page.getByText("Przejrzyj kolejki Ads do oceny bez apply")).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "01-command-center-action-plan.png"),
       fullPage: true,

@@ -208,47 +208,102 @@ def tactical_item_count() -> int:
 
 def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
     blocked_section = _first_blocked_section(data.sections)
+    metric_tiles = _ads_metric_tiles(data) if data.live_data_available else {}
     summary = (
-        "Google Ads ma live metric facts."
+        _ads_ready_summary(metric_tiles)
         if data.live_data_available
         else (blocked_section.summary if blocked_section else "Google Ads nie ma live danych.")
     )
     next_step = (
-        "Otwórz /ads-doctor i przejdź do read-only performance review."
+        _ads_ready_next_step(metric_tiles)
         if data.live_data_available
         else "Otwórz /ads-doctor i napraw OAuth przez `act_configure_google_ads_env`."
     )
     return CommandCenterBriefItem(
         id="daily_ads_status",
         title=(
-            "Ads: live campaign metrics dostępne"
+            "Ads: kolejki budżetu, rekomendacji i zapytań"
             if data.live_data_available
             else "Ads: blocker OAuth przed analizą spendu"
         ),
         route="/ads-doctor",
         status="ready" if data.live_data_available else "blocked",
-        priority=30 if data.live_data_available else 5,
+        priority=16 if data.live_data_available else 5,
         summary=summary,
         next_step=next_step,
         source_connectors=["google_ads"],
         evidence_ids=_limited_ids(data.evidence_ids),
         action_ids=data.action_ids,
-        metric_tiles=(
-            {
-                "kampanie": len(data.campaign_read_contract.campaign_rows),
-                "search terms": len(data.search_terms_read_contract.search_term_rows),
-                "blockery": data.blocker_count,
-            }
-            if data.live_data_available
-            else {"blockery": data.blocker_count}
-        ),
+        metric_tiles=metric_tiles if data.live_data_available else {"blockery": data.blocker_count},
         blocked_claims=(
-            ["CPA", "ROAS", "search-term waste", "negative keyword candidates"]
+            _ads_ready_blocked_claims(data)
             if data.live_data_available
             else ["spend", "CPA", "ROAS", "search terms", "wasted budget"]
         ),
         risk=ActionRisk.medium,
     )
+
+
+def _ads_metric_tiles(data: AdsDiagnosticsResponse) -> dict[str, float | int | str]:
+    return {
+        "kampanie": len(data.campaign_read_contract.campaign_rows),
+        "zapytania": len(data.search_terms_read_contract.search_term_rows),
+        "podgląd budżetu": len(data.budget_pacing_read_contract.payload_preview),
+        "rekomendacje": len(data.recommendations_read_contract.payload_preview),
+        "wykluczenia": len(data.negative_keywords_read_contract.payload_preview),
+        "segmenty": len(data.custom_segments_read_contract.payload_preview),
+    }
+
+
+def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
+    return (
+        "Google Ads ma liczniki do oceny: "
+        f"kampanie={metric_tiles.get('kampanie', 0)}, "
+        f"zapytania={metric_tiles.get('zapytania', 0)}, "
+        f"podgląd budżetu={metric_tiles.get('podgląd budżetu', 0)}, "
+        f"rekomendacje={metric_tiles.get('rekomendacje', 0)}, "
+        f"wykluczenia={metric_tiles.get('wykluczenia', 0)}, "
+        f"segmenty={metric_tiles.get('segmenty', 0)}. "
+        "To są kolejki tylko do oceny z evidence i ActionObjectami, nie ścieżka apply."
+    )
+
+
+def _ads_ready_next_step(metric_tiles: dict[str, float | int | str]) -> str:
+    review_parts: list[str] = []
+    if _numeric_tile(metric_tiles, "podgląd budżetu") > 0:
+        review_parts.append("budżety")
+    if _numeric_tile(metric_tiles, "rekomendacje") > 0:
+        review_parts.append("rekomendacje")
+    if _numeric_tile(metric_tiles, "wykluczenia") > 0:
+        review_parts.append("wykluczenia")
+    if _numeric_tile(metric_tiles, "segmenty") > 0:
+        review_parts.append("segmenty")
+    if not review_parts:
+        review_parts.append("kampanie i zapytania")
+    return (
+        "Otwórz /ads-doctor i przejdź przez ocenę: "
+        f"{', '.join(review_parts)}. Nie wdrażaj apply bez walidacji, "
+        "potwierdzenia i audytu."
+    )
+
+
+def _ads_ready_blocked_claims(data: AdsDiagnosticsResponse) -> list[str]:
+    blocked_claims = _unique(
+        [
+            *data.budget_pacing_read_contract.blocked_claims,
+            *data.recommendations_read_contract.blocked_claims,
+            *data.negative_keywords_read_contract.blocked_claims,
+            *data.custom_segments_read_contract.blocked_claims,
+            "profitability",
+            "wasted budget",
+        ]
+    )
+    return blocked_claims[:8]
+
+
+def _numeric_tile(metric_tiles: dict[str, float | int | str], name: str) -> float:
+    value = metric_tiles.get(name, 0)
+    return float(value) if isinstance(value, int | float) else 0.0
 
 
 def _merchant_item_from_facts(
@@ -686,29 +741,34 @@ def _action_plan_item(
         if item.status == "ready":
             return CommandCenterActionPlanItem(
                 id="plan_review_ads_campaign_metrics",
-                title="Przejrzyj kampanie Google Ads z live metryk",
+                title="Przejrzyj kolejki Ads do oceny bez apply",
                 route=item.route,
                 status="ready",
                 priority=16,
                 category="Google Ads",
                 why_it_matters=(
-                    "Google Ads OAuth, MCC login i child customer działają. WILQ ma "
-                    "świeże campaign i search-term metric facts z konwersjami, ale "
-                    "CPA, ROAS, waste i negative keywords nadal wymagają osobnych "
-                    "read/safety/ActionObject contractów."
+                    f"{item.summary} Marketer ma tu decyzje do oceny, a nie listę "
+                    "connectorów: budżet, rekomendacje, wykluczenia i segmenty mają "
+                    "evidence oraz ActionObjecty, ale apply pozostaje zablokowany."
                 ),
-                operator_action="Otwórz /ads-doctor i analizuj tylko metryki widoczne w evidence.",
+                operator_action=(
+                    "Otwórz /ads-doctor i przejrzyj kolejno: podgląd budżetów, "
+                    "podgląd rekomendacji, przegląd wykluczeń i podgląd segmentów. "
+                    "Waliduj ActionObjecty, ale nie wdrażaj zmian."
+                ),
                 skill_id="wilq-ads-doctor",
                 codex_prompt=(
-                    "Użyj skilla wilq-ads-doctor. Pokaż przestrzeń do poprawy adsów "
-                    "w Ekologus na podstawie dostępnych campaign i search-term metric facts. "
-                    "Wyraźnie zablokuj CPA, ROAS, wasted budget i negative keywords, jeśli "
-                    "brakuje derived KPI, safety checku albo ActionObject validation."
+                    "Użyj skilla wilq-ads-doctor. Przejrzyj Google Ads dla Ekologus "
+                    "jako kolejkę oceny: budżety, rekomendacje, zapytania wyszukiwane, "
+                    "wykluczenia i segmenty niestandardowe. Cytuj evidence IDs i "
+                    "ActionObject IDs. Nie twierdź profitability, wasted budget ani "
+                    "apply; wskaż tylko bezpieczne decyzje tylko do oceny i brakujące "
+                    "kontrakty."
                 ),
                 codex_context_endpoint="/api/codex/context-pack",
                 expected_codex_output=(
-                    "Polska diagnoza Ads z tym, co już wiadomo, czego nie wolno "
-                    "twierdzić i co odczytać dalej."
+                    "Polska kolejka oceny Ads z evidence IDs, ActionObjectami, "
+                    "zablokowanymi claimami i następnymi krokami bez apply."
                 ),
                 source_connectors=item.source_connectors,
                 evidence_ids=item.evidence_ids,

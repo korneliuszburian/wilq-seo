@@ -289,6 +289,126 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
         )
 
 
+def seed_google_ads_live_review_metric_facts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ads_command_center.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ads_command_center.duckdb"))
+    completed_at = datetime.now(UTC)
+    run = ConnectorRefreshRun(
+        id="refresh_google_ads_command_center_live",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=completed_at,
+        evidence_ids=["ev_refresh_refresh_google_ads_command_center_live"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "campaign_row_count": 1,
+            "search_term_row_count": 1,
+            "recommendation_row_count": 1,
+        },
+        summary="Google Ads command center live review seed.",
+    )
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="customer_currency_code",
+                value="PLN",
+                dimensions={"customer_id": "1234567890"},
+            ),
+            *[
+                VendorMetricFact(
+                    name=name,
+                    value=value,
+                    dimensions={
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                        "budget_id": "701",
+                        "budget_name": "Brand budget",
+                        "budget_period": "DAILY",
+                        "budget_status": "ENABLED",
+                    },
+                )
+                for name, value in (
+                    ("clicks", 12),
+                    ("impressions", 120),
+                    ("cost_micros", 12000000),
+                    ("conversions", 1.0),
+                    ("conversion_value", 150.0),
+                    ("budget_amount_micros", 30000000),
+                    ("budget_has_recommended_budget", True),
+                    ("budget_recommended_amount_micros", 42000000),
+                )
+            ],
+            VendorMetricFact(
+                name="recommendation_available",
+                value=1,
+                dimensions={
+                    "recommendation_id": "rec-1",
+                    "recommendation_resource_name": "customers/123/recommendations/rec-1",
+                    "recommendation_type": "CAMPAIGN_BUDGET",
+                    "campaign_id": "101",
+                    "campaign_budget_id": "701",
+                    "dismissed": "false",
+                },
+            ),
+            VendorMetricFact(
+                name="recommendation_campaign_count",
+                value=1,
+                dimensions={
+                    "recommendation_id": "rec-1",
+                    "recommendation_type": "CAMPAIGN_BUDGET",
+                    "campaign_id": "101",
+                    "campaign_budget_id": "701",
+                },
+            ),
+            VendorMetricFact(
+                name="search_term_clicks",
+                value=6,
+                dimensions={
+                    "campaign_id": "101",
+                    "campaign_name": "Brand Search",
+                    "ad_group_id": "202",
+                    "ad_group_name": "BDO",
+                    "search_term": "odpady cena",
+                    "search_term_status": "NONE",
+                },
+            ),
+            VendorMetricFact(
+                name="search_term_cost_micros",
+                value=5000000,
+                dimensions={
+                    "campaign_id": "101",
+                    "campaign_name": "Brand Search",
+                    "ad_group_id": "202",
+                    "ad_group_name": "BDO",
+                    "search_term": "odpady cena",
+                    "search_term_status": "NONE",
+                },
+            ),
+            VendorMetricFact(
+                name="search_term_conversions",
+                value=0.0,
+                dimensions={
+                    "campaign_id": "101",
+                    "campaign_name": "Brand Search",
+                    "ad_group_id": "202",
+                    "ad_group_name": "BDO",
+                    "search_term": "odpady cena",
+                    "search_term_status": "NONE",
+                },
+            ),
+        ],
+    )
+
+
 def test_health_endpoint() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -1161,6 +1281,51 @@ def test_command_center_exposes_polish_operator_brief(
         assert context_item["evidence_ids"] == item["evidence_ids"]
         assert context_item["action_ids"] == item["action_ids"]
     assert context_command["primary_next_step"] == payload["primary_next_step"]
+
+
+def test_command_center_ads_plan_uses_live_review_queues(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
+    ads_item = brief_by_id["daily_ads_status"]
+    assert ads_item["status"] == "ready"
+    assert ads_item["title"] == "Ads: kolejki budżetu, rekomendacji i zapytań"
+    assert ads_item["priority"] == 16
+    assert ads_item["metric_tiles"]["kampanie"] == 1
+    assert ads_item["metric_tiles"]["zapytania"] == 1
+    assert ads_item["metric_tiles"]["podgląd budżetu"] == 1
+    assert ads_item["metric_tiles"]["rekomendacje"] == 1
+    assert "kolejki tylko do oceny" in ads_item["summary"]
+    assert "apply" in ads_item["next_step"]
+    assert "budget apply" in ads_item["blocked_claims"]
+    assert "negative keyword candidates" not in ads_item["blocked_claims"]
+    assert "act_prepare_ads_campaign_review_queue" in ads_item["action_ids"]
+    assert "act_prepare_google_ads_recommendation_review_queue" in ads_item["action_ids"]
+
+    plan_by_id = {item["id"]: item for item in payload["action_plan"]}
+    ads_plan = plan_by_id["plan_review_ads_campaign_metrics"]
+    assert ads_plan["status"] == "ready"
+    assert ads_plan["title"] == "Przejrzyj kolejki Ads do oceny bez apply"
+    assert "oceny, a nie listę connectorów" in ads_plan["why_it_matters"]
+    assert "podgląd budżetów" in ads_plan["operator_action"]
+    assert "nie wdrażaj zmian" in ads_plan["operator_action"]
+    assert "Użyj skilla wilq-ads-doctor" in ads_plan["codex_prompt"]
+    assert "zablokowanymi claimami" in ads_plan["expected_codex_output"]
+    assert ads_plan["blocked_claims"] == ads_item["blocked_claims"]
+
+    decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
+    ads_decision = decisions_by_id["decision_review_ads_campaign_metrics"]
+    assert ads_decision["metric_tiles"]["podgląd budżetu"] == 1
+    assert ads_decision["metric_tiles"]["rekomendacje"] == 1
+    assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
+    assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
 
 
 def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(

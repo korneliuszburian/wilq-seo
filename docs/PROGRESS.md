@@ -58,11 +58,18 @@ Aktualny proof produktowy:
   `preview_contract=budget_apply_preview_v1`, `apply_allowed=false`,
   `destructive=false` i waliduje się jako `valid=true`. To nadal nie jest
   budget apply support.
+- Command Center Ads nie pokazuje już ogólnego statusu connectora jako insightu.
+  Live `/api/dashboard/command-center` pokazuje teraz decyzję
+  `Ads: kolejki budżetu, rekomendacji i zapytań` z licznikami:
+  `kampanie=18`, `zapytania=50`, `podgląd budżetu=18`, `rekomendacje=4`,
+  `wykluczenia=6`, `segmenty=1`. Ten sam prompt i ActionObjecty trafiają do
+  scoped `/api/codex/context-pack` dla `wilq-daily-command`.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
-- Pełny `scripts/verify.sh` przeszedł po budget apply-preview slice: backend
-  API contracts `116 passed`, dashboard route tests `14 passed`, Playwright
-  e2e `9 passed`, security, skill/API smokes i dashboard production build passed.
+- Pełny `scripts/verify.sh` przeszedł po Command Center Ads review queues slice:
+  backend API contracts `117 passed`, dashboard route tests `14 passed`,
+  Playwright e2e `9 passed`, security, skill/API smokes i dashboard production
+  build passed.
 
 Aktualny maintenance:
 
@@ -72,7 +79,24 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
+1. Command Center Ads review queues, 2026-06-20.
+   Command Center i `wilq-daily-command` context-pack konsumują teraz istniejące
+   Ads diagnostics zamiast pokazywać generyczne "live metrics" albo
+   connector/readiness prose. Live proof po `scripts/local_stack.sh restart`:
+   `daily_ads_status` ma title `Ads: kolejki budżetu, rekomendacji i zapytań`,
+   status `ready`, priority `16`, liczniki `kampanie=18`, `zapytania=50`,
+   `podgląd budżetu=18`, `rekomendacje=4`, `wykluczenia=6`, `segmenty=1` oraz
+   ActionObjecty `act_prepare_ads_campaign_review_queue`,
+   `act_prepare_google_ads_recommendation_review_queue`,
+   `act_prepare_custom_segments_from_search_terms` i
+   `act_prepare_negative_keyword_review_queue`. `/api/codex/context-pack`
+   niesie ten sam prompt do `wilq-ads-doctor`. Focused ruff, mypy i
+   `uv run pytest tests/test_api_contracts.py -q -k 'command_center'` passed.
+   Full `scripts/verify.sh` passed: backend `117 passed`, dashboard unit
+   `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
+   dashboard production build passed.
+
+2. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
    Google Ads budget context ma teraz review-only
    `CampaignBudgetOperation` payload preview w typed API, shared schemas,
    dashboardzie `/ads-doctor` i ActionObject
@@ -92,7 +116,7 @@ Aktualny maintenance:
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-2. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
+3. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
    Daily runtime cache TTL wzrósł z 2s do 30s
    (`WILQ_DAILY_RUNTIME_CACHE_SECONDS` nadal może to nadpisać), a dashboardowy
    TanStack Query client używa `staleTime=30000` i
@@ -103,7 +127,7 @@ Aktualny maintenance:
    `0.007s`, `0.009s`, `0.010s`, `0.007s` w oknie cache. Focused ruff, mypy,
    backend cache tests, dashboard `App.test.tsx`, dashboard typecheck passed.
 
-3. Ads recommendation apply payload preview, 2026-06-20 00:20 Europe/Warsaw.
+4. Ads recommendation apply payload preview, 2026-06-20 00:20 Europe/Warsaw.
    Google Ads recommendations mają teraz review-only apply payload preview w
    typed API, dashboardzie, ActionObject i scoped `wilq-ads-doctor`
    context-packu. To nie jest apply support: payload używa
@@ -124,7 +148,7 @@ Aktualny maintenance:
    dashboard production build passed. `uv.lock` zaktualizowany przy okazji
    security gate: `msgpack 1.2.0 -> 1.2.1`.
 
-4. Ads recommendation impact preview, 2026-06-19 23:44 Europe/Warsaw.
+5. Ads recommendation impact preview, 2026-06-19 23:44 Europe/Warsaw.
    Google Ads recommendations query pobiera read-only `recommendation.impact`.
    WILQ zapisuje impact metric facts jako
    `recommendation_impact_{base|potential}_*`, `/api/ads/diagnostics` pokazuje
@@ -138,19 +162,6 @@ Aktualny maintenance:
    `wilq-ads-doctor` smoke passed. Full `scripts/verify.sh` passed: backend
    `115 passed`, dashboard unit `13 passed`, Playwright e2e `9 passed`, skill
    smokes and dashboard production build passed.
-
-5. Ads account currency read contract, 2026-06-19 23:12 Europe/Warsaw.
-   Google Ads campaign read query pobiera `customer.currency_code` jako
-   read-only fact. WILQ zapisuje `account_currency_code` z evidence ID,
-   `/api/ads/diagnostics` wystawia `account_currency_read_contract`, scoped
-   `wilq-ads-doctor` context-pack przenosi ten sam kontrakt, a dashboard
-   `/ads-doctor` formatuje koszty kampanii, KPI, budżetów, search terms i
-   negative keyword review w walucie `PLN`. Live proof:
-   `refresh_google_ads_26cb4673eee2` /
-   `ev_refresh_refresh_google_ads_26cb4673eee2`. Focused backend,
-   TypeScript, dashboard tests i skill smoke passed. Full `scripts/verify.sh`
-   passed: backend `115 passed`, dashboard unit `13 passed`, Playwright e2e
-   `9 passed` and dashboard production build passed.
 
 ## Active Gaps
 
