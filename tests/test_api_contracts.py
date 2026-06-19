@@ -1139,6 +1139,69 @@ def test_command_center_exposes_polish_operator_brief(
     assert context_command["primary_next_step"] == payload["primary_next_step"]
 
 
+def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_command_center.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ga4_command_center.duckdb"))
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_google_analytics_4_command_center_fallback",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_refresh_refresh_google_analytics_4_command_center_fallback"],
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"active_users": 10, "sessions": 12},
+            summary="GA4 command center fallback metric seed.",
+        ),
+        detailed_facts=[
+            VendorMetricFact(
+                name="active_users",
+                value=10,
+                dimensions={
+                    "landing_page": "/ga4-fallback/",
+                    "source_medium": "google / organic",
+                    "campaign_name": "(organic)",
+                },
+            ),
+            VendorMetricFact(
+                name="sessions",
+                value=12,
+                dimensions={
+                    "landing_page": "/ga4-fallback/",
+                    "source_medium": "google / organic",
+                    "campaign_name": "(organic)",
+                },
+            ),
+        ],
+    )
+    empty_tactical_queue = TacticalQueueResponse(
+        strict_instruction="test tactical queue intentionally empty",
+    )
+    monkeypatch.setattr(
+        "wilq.briefing.daily_runtime.build_tactical_queue",
+        lambda: empty_tactical_queue,
+    )
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
+    ga4_item = brief_by_id["daily_ga4_landing_quality"]
+    assert ga4_item["status"] == "blocked"
+    assert "brak pełnego kontraktu" in ga4_item["title"]
+    assert ga4_item["metric_tiles"]["landing groups"] == 1
+    assert "Landing groups=1" in ga4_item["summary"]
+    assert ga4_item["evidence_ids"] == [
+        "ev_refresh_refresh_google_analytics_4_command_center_fallback"
+    ]
+    assert "landing groups=0" not in json.dumps(payload, ensure_ascii=False)
+
+
 def test_command_center_demotes_localo_access_ready_without_visibility_facts(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

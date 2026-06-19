@@ -1297,6 +1297,21 @@ Active 2026-06-19 follow-up:
     does not complete full performance work. Remaining: Command Center cold
     path, content/GA4 context packs, dashboard JS chunk and richer value
     contracts.
+- Active Command Center GA4 correction:
+  - live `/api/ga4/diagnostics` had GA4 dimensional facts, but Command Center
+    could still show `landing groups=0` because it only counted GA4 tactical
+    items;
+  - Command Center now uses a lightweight GA4 `MetricFact` fallback for unique
+    `landing_page` / `source_medium` / `campaign_name` groups;
+  - GA4 remains `blocked`, because WILQ still lacks the interpretation
+    contracts for ROAS/revenue/conversion drop/tracking fixed claims;
+  - live proof on `:8000`: title
+    `GA4: brak pełnego kontraktu interpretacji ruchu`, metric tiles
+    `landing groups=10`, `low engagement=0`, `WP match=0`, `blockery=1`,
+    evidence `ev_refresh_refresh_google_analytics_4_681b6bcefc85`, action
+    `act_review_ga4_tracking_quality`;
+  - daily Codex context-pack now returns the same GA4 decision as the
+    dashboard.
 
 Current hook-runtime fix:
 
@@ -1402,6 +1417,40 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 Command Center GA4 metric-fact fallback:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/command_center.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or command_center_uses_ga4_metric_facts_without_ga4_tactical_items'
+uv run pytest tests/test_api_contracts.py -q -k 'command_center'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1
+```
+
+Result:
+
+- Command Center no longer shows GA4 `landing groups=0` when dimensional GA4
+  metric facts exist.
+- Live `/api/dashboard/command-center` and
+  `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` expose the
+  same GA4 daily decision: `landing groups=10`, `blocked`, evidence
+  `ev_refresh_refresh_google_analytics_4_681b6bcefc85`, action
+  `act_review_ga4_tracking_quality`.
+- Focused checks passed: API selected `2 passed`, Command Center API `6
+  passed`, dashboard route tests `13 passed`, Playwright dashboard-api `8
+  passed`.
+- Full `scripts/verify.sh` passed after this slice:
+  - backend API contracts: `108 passed`;
+  - dashboard route tests: `13 passed`;
+  - Playwright e2e: `9 passed`;
+  - API smoke, skill structure smoke, skill API smoke and dashboard production
+    build passed;
+  - non-blocking warning: Vite main chunk is `525.96 kB`, above the 500 KB
+    warning threshold.
 
 Passed after the 2026-06-19 Ads scoped context-pack compaction:
 

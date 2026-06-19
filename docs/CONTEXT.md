@@ -98,6 +98,17 @@ Current performance slice truth:
   Remaining performance gaps: Command Center cold path can still take
   `~3-5s` in some runs; content/GA4 context-packs still need the same kind of
   focused slimming; dashboard JS chunk is still above Vite's 500 KB warning.
+- Active 2026-06-19 Command Center GA4 fallback: `/api/ga4/diagnostics`
+  had live GA4 dimensional facts (`landing_group_count=10`), but Command
+  Center could show `landing groups=0` because it only counted GA4 tactical
+  queue items. Command Center now reads a lightweight GA4 metric-fact fallback
+  directly and keeps GA4 as `blocked` for missing interpretation contracts.
+  Live `:8000` proof after restart: GA4 daily decision title
+  `GA4: brak pełnego kontraktu interpretacji ruchu`, metric tiles
+  `landing groups=10`, `low engagement=0`, `WP match=0`, `blockery=1`,
+  evidence `ev_refresh_refresh_google_analytics_4_681b6bcefc85`, action
+  `act_review_ga4_tracking_quality`. Targeted Playwright dashboard-api spec
+  passed `8 passed` on `:8000/:5173`.
 
 Current hook-runtime truth:
 

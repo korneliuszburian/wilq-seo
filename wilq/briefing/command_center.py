@@ -35,6 +35,8 @@ STRICT_DAILY_INSTRUCTION = (
     "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
     "nie domysł marketingowy."
 )
+GA4_CONNECTOR_ID = "google_analytics_4"
+GA4_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
 
 
 def build_command_center_response(
@@ -81,22 +83,28 @@ def build_command_center_brief(
 ) -> tuple[list[CommandCenterBriefItem], str, int]:
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
         ads_future = executor.submit(build_ads_diagnostics)
         merchant_facts_future = executor.submit(
             metric_store().list_metric_facts,
             "google_merchant_center",
             2000,
         )
+        ga4_facts_future = executor.submit(
+            metric_store().list_metric_facts,
+            GA4_CONNECTOR_ID,
+            GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        )
         ads = ads_future.result()
         merchant_facts = merchant_facts_future.result()
+        ga4_facts = ga4_facts_future.result()
     localo = get_connector_status("localo")
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
         _ads_item(ads),
         _merchant_item_from_facts(tactical_queue.items, merchant_facts, actions),
         _content_item_from_tactical(tactical_queue.items, actions),
-        _ga4_item_from_tactical(tactical_queue.items, actions),
+        _ga4_item_from_tactical(tactical_queue.items, actions, ga4_facts),
     ]
     if localo is not None:
         localo_item = _localo_item(localo, localo_runs)
@@ -337,8 +345,11 @@ def _content_item_from_tactical(
 def _ga4_item_from_tactical(
     tactical_items: list[TacticalQueueItem],
     actions: list[ActionObject],
+    ga4_facts: list[MetricFact],
 ) -> CommandCenterBriefItem:
     ga4_items = [item for item in tactical_items if item.domain == OpportunityDomain.ga4]
+    dimensioned_facts = _dimensioned_ga4_facts(ga4_facts)
+    landing_group_count = max(len(ga4_items), _ga4_landing_group_count(dimensioned_facts))
     low_engagement_items = [
         item for item in ga4_items if item.intent == "landing_page_quality"
     ]
@@ -347,9 +358,9 @@ def _ga4_item_from_tactical(
     ]
     action_ids = _action_ids_for(
         actions,
-        connector="google_analytics_4",
+        connector=GA4_CONNECTOR_ID,
     )
-    live_data_available = bool(ga4_items)
+    live_data_available = landing_group_count > 0
     return CommandCenterBriefItem(
         id="daily_ga4_landing_quality",
         title=(
@@ -361,26 +372,49 @@ def _ga4_item_from_tactical(
         status="blocked",
         priority=14 if live_data_available else 42,
         summary=(
-            f"Landing groups={len(ga4_items)}, low engagement="
+            f"Landing groups={landing_group_count}, low engagement="
             f"{len(low_engagement_items)}, WP match={len(matched_items)}. "
             "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
             "drop/tracking fixed, nie awarię connectora."
         ),
         next_step="Otwórz /ga4 i waliduj `act_review_ga4_tracking_quality`.",
-        source_connectors=["google_analytics_4"],
+        source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_limited_ids(
             _unique(evidence_id for item in ga4_items for evidence_id in item.evidence_ids)
-            or [connector_evidence_id("google_analytics_4")]
+            or _unique(fact.evidence_id for fact in dimensioned_facts)
+            or [connector_evidence_id(GA4_CONNECTOR_ID)]
         ),
         action_ids=action_ids,
         metric_tiles={
-            "landing groups": len(ga4_items),
+            "landing groups": landing_group_count,
             "low engagement": len(low_engagement_items),
             "WP match": len(matched_items),
             "blockery": 1,
         },
         blocked_claims=["ROAS", "revenue", "conversion drop", "tracking fixed"],
         risk=ActionRisk.medium,
+    )
+
+
+def _dimensioned_ga4_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
+    return [
+        fact
+        for fact in facts
+        if fact.source_connector == GA4_CONNECTOR_ID
+        and {"landing_page", "source_medium", "campaign_name"}.issubset(fact.dimensions)
+    ]
+
+
+def _ga4_landing_group_count(facts: Iterable[MetricFact]) -> int:
+    return len(
+        {
+            (
+                fact.dimensions.get("landing_page", ""),
+                fact.dimensions.get("source_medium", ""),
+                fact.dimensions.get("campaign_name", ""),
+            )
+            for fact in facts
+        }
     )
 
 
@@ -609,7 +643,11 @@ def _action_plan_item(
             for tactic in related_tactics
             if getattr(tactic, "intent", None) != "tracking_gap"
         ]
-        tactic_summary = _ga4_tactic_summary(review_tactics)
+        tactic_summary = (
+            _ga4_tactic_summary(review_tactics)
+            if review_tactics
+            else "Szczegóły landing/source/campaign są w /ga4 decision queue."
+        )
         return CommandCenterActionPlanItem(
             id="plan_review_ga4_landing_quality",
             title=item.title,

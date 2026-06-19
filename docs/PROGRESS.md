@@ -2055,3 +2055,84 @@ Result:
   build passed.
 - Non-blocking warning: Vite reports the main JS chunk at `525.96 kB`, above
   its 500 KB warning threshold.
+
+## 2026-06-19 - Command Center GA4 Metric-Fact Fallback
+
+Current stage:
+
+- Active Goal 001 route usefulness/regression-control follow-up.
+- Problem found from live API: `/api/ga4/diagnostics` reported
+  `landing_group_count=10`, but `/api/dashboard/command-center` could show
+  GA4 as `landing groups=0` and `GA4: brak danych do oceny ruchu`. That was
+  confusing because GA4 data existed; the missing piece was the interpretation
+  contract for ROAS/revenue/conversion/tracking claims.
+
+What changed:
+
+- Command Center now reads a lightweight GA4 metric-fact fallback in parallel
+  with Ads and Merchant first-screen inputs.
+- It counts unique GA4 `landing_page` / `source_medium` / `campaign_name`
+  groups from `MetricFact` rows when the tactical queue has no GA4 items.
+- It keeps the status `blocked` and blocked claims intact. The card now means:
+  GA4 facts exist, but WILQ still blocks performance claims until the correct
+  interpretation/read contracts exist.
+- Full `/api/ga4/diagnostics` remains the detailed route; Command Center only
+  shows the daily decision summary.
+
+Focused proof:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/command_center.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or command_center_uses_ga4_metric_facts_without_ga4_tactical_items'
+uv run pytest tests/test_api_contracts.py -q -k 'command_center'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1
+```
+
+Result:
+
+- ruff passed.
+- mypy passed.
+- selected API tests: `2 passed`.
+- broader Command Center API tests: `6 passed`.
+- dashboard lint passed.
+- dashboard typecheck passed.
+- dashboard route tests: `13 passed`.
+- targeted Playwright dashboard-api spec: `8 passed`.
+
+Live proof on local `:8000` after API restart:
+
+- GA4 daily decision title: `GA4: brak pełnego kontraktu interpretacji ruchu`.
+- Status: `blocked`.
+- Metric tiles: `landing groups=10`, `low engagement=0`, `WP match=0`,
+  `blockery=1`.
+- Evidence: `ev_refresh_refresh_google_analytics_4_681b6bcefc85`.
+- ActionObject: `act_review_ga4_tracking_quality`.
+- `/api/codex/context-pack {"skill":"wilq-daily-command"}` returns the same
+  GA4 daily decision as the dashboard.
+
+Remaining gap:
+
+- This fixes a misleading first-screen GA4 zero. It does not make GA4 a ready
+  performance recommendation. Conversion rate, ROAS, revenue, profitability,
+  conversion drop and tracking fixed claims remain blocked until separate
+  contracts exist.
+
+Full proof:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- Backend API contracts: `108 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- API smoke, skill structure smoke, skill API smoke and dashboard production
+  build passed.
+- Non-blocking warning: Vite reports the main JS chunk at `525.96 kB`, above
+  its 500 KB warning threshold.
