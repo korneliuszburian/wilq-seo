@@ -8,6 +8,29 @@ artifacts.
 
 Data: 2026-06-19
 
+- Non-daily skill context-pack compaction, 2026-06-19 22:45 Europe/Warsaw:
+  current active proof is Codex runtime performance only, not a new marketing
+  decision contract. Default context-packs now omit heavy diagnostic sections
+  and metric facts for content, GA4 and Merchant scoped packs. Campaign Builder
+  no longer pulls Merchant as a default scope and uses a lightweight
+  `content_landing_context` from GSC query/page facts instead of building full
+  `content_diagnostics`. Demand Gen builds Ads and GA4 read-only diagnostics in
+  parallel and omits Merchant until a concrete Demand Gen/Merchant contract
+  exists. Live proof after `scripts/local_stack.sh restart` on `:8000`:
+  `wilq-campaign-builder` `90711 bytes`, cold `1.867s`, warm `0.158s`;
+  `wilq-demand-gen-operator` `100349 bytes`, cold `2.574s`, warm `0.156s`;
+  `wilq-content-strategist` `91731 bytes`, cold `2.044s`, warm `0.166s`;
+  `wilq-ga4-analyst` `28578 bytes`, cold `1.927s`, warm `0.147s`;
+  `wilq-merchant-feed-operator` `24007 bytes`, cold `1.819s`, warm `0.153s`;
+  `wilq-ads-doctor` `185126 bytes`, cold `1.392s`, warm `0.156s`;
+  `wilq-custom-segments` `187121 bytes`, cold `1.408s`, warm `0.194s`;
+  `wilq-daily-command` `120504 bytes`, cold `1.918s`, warm `0.236s`.
+  Focused proof passed: ruff, mypy, context-pack API regression tests and live
+  smoke scripts for `wilq-campaign-builder` and `wilq-demand-gen-operator`.
+  Full `scripts/verify.sh` also passed after this slice: API smoke, skill
+  smokes, dashboard route tests, Playwright e2e `9 passed` and dashboard
+  production build. Remaining latency gap: Demand Gen cold path is still about
+  `2.6s`, but payload and warm runtime are inside budget.
 - Custom segments review-only payload preview, 2026-06-19 22:08
   Europe/Warsaw: current active proof is a safer Ads audience/action contract,
   not an apply path. `/api/ads/diagnostics.custom_segments_read_contract` now

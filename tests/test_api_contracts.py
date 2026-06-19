@@ -5419,6 +5419,14 @@ def test_codex_context_pack_scopes_content_strategist_payload() -> None:
     )
     assert data["content_diagnostics"]["language"] == "pl-PL"
     assert data["content_diagnostics"]["evidence_ids"]
+    assert "sections" not in data["content_diagnostics"]
+    assert '"metric_facts":' not in json.dumps(data["content_diagnostics"])
+    assert data["content_diagnostics"]["context_pack_compaction"] == {
+        "metric_facts_removed": True,
+        "sections_omitted": True,
+        "sections_total": 3,
+        "full_endpoint": "/api/content/diagnostics",
+    }
 
 
 def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
@@ -5511,6 +5519,76 @@ def test_codex_context_pack_scopes_custom_segments_payload() -> None:
             assert rows == []
             assert payload["payload_preview_included"] == 0
             assert payload["payload_preview_total"] >= 0
+
+
+def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-campaign-builder"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-campaign-builder"
+    assert set(data["context_scope"]["source_connectors"]) == {
+        "google_ads",
+        "google_analytics_4",
+        "google_search_console",
+    }
+    assert "ads_diagnostics" in data
+    assert "content_landing_context" in data
+    assert "command_center" not in data
+    assert "merchant_diagnostics" not in data
+    assert "content_diagnostics" not in data
+    assert data["content_landing_context"]["source_connectors"] == [
+        "google_search_console"
+    ]
+    assert data["content_landing_context"]["context_pack_compaction"][
+        "full_endpoint"
+    ] == "/api/content/diagnostics"
+    assert data["content_landing_context"]["context_pack_compaction"][
+        "purpose"
+    ] == "landing_context"
+    if data["content_landing_context"]["live_data_available"]:
+        assert data["content_landing_context"]["query_page_candidates"]
+        first_candidate = data["content_landing_context"]["query_page_candidates"][0]
+        assert first_candidate["page"]
+        assert first_candidate["query"]
+        assert first_candidate["evidence_ids"]
+    assert data["ads_diagnostics"]["context_pack_compaction"][
+        "metric_facts_removed"
+    ] is True
+    assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
+
+
+def test_codex_context_pack_scopes_demand_gen_payload() -> None:
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-demand-gen-operator"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-demand-gen-operator"
+    assert "ads_diagnostics" in data
+    assert "ga4_diagnostics" in data
+    assert "merchant_diagnostics" not in data
+    assert "command_center" not in data
+    assert set(data["context_scope"]["source_connectors"]) == {
+        "google_ads",
+        "google_analytics_4",
+    }
+    assert "sections" not in data["ga4_diagnostics"]
+    assert '"metric_facts":' not in json.dumps(data["ga4_diagnostics"])
+    assert data["ga4_diagnostics"]["context_pack_compaction"][
+        "full_endpoint"
+    ] == "/api/ga4/diagnostics"
+    assert data["ads_diagnostics"]["context_pack_compaction"][
+        "metric_facts_removed"
+    ] is True
+    assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

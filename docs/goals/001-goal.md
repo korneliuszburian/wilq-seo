@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 22:17 Europe/Warsaw.
+Last updated: 2026-06-19 22:45 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -561,16 +561,33 @@ Work in this order:
    Full context-pack is a debug mode, not default runtime. Measure before and
    after; do not hide performance issues with random frontend memoization.
 
-   Current status after the 2026-06-19 keyword-context follow-up:
-   `wilq-ads-doctor` scoped context-pack is back under the immediate non-daily
-   budget at `198513 bytes`, cold `1.281-1.620s`, warm `0.145-0.159s`.
-   Full detail remains in `/api/ads/diagnostics`; context-pack embeds only
-   capped samples plus totals in `context_pack_compaction`. Latest
-   non-interactive proof:
-   `.local-lab/evals/codex-skill/20260619T184940Z/wilq-ads-doctor/result.json`.
-   Slice 2 remains open for Command Center cold path (`~2.2s`), daily
-   context-pack size (`237939 bytes`), content/GA4 scoped packs and dashboard
-   JS chunk size.
+   Current status after the 2026-06-19 non-daily context-pack follow-up:
+   all default skill context-packs are now below 200 KB. Full diagnostic detail
+   remains in `full_context=true` and dedicated API endpoints. Live proof after
+   `scripts/local_stack.sh restart`:
+   - `wilq-campaign-builder`: `90711 bytes`, cold `1.867s`, warm `0.158s`,
+     sources `google_ads`, `google_analytics_4`, `google_search_console`.
+     It now uses `ads_diagnostics` plus lightweight `content_landing_context`
+     instead of full `content_diagnostics`, and it no longer pulls Merchant
+     ActionObjects by default.
+   - `wilq-demand-gen-operator`: `100349 bytes`, cold `2.574s`, warm `0.156s`,
+     sources `google_ads`, `google_analytics_4`; Ads and GA4 diagnostics build
+     in parallel and Merchant stays omitted until a concrete Demand Gen/Merchant
+     read contract exists.
+   - `wilq-content-strategist`: `91731 bytes`, cold `2.044s`, warm `0.166s`.
+   - `wilq-ga4-analyst`: `28578 bytes`, cold `1.927s`, warm `0.147s`.
+   - `wilq-merchant-feed-operator`: `24007 bytes`, cold `1.819s`, warm
+     `0.153s`.
+   - `wilq-ads-doctor`: `185126 bytes`, cold `1.392s`, warm `0.156s`.
+   - `wilq-custom-segments`: `187121 bytes`, cold `1.408s`, warm `0.194s`.
+   - `wilq-daily-command`: `120504 bytes`, cold `1.918s`, warm `0.236s`.
+   Focused ruff, mypy, context-pack API tests and live smoke scripts for
+   `wilq-campaign-builder` and `wilq-demand-gen-operator` passed. Full
+   `scripts/verify.sh` also passed after this slice: API smoke, skill smokes,
+   dashboard route tests, Playwright e2e `9 passed` and dashboard production
+   build. Slice 2 remains open only for deeper cold-path improvement,
+   especially Demand Gen cold latency around `2.6s`, and future route-level
+   lazy loading if browser proof shows it is still needed.
 
 4. **Slice 3: Merchant issue-level triage.**
    Convert Merchant from `products/issues` summary into issue clusters by

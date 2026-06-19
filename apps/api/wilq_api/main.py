@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any
@@ -113,6 +114,7 @@ app.add_middleware(
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
 ADS_CONTEXT_ROW_LIMIT = 8
 ADS_CONTEXT_DECISION_ROW_LIMIT = 4
+ADS_LITE_DECISION_LIMIT = 5
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
 
@@ -443,7 +445,6 @@ SKILL_CONNECTOR_SCOPES: dict[str, set[str]] = {
         "google_ads",
         "google_analytics_4",
         "google_search_console",
-        "google_merchant_center",
     },
     "wilq-content-strategist": {
         "google_search_console",
@@ -456,7 +457,6 @@ SKILL_CONNECTOR_SCOPES: dict[str, set[str]] = {
     "wilq-demand-gen-operator": {
         "google_ads",
         "google_analytics_4",
-        "google_merchant_center",
     },
     "wilq-ga4-analyst": {"google_analytics_4", "wordpress_ekologus"},
     "wilq-gsc-content-doctor": {
@@ -690,7 +690,11 @@ def _stateful_context_actions(
 
 def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
     if skill in {"wilq-content-strategist", "wilq-gsc-content-doctor"}:
-        return {"content_diagnostics": build_content_diagnostics().model_dump(mode="json")}
+        return {
+            "content_diagnostics": _compact_content_diagnostics_for_context(
+                build_content_diagnostics().model_dump(mode="json")
+            )
+        }
     if skill == "wilq-ads-doctor":
         return {
             "ads_diagnostics": _compact_ads_diagnostics_for_context(
@@ -698,19 +702,21 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
             )
         }
     if skill == "wilq-merchant-feed-operator":
-        return {"merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json")}
+        return {
+            "merchant_diagnostics": _compact_merchant_diagnostics_for_context(
+                build_merchant_diagnostics().model_dump(mode="json")
+            )
+        }
     if skill == "wilq-ga4-analyst":
-        return {"ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json")}
+        return {
+            "ga4_diagnostics": _compact_ga4_diagnostics_for_context(
+                build_ga4_diagnostics().model_dump(mode="json")
+            )
+        }
     if skill == "wilq-localo-operator":
         return {"localo_diagnostics": build_localo_diagnostics().model_dump(mode="json")}
     if skill == "wilq-demand-gen-operator":
-        return {
-            "ads_diagnostics": _compact_ads_diagnostics_for_context(
-                build_ads_diagnostics().model_dump(mode="json")
-            ),
-            "ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json"),
-            "merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json"),
-        }
+        return _demand_gen_diagnostics_for_context()
     if skill == "wilq-custom-segments":
         return {
             "ads_diagnostics": _compact_ads_diagnostics_for_context(
@@ -719,10 +725,15 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         }
     if skill == "wilq-campaign-builder":
         return {
-            "ads_diagnostics": _compact_ads_diagnostics_for_context(
-                build_ads_diagnostics().model_dump(mode="json")
+            "ads_diagnostics": _compact_ads_diagnostics_for_lite_context(
+                build_ads_diagnostics().model_dump(mode="json"),
+                allowed_decision_ids={
+                    "ads_review_campaign_activity",
+                    "ads_review_budget_context",
+                    "ads_block_write_actions_without_actionobject",
+                },
             ),
-            "content_diagnostics": build_content_diagnostics().model_dump(mode="json"),
+            "content_landing_context": _content_landing_context_for_campaign_builder(),
         }
     if skill == "wilq-social-publisher":
         return {
@@ -730,6 +741,164 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
             "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         }
     return {"marketing_brief": build_marketing_brief().model_dump(mode="json")}
+
+
+def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        ads_future = executor.submit(build_ads_diagnostics)
+        ga4_future = executor.submit(build_ga4_diagnostics)
+        ads_diagnostics = ads_future.result().model_dump(mode="json")
+        ga4_diagnostics = ga4_future.result().model_dump(mode="json")
+    return {
+        "ads_diagnostics": _compact_ads_diagnostics_for_lite_context(
+            ads_diagnostics,
+            allowed_decision_ids={
+                "ads_review_campaign_activity",
+                "ads_review_budget_context",
+                "ads_review_impression_share",
+                "ads_block_write_actions_without_actionobject",
+            },
+        ),
+        "ga4_diagnostics": _compact_ga4_diagnostics_for_context(ga4_diagnostics),
+    }
+
+
+def _compact_content_diagnostics_for_context(
+    content_diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    compact = dict(_without_metric_facts(content_diagnostics))
+    sections = compact.pop("sections", [])
+    compact["context_pack_compaction"] = {
+        "metric_facts_removed": True,
+        "sections_omitted": True,
+        "sections_total": len(sections) if isinstance(sections, list) else 0,
+        "full_endpoint": "/api/content/diagnostics",
+    }
+    return compact
+
+
+def _compact_ga4_diagnostics_for_context(
+    ga4_diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    compact = dict(_without_metric_facts(ga4_diagnostics))
+    sections = compact.pop("sections", [])
+    compact["context_pack_compaction"] = {
+        "metric_facts_removed": True,
+        "sections_omitted": True,
+        "sections_total": len(sections) if isinstance(sections, list) else 0,
+        "full_endpoint": "/api/ga4/diagnostics",
+    }
+    return compact
+
+
+def _compact_merchant_diagnostics_for_context(
+    merchant_diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    compact = dict(_without_metric_facts(merchant_diagnostics))
+    sections = compact.pop("sections", [])
+    compact["context_pack_compaction"] = {
+        "metric_facts_removed": True,
+        "sections_omitted": True,
+        "sections_total": len(sections) if isinstance(sections, list) else 0,
+        "full_endpoint": "/api/merchant/diagnostics",
+    }
+    return compact
+
+
+def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
+    facts = [
+        fact
+        for fact in metric_store().list_metric_facts(
+            connector_id="google_search_console",
+            limit=500,
+        )
+        if {"query", "page"}.issubset(fact.dimensions)
+    ]
+    grouped: dict[tuple[str, str], list[MetricFact]] = {}
+    for fact in facts:
+        page = fact.dimensions.get("page")
+        query = fact.dimensions.get("query")
+        if page and query:
+            grouped.setdefault((page, query), []).append(fact)
+
+    candidates = [
+        _campaign_builder_query_page_candidate(page, query, group_facts)
+        for (page, query), group_facts in grouped.items()
+    ]
+    candidates.sort(
+        key=lambda item: (
+            _numeric_or_zero(item.get("impressions")),
+            _numeric_or_zero(item.get("clicks")),
+        ),
+        reverse=True,
+    )
+    evidence_ids = sorted(
+        {
+            evidence_id
+            for candidate in candidates
+            for evidence_id in candidate["evidence_ids"]
+        }
+    )
+    return {
+        "language": "pl-PL",
+        "strict_instruction": (
+            "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza "
+            "blocker, nie domysł marketingowy."
+        ),
+        "live_data_available": bool(candidates),
+        "source_connectors": ["google_search_console"],
+        "evidence_ids": evidence_ids,
+        "query_page_candidate_count": len(candidates),
+        "query_page_candidates": candidates[:8],
+        "blocked_claims": [
+            "campaign performance",
+            "conversion uplift",
+            "lead quality",
+            "ranking guarantee",
+        ],
+        "context_pack_compaction": {
+            "full_endpoint": "/api/content/diagnostics",
+            "metric_facts_removed": True,
+            "purpose": "landing_context",
+            "query_page_candidates_total": len(candidates),
+            "query_page_candidates_included": len(candidates[:8]),
+        },
+    }
+
+
+def _campaign_builder_query_page_candidate(
+    page: str,
+    query: str,
+    facts: list[MetricFact],
+) -> dict[str, Any]:
+    return {
+        "page": page,
+        "query": query,
+        "clicks": _metric_value(facts, "clicks"),
+        "impressions": _metric_value(facts, "impressions"),
+        "ctr": _metric_value(facts, "ctr"),
+        "average_position": _metric_value(facts, "average_position"),
+        "evidence_ids": sorted({fact.evidence_id for fact in facts if fact.evidence_id}),
+        "source_connectors": ["google_search_console"],
+        "blocked_claims": [
+            "campaign performance",
+            "conversion uplift",
+            "ranking guarantee",
+        ],
+    }
+
+
+def _metric_value(facts: list[MetricFact], name: str) -> float | int | str | None:
+    for fact in facts:
+        if fact.name == name:
+            return fact.value
+    return None
+
+
+def _numeric_or_zero(value: Any) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    return 0.0
 
 
 def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict[str, Any]:
@@ -854,6 +1023,60 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
             _list_at(compact, "negative_keywords_read_contract", "candidates")
         ),
     }
+    return compact
+
+
+def _compact_ads_diagnostics_for_lite_context(
+    ads_diagnostics: dict[str, Any],
+    *,
+    allowed_decision_ids: set[str],
+) -> dict[str, Any]:
+    compact = _compact_ads_diagnostics_for_context(ads_diagnostics)
+    decision_queue = compact.get("decision_queue")
+    if isinstance(decision_queue, list):
+        compact["decision_queue"] = [
+            decision
+            for decision in decision_queue
+            if isinstance(decision, dict)
+            and str(decision.get("id")) in allowed_decision_ids
+        ][:ADS_LITE_DECISION_LIMIT]
+    keep_contracts = {
+        "generated_at",
+        "language",
+        "strict_instruction",
+        "latest_refresh",
+        "live_data_available",
+        "blocked_handoff",
+        "campaign_read_contract",
+        "derived_kpi_read_contract",
+        "budget_pacing_read_contract",
+        "impression_share_read_contract",
+        "action_ids",
+        "evidence_ids",
+        "blocker_count",
+        "decision_queue",
+        "context_pack_compaction",
+    }
+    for key in list(compact):
+        if key not in keep_contracts:
+            compact.pop(key, None)
+    compaction = compact.get("context_pack_compaction")
+    if isinstance(compaction, dict):
+        decision_queue = compact.get("decision_queue")
+        compaction["lite_context"] = True
+        compaction["omitted_contracts"] = [
+            "change_history_read_contract",
+            "custom_segments_read_contract",
+            "keyword_match_context_read_contract",
+            "negative_keywords_read_contract",
+            "recommendations_read_contract",
+            "search_term_safety_read_contract",
+            "search_terms_read_contract",
+            "sections",
+        ]
+        compaction["decision_rows_included"] = len(
+            decision_queue if isinstance(decision_queue, list) else []
+        )
     return compact
 
 

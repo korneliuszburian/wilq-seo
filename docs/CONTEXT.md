@@ -78,6 +78,22 @@ Audit `docs/audits/001-output.md` is now folded into
    `126.96 kB`, `vendor-schemas` `76.67 kB`, `vendor-icons` `7.91 kB`,
    `vendor-misc` `2.16 kB`. Preserve this split unless a better measured
    lazy-route split replaces it.
+0. Non-daily context-pack scope truth, 2026-06-19 22:45 Europe/Warsaw:
+   default skill packs must carry decision context, evidence IDs, ActionObject
+   IDs and enough examples for the matching workflow, not whole diagnostic
+   registries. Current live proof after restart: `wilq-campaign-builder`
+   `90711 bytes` with `ads_diagnostics` plus lightweight
+   `content_landing_context`; `wilq-demand-gen-operator` `100349 bytes` with
+   Ads + GA4 only; `wilq-content-strategist` `91731 bytes`;
+   `wilq-ga4-analyst` `28578 bytes`; `wilq-merchant-feed-operator`
+   `24007 bytes`; `wilq-ads-doctor` `185126 bytes`;
+   `wilq-custom-segments` `187121 bytes`; `wilq-daily-command`
+   `120504 bytes`. Full diagnostics remain available through `full_context=true`
+   and dedicated API endpoints. Remaining performance gap: Demand Gen cold
+   request is about `2.6s`, while warm cache hits are about `0.15s`. Full
+   `scripts/verify.sh` passed after this slice with API smoke, skill smokes,
+   dashboard route tests, Playwright e2e `9 passed` and dashboard production
+   build.
 0. Custom segments payload-preview truth, 2026-06-19 22:08 Europe/Warsaw:
    custom segments now have a typed review-only payload preview in
    `/api/ads/diagnostics`, `/api/actions/act_prepare_custom_segments_from_search_terms`
