@@ -341,86 +341,86 @@ deduplikacji, klasyfikacji decyzji, rankingów ani edge-case fixes w skill
 references. Jeśli skill potrzebuje mądrzejszej decyzji, najpierw implementujemy
 typed WILQ API/schema/view-model, a skill tylko konsumuje pole API.
 
-## Active Uncommitted Slice - Content Decision Queue
+## Active Uncommitted Slice - Shared Daily Runtime Endpoints
 
-Aktualny worktree ma aktywny, niecommitowany slice. Nie zaczynaj od zera.
+Aktualny worktree ma aktywny, niecommitowany performance slice. Nie zaczynaj od
+zera i nie wracaj do starego Content Decision Queue slice'a; tamten work został
+już zamknięty wcześniej.
 
 Cel slice'a:
 
-- Przenieść content decision logic z promptów/skilli do WILQ API.
-- Dodać typed `ContentDecisionItem` i `ContentDiagnosticsResponse.decision_queue`.
-- `wilq-content-strategist` ma używać `content_diagnostics.decision_queue`, nie
-  odtwarzać logiki w references.
-- Context-pack redaction ma zachowywać enumy `decision_type` /
-  `decision_types`, bo to trace IDs/enum values, nie sekrety.
+- Użyć istniejącego `wilq.briefing.daily_runtime.DailyRuntime` także dla
+  publicznych endpointów:
+  - `GET /api/dashboard/command-center`,
+  - `GET /api/marketing/brief`.
+- Dzięki temu Command Center, Marketing Brief i daily Codex context-pack mogą
+  korzystać z tego samego krótkiego TTL cache w procesie API.
+- Nie jest to pełny cold-run performance fix. Cold runtime nadal kosztuje przez
+  diagnostyki i tactical joins. Ten slice usuwa najbardziej oczywiste
+  powtarzanie daily view-model między endpointami i Codex context-packiem.
 
 Zmienione pliki w toku:
 
-- `wilq/schemas.py`
-- `wilq/briefing/content_diagnostics.py`
-- `wilq/security/redaction.py`
+- `apps/api/wilq_api/main.py`
 - `tests/test_api_contracts.py`
-- `.agents/skills/wilq-content-strategist/SKILL.md`
-- `.agents/skills/wilq-content-strategist/references/output-contract.md`
-- `.agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py`
-- `docs/evals/cases/wilq-skill-eval-cases.json`
-- `AGENTS.md`
 
-Live proof po restarcie API:
+Zmiany kodu w toku:
 
-```bash
-uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
-```
+- `/api/dashboard/command-center` zwraca `build_daily_runtime().command_center`.
+- `/api/marketing/brief` zwraca `build_daily_runtime().marketing_brief`.
+- `connector_refresh()` już czyści `clear_daily_runtime_cache()` po refreshu.
+- Dodany jest test `test_command_center_endpoint_uses_daily_runtime_cache`.
+- Dodany jest test `test_marketing_brief_endpoint_uses_daily_runtime_cache`.
 
-Wynik smoke:
-
-- `decision_types`:
-  - `block_as_tracking_not_content`
-  - `inventory_check_before_create`
-  - `inventory_check_before_create`
-  - `merge_create_after_inventory_check`
-  - `inventory_check_before_create`
-- `decision_queue` pochodzi z `/api/content/diagnostics`, nie ze skill
-  reference.
-- GA4 `(not set)` / `tracking_gap` jest blokowane jako content task.
-- Zielony Ład jest jednym klastrem
-  `merge_create_after_inventory_check`, nie siedmioma osobnymi rekomendacjami.
-- BDO i inne URL-e z `wordpress_match=missing` są
-  `inventory_check_before_create`, nie gotowym create/refresh.
-
-Focused checks, które już przeszły dla tego slice'a:
+Focused proof po dodaniu testu brief endpointu:
 
 ```bash
-uv run ruff check wilq/briefing/content_diagnostics.py wilq/security/redaction.py wilq/schemas.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
-uv run mypy wilq/briefing/content_diagnostics.py wilq/security/redaction.py wilq/schemas.py .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py
-uv run pytest tests/test_api_contracts.py -q -k 'redaction_preserves_env_names_but_redacts_token_values or content_diagnostics_exposes_query_page_inventory_queue or codex_context_pack_embeds_marketing_brief_contract'
-uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache or daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_embeds_marketing_brief_contract or marketing_brief_aggregates_metric_facts_and_blockers'
 ```
 
-Non-interactive eval po poprawce:
+Wynik:
 
-```txt
-.local-lab/evals/codex-skill/20260618T114810Z/wilq-content-strategist/result.json
+- ruff: passed.
+- mypy: passed.
+- pytest: 5 passed.
+
+Broader proof after the same patch:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k 'command_center or marketing_brief or daily_runtime or context_pack'
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
 ```
 
-Wynik evala:
+Wynik:
 
-- `language=pl-PL`
-- `api_used=true`
-- 11 evidence IDs
-- `operator_usefulness_score=4`
-- rekomendacje używają `content_diagnostics.decision_queue`
-- zawiera `inventory_check_before_create`,
-  `merge_create_after_inventory_check`, `block_as_tracking_not_content`
-- `act_prepare_content_refresh_queue` pozostaje prepare-only i wymaga
-  walidacji przed apply.
+- backend selected tests: 17 passed.
+- dashboard typecheck: passed.
+- dashboard unit route tests: 13 passed.
+
+Full proof before commit:
+
+```bash
+scripts/verify.sh
+```
+
+Wynik:
+
+- ruff/mypy/typecheck/lint: passed.
+- backend API contracts: 102 passed.
+- dashboard route tests: 13 passed.
+- skill API smoke: passed.
+- Playwright e2e: 9 passed.
+- dashboard production build: passed.
+- Non-blocking warning: Vite chunk `index-*.js` is above 500 KB.
 
 Następny krok po wznowieniu:
 
-1. Uzupełnić `docs/PROGRESS.md`, `docs/evals/skill-eval-ledger.md` i
-   `docs/goals/001-goal.md` o ten slice.
-2. Uruchomić focused checks jeszcze raz.
-3. Commit semantic, np.
-   `feat(content): expose content decision queue`.
-4. Potem wrócić do audytu `docs/audits/001-output.md`, najpierw Slice 1:
-   canonical `DailyDecision` dla Command Center.
+1. Opcjonalnie zmierzyć live HTTP sekwencję
+   `/api/dashboard/command-center` -> `/api/marketing/brief` w tym samym
+   procesie API, żeby potwierdzić warm TTL behavior.
+2. Zaktualizować `docs/PROGRESS.md` i `docs/goals/001-goal.md` wynikiem.
+3. Commit semantic:
+   `perf(api): share daily runtime endpoints`.

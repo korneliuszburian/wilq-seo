@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -735,6 +736,64 @@ def test_command_center_returns_valid_shape() -> None:
     assert data["demo_script"] == []
     assert data["action_plan"]
     assert data["action_plan"][0]["evidence_ids"]
+
+
+def test_command_center_endpoint_uses_daily_runtime_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing.daily_runtime import build_daily_runtime
+
+    command = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        primary_next_step="Przejrzyj decyzje.",
+        connector_summary=ConnectorSummary(total=0, configured=0, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[],
+        codex_operator_status={},
+    )
+    runtime = build_daily_runtime(use_cache=False)
+    calls = {"daily_runtime": 0}
+
+    def fake_daily_runtime() -> object:
+        calls["daily_runtime"] += 1
+        return replace(runtime, command_center=command)
+
+    monkeypatch.setattr("apps.api.wilq_api.main.build_daily_runtime", fake_daily_runtime)
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    assert response.json()["primary_next_step"] == "Przejrzyj decyzje."
+    assert calls == {"daily_runtime": 1}
+
+
+def test_marketing_brief_endpoint_uses_daily_runtime_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing.daily_runtime import build_daily_runtime
+
+    brief = MarketingBrief(
+        strict_instruction="Brief z testowego DailyRuntime.",
+        connector_summary=ConnectorSummary(total=0, configured=0, missing_credentials=0),
+        sections=[],
+        evidence_ids=["ev_test_daily_runtime_brief"],
+    )
+    runtime = build_daily_runtime(use_cache=False)
+    calls = {"daily_runtime": 0}
+
+    def fake_daily_runtime() -> object:
+        calls["daily_runtime"] += 1
+        return replace(runtime, marketing_brief=brief)
+
+    monkeypatch.setattr("apps.api.wilq_api.main.build_daily_runtime", fake_daily_runtime)
+
+    response = client.get("/api/marketing/brief")
+
+    assert response.status_code == 200
+    assert response.json()["strict_instruction"] == "Brief z testowego DailyRuntime."
+    assert response.json()["evidence_ids"] == ["ev_test_daily_runtime_brief"]
+    assert calls == {"daily_runtime": 1}
 
 
 def test_marketing_brief_aggregates_metric_facts_and_blockers(

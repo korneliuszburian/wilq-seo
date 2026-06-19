@@ -1056,6 +1056,53 @@ Current slice result:
   scripts/verify.sh
   ```
 
+Current uncommitted follow-up on 2026-06-19:
+
+- Public dashboard endpoints are being moved onto the same `DailyRuntime`
+  cache:
+  - `GET /api/dashboard/command-center` ->
+    `build_daily_runtime().command_center`;
+  - `GET /api/marketing/brief` ->
+    `build_daily_runtime().marketing_brief`.
+- This is the next real bottleneck after scoping daily Codex context-pack:
+  Command Center, Marketing Brief and Codex daily context should share one
+  daily view-model in the API process instead of rebuilding overlapping daily
+  state through separate endpoint paths.
+- Current changed files:
+  - `apps/api/wilq_api/main.py`,
+  - `tests/test_api_contracts.py`,
+  - `docs/CONTEXT.md`,
+  - `docs/PROGRESS.md`,
+  - `docs/goals/001-goal.md`.
+- Added/updated tests:
+  - `test_command_center_endpoint_uses_daily_runtime_cache`,
+  - `test_marketing_brief_endpoint_uses_daily_runtime_cache`.
+- Focused checks passed after adding both endpoint regression tests:
+  ```bash
+  uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
+  uv run mypy apps/api/wilq_api/main.py tests/test_api_contracts.py
+  uv run pytest tests/test_api_contracts.py -q -k 'command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache or daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_embeds_marketing_brief_contract or marketing_brief_aggregates_metric_facts_and_blockers'
+  ```
+- Result: ruff passed, mypy passed, pytest 5 selected tests passed.
+- Broader route/API proof also passed:
+  ```bash
+  uv run pytest tests/test_api_contracts.py -q -k 'command_center or marketing_brief or daily_runtime or context_pack'
+  pnpm --filter @wilq/dashboard typecheck
+  pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+  ```
+- Result: backend selected tests 17 passed, dashboard typecheck passed,
+  dashboard route tests 13 passed.
+- Full proof passed:
+  ```bash
+  scripts/verify.sh
+  ```
+- Result: backend API contracts 102 passed, dashboard route tests 13 passed,
+  Playwright e2e 9 passed, skill API smoke passed and dashboard production
+  build passed.
+- Non-blocking warning: Vite reports the main JS chunk is above 500 KB. This is
+  now a known future performance issue, not a blocker for this API runtime
+  slice.
+
 Remaining blocker:
 
 - Payload size, DuckDB read stability and warm daily Codex context are much

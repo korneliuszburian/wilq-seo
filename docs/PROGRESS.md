@@ -1486,3 +1486,86 @@ Remaining product risk:
   payload preview before any apply path.
 - The current source terms are Google Ads evidence, not final audience quality.
   The operator must reject irrelevant or low-intent terms before campaign use.
+
+## 2026-06-19 - Active Handoff: Shared Daily Runtime Endpoints
+
+Current stage:
+
+- WILQ is past the "connector dashboard" stage. The main demo routes now use
+  typed decision queues and Polish operator copy for Command Center, Merchant,
+  Content Planner, GA4, Ads Doctor and Localo.
+- The next bottleneck is product usefulness plus performance: dashboard,
+  Marketing Brief and Codex skills must consume the same daily view-model and
+  not rebuild the same picture several times.
+
+Current uncommitted slice:
+
+- `apps/api/wilq_api/main.py` now routes:
+  - `GET /api/dashboard/command-center` through
+    `build_daily_runtime().command_center`;
+  - `GET /api/marketing/brief` through
+    `build_daily_runtime().marketing_brief`.
+- `tests/test_api_contracts.py` has endpoint-level regression tests for both
+  routes:
+  - `test_command_center_endpoint_uses_daily_runtime_cache`;
+  - `test_marketing_brief_endpoint_uses_daily_runtime_cache`.
+- This builds on the already verified `DailyRuntime` TTL cache. It is meant to
+  reduce duplicated daily view-model work across dashboard endpoints and daily
+  Codex context-pack. It is not a claim that cold Command Center is solved.
+
+Focused proof:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache or daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_embeds_marketing_brief_contract or marketing_brief_aggregates_metric_facts_and_blockers'
+```
+
+Result:
+
+- ruff passed after removing the stale `build_command_center_response` import.
+- mypy passed after using a string monkeypatch target.
+- pytest passed: 5 selected tests.
+
+Broader proof:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k 'command_center or marketing_brief or daily_runtime or context_pack'
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+```
+
+Result:
+
+- backend selected tests: 17 passed.
+- dashboard typecheck: passed.
+- dashboard route tests: 13 passed.
+
+Full proof:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- backend API contracts: 102 passed.
+- dashboard route tests: 13 passed.
+- Playwright e2e: 9 passed.
+- dashboard production build: passed.
+- Skill API smoke passed.
+- Non-blocking warning: Vite reports the main JS chunk is above 500 KB.
+
+Next before push:
+
+- commit as `perf(api): share daily runtime endpoints`.
+
+Still open after this slice:
+
+- Cold Command Center still needs a slimmer API decision model and less
+  diagnostic/tactical join work.
+- Skills still need strict usefulness evals beyond "safe blocking" for the
+  remaining high-value operators.
+- Dashboard still needs more real value contracts: Localo visibility facts,
+  Ahrefs gaps, Keyword Planner enrichment, negative keyword safety and
+  campaign ActionObject previews.

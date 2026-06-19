@@ -11,9 +11,6 @@ from pydantic import BaseModel, Field
 
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
-from wilq.briefing.command_center import (
-    build_command_center_response,
-)
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.daily_runtime import build_daily_runtime, clear_daily_runtime_cache
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
@@ -676,12 +673,12 @@ def connector_refresh(
 
 @app.get("/api/dashboard/command-center", response_model=CommandCenterResponse)
 def command_center() -> CommandCenterResponse:
-    return build_command_center_response()
+    return build_daily_runtime().command_center
 
 
 @app.get("/api/marketing/brief", response_model=MarketingBrief)
 def marketing_brief() -> MarketingBrief:
-    return build_marketing_brief()
+    return build_daily_runtime().marketing_brief
 
 
 @app.get("/api/marketing/tactical-queue", response_model=TacticalQueueResponse)
