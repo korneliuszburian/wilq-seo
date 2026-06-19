@@ -776,6 +776,11 @@ Tasks:
   `docs/research/wilq-marketing-source-map.md` and
   `docs/goals/002-system-audit-and-usefulness-goal.md`.
 - Check `git status --branch --short`.
+- Use the canonical local runtime manager, not hand-rolled detached processes:
+  - `scripts/local_stack.sh status`
+  - `scripts/local_stack.sh start` if either service is not ready
+  - `scripts/local_stack.sh restart` only when a managed WILQ process or stale
+    port owner needs to be replaced
 - Check API and dashboard routes:
   - `http://127.0.0.1:8000/api/health`
   - `http://127.0.0.1:5173/command-center`

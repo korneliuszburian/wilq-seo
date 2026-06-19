@@ -20,6 +20,13 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
 
+0. Local runtime stability rule, 2026-06-19 15:12 Europe/Warsaw: use
+   `scripts/local_stack.sh start|stop|restart|status|logs` for the normal local
+   WILQ API/dashboard stack. It owns `.local-lab/runtime/{api,dashboard}.pid`
+   and logs, reports unmanaged port owners, and keeps canonical URLs
+   `http://127.0.0.1:8000/api/health` and
+   `http://127.0.0.1:5173/command-center`. Do not hand-roll `nohup`, `setsid`,
+   detached `uvicorn`, detached Vite or ad hoc `kill` loops for these ports.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.

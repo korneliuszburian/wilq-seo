@@ -8,6 +8,23 @@ artifacts.
 
 Data: 2026-06-19
 
+- Runtime-manager slice, 2026-06-19 15:12 Europe/Warsaw: current active fix is
+  to stop hand-rolling local server lifecycle. Added `scripts/local_stack.sh`
+  as the canonical local API/dashboard manager with `start|stop|restart|status|logs`.
+  It owns `.local-lab/runtime/{api,dashboard}.pid`, writes logs under
+  `.local-lab/runtime/`, checks readiness for `/api/health` and
+  `/command-center`, reports unmanaged port owners and uses the canonical
+  local URLs `http://127.0.0.1:8000` and `http://127.0.0.1:5173`. Proof:
+  `scripts/local_stack.sh restart` stopped the old port owners, started managed
+  API/dashboard PIDs, `scripts/local_stack.sh status` reported both ready, and
+  direct HTTP checks for `/api/health` and `/command-center` passed.
+  `shellcheck` is not installed and `sudo` requires a password, so committed
+  validation uses `bash -n`, pytest coverage for the script contract and real
+  lifecycle commands unless shellcheck is provided externally. Full
+  `scripts/verify.sh` passed for this slice: backend API contracts
+  `111 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`,
+  API smoke, skill structure smoke, skill API smoke and dashboard production
+  build passed. Non-blocking warning: Vite main JS chunk remains `530.14 kB`.
 - Recovery snapshot 2026-06-19 14:53 Europe/Warsaw: active local slice is Ads
   budget context, not full Ads optimization. Live `/api/ads/diagnostics` after
   API restart reports `budget_pacing_read_contract.status=ready`, 18 budget

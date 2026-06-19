@@ -110,13 +110,20 @@ Use subagents for large parallel analysis. Merge subagent findings into one impl
 ```bash
 uv sync --all-extras
 pnpm install
-uv run uvicorn apps.api.wilq_api.main:app --reload
-pnpm --filter @wilq/dashboard dev
+scripts/local_stack.sh start
+scripts/local_stack.sh status
 scripts/verify.sh
 ```
 
 ## Local runtime gotchas
 
+- Use `scripts/local_stack.sh start|stop|restart|status|logs` for the normal
+  local WILQ API/dashboard stack. Do not hand-roll `nohup`, `setsid`, detached
+  `uvicorn`, detached Vite, or ad hoc `kill` loops for ports 8000/5173. The
+  stack manager owns `.local-lab/runtime/{api,dashboard}.pid` and logs, checks
+  readiness, reports unmanaged port owners, and keeps the canonical local URLs:
+  `http://127.0.0.1:8000/api/health` and
+  `http://127.0.0.1:5173/command-center`.
 - Use `uv run ...` for every Python-facing repo command. This machine may not have a global `python`; use `uv run python ...` in scripts, pipes and smoke commands instead of bare `python`.
 - If `agent-browser` fails with `Failed to create socket directory: Permission denied`, set a writable runtime dir first: `mkdir -p .local-lab/xdg-runtime && chmod 700 .local-lab/xdg-runtime && XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser ...`. In this WSL session `/run/user/1000` may not exist.
 - After changing `pyproject.toml` entrypoints or build metadata, run `uv sync --all-extras` before expecting `uv run wilq ...` to exist.
