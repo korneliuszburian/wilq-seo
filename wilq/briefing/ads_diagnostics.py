@@ -20,6 +20,7 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
+    AdsAccountCurrencyReadContract,
     AdsBlockedHandoff,
     AdsBudgetPacingReadContract,
     AdsBudgetPacingRow,
@@ -191,7 +192,14 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
     campaign_read_contract = _campaign_read_contract(trusted_metric_facts, latest_refresh)
-    derived_kpi_read_contract = _derived_kpi_read_contract(campaign_read_contract)
+    account_currency_read_contract = _account_currency_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
+    derived_kpi_read_contract = _derived_kpi_read_contract(
+        campaign_read_contract,
+        account_currency_read_contract,
+    )
     budget_pacing_read_contract = _budget_pacing_read_contract(
         trusted_metric_facts,
         campaign_read_contract,
@@ -408,6 +416,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
+        account_currency_read_contract=account_currency_read_contract,
         derived_kpi_read_contract=derived_kpi_read_contract,
         budget_pacing_read_contract=budget_pacing_read_contract,
         recommendations_read_contract=recommendations_read_contract,
@@ -650,6 +659,63 @@ def _campaign_read_contract(
     )
 
 
+def _account_currency_read_contract(
+    metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsAccountCurrencyReadContract:
+    currency_facts: list[MetricFact] = []
+    currency_codes: list[str] = []
+    for fact in metric_facts:
+        if fact.name != "account_currency_code" or not isinstance(fact.value, str):
+            continue
+        currency_code = fact.value.strip().upper()
+        if len(currency_code) != 3:
+            continue
+        currency_facts.append(fact)
+        currency_codes.append(currency_code)
+    currency_codes = _unique(currency_codes)
+    if currency_codes:
+        currency_code = currency_codes[0]
+        return AdsAccountCurrencyReadContract(
+            status="ready",
+            title="Google Ads: waluta konta",
+            summary=f"WILQ ma walutę konta Google Ads z evidence: {currency_code}.",
+            currency_code=currency_code,
+            allowed_metrics=["account_currency_code"],
+            missing_read_contracts=[],
+            blocked_claims=[
+                "profitability",
+                "margin verdict",
+                "budget apply",
+            ],
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(fact.evidence_id for fact in currency_facts),
+            next_step=(
+                "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj "
+                "rentowności bez marży, celu biznesowego i walidowanego preview."
+            ),
+        )
+    return AdsAccountCurrencyReadContract(
+        status="blocked",
+        title="Google Ads: brak waluty konta",
+        summary="WILQ nie ma `customer.currency_code` w ostatnim Google Ads evidence.",
+        currency_code=None,
+        allowed_metrics=[],
+        missing_read_contracts=["account_currency"],
+        blocked_claims=[
+            "currency-formatted cost",
+            "profitability",
+            "CPA verdict",
+            "ROAS verdict",
+        ],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        next_step=(
+            "Uruchom read-only Google Ads vendor_read z polem `customer.currency_code`."
+        ),
+    )
+
+
 def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMetricRow]:
     grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
     seen_metric_keys: set[tuple[str | None, str, str]] = set()
@@ -710,13 +776,11 @@ def _campaign_metric_row(
 
 def _derived_kpi_read_contract(
     campaign_read_contract: AdsCampaignReadContract,
+    account_currency_read_contract: AdsAccountCurrencyReadContract,
 ) -> AdsDerivedKpiReadContract:
-    missing_read_contracts = [
-        "account_currency",
-        "profit_margin",
-        "change_history",
-        "recommendations",
-    ]
+    missing_read_contracts = ["profit_margin", "change_history", "recommendations"]
+    if account_currency_read_contract.status != "ready":
+        missing_read_contracts.insert(0, "account_currency")
     blocked_claims = [
         "profitability",
         "budget scaling",
@@ -752,7 +816,7 @@ def _derived_kpi_read_contract(
             ),
             kpi_rows=kpi_rows,
             next_step=(
-                "Użyj KPI do triage kampanii. Przed decyzją budżetową sprawdź walutę konta, "
+                "Użyj KPI do triage kampanii. Przed decyzją budżetową sprawdź "
                 "marżę, pacing budżetu, historię zmian i rekomendacje."
             ),
         )

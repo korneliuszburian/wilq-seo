@@ -330,6 +330,20 @@ const adsDiagnostics = {
     ],
     next_step: "Użyj wierszy kampanii do przeglądu aktywności."
   },
+  account_currency_read_contract: {
+    id: "ads_account_currency_read_contract",
+    status: "ready",
+    title: "Google Ads: waluta konta",
+    summary: "WILQ ma walutę konta Google Ads z evidence: PLN.",
+    currency_code: "PLN",
+    allowed_metrics: ["account_currency_code"],
+    missing_read_contracts: [],
+    blocked_claims: ["profitability", "margin verdict", "budget apply"],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    next_step:
+      "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj rentowności bez marży, celu biznesowego i walidowanego preview."
+  },
   derived_kpi_read_contract: {
     id: "ads_derived_kpi_read_contract",
     status: "ready",
@@ -344,11 +358,7 @@ const adsDiagnostics = {
       "roas",
       "value_per_conversion"
     ],
-    missing_read_contracts: [
-      "account_currency",
-      "profit_margin",
-      "change_history"
-    ],
+    missing_read_contracts: ["profit_margin", "change_history"],
     blocked_claims: [
       "profitability",
       "budget scaling",

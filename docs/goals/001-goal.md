@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 22:51 Europe/Warsaw.
+Last updated: 2026-06-19 23:12 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -64,17 +64,18 @@ it. A strong Ekologus demo can be delivered before the full product is complete:
 dashboard decisions, WILQ API evidence, Polish Codex skills, ActionObject
 safety, eval ledger and visible blocked claims. Ads now has a derived KPI read
 contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
-facts, a read-only budget context contract for campaign daily budgets versus
-7-day cost, a read-only Google Ads recommendations contract, a read-only Google
-Ads impression-share contract, a read-only Google Ads change-history contract,
-a read-only 90-day search-term safety contract and a review-only negative
-keyword payload preview plus read-only keyword match context for negative
-keyword review. Custom segments now have a review-only payload preview from
-real search terms, but no targeting/apply support.
-Full BDOS-class parity still requires optimizer contracts such as account
-currency/profit-margin interpretation, recommendation impact/apply previews,
-pre/post change-impact windows, Keyword Planner enrichment, forecast or
-audience-size checks, custom segment targeting/apply previews, budget/apply
+facts, a read-only account currency contract, a read-only budget context
+contract for campaign daily budgets versus 7-day cost, a read-only Google Ads
+recommendations contract, a read-only Google Ads impression-share contract, a
+read-only Google Ads change-history contract, a read-only 90-day search-term
+safety contract and a review-only negative keyword payload preview plus
+read-only keyword match context for negative keyword review. Custom segments
+now have a review-only payload preview from real search terms, but no
+targeting/apply support.
+Full BDOS-class parity still requires optimizer contracts such as
+profit-margin/business-goal interpretation, recommendation impact/apply
+previews, pre/post change-impact windows, Keyword Planner enrichment, forecast
+or audience-size checks, custom segment targeting/apply previews, budget/apply
 previews, apply safety and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
@@ -140,27 +141,35 @@ Current connector truth:
   `596-895-8639 Agencja Proud Media` is the MCC/login customer. `Ekologus NOWY`
   is the child metrics customer. Do not call Ads an OAuth blocker unless a fresh
   read proves that. Google Ads now has live campaign rows, search-term rows,
-  a derived KPI read contract for CTR/CPC/conversion rate/CPA/ROAS, a
+  account currency evidence, a derived KPI read contract for
+  CTR/CPC/conversion rate/CPA/ROAS, a
   read-only budget context contract, a read-only recommendations contract, a
   read-only impression-share contract, a read-only change-history contract, a
   read-only 90-day search-term safety contract, a prepare-only custom segment
   candidate contract with review-only payload preview and a prepare-only
   negative keyword safety review contract with review-only payload preview plus
   read-only keyword match context.
-  Latest live Ads proof: `refresh_google_ads_eb8c239bc32b` exposes 18 campaign
-  rows, 50 30-day search-term rows, 200 90-day search-term safety rows, 211
-  keyword match context rows, 4 active Google Ads recommendation rows, 2
-  impression-share rows and `change_event_row_count=0` for the last 14 days.
-  `/api/ads/diagnostics`
-  reports `impression_share_read_contract.status=ready`,
+  Latest live Ads proof: `refresh_google_ads_26cb4673eee2` /
+  `ev_refresh_refresh_google_ads_26cb4673eee2` exposes
+  `customer_currency_code=PLN`, 18 campaign rows, 50 30-day search-term rows,
+  200 90-day search-term safety rows, 211 keyword match context rows, 4 active
+  Google Ads recommendation rows, 2 impression-share rows and
+  `change_event_row_count=0` for the last 14 days.
+  `/api/ads/diagnostics` reports
+  `account_currency_read_contract.status=ready`,
+  `account_currency_read_contract.currency_code=PLN`,
+  `impression_share_read_contract.status=ready`,
   `change_history_read_contract.status=ready`,
   `search_term_safety_read_contract.status=ready`,
   `keyword_match_context_read_contract.status=ready`, decisions
   `ads_review_impression_share`, `ads_review_change_history` and
   `ads_review_search_term_safety`. CPA/ROAS are allowed only as calculations
   from campaign facts; budget context, recommendations, impression share,
-  change history, 90-day search-term safety and keyword match context are allowed only as review/audit
-  context. Current `negative_keywords_read_contract` has 7 review-only
+  change history, 90-day search-term safety and keyword match context are
+  allowed only as review/audit context. Dashboard `/ads-doctor` may format
+  cost, CPC, CPA, budget and search-term costs in PLN, but profitability and
+  margin verdicts remain blocked. Current `negative_keywords_read_contract`
+  has 7 review-only
   candidates, 7 `negative_keyword_payload_preview` rows, no
   `90_day_safety_check` missing contract and no
   `negative_keyword_payload_preview` missing contract and no
@@ -172,6 +181,10 @@ Current connector truth:
   audience size, budget scaling, campaign-performance, recommendation impact,
   recommendation apply, change impact and performance-uplift claims still need
   explicit read/safety/apply contracts.
+  Full `scripts/verify.sh` passed for the account-currency slice on
+  2026-06-19: backend API contracts `115 passed`, dashboard route tests
+  `13 passed`, Playwright e2e `9 passed`, API smoke, skill structure smoke,
+  skill API smoke and dashboard production build passed.
   Source-backed decision lineage now exists for Ads diagnostics: sections and
   decision queue items expose `knowledge_card_ids` and `expert_rule_ids`.
   Current proof chain for the budget slice is
@@ -1660,10 +1673,11 @@ Commit rules:
    Command Center, `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor`,
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
-   regression. Next product work should add missing value contracts: Localo
-   visibility facts, Ahrefs gap records, deeper source-term/custom-segment
-   evidence, remaining campaign optimization contracts and Demand Gen
-   diagnostics. Campaign ActionObjects are now partially started via
+   regression. Next product work should add missing value contracts:
+   profit-margin/business-goal interpretation for Ads, Localo visibility facts,
+   Ahrefs gap records, deeper source-term/custom-segment evidence, remaining
+   campaign optimization contracts and Demand Gen diagnostics. Campaign
+   ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget
    optimization or apply support.
 
@@ -1827,7 +1841,7 @@ Remaining Ads optimizer blockers:
 - no budget/apply preview or human budget-goal contract,
 - no recommendation impact/apply preview contract,
 - no pre/post change-impact window contract,
-- no account-currency/profit-margin interpretation contract,
+- no profit-margin/business-goal interpretation contract,
 - no campaign pause/budget apply audit path.
 
 Passed after the 2026-06-19 Command Center GA4 metric-fact fallback:

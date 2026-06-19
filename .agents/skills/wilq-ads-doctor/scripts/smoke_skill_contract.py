@@ -80,6 +80,9 @@ def main() -> int:
         if not {"ROAS", "search terms"} <= blocked_claims:
             raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
+    account_currency_read_contract = (
+        ads_diagnostics.get("account_currency_read_contract") or {}
+    )
     budget_pacing_read_contract = ads_diagnostics.get("budget_pacing_read_contract") or {}
     recommendations_read_contract = (
         ads_diagnostics.get("recommendations_read_contract") or {}
@@ -111,6 +114,22 @@ def main() -> int:
         not in (ads_diagnostics.get("action_ids") or [])
     ):
         raise SystemExit("Ready campaign diagnostics must expose campaign review ActionObject")
+    if account_currency_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose account_currency_read_contract")
+    pack_currency_contract = (
+        pack.get("ads_diagnostics", {}).get("account_currency_read_contract") or {}
+    )
+    if pack_currency_contract.get("summary") != account_currency_read_contract.get("summary"):
+        raise SystemExit("Context pack account currency contract differs")
+    if account_currency_read_contract.get("status") == "ready":
+        currency_code = account_currency_read_contract.get("currency_code")
+        if not isinstance(currency_code, str) or len(currency_code) != 3:
+            raise SystemExit("Ready account currency contract must expose ISO currency code")
+    elif "account_currency" not in account_currency_read_contract.get(
+        "missing_read_contracts",
+        [],
+    ):
+        raise SystemExit("Blocked account currency contract must list missing account_currency")
     if budget_pacing_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose budget_pacing_read_contract")
     if budget_pacing_read_contract.get("status") == "ready":
@@ -353,6 +372,18 @@ def main() -> int:
                         "has_campaign_review_action": (
                             "act_prepare_ads_campaign_review_queue"
                             in (ads_diagnostics.get("action_ids") or [])
+                        ),
+                    },
+                    "account_currency_read_contract": {
+                        "status": account_currency_read_contract.get("status"),
+                        "currency_code": account_currency_read_contract.get(
+                            "currency_code"
+                        ),
+                        "missing_read_contracts": account_currency_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "blocked_claims": account_currency_read_contract.get(
+                            "blocked_claims", []
                         ),
                     },
                     "budget_pacing_read_contract": {

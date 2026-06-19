@@ -805,7 +805,7 @@ function TacticalQueuePanel({
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
           <MetricTile
             label={compact ? "Decyzje" : "Taktyki"}
             value={compact ? compactGroups.length : filteredItems.length}
@@ -1568,6 +1568,7 @@ function AdsDoctorSurface() {
   }
 
   const data = diagnostics.data;
+  const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
   const latestRefresh = data.latest_refresh;
   const blockedDecisionCount = data.decision_queue.filter(
@@ -1589,6 +1590,7 @@ function AdsDoctorSurface() {
           <MetricTile label="Decyzje" value={data.decision_queue.length} />
           <MetricTile label="Blockery" value={blockedDecisionCount} />
           <MetricTile label="Dowody" value={data.evidence_ids.length} />
+          <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
         </div>
       </div>
 
@@ -1625,7 +1627,7 @@ function AdsDoctorSurface() {
 
       <AdsOperatorSummary data={data} />
 
-      <AdsMetricEvidencePanel data={data} />
+      <AdsMetricEvidencePanel data={data} currencyCode={currencyCode} />
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
@@ -1638,6 +1640,7 @@ function AdsDoctorSurface() {
 }
 
 function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
+  const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
   const decisions = data.decision_queue
     .slice()
     .sort((left, right) => adsDecisionSortValue(left) - adsDecisionSortValue(right));
@@ -1687,6 +1690,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             value={data.search_terms_read_contract.search_term_rows.length}
           />
           <MetricTile
+            label="Waluta"
+            value={data.account_currency_read_contract.currency_code ?? "brak"}
+          />
+          <MetricTile
             label="90 dni"
             value={data.search_term_safety_read_contract.safety_rows.length}
           />
@@ -1702,7 +1709,11 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
         <div className="grid gap-3">
           {decisions.length > 0 ? (
             decisions.map((decision) => (
-              <AdsDecisionCard key={decision.id} decision={decision} />
+              <AdsDecisionCard
+                key={decision.id}
+                decision={decision}
+                currencyCode={currencyCode}
+              />
             ))
           ) : (
             <BlockerNotice message="Brak decyzji Ads. Najpierw uruchom odczyt Google Ads." />
@@ -1713,6 +1724,11 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb Ads</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
             <TraceLine label="Metryki dostępne" values={allowedMetrics} empty="brak" />
+            <TraceLine
+              label="Waluta konta"
+              values={[data.account_currency_read_contract.currency_code ?? "brak"]}
+              empty="brak"
+            />
             <TraceLine label="Brakujące kontrakty" values={missingReadContracts} empty="brak" />
             <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
             <LinkedTraceLine label="ActionObjecty" values={data.action_ids} kind="actions" />
@@ -1724,7 +1740,13 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
   );
 }
 
-function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
+function AdsDecisionCard({
+  decision,
+  currencyCode
+}: {
+  decision: AdsDecisionItem;
+  currencyCode?: string;
+}) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1806,6 +1828,7 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
       {decision.negative_keyword_candidates.length > 0 ? (
         <AdsNegativeKeywordCandidatesPanel
           candidates={decision.negative_keyword_candidates}
+          currencyCode={currencyCode}
           compact
         />
       ) : null}
@@ -1828,7 +1851,13 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
   );
 }
 
-function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
+function AdsMetricEvidencePanel({
+  data,
+  currencyCode
+}: {
+  data: AdsDiagnosticsResponse;
+  currencyCode?: string;
+}) {
   const campaignRows = data.campaign_read_contract.campaign_rows;
   const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
   const budgetRows = data.budget_pacing_read_contract.budget_rows;
@@ -1841,6 +1870,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
   const missingReadContracts = uniqueValues([
+    ...data.account_currency_read_contract.missing_read_contracts,
     ...data.campaign_read_contract.missing_read_contracts,
     ...data.derived_kpi_read_contract.missing_read_contracts,
     ...data.budget_pacing_read_contract.missing_read_contracts,
@@ -1854,6 +1884,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.negative_keywords_read_contract.missing_read_contracts
   ]).map(adsMissingReadContractLabel);
   const blockedClaims = uniqueValues([
+    ...data.account_currency_read_contract.blocked_claims,
     ...data.campaign_read_contract.blocked_claims,
     ...data.derived_kpi_read_contract.blocked_claims,
     ...data.budget_pacing_read_contract.blocked_claims,
@@ -1892,20 +1923,27 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
           <MetricTile label="Keywords" value={keywordContextRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
+          <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
         </div>
       </div>
 
       <div className="grid gap-4">
-        <AdsCampaignRowsTable rows={campaignRows} />
-        <AdsDerivedKpiRowsTable rows={derivedKpiRows} />
-        <AdsBudgetPacingRowsTable rows={budgetRows} />
+        <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
+        <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
+        <AdsBudgetPacingRowsTable rows={budgetRows} currencyCode={currencyCode} />
         <AdsRecommendationRowsPanel rows={recommendationRows} />
         <AdsImpressionShareRowsTable rows={impressionShareRows} />
         <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
-        <AdsSearchTermRowsTable rows={searchTermRows} />
-        <AdsSearchTermSafetyRowsTable rows={searchTermSafetyRows} />
+        <AdsSearchTermRowsTable rows={searchTermRows} currencyCode={currencyCode} />
+        <AdsSearchTermSafetyRowsTable
+          rows={searchTermSafetyRows}
+          currencyCode={currencyCode}
+        />
         <AdsKeywordMatchContextRowsTable rows={keywordContextRows} />
-        <AdsNegativeKeywordCandidatesPanel candidates={negativeKeywordCandidates} />
+        <AdsNegativeKeywordCandidatesPanel
+          candidates={negativeKeywordCandidates}
+          currencyCode={currencyCode}
+        />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
       </div>
 
@@ -1922,7 +1960,13 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   );
 }
 
-function AdsCampaignRowsTable({ rows }: { rows: AdsCampaignMetricRow[] }) {
+function AdsCampaignRowsTable({
+  rows,
+  currencyCode
+}: {
+  rows: AdsCampaignMetricRow[];
+  currencyCode?: string;
+}) {
   if (rows.length === 0) {
     return (
       <BlockerNotice message="Brak wymiarowych wierszy kampanii. Ads Doctor nie może analizować kampanii bez odczytu Google Ads." />
@@ -1948,7 +1992,9 @@ function AdsCampaignRowsTable({ rows }: { rows: AdsCampaignMetricRow[] }) {
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.campaign_name}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
-              <td className="py-2 pr-4 text-slate-700">{adsCost(row.cost_micros)}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.cost_micros, currencyCode)}
+              </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversion_value)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
@@ -1960,7 +2006,13 @@ function AdsCampaignRowsTable({ rows }: { rows: AdsCampaignMetricRow[] }) {
   );
 }
 
-function AdsDerivedKpiRowsTable({ rows }: { rows: AdsDerivedKpiRow[] }) {
+function AdsDerivedKpiRowsTable({
+  rows,
+  currencyCode
+}: {
+  rows: AdsDerivedKpiRow[];
+  currencyCode?: string;
+}) {
   if (rows.length === 0) {
     return (
       <BlockerNotice message="Brak wyliczalnych KPI kampanii. WILQ potrzebuje kosztu, kliknięć, konwersji i wartości konwersji w campaign facts." />
@@ -1985,10 +2037,12 @@ function AdsDerivedKpiRowsTable({ rows }: { rows: AdsDerivedKpiRow[] }) {
             <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}-kpi`}>
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.campaign_name}</td>
               <td className="py-2 pr-4 text-slate-700">{adsPercent(row.ctr)}</td>
-              <td className="py-2 pr-4 text-slate-700">{adsCost(row.average_cpc_micros)}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.average_cpc_micros, currencyCode)}
+              </td>
               <td className="py-2 pr-4 text-slate-700">{adsPercent(row.conversion_rate)}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {adsCost(row.cost_per_conversion_micros)}
+                {adsCost(row.cost_per_conversion_micros, currencyCode)}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.roas)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">
@@ -2002,7 +2056,13 @@ function AdsDerivedKpiRowsTable({ rows }: { rows: AdsDerivedKpiRow[] }) {
   );
 }
 
-function AdsBudgetPacingRowsTable({ rows }: { rows: AdsBudgetPacingRow[] }) {
+function AdsBudgetPacingRowsTable({
+  rows,
+  currencyCode
+}: {
+  rows: AdsBudgetPacingRow[];
+  currencyCode?: string;
+}) {
   if (rows.length === 0) {
     return (
       <BlockerNotice message="Brak kontekstu budżetu kampanii. WILQ potrzebuje campaign_budget.amount_micros z Google Ads, żeby pokazać koszt względem budżetu dziennego." />
@@ -2033,18 +2093,20 @@ function AdsBudgetPacingRowsTable({ rows }: { rows: AdsBudgetPacingRow[] }) {
                 </div>
               </td>
               <td className="py-2 pr-4 text-slate-700">
-                {adsCost(row.budget_amount_micros)}
+                {adsCost(row.budget_amount_micros, currencyCode)}
               </td>
-              <td className="py-2 pr-4 text-slate-700">{adsCost(row.cost_micros_7d)}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {adsCost(row.seven_day_budget_micros)}
+                {adsCost(row.cost_micros_7d, currencyCode)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.seven_day_budget_micros, currencyCode)}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {adsPercent(row.spend_to_budget_ratio_7d)}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {row.has_recommended_budget
-                  ? adsCost(row.recommended_budget_amount_micros)
+                  ? adsCost(row.recommended_budget_amount_micros, currencyCode)
                   : "brak"}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
@@ -2191,7 +2253,13 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
   );
 }
 
-function AdsSearchTermRowsTable({ rows }: { rows: AdsSearchTermMetricRow[] }) {
+function AdsSearchTermRowsTable({
+  rows,
+  currencyCode
+}: {
+  rows: AdsSearchTermMetricRow[];
+  currencyCode?: string;
+}) {
   if (rows.length === 0) {
     return (
       <BlockerNotice message="Brak wymiarowych wierszy zapytań. Ads Doctor nie może analizować zapytań ani waste bez danych z search_term_view." />
@@ -2228,7 +2296,9 @@ function AdsSearchTermRowsTable({ rows }: { rows: AdsSearchTermMetricRow[] }) {
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
-              <td className="py-2 pr-4 text-slate-700">{adsCost(row.cost_micros)}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.cost_micros, currencyCode)}
+              </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
             </tr>
@@ -2239,7 +2309,13 @@ function AdsSearchTermRowsTable({ rows }: { rows: AdsSearchTermMetricRow[] }) {
   );
 }
 
-function AdsSearchTermSafetyRowsTable({ rows }: { rows: AdsSearchTermSafetyRow[] }) {
+function AdsSearchTermSafetyRowsTable({
+  rows,
+  currencyCode
+}: {
+  rows: AdsSearchTermSafetyRow[];
+  currencyCode?: string;
+}) {
   if (rows.length === 0) {
     return (
       <BlockerNotice message="Brak 90-dniowego safety read dla zapytań. WILQ nie powinien zdejmować blokady z review wykluczeń bez tego odczytu." />
@@ -2276,7 +2352,9 @@ function AdsSearchTermSafetyRowsTable({ rows }: { rows: AdsSearchTermSafetyRow[]
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks_90d)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions_90d)}</td>
-              <td className="py-2 pr-4 text-slate-700">{adsCost(row.cost_micros_90d)}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.cost_micros_90d, currencyCode)}
+              </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions_90d)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
             </tr>
@@ -2337,9 +2415,11 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
 
 function AdsNegativeKeywordCandidatesPanel({
   candidates,
+  currencyCode,
   compact = false
 }: {
   candidates: AdsNegativeKeywordCandidate[];
+  currencyCode?: string;
   compact?: boolean;
 }) {
   if (candidates.length === 0) {
@@ -2382,10 +2462,16 @@ function AdsNegativeKeywordCandidatesPanel({
             </div>
             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
               <MetricTile label="Kliknięcia" value={adsNumber(candidate.clicks)} />
-              <MetricTile label="Koszt" value={adsCost(candidate.cost_micros)} />
+              <MetricTile
+                label="Koszt"
+                value={adsCost(candidate.cost_micros, currencyCode)}
+              />
               <MetricTile label="Konwersje" value={adsNumber(candidate.conversions)} />
               <MetricTile label="Klik. 90d" value={adsNumber(candidate.clicks_90d)} />
-              <MetricTile label="Koszt 90d" value={adsCost(candidate.cost_micros_90d)} />
+              <MetricTile
+                label="Koszt 90d"
+                value={adsCost(candidate.cost_micros_90d, currencyCode)}
+              />
               <MetricTile label="Konw. 90d" value={adsNumber(candidate.conversions_90d)} />
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">{candidate.next_step}</p>
@@ -2659,6 +2745,7 @@ function adsAllowedMetricLabel(value: string) {
     cost_micros: "koszt",
     conversions: "konwersje",
     conversion_value: "wartość konwersji",
+    account_currency_code: "waluta konta",
     budget_amount_micros: "budżet",
     cost_micros_7d: "koszt 7 dni",
     seven_day_budget_micros: "budżet 7 dni",
@@ -2701,6 +2788,7 @@ function adsMissingReadContractLabel(value: string) {
     shared_budget_distribution: "podział shared budget",
     budget_target_or_seasonality: "cel budżetowy lub sezonowość",
     human_budget_goal: "cel budżetu od człowieka",
+    account_currency: "waluta konta",
     pre_change_performance_window: "okno wyników przed zmianą",
     post_change_performance_window: "okno wyników po zmianie",
     human_change_impact_review: "ręczny review wpływu zmian",
@@ -2734,6 +2822,8 @@ function adsBlockedClaimLabel(value: string) {
     "negative keyword apply": "wdrożenie wykluczeń",
     "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
     "budget apply": "zmiana budżetu",
+    "margin verdict": "werdykt marży",
+    "currency-formatted cost": "koszt w walucie konta",
     "budget mutation": "zmiana budżetu",
     "campaign mutation": "zmiana kampanii",
     "change history": "historia zmian",
@@ -2759,9 +2849,16 @@ function adsNumber(value: number | null | undefined) {
   return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 4 }).format(value);
 }
 
-function adsCost(value: number | null | undefined) {
+function adsCost(value: number | null | undefined, currencyCode?: string) {
   if (value === null || value === undefined) return "brak";
   const accountUnits = value / 1_000_000;
+  if (currencyCode) {
+    return new Intl.NumberFormat("pl-PL", {
+      currency: currencyCode,
+      maximumFractionDigits: 2,
+      style: "currency"
+    }).format(accountUnits);
+  }
   return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
     accountUnits
   )} jedn. konta`;

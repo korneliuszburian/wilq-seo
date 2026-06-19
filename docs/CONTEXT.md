@@ -29,6 +29,23 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads account-currency truth, 2026-06-19 23:12 Europe/Warsaw:
+   Google Ads campaign read now includes `customer.currency_code` and persists
+   a read-only `account_currency_code` fact. Live proof
+   `refresh_google_ads_26cb4673eee2` /
+   `ev_refresh_refresh_google_ads_26cb4673eee2` returned
+   `customer_currency_code=PLN`, 18 campaign rows, 50 30-day search-term rows,
+   200 90-day safety rows, 211 keyword context rows and 4 active
+   recommendations. `/api/ads/diagnostics.account_currency_read_contract` is
+   `ready` with `currency_code=PLN`, and derived KPI missing contracts no
+   longer include `account_currency`. Dashboard `/ads-doctor` formats Ads costs
+   in PLN across campaign, KPI, budget, search-term and negative-keyword review
+   surfaces. Full `scripts/verify.sh` passed: backend API contracts
+   `115 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
+   and dashboard production build passed. This is still not profitability
+   proof: profit margin, business goal, impact/apply previews and human
+   confirmation remain blocked.
+
 0. Local runtime stability rule, 2026-06-19 15:12 Europe/Warsaw: use
    `scripts/local_stack.sh start|stop|restart|status|logs` for the normal local
    WILQ API/dashboard stack. It owns `.local-lab/runtime/{api,dashboard}.pid`

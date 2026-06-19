@@ -33,6 +33,7 @@ GOOGLE_ADS_CREDENTIAL_NAMES = {
 
 CAMPAIGN_SUMMARY_QUERY = """
 SELECT
+  customer.currency_code,
   campaign.id,
   campaign.name,
   campaign.status,
@@ -651,8 +652,12 @@ def _summarize_search_stream_response(
     budgeted_campaign_count = 0
     recommended_budget_count = 0
     impression_share_row_count = 0
+    currency_codes: set[str] = set()
     metric_facts: list[VendorMetricFact] = []
     for row in rows:
+        currency_code = _customer_currency_code(row)
+        if currency_code:
+            currency_codes.add(currency_code)
         metrics = row.get("metrics", {})
         row_clicks = _int_metric(metrics.get("clicks"))
         row_impressions = _int_metric(metrics.get("impressions"))
@@ -744,22 +749,43 @@ def _summarize_search_stream_response(
             for name, value in impression_share_values.items():
                 if value is not None:
                     metric_facts.append(VendorMetricFact(name, value, dimensions))
-    return (
-        {
-            "api_version": GOOGLE_ADS_API_VERSION,
-            "query": "campaign_last_7_days",
-            "row_count": len(rows),
-            "clicks": clicks,
-            "impressions": impressions,
-            "cost_micros": cost_micros,
-            "conversions": conversions,
-            "conversion_value": conversion_value,
-            "budgeted_campaign_count": budgeted_campaign_count,
-            "recommended_budget_count": recommended_budget_count,
-            "impression_share_row_count": impression_share_row_count,
-        },
-        metric_facts,
-    )
+    for currency_code in sorted(currency_codes):
+        metric_facts.append(
+            VendorMetricFact(
+                "account_currency_code",
+                currency_code,
+                period="account_context",
+            )
+        )
+    summary: dict[str, float | int | str] = {
+        "api_version": GOOGLE_ADS_API_VERSION,
+        "query": "campaign_last_7_days",
+        "row_count": len(rows),
+        "clicks": clicks,
+        "impressions": impressions,
+        "cost_micros": cost_micros,
+        "conversions": conversions,
+        "conversion_value": conversion_value,
+        "budgeted_campaign_count": budgeted_campaign_count,
+        "recommended_budget_count": recommended_budget_count,
+        "impression_share_row_count": impression_share_row_count,
+    }
+    if currency_codes:
+        summary["customer_currency_code"] = ",".join(sorted(currency_codes))
+    return summary, metric_facts
+
+
+def _customer_currency_code(row: dict[str, Any]) -> str | None:
+    customer = row.get("customer", {})
+    if not isinstance(customer, dict):
+        return None
+    currency_code = customer.get("currencyCode", customer.get("currency_code"))
+    if not isinstance(currency_code, str):
+        return None
+    normalized = currency_code.strip().upper()
+    if len(normalized) != 3 or not normalized.isalpha():
+        return None
+    return normalized
 
 
 def _summarize_recommendation_response(

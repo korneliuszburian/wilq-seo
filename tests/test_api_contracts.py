@@ -1696,6 +1696,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         query = json.loads(request.content.decode())["query"]
         search_stream_queries.append(query)
         if "FROM campaign" in query:
+            assert "customer.currency_code" in query
             assert "campaign.name" in query
             assert "campaign.status" in query
             assert "campaign.advertising_channel_type" in query
@@ -1714,6 +1715,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     {
                         "results": [
                             {
+                                "customer": {"currencyCode": "PLN"},
                                 "campaign": {
                                     "id": "101",
                                     "name": "Brand Search",
@@ -1741,6 +1743,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                 }
                             },
                             {
+                                "customer": {"currencyCode": "PLN"},
                                 "campaign": {
                                     "id": "102",
                                     "name": "PMax Feed",
@@ -1935,6 +1938,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["cost_micros"] == 4000000
     assert result.metric_summary["conversions"] == 1.5
     assert result.metric_summary["conversion_value"] == 250.75
+    assert result.metric_summary["customer_currency_code"] == "PLN"
     assert result.metric_summary["budgeted_campaign_count"] == 2
     assert result.metric_summary["recommended_budget_count"] == 1
     assert result.metric_summary["impression_share_row_count"] == 1
@@ -1995,6 +1999,11 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         fact for fact in result.metric_facts if fact.name == "conversion_value"
     )
     assert conversion_value_fact.value == 250.75
+    currency_fact = next(
+        fact for fact in result.metric_facts if fact.name == "account_currency_code"
+    )
+    assert currency_fact.value == "PLN"
+    assert currency_fact.period == "account_context"
     budget_amount_fact = next(
         fact for fact in result.metric_facts if fact.name == "budget_amount_micros"
     )
@@ -2557,6 +2566,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "cost_micros": 12000000,
                 "conversions": 2.5,
                 "conversion_value": 450.75,
+                "customer_currency_code": "PLN",
                 "search_term_row_count": 2,
                 "search_term_clicks": 10,
                 "search_term_impressions": 100,
@@ -2588,6 +2598,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "keyword_match_context_match_types": "BROAD",
             },
             metric_facts=[
+                VendorMetricFact(
+                    "account_currency_code",
+                    "PLN",
+                    period="account_context",
+                ),
                 VendorMetricFact(
                     "clicks",
                     9,
@@ -3024,6 +3039,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "blocked_claims": ["CPA", "ROAS", "search-term waste", "wasted budget"],
         }
     ]
+    currency_contract = payload["account_currency_read_contract"]
+    assert currency_contract["status"] == "ready"
+    assert currency_contract["currency_code"] == "PLN"
+    assert currency_contract["allowed_metrics"] == ["account_currency_code"]
+    assert currency_contract["missing_read_contracts"] == []
+    assert "budget apply" in currency_contract["blocked_claims"]
     derived_kpi_contract = payload["derived_kpi_read_contract"]
     assert derived_kpi_contract["status"] == "ready"
     assert derived_kpi_contract["allowed_metrics"] == [
@@ -3035,6 +3056,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "value_per_conversion",
     ]
     assert "profit_margin" in derived_kpi_contract["missing_read_contracts"]
+    assert "account_currency" not in derived_kpi_contract["missing_read_contracts"]
     assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
     assert "impression_share" not in derived_kpi_contract["missing_read_contracts"]
     assert "change_history" not in derived_kpi_contract["missing_read_contracts"]

@@ -274,6 +274,20 @@ export const AdsCampaignReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsAccountCurrencyReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  currency_code: z.string().nullable().optional(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  next_step: z.string()
+});
+
 export const AdsDerivedKpiRowSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
@@ -691,6 +705,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
+  account_currency_read_contract: AdsAccountCurrencyReadContractSchema,
   derived_kpi_read_contract: AdsDerivedKpiReadContractSchema,
   budget_pacing_read_contract: AdsBudgetPacingReadContractSchema,
   recommendations_read_contract: AdsRecommendationsReadContractSchema,
@@ -1168,6 +1183,9 @@ export type CommandCenterDemoStep = z.infer<typeof CommandCenterDemoStepSchema>;
 export type CommandCenterActionPlanItem = z.infer<typeof CommandCenterActionPlanItemSchema>;
 export type DailyDecision = z.infer<typeof DailyDecisionSchema>;
 export type AdsDiagnosticSection = z.infer<typeof AdsDiagnosticSectionSchema>;
+export type AdsAccountCurrencyReadContract = z.infer<
+  typeof AdsAccountCurrencyReadContractSchema
+>;
 export type AdsBudgetPacingRow = z.infer<typeof AdsBudgetPacingRowSchema>;
 export type AdsBudgetPacingReadContract = z.infer<
   typeof AdsBudgetPacingReadContractSchema

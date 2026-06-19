@@ -503,6 +503,20 @@ class AdsCampaignReadContract(BaseModel):
     next_step: str
 
 
+class AdsAccountCurrencyReadContract(BaseModel):
+    id: str = "ads_account_currency_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    currency_code: str | None = None
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsDerivedKpiRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
@@ -926,6 +940,7 @@ class AdsDiagnosticsResponse(BaseModel):
     latest_refresh: ConnectorRefreshRun | None = None
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
+    account_currency_read_contract: AdsAccountCurrencyReadContract
     derived_kpi_read_contract: AdsDerivedKpiReadContract
     budget_pacing_read_contract: AdsBudgetPacingReadContract
     recommendations_read_contract: AdsRecommendationsReadContract

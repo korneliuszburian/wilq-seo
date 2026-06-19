@@ -34,11 +34,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Full `scripts/verify.sh` przeszedł po najnowszym slice:
-  API smoke, skill smokes, dashboard route tests, Playwright e2e `9 passed`
-  i dashboard production build.
-- Ostatni product/performance commit przed tym docs-maintenance slice:
-  `792ad2f perf(codex): scope non-daily context packs`.
+- Najnowszy live Ads proof: `refresh_google_ads_26cb4673eee2` /
+  `ev_refresh_refresh_google_ads_26cb4673eee2` odczytał
+  `customer_currency_code=PLN`, 18 kampanii, 50 search terms, 200 wierszy
+  90-dniowego search-term safety, 211 keyword context rows i 4 aktywne
+  rekomendacje Google Ads.
+- `/api/ads/diagnostics.account_currency_read_contract.status=ready`,
+  `currency_code=PLN`; `account_currency` zniknęło z brakujących kontraktów
+  derived KPI. Profitability, margin verdict i budget apply nadal są
+  zablokowane.
+- `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
+  `account_currency_read_contract` w scoped context-packu.
+- Full `scripts/verify.sh` przeszedł po tym slice: backend API contracts
+  `115 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`,
+  skill/API smokes i dashboard production build passed.
 
 Aktualny maintenance:
 
@@ -48,7 +57,20 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Non-daily skill context-pack compaction, 2026-06-19 22:45 Europe/Warsaw.
+1. Ads account currency read contract, 2026-06-19 23:12 Europe/Warsaw.
+   Google Ads campaign read query pobiera `customer.currency_code` jako
+   read-only fact. WILQ zapisuje `account_currency_code` z evidence ID,
+   `/api/ads/diagnostics` wystawia `account_currency_read_contract`, scoped
+   `wilq-ads-doctor` context-pack przenosi ten sam kontrakt, a dashboard
+   `/ads-doctor` formatuje koszty kampanii, KPI, budżetów, search terms i
+   negative keyword review w walucie `PLN`. Live proof:
+   `refresh_google_ads_26cb4673eee2` /
+   `ev_refresh_refresh_google_ads_26cb4673eee2`. Focused backend,
+   TypeScript, dashboard tests i skill smoke passed. Full `scripts/verify.sh`
+   passed: backend `115 passed`, dashboard unit `13 passed`, Playwright e2e
+   `9 passed` and dashboard production build passed.
+
+2. Non-daily skill context-pack compaction, 2026-06-19 22:45 Europe/Warsaw.
    Default context-packs pomijają ciężkie diagnostic sections i metric facts
    dla content, GA4 i Merchant scoped packs. Campaign Builder nie ciągnie już
    Merchant jako domyślnego scope'u i używa lekkiego `content_landing_context`.
@@ -64,7 +86,7 @@ Aktualny maintenance:
    warm `0.194s`; `wilq-daily-command` `120504 bytes`, cold `1.918s`,
    warm `0.236s`. Full `scripts/verify.sh` passed.
 
-2. Custom segments review-only payload preview, 2026-06-19 22:08
+3. Custom segments review-only payload preview, 2026-06-19 22:08
    Europe/Warsaw. `/api/ads/diagnostics.custom_segments_read_contract` exposes
    `payload_preview` with `member_type=KEYWORD`, `api_mutation_ready=false`,
    `apply_allowed=false` and `destructive=false`. Remaining missing contracts:
@@ -73,12 +95,12 @@ Aktualny maintenance:
    `.local-lab/evals/codex-skill/20260619T201200Z/wilq-custom-segments/result.json`.
    Full `scripts/verify.sh` passed.
 
-3. Dashboard bundle split, 2026-06-19 21:44 Europe/Warsaw. Vite manual chunks
+4. Dashboard bundle split, 2026-06-19 21:44 Europe/Warsaw. Vite manual chunks
    split React, TanStack, icons, schemas and misc vendor code. Production build
    no longer emits the >500 KB chunk warning in that proof. Full
    `scripts/verify.sh` passed.
 
-4. Daily command context-pack payload compaction, 2026-06-19 21:32
+5. Daily command context-pack payload compaction, 2026-06-19 21:32
    Europe/Warsaw. Default `wilq-daily-command` context-pack compacts
    `active_action_objects`, removes heavy `connector_health` from embedded
    Command Center, caps Marketing Brief metric facts and keeps full data behind
@@ -87,20 +109,15 @@ Aktualny maintenance:
    `.local-lab/evals/codex-skill/20260619T193056Z/wilq-daily-command/result.json`.
    Full `scripts/verify.sh` passed.
 
-5. DailyRuntime cold-path compaction, 2026-06-19 21:13 Europe/Warsaw. Shared
-   DailyRuntime now builds core daily products together and reuses them across
-   Command Center, Marketing Brief and daily skill context-pack. Cold API after
-   restart stayed around `1.9-2.1s`, warm cache around `0.17-0.28s`. Full
-   `scripts/verify.sh` passed.
-
 ## Active Gaps
 
 - Demand Gen cold context-pack is still about `2.6s`; payload and warm runtime
   are inside budget, but cold path should be improved if it stays visible in
   browser/Codex proof.
 - Full BDOS-class Ads optimizer is not done. Remaining areas include Keyword
-  Planner enrichment, forecast/audience size, budget pacing, impression share
-  usage, change-history reasoning, apply previews, human confirmation and audit.
+  Planner enrichment, forecast/audience size, profit-margin/business-goal
+  interpretation, budget/recommendation impact previews, apply previews, human
+  confirmation and audit.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety
   requirements are all verified.
