@@ -559,6 +559,17 @@ Work in this order:
    Full context-pack is a debug mode, not default runtime. Measure before and
    after; do not hide performance issues with random frontend memoization.
 
+   Current status after the 2026-06-19 keyword-context follow-up:
+   `wilq-ads-doctor` scoped context-pack is back under the immediate non-daily
+   budget at `198513 bytes`, cold `1.281-1.620s`, warm `0.145-0.159s`.
+   Full detail remains in `/api/ads/diagnostics`; context-pack embeds only
+   capped samples plus totals in `context_pack_compaction`. Latest
+   non-interactive proof:
+   `.local-lab/evals/codex-skill/20260619T184940Z/wilq-ads-doctor/result.json`.
+   Slice 2 remains open for Command Center cold path (`~2.2s`), daily
+   context-pack size (`237939 bytes`), content/GA4 scoped packs and dashboard
+   JS chunk size.
+
 4. **Slice 3: Merchant issue-level triage.**
    Convert Merchant from `products/issues` summary into issue clusters by
    `issue_type`, `affected_attribute`, `country`, `reporting_context`, impact,
@@ -1467,16 +1478,20 @@ Active 2026-06-19 follow-up:
   frontend-only memoization.
 - Active Ads skill performance follow-up:
   - scoped `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now
-    removes nested `metric_facts` from the skill packet, preserves totals in
-    `context_pack_compaction`, and points to `/api/ads/diagnostics` for full
-    detail;
+    removes nested `*_metric_facts` from the skill packet, strips duplicated
+    nested candidate payload previews, trims ActionObject row arrays while
+    preserving totals in `context_pack_compaction`, and points to
+    `/api/ads/diagnostics` plus `/api/actions/{action_id}` for full detail;
   - the API uses a short 5s skill context cache only as a compute shortcut for
     repeated identical skill calls. It is disabled in pytest and cleared after
     connector refresh, ActionObject validation and apply;
-  - local proof on `:8000`: Ads context-pack `131889 bytes`, cold/after-TTL
-    `1.322-1.914s`, warm `0.172-0.351s`, `search_term_rows_total=50`,
-    `search_term_rows_included=20`, no `"metric_facts"` key in scoped Ads
-    diagnostics payload;
+  - local proof on `:8000`: Ads context-pack `198513 bytes`, cold
+    `1.281-1.620s`, warm `0.145-0.159s`, `search_term_rows_total=50`,
+    `search_term_rows_included=8`,
+    `search_term_safety_rows_included=8`,
+    `keyword_match_context_rows_included=8`,
+    `negative_keyword_candidates_included=4`, no `*_metric_facts` keys in
+    scoped Ads diagnostics payload;
   - this satisfies the immediate non-daily Ads context-pack size target, but
     does not complete full performance work. Remaining: Command Center cold
     path, content/GA4 context packs, dashboard JS chunk and richer value
@@ -1723,8 +1738,8 @@ Result:
 
 - Scoped `wilq-ads-doctor` context-pack keeps Ads evidence/action traceability
   but removes nested metric-fact dumps from the Codex runtime packet.
-- Runtime measurement on local `:8000`: `131889 bytes`, cold/after-TTL
-  `1.322-1.914s`, warm `0.172-0.351s`.
+- Runtime measurement on local `:8000` after keyword-context compaction:
+  `198513 bytes`, cold `1.281-1.620s`, warm `0.145-0.159s`.
 - The full Ads detail endpoint remains `/api/ads/diagnostics`; the cache must
   not be treated as source truth.
 - Full `scripts/verify.sh` passed after this slice:

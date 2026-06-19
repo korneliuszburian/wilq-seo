@@ -5305,8 +5305,43 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     assert ads_context["action_ids"] == ads_diagnostics["action_ids"]
     assert ads_context["context_pack_compaction"]["metric_facts_removed"] is True
     assert ads_context["context_pack_compaction"]["full_endpoint"] == "/api/ads/diagnostics"
-    assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 20
+    assert len(data["connector_refresh_runs"]) <= 3
+    for action in data["active_action_objects"]:
+        payload = action.get("payload") or {}
+        for rows_key in (
+            "campaign_candidates",
+            "terms",
+            "source_terms",
+            "payload_preview",
+            "keyword_match_context",
+        ):
+            rows = payload.get(rows_key)
+            if isinstance(rows, list):
+                assert rows == []
+                assert payload[f"{rows_key}_included"] == 0
+                assert payload[f"{rows_key}_total"] >= 0
+    assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8
+    assert len(ads_context["search_term_safety_read_contract"]["safety_rows"]) <= 8
+    assert len(ads_context["keyword_match_context_read_contract"]["context_rows"]) <= 8
+    assert len(ads_context["negative_keywords_read_contract"]["payload_preview"]) <= 8
+    for candidate in ads_context["negative_keywords_read_contract"]["candidates"]:
+        assert len(candidate["keyword_context_rows"]) <= 4
+    for decision in ads_context["decision_queue"]:
+        assert len(decision["search_term_safety_rows"]) <= 4
+        assert len(decision["keyword_match_context_rows"]) <= 4
+        assert len(decision["negative_keyword_payload_preview"]) <= 4
+        for candidate in decision["negative_keyword_candidates"]:
+            assert len(candidate["keyword_context_rows"]) <= 4
+    assert (
+        ads_context["context_pack_compaction"]["keyword_match_context_rows_included"]
+        <= 8
+    )
+    assert (
+        ads_context["context_pack_compaction"]["search_term_safety_rows_included"]
+        <= 8
+    )
     assert '"metric_facts":' not in json.dumps(ads_context)
+    assert "safety_metric_facts" not in json.dumps(ads_context)
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

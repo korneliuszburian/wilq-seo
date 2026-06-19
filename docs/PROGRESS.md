@@ -8,6 +8,28 @@ artifacts.
 
 Data: 2026-06-19
 
+- Ads scoped context-pack compaction after keyword context, 2026-06-19 20:50
+  Europe/Warsaw: current active proof is performance-only, not a new Ads
+  decision contract. After keyword match context inflated
+  `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` to about
+  `639 KB`, the scoped Ads context pack now removes `*_metric_facts`, caps
+  embedded Ads sample rows, caps decision rows, strips duplicated nested
+  candidate `payload_preview`, trims ActionObject payload row arrays while
+  preserving row totals, and limits scoped connector refresh runs to 3. Full
+  detail remains at `/api/ads/diagnostics` and `/api/actions/{action_id}`.
+  Local `:8000` proof after restart: Ads context-pack `198513 bytes`, cold
+  `1.281s-1.620s`, warm `0.145s-0.159s`; embedded counts:
+  `search_term_rows_included=8`, `search_term_safety_rows_included=8`,
+  `keyword_match_context_rows_included=8`,
+  `negative_keyword_candidates_included=4`, full totals preserved in
+  `context_pack_compaction`. Focused proof passed: ruff, mypy,
+  `test_codex_context_pack_scopes_ads_doctor_payload`, Ads skill smoke and
+  non-interactive `wilq-ads-doctor` eval:
+  `.local-lab/evals/codex-skill/20260619T184940Z/wilq-ads-doctor/result.json`.
+  The eval has no stale `match context missing` wording and still blocks
+  negative keyword apply behind human review, validation and audit. Remaining
+  performance gap: Command Center cold path is still about `2.2s`, while warm
+  TTL is about `0.007s`; daily context-pack is about `237939 bytes`.
 - Ads keyword match context read contract, 2026-06-19 20:17 Europe/Warsaw:
   current active proof is read-only keyword context for negative keyword
   review, not negative keyword apply. Google Ads `vendor_read` now reads

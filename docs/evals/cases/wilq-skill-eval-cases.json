@@ -68,6 +68,8 @@
     "forbidden_terms_pl": [
       "bez match context",
       "bez keyword match context",
+      "bez human review, match context",
+      "bez human review, potwierdzenia, match context",
       "match context missing",
       "keyword match context missing"
     ],

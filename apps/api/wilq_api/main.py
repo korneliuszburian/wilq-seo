@@ -111,8 +111,8 @@ app.add_middleware(
 )
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
-ADS_CONTEXT_ROW_LIMIT = 20
-ADS_CONTEXT_DECISION_ROW_LIMIT = 8
+ADS_CONTEXT_ROW_LIMIT = 8
+ADS_CONTEXT_DECISION_ROW_LIMIT = 4
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
 
@@ -475,13 +475,14 @@ def _skill_scoped_context_pack(
             opportunity.model_dump(mode="json") for opportunity in scoped_opportunities
         ],
         "active_action_objects": [
-            action.model_dump(mode="json") for action in scoped_actions
+            _compact_action_dump_for_context(action.model_dump(mode="json"))
+            for action in scoped_actions
         ],
         "connector_refresh_runs": [
             run.model_dump(mode="json")
             for run in list_connector_refresh_runs()[:25]
             if run.connector_id in scoped_connectors
-        ][:10],
+        ][:3],
         "evidence_summaries": [
             evidence.model_dump(mode="json")
             for evidence in scoped_evidence
@@ -625,6 +626,21 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "search_terms_read_contract",
         "search_term_rows",
     )
+    safety_rows = _list_at(
+        compact,
+        "search_term_safety_read_contract",
+        "safety_rows",
+    )
+    keyword_context_rows = _list_at(
+        compact,
+        "keyword_match_context_read_contract",
+        "context_rows",
+    )
+    negative_payload_preview = _list_at(
+        compact,
+        "negative_keywords_read_contract",
+        "payload_preview",
+    )
     _limit_contract_rows(
         compact,
         ("budget_pacing_read_contract", "budget_rows"),
@@ -635,11 +651,41 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ("search_terms_read_contract", "search_term_rows"),
         ADS_CONTEXT_ROW_LIMIT,
     )
+    _limit_contract_rows(
+        compact,
+        ("search_term_safety_read_contract", "safety_rows"),
+        ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
+        ("keyword_match_context_read_contract", "context_rows"),
+        ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
+        ("negative_keywords_read_contract", "payload_preview"),
+        ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
+        ("negative_keywords_read_contract", "candidates"),
+        ADS_CONTEXT_DECISION_ROW_LIMIT,
+    )
     _limit_candidate_rows(
         compact,
         ("custom_segments_read_contract", "candidates"),
         "search_term_rows",
         ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_candidate_rows(
+        compact,
+        ("negative_keywords_read_contract", "candidates"),
+        "keyword_context_rows",
+        ADS_CONTEXT_DECISION_ROW_LIMIT,
+    )
+    _drop_candidate_nested_payload_preview(
+        compact,
+        ("negative_keywords_read_contract", "candidates"),
     )
     _limit_decision_rows(compact)
     compact["context_pack_compaction"] = {
@@ -655,7 +701,47 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "search_term_rows_included": len(
             _list_at(compact, "search_terms_read_contract", "search_term_rows")
         ),
+        "search_term_safety_rows_total": len(safety_rows),
+        "search_term_safety_rows_included": len(
+            _list_at(compact, "search_term_safety_read_contract", "safety_rows")
+        ),
+        "keyword_match_context_rows_total": len(keyword_context_rows),
+        "keyword_match_context_rows_included": len(
+            _list_at(compact, "keyword_match_context_read_contract", "context_rows")
+        ),
+        "negative_keyword_payload_preview_total": len(negative_payload_preview),
+        "negative_keyword_payload_preview_included": len(
+            _list_at(compact, "negative_keywords_read_contract", "payload_preview")
+        ),
+        "negative_keyword_candidates_total": len(
+            _list_at(ads_diagnostics, "negative_keywords_read_contract", "candidates")
+        ),
+        "negative_keyword_candidates_included": len(
+            _list_at(compact, "negative_keywords_read_contract", "candidates")
+        ),
     }
+    return compact
+
+
+def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(action)
+    payload = compact.get("payload")
+    if not isinstance(payload, dict):
+        return compact
+    compact_payload = dict(payload)
+    for key in (
+        "campaign_candidates",
+        "terms",
+        "source_terms",
+        "payload_preview",
+        "keyword_match_context",
+    ):
+        rows = compact_payload.get(key)
+        if isinstance(rows, list):
+            compact_payload[f"{key}_total"] = len(rows)
+            compact_payload[key] = []
+            compact_payload[f"{key}_included"] = len(compact_payload[key])
+    compact["payload"] = compact_payload
     return compact
 
 
@@ -664,7 +750,7 @@ def _without_metric_facts(value: Any) -> Any:
         return {
             key: _without_metric_facts(item)
             for key, item in value.items()
-            if key != "metric_facts"
+            if key != "metric_facts" and not key.endswith("_metric_facts")
         }
     if isinstance(value, list):
         return [_without_metric_facts(item) for item in value]
@@ -702,6 +788,15 @@ def _limit_candidate_rows(
             candidate[rows_key] = candidate[rows_key][:limit]
 
 
+def _drop_candidate_nested_payload_preview(
+    data: dict[str, Any],
+    candidates_path: tuple[str, str],
+) -> None:
+    for candidate in _list_at(data, *candidates_path):
+        if isinstance(candidate, dict):
+            candidate.pop("payload_preview", None)
+
+
 def _limit_decision_rows(data: dict[str, Any]) -> None:
     for decision in _list_at(data, "decision_queue"):
         if not isinstance(decision, dict):
@@ -710,13 +805,37 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
             "campaign_rows",
             "derived_kpi_rows",
             "budget_rows",
+            "recommendation_rows",
+            "impression_share_rows",
+            "change_history_rows",
             "search_term_rows",
+            "search_term_safety_rows",
+            "keyword_match_context_rows",
             "custom_segment_candidates",
             "negative_keyword_candidates",
+            "negative_keyword_payload_preview",
         ):
             rows = decision.get(rows_key)
             if isinstance(rows, list):
                 decision[rows_key] = rows[:ADS_CONTEXT_DECISION_ROW_LIMIT]
+        for candidate in decision.get("custom_segment_candidates", []):
+            if isinstance(candidate, dict) and isinstance(
+                candidate.get("search_term_rows"),
+                list,
+            ):
+                candidate["search_term_rows"] = candidate["search_term_rows"][
+                    :ADS_CONTEXT_DECISION_ROW_LIMIT
+                ]
+        for candidate in decision.get("negative_keyword_candidates", []):
+            if isinstance(candidate, dict) and isinstance(
+                candidate.get("keyword_context_rows"),
+                list,
+            ):
+                candidate["keyword_context_rows"] = candidate["keyword_context_rows"][
+                    :ADS_CONTEXT_DECISION_ROW_LIMIT
+                ]
+            if isinstance(candidate, dict):
+                candidate.pop("payload_preview", None)
 
 
 def _evidence_ids_from_context(

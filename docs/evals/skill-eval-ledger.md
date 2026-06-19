@@ -1801,6 +1801,22 @@ konkretnych missing read contracts.
 
 ## 2026-06-19 - wilq-ads-doctor scoped context-pack compaction smoke
 
+Follow-up after keyword match context:
+
+- Keyword match context initially inflated scoped
+  `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` to about
+  `639 KB`.
+- After compaction, live local proof is `198513 bytes`, cold `1.281-1.620s`,
+  warm `0.145-0.159s`.
+- The pack keeps totals in `context_pack_compaction`, embeds only small samples
+  and points to `/api/ads/diagnostics` for full detail.
+- Non-interactive Codex eval passed:
+  `.local-lab/evals/codex-skill/20260619T184940Z/wilq-ads-doctor/result.json`.
+- The final JSON includes `keyword_match_context_read_contract` and
+  `keyword_match_context`, has no stale `match context missing` wording, and
+  still blocks negative keyword apply behind human review, ActionObject
+  validation and audit.
+
 Purpose:
 
 - Verify that Ads skill runtime receives a useful context packet instead of a

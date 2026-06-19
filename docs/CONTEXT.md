@@ -201,17 +201,24 @@ Current performance slice truth:
   after TTL `2.548s`, warm `0.273-0.324s`, size `171000 bytes`; Command Center
   after TTL `2.009s`, warm `0.008s`, size `26629 bytes`. This improves the
   context-pack TTL spike, but full performance is not done.
-- Active 2026-06-19 Ads skill follow-up: scoped `wilq-ads-doctor`
-  context-pack now removes nested `metric_facts`, keeps full detail available
-  at `/api/ads/diagnostics`, limits embedded Ads rows for skill runtime, and
-  uses a short 5s API-side context cache. The cache is only a compute shortcut;
-  it is cleared after connector refresh, ActionObject validation and apply.
-  Local `:8000` proof: Ads context-pack `131889 bytes`, cold/after-TTL
-  `1.322-1.914s`, warm `0.172-0.351s`, search terms total `50`, embedded
-  `20`, no `"metric_facts"` key in the scoped Ads diagnostics payload.
-  Remaining performance gaps: Command Center cold path can still take
-  `~3-5s` in some runs; content/GA4 context-packs still need the same kind of
-  focused slimming; dashboard JS chunk is still above Vite's 500 KB warning.
+- Active 2026-06-19 Ads skill follow-up after keyword context: scoped
+  `wilq-ads-doctor` context-pack now removes `*_metric_facts`, keeps full
+  detail available at `/api/ads/diagnostics`, limits embedded Ads sample rows
+  for skill runtime, strips duplicated nested candidate `payload_preview`,
+  trims ActionObject payload row arrays while preserving totals, limits scoped
+  connector refresh runs to 3, and uses a short 5s API-side context cache. The
+  cache is only a compute shortcut; it is cleared after connector refresh,
+  ActionObject validation and apply. Local `:8000` proof: Ads context-pack
+  `198513 bytes`, cold `1.281-1.620s`, warm `0.145-0.159s`; full totals remain
+  in `context_pack_compaction` with embedded samples
+  `search_term_rows_included=8`, `search_term_safety_rows_included=8`,
+  `keyword_match_context_rows_included=8` and
+  `negative_keyword_candidates_included=4`. Non-interactive
+  `wilq-ads-doctor` eval passed at
+  `.local-lab/evals/codex-skill/20260619T184940Z/wilq-ads-doctor/result.json`.
+  Remaining performance gaps: Command Center cold path is still about `2.2s`,
+  daily context-pack is about `237939 bytes`, and dashboard JS chunk is still
+  above Vite's 500 KB warning.
 - Active 2026-06-19 Command Center GA4 fallback: `/api/ga4/diagnostics`
   had live GA4 dimensional facts (`landing_group_count=10`), but Command
   Center could show `landing groups=0` because it only counted GA4 tactical
