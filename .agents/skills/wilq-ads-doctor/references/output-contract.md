@@ -26,7 +26,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 1. `Status`: zasięg API, gotowość connectorów, `blocked_handoff.status` jeśli istnieje, i znane blockery.
 2. `Dowody`: Ads diagnostics section IDs, evidence IDs, connector IDs, latest refresh status, freshness notes and metric summaries from WILQ API only.
 3. `Diagnoza`: what `/api/ads/diagnostics` supports, with uncertainty if the evidence is aggregate, stale, incomplete or blocked by OAuth.
-4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
+4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia. Dla negative keywords używaj tylko `ads_diagnostics.negative_keywords_read_contract` i opisuj to jako review/safety queue, nie jako gotowe wykluczenia.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
@@ -37,6 +37,8 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
 - `/api/ads/diagnostics` returns `live_data_available=false` and the user asks for spend, CPA, ROAS, search terms, negative keywords, campaign scaling or budget changes.
+- `negative_keywords_read_contract` is missing, blocked or has no candidates and the user asks for negative keyword candidates.
+- The user asks to apply negative keywords before `act_prepare_negative_keyword_review_queue` is present and validated.
 - Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
 - Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
 

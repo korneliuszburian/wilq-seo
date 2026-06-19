@@ -81,6 +81,22 @@ def main() -> int:
             raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
+    negative_keywords_read_contract = (
+        ads_diagnostics.get("negative_keywords_read_contract") or {}
+    )
+    if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
+    if not negative_keywords_read_contract.get("blocked_claims"):
+        raise SystemExit("Negative keyword contract must list blocked claims")
+    if negative_keywords_read_contract.get("status") == "ready":
+        if not negative_keywords_read_contract.get("candidates"):
+            raise SystemExit("Ready negative keyword contract must expose candidates")
+        if "act_prepare_negative_keyword_review_queue" not in (
+            negative_keywords_read_contract.get("action_ids") or []
+        ):
+            raise SystemExit("Ready negative keyword contract must expose ActionObject")
+    elif not negative_keywords_read_contract.get("missing_read_contracts"):
+        raise SystemExit("Blocked negative keyword contract must list missing read contracts")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -150,6 +166,20 @@ def main() -> int:
                         "row_count": len(
                             search_terms_read_contract.get("search_term_rows") or []
                         ),
+                    },
+                    "negative_keywords_read_contract": {
+                        "status": negative_keywords_read_contract.get("status"),
+                        "summary": negative_keywords_read_contract.get("summary"),
+                        "candidate_count": len(
+                            negative_keywords_read_contract.get("candidates") or []
+                        ),
+                        "missing_read_contracts": negative_keywords_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "blocked_claims": negative_keywords_read_contract.get(
+                            "blocked_claims", []
+                        ),
+                        "action_ids": negative_keywords_read_contract.get("action_ids", []),
                     },
                     "blocked_handoff": {
                         "status": blocked_handoff.get("status"),

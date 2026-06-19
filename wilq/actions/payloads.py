@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from wilq.actions.google_ads.custom_segments import validate_custom_segment_payload
+from wilq.actions.google_ads.negative_keywords import validate_negative_keyword_payload
 from wilq.connectors.registry import get_connector_status
 
 INTERNAL_ACTION_TYPES = {"configure_connector", "repair_google_ads_oauth"}
@@ -47,5 +48,7 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
 
     if connector_id == "google_ads" and action_type == "custom_segment_candidate":
         errors.extend(validate_custom_segment_payload(payload))
+    if connector_id == "google_ads" and action_type == "negative_keyword_candidate":
+        errors.extend(validate_negative_keyword_payload(payload))
 
     return errors

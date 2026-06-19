@@ -24,9 +24,11 @@ Audit `docs/audits/001-output.md` is now folded into
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
 2. Ads campaign/search-term read contracts are implemented with conversion
-   counts/value. Continue with recommendations, change history, budget pacing,
-   impression share, keyword/match context, 90-day safety and ActionObjects
-   before any money-leak/CPA/ROAS/negative-keyword claims.
+   counts/value. Latest work adds a prepare-only negative keyword safety
+   review queue, but it is not a waste/apply claim. Continue with
+   recommendations, change history, budget pacing, impression share,
+   keyword/match context, full 90-day safety and derived KPI contracts before
+   any money-leak/CPA/ROAS/negative-keyword apply claims.
 3. Repair each skill only after the matching API/read contract exists.
 
 Recently completed and pushed foundations:
@@ -110,9 +112,12 @@ Current Ads Doctor contract truth:
   `search_term_cost_micros`, `search_term_conversions` and
   `search_term_conversion_value` with campaign, ad group, search term and
   status dimensions.
-- Search terms rows are for read-only review only. Do not claim search-term
-  waste, CPA, ROAS or negative keyword candidates until keyword/match context,
-  90-day safety check, derived KPI semantics and validated ActionObject
+- Search terms rows are for read-only review. Latest work adds
+  `/api/ads/diagnostics.negative_keywords_read_contract` and
+  `act_prepare_negative_keyword_review_queue` for prepare-only safety review of
+  zero-conversion search terms with activity. Do not claim search-term waste,
+  CPA, ROAS, conversion loss or negative keyword apply until keyword/match
+  context, full 90-day safety, derived KPI semantics and validated preview/apply
   contracts exist.
 - Live proof on 2026-06-18:
   `refresh_google_ads_c2f62ee2b43a` completed with 18 campaign rows, 50 search
@@ -120,9 +125,8 @@ Current Ads Doctor contract truth:
   `search_term_conversions=0.0` and
   `search_term_conversion_value=0.0`.
 - Still missing read contracts: recommendations, change history, budget
-  pacing, impression share, keyword/match context, 90-day safety,
-  prepare-only negative keyword ActionObjects and explicit CPA/ROAS derived KPI
-  contracts.
+  pacing, impression share, keyword/match context, full 90-day safety history,
+  payload previews for apply paths and explicit CPA/ROAS derived KPI contracts.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the
@@ -341,64 +345,19 @@ deduplikacji, klasyfikacji decyzji, rankingów ani edge-case fixes w skill
 references. Jeśli skill potrzebuje mądrzejszej decyzji, najpierw implementujemy
 typed WILQ API/schema/view-model, a skill tylko konsumuje pole API.
 
-## Active Uncommitted Slice - Shared Daily Runtime Endpoints
+## Recently Completed - Shared Daily Runtime Endpoints
 
-Aktualny worktree ma aktywny, niecommitowany performance slice. Nie zaczynaj od
-zera i nie wracaj do starego Content Decision Queue slice'a; tamten work został
-już zamknięty wcześniej.
+This slice is done and pushed as `35d8be3 perf(api): share daily runtime endpoints`.
+Do not resume it as active work unless a new performance regression is found.
 
-Cel slice'a:
+What changed:
 
-- Użyć istniejącego `wilq.briefing.daily_runtime.DailyRuntime` także dla
-  publicznych endpointów:
-  - `GET /api/dashboard/command-center`,
-  - `GET /api/marketing/brief`.
-- Dzięki temu Command Center, Marketing Brief i daily Codex context-pack mogą
-  korzystać z tego samego krótkiego TTL cache w procesie API.
-- Nie jest to pełny cold-run performance fix. Cold runtime nadal kosztuje przez
-  diagnostyki i tactical joins. Ten slice usuwa najbardziej oczywiste
-  powtarzanie daily view-model między endpointami i Codex context-packiem.
-
-Zmienione pliki w toku:
-
-- `apps/api/wilq_api/main.py`
-- `tests/test_api_contracts.py`
-
-Zmiany kodu w toku:
-
-- `/api/dashboard/command-center` zwraca `build_daily_runtime().command_center`.
-- `/api/marketing/brief` zwraca `build_daily_runtime().marketing_brief`.
-- `connector_refresh()` już czyści `clear_daily_runtime_cache()` po refreshu.
-- Dodany jest test `test_command_center_endpoint_uses_daily_runtime_cache`.
-- Dodany jest test `test_marketing_brief_endpoint_uses_daily_runtime_cache`.
-
-Focused proof po dodaniu testu brief endpointu:
-
-```bash
-uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
-uv run mypy apps/api/wilq_api/main.py tests/test_api_contracts.py
-uv run pytest tests/test_api_contracts.py -q -k 'command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache or daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_embeds_marketing_brief_contract or marketing_brief_aggregates_metric_facts_and_blockers'
-```
-
-Wynik:
-
-- ruff: passed.
-- mypy: passed.
-- pytest: 5 passed.
-
-Broader proof after the same patch:
-
-```bash
-uv run pytest tests/test_api_contracts.py -q -k 'command_center or marketing_brief or daily_runtime or context_pack'
-pnpm --filter @wilq/dashboard typecheck
-pnpm --filter @wilq/dashboard test -- --run App.test.tsx
-```
-
-Wynik:
-
-- backend selected tests: 17 passed.
-- dashboard typecheck: passed.
-- dashboard unit route tests: 13 passed.
+- `GET /api/dashboard/command-center` returns
+  `build_daily_runtime().command_center`.
+- `GET /api/marketing/brief` returns
+  `build_daily_runtime().marketing_brief`.
+- `connector_refresh()` clears `clear_daily_runtime_cache()` after refresh.
+- Endpoint regression tests cover both daily-runtime-backed routes.
 
 Full proof before commit:
 
@@ -406,21 +365,93 @@ Full proof before commit:
 scripts/verify.sh
 ```
 
+Result:
+
+- backend API contracts: `102 passed`;
+- dashboard route tests: `13 passed`;
+- Playwright e2e: `9 passed`;
+- skill API smoke: passed;
+- dashboard production build: passed;
+- non-blocking warning: Vite main chunk is above 500 KB.
+
+## Latest Slice - Ads Negative Keyword Safety Review
+
+Ads safety slice is implemented and verified locally. Nie zaczynaj od zera i
+nie cofaj poprzednich route/performance cleanupów.
+
+Cel slice'a:
+
+- Dodać Ads negative keyword safety review jako prepare-only contract.
+- Użyć realnych Google Ads search-term metric facts, ale nie claimować waste.
+- Wystawić ten sam stan przez API, dashboard, shared schema, ActionObject i
+  `wilq-ads-doctor` smoke/eval contract.
+- Zablokować `negative keyword apply`, `search-term waste`, CPA, ROAS,
+  conversion loss i automatyczne zmiany bez walidacji.
+
+Zmienione pliki w toku:
+
+- `wilq/actions/google_ads/negative_keywords.py`
+- `wilq/actions/payloads.py`
+- `wilq/actions/service.py`
+- `wilq/briefing/ads_diagnostics.py`
+- `wilq/schemas.py`
+- `packages/shared-schemas/src/index.ts`
+- `apps/dashboard/src/routes/App.tsx`
+- `apps/dashboard/src/routes/App.test.tsx`
+- `.agents/skills/wilq-ads-doctor/SKILL.md`
+- `.agents/skills/wilq-ads-doctor/references/output-contract.md`
+- `.agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py`
+- `tests/test_api_contracts.py`
+- `tests/test_codex_skill_eval_cases.py`
+- `docs/evals/cases/wilq-skill-eval-cases.json`
+
+Zmiany kodu w toku:
+
+- New ActionObject ID: `act_prepare_negative_keyword_review_queue`.
+- New diagnostics contract:
+  `/api/ads/diagnostics.negative_keywords_read_contract`.
+- New Ads decision type: `review_negative_keyword_safety`.
+- Candidates are built only from grouped `search_term_*` metric facts with
+  activity and zero conversions/conversion value in current evidence.
+- Candidate payloads require:
+  `apply_allowed=false`, `destructive=false`,
+  `required_validation=["90_day_safety_check", ...]` and evidence IDs.
+- Dashboard `/ads-doctor` shows candidates as review/safety cards, not ready
+  exclusions.
+- `wilq-ads-doctor` smoke now fails if the negative keyword contract is ready
+  without candidates/action ID or blocked without missing contracts.
+
+Focused proof already passed:
+
+```bash
+uv run ruff check wilq/actions/google_ads/negative_keywords.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py wilq/schemas.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run mypy wilq/actions/google_ads/negative_keywords.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py wilq/schemas.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ads_diagnostics or custom_segments or negative_keyword or route_specific'
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+```
+
 Wynik:
 
-- ruff/mypy/typecheck/lint: passed.
-- backend API contracts: 102 passed.
+- ruff: passed.
+- mypy: passed.
+- backend selected tests: 4 passed.
+- dashboard typecheck: passed.
+- shared schema typecheck: passed.
 - dashboard route tests: 13 passed.
-- skill API smoke: passed.
-- Playwright e2e: 9 passed.
-- dashboard production build: passed.
-- Non-blocking warning: Vite chunk `index-*.js` is above 500 KB.
 
-Następny krok po wznowieniu:
+Full proof before commit:
 
-1. Opcjonalnie zmierzyć live HTTP sekwencję
-   `/api/dashboard/command-center` -> `/api/marketing/brief` w tym samym
-   procesie API, żeby potwierdzić warm TTL behavior.
-2. Zaktualizować `docs/PROGRESS.md` i `docs/goals/001-goal.md` wynikiem.
-3. Commit semantic:
-   `perf(api): share daily runtime endpoints`.
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- backend API contracts: `102 passed`;
+- dashboard route tests: `13 passed`;
+- Playwright e2e: `9 passed`;
+- skill API smoke: passed;
+- dashboard production build: passed;
+- non-blocking warning: Vite main chunk is above 500 KB.

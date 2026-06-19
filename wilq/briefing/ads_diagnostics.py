@@ -7,6 +7,10 @@ from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     CUSTOM_SEGMENT_BLOCKED_CLAIMS,
 )
+from wilq.actions.google_ads.negative_keywords import (
+    NEGATIVE_KEYWORD_ACTION_ID,
+    NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+)
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -23,6 +27,8 @@ from wilq.schemas import (
     AdsDecisionItem,
     AdsDiagnosticSection,
     AdsDiagnosticsResponse,
+    AdsNegativeKeywordCandidate,
+    AdsNegativeKeywordsReadContract,
     AdsSearchTermMetricRow,
     AdsSearchTermsReadContract,
     ConnectorRefreshMode,
@@ -65,6 +71,10 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         search_terms_read_contract,
         action_ids,
     )
+    negative_keywords_read_contract = _negative_keywords_read_contract(
+        search_terms_read_contract,
+        action_ids,
+    )
     sections = [
         _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
         _campaign_overview_section(
@@ -75,6 +85,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         ),
         _search_terms_section(search_terms_read_contract, action_ids),
         _custom_segments_section(custom_segments_read_contract),
+        _negative_keywords_section(negative_keywords_read_contract),
         _safe_action_section(
             action_ids,
             latest_refresh,
@@ -86,6 +97,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         campaign_read_contract,
         search_terms_read_contract,
         custom_segments_read_contract,
+        negative_keywords_read_contract,
         sections,
         blocked_handoff,
         action_ids,
@@ -98,6 +110,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         campaign_read_contract=campaign_read_contract,
         search_terms_read_contract=search_terms_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
+        negative_keywords_read_contract=negative_keywords_read_contract,
         decision_queue=decision_queue,
         sections=sections,
         blocked_handoff=blocked_handoff,
@@ -793,6 +806,176 @@ def _custom_segments_section(
     )
 
 
+def _negative_keywords_read_contract(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    action_ids: list[str],
+) -> AdsNegativeKeywordsReadContract:
+    if not search_terms_read_contract.search_term_rows:
+        return AdsNegativeKeywordsReadContract(
+            status="blocked",
+            title="Review wykluczeń z search terms",
+            summary="Brak search-term rows do kolejki review wykluczeń.",
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=search_terms_read_contract.evidence_ids,
+            missing_read_contracts=[
+                "search_term_view",
+                "keyword match context",
+                "90_day_safety_check",
+                "negative_keyword_payload_preview",
+            ],
+            blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+            action_ids=[],
+            next_step=(
+                "Najpierw zbierz Google Ads search_term_view metric facts. Nie twórz "
+                "wykluczeń bez search terms, kontekstu dopasowania i safety checku."
+            ),
+        )
+
+    candidates = _negative_keyword_candidates(search_terms_read_contract.search_term_rows)
+    negative_keyword_action_ids = [
+        action_id for action_id in action_ids if action_id == NEGATIVE_KEYWORD_ACTION_ID
+    ]
+    if not candidates:
+        return AdsNegativeKeywordsReadContract(
+            status="blocked",
+            title="Review wykluczeń z search terms",
+            summary=(
+                "Search-term rows istnieją, ale WILQ nie znalazł terminów z kosztem lub "
+                "kliknięciami i zerową konwersją w bieżącym evidence."
+            ),
+            source_connectors=search_terms_read_contract.source_connectors,
+            evidence_ids=search_terms_read_contract.evidence_ids,
+            missing_read_contracts=[
+                "zero_conversion_search_terms",
+                "keyword match context",
+                "90_day_safety_check",
+                "negative_keyword_payload_preview",
+            ],
+            blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+            action_ids=[],
+            next_step=(
+                "Kontynuuj read-only review search terms. Nie twórz negative keyword "
+                "candidates, jeśli bieżące evidence nie pokazuje zerowej konwersji."
+            ),
+        )
+
+    return AdsNegativeKeywordsReadContract(
+        status="ready",
+        title="Review wykluczeń z search terms",
+        summary=(
+            f"WILQ ma {len(candidates)} terminów do review: mają koszt lub kliknięcia "
+            "i zero konwersji w bieżącym Google Ads evidence."
+        ),
+        candidates=candidates,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_unique(
+            evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
+        ),
+        missing_read_contracts=[
+            "keyword match context",
+            "90_day_safety_check",
+            "negative_keyword_payload_preview",
+        ],
+        blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+        action_ids=negative_keyword_action_ids,
+        next_step=(
+            "Przejrzyj kandydatów jako review-only. Przed jakimkolwiek apply wymagaj "
+            "kontekstu dopasowania, 90-dniowego safety checku, payload preview i "
+            "walidacji ActionObject."
+        ),
+    )
+
+
+def _negative_keyword_candidates(
+    rows: list[AdsSearchTermMetricRow],
+) -> list[AdsNegativeKeywordCandidate]:
+    candidates: list[AdsNegativeKeywordCandidate] = []
+    for row in sorted(rows, key=_search_term_row_sort_key):
+        if not _is_negative_keyword_review_candidate(row):
+            continue
+        metric_facts = row.metric_facts[:12]
+        candidates.append(
+            AdsNegativeKeywordCandidate(
+                id=(
+                    "ads_negative_keyword_review_"
+                    f"{_slug(row.campaign_id or row.campaign_name or 'campaign')}_"
+                    f"{_slug(row.ad_group_id or row.ad_group_name or 'ad_group')}_"
+                    f"{_slug(row.search_term)}"
+                ),
+                search_term=row.search_term,
+                campaign_id=row.campaign_id,
+                campaign_name=row.campaign_name,
+                ad_group_id=row.ad_group_id,
+                ad_group_name=row.ad_group_name,
+                clicks=row.clicks,
+                impressions=row.impressions,
+                cost_micros=row.cost_micros,
+                conversions=row.conversions,
+                conversion_value=row.conversion_value,
+                evidence_ids=row.evidence_ids,
+                metric_facts=metric_facts,
+                required_checks=[
+                    "review_search_term_context",
+                    "check_existing_keywords_and_match_types",
+                    "90_day_safety_check",
+                    "human_confirm_before_apply",
+                ],
+                safety_status="needs_90_day_review",
+                validation_status="pending_validation",
+                blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+                next_step=(
+                    "Sprawdź intencję terminu, istniejące keywords/match types i "
+                    "90-dniową historię przed jakimkolwiek wykluczeniem."
+                ),
+            )
+        )
+    return candidates[:12]
+
+
+def _is_negative_keyword_review_candidate(row: AdsSearchTermMetricRow) -> bool:
+    if not _eligible_negative_keyword_term(row.search_term):
+        return False
+    has_activity = bool((row.clicks or 0) > 0 or (row.cost_micros or 0) > 0)
+    has_conversions = bool((row.conversions or 0) > 0 or (row.conversion_value or 0) > 0)
+    return has_activity and not has_conversions
+
+
+def _eligible_negative_keyword_term(term: str) -> bool:
+    normalized = term.strip().lower()
+    if len(normalized) < 3:
+        return False
+    if "ekologus" in normalized:
+        return False
+    return any(character.isalpha() for character in normalized)
+
+
+def _negative_keywords_section(
+    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for candidate in negative_keywords_read_contract.candidates
+        for fact in candidate.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_negative_keyword_safety",
+        title="Review wykluczeń z search terms",
+        status=negative_keywords_read_contract.status,
+        summary=negative_keywords_read_contract.summary,
+        diagnosis=(
+            "WILQ może przygotować tylko kolejkę review. Zero konwersji w bieżącym "
+            "evidence nie jest jeszcze dowodem waste ani zgodą na wykluczenie."
+        ),
+        next_step=negative_keywords_read_contract.next_step,
+        source_connectors=negative_keywords_read_contract.source_connectors,
+        evidence_ids=negative_keywords_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=negative_keywords_read_contract.action_ids,
+        blocked_claims=negative_keywords_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
 def _safe_action_section(
     action_ids: list[str],
     latest_refresh: ConnectorRefreshRun | None,
@@ -802,8 +985,8 @@ def _safe_action_section(
     evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
     if live_data_available:
         summary = (
-            "WILQ ma dowody z odczytu Google Ads; ścieżka zapisu nadal nie ma gotowego "
-            "ActionObject."
+            "WILQ ma dowody z odczytu Google Ads; ścieżka apply nadal wymaga "
+            "osobnej walidacji, preview, potwierdzenia i audytu."
         )
         diagnosis = (
             "Odczyt kampanii i zapytań może wspierać analizę, ale zmiany budżetów, "
@@ -844,6 +1027,7 @@ def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
+    negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
     sections: list[AdsDiagnosticSection],
     blocked_handoff: AdsBlockedHandoff | None,
     action_ids: list[str],
@@ -928,6 +1112,43 @@ def _ads_decision_queue(
                 search_term_rows=search_terms_read_contract.search_term_rows,
                 action_ids=action_ids,
                 blocked_claims=search_terms_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
+    if negative_keywords_read_contract.candidates:
+        metric_facts = [
+            fact
+            for candidate in negative_keywords_read_contract.candidates
+            for fact in candidate.metric_facts
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_negative_keyword_safety",
+                decision_type="review_negative_keyword_safety",
+                status="ready",
+                title="Przejrzyj kandydatów wykluczeń tylko w trybie safety review",
+                summary=negative_keywords_read_contract.summary,
+                rationale=(
+                    "WILQ widzi terminy z kosztem lub kliknięciami i zerową konwersją "
+                    "w bieżącym evidence. To jest sygnał do review, nie dowód waste ani "
+                    "zgoda na automatyczne wykluczenie."
+                ),
+                next_step=negative_keywords_read_contract.next_step,
+                allowed_metrics=[
+                    "search_term",
+                    "search_term_clicks",
+                    "search_term_cost_micros",
+                    "search_term_conversions",
+                    "search_term_conversion_value",
+                ],
+                missing_read_contracts=negative_keywords_read_contract.missing_read_contracts,
+                source_connectors=negative_keywords_read_contract.source_connectors,
+                evidence_ids=negative_keywords_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                negative_keyword_candidates=negative_keywords_read_contract.candidates,
+                action_ids=negative_keywords_read_contract.action_ids,
+                blocked_claims=negative_keywords_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
         )

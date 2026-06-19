@@ -1487,7 +1487,7 @@ Remaining product risk:
 - The current source terms are Google Ads evidence, not final audience quality.
   The operator must reject irrelevant or low-intent terms before campaign use.
 
-## 2026-06-19 - Active Handoff: Shared Daily Runtime Endpoints
+## 2026-06-19 - Shared Daily Runtime Endpoints
 
 Current stage:
 
@@ -1498,7 +1498,7 @@ Current stage:
   Marketing Brief and Codex skills must consume the same daily view-model and
   not rebuild the same picture several times.
 
-Current uncommitted slice:
+Completed slice:
 
 - `apps/api/wilq_api/main.py` now routes:
   - `GET /api/dashboard/command-center` through
@@ -1556,9 +1556,9 @@ Result:
 - Skill API smoke passed.
 - Non-blocking warning: Vite reports the main JS chunk is above 500 KB.
 
-Next before push:
+Commit:
 
-- commit as `perf(api): share daily runtime endpoints`.
+- `35d8be3 perf(api): share daily runtime endpoints`
 
 Still open after this slice:
 
@@ -1569,3 +1569,77 @@ Still open after this slice:
 - Dashboard still needs more real value contracts: Localo visibility facts,
   Ahrefs gaps, Keyword Planner enrichment, negative keyword safety and
   campaign ActionObject previews.
+
+## 2026-06-19 - Ads Negative Keyword Safety Review
+
+Current stage:
+
+- Implemented and verified locally.
+- Goal: add a review-only negative keyword safety contract for Ads Doctor,
+  dashboard and `wilq-ads-doctor`.
+- This is not a waste detector and not an apply path. It only prepares a
+  safety review queue from current Google Ads search-term metric facts.
+
+What changed locally:
+
+- Added `wilq/actions/google_ads/negative_keywords.py`.
+- Added ActionObject `act_prepare_negative_keyword_review_queue`.
+- Added `/api/ads/diagnostics.negative_keywords_read_contract`.
+- Added Ads decision type `review_negative_keyword_safety`.
+- Dashboard `/ads-doctor` renders negative keyword candidates as safety review
+  cards with search term, campaign/ad group, metrics, evidence IDs, required
+  checks and blocked claims.
+- `wilq-ads-doctor` smoke/eval contract now requires
+  `negative_keywords_read_contract`, `review_negative_keyword_safety`,
+  `90_day_safety_check` and the new ActionObject ID.
+
+Safety contract:
+
+- Candidate groups come only from grouped `search_term_*` metric facts.
+- Candidates require activity from clicks or cost and zero conversions/value in
+  current evidence.
+- Payload requires `apply_allowed=false`, `destructive=false`, evidence IDs and
+  `90_day_safety_check`.
+- Blocked claims remain: negative keyword apply, search-term waste,
+  conversion loss, CPA and ROAS.
+
+Focused proof already passed:
+
+```bash
+uv run ruff check wilq/actions/google_ads/negative_keywords.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py wilq/schemas.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run mypy wilq/actions/google_ads/negative_keywords.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py wilq/schemas.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ads_diagnostics or custom_segments or negative_keyword or route_specific'
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+```
+
+Result:
+
+- ruff passed.
+- mypy passed.
+- backend selected tests: 4 passed.
+- dashboard typecheck passed.
+- shared schemas typecheck passed.
+- dashboard route tests: 13 passed.
+
+Full proof passed:
+
+```bash
+scripts/verify.sh
+```
+
+Full gate result:
+
+- Backend API contracts: `102 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- Skill API smoke: passed.
+- Dashboard production build: passed.
+- Non-blocking warning: Vite main JS chunk is above 500 KB.
+
+Then commit as:
+
+```text
+feat(ads): add negative keyword safety review
+```

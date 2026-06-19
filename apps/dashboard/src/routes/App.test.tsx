@@ -150,6 +150,32 @@ const actions = [
       destructive: false
     },
     audit_events: []
+  },
+  {
+    id: "act_prepare_negative_keyword_review_queue",
+    title: "Przygotuj kolejkę review wykluczeń z search terms",
+    domain: "google_ads",
+    connector: "google_ads",
+    mode: "prepare",
+    risk: "medium",
+    status: "needs_validation",
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    metrics: [],
+    validation_status: "not_validated",
+    human_diagnosis:
+      "Google Ads ma search-term metric facts do review, ale apply wymaga 90-day safety check.",
+    recommended_reason: "Przygotuj review-only queue bez claimów o waste.",
+    payload: {
+      action_type: "negative_keyword_candidate",
+      connector: "google_ads",
+      mode: "prepare_only",
+      terms: ["odpady cena"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      required_validation: ["90_day_safety_check"],
+      apply_allowed: false,
+      destructive: false
+    },
+    audit_events: []
   }
 ];
 
@@ -421,6 +447,56 @@ const adsDiagnostics = {
     action_ids: ["act_prepare_custom_segments_from_search_terms"],
     next_step: "Przejrzyj source terms i waliduj ActionObject przed apply."
   },
+  negative_keywords_read_contract: {
+    id: "ads_negative_keywords_read_contract",
+    status: "ready",
+    title: "Review wykluczeń z search terms",
+    summary:
+      "WILQ ma 1 terminów do review: mają koszt lub kliknięcia i zero konwersji w bieżącym Google Ads evidence.",
+    candidates: [
+      {
+        id: "ads_negative_keyword_review_123_789_odpady_cena",
+        search_term: "odpady cena",
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        ad_group_id: "789",
+        ad_group_name: "Odpady",
+        clicks: 6,
+        impressions: 60,
+        cost_micros: 5000000,
+        conversions: 0,
+        conversion_value: 0,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        required_checks: [
+          "review_search_term_context",
+          "check_existing_keywords_and_match_types",
+          "90_day_safety_check",
+          "human_confirm_before_apply"
+        ],
+        safety_status: "needs_90_day_review",
+        validation_status: "pending_validation",
+        blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+        next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
+      }
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    missing_read_contracts: [
+      "keyword match context",
+      "90_day_safety_check",
+      "negative_keyword_payload_preview"
+    ],
+    blocked_claims: [
+      "negative keyword apply",
+      "search-term waste",
+      "conversion loss",
+      "CPA",
+      "ROAS"
+    ],
+    action_ids: ["act_prepare_negative_keyword_review_queue"],
+    next_step: "Przejrzyj kandydatów jako review-only przed payload preview."
+  },
   decision_queue: [
     {
       id: "ads_review_campaign_activity",
@@ -454,6 +530,7 @@ const adsDiagnostics = {
       ],
       search_term_rows: [],
       custom_segment_candidates: [],
+      negative_keyword_candidates: [],
       action_ids: [],
       blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
       risk: "low"
@@ -494,8 +571,67 @@ const adsDiagnostics = {
         }
       ],
       custom_segment_candidates: [],
+      negative_keyword_candidates: [],
       action_ids: [],
       blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+      risk: "medium"
+    },
+    {
+      id: "ads_review_negative_keyword_safety",
+      decision_type: "review_negative_keyword_safety",
+      status: "ready",
+      title: "Przejrzyj kandydatów wykluczeń tylko w trybie safety review",
+      summary:
+        "WILQ ma 1 terminów do review: mają koszt lub kliknięcia i zero konwersji w bieżącym Google Ads evidence.",
+      rationale:
+        "To jest sygnał do review, nie dowód waste ani zgoda na automatyczne wykluczenie.",
+      next_step: "Przejrzyj kandydatów jako review-only przed payload preview.",
+      allowed_metrics: [
+        "search_term",
+        "search_term_clicks",
+        "search_term_cost_micros",
+        "search_term_conversions"
+      ],
+      missing_read_contracts: [
+        "keyword match context",
+        "90_day_safety_check",
+        "negative_keyword_payload_preview"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      search_term_rows: [],
+      custom_segment_candidates: [],
+      negative_keyword_candidates: [
+        {
+          id: "ads_negative_keyword_review_123_789_odpady_cena",
+          search_term: "odpady cena",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "789",
+          ad_group_name: "Odpady",
+          clicks: 6,
+          impressions: 60,
+          cost_micros: 5000000,
+          conversions: 0,
+          conversion_value: 0,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          required_checks: [
+            "review_search_term_context",
+            "check_existing_keywords_and_match_types",
+            "90_day_safety_check",
+            "human_confirm_before_apply"
+          ],
+          safety_status: "needs_90_day_review",
+          validation_status: "pending_validation",
+          blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+          next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
+        }
+      ],
+      action_ids: ["act_prepare_negative_keyword_review_queue"],
+      blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
       risk: "medium"
     },
     {
@@ -559,6 +695,7 @@ const adsDiagnostics = {
           next_step: "Użyj tych terminów jako prepare-only candidate."
         }
       ],
+      negative_keyword_candidates: [],
       action_ids: ["act_prepare_custom_segments_from_search_terms"],
       blocked_claims: ["audience size", "conversion uplift", "ROAS", "targeting applied"],
       risk: "medium"
@@ -579,6 +716,7 @@ const adsDiagnostics = {
       campaign_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
+      negative_keyword_candidates: [],
       action_ids: [],
       blocked_claims: ["budget apply", "campaign creation", "negative keyword apply"],
       risk: "medium"
@@ -636,8 +774,11 @@ const adsDiagnostics = {
   ],
   blocked_handoff: null,
   evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
-  action_ids: [],
-  blocker_count: 0
+  action_ids: [
+    "act_prepare_custom_segments_from_search_terms",
+    "act_prepare_negative_keyword_review_queue"
+  ],
+  blocker_count: 1
 };
 
 const metricFacts = [

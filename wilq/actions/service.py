@@ -7,6 +7,10 @@ from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     custom_segment_payload_from_metric_facts,
 )
+from wilq.actions.google_ads.negative_keywords import (
+    NEGATIVE_KEYWORD_ACTION_ID,
+    negative_keyword_payload_from_metric_facts,
+)
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -403,6 +407,41 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "dodaj Keyword Planner enrichment i waliduj payload preview przed apply."
             ),
             payload=custom_segment_payload,
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
+    negative_keyword_payload = negative_keyword_payload_from_metric_facts(google_ads_facts)
+    if negative_keyword_payload is not None:
+        negative_keyword_metrics = [
+            fact
+            for fact in google_ads_facts
+            if fact.name.startswith("search_term_")
+            and fact.dimensions.get("search_term") in negative_keyword_payload["terms"]
+        ][:12]
+        action = ActionObject(
+            id=NEGATIVE_KEYWORD_ACTION_ID,
+            title="Przygotuj kolejkę review wykluczeń z search terms",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=negative_keyword_payload["evidence_ids"],
+            metrics=negative_keyword_metrics,
+            human_diagnosis=(
+                "Google Ads ma search-term metric facts, które mogą zasilić review "
+                "potencjalnych wykluczeń. WILQ nie może jednak twierdzić waste ani "
+                "wdrażać negative keywords bez 90-dniowego safety checku i ręcznej "
+                "walidacji."
+            ),
+            recommended_reason=(
+                "Na /ads-doctor przejrzyj terminy z kosztem/kliknięciami i zerową "
+                "konwersją w bieżącym evidence, ale potraktuj je wyłącznie jako "
+                "kolejkę review przed 90-day safety check."
+            ),
+            payload=negative_keyword_payload,
             validation_status="not_validated",
             created_by="system_metric_seed",
         )

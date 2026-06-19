@@ -335,11 +335,47 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsNegativeKeywordCandidateSchema = z.object({
+  id: z.string(),
+  search_term: z.string(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  ad_group_id: z.string().nullable().optional(),
+  ad_group_name: z.string().nullable().optional(),
+  clicks: z.number().nullable().optional(),
+  impressions: z.number().nullable().optional(),
+  cost_micros: z.number().nullable().optional(),
+  conversions: z.number().nullable().optional(),
+  conversion_value: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  required_checks: z.array(z.string()),
+  safety_status: z.enum(["needs_90_day_review", "blocked"]),
+  validation_status: z.enum(["pending_validation", "blocked"]),
+  blocked_claims: z.array(z.string()),
+  next_step: z.string()
+});
+
+export const AdsNegativeKeywordsReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  candidates: z.array(AdsNegativeKeywordCandidateSchema),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  next_step: z.string()
+});
+
 export const AdsDecisionItemSchema = z.object({
   id: z.string(),
   decision_type: z.enum([
     "review_campaign_activity",
     "review_search_terms",
+    "review_negative_keyword_safety",
     "prepare_custom_segments",
     "block_write_actions",
     "fix_ads_access"
@@ -357,6 +393,7 @@ export const AdsDecisionItemSchema = z.object({
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
+  negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
   risk: z.enum(["low", "medium", "high", "critical"])
@@ -372,6 +409,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   campaign_read_contract: AdsCampaignReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
+  negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,
   decision_queue: z.array(AdsDecisionItemSchema),
   sections: z.array(AdsDiagnosticSectionSchema),
   blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
@@ -842,6 +880,12 @@ export type AdsDiagnosticSection = z.infer<typeof AdsDiagnosticSectionSchema>;
 export type AdsCustomSegmentCandidate = z.infer<typeof AdsCustomSegmentCandidateSchema>;
 export type AdsCustomSegmentsReadContract = z.infer<
   typeof AdsCustomSegmentsReadContractSchema
+>;
+export type AdsNegativeKeywordCandidate = z.infer<
+  typeof AdsNegativeKeywordCandidateSchema
+>;
+export type AdsNegativeKeywordsReadContract = z.infer<
+  typeof AdsNegativeKeywordsReadContractSchema
 >;
 export type AdsDiagnosticsResponse = z.infer<typeof AdsDiagnosticsResponseSchema>;
 export type MerchantDiagnosticSection = z.infer<typeof MerchantDiagnosticSectionSchema>;

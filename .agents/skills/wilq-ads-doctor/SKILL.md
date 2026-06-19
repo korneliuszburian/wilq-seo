@@ -32,7 +32,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
 3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą gotowości Google Ads, wasted spend, search terms, jakości kampanii, rekomendacji lub negative keywords.
-4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także opcjonalny `blocked_handoff`.
+4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ads-doctor"}` i potwierdź, że `ads_diagnostics` zgadza się z endpointem Ads diagnostics, także opcjonalny `blocked_handoff`, `search_terms_read_contract`, `negative_keywords_read_contract` i ActionObject IDs.
 5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
 7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
@@ -69,7 +69,7 @@ Wymagane powierzchnie connectorów dla tego skilla:
 
 - `google_ads`
 
-Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli `/api/ads/diagnostics` zwraca `live_data_available=false`, zwróć `blocked_handoff`, OAuth/API blocker i blocked claims zamiast diagnozować spend, CPA, ROAS, search terms lub negative keywords.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli `/api/ads/diagnostics` zwraca `live_data_available=false`, zwróć `blocked_handoff`, OAuth/API blocker i blocked claims zamiast diagnozować spend, CPA, ROAS, search terms lub negative keywords. Jeśli `negative_keywords_read_contract.status=ready`, traktuj kandydatów wyłącznie jako kolejkę review/safety; nie claimuj waste i nie rekomenduj apply bez walidacji ActionObject.
 
 </evidence_requirements>
 
