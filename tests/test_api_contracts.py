@@ -1094,6 +1094,98 @@ def test_command_center_keeps_localo_access_blocker_in_primary_brief(
     assert localo_brief["metric_tiles"]["MCP access"] == 0
 
 
+def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "localo_diag_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "localo_diag.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+    monkeypatch.setenv("LOCALO_ACCESS_TOKEN", "localo-access-test")
+    localo_run = ConnectorRefreshRun(
+        id="refresh_localo_access_ready_diag_test",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_localo_access_ready_diag_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "api": "localo_mcp_oauth_probe",
+            "mcp_initialize_status": 200,
+            "authorization_code_supported": 1,
+            "pkce_s256_supported": 1,
+            "access_token_present": 1,
+        },
+        summary="Localo MCP initialize completed with local OAuth access token.",
+    )
+    local_state_store().save_connector_refresh_run(localo_run)
+    metric_store().save_connector_refresh_metrics(localo_run)
+
+    response = client.get("/api/localo/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["language"] == "pl-PL"
+    assert payload["access_probe"]["status"] == "access_ready"
+    assert payload["access_probe"]["mcp_initialize_status"] == 200
+    assert payload["live_data_available"] is False
+    assert payload["visibility_fact_count"] == 0
+    assert payload["evidence_ids"] == ["ev_refresh_refresh_localo_access_ready_diag_test"]
+    decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
+    access_decision = decision_by_id["localo_access_ready_wait_for_visibility_facts"]
+    assert access_decision["status"] == "ready"
+    assert "local_rankings" in access_decision["missing_read_contracts"]
+    assert "GBP performance" in access_decision["blocked_claims"]
+    block_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
+    assert block_decision["status"] == "blocked"
+    assert "local visibility uplift" in block_decision["blocked_claims"]
+    assert all(fact["name"] != "mcp_initialize_status" for fact in block_decision["metric_facts"])
+    serialized = json.dumps(payload, ensure_ascii=False)
+    assert "localo-access-test" not in serialized
+    assert "localo-token-test" not in serialized
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-localo-operator"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    assert context_payload["localo_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
+    assert context_payload["localo_diagnostics"]["decision_queue"][0]["id"] in decision_by_id
+    assert "marketing_brief" not in context_payload
+
+
+def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "localo_diag_blocked_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "localo_diag_blocked.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    metric_store().status()
+
+    response = client.get("/api/localo/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["access_probe"]["status"] == "access_blocked"
+    assert payload["live_data_available"] is False
+    assert payload["visibility_fact_count"] == 0
+    decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
+    assert decision_by_id["localo_fix_access_before_visibility_review"]["status"] == "blocked"
+    assert "mcp_initialize" in decision_by_id[
+        "localo_fix_access_before_visibility_review"
+    ]["missing_read_contracts"]
+    assert decision_by_id["localo_block_visibility_claims_without_read_contract"][
+        "status"
+    ] == "blocked"
+
+
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

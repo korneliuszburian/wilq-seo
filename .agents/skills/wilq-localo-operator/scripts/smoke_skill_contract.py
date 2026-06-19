@@ -16,6 +16,7 @@ REQUIRED_CONTEXT_KEYS = {
     "evidence_summaries",
     "top_opportunities",
     "active_action_objects",
+    "localo_diagnostics",
 }
 
 
@@ -58,6 +59,16 @@ def main() -> int:
         {"mode": "vendor_read", "reason": "Localo skill smoke MCP OAuth blocker proof"},
     )
     pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
+    localo_diagnostics = pack.get("localo_diagnostics") or {}
+    access_probe = localo_diagnostics.get("access_probe") or {}
+    decision_queue = localo_diagnostics.get("decision_queue") or []
+    decision_ids = {decision.get("id") for decision in decision_queue}
+    if access_probe.get("status") not in {"access_ready", "access_blocked", "unknown"}:
+        raise SystemExit(f"Unexpected Localo access status: {access_probe.get('status')}")
+    if not localo_diagnostics.get("evidence_ids"):
+        raise SystemExit("Localo diagnostics must expose evidence IDs")
+    if not decision_queue:
+        raise SystemExit("Localo diagnostics must expose a decision queue")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -104,17 +115,21 @@ def main() -> int:
             raise SystemExit("Blocked Localo OAuth probe must report access_token_present=0")
         if metric_summary.get("mcp_initialize_status") != 401:
             raise SystemExit("Blocked Localo OAuth probe must report MCP initialize 401")
-        if not localo_blockers:
-            raise SystemExit("MarketingBrief does not expose a Localo blocker item")
-        if not any("LOCALO_ACCESS_TOKEN" in json.dumps(item) for item in localo_blockers):
-            raise SystemExit("Localo blocker does not name missing LOCALO_ACCESS_TOKEN")
+        if "localo_fix_access_before_visibility_review" not in decision_ids:
+            raise SystemExit("Blocked Localo diagnostics must expose the access repair decision")
     if latest_localo_run.get("status") == "completed":
         if metric_summary.get("mcp_initialize_status") != 200:
             raise SystemExit("Completed Localo OAuth probe must report MCP initialize 200")
+        if access_probe.get("status") != "access_ready":
+            raise SystemExit("Completed Localo OAuth probe must produce access_ready diagnostics")
+        if "localo_access_ready_wait_for_visibility_facts" not in decision_ids:
+            raise SystemExit("Access-ready Localo diagnostics must wait for visibility facts")
+        if "localo_block_visibility_claims_without_read_contract" not in decision_ids:
+            raise SystemExit("Access-ready Localo diagnostics must block visibility claims")
         localo_metric_facts = [
-            item
-            for item in brief_items
-            if item.get("kind") != "blocker" and item.get("metric_facts")
+            fact
+            for decision in decision_queue
+            for fact in decision.get("metric_facts", [])
         ]
         if localo_metric_facts:
             raise SystemExit(
@@ -149,6 +164,10 @@ def main() -> int:
                 "brief_items": brief_items,
                 "localo_refresh_status": latest_localo_run.get("status"),
                 "localo_metric_summary": metric_summary,
+                "localo_access_status": access_probe.get("status"),
+                "localo_decision_ids": sorted(
+                    decision_id for decision_id in decision_ids if decision_id
+                ),
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),

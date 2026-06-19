@@ -513,6 +513,72 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   blocker_count: z.number()
 });
 
+export const LocaloAccessProbeSchema = z.object({
+  status: z.enum(["access_ready", "access_blocked", "unknown"]),
+  source_run_id: z.string().nullable().optional(),
+  mcp_initialize_status: z.number().nullable().optional(),
+  authorization_code_supported: z.boolean().nullable().optional(),
+  pkce_s256_supported: z.boolean().nullable().optional(),
+  access_token_present: z.boolean().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  summary: z.string()
+});
+
+export const LocaloDiagnosticSectionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.enum(["ready", "blocked", "missing"]),
+  summary: z.string(),
+  diagnosis: z.string(),
+  next_step: z.string(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
+export const LocaloDecisionItemSchema = z.object({
+  id: z.string(),
+  decision_type: z.enum([
+    "access_ready_wait_for_visibility_facts",
+    "fix_access",
+    "review_local_visibility",
+    "block_visibility_claims"
+  ]),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  rationale: z.string(),
+  next_step: z.string(),
+  access_status: z.enum(["access_ready", "access_blocked", "unknown"]),
+  allowed_evidence: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
+export const LocaloDiagnosticsResponseSchema = z.object({
+  generated_at: z.string().nullable().optional(),
+  language: z.literal("pl-PL"),
+  strict_instruction: z.string(),
+  connector: ConnectorStatusSchema,
+  latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
+  access_probe: LocaloAccessProbeSchema,
+  live_data_available: z.boolean(),
+  visibility_fact_count: z.number(),
+  decision_queue: z.array(LocaloDecisionItemSchema),
+  sections: z.array(LocaloDiagnosticSectionSchema),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocker_count: z.number()
+});
+
 export const ExpertRuleSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -719,6 +785,7 @@ export const ContextPackResponseSchema = z.object({
   merchant_diagnostics: MerchantDiagnosticsResponseSchema,
   content_diagnostics: ContentDiagnosticsResponseSchema,
   ga4_diagnostics: Ga4DiagnosticsResponseSchema,
+  localo_diagnostics: LocaloDiagnosticsResponseSchema.optional(),
   strict_instruction: z.string()
 });
 
@@ -746,6 +813,10 @@ export type ContentDiagnosticsResponse = z.infer<typeof ContentDiagnosticsRespon
 export type Ga4DecisionItem = z.infer<typeof Ga4DecisionItemSchema>;
 export type Ga4DiagnosticSection = z.infer<typeof Ga4DiagnosticSectionSchema>;
 export type Ga4DiagnosticsResponse = z.infer<typeof Ga4DiagnosticsResponseSchema>;
+export type LocaloAccessProbe = z.infer<typeof LocaloAccessProbeSchema>;
+export type LocaloDecisionItem = z.infer<typeof LocaloDecisionItemSchema>;
+export type LocaloDiagnosticSection = z.infer<typeof LocaloDiagnosticSectionSchema>;
+export type LocaloDiagnosticsResponse = z.infer<typeof LocaloDiagnosticsResponseSchema>;
 export type MarketingBrief = z.infer<typeof MarketingBriefSchema>;
 export type MarketingBriefItem = z.infer<typeof MarketingBriefItemSchema>;
 export type MarketingBriefSection = z.infer<typeof MarketingBriefSectionSchema>;

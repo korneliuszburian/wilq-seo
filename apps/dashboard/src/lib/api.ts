@@ -11,6 +11,7 @@ import {
   ExpertRuleSchema,
   Ga4DiagnosticsResponseSchema,
   KnowledgeCardSchema,
+  LocaloDiagnosticsResponseSchema,
   MarketingBriefSchema,
   MarketingPlaybookSchema,
   MerchantDiagnosticsResponseSchema,
@@ -33,6 +34,7 @@ import {
   type ExpertRule,
   type Ga4DiagnosticsResponse,
   type KnowledgeCard,
+  type LocaloDiagnosticsResponse,
   type MarketingBrief,
   type MarketingBriefItem,
   type MarketingPlaybook,
@@ -98,6 +100,10 @@ export function getContentDiagnostics(): Promise<ContentDiagnosticsResponse> {
 
 export function getGa4Diagnostics(): Promise<Ga4DiagnosticsResponse> {
   return apiGet("/api/ga4/diagnostics", Ga4DiagnosticsResponseSchema);
+}
+
+export function getLocaloDiagnostics(): Promise<LocaloDiagnosticsResponse> {
+  return apiGet("/api/localo/diagnostics", LocaloDiagnosticsResponseSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -191,6 +197,7 @@ export type {
   ExpertRule,
   Ga4DiagnosticsResponse,
   KnowledgeCard,
+  LocaloDiagnosticsResponse,
   MarketingBrief,
   MarketingBriefItem,
   MarketingPlaybook,

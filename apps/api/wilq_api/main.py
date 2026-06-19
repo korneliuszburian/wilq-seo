@@ -17,6 +17,7 @@ from wilq.briefing.command_center import (
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.daily_runtime import build_daily_runtime, clear_daily_runtime_cache
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
+from wilq.briefing.localo_diagnostics import build_localo_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief, core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
@@ -69,6 +70,7 @@ from wilq.schemas import (
     Ga4DiagnosticsResponse,
     KnowledgeCard,
     KnowledgeCompilerResult,
+    LocaloDiagnosticsResponse,
     MarketingBrief,
     MarketingPlaybook,
     MerchantDiagnosticsResponse,
@@ -493,6 +495,8 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         return {"merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json")}
     if skill == "wilq-ga4-analyst":
         return {"ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json")}
+    if skill == "wilq-localo-operator":
+        return {"localo_diagnostics": build_localo_diagnostics().model_dump(mode="json")}
     if skill == "wilq-demand-gen-operator":
         return {
             "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
@@ -703,6 +707,11 @@ def content_diagnostics() -> ContentDiagnosticsResponse:
 @app.get("/api/ga4/diagnostics", response_model=Ga4DiagnosticsResponse)
 def ga4_diagnostics() -> Ga4DiagnosticsResponse:
     return build_ga4_diagnostics()
+
+
+@app.get("/api/localo/diagnostics", response_model=LocaloDiagnosticsResponse)
+def localo_diagnostics() -> LocaloDiagnosticsResponse:
+    return build_localo_diagnostics()
 
 
 @app.get("/api/opportunities", response_model=list[Opportunity])

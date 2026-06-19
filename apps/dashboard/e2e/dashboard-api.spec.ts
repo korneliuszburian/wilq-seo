@@ -108,8 +108,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "SEO / GSC" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Co marketer ma zrobić teraz z treściami" })
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Bezpieczny tryb treści" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Content" })).toBeVisible();
-    await expect(page.getByText(/Odśwież lub scal:/).first()).toBeVisible();
     await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
     await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "act_prepare_content_refresh_queue" }).first()).toBeVisible();
@@ -192,12 +195,18 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/localo");
 
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
-    await expect(page.getByText(/Brak konkretnych Localo ranking\/GBP facts/)).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Local Visibility Safety Gate" })).toBeVisible();
-    await expect(page.getByText(/MCP initialize=200 potwierdza access/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status Localo / MCP access" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo/GBP" })).toBeVisible();
+    await expect(page.getByText(/Localo access działa; brakuje ranking\/GBP facts/)).toBeVisible();
+    await expect(
+      page.getByText(/Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts/)
+    ).toBeVisible();
+    await expect(page.getByText(/MCP initialize zwrócił 200/)).toBeVisible();
     await expect(page.getByText(/LOCALO_ACCESS_TOKEN/)).toHaveCount(0);
-    await expect(page.getByText(/local ranking/i)).toHaveCount(0);
-    await expect(page.getByText(/pozycja lokalna/i)).toHaveCount(0);
+    await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);
+    await expect(page.getByText(/Local Visibility Focus/)).toHaveCount(0);
     await expect(page.getByText("Taktyki z WILQ API")).toHaveCount(0);
     await expect(page.getByText("Metric facts")).toHaveCount(0);
     await expect(page.getByText("24 Taktyki")).toHaveCount(0);

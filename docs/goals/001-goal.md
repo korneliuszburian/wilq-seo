@@ -177,6 +177,13 @@ Do not rebuild these from scratch:
   no longer shows raw `Read contract Ads`, `Search terms read-only`,
   `Campaign activity read contract`, `Evidence`, `configured`, `READY`,
   `payload preview` or stale OAuth blocker copy when live Ads data exists.
+- Localo route operator cleanup: `/api/localo/diagnostics` now exposes a typed
+  access/readiness contract with missing Localo visibility contracts and blocked
+  claims. Dashboard `/localo` renders `Status Localo / MCP access`,
+  `Co marketer ma wiedzieć o Localo`, `Dowody i ograniczenia Localo` and a
+  Localo/GBP safety gate instead of the generic tactical queue, `Metric facts`,
+  `24 Taktyki` counters or stale `Dokończ Localo access` copy when MCP
+  initialize already works.
 - Metric store grouped batch reads for tactical/content surfaces: latest
   query/page groups keep clicks, impressions, CTR and position together instead
   of truncating by connector row count.
@@ -185,15 +192,18 @@ Do not rebuild these from scratch:
 
 These are the current reasons Goal 001 is not complete:
 
-1. **Dashboard route audit is not finished.**
+1. **Dashboard route audit must stay enforced, not restarted.**
    Command Center, `/actions`, `/opportunities` and `/merchant` have been
    cleaned up for the current stale Ads/Localo/readiness issues and technical
    wording. `/content-planner` has also been cleaned up around its typed
    content decision queue. `/ga4` has been cleaned up around its typed GA4
    decision queue. `/ads-doctor` has been cleaned up around its typed Ads
-   decision queue. Remaining route work must continue top-to-bottom on
-   `/localo`, looking for duplicate intent, stale copy, missing Codex bridge and
-   technical wording that masquerades as marketer insight.
+   decision queue. `/localo` has been cleaned up around
+   `/api/localo/diagnostics`. Remaining route work is now regression control:
+   every touched route must preserve the decision-first hierarchy, Polish
+   operator copy, Codex bridge, evidence IDs and blocked claims. Do not
+   reintroduce generic registries, readiness-only cards, stale blocker copy or
+   raw metric dumps as first-screen marketer insight.
 
 2. **Command Center and supporting registries must stay separated.**
    Evidence IDs and ActionObjects are required, but the marketer needs a clear
@@ -223,9 +233,11 @@ These are the current reasons Goal 001 is not complete:
    strengthened usefulness guardrail plus a fresh non-interactive eval pass.
    `wilq-content-strategist` and `wilq-ads-doctor` also have strict usefulness
    passes after their matching API contracts. `wilq-ga4-analyst` should be
-   repaired and re-evaluated next now that `/api/ga4/diagnostics.decision_queue`
-   exists. Goal 001 still needs the same strict usefulness pass across the
-   remaining high-value skills and a clean
+   repaired and re-evaluated now that `/api/ga4/diagnostics.decision_queue`
+   exists. `wilq-localo-operator` should consume `/api/localo/diagnostics` for
+   access/readiness and must continue blocking ranking/GBP/competitor claims
+   until actual Localo visibility facts exist. Goal 001 still needs the same
+   strict usefulness pass across the remaining high-value skills and a clean
    plug-and-play Codex session proving Polish prompts -> WILQ API calls -> same
    evidence IDs as dashboard -> useful next actions.
 
@@ -242,16 +254,17 @@ These are the current reasons Goal 001 is not complete:
    into batched/read-only API storage paths instead of skill-reference patches.
 
 6. **Localo and social remain limited-evidence surfaces.**
-   Localo access is no longer an OAuth blocker, but local ranking/GBP/competitor
-   insight remains blocked until a concrete Localo read contract exists. Social
-   publishing remains permission-gated; drafting can be prepare-only and
-   evidence-backed.
+   Localo access/readiness has a typed API surface in `/api/localo/diagnostics`.
+   It proves MCP initialize/access state and names missing contracts, but local
+   ranking/GBP/competitor/review insight remains blocked until a concrete Localo
+   visibility read contract exists. Social publishing remains permission-gated;
+   drafting can be prepare-only and evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the 2026-06-19 GA4 decision route cleanup:
-   backend API contracts `98 passed`, dashboard route tests `13 passed`,
-   Playwright e2e `9 passed` and dashboard production build passed. Keep this
-   file current after every future slice.
+   `scripts/verify.sh` passed after the 2026-06-19 Localo diagnostics route
+   cleanup: backend API contracts `100 passed`, dashboard route tests
+   `13 passed`, Playwright e2e `9 passed` and dashboard production build
+   passed. Keep this file current after every future slice.
 
 ## What WILQ Must Give The Marketer
 
@@ -405,6 +418,17 @@ Work in this order:
    tests `13 passed`, Playwright e2e `9 passed` and dashboard production build
    passed.
 
+   Follow-up completed on 2026-06-19: `/localo` now consumes
+   `/api/localo/diagnostics` instead of the generic workflow/tactical surface.
+   The route shows MCP access/readiness, missing visibility contracts and
+   blocked Localo/GBP claims. It does not show `Local Visibility Focus`,
+   `Taktyki z WILQ API`, `Metric facts`, `24 Taktyki` or stale
+   `Dokończ Localo access` copy when access is already proven. Focused backend
+   contract tests and dashboard route tests pass for this slice. Full
+   `scripts/verify.sh` passed after this slice with backend API contracts
+   `100 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
+   and dashboard production build passed.
+
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when
    feasible. Non-daily skill context-pack target: under 2s and under 200 KB.
@@ -498,10 +522,11 @@ Work in this order:
    passed.
 
 7. **Later P2/P3 data contracts.**
-   Localo needs rankings, GBP visibility, competitors and reviews before local
-   SEO claims. Ahrefs needs competitor pages/backlink/content-gap records before
-   gap claims. Custom Segments need real source terms. Campaign Builder needs
-   campaign ActionObjects and payload preview contracts. Demand Gen needs
+   Localo has access/readiness diagnostics, but still needs rankings, GBP
+   visibility, competitors, reviews and local tasks before local SEO claims.
+   Ahrefs needs competitor pages/backlink/content-gap records before gap claims.
+   Custom Segments need real source terms. Campaign Builder needs campaign
+   ActionObjects and payload preview contracts. Demand Gen needs
    creative/asset/landing-quality diagnostics. Social publishing stays explicit
    workflow only.
 
@@ -519,10 +544,13 @@ Work in this order:
      search terms/conversions and blocked-claim matrix; keep rerunning when
      recommendations, change history, budget pacing, impression share, derived
      CPA/ROAS or negative keyword ActionObjects are added;
-   - `wilq-localo-operator`, `wilq-ahrefs-gap-finder`,
-     `wilq-custom-segments`, `wilq-campaign-builder`,
-     `wilq-demand-gen-operator` and `wilq-social-publisher` only after their
-     required read contracts or ActionObjects exist.
+   - `wilq-localo-operator` after `/api/localo/diagnostics` for
+     access/readiness and again after real ranking/GBP/competitor/review facts
+     exist;
+   - `wilq-ahrefs-gap-finder`, `wilq-custom-segments`,
+     `wilq-campaign-builder`, `wilq-demand-gen-operator` and
+     `wilq-social-publisher` only after their required read contracts or
+     ActionObjects exist.
 
    Repair means:
    - `SKILL.md` has clean trigger intent, allowed endpoints, evidence

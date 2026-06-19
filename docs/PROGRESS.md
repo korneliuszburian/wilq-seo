@@ -24,8 +24,13 @@ Data: 2026-06-19
   `plan_prepare_content_refresh_queue`,
   `plan_review_ga4_landing_quality`,
   `plan_review_ads_campaign_metrics`.
-- Localo access działa na poziomie MCP initialize, ale ranking/GBP/competitor
-  facts nadal są blocked.
+- Localo access działa na poziomie MCP initialize. `/api/localo/diagnostics`
+  ma teraz osobny typed contract dla access/readiness, missing visibility
+  contracts i blocked claims. Dashboard `/localo` renderuje własny widok
+  `Status Localo / MCP access`, `Co marketer ma wiedzieć o Localo` i
+  `Dowody i ograniczenia Localo`, zamiast generycznej kolejki `Taktyki z WILQ
+  API`. Ranking/GBP/competitor/review facts nadal są blocked, bo WILQ ma tylko
+  access probe, nie lokalną widoczność.
 - Merchant issue-level triage jest wdrożony lokalnie w API/schema/action
   payload/dashboard route. `/api/merchant/diagnostics` zwraca
   `issue_clusters` z `issue_type`, `affected_attribute`, `country`,
@@ -114,9 +119,11 @@ Data: 2026-06-19
   `ads_block_write_actions_without_actionobject` dla zablokowanego write path.
   OAuth repair handoff jest zarezerwowany wyłącznie dla realnego access
   blockera.
-- `/localo` nie dokleja już generycznej globalnej kolejki `Taktyki z WILQ API`.
-  Localo pokazuje access/readiness oraz brak ranking/GBP facts bez fałszywych
-  liczników typu `24 Taktyki` i bez angielskiego `Metric facts`.
+- `/localo` ma własny endpoint `/api/localo/diagnostics` i nie dokleja już
+  generycznej globalnej kolejki `Taktyki z WILQ API`. Localo pokazuje
+  access/readiness, missing contracts i blocked claims bez fałszywych liczników
+  typu `24 Taktyki`, bez angielskiego `Metric facts` i bez komunikatu
+  `Dokończ Localo access`, gdy MCP initialize już działa.
 - `/ga4` ma teraz typed decision queue w `/api/ga4/diagnostics.decision_queue`
   i renderuje ją jako primary marketer view. Widok pokazuje decyzje
   `fix_measurement`, `review_landing_mapping` i `review_traffic_quality`,
@@ -132,6 +139,10 @@ Data: 2026-06-19
 - Pełny `scripts/verify.sh` przeszedł po Ads Doctor decision route cleanup:
   backend API contracts 98 passed, dashboard route tests 13 passed,
   Playwright e2e 9 passed i dashboard production build passed.
+- Pełny `scripts/verify.sh` przeszedł po Localo diagnostics route cleanup:
+  backend API contracts 100 passed, dashboard route tests 13 passed,
+  Playwright e2e 9 passed i dashboard production build passed. Localo e2e
+  potwierdza access readiness bez wymyślonych lokalnych metryk.
 
 ## Latest Verified Checks
 
@@ -146,6 +157,10 @@ Data: 2026-06-19
 - `uv run pytest tests/test_api_contracts.py -q -k 'merchant_diagnostics_exposes_feed_issue_queue or merchant_vendor_read_uses_aggregate_product_statuses'`
 - `pnpm --filter @wilq/dashboard lint`
 - `pnpm --filter @wilq/dashboard typecheck`
+- `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `uv run ruff check .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py wilq/briefing/localo_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py tests/test_api_contracts.py`
+- `uv run mypy .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py wilq/briefing/localo_diagnostics.py wilq/schemas.py apps/api/wilq_api/main.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'localo_diagnostics or localo_access'`
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
 - `WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts`
 - `scripts/verify.sh`
@@ -263,6 +278,16 @@ scripts/verify.sh passed
 backend API contracts: 98 passed
 dashboard route tests: 12 passed
 Playwright e2e: 8 passed
+dashboard production build: passed
+```
+
+Po Localo diagnostics route cleanup 2026-06-19:
+
+```text
+scripts/verify.sh passed
+backend API contracts: 100 passed
+dashboard route tests: 13 passed
+Playwright e2e: 9 passed
 dashboard production build: passed
 ```
 

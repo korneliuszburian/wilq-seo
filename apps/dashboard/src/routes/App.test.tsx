@@ -1157,6 +1157,167 @@ const ga4Diagnostics = {
   blocker_count: 0
 };
 
+const localoDiagnostics = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  connector: {
+    id: "localo",
+    label: "Localo",
+    status: "configured",
+    configured: true,
+    missing_credentials: [],
+    available_credential_sources: ["repo_env"],
+    freshness: { state: "fresh" },
+    supported_actions: []
+  },
+  latest_refresh: {
+    id: "refresh_localo_access_ready_test",
+    connector_id: "localo",
+    mode: "vendor_read",
+    status: "completed",
+    started_at: "2026-06-17T10:00:00Z",
+    completed_at: "2026-06-17T10:00:01Z",
+    evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+    missing_credentials: [],
+    checked_credentials: ["LOCALO_ACCESS_TOKEN"],
+    external_call_attempted: true,
+    vendor_data_collected: true,
+    metric_summary: {
+      api: "localo_mcp_oauth_probe",
+      mcp_initialize_status: 200,
+      authorization_code_supported: 1,
+      pkce_s256_supported: 1,
+      access_token_present: 1
+    },
+    summary: "Localo MCP initialize completed with local OAuth access token.",
+    errors: [],
+    redacted: true
+  },
+  access_probe: {
+    status: "access_ready",
+    source_run_id: "refresh_localo_access_ready_test",
+    mcp_initialize_status: 200,
+    authorization_code_supported: true,
+    pkce_s256_supported: true,
+    access_token_present: true,
+    evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+    summary:
+      "Localo MCP initialize zwrócił 200. To potwierdza dostęp WILQ do MCP, ale nie jest jeszcze dowodem rankingów, GBP ani konkurencji."
+  },
+  live_data_available: false,
+  visibility_fact_count: 0,
+  decision_queue: [
+    {
+      id: "localo_access_ready_wait_for_visibility_facts",
+      decision_type: "access_ready_wait_for_visibility_facts",
+      status: "ready",
+      title: "Localo access działa; brakuje ranking/GBP facts",
+      summary:
+        "MCP initialize=200 potwierdza dostęp. WILQ nie ma jeszcze lokalnych rankingów, GBP, konkurencji ani reviews.",
+      rationale:
+        "To jest gotowość adaptera, nie diagnoza lokalnej widoczności. Marketer nie powinien traktować tego jako zadania optymalizacyjnego.",
+      next_step:
+        "Zostaw Localo jako status źródła i dodaj Localo read contract dla rankings/GBP/competitors/reviews.",
+      access_status: "access_ready",
+      allowed_evidence: ["mcp_initialize", "oauth_metadata", "access_token_presence"],
+      missing_read_contracts: [
+        "local_rankings",
+        "gbp_visibility",
+        "competitor_visibility",
+        "reviews",
+        "local_tasks"
+      ],
+      source_connectors: ["localo"],
+      evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      metric_facts: [],
+      action_ids: [],
+      blocked_claims: [
+        "local ranking",
+        "GBP performance",
+        "competitor visibility",
+        "local visibility uplift"
+      ],
+      risk: "low"
+    },
+    {
+      id: "localo_block_visibility_claims_without_read_contract",
+      decision_type: "block_visibility_claims",
+      status: "blocked",
+      title: "Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts",
+      summary:
+        "WILQ blokuje claimy o rankingach, GBP, konkurencji, reviews i wzroście widoczności, dopóki Localo read contract nie dostarczy tych facts.",
+      rationale:
+        "Access/readiness nie jest metryką marketingową. To chroni dashboard i skille przed udawaniem lokalnego SEO insightu.",
+      next_step:
+        "Najpierw dodaj typed Localo read contract; dopiero potem buduj lokalne ActionObjecty.",
+      access_status: "access_ready",
+      allowed_evidence: ["mcp_initialize"],
+      missing_read_contracts: [
+        "local_rankings",
+        "gbp_visibility",
+        "competitor_visibility",
+        "reviews",
+        "local_tasks"
+      ],
+      source_connectors: ["localo"],
+      evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      metric_facts: [],
+      action_ids: [],
+      blocked_claims: [
+        "local ranking",
+        "GBP performance",
+        "competitor visibility",
+        "local visibility uplift"
+      ],
+      risk: "medium"
+    }
+  ],
+  sections: [
+    {
+      id: "localo_access_status",
+      title: "Localo: status dostępu MCP",
+      status: "ready",
+      summary:
+        "Localo MCP initialize zwrócił 200. To potwierdza dostęp WILQ do MCP, ale nie jest jeszcze dowodem rankingów, GBP ani konkurencji.",
+      diagnosis: "Dostęp MCP pozwala WILQ rozmawiać z Localo jako adapterem.",
+      next_step:
+        "Nie pokazuj Localo jako zadania dziennego. Użyj tego widoku jako statusu źródła.",
+      source_connectors: ["localo"],
+      evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      metric_facts: [],
+      action_ids: [],
+      blocked_claims: [],
+      risk: "low"
+    },
+    {
+      id: "localo_visibility_contract",
+      title: "Localo: ranking/GBP evidence",
+      status: "missing",
+      summary:
+        "WILQ nie ma jeszcze rankingów, GBP, competitor visibility ani reviews z Localo.",
+      diagnosis:
+        "Brak tych facts oznacza brak lokalnej diagnozy marketingowej, nie brak problemu.",
+      next_step:
+        "Zbuduj Localo read contract dla rankings/GBP/competitors/reviews zanim WILQ zaproponuje lokalne działania.",
+      source_connectors: ["localo"],
+      evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+      metric_facts: [],
+      action_ids: [],
+      blocked_claims: [
+        "local ranking",
+        "GBP performance",
+        "competitor visibility",
+        "local visibility uplift"
+      ],
+      risk: "medium"
+    }
+  ],
+  evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+  action_ids: [],
+  blocker_count: 1
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -1484,6 +1645,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/ga4/diagnostics")) {
         return Promise.resolve(Response.json(ga4Diagnostics));
+      }
+      if (url.endsWith("/api/localo/diagnostics")) {
+        return Promise.resolve(Response.json(localoDiagnostics));
       }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
@@ -1813,13 +1977,22 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Local Visibility Focus")).toBeInTheDocument();
+    expect(screen.getByText("Status Localo / MCP access")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma wiedzieć o Localo")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i ograniczenia Localo")).toBeInTheDocument();
     expect(
-      screen.getByText("Localo: MCP access działa, brak jeszcze ranking/GBP facts")
+      screen.getByText("Localo access działa; brakuje ranking/GBP facts")
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts")
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("access działa").length).toBeGreaterThan(0);
+    expect(screen.getByText("Brama bezpieczeństwa Localo/GBP")).toBeInTheDocument();
+    expect(screen.queryByText("Local Visibility Focus")).not.toBeInTheDocument();
     expect(screen.queryByText("Taktyki z WILQ API")).not.toBeInTheDocument();
     expect(screen.queryByText("Metric facts")).not.toBeInTheDocument();
     expect(screen.queryByText("24 Taktyki")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dokończ Localo access")).not.toBeInTheDocument();
 
     cleanup();
     testQueryClient.clear();

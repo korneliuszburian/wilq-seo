@@ -742,6 +742,72 @@ class Ga4DiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
 
+class LocaloAccessProbe(BaseModel):
+    status: Literal["access_ready", "access_blocked", "unknown"]
+    source_run_id: str | None = None
+    mcp_initialize_status: int | None = None
+    authorization_code_supported: bool | None = None
+    pkce_s256_supported: bool | None = None
+    access_token_present: bool | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    summary: str
+
+
+class LocaloDiagnosticSection(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "blocked", "missing"]
+    summary: str
+    diagnosis: str
+    next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
+class LocaloDecisionItem(BaseModel):
+    id: str
+    decision_type: Literal[
+        "access_ready_wait_for_visibility_facts",
+        "fix_access",
+        "review_local_visibility",
+        "block_visibility_claims",
+    ]
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    rationale: str
+    next_step: str
+    access_status: Literal["access_ready", "access_blocked", "unknown"]
+    allowed_evidence: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
+class LocaloDiagnosticsResponse(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    language: Literal["pl-PL"] = "pl-PL"
+    strict_instruction: str
+    connector: ConnectorStatus
+    latest_refresh: ConnectorRefreshRun | None = None
+    access_probe: LocaloAccessProbe
+    live_data_available: bool
+    visibility_fact_count: int = 0
+    decision_queue: list[LocaloDecisionItem] = Field(default_factory=list)
+    sections: list[LocaloDiagnosticSection] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocker_count: int = 0
+
+
 class CommandCenterBriefItem(BaseModel):
     id: str
     title: str

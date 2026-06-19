@@ -97,13 +97,17 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       fullPage: true,
     });
 
-    await page.goto("/localo");
+    await gotoAndWaitForApi(page, "/localo", "/api/localo/diagnostics");
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
-    await expect(page.getByText(/Brak konkretnych Localo ranking\/GBP facts/)).toBeVisible();
-    await expect(page.getByText(/MCP initialize=200 potwierdza access/)).toBeVisible();
-    await expect(page.getByText(/local ranking/i)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Status Localo / MCP access" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
+    await expect(page.getByText(/Localo access działa; brakuje ranking\/GBP facts/)).toBeVisible();
+    await expect(page.getByText(/MCP initialize zwrócił 200/)).toBeVisible();
+    await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);
+    await expect(page.getByText(/Local Visibility Focus/)).toHaveCount(0);
     await page.screenshot({
-      path: path.join(runDir, "06-localo-access-blocker.png"),
+      path: path.join(runDir, "06-localo-access-status.png"),
       fullPage: true,
     });
 
@@ -119,7 +123,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
         "- 03-content-planner-queue.png",
         "- 04-ga4-landing-quality.png",
         "- 05-ads-live-campaign-metrics.png",
-        "- 06-localo-access-blocker.png",
+        "- 06-localo-access-status.png",
         "",
       ].join("\n"),
       "utf-8"
