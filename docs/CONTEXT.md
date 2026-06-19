@@ -29,6 +29,26 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads recommendation apply-preview truth, 2026-06-20 00:20 Europe/Warsaw:
+   Google Ads recommendation review now has a typed review-only apply payload
+   preview in `/api/ads/diagnostics`, `/api/actions`,
+   dashboard `/ads-doctor` and scoped `wilq-ads-doctor` context-pack. Live
+   proof `refresh_google_ads_60956db2c42f` /
+   `ev_refresh_refresh_google_ads_60956db2c42f` returned 4 active
+   recommendations, 2 impact-preview rows and 4 apply payload preview rows.
+   `/api/ads/diagnostics.recommendations_read_contract.status=ready`,
+   `missing_read_contracts=["human_strategy_review"]`, and
+   `action_ids=["act_prepare_google_ads_recommendation_review_queue"]`.
+   The ActionObject payload uses
+   `preview_contract="recommendation_apply_preview_v1"` and
+   `operation_type=ApplyRecommendationOperation`, but keeps
+   `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false`.
+   Do not call this apply support; it is a review queue and safety preview.
+   Full `scripts/verify.sh` passed after this slice: backend `115 passed`,
+   dashboard unit `13 passed`, Playwright e2e `9 passed`, security checks,
+   skill/API smokes and dashboard production build passed. The security gate
+   also required `uv.lock` update `msgpack 1.2.0 -> 1.2.1`.
+
 0. Ads account-currency truth, 2026-06-19 23:12 Europe/Warsaw:
    Google Ads campaign read now includes `customer.currency_code` and persists
    a read-only `account_currency_code` fact. Live proof
@@ -43,7 +63,7 @@ Audit `docs/audits/001-output.md` is now folded into
    surfaces. Full `scripts/verify.sh` passed: backend API contracts
    `115 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
    and dashboard production build passed. This is still not profitability
-   proof: profit margin, business goal, recommendation apply preview and human
+   proof: profit margin, business goal, recommendation apply support and human
    confirmation remain blocked.
 
 0. Ads recommendation impact truth, 2026-06-19 23:44 Europe/Warsaw:
@@ -54,7 +74,8 @@ Audit `docs/audits/001-output.md` is now folded into
    recommendations and `recommendation_impact_row_count=2` with
    `recommendation_impact_metric_count=8`.
    `/api/ads/diagnostics.recommendations_read_contract.status=ready`; missing
-   contracts are now `human_strategy_review` and `recommendation_apply_preview`.
+   contracts after the newer apply-preview slice are now only
+   `human_strategy_review`.
    The scoped `wilq-ads-doctor` context-pack exposes the same impact rows:
    `IMPROVE_PERFORMANCE_MAX_AD_STRENGTH` has `delta_cost_micros=4377640`, and
    `SEARCH_PARTNERS_OPT_IN` has zero click/impression/cost deltas in current
@@ -253,7 +274,7 @@ Audit `docs/audits/001-output.md` is now folded into
    `refresh_google_ads_baba7f993f1a`, and decision
    `ads_review_impression_share`. This is still not budget/waste/apply.
    Continue with change history, keyword/match context, full 90-day safety,
-   human budget goals, recommendation apply previews and
+   human budget goals, recommendation apply support/audit and
    value/account-currency semantics before any money-leak/CPA/ROAS/budget
    scaling/negative-keyword apply claims. Full `scripts/verify.sh` passed for
    this slice with backend `108 passed`, dashboard unit `13 passed`,

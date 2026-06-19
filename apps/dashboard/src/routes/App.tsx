@@ -1809,6 +1809,11 @@ function AdsDecisionCard({
             Zmiany: {decision.change_history_rows.length}
           </span>
         ) : null}
+        {decision.recommendation_apply_preview.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Apply preview: {decision.recommendation_apply_preview.length}
+          </span>
+        ) : null}
         {decision.allowed_metrics.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
@@ -2196,6 +2201,20 @@ function AdsRecommendationRowsPanel({
               values={row.evidence_ids.slice(0, 2)}
               kind="evidence"
             />
+            {row.payload_preview ? (
+              <div className="mt-3 rounded-md border border-line bg-slate-50 px-2 py-2 text-xs text-slate-700">
+                <div className="font-semibold text-ink">Podgląd apply: zablokowany</div>
+                <div className="mt-1">
+                  Operacja: {row.payload_preview.operation_type}. Wdrożenie:{" "}
+                  {row.payload_preview.apply_allowed
+                    ? "dozwolone"
+                    : "niedozwolone bez review i audytu"}.
+                </div>
+                <div className="mt-1">
+                  Walidacje: {row.payload_preview.required_validation.slice(0, 4).join(", ")}
+                </div>
+              </div>
+            ) : null}
           </article>
         ))}
       </div>

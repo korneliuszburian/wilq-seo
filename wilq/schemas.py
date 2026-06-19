@@ -582,8 +582,27 @@ class AdsBudgetPacingReadContract(BaseModel):
     next_step: str
 
 
+class AdsRecommendationApplyPreview(BaseModel):
+    id: str
+    recommendation_id: str | None = None
+    recommendation_resource_name: str | None = None
+    recommendation_type: str
+    campaign_id: str | None = None
+    campaign_budget_id: str | None = None
+    operation_type: Literal["ApplyRecommendationOperation"] = "ApplyRecommendationOperation"
+    reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_metric_names: list[str] = Field(default_factory=list)
+    required_validation: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class AdsRecommendationRow(BaseModel):
     recommendation_id: str | None = None
+    recommendation_resource_name: str | None = None
     recommendation_type: str
     dismissed: bool = False
     campaign_id: str | None = None
@@ -607,6 +626,7 @@ class AdsRecommendationRow(BaseModel):
     delta_conversion_value: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    payload_preview: AdsRecommendationApplyPreview | None = None
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
 
@@ -622,6 +642,8 @@ class AdsRecommendationsReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
+    payload_preview: list[AdsRecommendationApplyPreview] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
     next_step: str
 
 
@@ -926,6 +948,9 @@ class AdsDecisionItem(BaseModel):
     derived_kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
+    recommendation_apply_preview: list[AdsRecommendationApplyPreview] = Field(
+        default_factory=list
+    )
     impression_share_rows: list[AdsImpressionShareRow] = Field(default_factory=list)
     change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)

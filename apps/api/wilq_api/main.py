@@ -921,6 +921,11 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "keyword_match_context_read_contract",
         "context_rows",
     )
+    recommendation_payload_preview = _list_at(
+        compact,
+        "recommendations_read_contract",
+        "payload_preview",
+    )
     custom_payload_preview = _list_at(
         compact,
         "custom_segments_read_contract",
@@ -950,6 +955,16 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         compact,
         ("keyword_match_context_read_contract", "context_rows"),
         ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
+        ("recommendations_read_contract", "payload_preview"),
+        ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
+        ("recommendations_read_contract", "recommendation_rows"),
+        ADS_CONTEXT_DECISION_ROW_LIMIT,
     )
     _limit_contract_rows(
         compact,
@@ -1007,6 +1022,10 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "keyword_match_context_rows_total": len(keyword_context_rows),
         "keyword_match_context_rows_included": len(
             _list_at(compact, "keyword_match_context_read_contract", "context_rows")
+        ),
+        "recommendation_apply_preview_total": len(recommendation_payload_preview),
+        "recommendation_apply_preview_included": len(
+            _list_at(compact, "recommendations_read_contract", "payload_preview")
         ),
         "custom_segment_payload_preview_total": len(custom_payload_preview),
         "custom_segment_payload_preview_included": len(
@@ -1168,6 +1187,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
             "derived_kpi_rows",
             "budget_rows",
             "recommendation_rows",
+            "recommendation_apply_preview",
             "impression_share_rows",
             "change_history_rows",
             "search_term_rows",

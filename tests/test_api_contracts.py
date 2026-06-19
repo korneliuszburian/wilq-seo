@@ -2093,6 +2093,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert recommendation_fact.period == "recommendation"
     assert recommendation_fact.dimensions == {
         "recommendation_id": "rec-1",
+        "recommendation_resource_name": "customers/test/recommendations/rec-1",
         "recommendation_type": "CAMPAIGN_BUDGET",
         "dismissed": "false",
         "campaign_id": "101",
@@ -2730,6 +2731,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     1,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": "customers/test/recommendations/rec-1",
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -2743,6 +2745,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     1,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": "customers/test/recommendations/rec-1",
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -2756,6 +2759,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     20,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": "customers/test/recommendations/rec-1",
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -2769,6 +2773,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     25,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": "customers/test/recommendations/rec-1",
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -2782,6 +2787,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     200,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": "customers/test/recommendations/rec-1",
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -2795,6 +2801,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     260,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": "customers/test/recommendations/rec-1",
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -2808,6 +2815,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     10000000,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": (
+                            "customers/test/recommendations/rec-1"
+                        ),
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -2821,6 +2831,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     12000000,
                     {
                         "recommendation_id": "rec-1",
+                        "recommendation_resource_name": (
+                            "customers/test/recommendations/rec-1"
+                        ),
                         "recommendation_type": "CAMPAIGN_BUDGET",
                         "dismissed": "false",
                         "campaign_id": "101",
@@ -3280,12 +3293,19 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "recommendation_impact_preview" not in recommendations_contract[
         "missing_read_contracts"
     ]
+    assert "recommendation_apply_preview" not in recommendations_contract[
+        "missing_read_contracts"
+    ]
     assert "impression_share" not in recommendations_contract["missing_read_contracts"]
     assert "change_history" not in recommendations_contract["missing_read_contracts"]
+    assert recommendations_contract["action_ids"] == [
+        "act_prepare_google_ads_recommendation_review_queue"
+    ]
     assert "recommendation apply" in recommendations_contract["blocked_claims"]
     assert recommendations_contract["recommendation_rows"] == [
         {
             "recommendation_id": "rec-1",
+            "recommendation_resource_name": "customers/test/recommendations/rec-1",
             "recommendation_type": "CAMPAIGN_BUDGET",
             "dismissed": False,
             "campaign_id": "101",
@@ -3311,6 +3331,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "metric_facts": recommendations_contract["recommendation_rows"][0][
                 "metric_facts"
             ],
+            "payload_preview": recommendations_contract["payload_preview"][0],
             "missing_metrics": [],
             "blocked_claims": [
                 "recommendation apply",
@@ -3318,6 +3339,41 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "budget apply",
                 "campaign mutation",
             ],
+        }
+    ]
+    assert recommendations_contract["payload_preview"] == [
+        {
+            "id": "recommendation_apply_preview_rec-1",
+            "recommendation_id": "rec-1",
+            "recommendation_resource_name": "customers/test/recommendations/rec-1",
+            "recommendation_type": "CAMPAIGN_BUDGET",
+            "campaign_id": "101",
+            "campaign_budget_id": "701",
+            "operation_type": "ApplyRecommendationOperation",
+            "reason": recommendations_contract["payload_preview"][0]["reason"],
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "source_metric_names": recommendations_contract["payload_preview"][0][
+                "source_metric_names"
+            ],
+            "required_validation": [
+                "review_recommendation_type",
+                "review_impact_metrics",
+                "review_change_history",
+                "review_business_goal",
+                "recommendation_apply_preview",
+                "google_ads_rmf_compliance_review",
+                "human_confirm_before_apply",
+            ],
+            "blocked_claims": [
+                "recommendation apply",
+                "automatic recommendation accept",
+                "budget apply",
+                "campaign mutation",
+                "performance uplift",
+            ],
+            "api_mutation_ready": False,
+            "apply_allowed": False,
+            "destructive": False,
         }
     ]
     recommendations_section = next(
@@ -3688,7 +3744,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert recommendations_decision["recommendation_rows"][0]["recommendation_type"] == (
         "CAMPAIGN_BUDGET"
     )
-    assert recommendations_decision["action_ids"] == []
+    assert recommendations_decision["recommendation_apply_preview"][0][
+        "operation_type"
+    ] == "ApplyRecommendationOperation"
+    assert recommendations_decision["recommendation_apply_preview"][0][
+        "apply_allowed"
+    ] is False
+    assert recommendations_decision["action_ids"] == [
+        "act_prepare_google_ads_recommendation_review_queue"
+    ]
     assert recommendations_decision["knowledge_card_ids"] == [
         "card_google_ads_budget_review_playbook"
     ]
@@ -3833,6 +3897,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     action_ids = {action["id"] for action in actions_payload}
     assert "act_configure_google_ads_env" not in action_ids
     assert "act_prepare_ads_campaign_review_queue" in action_ids
+    assert "act_prepare_google_ads_recommendation_review_queue" in action_ids
     assert "act_prepare_custom_segments_from_search_terms" in action_ids
     assert "act_prepare_negative_keyword_review_queue" in action_ids
     campaign_review_action = next(
@@ -3865,6 +3930,34 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert campaign_review_validation_response.status_code == 200
     assert campaign_review_validation_response.json()["valid"] is True
+    recommendation_review_action = next(
+        action
+        for action in actions_payload
+        if action["id"] == "act_prepare_google_ads_recommendation_review_queue"
+    )
+    assert recommendation_review_action["payload"]["action_type"] == (
+        "google_ads_recommendation_review"
+    )
+    assert recommendation_review_action["payload"]["preview_contract"] == (
+        "recommendation_apply_preview_v1"
+    )
+    assert recommendation_review_action["payload"]["payload_preview"][0][
+        "operation_type"
+    ] == "ApplyRecommendationOperation"
+    assert recommendation_review_action["payload"]["payload_preview"][0][
+        "apply_allowed"
+    ] is False
+    assert recommendation_review_action["payload"]["apply_allowed"] is False
+    assert recommendation_review_action["payload"]["destructive"] is False
+    assert "human_confirm_before_apply" in recommendation_review_action["payload"][
+        "required_validation"
+    ]
+    recommendation_review_validation_response = client.post(
+        "/api/actions/act_prepare_google_ads_recommendation_review_queue/validate",
+        json={},
+    )
+    assert recommendation_review_validation_response.status_code == 200
+    assert recommendation_review_validation_response.json()["valid"] is True
     custom_segment_action = next(
         action
         for action in actions_payload
@@ -5623,10 +5716,12 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8
     assert len(ads_context["search_term_safety_read_contract"]["safety_rows"]) <= 8
     assert len(ads_context["keyword_match_context_read_contract"]["context_rows"]) <= 8
+    assert len(ads_context["recommendations_read_contract"]["payload_preview"]) <= 8
     assert len(ads_context["negative_keywords_read_contract"]["payload_preview"]) <= 8
     for candidate in ads_context["negative_keywords_read_contract"]["candidates"]:
         assert len(candidate["keyword_context_rows"]) <= 4
     for decision in ads_context["decision_queue"]:
+        assert len(decision["recommendation_apply_preview"]) <= 4
         assert len(decision["search_term_safety_rows"]) <= 4
         assert len(decision["keyword_match_context_rows"]) <= 4
         assert len(decision["negative_keyword_payload_preview"]) <= 4
@@ -5638,6 +5733,12 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     )
     assert (
         ads_context["context_pack_compaction"]["search_term_safety_rows_included"]
+        <= 8
+    )
+    assert (
+        ads_context["context_pack_compaction"][
+            "recommendation_apply_preview_included"
+        ]
         <= 8
     )
     assert '"metric_facts":' not in json.dumps(ads_context)

@@ -15,6 +15,10 @@ from wilq.actions.google_ads.negative_keywords import (
     NEGATIVE_KEYWORD_ACTION_ID,
     negative_keyword_payload_from_metric_facts,
 )
+from wilq.actions.google_ads.recommendations import (
+    RECOMMENDATION_REVIEW_ACTION_ID,
+    recommendation_review_payload_from_metric_facts,
+)
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -425,6 +429,53 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "claimów o rentowności."
             ),
             payload=campaign_review_payload,
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
+    recommendation_review_payload = recommendation_review_payload_from_metric_facts(
+        google_ads_facts
+    )
+    if recommendation_review_payload is not None:
+        recommendation_metric_names = set(
+            recommendation_review_payload["source_metric_names"]
+        )
+        recommendation_evidence_ids = set(recommendation_review_payload["evidence_ids"])
+        recommendation_ids = {
+            recommendation.get("recommendation_id")
+            for recommendation in recommendation_review_payload["recommendations"][:6]
+            if isinstance(recommendation, dict)
+        }
+        recommendation_metrics = [
+            fact
+            for fact in google_ads_facts
+            if fact.name in recommendation_metric_names
+            and fact.evidence_id in recommendation_evidence_ids
+            and fact.dimensions.get("recommendation_id") in recommendation_ids
+        ][:12]
+        action = ActionObject(
+            id=RECOMMENDATION_REVIEW_ACTION_ID,
+            title="Przygotuj review rekomendacji Google Ads",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=recommendation_review_payload["evidence_ids"],
+            metrics=recommendation_metrics,
+            human_diagnosis=(
+                "Google Ads ma aktywne recommendation facts. WILQ może pokazać "
+                "review-only apply payload preview, ale nie może akceptować "
+                "rekomendacji bez strategii, RMF/compliance review, potwierdzenia "
+                "i audytu."
+            ),
+            recommended_reason=(
+                "Na /ads-doctor przejrzyj typ rekomendacji, impact preview i "
+                "powiązane kampanie. Traktuj payload jako podgląd operacji, nie "
+                "zgodę na apply."
+            ),
+            payload=recommendation_review_payload,
             validation_status="not_validated",
             created_by="system_metric_seed",
         )

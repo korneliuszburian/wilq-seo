@@ -12,6 +12,11 @@ from wilq.actions.google_ads.negative_keywords import (
     NEGATIVE_KEYWORD_ACTION_ID,
     NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
 )
+from wilq.actions.google_ads.recommendations import (
+    RECOMMENDATION_REVIEW_ACTION_ID,
+    RECOMMENDATION_REVIEW_BLOCKED_CLAIMS,
+    RECOMMENDATION_REVIEW_REQUIRED_VALIDATION,
+)
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -43,6 +48,7 @@ from wilq.schemas import (
     AdsNegativeKeywordCandidate,
     AdsNegativeKeywordPayloadPreview,
     AdsNegativeKeywordsReadContract,
+    AdsRecommendationApplyPreview,
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
     AdsSearchTermMetricRow,
@@ -1096,6 +1102,10 @@ def _recommendations_read_contract(
         "recommendation_row_count",
     )
     impact_row_count = sum(1 for row in rows if row.impact_available)
+    payload_preview = [
+        row.payload_preview for row in rows if row.payload_preview is not None
+    ]
+    action_ids = [RECOMMENDATION_REVIEW_ACTION_ID] if payload_preview else []
     missing_read_contracts = [
         "change_history",
         "impression_share",
@@ -1104,6 +1114,11 @@ def _recommendations_read_contract(
     ]
     if impact_row_count == 0:
         missing_read_contracts.insert(0, "recommendation_impact_preview")
+    if payload_preview:
+        missing_read_contracts = _remove_missing_contract_names(
+            missing_read_contracts,
+            "recommendation_apply_preview",
+        )
     blocked_claims = [
         "recommendation apply",
         "automatic recommendation accept",
@@ -1117,7 +1132,8 @@ def _recommendations_read_contract(
             summary = (
                 f"WILQ ma {len(rows)} aktywnych rekomendacji Google Ads do review. "
                 f"Typy: {', '.join(types[:5])}. Impact preview dostępny dla "
-                f"{impact_row_count}."
+                f"{impact_row_count}; apply payload preview dla "
+                f"{len(payload_preview)}."
             )
         else:
             summary = (
@@ -1150,10 +1166,12 @@ def _recommendations_read_contract(
                 or _refresh_or_connector_evidence_ids(latest_refresh)
             ),
             recommendation_rows=rows,
+            payload_preview=payload_preview,
+            action_ids=action_ids,
             next_step=(
                 "Potraktuj rekomendacje Google jako input do review, nie jako gotową "
-                "strategię. Przed apply wymagaj historii zmian, celu biznesowego, "
-                "impact sanity checku i walidowanego ActionObject."
+                "strategię. Przed apply wymagaj celu biznesowego, RMF/compliance "
+                "review, potwierdzenia człowieka, audytu i osobnego apply path."
             ),
         )
     return AdsRecommendationsReadContract(
@@ -1166,6 +1184,8 @@ def _recommendations_read_contract(
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         recommendation_rows=[],
+        payload_preview=[],
+        action_ids=[],
         next_step=(
             "Uruchom Google Ads vendor_read z recommendation fields. Nie przyjmuj "
             "ani nie odrzucaj rekomendacji bez osobnego ActionObject."
@@ -1263,8 +1283,21 @@ def _recommendation_row(
     missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
     if not impact_available:
         missing_metrics.append("recommendation_impact")
+    recommendation_resource_name = first_dimensions.get("recommendation_resource_name")
+    row_evidence_ids = _unique(fact.evidence_id for fact in facts)
+    source_metric_names = _unique(fact.name for fact in facts)
+    payload_preview = _recommendation_apply_preview(
+        recommendation_id=recommendation_id,
+        recommendation_resource_name=recommendation_resource_name,
+        recommendation_type=recommendation_type,
+        campaign_id=first_dimensions.get("campaign_id"),
+        campaign_budget_id=first_dimensions.get("campaign_budget_id"),
+        evidence_ids=row_evidence_ids,
+        source_metric_names=source_metric_names,
+    )
     return AdsRecommendationRow(
         recommendation_id=recommendation_id,
+        recommendation_resource_name=recommendation_resource_name,
         recommendation_type=recommendation_type,
         dismissed=first_dimensions.get("dismissed") == "true",
         campaign_id=first_dimensions.get("campaign_id"),
@@ -1289,8 +1322,9 @@ def _recommendation_row(
             base_conversion_value,
             potential_conversion_value,
         ),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        evidence_ids=row_evidence_ids,
         metric_facts=sorted(facts, key=lambda fact: fact.name),
+        payload_preview=payload_preview,
         missing_metrics=missing_metrics,
         blocked_claims=[
             "recommendation apply",
@@ -1298,6 +1332,40 @@ def _recommendation_row(
             "budget apply",
             "campaign mutation",
         ],
+    )
+
+
+def _recommendation_apply_preview(
+    *,
+    recommendation_id: str | None,
+    recommendation_resource_name: str | None,
+    recommendation_type: str,
+    campaign_id: str | None,
+    campaign_budget_id: str | None,
+    evidence_ids: list[str],
+    source_metric_names: list[str],
+) -> AdsRecommendationApplyPreview | None:
+    if not evidence_ids:
+        return None
+    return AdsRecommendationApplyPreview(
+        id=f"recommendation_apply_preview_{recommendation_id or recommendation_type}",
+        recommendation_id=recommendation_id,
+        recommendation_resource_name=recommendation_resource_name,
+        recommendation_type=recommendation_type,
+        campaign_id=campaign_id,
+        campaign_budget_id=campaign_budget_id,
+        reason=(
+            "Review-only podgląd operacji ApplyRecommendation. WILQ nie może "
+            "wykonać apply bez strategii, RMF/compliance review, potwierdzenia "
+            "człowieka i audytu."
+        ),
+        evidence_ids=evidence_ids,
+        source_metric_names=source_metric_names,
+        required_validation=RECOMMENDATION_REVIEW_REQUIRED_VALIDATION,
+        blocked_claims=RECOMMENDATION_REVIEW_BLOCKED_CLAIMS,
+        api_mutation_ready=False,
+        apply_allowed=False,
+        destructive=False,
     )
 
 
@@ -1323,7 +1391,7 @@ def _recommendations_section(
         source_connectors=recommendations_read_contract.source_connectors,
         evidence_ids=recommendations_read_contract.evidence_ids,
         metric_facts=metric_facts[:12],
-        action_ids=[],
+        action_ids=recommendations_read_contract.action_ids,
         blocked_claims=recommendations_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
@@ -3067,6 +3135,7 @@ def _ads_decision_queue(
         )
 
     if recommendations_read_contract.status == "ready":
+        recommendation_action_ids = _recommendation_action_ids(action_ids)
         metric_facts = [
             fact
             for row in recommendations_read_contract.recommendation_rows
@@ -3083,7 +3152,7 @@ def _ads_decision_queue(
                     "Google Ads recommendations są sygnałem do kontroli, nie "
                     "automatyczną strategią. WILQ pokazuje typ rekomendacji i "
                     "powiązanie z kampanią/budżetem, ale blokuje accept/apply bez "
-                    "impact preview, historii zmian, celu biznesowego i ActionObject."
+                    "strategii, RMF/compliance review, potwierdzenia i audytu."
                 ),
                 next_step=recommendations_read_contract.next_step,
                 allowed_metrics=recommendations_read_contract.allowed_metrics,
@@ -3092,7 +3161,8 @@ def _ads_decision_queue(
                 evidence_ids=recommendations_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 recommendation_rows=recommendations_read_contract.recommendation_rows,
-                action_ids=[],
+                recommendation_apply_preview=recommendations_read_contract.payload_preview,
+                action_ids=recommendation_action_ids,
                 blocked_claims=recommendations_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
@@ -3370,6 +3440,14 @@ def _ads_decision_queue(
 
 def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
     return [action_id for action_id in action_ids if action_id == CAMPAIGN_REVIEW_ACTION_ID]
+
+
+def _recommendation_action_ids(action_ids: list[str]) -> list[str]:
+    return [
+        action_id
+        for action_id in action_ids
+        if action_id == RECOMMENDATION_REVIEW_ACTION_ID
+    ]
 
 
 def _search_term_action_ids(action_ids: list[str]) -> list[str]:

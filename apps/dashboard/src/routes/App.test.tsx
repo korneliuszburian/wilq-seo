@@ -207,6 +207,104 @@ const actions = [
       destructive: false
     },
     audit_events: []
+  },
+  {
+    id: "act_prepare_google_ads_recommendation_review_queue",
+    title: "Przygotuj review rekomendacji Google Ads",
+    domain: "google_ads",
+    connector: "google_ads",
+    mode: "prepare",
+    risk: "medium",
+    status: "needs_validation",
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    metrics: [],
+    validation_status: "not_validated",
+    human_diagnosis:
+      "Google Ads ma aktywne recommendation facts, ale apply wymaga review strategii.",
+    recommended_reason: "Przejrzyj typ rekomendacji i impact preview bez apply.",
+    payload: {
+      action_type: "google_ads_recommendation_review",
+      connector: "google_ads",
+      mode: "prepare_only",
+      recommendations: [
+        {
+          id: "rec-1",
+          recommendation_id: "rec-1",
+          recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
+          recommendation_type: "CAMPAIGN_BUDGET",
+          campaign_id: "123",
+          campaign_budget_id: "777",
+          source_metric_names: ["recommendation_available"],
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          blocked_claims: ["recommendation apply"],
+          required_validation: [
+            "review_recommendation_type",
+            "review_impact_metrics",
+            "review_change_history",
+            "review_business_goal",
+            "recommendation_apply_preview",
+            "google_ads_rmf_compliance_review",
+            "human_confirm_before_apply"
+          ]
+        }
+      ],
+      preview_contract: "recommendation_apply_preview_v1",
+      payload_preview: [
+        {
+          id: "recommendation_apply_preview_rec-1",
+          recommendation_id: "rec-1",
+          recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
+          recommendation_type: "CAMPAIGN_BUDGET",
+          campaign_id: "123",
+          campaign_budget_id: "777",
+          operation_type: "ApplyRecommendationOperation",
+          reason: "Review-only recommendation apply operation preview.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: ["recommendation_available"],
+          required_validation: [
+            "review_recommendation_type",
+            "review_impact_metrics",
+            "review_change_history",
+            "review_business_goal",
+            "recommendation_apply_preview",
+            "google_ads_rmf_compliance_review",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: [
+            "recommendation apply",
+            "automatic recommendation accept",
+            "budget apply",
+            "campaign mutation",
+            "performance uplift"
+          ],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        }
+      ],
+      source_metric_names: ["recommendation_available"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      required_validation: [
+        "review_recommendation_type",
+        "review_impact_metrics",
+        "review_change_history",
+        "review_business_goal",
+        "recommendation_apply_preview",
+        "google_ads_rmf_compliance_review",
+        "human_confirm_before_apply"
+      ],
+      blocked_claims: [
+        "recommendation apply",
+        "automatic recommendation accept",
+        "budget apply",
+        "campaign mutation",
+        "performance uplift"
+      ],
+      api_mutation_ready: false,
+      apply_allowed: false,
+      destructive: false
+    },
+    audit_events: []
   }
 ];
 
@@ -464,7 +562,7 @@ const adsDiagnostics = {
     status: "ready",
     title: "Google Ads: rekomendacje do review",
     summary:
-      "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET. Impact preview dostępny dla 1.",
+      "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET. Impact preview dostępny dla 1; apply payload preview dla 1.",
     allowed_metrics: [
       "recommendation_available",
       "recommendation_campaign_count",
@@ -473,11 +571,7 @@ const adsDiagnostics = {
       "recommendation_impact_base_cost_micros",
       "recommendation_impact_potential_cost_micros"
     ],
-    missing_read_contracts: [
-      "change_history",
-      "human_strategy_review",
-      "recommendation_apply_preview"
-    ],
+    missing_read_contracts: ["change_history", "human_strategy_review"],
     blocked_claims: [
       "recommendation apply",
       "automatic recommendation accept",
@@ -490,6 +584,7 @@ const adsDiagnostics = {
     recommendation_rows: [
       {
         recommendation_id: "rec-1",
+        recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
         recommendation_type: "CAMPAIGN_BUDGET",
         dismissed: false,
         campaign_id: "123",
@@ -513,6 +608,40 @@ const adsDiagnostics = {
         delta_conversion_value: null,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
+        payload_preview: {
+          id: "recommendation_apply_preview_rec-1",
+          recommendation_id: "rec-1",
+          recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
+          recommendation_type: "CAMPAIGN_BUDGET",
+          campaign_id: "123",
+          campaign_budget_id: "777",
+          operation_type: "ApplyRecommendationOperation",
+          reason: "Review-only recommendation apply operation preview.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: [
+            "recommendation_available",
+            "recommendation_impact_potential_cost_micros"
+          ],
+          required_validation: [
+            "review_recommendation_type",
+            "review_impact_metrics",
+            "review_change_history",
+            "review_business_goal",
+            "recommendation_apply_preview",
+            "google_ads_rmf_compliance_review",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: [
+            "recommendation apply",
+            "automatic recommendation accept",
+            "budget apply",
+            "campaign mutation",
+            "performance uplift"
+          ],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        },
         missing_metrics: [],
         blocked_claims: [
           "recommendation apply",
@@ -522,6 +651,43 @@ const adsDiagnostics = {
         ]
       }
     ],
+    payload_preview: [
+      {
+        id: "recommendation_apply_preview_rec-1",
+        recommendation_id: "rec-1",
+        recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
+        recommendation_type: "CAMPAIGN_BUDGET",
+        campaign_id: "123",
+        campaign_budget_id: "777",
+        operation_type: "ApplyRecommendationOperation",
+        reason: "Review-only recommendation apply operation preview.",
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        source_metric_names: [
+          "recommendation_available",
+          "recommendation_impact_potential_cost_micros"
+        ],
+        required_validation: [
+          "review_recommendation_type",
+          "review_impact_metrics",
+          "review_change_history",
+          "review_business_goal",
+          "recommendation_apply_preview",
+          "google_ads_rmf_compliance_review",
+          "human_confirm_before_apply"
+        ],
+        blocked_claims: [
+          "recommendation apply",
+          "automatic recommendation accept",
+          "budget apply",
+          "campaign mutation",
+          "performance uplift"
+        ],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ],
+    action_ids: ["act_prepare_google_ads_recommendation_review_queue"],
     next_step:
       "Potraktuj rekomendacje Google jako input do review, nie jako gotową strategię."
   },
@@ -1095,7 +1261,7 @@ const adsDiagnostics = {
       status: "ready",
       title: "Przejrzyj rekomendacje Google Ads bez apply",
       summary:
-        "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET. Impact preview dostępny dla 1.",
+        "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET. Impact preview dostępny dla 1; apply payload preview dla 1.",
       rationale:
         "Google Ads recommendations są sygnałem do kontroli, nie automatyczną strategią.",
       next_step:
@@ -1108,11 +1274,7 @@ const adsDiagnostics = {
         "recommendation_impact_base_cost_micros",
         "recommendation_impact_potential_cost_micros"
       ],
-      missing_read_contracts: [
-        "change_history",
-        "human_strategy_review",
-        "recommendation_apply_preview"
-      ],
+      missing_read_contracts: ["change_history", "human_strategy_review"],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
@@ -1122,6 +1284,7 @@ const adsDiagnostics = {
       recommendation_rows: [
         {
           recommendation_id: "rec-1",
+          recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
           recommendation_type: "CAMPAIGN_BUDGET",
           dismissed: false,
           campaign_id: "123",
@@ -1145,6 +1308,40 @@ const adsDiagnostics = {
           delta_conversion_value: null,
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
+          payload_preview: {
+            id: "recommendation_apply_preview_rec-1",
+            recommendation_id: "rec-1",
+            recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
+            recommendation_type: "CAMPAIGN_BUDGET",
+            campaign_id: "123",
+            campaign_budget_id: "777",
+            operation_type: "ApplyRecommendationOperation",
+            reason: "Review-only recommendation apply operation preview.",
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+            source_metric_names: [
+              "recommendation_available",
+              "recommendation_impact_potential_cost_micros"
+            ],
+            required_validation: [
+              "review_recommendation_type",
+              "review_impact_metrics",
+              "review_change_history",
+              "review_business_goal",
+              "recommendation_apply_preview",
+              "google_ads_rmf_compliance_review",
+              "human_confirm_before_apply"
+            ],
+            blocked_claims: [
+              "recommendation apply",
+              "automatic recommendation accept",
+              "budget apply",
+              "campaign mutation",
+              "performance uplift"
+            ],
+            api_mutation_ready: false,
+            apply_allowed: false,
+            destructive: false
+          },
           missing_metrics: [],
           blocked_claims: [
             "recommendation apply",
@@ -1154,6 +1351,42 @@ const adsDiagnostics = {
           ]
         }
       ],
+      recommendation_apply_preview: [
+        {
+          id: "recommendation_apply_preview_rec-1",
+          recommendation_id: "rec-1",
+          recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
+          recommendation_type: "CAMPAIGN_BUDGET",
+          campaign_id: "123",
+          campaign_budget_id: "777",
+          operation_type: "ApplyRecommendationOperation",
+          reason: "Review-only recommendation apply operation preview.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: [
+            "recommendation_available",
+            "recommendation_impact_potential_cost_micros"
+          ],
+          required_validation: [
+            "review_recommendation_type",
+            "review_impact_metrics",
+            "review_change_history",
+            "review_business_goal",
+            "recommendation_apply_preview",
+            "google_ads_rmf_compliance_review",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: [
+            "recommendation apply",
+            "automatic recommendation accept",
+            "budget apply",
+            "campaign mutation",
+            "performance uplift"
+          ],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        }
+      ],
       impression_share_rows: [],
       change_history_rows: [],
       search_term_rows: [],
@@ -1161,7 +1394,7 @@ const adsDiagnostics = {
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
       negative_keyword_payload_preview: [],
-      action_ids: [],
+      action_ids: ["act_prepare_google_ads_recommendation_review_queue"],
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_recommendations_v1", "ads_principles_v1"],
       blocked_claims: [
@@ -1763,6 +1996,7 @@ const adsDiagnostics = {
   blocked_handoff: null,
   evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_refresh_google_ads_test"],
   action_ids: [
+    "act_prepare_google_ads_recommendation_review_queue",
     "act_prepare_custom_segments_from_search_terms",
     "act_prepare_negative_keyword_review_queue"
   ],

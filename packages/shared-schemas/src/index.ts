@@ -353,8 +353,27 @@ export const AdsBudgetPacingReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsRecommendationApplyPreviewSchema = z.object({
+  id: z.string(),
+  recommendation_id: z.string().nullable().optional(),
+  recommendation_resource_name: z.string().nullable().optional(),
+  recommendation_type: z.string(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_budget_id: z.string().nullable().optional(),
+  operation_type: z.literal("ApplyRecommendationOperation"),
+  reason: z.string(),
+  evidence_ids: z.array(z.string()),
+  source_metric_names: z.array(z.string()),
+  required_validation: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsRecommendationRowSchema = z.object({
   recommendation_id: z.string().nullable().optional(),
+  recommendation_resource_name: z.string().nullable().optional(),
   recommendation_type: z.string(),
   dismissed: z.boolean(),
   campaign_id: z.string().nullable().optional(),
@@ -378,6 +397,7 @@ export const AdsRecommendationRowSchema = z.object({
   delta_conversion_value: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
+  payload_preview: AdsRecommendationApplyPreviewSchema.nullable().optional(),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string())
 });
@@ -393,6 +413,8 @@ export const AdsRecommendationsReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   recommendation_rows: z.array(AdsRecommendationRowSchema),
+  payload_preview: z.array(AdsRecommendationApplyPreviewSchema),
+  action_ids: z.array(z.string()),
   next_step: z.string()
 });
 
@@ -693,6 +715,9 @@ export const AdsDecisionItemSchema = z.object({
   derived_kpi_rows: z.array(AdsDerivedKpiRowSchema),
   budget_rows: z.array(AdsBudgetPacingRowSchema),
   recommendation_rows: z.array(AdsRecommendationRowSchema),
+  recommendation_apply_preview: z.array(AdsRecommendationApplyPreviewSchema)
+    .optional()
+    .default([]),
   impression_share_rows: z.array(AdsImpressionShareRowSchema),
   change_history_rows: z.array(AdsChangeHistoryRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),

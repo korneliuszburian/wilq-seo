@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 23:44 Europe/Warsaw.
+Last updated: 2026-06-20 00:20 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -68,15 +68,16 @@ facts, a read-only account currency contract, a read-only budget context
 contract for campaign daily budgets versus 7-day cost, a read-only Google Ads
 recommendations contract, a read-only Google Ads impression-share contract, a
 read-only Google Ads change-history contract, a read-only recommendation impact
-preview for recommendation types that expose impact metrics, a read-only
-90-day search-term safety contract and a review-only negative keyword payload preview plus
-read-only keyword match context for negative keyword review. Custom segments
-now have a review-only payload preview from real search terms, but no
-targeting/apply support.
+preview for recommendation types that expose impact metrics, a review-only
+recommendation apply payload preview, a read-only 90-day search-term safety
+contract and a review-only negative keyword payload preview plus read-only
+keyword match context for negative keyword review. Custom segments now have a
+review-only payload preview from real search terms, but no targeting/apply
+support.
 Full BDOS-class parity still requires optimizer contracts such as
-profit-margin/business-goal interpretation, recommendation apply previews,
-pre/post change-impact windows, Keyword Planner enrichment, forecast
-or audience-size checks, custom segment targeting/apply previews, budget/apply
+profit-margin/business-goal interpretation, human strategy review,
+pre/post change-impact windows, Keyword Planner enrichment, forecast or
+audience-size checks, custom segment targeting/apply previews, budget/apply
 previews, apply safety and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
@@ -149,19 +150,23 @@ Current connector truth:
   read-only 90-day search-term safety contract, a prepare-only custom segment
   candidate contract with review-only payload preview and a prepare-only
   negative keyword safety review contract with review-only payload preview plus
-  read-only keyword match context.
-  Latest live Ads proof: `refresh_google_ads_978ef3a667f6` /
-  `ev_refresh_refresh_google_ads_978ef3a667f6` exposes
+  read-only keyword match context. Recommendations now also have a review-only
+  apply payload preview ActionObject.
+  Latest live Ads proof: `refresh_google_ads_60956db2c42f` /
+  `ev_refresh_refresh_google_ads_60956db2c42f` exposes
   `customer_currency_code=PLN`, 18 campaign rows, 50 30-day search-term rows,
   200 90-day search-term safety rows, 211 keyword match context rows, 4 active
   Google Ads recommendation rows, 2 recommendation rows with impact preview,
-  2 impression-share rows and `change_event_row_count=0` for the last 14 days.
+  4 recommendation apply payload preview rows, 2 impression-share rows and
+  `change_event_row_count=0` for the last 14 days.
   `/api/ads/diagnostics` reports
   `account_currency_read_contract.status=ready`,
   `account_currency_read_contract.currency_code=PLN`,
   `impression_share_read_contract.status=ready`,
   `change_history_read_contract.status=ready`,
   `recommendations_read_contract.status=ready`,
+  `recommendations_read_contract.action_ids=["act_prepare_google_ads_recommendation_review_queue"]`,
+  `recommendations_read_contract.missing_read_contracts=["human_strategy_review"]`,
   `search_term_safety_read_contract.status=ready`,
   `keyword_match_context_read_contract.status=ready`, decisions
   `ads_review_impression_share`, `ads_review_change_history` and
@@ -175,9 +180,12 @@ Current connector truth:
   candidates, 7 `negative_keyword_payload_preview` rows, no
   `90_day_safety_check` missing contract and no
   `negative_keyword_payload_preview` missing contract and no
-  `keyword match context` missing contract. Preview rows are exact-match review
-  rows with `api_mutation_ready=false`, `apply_allowed=false` and
-  `destructive=false`. WILQ still blocks `negative keyword apply`,
+  `keyword match context` missing contract. Negative keyword preview rows are
+  exact-match review rows with `api_mutation_ready=false`,
+  `apply_allowed=false` and `destructive=false`. Recommendation apply preview
+  rows use `operation_type=ApplyRecommendationOperation`, but also keep
+  `api_mutation_ready=false`, `apply_allowed=false` and `destructive=false`.
+  WILQ still blocks `negative keyword apply`, `recommendation apply`,
   `search-term waste`, CPA, ROAS and conversion-loss claims until human review,
   confirmation and future apply/audit contracts exist. Profitability, wasted-budget,
   audience size, budget scaling, campaign-performance, recommendation apply,
@@ -185,10 +193,10 @@ Current connector truth:
   read/safety/apply contracts. Individual recommendation rows may still show
   `missing_metrics=["recommendation_impact"]` when Google Ads does not return
   impact metrics for that recommendation type; that is not an OAuth/API blocker.
-  Full `scripts/verify.sh` passed for the recommendation impact slice on
-  2026-06-19: backend API contracts `115 passed`, dashboard route tests
+  Full `scripts/verify.sh` passed for the recommendation apply-preview slice on
+  2026-06-20: backend API contracts `115 passed`, dashboard route tests
   `13 passed`, Playwright e2e `9 passed`, API smoke, skill structure smoke,
-  skill API smoke and dashboard production build passed.
+  skill API smoke, security checks and dashboard production build passed.
   Source-backed decision lineage now exists for Ads diagnostics: sections and
   decision queue items expose `knowledge_card_ids` and `expert_rule_ids`.
   Current proof chain for the budget slice is
@@ -1843,7 +1851,7 @@ Live `:8000` proof after API restart:
 Remaining Ads optimizer blockers:
 
 - no budget/apply preview or human budget-goal contract,
-- no recommendation apply preview or human strategy-review contract,
+- no recommendation apply support, human strategy-review or mutation audit path,
 - no pre/post change-impact window contract,
 - no profit-margin/business-goal interpretation contract,
 - no campaign pause/budget apply audit path.

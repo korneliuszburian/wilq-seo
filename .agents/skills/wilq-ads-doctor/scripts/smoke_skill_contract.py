@@ -179,18 +179,37 @@ def main() -> int:
             raise SystemExit("Recommendations contract must keep apply blocked")
         recommendation_rows = recommendations_read_contract.get("recommendation_rows") or []
         impact_row_count = sum(1 for row in recommendation_rows if row.get("impact_available"))
+        payload_preview = recommendations_read_contract.get("payload_preview") or []
         if impact_row_count > 0 and "recommendation_impact_preview" in (
             recommendations_read_contract.get("missing_read_contracts") or []
         ):
             raise SystemExit("Ready recommendation impact must not remain missing")
+        if payload_preview and "recommendation_apply_preview" in (
+            recommendations_read_contract.get("missing_read_contracts") or []
+        ):
+            raise SystemExit("Ready recommendation payload preview must not remain missing")
+        if payload_preview and "act_prepare_google_ads_recommendation_review_queue" not in (
+            recommendations_read_contract.get("action_ids") or []
+        ):
+            raise SystemExit("Ready recommendation payload preview must expose ActionObject")
+        for item in payload_preview:
+            if item.get("operation_type") != "ApplyRecommendationOperation":
+                raise SystemExit("Recommendation preview must use ApplyRecommendationOperation")
+            if item.get("apply_allowed") is not False:
+                raise SystemExit("Recommendation preview must keep apply_allowed=false")
+            if item.get("api_mutation_ready") is not False:
+                raise SystemExit("Recommendation preview must not be mutation-ready")
         pack_recommendation_rows = pack_recommendations_contract.get(
             "recommendation_rows",
         ) or []
+        pack_payload_preview = pack_recommendations_contract.get("payload_preview") or []
         pack_impact_row_count = sum(
             1 for row in pack_recommendation_rows if row.get("impact_available")
         )
         if pack_impact_row_count != impact_row_count:
             raise SystemExit("Context pack recommendation impact row count differs")
+        if len(pack_payload_preview) != min(len(payload_preview), 8):
+            raise SystemExit("Context pack recommendation payload preview count differs")
     elif "recommendations" not in recommendations_read_contract.get(
         "missing_read_contracts",
         [],
@@ -437,6 +456,9 @@ def main() -> int:
                         "row_count": len(
                             recommendations_read_contract.get("recommendation_rows") or []
                         ),
+                        "apply_preview_count": len(
+                            recommendations_read_contract.get("payload_preview") or []
+                        ),
                         "impact_row_count": sum(
                             1
                             for row in recommendations_read_contract.get(
@@ -449,6 +471,7 @@ def main() -> int:
                             "blocked_claims",
                             [],
                         ),
+                        "action_ids": recommendations_read_contract.get("action_ids", []),
                     },
                     "impression_share_read_contract": {
                         "status": impression_share_read_contract.get("status"),

@@ -1264,6 +1264,8 @@ def _keyword_match_context_dimensions(row: dict[str, Any]) -> dict[str, str]:
 def _recommendation_dimensions(recommendation: dict[str, Any]) -> dict[str, str]:
     dimensions: dict[str, str] = {}
     resource_name = recommendation.get("resourceName", recommendation.get("resource_name"))
+    if isinstance(resource_name, str) and resource_name:
+        dimensions["recommendation_resource_name"] = resource_name
     recommendation_id = _customer_resource_id(resource_name)
     if recommendation_id:
         dimensions["recommendation_id"] = recommendation_id
