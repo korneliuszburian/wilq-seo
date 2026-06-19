@@ -1534,6 +1534,8 @@ type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 type AdsSearchTermSafetyRow =
   AdsDiagnosticsResponse["search_term_safety_read_contract"]["safety_rows"][number];
+type AdsKeywordMatchContextRow =
+  AdsDiagnosticsResponse["keyword_match_context_read_contract"]["context_rows"][number];
 type AdsCustomSegmentCandidate =
   AdsDiagnosticsResponse["custom_segments_read_contract"]["candidates"][number];
 type AdsNegativeKeywordCandidate =
@@ -1688,6 +1690,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             label="90 dni"
             value={data.search_term_safety_read_contract.safety_rows.length}
           />
+          <MetricTile
+            label="Keywords"
+            value={data.keyword_match_context_read_contract.context_rows.length}
+          />
           <MetricTile label="Decyzje" value={decisions.length} />
         </div>
       </div>
@@ -1749,6 +1755,11 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
         {decision.search_term_safety_rows.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Safety 90 dni: {decision.search_term_safety_rows.length}
+          </span>
+        ) : null}
+        {decision.keyword_match_context_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Keyword context: {decision.keyword_match_context_rows.length}
           </span>
         ) : null}
         {decision.derived_kpi_rows.length > 0 ? (
@@ -1826,6 +1837,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const changeHistoryRows = data.change_history_read_contract.change_history_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
   const searchTermSafetyRows = data.search_term_safety_read_contract.safety_rows;
+  const keywordContextRows = data.keyword_match_context_read_contract.context_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
   const missingReadContracts = uniqueValues([
@@ -1837,6 +1849,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.change_history_read_contract.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.search_term_safety_read_contract.missing_read_contracts,
+    ...data.keyword_match_context_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
   ]).map(adsMissingReadContractLabel);
@@ -1849,6 +1862,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.change_history_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.search_term_safety_read_contract.blocked_claims,
+    ...data.keyword_match_context_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
     ...data.negative_keywords_read_contract.blocked_claims,
     ...data.sections.flatMap((section) => section.blocked_claims)
@@ -1875,6 +1889,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
           <MetricTile label="Zmiany" value={changeHistoryRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="Safety 90d" value={searchTermSafetyRows.length} />
+          <MetricTile label="Keywords" value={keywordContextRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
         </div>
@@ -1889,6 +1904,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
         <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} />
         <AdsSearchTermSafetyRowsTable rows={searchTermSafetyRows} />
+        <AdsKeywordMatchContextRowsTable rows={keywordContextRows} />
         <AdsNegativeKeywordCandidatesPanel candidates={negativeKeywordCandidates} />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
       </div>
@@ -2271,6 +2287,54 @@ function AdsSearchTermSafetyRowsTable({ rows }: { rows: AdsSearchTermSafetyRow[]
   );
 }
 
+function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContextRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak kontekstu istniejących keywords/match types. WILQ nie powinien zdejmować blokady z review wykluczeń bez odczytu ad_group_criterion." />
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Keyword</th>
+            <th className="py-2 pr-4 font-semibold">Match type</th>
+            <th className="py-2 pr-4 font-semibold">Status</th>
+            <th className="py-2 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-4 font-semibold">Grupa reklam</th>
+            <th className="py-2 pr-3 font-semibold">Dowody</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.slice(0, 12).map((row) => (
+            <tr
+              key={`kw-${row.criterion_id ?? row.keyword_text}-${
+                row.ad_group_id ?? "unknown"
+              }`}
+            >
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.keyword_text}</td>
+              <td className="py-2 pr-4 text-slate-700">{row.match_type}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.negative ? "negative" : row.criterion_status ?? "brak"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.campaign_name ?? row.campaign_id ?? "brak"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.ad_group_name ?? row.ad_group_id ?? "brak"}
+              </td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {row.evidence_ids.length} ID
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function AdsNegativeKeywordCandidatesPanel({
   candidates,
   compact = false
@@ -2342,6 +2406,19 @@ function AdsNegativeKeywordCandidatesPanel({
                     : "zablokowany"}
                   . {candidate.payload_preview.reason}
                 </div>
+              </div>
+            ) : null}
+            {candidate.keyword_context_rows.length > 0 ? (
+              <div className="mt-2 rounded-md border border-line bg-slate-50 p-2 text-xs leading-5 text-slate-700">
+                <div className="font-semibold uppercase tracking-normal text-slate-600">
+                  Istniejące keywords w tej grupie
+                </div>
+                {candidate.keyword_context_rows.slice(0, 4).map((row) => (
+                  <div key={`${row.criterion_id ?? row.keyword_text}-${row.match_type}`}>
+                    {row.keyword_text} / {row.match_type}
+                    {row.negative ? " / negative" : ""}
+                  </div>
+                ))}
               </div>
             ) : null}
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
@@ -2552,6 +2629,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_change_history") return "Historia zmian";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_search_term_safety") return "Safety 90 dni";
+  if (sectionId === "ads_keyword_match_context") return "Kontekst keywords";
   if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
   if (sectionId === "ads_custom_segments") return "Custom segments";
   if (sectionId === "ads_action_safety") return "Bezpieczeństwo akcji Ads";
@@ -2585,6 +2663,10 @@ function adsAllowedMetricLabel(value: string) {
     search_term_90d_cost_micros: "koszt 90 dni",
     search_term_90d_conversions: "konwersje 90 dni",
     search_term_90d_conversion_value: "wartość konwersji 90 dni",
+    keyword_text: "keyword",
+    keyword_match_type: "typ dopasowania keyworda",
+    criterion_status: "status keyworda",
+    keyword_negative: "keyword negative",
     campaign: "kampania",
     ad_group: "grupa reklam",
     status: "status zapytania"
@@ -2610,6 +2692,7 @@ function adsMissingReadContractLabel(value: string) {
     apply_preview: "podgląd wdrożenia",
     impression_share: "udział w wyświetleniach",
     "keyword match context": "kontekst dopasowania słów kluczowych",
+    keyword_match_context_read: "odczyt istniejących keywords i match types",
     "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
     search_term_90d_read: "90-dniowy odczyt zapytań",
     human_intent_review: "ręczny review intencji",

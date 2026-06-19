@@ -94,6 +94,24 @@ WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
 LIMIT 200
 """.strip()
 
+KEYWORD_MATCH_CONTEXT_QUERY = """
+SELECT
+  campaign.id,
+  campaign.name,
+  ad_group.id,
+  ad_group.name,
+  ad_group_criterion.criterion_id,
+  ad_group_criterion.status,
+  ad_group_criterion.negative,
+  ad_group_criterion.keyword.text,
+  ad_group_criterion.keyword.match_type
+FROM ad_group_criterion
+WHERE ad_group_criterion.type = 'KEYWORD'
+  AND campaign.status != 'REMOVED'
+  AND ad_group_criterion.status != 'REMOVED'
+LIMIT 500
+""".strip()
+
 RECOMMENDATION_SUMMARY_QUERY = """
 SELECT
   recommendation.resource_name,
@@ -187,6 +205,13 @@ def refresh_google_ads_campaign_summary(
                     access_token,
                 )
             )
+            keyword_context_summary, keyword_context_facts = (
+                _fetch_keyword_match_context_summary(
+                    client,
+                    credentials,
+                    access_token,
+                )
+            )
             recommendation_summary, recommendation_facts = _fetch_recommendation_summary(
                 client,
                 credentials,
@@ -199,10 +224,12 @@ def refresh_google_ads_campaign_summary(
             )
             metric_summary.update(search_term_summary)
             metric_summary.update(search_term_safety_summary)
+            metric_summary.update(keyword_context_summary)
             metric_summary.update(recommendation_summary)
             metric_summary.update(change_event_summary)
             metric_facts.extend(search_term_facts)
             metric_facts.extend(search_term_safety_facts)
+            metric_facts.extend(keyword_context_facts)
             metric_facts.extend(recommendation_facts)
             metric_facts.extend(change_event_facts)
         except httpx.HTTPStatusError as exc:
@@ -251,6 +278,8 @@ def refresh_google_ads_campaign_summary(
             f"search term rows: {metric_summary.get('search_term_row_count', 0)}; "
             "90-day search term safety rows: "
             f"{metric_summary.get('search_term_safety_row_count', 0)}; "
+            "keyword match context rows: "
+            f"{metric_summary.get('keyword_match_context_row_count', 0)}; "
             f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}; "
             f"change events: {metric_summary.get('change_event_row_count', 0)}."
         ),
@@ -455,6 +484,27 @@ def _fetch_search_term_safety_summary(
     )
     response.raise_for_status()
     return _summarize_search_term_safety_response(response.json())
+
+
+def _fetch_keyword_match_context_summary(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    customer_id = credentials["customer_id"]
+    response = client.post(
+        f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+        f"{customer_id}/googleAds:searchStream",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "developer-token": str(credentials["developer_token"]),
+            "login-customer-id": str(credentials["login_customer_id"]),
+            "Content-Type": "application/json",
+        },
+        json={"query": KEYWORD_MATCH_CONTEXT_QUERY},
+    )
+    response.raise_for_status()
+    return _summarize_keyword_match_context_response(response.json())
 
 
 def _fetch_recommendation_summary(
@@ -943,6 +993,60 @@ def _summarize_search_term_safety_response(
     )
 
 
+def _summarize_keyword_match_context_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    metric_facts: list[VendorMetricFact] = []
+    keyword_texts: set[str] = set()
+    match_types: set[str] = set()
+    negative_count = 0
+    for row in rows:
+        dimensions = _keyword_match_context_dimensions(row)
+        keyword_text = dimensions.get("keyword_text")
+        match_type = dimensions.get("keyword_match_type")
+        if keyword_text:
+            keyword_texts.add(keyword_text)
+        if match_type:
+            match_types.add(match_type)
+        negative = dimensions.get("keyword_negative") == "true"
+        if negative:
+            negative_count += 1
+        if dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact(
+                        "keyword_match_context_available",
+                        1,
+                        dimensions,
+                        period="keyword_match_context",
+                    ),
+                    VendorMetricFact(
+                        "keyword_match_type",
+                        match_type or "UNKNOWN",
+                        dimensions,
+                        period="keyword_match_context",
+                    ),
+                    VendorMetricFact(
+                        "keyword_match_context_negative",
+                        1 if negative else 0,
+                        dimensions,
+                        period="keyword_match_context",
+                    ),
+                ]
+            )
+    return (
+        {
+            "keyword_match_context_query": "ad_group_criterion_keyword_context",
+            "keyword_match_context_row_count": len(rows),
+            "keyword_match_context_keyword_count": len(keyword_texts),
+            "keyword_match_context_negative_count": negative_count,
+            "keyword_match_context_match_types": ",".join(sorted(match_types)),
+        },
+        metric_facts,
+    )
+
+
 def _search_stream_rows(payload: Any) -> list[dict[str, Any]]:
     if not isinstance(payload, list):
         return []
@@ -1086,6 +1190,38 @@ def _search_term_dimensions(row: dict[str, Any]) -> dict[str, str]:
         status = search_term_view.get("status")
         if isinstance(status, str) and status:
             dimensions["search_term_status"] = status
+    return dimensions
+
+
+def _keyword_match_context_dimensions(row: dict[str, Any]) -> dict[str, str]:
+    dimensions = _campaign_dimensions(row.get("campaign", {}))
+    ad_group = row.get("adGroup", row.get("ad_group", {}))
+    if isinstance(ad_group, dict):
+        ad_group_id = ad_group.get("id")
+        if ad_group_id is not None:
+            dimensions["ad_group_id"] = str(ad_group_id)
+        ad_group_name = ad_group.get("name")
+        if isinstance(ad_group_name, str) and ad_group_name:
+            dimensions["ad_group_name"] = ad_group_name
+    criterion = row.get("adGroupCriterion", row.get("ad_group_criterion", {}))
+    if not isinstance(criterion, dict):
+        return dimensions
+    criterion_id = criterion.get("criterionId", criterion.get("criterion_id"))
+    if criterion_id is not None:
+        dimensions["criterion_id"] = str(criterion_id)
+    status = criterion.get("status")
+    if isinstance(status, str) and status:
+        dimensions["criterion_status"] = status
+    negative = _bool_metric(criterion.get("negative"))
+    dimensions["keyword_negative"] = "true" if negative else "false"
+    keyword = criterion.get("keyword", {})
+    if isinstance(keyword, dict):
+        keyword_text = keyword.get("text")
+        if isinstance(keyword_text, str) and keyword_text:
+            dimensions["keyword_text"] = keyword_text
+        match_type = keyword.get("matchType", keyword.get("match_type"))
+        if isinstance(match_type, str) and match_type:
+            dimensions["keyword_match_type"] = match_type
     return dimensions
 
 

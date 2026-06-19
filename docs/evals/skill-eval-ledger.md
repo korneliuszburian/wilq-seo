@@ -27,6 +27,22 @@ scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 
 ## 2026-06-19 - wilq-ads-doctor negative keyword payload preview
 
+Follow-up keyword context proof:
+
+- After adding `keyword_match_context_read_contract`, the Ads eval case now
+  requires `keyword_match_context_read_contract` and `keyword_match_context`,
+  and forbids stale phrases such as `bez match context`.
+- Non-interactive Codex eval passed:
+  `.local-lab/evals/codex-skill/20260619T182309Z/wilq-ads-doctor/result.json`.
+- The final JSON has `language=pl-PL`, `api_used=true`,
+  `ev_refresh_refresh_google_ads_eb8c239bc32b`, `keyword_match_context_read_contract`,
+  `negative_keyword_payload_preview`, `act_prepare_ads_campaign_review_queue`
+  and `act_prepare_negative_keyword_review_queue`.
+- The output treats keyword context as read-only review evidence, not as apply
+  permission, and keeps negative keyword apply/search-term waste/CPA/ROAS
+  blocked behind human review, ActionObject validation and apply/audit
+  contracts.
+
 Prompt class:
 
 ```text

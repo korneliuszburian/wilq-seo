@@ -8,6 +8,35 @@ artifacts.
 
 Data: 2026-06-19
 
+- Ads keyword match context read contract, 2026-06-19 20:17 Europe/Warsaw:
+  current active proof is read-only keyword context for negative keyword
+  review, not negative keyword apply. Google Ads `vendor_read` now reads
+  existing `ad_group_criterion` keyword rows with campaign, ad group,
+  criterion status, negative flag, keyword text and match type. Live proof:
+  `refresh_google_ads_eb8c239bc32b` with evidence
+  `ev_refresh_refresh_google_ads_eb8c239bc32b` returned 18 campaign rows, 50
+  search-term rows, 200 90-day safety rows, 211 keyword match context rows, 4
+  recommendations and 0 change events. `/api/ads/diagnostics` now reports
+  `keyword_match_context_read_contract.status=ready`,
+  `context_row_count=211`, `missing_read_contracts=["human_intent_review"]`.
+  The live `negative_keywords_read_contract` has 7 candidates, 7
+  `negative_keyword_payload_preview` rows and `missing_read_contracts=[]`.
+  First live candidate has 8 keyword-context rows and required checks:
+  `review_search_term_context`, `check_existing_keywords_and_match_types`,
+  `90_day_safety_check`, `negative_keyword_payload_preview`,
+  `human_confirm_before_apply`. WILQ still blocks negative keyword apply,
+  search-term waste, conversion loss, CPA and ROAS; keyword context is review
+  context only. Focused proof passed: ruff, mypy, selected Ads/API tests,
+  Codex eval-case tests, dashboard TypeScript, dashboard route tests and live
+  `wilq-ads-doctor` smoke against `:8000`. Non-interactive
+  `wilq-ads-doctor` eval passed after tightening the case to require
+  `keyword_match_context_read_contract` and forbid stale `bez match context`
+  wording:
+  `.local-lab/evals/codex-skill/20260619T182309Z/wilq-ads-doctor/result.json`.
+  Full `scripts/verify.sh` passed after this slice: backend API contracts
+  `111 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`,
+  API smoke, skill smokes and dashboard production build passed. Non-blocking
+  warning: Vite main JS chunk `549.44 kB` exceeds the 500 KB warning threshold.
 - Ads negative keyword review payload preview, 2026-06-19 19:24 Europe/Warsaw:
   current active proof is still review-only, not apply. WILQ now exposes
   `negative_keyword_payload_preview` for the live Google Ads negative keyword

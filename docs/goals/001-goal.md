@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 19:24 Europe/Warsaw.
+Last updated: 2026-06-19 20:17 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -63,12 +63,13 @@ facts, a read-only budget context contract for campaign daily budgets versus
 7-day cost, a read-only Google Ads recommendations contract, a read-only Google
 Ads impression-share contract, a read-only Google Ads change-history contract,
 a read-only 90-day search-term safety contract and a review-only negative
-keyword payload preview for negative keyword review.
+keyword payload preview plus read-only keyword match context for negative
+keyword review.
 Full BDOS-class parity still requires optimizer contracts such as account
 currency/profit-margin interpretation, recommendation impact/apply previews,
 pre/post change-impact windows, Keyword Planner enrichment, forecast or
-audience-size checks, keyword match context, budget/apply previews, apply
-safety and mutation audit paths, plus real Localo
+audience-size checks, budget/apply previews, apply safety and mutation audit
+paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
@@ -138,27 +139,29 @@ Current connector truth:
   read-only impression-share contract, a read-only change-history contract, a
   read-only 90-day search-term safety contract, a prepare-only custom segment
   candidate contract and a prepare-only negative keyword safety review contract
-  with review-only payload preview.
-  Latest live Ads proof: `refresh_google_ads_5a0c672b5000` exposes 18 campaign
-  rows, 50 30-day search-term rows, 200 90-day search-term safety rows, 4 active
-  Google Ads recommendation rows, 2 impression-share rows and
-  `change_event_row_count=0` for the last 14 days. `/api/ads/diagnostics`
+  with review-only payload preview plus read-only keyword match context.
+  Latest live Ads proof: `refresh_google_ads_eb8c239bc32b` exposes 18 campaign
+  rows, 50 30-day search-term rows, 200 90-day search-term safety rows, 211
+  keyword match context rows, 4 active Google Ads recommendation rows, 2
+  impression-share rows and `change_event_row_count=0` for the last 14 days.
+  `/api/ads/diagnostics`
   reports `impression_share_read_contract.status=ready`,
   `change_history_read_contract.status=ready`,
-  `search_term_safety_read_contract.status=ready`, decisions
+  `search_term_safety_read_contract.status=ready`,
+  `keyword_match_context_read_contract.status=ready`, decisions
   `ads_review_impression_share`, `ads_review_change_history` and
   `ads_review_search_term_safety`. CPA/ROAS are allowed only as calculations
   from campaign facts; budget context, recommendations, impression share,
-  change history and 90-day search-term safety are allowed only as review/audit
+  change history, 90-day search-term safety and keyword match context are allowed only as review/audit
   context. Current `negative_keywords_read_contract` has 7 review-only
   candidates, 7 `negative_keyword_payload_preview` rows, no
   `90_day_safety_check` missing contract and no
-  `negative_keyword_payload_preview` missing contract. Preview rows are
-  exact-match review rows with `api_mutation_ready=false`,
-  `apply_allowed=false` and `destructive=false`. WILQ still blocks
-  `negative keyword apply`, `search-term waste`, CPA, ROAS and conversion-loss
-  claims until keyword match context, ActionObject validation and human review
-  exist. Profitability, wasted-budget,
+  `negative_keyword_payload_preview` missing contract and no
+  `keyword match context` missing contract. Preview rows are exact-match review
+  rows with `api_mutation_ready=false`, `apply_allowed=false` and
+  `destructive=false`. WILQ still blocks `negative keyword apply`,
+  `search-term waste`, CPA, ROAS and conversion-loss claims until human review,
+  confirmation and future apply/audit contracts exist. Profitability, wasted-budget,
   audience size, budget scaling, campaign-performance, recommendation impact,
   recommendation apply, change impact and performance-uplift claims still need
   explicit read/safety/apply contracts.
@@ -173,10 +176,11 @@ Current connector truth:
   `wilq-ads-doctor` scoped context-pack preserves them for Codex. Fresh
   non-interactive `wilq-ads-doctor` eval passed for the newest 90-day safety
   slice:
-  `.local-lab/evals/codex-skill/20260619T165729Z/wilq-ads-doctor/result.json`.
+  `.local-lab/evals/codex-skill/20260619T182309Z/wilq-ads-doctor/result.json`.
   Eval result includes `card_google_ads_budget_review_playbook`,
   `ads_scaling_candidates_v1`, `ads_recommendations_v1`,
-  `ads_principles_v1`, Google Ads evidence IDs and prepare-only
+  `ads_principles_v1`, `keyword_match_context_read_contract`,
+  Google Ads evidence IDs and prepare-only
   `act_prepare_ads_campaign_review_queue` /
   `act_prepare_negative_keyword_review_queue` action candidates.
   Full `scripts/verify.sh` passed for this lineage/eval slice on 2026-06-19:
@@ -706,12 +710,14 @@ Work in this order:
    `ROAS`, `conversion uplift`, `targeting applied` and
    `campaign performance`.
 
-   Latest follow-up: `/api/ads/diagnostics.negative_keywords_read_contract`
-   and `act_prepare_negative_keyword_review_queue` are implemented. The
-   contract builds review-only candidates from
-   `search_term_*` facts with activity and zero conversions/value in current
-   evidence. It requires `apply_allowed=false`, `destructive=false`, evidence
-   IDs and `90_day_safety_check`. It blocks `negative keyword apply`,
+   Latest follow-up: `/api/ads/diagnostics.negative_keywords_read_contract`,
+   `keyword_match_context_read_contract` and
+   `act_prepare_negative_keyword_review_queue` are implemented. The contract
+   builds review-only candidates from `search_term_*` facts with activity and
+   zero conversions/value in current evidence, attaches existing keyword/match
+   type context from `ad_group_criterion`, and requires
+   `apply_allowed=false`, `destructive=false`, evidence IDs, 90-day safety,
+   payload preview and human intent review. It blocks `negative keyword apply`,
    `search-term waste`, `conversion loss`, CPA and ROAS.
 
    Latest local Ads budget context slice: Google Ads `campaign_budget` fields
@@ -1612,25 +1618,27 @@ uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --a
 CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
 ```
 
-Live `:8000` proof after `scripts/local_stack.sh restart`:
+Live `:8000` proof after `scripts/local_stack.sh restart` and the 2026-06-19
+keyword context slice:
 
+- `/api/ads/diagnostics.keyword_match_context_read_contract.status=ready`
+  with 211 context rows and `missing_read_contracts=["human_intent_review"]`.
 - `/api/ads/diagnostics.negative_keywords_read_contract.payload_preview` has
-  7 review-only preview rows.
-- Remaining missing contract for the negative keyword review queue is
-  `keyword match context`.
+  7 review-only preview rows and `missing_read_contracts=[]`.
 - `/api/actions/act_prepare_negative_keyword_review_queue` exposes
   `preview_contract=negative_keyword_payload_preview_v1`,
   `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false`.
-- `wilq-ads-doctor` smoke passed with `payload_preview_count=7`.
+- `wilq-ads-doctor` smoke passed with `context_row_count=211`,
+  `candidate_count=7` and `payload_preview_count=7`.
 - Non-interactive `wilq-ads-doctor` eval passed at
-  `.local-lab/evals/codex-skill/20260619T172731Z/wilq-ads-doctor/result.json`.
+  `.local-lab/evals/codex-skill/20260619T182309Z/wilq-ads-doctor/result.json`.
 - Full `scripts/verify.sh` passed: backend API contracts `111 passed`,
   dashboard route tests `13 passed`, Playwright e2e `9 passed`, API smoke,
   skill smokes and dashboard production build passed. Non-blocking warning:
-  Vite main JS chunk `545.73 kB` exceeds the 500 KB warning threshold.
+  Vite main JS chunk `549.44 kB` exceeds the 500 KB warning threshold.
 - Still blocked: negative keyword apply, search-term waste, conversion loss,
-  CPA and ROAS until keyword match context, ActionObject validation and human
-  review exist.
+  CPA and ROAS until human review, confirmation, apply/audit contracts and
+  stronger intent validation exist.
 
 Passed after the 2026-06-19 Ads campaign review ActionObject:
 

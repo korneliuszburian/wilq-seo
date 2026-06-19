@@ -78,6 +78,7 @@ def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[
     payload_preview = _payload_preview_items(candidate_groups)
     if not payload_preview:
         return None
+    keyword_context = _keyword_context_items(facts)
     return {
         "action_type": "negative_keyword_candidate",
         "connector": "google_ads",
@@ -89,6 +90,8 @@ def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[
         "preview_contract": "negative_keyword_payload_preview_v1",
         "api_mutation_ready": False,
         "payload_preview": payload_preview[:20],
+        "keyword_match_context_available": bool(keyword_context),
+        "keyword_match_context": keyword_context[:50],
         "required_validation": [
             "review_search_term_context",
             "check_existing_keywords_and_match_types",
@@ -144,6 +147,67 @@ def _candidate_fact_groups(facts: list[MetricFact]) -> list[list[MetricFact]]:
         if has_activity and not has_conversion:
             groups.append(group_facts)
     return groups
+
+
+def _keyword_context_items(facts: list[MetricFact]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str | None, str | None, str | None], list[MetricFact]] = {}
+    for fact in facts:
+        if fact.name not in {
+            "keyword_match_context_available",
+            "keyword_match_type",
+            "keyword_match_context_negative",
+        }:
+            continue
+        keyword_text = fact.dimensions.get("keyword_text")
+        if not keyword_text:
+            continue
+        key = (
+            keyword_text,
+            fact.dimensions.get("campaign_id"),
+            fact.dimensions.get("ad_group_id"),
+            fact.dimensions.get("criterion_id"),
+        )
+        grouped.setdefault(key, []).append(fact)
+
+    items: list[dict[str, Any]] = []
+    for (keyword_text, campaign_id, ad_group_id, criterion_id), group in grouped.items():
+        first_dimensions = group[0].dimensions
+        match_type = next(
+            (
+                str(fact.value)
+                for fact in group
+                if fact.name == "keyword_match_type" and fact.value
+            ),
+            first_dimensions.get("keyword_match_type", "UNKNOWN"),
+        )
+        negative = any(
+            fact.name == "keyword_match_context_negative"
+            and isinstance(fact.value, int | float)
+            and fact.value > 0
+            for fact in group
+        )
+        items.append(
+            {
+                "keyword_text": keyword_text,
+                "match_type": match_type,
+                "criterion_id": criterion_id,
+                "criterion_status": first_dimensions.get("criterion_status"),
+                "negative": negative,
+                "campaign_id": campaign_id,
+                "campaign_name": first_dimensions.get("campaign_name"),
+                "ad_group_id": ad_group_id,
+                "ad_group_name": first_dimensions.get("ad_group_name"),
+                "evidence_ids": _unique(fact.evidence_id for fact in group),
+            }
+        )
+    return sorted(
+        items,
+        key=lambda item: (
+            item.get("campaign_name") or item.get("campaign_id") or "",
+            item.get("ad_group_name") or "",
+            item["keyword_text"],
+        ),
+    )
 
 
 def _fact_has_conversion_signal(fact: MetricFact) -> bool:

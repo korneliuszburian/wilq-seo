@@ -488,6 +488,35 @@ export const AdsSearchTermSafetyReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsKeywordMatchContextRowSchema = z.object({
+  keyword_text: z.string(),
+  match_type: z.string(),
+  criterion_id: z.string().nullable().optional(),
+  criterion_status: z.string().nullable().optional(),
+  negative: z.boolean().nullable().optional(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  ad_group_id: z.string().nullable().optional(),
+  ad_group_name: z.string().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsKeywordMatchContextReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  context_rows: z.array(AdsKeywordMatchContextRowSchema),
+  next_step: z.string()
+});
+
 export const AdsCustomSegmentCandidateSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -558,8 +587,10 @@ export const AdsNegativeKeywordCandidateSchema = z.object({
   conversion_value_90d: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
   safety_evidence_ids: z.array(z.string()),
+  keyword_context_evidence_ids: z.array(z.string()).optional().default([]),
   metric_facts: z.array(MetricFactSchema),
   safety_metric_facts: z.array(MetricFactSchema),
+  keyword_context_rows: z.array(AdsKeywordMatchContextRowSchema).optional().default([]),
   payload_preview: AdsNegativeKeywordPayloadPreviewSchema.nullable().optional(),
   required_checks: z.array(z.string()),
   safety_status: z.enum(["needs_90_day_review", "read_ready_needs_human_review", "blocked"]),
@@ -617,6 +648,9 @@ export const AdsDecisionItemSchema = z.object({
   change_history_rows: z.array(AdsChangeHistoryRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   search_term_safety_rows: z.array(AdsSearchTermSafetyRowSchema),
+  keyword_match_context_rows: z.array(AdsKeywordMatchContextRowSchema)
+    .optional()
+    .default([]),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
   negative_keyword_payload_preview: z.array(AdsNegativeKeywordPayloadPreviewSchema),
@@ -642,6 +676,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   change_history_read_contract: AdsChangeHistoryReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   search_term_safety_read_contract: AdsSearchTermSafetyReadContractSchema,
+  keyword_match_context_read_contract: AdsKeywordMatchContextReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,
   decision_queue: z.array(AdsDecisionItemSchema),
@@ -1118,6 +1153,12 @@ export type AdsBudgetPacingReadContract = z.infer<
 export type AdsCustomSegmentCandidate = z.infer<typeof AdsCustomSegmentCandidateSchema>;
 export type AdsCustomSegmentsReadContract = z.infer<
   typeof AdsCustomSegmentsReadContractSchema
+>;
+export type AdsKeywordMatchContextRow = z.infer<
+  typeof AdsKeywordMatchContextRowSchema
+>;
+export type AdsKeywordMatchContextReadContract = z.infer<
+  typeof AdsKeywordMatchContextReadContractSchema
 >;
 export type AdsNegativeKeywordPayloadPreview = z.infer<
   typeof AdsNegativeKeywordPayloadPreviewSchema

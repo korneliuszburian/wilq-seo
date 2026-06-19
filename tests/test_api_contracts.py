@@ -1833,6 +1833,34 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
+        if "FROM ad_group_criterion" in query:
+            assert "ad_group_criterion.keyword.text" in query
+            assert "ad_group_criterion.keyword.match_type" in query
+            assert "ad_group_criterion.negative" in query
+            assert "ad_group_criterion.status" in query
+            assert "ad_group_criterion.type = 'KEYWORD'" in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "campaign": {"id": "101", "name": "Brand Search"},
+                                "adGroup": {"id": "201", "name": "BDO"},
+                                "adGroupCriterion": {
+                                    "criterionId": "301",
+                                    "status": "ENABLED",
+                                    "negative": False,
+                                    "keyword": {
+                                        "text": "bdo rejestracja",
+                                        "matchType": "PHRASE",
+                                    },
+                                },
+                            },
+                        ]
+                    }
+                ],
+            )
         if "FROM search_term_view" in query and "BETWEEN" in query:
             assert "segments.date BETWEEN" in query
             assert "LAST_90_DAYS" not in query
@@ -1932,6 +1960,13 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["change_event_resource_types"] == "CAMPAIGN"
     assert result.metric_summary["change_event_operations"] == "UPDATE"
     assert result.metric_summary["change_event_client_types"] == "GOOGLE_ADS_WEB_CLIENT"
+    assert result.metric_summary["keyword_match_context_query"] == (
+        "ad_group_criterion_keyword_context"
+    )
+    assert result.metric_summary["keyword_match_context_row_count"] == 1
+    assert result.metric_summary["keyword_match_context_keyword_count"] == 1
+    assert result.metric_summary["keyword_match_context_negative_count"] == 0
+    assert result.metric_summary["keyword_match_context_match_types"] == "PHRASE"
     assert any("FROM campaign" in query for query in search_stream_queries)
     assert any("FROM search_term_view" in query for query in search_stream_queries)
     assert any(
@@ -1940,6 +1975,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     )
     assert any("FROM recommendation" in query for query in search_stream_queries)
     assert any("FROM change_event" in query for query in search_stream_queries)
+    assert any("FROM ad_group_criterion" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
@@ -1997,6 +2033,22 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "ad_group_name": "BDO",
         "search_term": "bdo rejestracja",
         "search_term_status": "ADDED",
+    }
+    keyword_match_type_fact = next(
+        fact for fact in result.metric_facts if fact.name == "keyword_match_type"
+    )
+    assert keyword_match_type_fact.value == "PHRASE"
+    assert keyword_match_type_fact.period == "keyword_match_context"
+    assert keyword_match_type_fact.dimensions == {
+        "campaign_id": "101",
+        "campaign_name": "Brand Search",
+        "ad_group_id": "201",
+        "ad_group_name": "BDO",
+        "criterion_id": "301",
+        "criterion_status": "ENABLED",
+        "keyword_negative": "false",
+        "keyword_text": "bdo rejestracja",
+        "keyword_match_type": "PHRASE",
     }
     impression_share_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_impression_share"
@@ -2528,6 +2580,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "change_event_resource_types": "CAMPAIGN",
                 "change_event_operations": "UPDATE",
                 "change_event_client_types": "GOOGLE_ADS_WEB_CLIENT",
+                "keyword_match_context_query": "ad_group_criterion_keyword_context",
+                "keyword_match_context_row_count": 1,
+                "keyword_match_context_keyword_count": 1,
+                "keyword_match_context_negative_count": 0,
+                "keyword_match_context_match_types": "BROAD",
             },
             metric_facts=[
                 VendorMetricFact(
@@ -2869,6 +2926,54 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "search_term_status": "NONE",
                     },
                     period="search_term_safety_90d",
+                ),
+                VendorMetricFact(
+                    "keyword_match_context_available",
+                    1,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "criterion_id": "401",
+                        "criterion_status": "ENABLED",
+                        "keyword_negative": "false",
+                        "keyword_text": "odpady",
+                        "keyword_match_type": "BROAD",
+                    },
+                    period="keyword_match_context",
+                ),
+                VendorMetricFact(
+                    "keyword_match_type",
+                    "BROAD",
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "criterion_id": "401",
+                        "criterion_status": "ENABLED",
+                        "keyword_negative": "false",
+                        "keyword_text": "odpady",
+                        "keyword_match_type": "BROAD",
+                    },
+                    period="keyword_match_context",
+                ),
+                VendorMetricFact(
+                    "keyword_match_context_negative",
+                    0,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "criterion_id": "401",
+                        "criterion_status": "ENABLED",
+                        "keyword_negative": "false",
+                        "keyword_text": "odpady",
+                        "keyword_match_type": "BROAD",
+                    },
+                    period="keyword_match_context",
                 ),
             ],
         ),
@@ -3244,6 +3349,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "negative_keyword_payload_preview" not in search_term_safety_contract[
         "missing_read_contracts"
     ]
+    assert "keyword match context" not in search_term_safety_contract[
+        "missing_read_contracts"
+    ]
     assert "negative keyword apply" in search_term_safety_contract["blocked_claims"]
     assert search_term_safety_contract["safety_rows"] == [
         {
@@ -3271,6 +3379,28 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert search_term_safety_section["status"] == "ready"
     assert search_term_safety_section["knowledge_card_ids"] == [
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_search_playbook",
+    ]
+    keyword_context_contract = payload["keyword_match_context_read_contract"]
+    assert keyword_context_contract["status"] == "ready"
+    assert keyword_context_contract["allowed_metrics"] == [
+        "keyword_text",
+        "keyword_match_type",
+        "criterion_status",
+        "keyword_negative",
+        "campaign",
+        "ad_group",
+    ]
+    assert keyword_context_contract["missing_read_contracts"] == ["human_intent_review"]
+    assert keyword_context_contract["context_rows"][0]["keyword_text"] == "odpady"
+    assert keyword_context_contract["context_rows"][0]["match_type"] == "BROAD"
+    assert keyword_context_contract["context_rows"][0]["negative"] is False
+    keyword_context_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_keyword_match_context"
+    )
+    assert keyword_context_section["status"] == "ready"
+    assert keyword_context_section["knowledge_card_ids"] == [
         "card_google_ads_negative_keywords_playbook",
         "card_google_ads_search_playbook",
     ]
@@ -3307,11 +3437,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "negative_keyword_payload_preview" not in negative_keywords_contract[
         "missing_read_contracts"
     ]
-    assert negative_keywords_contract["missing_read_contracts"] == [
-        "keyword match context"
-    ]
+    assert negative_keywords_contract["missing_read_contracts"] == []
     assert "negative keyword apply" in negative_keywords_contract["blocked_claims"]
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
+    assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
+        "keyword_text"
+    ] == "odpady"
+    assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
+        "match_type"
+    ] == "BROAD"
     assert negative_keywords_contract["payload_preview"][0] == (
         negative_keywords_contract["candidates"][0]["payload_preview"]
     )
@@ -3452,9 +3586,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keyword_decision["negative_keyword_payload_preview"][0][
         "negative_keyword_text"
     ] == "odpady cena"
-    assert negative_keyword_decision["missing_read_contracts"] == [
-        "keyword match context"
-    ]
+    assert negative_keyword_decision["missing_read_contracts"] == []
+    assert negative_keyword_decision["keyword_match_context_rows"][0]["keyword_text"] == (
+        "odpady"
+    )
     assert negative_keyword_decision["action_ids"] == [
         "act_prepare_negative_keyword_review_queue"
     ]
@@ -3587,6 +3722,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keyword_action["payload"]["api_mutation_ready"] is False
     assert negative_keyword_action["payload"]["payload_preview"][0]["match_type"] == "EXACT"
     assert negative_keyword_action["payload"]["payload_preview"][0]["apply_allowed"] is False
+    assert negative_keyword_action["payload"]["keyword_match_context_available"] is True
+    assert negative_keyword_action["payload"]["keyword_match_context"][0][
+        "keyword_text"
+    ] == "odpady"
+    assert negative_keyword_action["payload"]["keyword_match_context"][0][
+        "match_type"
+    ] == "BROAD"
     assert "search_term_90d_clicks" in negative_keyword_action["payload"][
         "source_metric_names"
     ]

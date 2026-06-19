@@ -718,6 +718,48 @@ const adsDiagnostics = {
     next_step:
       "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa przed wykluczeniem."
   },
+  keyword_match_context_read_contract: {
+    id: "ads_keyword_match_context_read_contract",
+    status: "ready",
+    title: "Google Ads: kontekst dopasowań keywords",
+    summary:
+      "WILQ ma read-only kontekst 1 istniejących keywordów z match types: BROAD.",
+    allowed_metrics: [
+      "keyword_text",
+      "keyword_match_type",
+      "criterion_status",
+      "keyword_negative",
+      "campaign",
+      "ad_group"
+    ],
+    missing_read_contracts: ["human_intent_review"],
+    blocked_claims: [
+      "negative keyword apply",
+      "search-term waste",
+      "conversion loss",
+      "CPA",
+      "ROAS"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    context_rows: [
+      {
+        keyword_text: "odpady",
+        match_type: "BROAD",
+        criterion_id: "401",
+        criterion_status: "ENABLED",
+        negative: false,
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        ad_group_id: "789",
+        ad_group_name: "Odpady",
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        blocked_claims: ["negative keyword apply", "search-term waste", "wasted budget"]
+      }
+    ],
+    next_step: "Użyj tego jako kontekstu review, nie jako zgody na apply."
+  },
   custom_segments_read_contract: {
     id: "ads_custom_segments_read_contract",
     status: "ready",
@@ -808,8 +850,25 @@ const adsDiagnostics = {
         conversion_value_90d: 0,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         safety_evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        keyword_context_evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         safety_metric_facts: [],
+        keyword_context_rows: [
+          {
+            keyword_text: "odpady",
+            match_type: "BROAD",
+            criterion_id: "401",
+            criterion_status: "ENABLED",
+            negative: false,
+            campaign_id: "123",
+            campaign_name: "Ekologus Search",
+            ad_group_id: "789",
+            ad_group_name: "Odpady",
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+            metric_facts: [],
+            blocked_claims: ["negative keyword apply", "search-term waste", "wasted budget"]
+          }
+        ],
         payload_preview: {
           id: "negative_keyword_preview_123_789_odpady_cena",
           search_term: "odpady cena",
@@ -875,7 +934,7 @@ const adsDiagnostics = {
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-    missing_read_contracts: ["keyword match context"],
+    missing_read_contracts: [],
     blocked_claims: [
       "negative keyword apply",
       "search-term waste",

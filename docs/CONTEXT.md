@@ -102,6 +102,23 @@ Audit `docs/audits/001-output.md` is now folded into
    fact window, otherwise 200 safety rows can push 30-day search-term facts out
    of view. Non-interactive `wilq-ads-doctor` eval passed at
    `.local-lab/evals/codex-skill/20260619T165729Z/wilq-ads-doctor/result.json`.
+0. Ads keyword match context truth, 2026-06-19 20:17 Europe/Warsaw:
+   Google Ads negative keyword review now has typed read-only context for
+   existing account keywords and match types. Live proof
+   `refresh_google_ads_eb8c239bc32b` /
+   `ev_refresh_refresh_google_ads_eb8c239bc32b` returned 211
+   `keyword_match_context` rows from `ad_group_criterion`. `/api/ads/diagnostics`
+   exposes `keyword_match_context_read_contract.status=ready` with only
+   `human_intent_review` missing. `negative_keywords_read_contract` now has 7
+   candidates, 7 payload preview rows and `missing_read_contracts=[]`. This is
+   still not apply-ready: negative keyword apply, search-term waste,
+   conversion loss, CPA and ROAS stay blocked until human review/confirmation
+   and future apply/audit contracts exist. Non-interactive
+   `wilq-ads-doctor` eval passed at
+   `.local-lab/evals/codex-skill/20260619T182309Z/wilq-ads-doctor/result.json`
+   after the eval case was tightened to require
+   `keyword_match_context_read_contract` and forbid stale `bez match context`
+   wording.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.
@@ -223,21 +240,25 @@ Current performance slice truth:
 
 Current Ads negative-keyword safety truth:
 
-- `negative_keyword_payload_preview` is now implemented as a review-only
-  contract, not an apply contract. Live `/api/ads/diagnostics` shows
+- `negative_keyword_payload_preview` and `keyword_match_context` are now
+  implemented as review-only contracts, not apply contracts. Live
+  `/api/ads/diagnostics` shows
   `negative_keywords_read_contract.payload_preview` with 7 items and
-  `missing_read_contracts=["keyword match context"]`.
+  `missing_read_contracts=[]`; the keyword context contract is ready with 211
+  rows and only `human_intent_review` missing.
 - `act_prepare_negative_keyword_review_queue.payload` includes
   `preview_contract=negative_keyword_payload_preview_v1`,
   `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false` and
   exact-match preview rows with evidence IDs.
 - Do not describe these rows as ready negative keywords. They are a review
   preview for the marketer. Still blocked: negative keyword apply,
-  search-term waste, conversion loss, CPA and ROAS until keyword match context,
-  ActionObject validation and human review exist. Full `scripts/verify.sh`
-  passed after this slice with backend API contracts `111 passed`, dashboard
-  route tests `13 passed`, Playwright e2e `9 passed` and dashboard production
-  build passed.
+  search-term waste, conversion loss, CPA and ROAS until human review,
+  confirmation, apply/audit contracts and stronger intent validation exist.
+  Full `scripts/verify.sh` passed after the newest keyword-context slice with
+  backend API contracts `111 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed`, API smoke, skill smokes and dashboard production
+  build passed. Non-blocking warning: Vite main JS chunk `549.44 kB` exceeds
+  the 500 KB warning threshold.
 
 Current hook-runtime truth:
 

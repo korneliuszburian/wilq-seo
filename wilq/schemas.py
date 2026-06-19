@@ -717,6 +717,35 @@ class AdsSearchTermSafetyReadContract(BaseModel):
     next_step: str
 
 
+class AdsKeywordMatchContextRow(BaseModel):
+    keyword_text: str
+    match_type: str
+    criterion_id: str | None = None
+    criterion_status: str | None = None
+    negative: bool | None = None
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    ad_group_id: str | None = None
+    ad_group_name: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsKeywordMatchContextReadContract(BaseModel):
+    id: str = "ads_keyword_match_context_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    context_rows: list[AdsKeywordMatchContextRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsCustomSegmentCandidate(BaseModel):
     id: str
     name: str
@@ -787,8 +816,10 @@ class AdsNegativeKeywordCandidate(BaseModel):
     conversion_value_90d: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     safety_evidence_ids: list[str] = Field(default_factory=list)
+    keyword_context_evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     safety_metric_facts: list[MetricFact] = Field(default_factory=list)
+    keyword_context_rows: list[AdsKeywordMatchContextRow] = Field(default_factory=list)
     payload_preview: AdsNegativeKeywordPayloadPreview | None = None
     required_checks: list[str] = Field(default_factory=list)
     safety_status: Literal[
@@ -850,6 +881,9 @@ class AdsDecisionItem(BaseModel):
     change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     search_term_safety_rows: list[AdsSearchTermSafetyRow] = Field(default_factory=list)
+    keyword_match_context_rows: list[AdsKeywordMatchContextRow] = Field(
+        default_factory=list
+    )
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
     negative_keyword_payload_preview: list[AdsNegativeKeywordPayloadPreview] = Field(
@@ -877,6 +911,7 @@ class AdsDiagnosticsResponse(BaseModel):
     change_history_read_contract: AdsChangeHistoryReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract
+    keyword_match_context_read_contract: AdsKeywordMatchContextReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract
     decision_queue: list[AdsDecisionItem] = Field(default_factory=list)

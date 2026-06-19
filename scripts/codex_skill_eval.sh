@@ -293,6 +293,10 @@ for term in case.get("expected_terms_pl", []):
     if term.lower() not in combined_json_text.lower():
         errors.append(f"expected route term missing from final JSON: {term}")
 
+for term in case.get("forbidden_terms_pl", []):
+    if term.lower() in combined_json_text.lower():
+        errors.append(f"forbidden term present in final JSON: {term}")
+
 result_connector_text = " ".join(
     [
         *data.get("source_connectors", []),

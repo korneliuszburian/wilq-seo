@@ -94,6 +94,9 @@ def main() -> int:
     search_term_safety_read_contract = (
         ads_diagnostics.get("search_term_safety_read_contract") or {}
     )
+    keyword_match_context_read_contract = (
+        ads_diagnostics.get("keyword_match_context_read_contract") or {}
+    )
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
     )
@@ -220,6 +223,26 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Blocked search-term safety contract must list missing 90d read")
+    if keyword_match_context_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose keyword_match_context_read_contract")
+    if not keyword_match_context_read_contract.get("blocked_claims"):
+        raise SystemExit("Keyword match context contract must list blocked claims")
+    if keyword_match_context_read_contract.get("status") == "ready":
+        pack_keyword_context_contract = (
+            pack.get("ads_diagnostics", {}).get("keyword_match_context_read_contract")
+            or {}
+        )
+        if pack_keyword_context_contract.get("summary") != (
+            keyword_match_context_read_contract.get("summary")
+        ):
+            raise SystemExit(
+                "Context-pack Ads diagnostics must include keyword match context"
+            )
+    elif "keyword_match_context_read" not in keyword_match_context_read_contract.get(
+        "missing_read_contracts",
+        [],
+    ):
+        raise SystemExit("Blocked keyword match context must list missing read contract")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -442,6 +465,19 @@ def main() -> int:
                         "blocked_claims": search_term_safety_read_contract.get(
                             "blocked_claims",
                             [],
+                        ),
+                    },
+                    "keyword_match_context_read_contract": {
+                        "status": keyword_match_context_read_contract.get("status"),
+                        "summary": keyword_match_context_read_contract.get("summary"),
+                        "context_row_count": len(
+                            keyword_match_context_read_contract.get("context_rows") or []
+                        ),
+                        "missing_read_contracts": keyword_match_context_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "blocked_claims": keyword_match_context_read_contract.get(
+                            "blocked_claims", []
                         ),
                     },
                     "negative_keywords_read_contract": {
