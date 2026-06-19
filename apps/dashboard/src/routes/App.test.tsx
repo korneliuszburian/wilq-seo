@@ -3336,6 +3336,16 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("Jak Codex może pomóc").length).toBeGreaterThan(0);
     expect(screen.getByText("Skill: wilq-merchant-feed-operator")).toBeInTheDocument();
     expect(screen.getAllByText("Context-pack: /api/codex/context-pack").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ponowne zatwierdzenie produktu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/automatyczna zmiana feedu/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/wzrost leadów/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/gwarancja pozycji/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/waste na zapytaniach/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/approval restored/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/lead uplift/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ranking guarantee/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/search-term waste/)).not.toBeInTheDocument();
     expect(
       screen.getByText("Oczekiwany wynik: Polski brief feed issue review z evidence IDs.")
     ).toBeInTheDocument();

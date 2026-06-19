@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 01:16 Europe/Warsaw.
+Last updated: 2026-06-20 01:43 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -180,6 +180,11 @@ Current connector truth:
   `act_prepare_custom_segments_from_search_terms` and
   `act_prepare_negative_keyword_review_queue`. The `wilq-daily-command`
   scoped context-pack carries the same Ads action-plan prompt.
+  Command Center keeps API `blocked_claims` stable, but the dashboard now
+  translates marketer-facing blocked claims in general decision/tactical/brief
+  cards. Do not regress to visible raw labels such as `approval restored`,
+  `lead uplift`, `profitability`, `wasted budget` or `search-term waste` on
+  first-screen marketer surfaces.
   Latest live Ads proof: `refresh_google_ads_60956db2c42f` /
   `ev_refresh_refresh_google_ads_60956db2c42f` exposes
   `customer_currency_code=PLN`, 18 campaign rows, 50 30-day search-term rows,
@@ -633,6 +638,17 @@ Work in this order:
    `117 passed`, dashboard route tests `14 passed`, Playwright e2e `9 passed`,
    API smoke, skill structure smoke, skill API smoke, security checks and
    dashboard production build.
+
+   Follow-up completed on 2026-06-20: Command Center marketer-facing blocked
+   claims are now translated at the dashboard boundary. The API still exposes
+   stable raw `blocked_claims`, but daily decisions, tactical cards and
+   brief/action cards render Polish labels such as `ponowne zatwierdzenie
+   produktu`, `wzrost leadów`, `opłacalność` and `zmarnowany budżet`. The Ads
+   Codex prompt in `/api/dashboard/command-center` and scoped
+   `/api/codex/context-pack` now blocks `opłacalność`, `zmarnowany budżet` and
+   `wdrożenie zmian` in Polish instead of visible raw `profitability` /
+   `wasted budget`. Focused backend/frontend checks and real-browser Command
+   Center smoke passed for this slice.
 
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when

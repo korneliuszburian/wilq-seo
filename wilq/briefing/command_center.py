@@ -761,9 +761,9 @@ def _action_plan_item(
                     "Użyj skilla wilq-ads-doctor. Przejrzyj Google Ads dla Ekologus "
                     "jako kolejkę oceny: budżety, rekomendacje, zapytania wyszukiwane, "
                     "wykluczenia i segmenty niestandardowe. Cytuj evidence IDs i "
-                    "ActionObject IDs. Nie twierdź profitability, wasted budget ani "
-                    "apply; wskaż tylko bezpieczne decyzje tylko do oceny i brakujące "
-                    "kontrakty."
+                    "ActionObject IDs. Nie twierdź opłacalności, zmarnowanego budżetu "
+                    "ani wdrożenia zmian; wskaż tylko bezpieczne decyzje tylko do "
+                    "oceny i brakujące kontrakty."
                 ),
                 codex_context_endpoint="/api/codex/context-pack",
                 expected_codex_output=(

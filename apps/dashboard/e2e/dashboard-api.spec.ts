@@ -31,6 +31,15 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("zapytania").first()).toBeVisible();
     await expect(page.getByText("50").first()).toBeVisible();
     await expect(page.getByText("podgląd budżetu").first()).toBeVisible();
+    await expect(page.getByText("ponowne zatwierdzenie produktu").first()).toBeVisible();
+    await expect(page.getByText("wzrost leadów").first()).toBeVisible();
+    await expect(page.getByText("opłacalność").first()).toBeVisible();
+    await expect(page.getByText("zmarnowany budżet").first()).toBeVisible();
+    await expect(page.getByText("approval restored")).toHaveCount(0);
+    await expect(page.getByText("lead uplift")).toHaveCount(0);
+    await expect(page.getByText("search-term waste")).toHaveCount(0);
+    await expect(page.getByText("profitability")).toHaveCount(0);
+    await expect(page.getByText("wasted budget")).toHaveCount(0);
     await expect(page.getByText("Merchant: feed/product issues do przeglądu")).toHaveCount(0);
     await expect(page.getByText("Content: GSC query/page + WordPress inventory")).toHaveCount(0);
     await expect(page.getByText("GA4: landing/source/campaign quality review")).toHaveCount(0);

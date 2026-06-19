@@ -669,6 +669,53 @@ function LinkedTraceLine({
   );
 }
 
+function marketerBlockedClaimLabels(claims: string[]) {
+  return uniqueValues(claims.map(marketerBlockedClaimLabel));
+}
+
+function marketerBlockedClaimLabel(value: string) {
+  const labels: Record<string, string> = {
+    CPA: "CPA",
+    ROAS: "ROAS",
+    "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
+    "approval restored": "ponowne zatwierdzenie produktu",
+    "automatic approval fix": "automatyczna naprawa zatwierdzenia",
+    "automatic feed edit": "automatyczna zmiana feedu",
+    "automatic recommendation accept": "automatyczne przyjęcie rekomendacji",
+    "audience size": "rozmiar odbiorców",
+    "budget apply": "wdrożenie zmiany budżetu",
+    "budget scaling": "skalowanie budżetu",
+    "campaign mutation": "zmiana kampanii",
+    "campaign performance": "wynik kampanii",
+    "conversion drop": "spadek konwersji",
+    "conversion loss": "utrata konwersji",
+    "conversion rate": "conversion rate",
+    "conversion uplift": "wzrost konwersji",
+    "feed fix candidate": "kandydat naprawy feedu",
+    "feed write": "zapis do feedu",
+    "GBP performance": "wynik Google Business Profile",
+    "lead quality": "jakość leadów",
+    "lead uplift": "wzrost leadów",
+    "local ranking": "lokalne pozycje",
+    "local visibility uplift": "wzrost lokalnej widoczności",
+    "negative keyword apply": "wdrożenie wykluczeń",
+    "negative keyword candidates": "kandydaci do wykluczeń",
+    "new article without inventory check": "nowy artykuł bez sprawdzenia inventory",
+    profitability: "opłacalność",
+    "product data mutation": "zmiana danych produktu",
+    "product fix applied": "naprawa produktu wdrożona",
+    "ranking guarantee": "gwarancja pozycji",
+    "recommendation apply": "wdrożenie rekomendacji",
+    "revenue impact": "wpływ na przychód",
+    "revenue recovered": "odzyskany przychód",
+    "search-term waste": "waste na zapytaniach",
+    "targeting applied": "targetowanie wdrożone",
+    "tracking fixed": "pomiar naprawiony",
+    "wasted budget": "zmarnowany budżet"
+  };
+  return labels[value] ?? value;
+}
+
 function BlockerNotice({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-2 rounded-md border border-wait/30 bg-wait/10 p-4 text-sm leading-6 text-wait">
@@ -879,7 +926,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
         <LinkedTraceLine label="Evidence" values={group.evidenceIds.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={group.sourceConnectors} />
         <LinkedTraceLine label="Akcje" values={group.actionIds} kind="actions" empty="brak" />
-        <TraceLine label="Blokady claimów" values={group.blockedClaims} />
+        <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(group.blockedClaims)} />
       </div>
     </article>
   );
@@ -1016,7 +1063,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
         <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={item.source_connectors} />
         <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
-        <TraceLine label="Blokady claimów" values={item.blocked_claims} />
+        <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(item.blocked_claims)} />
       </div>
       {tacticalContextPairs(item).length > 0 ? (
         <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-700">
@@ -1138,7 +1185,7 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
                 empty="brak"
               />
               <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
-              <TraceLine label="Zablokowane claimy" values={item.blocked_claims} />
+              <TraceLine label="Zablokowane claimy" values={marketerBlockedClaimLabels(item.blocked_claims)} />
             </div>
             <a
               href={item.route}
