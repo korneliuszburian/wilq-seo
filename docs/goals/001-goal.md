@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 18:57 Europe/Warsaw.
+Last updated: 2026-06-19 19:24 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -61,13 +61,14 @@ safety, eval ledger and visible blocked claims. Ads now has a derived KPI read
 contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
 facts, a read-only budget context contract for campaign daily budgets versus
 7-day cost, a read-only Google Ads recommendations contract, a read-only Google
-Ads impression-share contract, a read-only Google Ads change-history contract
-and a read-only 90-day search-term safety contract for negative keyword review.
+Ads impression-share contract, a read-only Google Ads change-history contract,
+a read-only 90-day search-term safety contract and a review-only negative
+keyword payload preview for negative keyword review.
 Full BDOS-class parity still requires optimizer contracts such as account
 currency/profit-margin interpretation, recommendation impact/apply previews,
 pre/post change-impact windows, Keyword Planner enrichment, forecast or
-audience-size checks, keyword match context, negative keyword payload previews,
-budget/apply previews, apply safety and mutation audit paths, plus real Localo
+audience-size checks, keyword match context, budget/apply previews, apply
+safety and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
@@ -136,7 +137,8 @@ Current connector truth:
   read-only budget context contract, a read-only recommendations contract, a
   read-only impression-share contract, a read-only change-history contract, a
   read-only 90-day search-term safety contract, a prepare-only custom segment
-  candidate contract and a prepare-only negative keyword safety review contract.
+  candidate contract and a prepare-only negative keyword safety review contract
+  with review-only payload preview.
   Latest live Ads proof: `refresh_google_ads_5a0c672b5000` exposes 18 campaign
   rows, 50 30-day search-term rows, 200 90-day search-term safety rows, 4 active
   Google Ads recommendation rows, 2 impression-share rows and
@@ -149,10 +151,14 @@ Current connector truth:
   from campaign facts; budget context, recommendations, impression share,
   change history and 90-day search-term safety are allowed only as review/audit
   context. Current `negative_keywords_read_contract` has 7 review-only
-  candidates and no `90_day_safety_check` missing contract, but still blocks
+  candidates, 7 `negative_keyword_payload_preview` rows, no
+  `90_day_safety_check` missing contract and no
+  `negative_keyword_payload_preview` missing contract. Preview rows are
+  exact-match review rows with `api_mutation_ready=false`,
+  `apply_allowed=false` and `destructive=false`. WILQ still blocks
   `negative keyword apply`, `search-term waste`, CPA, ROAS and conversion-loss
-  claims until keyword match context, negative keyword payload preview,
-  ActionObject validation and human review exist. Profitability, wasted-budget,
+  claims until keyword match context, ActionObject validation and human review
+  exist. Profitability, wasted-budget,
   audience size, budget scaling, campaign-performance, recommendation impact,
   recommendation apply, change impact and performance-uplift claims still need
   explicit read/safety/apply contracts.
@@ -1592,6 +1598,39 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 Ads negative keyword payload preview slice:
+
+```bash
+uv run ruff check wilq/actions/google_ads/negative_keywords.py wilq/briefing/ads_diagnostics.py wilq/schemas.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/actions/google_ads/negative_keywords.py wilq/briefing/ads_diagnostics.py wilq/schemas.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ads_diagnostics_exposes_live_campaign_metric_facts or google_ads_vendor_read_uses_oauth_and_search_stream or route_specific or ads_skill'
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Live `:8000` proof after `scripts/local_stack.sh restart`:
+
+- `/api/ads/diagnostics.negative_keywords_read_contract.payload_preview` has
+  7 review-only preview rows.
+- Remaining missing contract for the negative keyword review queue is
+  `keyword match context`.
+- `/api/actions/act_prepare_negative_keyword_review_queue` exposes
+  `preview_contract=negative_keyword_payload_preview_v1`,
+  `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false`.
+- `wilq-ads-doctor` smoke passed with `payload_preview_count=7`.
+- Non-interactive `wilq-ads-doctor` eval passed at
+  `.local-lab/evals/codex-skill/20260619T172731Z/wilq-ads-doctor/result.json`.
+- Full `scripts/verify.sh` passed: backend API contracts `111 passed`,
+  dashboard route tests `13 passed`, Playwright e2e `9 passed`, API smoke,
+  skill smokes and dashboard production build passed. Non-blocking warning:
+  Vite main JS chunk `545.73 kB` exceeds the 500 KB warning threshold.
+- Still blocked: negative keyword apply, search-term waste, conversion loss,
+  CPA and ROAS until keyword match context, ActionObject validation and human
+  review exist.
 
 Passed after the 2026-06-19 Ads campaign review ActionObject:
 

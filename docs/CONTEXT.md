@@ -213,14 +213,31 @@ Current performance slice truth:
   when available, and now also has read-only recommendations and
   impression-share contracts. It still requires change history, value/currency
   review, budget/apply preview and human confirmation before any apply path. It
-  keeps `apply_allowed=false` plus
-  `destructive=false`. Live `:8000` proof after restart: Ads diagnostics
-  includes the new action ID, campaign and derived KPI decisions attach only
-  this campaign action, and validation returns `valid=true`. This closes the
-  first campaign ActionObject gap, not the full Ads optimizer. Full
-  `scripts/verify.sh` passed for this slice with backend API contracts
-  `108 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
-  and dashboard production build passed.
+  keeps `apply_allowed=false` plus `destructive=false`. Live `:8000` proof
+  after restart: Ads diagnostics includes the new action ID, campaign and
+  derived KPI decisions attach only this campaign action, and validation
+  returns `valid=true`. This closes the first campaign ActionObject gap, not
+  the full Ads optimizer. Full `scripts/verify.sh` passed for this slice with
+  backend API contracts `108 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed` and dashboard production build passed.
+
+Current Ads negative-keyword safety truth:
+
+- `negative_keyword_payload_preview` is now implemented as a review-only
+  contract, not an apply contract. Live `/api/ads/diagnostics` shows
+  `negative_keywords_read_contract.payload_preview` with 7 items and
+  `missing_read_contracts=["keyword match context"]`.
+- `act_prepare_negative_keyword_review_queue.payload` includes
+  `preview_contract=negative_keyword_payload_preview_v1`,
+  `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false` and
+  exact-match preview rows with evidence IDs.
+- Do not describe these rows as ready negative keywords. They are a review
+  preview for the marketer. Still blocked: negative keyword apply,
+  search-term waste, conversion loss, CPA and ROAS until keyword match context,
+  ActionObject validation and human review exist. Full `scripts/verify.sh`
+  passed after this slice with backend API contracts `111 passed`, dashboard
+  route tests `13 passed`, Playwright e2e `9 passed` and dashboard production
+  build passed.
 
 Current hook-runtime truth:
 

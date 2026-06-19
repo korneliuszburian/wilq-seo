@@ -25,6 +25,52 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-19 - wilq-ads-doctor negative keyword payload preview
+
+Prompt class:
+
+```text
+Sprawdź Google Ads search terms i negative keyword safety review queue. Pokaż,
+czy WILQ ma 90-day safety oraz review-only payload preview, ale nie rekomenduj
+apply, waste, CPA ani ROAS bez match context i walidacji ActionObject.
+```
+
+Observed behavior:
+
+- `/api/ads/diagnostics.negative_keywords_read_contract.status=ready`.
+- `negative_keywords_read_contract.payload_preview` has 7 review-only rows.
+- Remaining missing contract is `keyword match context`.
+- `/api/actions/act_prepare_negative_keyword_review_queue.payload` exposes
+  `preview_contract=negative_keyword_payload_preview_v1`,
+  `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false`.
+- Preview rows use `match_type=EXACT` and carry Google Ads evidence IDs.
+- `wilq-ads-doctor` smoke passed against `http://127.0.0.1:8000` with
+  `payload_preview_count=7`.
+- Non-interactive Codex eval passed:
+  `.local-lab/evals/codex-skill/20260619T172731Z/wilq-ads-doctor/result.json`.
+  The response includes `negative_keyword_payload_preview`, keeps
+  `language=pl-PL`, `api_used=true`, Google Ads evidence IDs and blocks
+  negative keyword apply.
+
+Useful output:
+
+- Codex can now point the marketer to a concrete review-only preview instead
+  of saying "payload preview missing".
+- The preview is still not a mutation payload; the skill must keep apply,
+  search-term waste, CPA, ROAS and conversion-loss claims blocked.
+
+Product gaps found:
+
+1. Keyword match context is still missing.
+2. Human review and ActionObject validation are still required before any
+   future apply path.
+3. Google Ads negative keywords remain prepare/review-only in Goal 001.
+
+Verdict:
+
+Useful incremental value contract. It moves Ads Doctor closer to BDOS-style
+safe review flow without opening a write/apply path.
+
 ## 2026-06-19 - wilq-ads-doctor 90-day search-term safety
 
 Prompt class:

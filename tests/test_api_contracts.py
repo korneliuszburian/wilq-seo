@@ -3241,6 +3241,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "90_day_safety_check" not in search_term_safety_contract[
         "missing_read_contracts"
     ]
+    assert "negative_keyword_payload_preview" not in search_term_safety_contract[
+        "missing_read_contracts"
+    ]
     assert "negative keyword apply" in search_term_safety_contract["blocked_claims"]
     assert search_term_safety_contract["safety_rows"] == [
         {
@@ -3301,8 +3304,22 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "act_prepare_negative_keyword_review_queue"
     ]
     assert "90_day_safety_check" not in negative_keywords_contract["missing_read_contracts"]
+    assert "negative_keyword_payload_preview" not in negative_keywords_contract[
+        "missing_read_contracts"
+    ]
+    assert negative_keywords_contract["missing_read_contracts"] == [
+        "keyword match context"
+    ]
     assert "negative keyword apply" in negative_keywords_contract["blocked_claims"]
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
+    assert negative_keywords_contract["payload_preview"][0] == (
+        negative_keywords_contract["candidates"][0]["payload_preview"]
+    )
+    assert negative_keywords_contract["payload_preview"][0]["match_type"] == "EXACT"
+    assert negative_keywords_contract["payload_preview"][0]["level"] == "ad_group"
+    assert negative_keywords_contract["payload_preview"][0]["api_mutation_ready"] is False
+    assert negative_keywords_contract["payload_preview"][0]["apply_allowed"] is False
+    assert negative_keywords_contract["payload_preview"][0]["destructive"] is False
     assert negative_keywords_contract["candidates"][0]["clicks_90d"] == 10
     assert negative_keywords_contract["candidates"][0]["cost_micros_90d"] == 8000000
     assert negative_keywords_contract["candidates"][0]["conversions_90d"] == 0
@@ -3432,6 +3449,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "odpady cena"
     )
     assert negative_keyword_decision["search_term_safety_rows"][0]["clicks_90d"] == 10
+    assert negative_keyword_decision["negative_keyword_payload_preview"][0][
+        "negative_keyword_text"
+    ] == "odpady cena"
+    assert negative_keyword_decision["missing_read_contracts"] == [
+        "keyword match context"
+    ]
     assert negative_keyword_decision["action_ids"] == [
         "act_prepare_negative_keyword_review_queue"
     ]
@@ -3558,6 +3581,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         if action["id"] == "act_prepare_negative_keyword_review_queue"
     )
     assert negative_keyword_action["payload"]["terms"] == ["odpady cena"]
+    assert negative_keyword_action["payload"]["preview_contract"] == (
+        "negative_keyword_payload_preview_v1"
+    )
+    assert negative_keyword_action["payload"]["api_mutation_ready"] is False
+    assert negative_keyword_action["payload"]["payload_preview"][0]["match_type"] == "EXACT"
+    assert negative_keyword_action["payload"]["payload_preview"][0]["apply_allowed"] is False
     assert "search_term_90d_clicks" in negative_keyword_action["payload"][
         "source_metric_names"
     ]

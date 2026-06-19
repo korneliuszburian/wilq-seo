@@ -31,13 +31,40 @@ def validate_negative_keyword_payload(payload: dict[str, Any]) -> list[str]:
         or "90_day_safety_check" not in required_validation
     ):
         errors.append("Negative keyword review payload requires 90_day_safety_check.")
+    preview_items = payload.get("payload_preview")
+    if not isinstance(preview_items, list) or not preview_items:
+        errors.append("Negative keyword review payload requires payload_preview.")
+        return errors
+    for index, item in enumerate(preview_items):
+        if not isinstance(item, dict):
+            errors.append(f"Negative keyword payload preview item {index} must be object.")
+            continue
+        if item.get("match_type") != "EXACT":
+            errors.append(
+                f"Negative keyword payload preview item {index} must use EXACT match."
+            )
+        if item.get("apply_allowed") is not False:
+            errors.append(
+                f"Negative keyword payload preview item {index} must keep apply_allowed=false."
+            )
+        if item.get("destructive") is not False:
+            errors.append(
+                f"Negative keyword payload preview item {index} must be non-destructive."
+            )
+        if item.get("api_mutation_ready") is not False:
+            errors.append(
+                f"Negative keyword payload preview item {index} must not be API-mutation ready."
+            )
+        if not item.get("evidence_ids"):
+            errors.append(
+                f"Negative keyword payload preview item {index} requires evidence IDs."
+            )
     return errors
 
 
 def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[str, Any] | None:
-    candidate_facts = [
-        fact for group in _candidate_fact_groups(facts) for fact in group
-    ]
+    candidate_groups = _candidate_fact_groups(facts)
+    candidate_facts = [fact for group in candidate_groups for fact in group]
     terms = _unique(
         fact.dimensions["search_term"]
         for fact in candidate_facts
@@ -48,6 +75,9 @@ def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[
     evidence_ids = _unique(fact.evidence_id for fact in candidate_facts)
     if not evidence_ids:
         return None
+    payload_preview = _payload_preview_items(candidate_groups)
+    if not payload_preview:
+        return None
     return {
         "action_type": "negative_keyword_candidate",
         "connector": "google_ads",
@@ -56,10 +86,14 @@ def negative_keyword_payload_from_metric_facts(facts: list[MetricFact]) -> dict[
         "source_terms": terms[:20],
         "source_metric_names": _unique(fact.name for fact in candidate_facts),
         "evidence_ids": evidence_ids,
+        "preview_contract": "negative_keyword_payload_preview_v1",
+        "api_mutation_ready": False,
+        "payload_preview": payload_preview[:20],
         "required_validation": [
             "review_search_term_context",
             "check_existing_keywords_and_match_types",
             "90_day_safety_check",
+            "negative_keyword_payload_preview",
             "human_confirm_before_apply",
         ],
         "blocked_claims": NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
@@ -122,6 +156,70 @@ def _fact_has_conversion_signal(fact: MetricFact) -> bool:
         return False
     value = fact.value
     return isinstance(value, int | float) and value > 0
+
+
+def _payload_preview_items(groups: list[list[MetricFact]]) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for group in groups:
+        first_fact = group[0]
+        dimensions = first_fact.dimensions
+        search_term = dimensions.get("search_term")
+        if not search_term:
+            continue
+        ad_group_id = dimensions.get("ad_group_id")
+        campaign_id = dimensions.get("campaign_id")
+        evidence_ids = _unique(fact.evidence_id for fact in group)
+        if not evidence_ids:
+            continue
+        preview_id_parts = [
+            "negative_keyword_preview",
+            campaign_id or "campaign",
+            ad_group_id or "ad_group",
+            search_term,
+        ]
+        level = "ad_group" if ad_group_id else "campaign_review_required"
+        reason = (
+            "Exact negative keyword review preview zbudowany z search-term facts "
+            "i 90-dniowego safety read. To nie jest gotowa mutacja API."
+        )
+        if level == "campaign_review_required":
+            reason = (
+                "Brak ad_group_id w evidence, więc WILQ pokazuje tylko review "
+                "preview i wymaga decyzji człowieka o poziomie kampanii/grupy."
+            )
+        items.append(
+            {
+                "id": "_".join(_slug(part) for part in preview_id_parts),
+                "search_term": search_term,
+                "negative_keyword_text": search_term,
+                "match_type": "EXACT",
+                "level": level,
+                "campaign_id": campaign_id,
+                "campaign_name": dimensions.get("campaign_name"),
+                "ad_group_id": ad_group_id,
+                "ad_group_name": dimensions.get("ad_group_name"),
+                "reason": reason,
+                "evidence_ids": evidence_ids,
+                "source_metric_names": _unique(fact.name for fact in group),
+                "required_validation": [
+                    "review_search_term_context",
+                    "check_existing_keywords_and_match_types",
+                    "90_day_safety_check",
+                    "human_confirm_before_apply",
+                ],
+                "blocked_claims": NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+                "api_mutation_ready": False,
+                "apply_allowed": False,
+                "destructive": False,
+            }
+        )
+    return items
+
+
+def _slug(value: str) -> str:
+    return "".join(character.lower() if character.isalnum() else "_" for character in value)[
+        :80
+    ].strip("_") or "item"
 
 
 def _unique(values: Iterable[str]) -> list[str]:

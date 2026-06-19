@@ -8,6 +8,34 @@ artifacts.
 
 Data: 2026-06-19
 
+- Ads negative keyword review payload preview, 2026-06-19 19:24 Europe/Warsaw:
+  current active proof is still review-only, not apply. WILQ now exposes
+  `negative_keyword_payload_preview` for the live Google Ads negative keyword
+  safety queue. `/api/ads/diagnostics.negative_keywords_read_contract` has
+  `payload_preview_count=7`; its only remaining missing contract is
+  `keyword match context`. Each preview item uses exact-match review
+  (`match_type=EXACT`), carries campaign/ad group context, evidence IDs and
+  source metric names, and keeps `api_mutation_ready=false`,
+  `apply_allowed=false`, `destructive=false`. The ActionObject
+  `act_prepare_negative_keyword_review_queue` now carries
+  `preview_contract=negative_keyword_payload_preview_v1` and the same preview
+  list. Live proof after `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics` returned 7 preview items, `/api/actions` returned 7
+  review-only preview items, and `wilq-ads-doctor` smoke returned
+  `payload_preview_count=7`. Still blocked: negative keyword apply,
+  search-term waste, conversion loss, CPA and ROAS until keyword match context,
+  ActionObject validation and human review exist. Focused proof passed: ruff,
+  mypy, selected Ads/API/eval tests, shared schemas typecheck, dashboard
+  typecheck, dashboard `App.test.tsx` and live `wilq-ads-doctor` smoke.
+  Non-interactive `wilq-ads-doctor` eval passed at
+  `.local-lab/evals/codex-skill/20260619T172731Z/wilq-ads-doctor/result.json`;
+  the answer includes `negative_keyword_payload_preview`, keeps
+  `language=pl-PL`, `api_used=true`, Google Ads evidence IDs and blocks
+  negative keyword apply. Full `scripts/verify.sh` passed after this slice:
+  backend API contracts `111 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed`, API smoke, skill smokes and dashboard production
+  build passed. Non-blocking warning: Vite main JS chunk is `545.73 kB`,
+  above the 500 KB warning threshold.
 - Ads 90-day search-term safety read, 2026-06-19 18:57 Europe/Warsaw:
   current active proof is read-only negative-keyword safety context, not
   negative keyword apply. Google Ads `vendor_read` now runs a separate

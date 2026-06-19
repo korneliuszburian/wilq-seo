@@ -33,6 +33,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "search_term_safety_read_contract",
                 "ads_review_search_term_safety",
                 "search_term_90d",
+                "negative_keyword_payload_preview",
                 "recommendation apply",
                 "search terms",
                 "negative_keywords_read_contract",

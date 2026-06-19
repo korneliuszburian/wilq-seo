@@ -171,7 +171,38 @@ const actions = [
       mode: "prepare_only",
       terms: ["odpady cena"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-      required_validation: ["90_day_safety_check"],
+      preview_contract: "negative_keyword_payload_preview_v1",
+      api_mutation_ready: false,
+      payload_preview: [
+        {
+          id: "negative_keyword_preview_123_789_odpady_cena",
+          search_term: "odpady cena",
+          negative_keyword_text: "odpady cena",
+          match_type: "EXACT",
+          level: "ad_group",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "789",
+          ad_group_name: "Odpady",
+          reason: "Exact negative keyword review preview zbudowany z evidence.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
+          required_validation: [
+            "review_search_term_context",
+            "check_existing_keywords_and_match_types",
+            "90_day_safety_check",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: ["negative keyword apply", "search-term waste"],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        }
+      ],
+      required_validation: [
+        "90_day_safety_check",
+        "negative_keyword_payload_preview"
+      ],
       apply_allowed: false,
       destructive: false
     },
@@ -654,7 +685,6 @@ const adsDiagnostics = {
     ],
     missing_read_contracts: [
       "keyword match context",
-      "negative_keyword_payload_preview",
       "human_intent_review"
     ],
     blocked_claims: [
@@ -780,10 +810,35 @@ const adsDiagnostics = {
         safety_evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
         safety_metric_facts: [],
+        payload_preview: {
+          id: "negative_keyword_preview_123_789_odpady_cena",
+          search_term: "odpady cena",
+          negative_keyword_text: "odpady cena",
+          match_type: "EXACT",
+          level: "ad_group",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "789",
+          ad_group_name: "Odpady",
+          reason: "Exact negative keyword review preview zbudowany z evidence.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
+          required_validation: [
+            "review_search_term_context",
+            "check_existing_keywords_and_match_types",
+            "90_day_safety_check",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: ["negative keyword apply", "search-term waste"],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        },
         required_checks: [
           "review_search_term_context",
           "check_existing_keywords_and_match_types",
           "90_day_safety_check",
+          "negative_keyword_payload_preview",
           "human_confirm_before_apply"
         ],
         safety_status: "read_ready_needs_human_review",
@@ -792,13 +847,35 @@ const adsDiagnostics = {
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
       }
     ],
+    payload_preview: [
+      {
+        id: "negative_keyword_preview_123_789_odpady_cena",
+        search_term: "odpady cena",
+        negative_keyword_text: "odpady cena",
+        match_type: "EXACT",
+        level: "ad_group",
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        ad_group_id: "789",
+        ad_group_name: "Odpady",
+        reason: "Exact negative keyword review preview zbudowany z evidence.",
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
+        required_validation: [
+          "review_search_term_context",
+          "check_existing_keywords_and_match_types",
+          "90_day_safety_check",
+          "human_confirm_before_apply"
+        ],
+        blocked_claims: ["negative keyword apply", "search-term waste"],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-    missing_read_contracts: [
-      "keyword match context",
-      "90_day_safety_check",
-      "negative_keyword_payload_preview"
-    ],
+    missing_read_contracts: ["keyword match context"],
     blocked_claims: [
       "negative keyword apply",
       "search-term waste",
@@ -807,7 +884,7 @@ const adsDiagnostics = {
       "ROAS"
     ],
     action_ids: ["act_prepare_negative_keyword_review_queue"],
-    next_step: "Przejrzyj kandydatów jako review-only przed payload preview."
+    next_step: "Przejrzyj kandydatów jako review-only i sprawdź payload preview."
   },
   decision_queue: [
     {
@@ -849,6 +926,7 @@ const adsDiagnostics = {
       search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: [],
       knowledge_card_ids: [
         "card_google_ads_search_playbook",
@@ -910,6 +988,7 @@ const adsDiagnostics = {
       search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: [],
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_recommendations_v1", "ads_principles_v1"],
@@ -970,6 +1049,7 @@ const adsDiagnostics = {
       search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: [],
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_scaling_candidates_v1", "ads_principles_v1"],
@@ -1034,6 +1114,7 @@ const adsDiagnostics = {
       search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: [],
       knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
       expert_rule_ids: ["ads_diagnostics_v1", "ads_principles_v1"],
@@ -1056,7 +1137,10 @@ const adsDiagnostics = {
         "WILQ widzi zapytania, kampanie, grupy reklam, koszt, kliknięcia i konwersje.",
       next_step: "Przejrzyj zapytania z najwyższym kosztem.",
       allowed_metrics: ["search_term", "campaign", "ad_group", "clicks", "conversions"],
-      missing_read_contracts: ["90_day_safety_check", "negative_keyword_action_validation"],
+      missing_read_contracts: [
+        "keyword match context",
+        "negative_keyword_action_validation"
+      ],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
@@ -1088,6 +1172,7 @@ const adsDiagnostics = {
       custom_segment_candidates: [],
       search_term_safety_rows: [],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: [],
       blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
       risk: "medium"
@@ -1112,7 +1197,6 @@ const adsDiagnostics = {
       ],
       missing_read_contracts: [
         "keyword match context",
-        "negative_keyword_payload_preview",
         "human_intent_review"
       ],
       source_connectors: ["google_ads"],
@@ -1146,6 +1230,7 @@ const adsDiagnostics = {
       ],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: [],
       knowledge_card_ids: [
         "card_google_ads_negative_keywords_playbook",
@@ -1175,11 +1260,7 @@ const adsDiagnostics = {
         "search_term_cost_micros",
         "search_term_conversions"
       ],
-      missing_read_contracts: [
-        "keyword match context",
-        "90_day_safety_check",
-        "negative_keyword_payload_preview"
-      ],
+      missing_read_contracts: ["keyword match context"],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
@@ -1232,16 +1313,67 @@ const adsDiagnostics = {
           safety_evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
           safety_metric_facts: [],
+          payload_preview: {
+            id: "negative_keyword_preview_123_789_odpady_cena",
+            search_term: "odpady cena",
+            negative_keyword_text: "odpady cena",
+            match_type: "EXACT",
+            level: "ad_group",
+            campaign_id: "123",
+            campaign_name: "Ekologus Search",
+            ad_group_id: "789",
+            ad_group_name: "Odpady",
+            reason: "Exact negative keyword review preview zbudowany z evidence.",
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+            source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
+            required_validation: [
+              "review_search_term_context",
+              "check_existing_keywords_and_match_types",
+              "90_day_safety_check",
+              "human_confirm_before_apply"
+            ],
+            blocked_claims: ["negative keyword apply", "search-term waste"],
+            api_mutation_ready: false,
+            apply_allowed: false,
+            destructive: false
+          },
           required_checks: [
             "review_search_term_context",
             "check_existing_keywords_and_match_types",
             "90_day_safety_check",
+            "negative_keyword_payload_preview",
             "human_confirm_before_apply"
           ],
           safety_status: "read_ready_needs_human_review",
           validation_status: "pending_validation",
           blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
+        }
+      ],
+      negative_keyword_payload_preview: [
+        {
+          id: "negative_keyword_preview_123_789_odpady_cena",
+          search_term: "odpady cena",
+          negative_keyword_text: "odpady cena",
+          match_type: "EXACT",
+          level: "ad_group",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "789",
+          ad_group_name: "Odpady",
+          reason: "Exact negative keyword review preview zbudowany z evidence.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: ["search_term_clicks", "search_term_90d_clicks"],
+          required_validation: [
+            "review_search_term_context",
+            "check_existing_keywords_and_match_types",
+            "90_day_safety_check",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: ["negative keyword apply", "search-term waste"],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
         }
       ],
       action_ids: ["act_prepare_negative_keyword_review_queue"],
@@ -1316,6 +1448,7 @@ const adsDiagnostics = {
         }
       ],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: ["act_prepare_custom_segments_from_search_terms"],
       blocked_claims: ["audience size", "conversion uplift", "ROAS", "targeting applied"],
       risk: "medium"
@@ -1343,6 +1476,7 @@ const adsDiagnostics = {
       search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
       action_ids: [],
       blocked_claims: ["budget apply", "campaign creation", "negative keyword apply"],
       risk: "medium"

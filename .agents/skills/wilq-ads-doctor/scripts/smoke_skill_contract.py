@@ -227,6 +227,16 @@ def main() -> int:
     if negative_keywords_read_contract.get("status") == "ready":
         if not negative_keywords_read_contract.get("candidates"):
             raise SystemExit("Ready negative keyword contract must expose candidates")
+        if not negative_keywords_read_contract.get("payload_preview"):
+            raise SystemExit(
+                "Ready negative keyword contract must expose payload_preview"
+            )
+        if "negative_keyword_payload_preview" in (
+            negative_keywords_read_contract.get("missing_read_contracts") or []
+        ):
+            raise SystemExit(
+                "Ready negative keyword contract must not list payload preview as missing"
+            )
         if "act_prepare_negative_keyword_review_queue" not in (
             negative_keywords_read_contract.get("action_ids") or []
         ):
@@ -439,6 +449,9 @@ def main() -> int:
                         "summary": negative_keywords_read_contract.get("summary"),
                         "candidate_count": len(
                             negative_keywords_read_contract.get("candidates") or []
+                        ),
+                        "payload_preview_count": len(
+                            negative_keywords_read_contract.get("payload_preview") or []
                         ),
                         "missing_read_contracts": negative_keywords_read_contract.get(
                             "missing_read_contracts", []

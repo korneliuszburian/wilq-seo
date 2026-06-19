@@ -37,6 +37,7 @@ from wilq.schemas import (
     AdsImpressionShareReadContract,
     AdsImpressionShareRow,
     AdsNegativeKeywordCandidate,
+    AdsNegativeKeywordPayloadPreview,
     AdsNegativeKeywordsReadContract,
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
@@ -1742,7 +1743,6 @@ def _search_term_safety_read_contract(
             ],
             missing_read_contracts=[
                 "keyword match context",
-                "negative_keyword_payload_preview",
                 "human_intent_review",
             ],
             blocked_claims=blocked_claims,
@@ -1756,7 +1756,7 @@ def _search_term_safety_read_contract(
                 "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa. Jeśli termin "
                 "ma konwersje w 90 dniach, nie kwalifikuj go do wykluczenia; jeśli "
                 "nie ma konwersji, nadal wymagaj review intencji, match context i "
-                "payload preview."
+                "review payload preview."
             ),
         )
 
@@ -2165,7 +2165,6 @@ def _negative_keywords_read_contract(
                 "search_term_view",
                 "keyword match context",
                 "90_day_safety_check",
-                "negative_keyword_payload_preview",
             ],
             blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
             action_ids=[],
@@ -2200,7 +2199,6 @@ def _negative_keywords_read_contract(
                     if search_term_safety_read_contract.status == "ready"
                     else ["90_day_safety_check"]
                 ),
-                "negative_keyword_payload_preview",
             ],
             blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
             action_ids=[],
@@ -2210,10 +2208,7 @@ def _negative_keywords_read_contract(
             ),
         )
 
-    missing_read_contracts = [
-        "keyword match context",
-        "negative_keyword_payload_preview",
-    ]
+    missing_read_contracts = ["keyword match context"]
     if any(
         candidate.safety_status != "read_ready_needs_human_review"
         for candidate in candidates
@@ -2229,6 +2224,11 @@ def _negative_keywords_read_contract(
             "90-dniowy read, jeśli WILQ ma matching row."
         ),
         candidates=candidates,
+        payload_preview=[
+            candidate.payload_preview
+            for candidate in candidates
+            if candidate.payload_preview is not None
+        ],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_unique(
             evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
@@ -2238,8 +2238,8 @@ def _negative_keywords_read_contract(
         action_ids=negative_keyword_action_ids,
         next_step=(
             "Przejrzyj kandydatów jako review-only. Przed jakimkolwiek apply wymagaj "
-            "kontekstu dopasowania, 90-dniowego safety checku, payload preview i "
-            "walidacji ActionObject."
+            "kontekstu dopasowania, sprawdzenia payload preview i walidacji "
+            "ActionObject."
         ),
     )
 
@@ -2263,6 +2263,7 @@ def _negative_keyword_candidates(
             safety_status = "needs_90_day_review"
         else:
             safety_status = "read_ready_needs_human_review"
+        payload_preview = _negative_keyword_payload_preview(row, safety_row)
         candidates.append(
             AdsNegativeKeywordCandidate(
                 id=(
@@ -2292,10 +2293,12 @@ def _negative_keyword_candidates(
                 safety_evidence_ids=safety_row.evidence_ids if safety_row else [],
                 metric_facts=metric_facts,
                 safety_metric_facts=safety_metric_facts,
+                payload_preview=payload_preview,
                 required_checks=[
                     "review_search_term_context",
                     "check_existing_keywords_and_match_types",
                     "90_day_safety_check",
+                    "negative_keyword_payload_preview",
                     "human_confirm_before_apply",
                 ],
                 safety_status=safety_status,
@@ -2308,6 +2311,58 @@ def _negative_keyword_candidates(
             )
         )
     return candidates[:12]
+
+
+def _negative_keyword_payload_preview(
+    row: AdsSearchTermMetricRow,
+    safety_row: AdsSearchTermSafetyRow | None,
+) -> AdsNegativeKeywordPayloadPreview:
+    safety_evidence_ids = safety_row.evidence_ids if safety_row else []
+    evidence_ids = _unique([*row.evidence_ids, *safety_evidence_ids])
+    safety_metric_names = (
+        [fact.name for fact in safety_row.metric_facts] if safety_row else []
+    )
+    source_metric_names = _unique(
+        [*(fact.name for fact in row.metric_facts), *safety_metric_names]
+    )
+    level: Literal["ad_group", "campaign_review_required"] = (
+        "ad_group" if row.ad_group_id else "campaign_review_required"
+    )
+    reason = (
+        "Exact negative keyword review preview zbudowany z 30-dniowych search terms "
+        "i 90-dniowego safety read. To nie jest gotowa mutacja API."
+    )
+    if level == "campaign_review_required":
+        reason = (
+            "Brak ad_group_id w evidence, więc WILQ pokazuje tylko review preview "
+            "i wymaga decyzji człowieka o poziomie kampanii lub grupy reklam."
+        )
+    return AdsNegativeKeywordPayloadPreview(
+        id=(
+            "negative_keyword_preview_"
+            f"{_slug(row.campaign_id or row.campaign_name or 'campaign')}_"
+            f"{_slug(row.ad_group_id or row.ad_group_name or 'ad_group')}_"
+            f"{_slug(row.search_term)}"
+        ),
+        search_term=row.search_term,
+        negative_keyword_text=row.search_term,
+        match_type="EXACT",
+        level=level,
+        campaign_id=row.campaign_id,
+        campaign_name=row.campaign_name,
+        ad_group_id=row.ad_group_id,
+        ad_group_name=row.ad_group_name,
+        reason=reason,
+        evidence_ids=evidence_ids,
+        source_metric_names=source_metric_names,
+        required_validation=[
+            "review_search_term_context",
+            "check_existing_keywords_and_match_types",
+            "90_day_safety_check",
+            "human_confirm_before_apply",
+        ],
+        blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
+    )
 
 
 def _is_negative_keyword_review_candidate(row: AdsSearchTermMetricRow) -> bool:
@@ -2720,8 +2775,9 @@ def _ads_decision_queue(
                 summary=negative_keywords_read_contract.summary,
                 rationale=(
                     "WILQ widzi terminy z kosztem lub kliknięciami i zerową konwersją "
-                    "w bieżącym evidence. To jest sygnał do review, nie dowód waste ani "
-                    "zgoda na automatyczne wykluczenie."
+                    "w bieżącym evidence oraz review-only payload preview. To jest "
+                    "sygnał do review, nie dowód waste ani zgoda na automatyczne "
+                    "wykluczenie."
                 ),
                 next_step=negative_keywords_read_contract.next_step,
                 allowed_metrics=[
@@ -2741,6 +2797,9 @@ def _ads_decision_queue(
                 metric_facts=[*metric_facts, *safety_metric_facts][:12],
                 search_term_safety_rows=search_term_safety_read_contract.safety_rows[:12],
                 negative_keyword_candidates=negative_keywords_read_contract.candidates,
+                negative_keyword_payload_preview=(
+                    negative_keywords_read_contract.payload_preview
+                ),
                 action_ids=negative_keywords_read_contract.action_ids,
                 blocked_claims=negative_keywords_read_contract.blocked_claims,
                 risk=ActionRisk.medium,

@@ -519,6 +519,26 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsNegativeKeywordPayloadPreviewSchema = z.object({
+  id: z.string(),
+  search_term: z.string(),
+  negative_keyword_text: z.string(),
+  match_type: z.literal("EXACT"),
+  level: z.enum(["ad_group", "campaign_review_required"]),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  ad_group_id: z.string().nullable().optional(),
+  ad_group_name: z.string().nullable().optional(),
+  reason: z.string(),
+  evidence_ids: z.array(z.string()),
+  source_metric_names: z.array(z.string()),
+  required_validation: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsNegativeKeywordCandidateSchema = z.object({
   id: z.string(),
   search_term: z.string(),
@@ -540,6 +560,7 @@ export const AdsNegativeKeywordCandidateSchema = z.object({
   safety_evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   safety_metric_facts: z.array(MetricFactSchema),
+  payload_preview: AdsNegativeKeywordPayloadPreviewSchema.nullable().optional(),
   required_checks: z.array(z.string()),
   safety_status: z.enum(["needs_90_day_review", "read_ready_needs_human_review", "blocked"]),
   validation_status: z.enum(["pending_validation", "blocked"]),
@@ -553,6 +574,7 @@ export const AdsNegativeKeywordsReadContractSchema = z.object({
   title: z.string(),
   summary: z.string(),
   candidates: z.array(AdsNegativeKeywordCandidateSchema),
+  payload_preview: z.array(AdsNegativeKeywordPayloadPreviewSchema),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
@@ -597,6 +619,7 @@ export const AdsDecisionItemSchema = z.object({
   search_term_safety_rows: z.array(AdsSearchTermSafetyRowSchema),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
+  negative_keyword_payload_preview: z.array(AdsNegativeKeywordPayloadPreviewSchema),
   action_ids: z.array(z.string()),
   knowledge_card_ids: z.array(z.string()).optional().default([]),
   expert_rule_ids: z.array(z.string()).optional().default([]),
@@ -1095,6 +1118,9 @@ export type AdsBudgetPacingReadContract = z.infer<
 export type AdsCustomSegmentCandidate = z.infer<typeof AdsCustomSegmentCandidateSchema>;
 export type AdsCustomSegmentsReadContract = z.infer<
   typeof AdsCustomSegmentsReadContractSchema
+>;
+export type AdsNegativeKeywordPayloadPreview = z.infer<
+  typeof AdsNegativeKeywordPayloadPreviewSchema
 >;
 export type AdsNegativeKeywordCandidate = z.infer<
   typeof AdsNegativeKeywordCandidateSchema

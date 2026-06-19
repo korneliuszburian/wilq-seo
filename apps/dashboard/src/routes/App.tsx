@@ -2325,6 +2325,25 @@ function AdsNegativeKeywordCandidatesPanel({
               <MetricTile label="Konw. 90d" value={adsNumber(candidate.conversions_90d)} />
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">{candidate.next_step}</p>
+            {candidate.payload_preview ? (
+              <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2 text-xs leading-5 text-slate-700">
+                <div className="font-semibold uppercase tracking-normal text-blue-700">
+                  Podgląd wykluczenia
+                </div>
+                <div>
+                  `{candidate.payload_preview.negative_keyword_text}` /{" "}
+                  {candidate.payload_preview.match_type} /{" "}
+                  {adsNegativeKeywordLevelLabel(candidate.payload_preview.level)}
+                </div>
+                <div className="text-slate-600">
+                  Wdrożenie:{" "}
+                  {candidate.payload_preview.apply_allowed
+                    ? "wymaga walidacji"
+                    : "zablokowany"}
+                  . {candidate.payload_preview.reason}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
               <TraceLine label="Wymagane checki" values={candidate.required_checks.map(adsMissingReadContractLabel)} />
               <LinkedTraceLine
@@ -2471,6 +2490,12 @@ function adsDecisionStatusLabel(status: string) {
   if (status === "ready") return "gotowe";
   if (status === "blocked") return "zablokowane";
   return status;
+}
+
+function adsNegativeKeywordLevelLabel(level: string) {
+  if (level === "ad_group") return "grupa reklam";
+  if (level === "campaign_review_required") return "poziom do decyzji";
+  return level;
 }
 
 function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
