@@ -120,7 +120,8 @@ SELECT
   recommendation.dismissed,
   recommendation.campaign,
   recommendation.campaign_budget,
-  recommendation.campaigns
+  recommendation.campaigns,
+  recommendation.impact
 FROM recommendation
 WHERE recommendation.dismissed = false
 LIMIT 50
@@ -795,6 +796,8 @@ def _summarize_recommendation_response(
     metric_facts: list[VendorMetricFact] = []
     recommendation_types: set[str] = set()
     campaign_count = 0
+    impact_row_count = 0
+    impact_metric_count = 0
     for row in rows:
         recommendation = row.get("recommendation", {})
         if not isinstance(recommendation, dict):
@@ -822,11 +825,18 @@ def _summarize_recommendation_response(
                     ),
                 ]
             )
+            impact_facts = _recommendation_impact_metric_facts(recommendation, dimensions)
+            if impact_facts:
+                impact_row_count += 1
+                impact_metric_count += len(impact_facts)
+                metric_facts.extend(impact_facts)
     return (
         {
             "recommendation_query": "active_recommendations",
             "recommendation_row_count": len(rows),
             "recommendation_campaign_count": campaign_count,
+            "recommendation_impact_row_count": impact_row_count,
+            "recommendation_impact_metric_count": impact_metric_count,
             "recommendation_types": ",".join(sorted(recommendation_types)),
         },
         metric_facts,
@@ -1280,6 +1290,68 @@ def _recommendation_campaign_count(recommendation: dict[str, Any]) -> int:
     if isinstance(campaigns, list):
         return len(campaigns)
     return 1 if _customer_resource_id(recommendation.get("campaign")) else 0
+
+
+def _recommendation_impact_metric_facts(
+    recommendation: dict[str, Any],
+    dimensions: dict[str, str],
+) -> list[VendorMetricFact]:
+    impact = recommendation.get("impact")
+    if not isinstance(impact, dict):
+        return []
+    metric_facts: list[VendorMetricFact] = []
+    for prefix, metrics in (
+        ("base", impact.get("baseMetrics", impact.get("base_metrics"))),
+        ("potential", impact.get("potentialMetrics", impact.get("potential_metrics"))),
+    ):
+        if not isinstance(metrics, dict):
+            continue
+        metric_facts.extend(
+            _recommendation_impact_metrics_for_prefix(prefix, metrics, dimensions)
+        )
+    return metric_facts
+
+
+def _recommendation_impact_metrics_for_prefix(
+    prefix: str,
+    metrics: dict[str, Any],
+    dimensions: dict[str, str],
+) -> list[VendorMetricFact]:
+    metric_facts: list[VendorMetricFact] = []
+    int_metrics = {
+        "clicks": _optional_int_metric(metrics.get("clicks")),
+        "impressions": _optional_int_metric(metrics.get("impressions")),
+        "cost_micros": _optional_int_metric(
+            metrics.get("costMicros", metrics.get("cost_micros"))
+        ),
+    }
+    float_metrics = {
+        "conversions": _optional_float_metric(metrics.get("conversions")),
+        "conversion_value": _optional_float_metric(
+            metrics.get("conversionsValue", metrics.get("conversions_value"))
+        ),
+    }
+    for name, int_value in int_metrics.items():
+        if int_value is not None:
+            metric_facts.append(
+                VendorMetricFact(
+                    f"recommendation_impact_{prefix}_{name}",
+                    int_value,
+                    dimensions,
+                    period="recommendation_impact",
+                )
+            )
+    for name, float_value in float_metrics.items():
+        if float_value is not None:
+            metric_facts.append(
+                VendorMetricFact(
+                    f"recommendation_impact_{prefix}_{name}",
+                    float_value,
+                    dimensions,
+                    period="recommendation_impact",
+                )
+            )
+    return metric_facts
 
 
 def _change_event_dimensions(change_event: dict[str, Any]) -> dict[str, str]:

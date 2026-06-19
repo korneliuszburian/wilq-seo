@@ -177,6 +177,20 @@ def main() -> int:
             [],
         ):
             raise SystemExit("Recommendations contract must keep apply blocked")
+        recommendation_rows = recommendations_read_contract.get("recommendation_rows") or []
+        impact_row_count = sum(1 for row in recommendation_rows if row.get("impact_available"))
+        if impact_row_count > 0 and "recommendation_impact_preview" in (
+            recommendations_read_contract.get("missing_read_contracts") or []
+        ):
+            raise SystemExit("Ready recommendation impact must not remain missing")
+        pack_recommendation_rows = pack_recommendations_contract.get(
+            "recommendation_rows",
+        ) or []
+        pack_impact_row_count = sum(
+            1 for row in pack_recommendation_rows if row.get("impact_available")
+        )
+        if pack_impact_row_count != impact_row_count:
+            raise SystemExit("Context pack recommendation impact row count differs")
     elif "recommendations" not in recommendations_read_contract.get(
         "missing_read_contracts",
         [],
@@ -422,6 +436,14 @@ def main() -> int:
                         ),
                         "row_count": len(
                             recommendations_read_contract.get("recommendation_rows") or []
+                        ),
+                        "impact_row_count": sum(
+                            1
+                            for row in recommendations_read_contract.get(
+                                "recommendation_rows",
+                            )
+                            or []
+                            if row.get("impact_available")
                         ),
                         "blocked_claims": recommendations_read_contract.get(
                             "blocked_claims",

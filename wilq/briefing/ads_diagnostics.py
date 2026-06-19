@@ -1095,13 +1095,15 @@ def _recommendations_read_contract(
         latest_refresh,
         "recommendation_row_count",
     )
+    impact_row_count = sum(1 for row in rows if row.impact_available)
     missing_read_contracts = [
-        "recommendation_impact_preview",
         "change_history",
         "impression_share",
         "human_strategy_review",
         "recommendation_apply_preview",
     ]
+    if impact_row_count == 0:
+        missing_read_contracts.insert(0, "recommendation_impact_preview")
     blocked_claims = [
         "recommendation apply",
         "automatic recommendation accept",
@@ -1114,7 +1116,8 @@ def _recommendations_read_contract(
             types = _unique(row.recommendation_type for row in rows)
             summary = (
                 f"WILQ ma {len(rows)} aktywnych rekomendacji Google Ads do review. "
-                f"Typy: {', '.join(types[:5])}."
+                f"Typy: {', '.join(types[:5])}. Impact preview dostępny dla "
+                f"{impact_row_count}."
             )
         else:
             summary = (
@@ -1128,6 +1131,16 @@ def _recommendations_read_contract(
             allowed_metrics=[
                 "recommendation_available",
                 "recommendation_campaign_count",
+                "recommendation_impact_base_clicks",
+                "recommendation_impact_potential_clicks",
+                "recommendation_impact_base_impressions",
+                "recommendation_impact_potential_impressions",
+                "recommendation_impact_base_cost_micros",
+                "recommendation_impact_potential_cost_micros",
+                "recommendation_impact_base_conversions",
+                "recommendation_impact_potential_conversions",
+                "recommendation_impact_base_conversion_value",
+                "recommendation_impact_potential_conversion_value",
             ],
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
@@ -1139,8 +1152,8 @@ def _recommendations_read_contract(
             recommendation_rows=rows,
             next_step=(
                 "Potraktuj rekomendacje Google jako input do review, nie jako gotową "
-                "strategię. Przed apply wymagaj historii zmian, impact preview, "
-                "impression share, celu biznesowego i walidowanego ActionObject."
+                "strategię. Przed apply wymagaj historii zmian, celu biznesowego, "
+                "impact sanity checku i walidowanego ActionObject."
             ),
         )
     return AdsRecommendationsReadContract(
@@ -1163,8 +1176,22 @@ def _recommendations_read_contract(
 def _recommendation_rows(metric_facts: list[MetricFact]) -> list[AdsRecommendationRow]:
     grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
     seen_metric_keys: set[tuple[str | None, str, str]] = set()
+    supported_metric_names = {
+        "recommendation_available",
+        "recommendation_campaign_count",
+        "recommendation_impact_base_clicks",
+        "recommendation_impact_potential_clicks",
+        "recommendation_impact_base_impressions",
+        "recommendation_impact_potential_impressions",
+        "recommendation_impact_base_cost_micros",
+        "recommendation_impact_potential_cost_micros",
+        "recommendation_impact_base_conversions",
+        "recommendation_impact_potential_conversions",
+        "recommendation_impact_base_conversion_value",
+        "recommendation_impact_potential_conversion_value",
+    }
     for fact in metric_facts:
-        if fact.name not in {"recommendation_available", "recommendation_campaign_count"}:
+        if fact.name not in supported_metric_names:
             continue
         recommendation_type = fact.dimensions.get("recommendation_type")
         recommendation_id = fact.dimensions.get("recommendation_id")
@@ -1192,6 +1219,50 @@ def _recommendation_row(
     facts_by_name = {fact.name: fact for fact in facts}
     first_dimensions = facts[0].dimensions if facts else {}
     expected_metrics = ["recommendation_available", "recommendation_campaign_count"]
+    impact_fact_names = {
+        "recommendation_impact_base_clicks",
+        "recommendation_impact_potential_clicks",
+        "recommendation_impact_base_impressions",
+        "recommendation_impact_potential_impressions",
+        "recommendation_impact_base_cost_micros",
+        "recommendation_impact_potential_cost_micros",
+        "recommendation_impact_base_conversions",
+        "recommendation_impact_potential_conversions",
+        "recommendation_impact_base_conversion_value",
+        "recommendation_impact_potential_conversion_value",
+    }
+    impact_available = any(name in facts_by_name for name in impact_fact_names)
+    base_clicks = _int_metric_value(facts_by_name.get("recommendation_impact_base_clicks"))
+    potential_clicks = _int_metric_value(
+        facts_by_name.get("recommendation_impact_potential_clicks")
+    )
+    base_impressions = _int_metric_value(
+        facts_by_name.get("recommendation_impact_base_impressions")
+    )
+    potential_impressions = _int_metric_value(
+        facts_by_name.get("recommendation_impact_potential_impressions")
+    )
+    base_cost_micros = _int_metric_value(
+        facts_by_name.get("recommendation_impact_base_cost_micros")
+    )
+    potential_cost_micros = _int_metric_value(
+        facts_by_name.get("recommendation_impact_potential_cost_micros")
+    )
+    base_conversions = _float_metric_value(
+        facts_by_name.get("recommendation_impact_base_conversions")
+    )
+    potential_conversions = _float_metric_value(
+        facts_by_name.get("recommendation_impact_potential_conversions")
+    )
+    base_conversion_value = _float_metric_value(
+        facts_by_name.get("recommendation_impact_base_conversion_value")
+    )
+    potential_conversion_value = _float_metric_value(
+        facts_by_name.get("recommendation_impact_potential_conversion_value")
+    )
+    missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
+    if not impact_available:
+        missing_metrics.append("recommendation_impact")
     return AdsRecommendationRow(
         recommendation_id=recommendation_id,
         recommendation_type=recommendation_type,
@@ -1199,9 +1270,28 @@ def _recommendation_row(
         campaign_id=first_dimensions.get("campaign_id"),
         campaign_budget_id=first_dimensions.get("campaign_budget_id"),
         campaign_count=_int_metric_value(facts_by_name.get("recommendation_campaign_count")),
+        impact_available=impact_available,
+        base_clicks=base_clicks,
+        potential_clicks=potential_clicks,
+        delta_clicks=_int_metric_delta(base_clicks, potential_clicks),
+        base_impressions=base_impressions,
+        potential_impressions=potential_impressions,
+        delta_impressions=_int_metric_delta(base_impressions, potential_impressions),
+        base_cost_micros=base_cost_micros,
+        potential_cost_micros=potential_cost_micros,
+        delta_cost_micros=_int_metric_delta(base_cost_micros, potential_cost_micros),
+        base_conversions=base_conversions,
+        potential_conversions=potential_conversions,
+        delta_conversions=_float_metric_delta(base_conversions, potential_conversions),
+        base_conversion_value=base_conversion_value,
+        potential_conversion_value=potential_conversion_value,
+        delta_conversion_value=_float_metric_delta(
+            base_conversion_value,
+            potential_conversion_value,
+        ),
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
-        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        missing_metrics=missing_metrics,
         blocked_claims=[
             "recommendation apply",
             "automatic recommendation accept",
@@ -1634,6 +1724,18 @@ def _float_metric_value(fact: MetricFact | None) -> float | None:
         except ValueError:
             return None
     return float(fact.value)
+
+
+def _int_metric_delta(base: int | None, potential: int | None) -> int | None:
+    if base is None or potential is None:
+        return None
+    return potential - base
+
+
+def _float_metric_delta(base: float | None, potential: float | None) -> float | None:
+    if base is None or potential is None:
+        return None
+    return round(potential - base, 6)
 
 
 def _bool_metric_value(fact: MetricFact | None) -> bool | None:

@@ -589,6 +589,22 @@ class AdsRecommendationRow(BaseModel):
     campaign_id: str | None = None
     campaign_budget_id: str | None = None
     campaign_count: int | None = None
+    impact_available: bool = False
+    base_clicks: int | None = None
+    potential_clicks: int | None = None
+    delta_clicks: int | None = None
+    base_impressions: int | None = None
+    potential_impressions: int | None = None
+    delta_impressions: int | None = None
+    base_cost_micros: int | None = None
+    potential_cost_micros: int | None = None
+    delta_cost_micros: int | None = None
+    base_conversions: float | None = None
+    potential_conversions: float | None = None
+    delta_conversions: float | None = None
+    base_conversion_value: float | None = None
+    potential_conversion_value: float | None = None
+    delta_conversion_value: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)

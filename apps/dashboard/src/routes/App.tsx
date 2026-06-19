@@ -1931,7 +1931,10 @@ function AdsMetricEvidencePanel({
         <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
         <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
         <AdsBudgetPacingRowsTable rows={budgetRows} currencyCode={currencyCode} />
-        <AdsRecommendationRowsPanel rows={recommendationRows} />
+        <AdsRecommendationRowsPanel
+          rows={recommendationRows}
+          currencyCode={currencyCode}
+        />
         <AdsImpressionShareRowsTable rows={impressionShareRows} />
         <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} currencyCode={currencyCode} />
@@ -2120,7 +2123,13 @@ function AdsBudgetPacingRowsTable({
   );
 }
 
-function AdsRecommendationRowsPanel({ rows }: { rows: AdsRecommendationRow[] }) {
+function AdsRecommendationRowsPanel({
+  rows,
+  currencyCode
+}: {
+  rows: AdsRecommendationRow[];
+  currencyCode?: string;
+}) {
   if (rows.length === 0) {
     return (
       <BlockerNotice message="Brak aktywnych rekomendacji Google Ads w ostatnim read-only odczycie albo brak kontraktu recommendations. WILQ nie przyjmuje rekomendacji bez review." />
@@ -2149,6 +2158,35 @@ function AdsRecommendationRowsPanel({ rows }: { rows: AdsRecommendationRow[] }) 
               {row.campaign_budget_id ?? "brak"} / zakres kampanii:{" "}
               {row.campaign_count ?? 0}
             </div>
+            {row.impact_available ? (
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+                <MetricTile label="Klik. delta" value={adsSignedNumber(row.delta_clicks)} />
+                <MetricTile
+                  label="Wyśw. delta"
+                  value={adsSignedNumber(row.delta_impressions)}
+                />
+                <MetricTile
+                  label="Koszt delta"
+                  value={adsSignedCost(row.delta_cost_micros, currencyCode)}
+                />
+                <MetricTile
+                  label="Koszt bazowy"
+                  value={adsCost(row.base_cost_micros, currencyCode)}
+                />
+                <MetricTile
+                  label="Koszt po"
+                  value={adsCost(row.potential_cost_micros, currencyCode)}
+                />
+                <MetricTile
+                  label="Konw. delta"
+                  value={adsSignedNumber(row.delta_conversions)}
+                />
+              </div>
+            ) : (
+              <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
+                Google Ads nie zwrócił impact metrics dla tego typu rekomendacji.
+              </div>
+            )}
             <TraceLine
               label="Nie wolno twierdzić"
               values={row.blocked_claims.map(adsBlockedClaimLabel)}
@@ -2754,6 +2792,20 @@ function adsAllowedMetricLabel(value: string) {
     budget_recommended_amount_micros: "rekomendowany budżet",
     recommendation_available: "rekomendacja dostępna",
     recommendation_campaign_count: "kampanie w rekomendacji",
+    recommendation_impact_base_clicks: "bazowe kliknięcia rekomendacji",
+    recommendation_impact_potential_clicks: "potencjalne kliknięcia rekomendacji",
+    recommendation_impact_base_impressions: "bazowe wyświetlenia rekomendacji",
+    recommendation_impact_potential_impressions:
+      "potencjalne wyświetlenia rekomendacji",
+    recommendation_impact_base_cost_micros: "bazowy koszt rekomendacji",
+    recommendation_impact_potential_cost_micros: "potencjalny koszt rekomendacji",
+    recommendation_impact_base_conversions: "bazowe konwersje rekomendacji",
+    recommendation_impact_potential_conversions:
+      "potencjalne konwersje rekomendacji",
+    recommendation_impact_base_conversion_value:
+      "bazowa wartość konwersji rekomendacji",
+    recommendation_impact_potential_conversion_value:
+      "potencjalna wartość konwersji rekomendacji",
     search_impression_share: "udział w wyświetleniach",
     search_budget_lost_impression_share: "utracony udział przez budżet",
     search_rank_lost_impression_share: "utracony udział przez ranking",
@@ -2862,6 +2914,20 @@ function adsCost(value: number | null | undefined, currencyCode?: string) {
   return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
     accountUnits
   )} jedn. konta`;
+}
+
+function adsSignedCost(value: number | null | undefined, currencyCode?: string) {
+  if (value === null || value === undefined) return "brak";
+  const formatted = adsCost(Math.abs(value), currencyCode);
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `-${formatted}`;
+  return formatted;
+}
+
+function adsSignedNumber(value: number | null | undefined) {
+  if (value === null || value === undefined) return "brak";
+  if (value > 0) return `+${adsNumber(value)}`;
+  return adsNumber(value);
 }
 
 function adsPercent(value: number | null | undefined) {

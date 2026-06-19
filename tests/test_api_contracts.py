@@ -1776,6 +1776,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
             assert "recommendation.dismissed" in query
             assert "recommendation.campaign_budget" in query
             assert "recommendation.campaigns" in query
+            assert "recommendation.impact" in query
             return httpx.Response(
                 200,
                 json=[
@@ -1795,6 +1796,18 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                     "campaigns": [
                                         "customers/test/campaigns/101",
                                     ],
+                                    "impact": {
+                                        "baseMetrics": {
+                                            "clicks": "20",
+                                            "impressions": "200",
+                                            "costMicros": "10000000",
+                                        },
+                                        "potentialMetrics": {
+                                            "clicks": "25",
+                                            "impressions": "260",
+                                            "costMicros": "12000000",
+                                        },
+                                    },
                                 },
                             },
                         ]
@@ -1958,6 +1971,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["recommendation_query"] == "active_recommendations"
     assert result.metric_summary["recommendation_row_count"] == 1
     assert result.metric_summary["recommendation_campaign_count"] == 1
+    assert result.metric_summary["recommendation_impact_row_count"] == 1
+    assert result.metric_summary["recommendation_impact_metric_count"] == 6
     assert result.metric_summary["recommendation_types"] == "CAMPAIGN_BUDGET"
     assert result.metric_summary["change_event_query"] == "change_event_last_14_days"
     assert result.metric_summary["change_event_row_count"] == 1
@@ -2084,6 +2099,14 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "campaign_budget_id": "701",
         "recommendation_campaign_count": "1",
     }
+    recommendation_impact_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "recommendation_impact_potential_cost_micros"
+    )
+    assert recommendation_impact_fact.value == 12000000
+    assert recommendation_impact_fact.period == "recommendation_impact"
+    assert recommendation_impact_fact.dimensions["recommendation_id"] == "rec-1"
     change_event_fact = next(
         fact for fact in result.metric_facts if fact.name == "change_event_available"
     )
@@ -2583,6 +2606,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "recommendation_query": "active_recommendations",
                 "recommendation_row_count": 1,
                 "recommendation_campaign_count": 1,
+                "recommendation_impact_row_count": 1,
+                "recommendation_impact_metric_count": 6,
                 "recommendation_types": "CAMPAIGN_BUDGET",
                 "impression_share_row_count": 1,
                 "change_event_query": "change_event_last_14_days",
@@ -2725,6 +2750,84 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "recommendation_campaign_count": "1",
                     },
                     period="recommendation",
+                ),
+                VendorMetricFact(
+                    "recommendation_impact_base_clicks",
+                    20,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation_impact",
+                ),
+                VendorMetricFact(
+                    "recommendation_impact_potential_clicks",
+                    25,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation_impact",
+                ),
+                VendorMetricFact(
+                    "recommendation_impact_base_impressions",
+                    200,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation_impact",
+                ),
+                VendorMetricFact(
+                    "recommendation_impact_potential_impressions",
+                    260,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation_impact",
+                ),
+                VendorMetricFact(
+                    "recommendation_impact_base_cost_micros",
+                    10000000,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation_impact",
+                ),
+                VendorMetricFact(
+                    "recommendation_impact_potential_cost_micros",
+                    12000000,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation_impact",
                 ),
                 VendorMetricFact(
                     "change_event_available",
@@ -3162,8 +3265,21 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert recommendations_contract["allowed_metrics"] == [
         "recommendation_available",
         "recommendation_campaign_count",
+        "recommendation_impact_base_clicks",
+        "recommendation_impact_potential_clicks",
+        "recommendation_impact_base_impressions",
+        "recommendation_impact_potential_impressions",
+        "recommendation_impact_base_cost_micros",
+        "recommendation_impact_potential_cost_micros",
+        "recommendation_impact_base_conversions",
+        "recommendation_impact_potential_conversions",
+        "recommendation_impact_base_conversion_value",
+        "recommendation_impact_potential_conversion_value",
     ]
     assert "recommendations" not in recommendations_contract["missing_read_contracts"]
+    assert "recommendation_impact_preview" not in recommendations_contract[
+        "missing_read_contracts"
+    ]
     assert "impression_share" not in recommendations_contract["missing_read_contracts"]
     assert "change_history" not in recommendations_contract["missing_read_contracts"]
     assert "recommendation apply" in recommendations_contract["blocked_claims"]
@@ -3175,6 +3291,22 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "campaign_id": "101",
             "campaign_budget_id": "701",
             "campaign_count": 1,
+            "impact_available": True,
+            "base_clicks": 20,
+            "potential_clicks": 25,
+            "delta_clicks": 5,
+            "base_impressions": 200,
+            "potential_impressions": 260,
+            "delta_impressions": 60,
+            "base_cost_micros": 10000000,
+            "potential_cost_micros": 12000000,
+            "delta_cost_micros": 2000000,
+            "base_conversions": None,
+            "potential_conversions": None,
+            "delta_conversions": None,
+            "base_conversion_value": None,
+            "potential_conversion_value": None,
+            "delta_conversion_value": None,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": recommendations_contract["recommendation_rows"][0][
                 "metric_facts"

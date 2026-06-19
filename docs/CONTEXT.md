@@ -43,8 +43,29 @@ Audit `docs/audits/001-output.md` is now folded into
    surfaces. Full `scripts/verify.sh` passed: backend API contracts
    `115 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
    and dashboard production build passed. This is still not profitability
-   proof: profit margin, business goal, impact/apply previews and human
+   proof: profit margin, business goal, recommendation apply preview and human
    confirmation remain blocked.
+
+0. Ads recommendation impact truth, 2026-06-19 23:44 Europe/Warsaw:
+   Google Ads recommendation read now includes `recommendation.impact` and
+   persists read-only `recommendation_impact_{base|potential}_*` metric facts.
+   Live proof `refresh_google_ads_978ef3a667f6` /
+   `ev_refresh_refresh_google_ads_978ef3a667f6` returned 4 active
+   recommendations and `recommendation_impact_row_count=2` with
+   `recommendation_impact_metric_count=8`.
+   `/api/ads/diagnostics.recommendations_read_contract.status=ready`; missing
+   contracts are now `human_strategy_review` and `recommendation_apply_preview`.
+   The scoped `wilq-ads-doctor` context-pack exposes the same impact rows:
+   `IMPROVE_PERFORMANCE_MAX_AD_STRENGTH` has `delta_cost_micros=4377640`, and
+   `SEARCH_PARTNERS_OPT_IN` has zero click/impression/cost deltas in current
+   evidence. Some recommendation types legitimately return no impact metrics;
+   treat that as per-row `missing_metrics=["recommendation_impact"]`, not a
+   global API blocker. This is still review-only: recommendation apply,
+   automatic accept, budget apply, campaign mutation and performance-uplift
+   claims remain blocked. Full `scripts/verify.sh` passed after this slice:
+   backend API contracts `115 passed`, dashboard route tests `13 passed`,
+   Playwright e2e `9 passed`, skill/API smokes and dashboard production build
+   passed.
 
 0. Local runtime stability rule, 2026-06-19 15:12 Europe/Warsaw: use
    `scripts/local_stack.sh start|stop|restart|status|logs` for the normal local
@@ -139,10 +160,11 @@ Audit `docs/audits/001-output.md` is now folded into
    `IMPROVE_PERFORMANCE_MAX_AD_STRENGTH`, `SEARCH_PARTNERS_OPT_IN`.
    `/api/ads/diagnostics.recommendations_read_contract.status=ready`, decision
    queue includes `ads_review_recommendations`, and scoped
-   `wilq-ads-doctor` context-pack exposes the same contract. Do not call this
-   apply-ready: impact preview, change history, impression share, human review
-   and recommendation apply preview remain missing, so apply/performance-uplift
-   claims stay blocked.
+   `wilq-ads-doctor` context-pack exposes the same contract. Historical note:
+   at this point impact preview was still missing; see the newer 2026-06-19
+   23:44 entry above for the current impact-read truth. Do not call
+   recommendations apply-ready until human review and recommendation apply
+   preview exist.
 0. Ads impression-share truth, 2026-06-19 17:55 Europe/Warsaw: Google Ads
    impression share is now a typed read-only contract, not a missing Ads
    optimizer blocker. Live proof `refresh_google_ads_baba7f993f1a` /
@@ -231,7 +253,7 @@ Audit `docs/audits/001-output.md` is now folded into
    `refresh_google_ads_baba7f993f1a`, and decision
    `ads_review_impression_share`. This is still not budget/waste/apply.
    Continue with change history, keyword/match context, full 90-day safety,
-   human budget goals, impact/apply previews and
+   human budget goals, recommendation apply previews and
    value/account-currency semantics before any money-leak/CPA/ROAS/budget
    scaling/negative-keyword apply claims. Full `scripts/verify.sh` passed for
    this slice with backend `108 passed`, dashboard unit `13 passed`,
