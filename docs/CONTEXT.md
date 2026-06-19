@@ -7,18 +7,27 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 
 1. `AGENTS.md` - stałe reguły pracy, sekrety, lokalne ścieżki i gotchas.
 2. `docs/goals/001-goal.md` - jedyny aktywny goal i kolejka następnych zadań.
-3. `docs/PROGRESS.md` - najnowszy stan slice'ów, testów i decyzji.
+3. `docs/PROGRESS.md` - krótki aktualny stan slice'ów, testów i decyzji.
 4. `docs/evals/skill-eval-ledger.md` - przebiegi ręcznych i non-interactive testów skillów.
 5. `docs/research/wilq-marketing-source-map.md` - źródła marketingowe i techniczne.
 6. `docs/architecture/bdos-class-wilq-operating-system.md` - poprzeczka produktowa.
 7. `docs/architecture/codex-runtime.md` - Codex skills, hooks, evals i runtime.
 8. `docs/audits/001-output.md` - świeży audyt 2026-06-18: co zatrzymać, co
    zacząć i pięć następnych slice'ów dla marketera.
+9. `docs/progress/archive/2026-06-19-progress-ledger.md` - pełny progress
+   ledger sprzed kompaktowania, używany tylko gdy potrzebna jest starsza
+   historia.
 
 ## Current Critical Direction
 
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
+
+0. Progress ledger maintenance rule, 2026-06-19 22:51 Europe/Warsaw:
+   `docs/PROGRESS.md` is now a short recovery ledger, not the full historical
+   changelog. Keep current state, last 3-5 slices, active gaps and next best
+   actions there. Move older detail to `docs/progress/archive/`; the first full
+   archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
 0. Local runtime stability rule, 2026-06-19 15:12 Europe/Warsaw: use
    `scripts/local_stack.sh start|stop|restart|status|logs` for the normal local

@@ -1,11 +1,16 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 22:45 Europe/Warsaw.
+Last updated: 2026-06-19 22:51 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
 foundation list or remove it from the active queue. Git history is the detailed
 archive.
+
+Progress hygiene rule: `docs/PROGRESS.md` is a compact recovery ledger, not a
+full chronological dump. Keep current state, last 3-5 slices, active gaps and
+next best actions there. Older detail belongs in `docs/progress/archive/`; the
+first full archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
 ## Recovery Contract
 
