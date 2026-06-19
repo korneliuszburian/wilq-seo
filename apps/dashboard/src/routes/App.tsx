@@ -1811,6 +1811,11 @@ function AdsDecisionCard({
             Budżety: {decision.budget_rows.length}
           </span>
         ) : null}
+        {decision.budget_apply_preview.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Budżet preview: {decision.budget_apply_preview.length}
+          </span>
+        ) : null}
         {decision.recommendation_rows.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Rekomendacje: {decision.recommendation_rows.length}
@@ -2104,6 +2109,7 @@ function AdsBudgetPacingRowsTable({
             <th className="py-2 pr-4 font-semibold">7-dniowy budżet</th>
             <th className="py-2 pr-4 font-semibold">Wydanie</th>
             <th className="py-2 pr-4 font-semibold">Rekomendacja Google</th>
+            <th className="py-2 pr-4 font-semibold">Preview apply</th>
             <th className="py-2 pr-3 font-semibold">Blokady</th>
           </tr>
         </thead>
@@ -2133,6 +2139,24 @@ function AdsBudgetPacingRowsTable({
                 {row.has_recommended_budget
                   ? adsCost(row.recommended_budget_amount_micros, currencyCode)
                   : "brak"}
+              </td>
+              <td className="min-w-48 py-2 pr-4 text-xs text-slate-600">
+                {row.payload_preview ? (
+                  <div>
+                    <div className="font-semibold text-ink">
+                      {adsCost(
+                        row.payload_preview.proposed_budget_amount_micros,
+                        currencyCode
+                      )}
+                    </div>
+                    <div>
+                      {row.payload_preview.operation_type} /{" "}
+                      {row.payload_preview.apply_allowed ? "apply możliwy" : "apply zablokowany"}
+                    </div>
+                  </div>
+                ) : (
+                  "brak"
+                )}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}

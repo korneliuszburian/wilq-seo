@@ -544,6 +544,47 @@ const adsDiagnostics = {
         recommended_budget_delta_micros: 12000000,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
+        payload_preview: {
+          id: "budget_apply_preview_123_777",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          campaign_budget_id: "777",
+          campaign_budget_name: "Ekologus Search budget",
+          operation_type: "CampaignBudgetOperation",
+          current_budget_amount_micros: 30000000,
+          proposed_budget_amount_micros: 42000000,
+          proposed_budget_delta_micros: 12000000,
+          reason:
+            "Review-only podgląd CampaignBudgetOperation z Google recommended budget.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: [
+            "budget_amount_micros",
+            "budget_recommended_amount_micros"
+          ],
+          required_validation: [
+            "review_campaign_activity",
+            "verify_account_currency",
+            "budget_pacing",
+            "impression_share",
+            "change_history",
+            "human_budget_goal",
+            "campaign_budget_operation_preview",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: [
+            "budget scaling",
+            "budget apply",
+            "campaign pause",
+            "wasted budget",
+            "profitability",
+            "CPA verdict",
+            "ROAS verdict",
+            "recommendation apply"
+          ],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        },
         missing_metrics: [],
         blocked_claims: [
           "budget scaling",
@@ -554,6 +595,49 @@ const adsDiagnostics = {
         ]
       }
     ],
+    payload_preview: [
+      {
+        id: "budget_apply_preview_123_777",
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        campaign_budget_id: "777",
+        campaign_budget_name: "Ekologus Search budget",
+        operation_type: "CampaignBudgetOperation",
+        current_budget_amount_micros: 30000000,
+        proposed_budget_amount_micros: 42000000,
+        proposed_budget_delta_micros: 12000000,
+        reason: "Review-only podgląd CampaignBudgetOperation z Google recommended budget.",
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        source_metric_names: [
+          "budget_amount_micros",
+          "budget_recommended_amount_micros"
+        ],
+        required_validation: [
+          "review_campaign_activity",
+          "verify_account_currency",
+          "budget_pacing",
+          "impression_share",
+          "change_history",
+          "human_budget_goal",
+          "campaign_budget_operation_preview",
+          "human_confirm_before_apply"
+        ],
+        blocked_claims: [
+          "budget scaling",
+          "budget apply",
+          "campaign pause",
+          "wasted budget",
+          "profitability",
+          "CPA verdict",
+          "ROAS verdict",
+          "recommendation apply"
+        ],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ],
+    action_ids: ["act_prepare_ads_campaign_review_queue"],
     next_step:
       "Użyj tego jako kontekstu review; nie skaluj budżetu bez historii zmian i walidowanego ActionObject."
   },

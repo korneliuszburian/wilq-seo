@@ -3252,6 +3252,49 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "recommendations" not in budget_contract["missing_read_contracts"]
     assert "impression_share" not in budget_contract["missing_read_contracts"]
     assert "change_history" not in budget_contract["missing_read_contracts"]
+    assert "budget_apply_preview" not in budget_contract["missing_read_contracts"]
+    assert budget_contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert budget_contract["payload_preview"] == [
+        {
+            "id": "budget_apply_preview_101_701",
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_budget_id": "701",
+            "campaign_budget_name": "Brand budget",
+            "operation_type": "CampaignBudgetOperation",
+            "current_budget_amount_micros": 30000000,
+            "proposed_budget_amount_micros": 42000000,
+            "proposed_budget_delta_micros": 12000000,
+            "reason": budget_contract["payload_preview"][0]["reason"],
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "source_metric_names": budget_contract["payload_preview"][0][
+                "source_metric_names"
+            ],
+            "required_validation": [
+                "review_campaign_activity",
+                "verify_account_currency",
+                "budget_pacing",
+                "impression_share",
+                "change_history",
+                "human_budget_goal",
+                "campaign_budget_operation_preview",
+                "human_confirm_before_apply",
+            ],
+            "blocked_claims": [
+                "budget scaling",
+                "budget apply",
+                "campaign pause",
+                "wasted budget",
+                "profitability",
+                "CPA verdict",
+                "ROAS verdict",
+                "recommendation apply",
+            ],
+            "api_mutation_ready": False,
+            "apply_allowed": False,
+            "destructive": False,
+        }
+    ]
     assert budget_contract["budget_rows"] == [
         {
             "campaign_id": "101",
@@ -3271,12 +3314,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "recommended_budget_delta_micros": 12000000,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": budget_contract["budget_rows"][0]["metric_facts"],
+            "payload_preview": budget_contract["payload_preview"][0],
             "missing_metrics": [],
             "blocked_claims": [
                 "budget scaling",
                 "budget apply",
-                "profitability",
+                "campaign pause",
                 "wasted budget",
+                "profitability",
+                "CPA verdict",
+                "ROAS verdict",
                 "recommendation apply",
             ],
         }
@@ -3747,6 +3794,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert budget_decision["decision_type"] == "review_budget_context"
     assert budget_decision["budget_rows"][0]["campaign_name"] == "Brand Search"
     assert budget_decision["budget_rows"][0]["spend_to_budget_ratio_7d"] == 0.057143
+    assert budget_decision["budget_apply_preview"][0]["operation_type"] == (
+        "CampaignBudgetOperation"
+    )
+    assert budget_decision["budget_apply_preview"][0]["api_mutation_ready"] is False
+    assert budget_decision["budget_apply_preview"][0]["apply_allowed"] is False
     assert budget_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     assert budget_decision["knowledge_card_ids"] == [
         "card_google_ads_budget_review_playbook"
@@ -3939,9 +3991,27 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "has_recommended_budget": True,
         "recommended_budget_amount_micros": 42000000,
     }
+    assert campaign_review_action["payload"]["preview_contract"] == (
+        "budget_apply_preview_v1"
+    )
+    assert campaign_review_action["payload"]["budget_payload_preview"][0][
+        "operation_type"
+    ] == "CampaignBudgetOperation"
+    assert campaign_review_action["payload"]["budget_payload_preview"][0][
+        "proposed_budget_amount_micros"
+    ] == 42000000
+    assert campaign_review_action["payload"]["budget_payload_preview"][0][
+        "api_mutation_ready"
+    ] is False
+    assert campaign_review_action["payload"]["budget_payload_preview"][0][
+        "apply_allowed"
+    ] is False
     assert campaign_review_action["payload"]["apply_allowed"] is False
     assert campaign_review_action["payload"]["destructive"] is False
     assert "budget_pacing" in campaign_review_action["payload"]["required_validation"]
+    assert "budget_apply_preview" in campaign_review_action["payload"][
+        "required_validation"
+    ]
     assert "budget scaling" in campaign_review_action["payload"]["blocked_claims"]
     campaign_review_validation_response = client.post(
         "/api/actions/act_prepare_ads_campaign_review_queue/validate",

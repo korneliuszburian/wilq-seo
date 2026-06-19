@@ -8,6 +8,7 @@ from wilq.schemas import MetricFact
 CAMPAIGN_REVIEW_ACTION_ID = "act_prepare_ads_campaign_review_queue"
 CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "budget scaling",
+    "budget apply",
     "campaign pause",
     "wasted budget",
     "profitability",
@@ -15,10 +16,21 @@ CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
     "ROAS verdict",
     "recommendation apply",
 ]
+CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION = [
+    "review_campaign_activity",
+    "verify_account_currency",
+    "budget_pacing",
+    "impression_share",
+    "change_history",
+    "human_budget_goal",
+    "campaign_budget_operation_preview",
+    "human_confirm_before_apply",
+]
 CAMPAIGN_REVIEW_REQUIRED_VALIDATION = [
     "review_campaign_activity",
     "verify_account_currency",
     "budget_pacing",
+    "budget_apply_preview",
     "impression_share",
     "change_history",
     "recommendations",
@@ -44,6 +56,37 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
     for required_check in CAMPAIGN_REVIEW_REQUIRED_VALIDATION:
         if required_check not in required_validation:
             errors.append(f"Campaign review payload requires {required_check}.")
+    preview_items = payload.get("budget_payload_preview")
+    if not isinstance(preview_items, list):
+        errors.append("Campaign review payload requires budget_payload_preview list.")
+        return errors
+    candidates_with_budget = [
+        candidate
+        for candidate in payload.get("campaign_candidates", [])
+        if isinstance(candidate, dict)
+        and isinstance(candidate.get("budget_context"), dict)
+        and candidate["budget_context"].get("budget_amount_micros") is not None
+    ]
+    if candidates_with_budget and not preview_items:
+        errors.append("Campaign review payload requires budget preview for budget facts.")
+    for index, item in enumerate(preview_items):
+        if not isinstance(item, dict):
+            errors.append(f"Budget payload preview item {index} must be object.")
+            continue
+        if item.get("operation_type") != "CampaignBudgetOperation":
+            errors.append(
+                f"Budget payload preview item {index} must use CampaignBudgetOperation."
+            )
+        if item.get("apply_allowed") is not False:
+            errors.append(f"Budget payload preview item {index} must keep apply_allowed=false.")
+        if item.get("destructive") is not False:
+            errors.append(f"Budget payload preview item {index} must be non-destructive.")
+        if item.get("api_mutation_ready") is not False:
+            errors.append(
+                f"Budget payload preview item {index} must not be API-mutation ready."
+            )
+        if not item.get("evidence_ids"):
+            errors.append(f"Budget payload preview item {index} requires evidence IDs.")
     return errors
 
 
@@ -77,21 +120,27 @@ def campaign_review_payload_from_metric_facts(
         for candidate in candidates
         for metric_name in candidate.get("source_metric_names", [])
     )
+    budget_payload_preview = [
+        candidate["budget_payload_preview"]
+        for candidate in candidates
+        if isinstance(candidate.get("budget_payload_preview"), dict)
+    ]
     return {
         "action_type": "campaign_change_review",
         "connector": "google_ads",
         "mode": "prepare_only",
         "campaign_candidates": candidates,
+        "preview_contract": "budget_apply_preview_v1",
+        "budget_payload_preview": budget_payload_preview,
         "source_metric_names": source_metric_names,
         "evidence_ids": evidence_ids,
         "required_validation": CAMPAIGN_REVIEW_REQUIRED_VALIDATION,
         "missing_read_contracts": [
-            "account_currency",
-            "profit_margin",
-            "budget_pacing",
-            "impression_share",
-            "change_history",
-            "recommendations",
+            "profit_margin_or_value_model",
+            "budget_target_or_seasonality",
+            "human_budget_goal",
+            "campaign_budget_apply_safety",
+            "mutation_audit",
         ],
         "blocked_claims": CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
         "apply_allowed": False,
@@ -137,8 +186,25 @@ def _campaign_candidate(
     conversions = _float_metric_value(facts_by_name.get("conversions"))
     conversion_value = _float_metric_value(facts_by_name.get("conversion_value"))
     budget_amount_micros = _int_metric_value(facts_by_name.get("budget_amount_micros"))
+    has_recommended_budget = _bool_metric_value(
+        facts_by_name.get("budget_has_recommended_budget")
+    )
     recommended_budget_amount_micros = _int_metric_value(
         facts_by_name.get("budget_recommended_amount_micros")
+    )
+    source_metric_names = _unique(fact.name for fact in facts)
+    evidence_ids = _unique(fact.evidence_id for fact in facts)
+    budget_dimensions = _budget_dimensions(facts)
+    budget_payload_preview = _budget_payload_preview(
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        budget_id=budget_dimensions.get("budget_id"),
+        budget_name=budget_dimensions.get("budget_name"),
+        budget_amount_micros=budget_amount_micros,
+        has_recommended_budget=has_recommended_budget,
+        recommended_budget_amount_micros=recommended_budget_amount_micros,
+        source_metric_names=source_metric_names,
+        evidence_ids=evidence_ids,
     )
     return {
         "campaign_id": campaign_id,
@@ -166,17 +232,80 @@ def _campaign_candidate(
                 cost_micros,
                 budget_amount_micros * 7 if budget_amount_micros is not None else None,
             ),
-            "has_recommended_budget": _bool_metric_value(
-                facts_by_name.get("budget_has_recommended_budget")
-            ),
+            "has_recommended_budget": has_recommended_budget,
             "recommended_budget_amount_micros": recommended_budget_amount_micros,
         },
-        "source_metric_names": _unique(fact.name for fact in facts),
-        "evidence_ids": _unique(fact.evidence_id for fact in facts),
+        "budget_payload_preview": budget_payload_preview,
+        "source_metric_names": source_metric_names,
+        "evidence_ids": evidence_ids,
         "required_checks": CAMPAIGN_REVIEW_REQUIRED_VALIDATION,
         "blocked_claims": CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
         "apply_allowed": False,
     }
+
+
+def _budget_payload_preview(
+    *,
+    campaign_id: str | None,
+    campaign_name: str,
+    budget_id: str | None,
+    budget_name: str | None,
+    budget_amount_micros: int | None,
+    has_recommended_budget: bool | None,
+    recommended_budget_amount_micros: int | None,
+    source_metric_names: list[str],
+    evidence_ids: list[str],
+) -> dict[str, Any]:
+    proposed_budget_amount_micros = (
+        recommended_budget_amount_micros
+        if has_recommended_budget and recommended_budget_amount_micros is not None
+        else None
+    )
+    proposed_budget_delta_micros = (
+        proposed_budget_amount_micros - budget_amount_micros
+        if proposed_budget_amount_micros is not None and budget_amount_micros is not None
+        else None
+    )
+    reason = (
+        "Review-only podgląd CampaignBudgetOperation z Google recommended budget. "
+        "WILQ nie może zmienić budżetu bez celu budżetowego, review strategii, "
+        "potwierdzenia człowieka i audytu."
+        if proposed_budget_amount_micros is not None
+        else (
+            "Review-only podgląd CampaignBudgetOperation. Google Ads nie zwrócił "
+            "recommended budget, więc WILQ pokazuje bieżący budżet i blokuje "
+            "propozycję kwoty do czasu human_budget_goal."
+        )
+    )
+    return {
+        "id": (
+            f"budget_apply_preview_{_slug(campaign_id or campaign_name)}_"
+            f"{_slug(budget_id or budget_name or 'budget')}"
+        ),
+        "campaign_id": campaign_id,
+        "campaign_name": campaign_name,
+        "campaign_budget_id": budget_id,
+        "campaign_budget_name": budget_name,
+        "operation_type": "CampaignBudgetOperation",
+        "current_budget_amount_micros": budget_amount_micros,
+        "proposed_budget_amount_micros": proposed_budget_amount_micros,
+        "proposed_budget_delta_micros": proposed_budget_delta_micros,
+        "reason": reason,
+        "evidence_ids": evidence_ids,
+        "source_metric_names": source_metric_names,
+        "required_validation": CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION,
+        "blocked_claims": CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+        "api_mutation_ready": False,
+        "apply_allowed": False,
+        "destructive": False,
+    }
+
+
+def _budget_dimensions(facts: list[MetricFact]) -> dict[str, str]:
+    return next(
+        (fact.dimensions for fact in facts if fact.dimensions.get("budget_id")),
+        facts[0].dimensions if facts else {},
+    )
 
 
 def _int_metric_value(fact: MetricFact | None) -> int | None:
@@ -231,3 +360,7 @@ def _unique(values: Iterable[object]) -> list[str]:
         if text and text not in result:
             result.append(text)
     return result
+
+
+def _slug(value: object) -> str:
+    return str(value).strip().lower().replace(" ", "_")[:80] or "unknown"

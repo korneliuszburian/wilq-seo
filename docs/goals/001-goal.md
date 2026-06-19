@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 00:31 Europe/Warsaw.
+Last updated: 2026-06-20 00:52 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -73,12 +73,13 @@ recommendation apply payload preview, a read-only 90-day search-term safety
 contract and a review-only negative keyword payload preview plus read-only
 keyword match context for negative keyword review. Custom segments now have a
 review-only payload preview from real search terms, but no targeting/apply
-support.
+support. Campaign budgets now have review-only `CampaignBudgetOperation`
+payload previews from budget facts, but no budget apply support.
 Full BDOS-class parity still requires optimizer contracts such as
 profit-margin/business-goal interpretation, human strategy review,
 pre/post change-impact windows, Keyword Planner enrichment, forecast or
-audience-size checks, custom segment targeting/apply previews, budget/apply
-previews, apply safety and mutation audit paths, plus real Localo
+audience-size checks, custom segment targeting/apply previews, budget apply
+safety, apply confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
@@ -163,13 +164,18 @@ Current connector truth:
   candidate contract with review-only payload preview and a prepare-only
   negative keyword safety review contract with review-only payload preview plus
   read-only keyword match context. Recommendations now also have a review-only
-  apply payload preview ActionObject.
+  apply payload preview ActionObject. Campaign budgets now also have
+  review-only `CampaignBudgetOperation` payload previews exposed through
+  `/api/ads/diagnostics`, `/api/actions/act_prepare_ads_campaign_review_queue`
+  and dashboard `/ads-doctor`; every preview keeps `api_mutation_ready=false`,
+  `apply_allowed=false` and `destructive=false`.
   Latest live Ads proof: `refresh_google_ads_60956db2c42f` /
   `ev_refresh_refresh_google_ads_60956db2c42f` exposes
   `customer_currency_code=PLN`, 18 campaign rows, 50 30-day search-term rows,
   200 90-day search-term safety rows, 211 keyword match context rows, 4 active
   Google Ads recommendation rows, 2 recommendation rows with impact preview,
-  4 recommendation apply payload preview rows, 2 impression-share rows and
+  4 recommendation apply payload preview rows, 18 campaign budget apply preview
+  rows, 2 impression-share rows and
   `change_event_row_count=0` for the last 14 days.
   `/api/ads/diagnostics` reports
   `account_currency_read_contract.status=ready`,
@@ -197,17 +203,22 @@ Current connector truth:
   `apply_allowed=false` and `destructive=false`. Recommendation apply preview
   rows use `operation_type=ApplyRecommendationOperation`, but also keep
   `api_mutation_ready=false`, `apply_allowed=false` and `destructive=false`.
+  Budget apply preview rows use `operation_type=CampaignBudgetOperation`, but
+  also keep `api_mutation_ready=false`, `apply_allowed=false` and
+  `destructive=false`.
   WILQ still blocks `negative keyword apply`, `recommendation apply`,
   `search-term waste`, CPA, ROAS and conversion-loss claims until human review,
-  confirmation and future apply/audit contracts exist. Profitability, wasted-budget,
-  audience size, budget scaling, campaign-performance, recommendation apply,
+  confirmation and future apply/audit contracts exist. Budget preview does not
+  mean budget apply: WILQ still blocks budget scaling/apply until
+  `human_budget_goal`, apply safety and mutation audit exist. Profitability,
+  wasted-budget, audience size, campaign-performance, recommendation apply,
   change impact and performance-uplift claims still need explicit
   read/safety/apply contracts. Individual recommendation rows may still show
   `missing_metrics=["recommendation_impact"]` when Google Ads does not return
   impact metrics for that recommendation type; that is not an OAuth/API blocker.
-  Full `scripts/verify.sh` passed for the recommendation apply-preview slice on
-  2026-06-20: backend API contracts `115 passed`, dashboard route tests
-  `13 passed`, Playwright e2e `9 passed`, API smoke, skill structure smoke,
+  Full `scripts/verify.sh` passed for the budget apply-preview slice on
+  2026-06-20: backend API contracts `116 passed`, dashboard route tests
+  `14 passed`, Playwright e2e `9 passed`, API smoke, skill structure smoke,
   skill API smoke, security checks and dashboard production build passed.
   Source-backed decision lineage now exists for Ads diagnostics: sections and
   decision queue items expose `knowledge_card_ids` and `expert_rule_ids`.
@@ -809,8 +820,8 @@ Work in this order:
    Still missing for BDOS-class Ads value: change history,
    keyword/match context, full 90-day safety history, Keyword
    Planner enrichment, forecast/audience-size contract, custom segment payload
-   preview, margin/currency interpretation, explicit budget/apply previews and
-   all Ads apply/audit paths. Full `scripts/verify.sh` passed after the custom
+   preview, margin/currency interpretation, budget apply safety/confirmation
+   and all Ads apply/audit paths. Full `scripts/verify.sh` passed after the custom
    segments slice on 2026-06-19: backend API contracts `100 passed`, dashboard
    route tests `13 passed`, Playwright e2e `9 passed` and dashboard production
    build passed. For the negative keyword safety slice, focused
@@ -1862,7 +1873,9 @@ Live `:8000` proof after API restart:
 
 Remaining Ads optimizer blockers:
 
-- no budget/apply preview or human budget-goal contract,
+- budget apply preview exists as review-only `CampaignBudgetOperation`, but
+  human budget-goal, apply safety and mutation audit contracts are still
+  missing,
 - no recommendation apply support, human strategy-review or mutation audit path,
 - no pre/post change-impact window contract,
 - no profit-margin/business-goal interpretation contract,

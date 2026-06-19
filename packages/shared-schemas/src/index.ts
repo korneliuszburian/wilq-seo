@@ -317,6 +317,26 @@ export const AdsDerivedKpiReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsBudgetApplyPreviewSchema = z.object({
+  id: z.string(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string(),
+  campaign_budget_id: z.string().nullable().optional(),
+  campaign_budget_name: z.string().nullable().optional(),
+  operation_type: z.literal("CampaignBudgetOperation"),
+  current_budget_amount_micros: z.number().nullable().optional(),
+  proposed_budget_amount_micros: z.number().nullable().optional(),
+  proposed_budget_delta_micros: z.number().nullable().optional(),
+  reason: z.string(),
+  evidence_ids: z.array(z.string()),
+  source_metric_names: z.array(z.string()),
+  required_validation: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsBudgetPacingRowSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
@@ -335,6 +355,7 @@ export const AdsBudgetPacingRowSchema = z.object({
   recommended_budget_delta_micros: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
+  payload_preview: AdsBudgetApplyPreviewSchema.nullable().optional(),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string())
 });
@@ -350,6 +371,8 @@ export const AdsBudgetPacingReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   budget_rows: z.array(AdsBudgetPacingRowSchema),
+  payload_preview: z.array(AdsBudgetApplyPreviewSchema),
+  action_ids: z.array(z.string()),
   next_step: z.string()
 });
 
@@ -714,6 +737,7 @@ export const AdsDecisionItemSchema = z.object({
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
   derived_kpi_rows: z.array(AdsDerivedKpiRowSchema),
   budget_rows: z.array(AdsBudgetPacingRowSchema),
+  budget_apply_preview: z.array(AdsBudgetApplyPreviewSchema).optional().default([]),
   recommendation_rows: z.array(AdsRecommendationRowSchema),
   recommendation_apply_preview: z.array(AdsRecommendationApplyPreviewSchema)
     .optional()

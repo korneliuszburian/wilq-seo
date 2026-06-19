@@ -546,6 +546,26 @@ class AdsDerivedKpiReadContract(BaseModel):
     next_step: str
 
 
+class AdsBudgetApplyPreview(BaseModel):
+    id: str
+    campaign_id: str | None = None
+    campaign_name: str
+    campaign_budget_id: str | None = None
+    campaign_budget_name: str | None = None
+    operation_type: Literal["CampaignBudgetOperation"] = "CampaignBudgetOperation"
+    current_budget_amount_micros: int | None = None
+    proposed_budget_amount_micros: int | None = None
+    proposed_budget_delta_micros: int | None = None
+    reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_metric_names: list[str] = Field(default_factory=list)
+    required_validation: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class AdsBudgetPacingRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
@@ -564,6 +584,7 @@ class AdsBudgetPacingRow(BaseModel):
     recommended_budget_delta_micros: int | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    payload_preview: AdsBudgetApplyPreview | None = None
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
 
@@ -579,6 +600,8 @@ class AdsBudgetPacingReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
+    payload_preview: list[AdsBudgetApplyPreview] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
     next_step: str
 
 
@@ -947,6 +970,7 @@ class AdsDecisionItem(BaseModel):
     campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     derived_kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
+    budget_apply_preview: list[AdsBudgetApplyPreview] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
     recommendation_apply_preview: list[AdsRecommendationApplyPreview] = Field(
         default_factory=list

@@ -52,10 +52,16 @@ Aktualny proof produktowy:
   preview jest dostępny dla 2 z 4 rekomendacji, a review-only apply payload
   preview dla 4 z 4 rekomendacji. Brakujący kontrakt pozostaje celowo wąski:
   `human_strategy_review`.
+- `/api/ads/diagnostics.budget_pacing_read_contract.payload_preview` ma 18
+  review-only `CampaignBudgetOperation` preview rows. ActionObject
+  `act_prepare_ads_campaign_review_queue` ma 8 budżetowych preview rows,
+  `preview_contract=budget_apply_preview_v1`, `apply_allowed=false`,
+  `destructive=false` i waliduje się jako `valid=true`. To nadal nie jest
+  budget apply support.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
-- Pełny `scripts/verify.sh` przeszedł po recommendation apply-preview slice: backend
-  API contracts `115 passed`, dashboard route tests `13 passed`, Playwright
+- Pełny `scripts/verify.sh` przeszedł po budget apply-preview slice: backend
+  API contracts `116 passed`, dashboard route tests `14 passed`, Playwright
   e2e `9 passed`, security, skill/API smokes i dashboard production build passed.
 
 Aktualny maintenance:
@@ -66,7 +72,27 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
+1. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
+   Google Ads budget context ma teraz review-only
+   `CampaignBudgetOperation` payload preview w typed API, shared schemas,
+   dashboardzie `/ads-doctor` i ActionObject
+   `act_prepare_ads_campaign_review_queue`. Preview pokazuje bieżący budżet,
+   ewentualną rekomendowaną kwotę/deltę z Google, evidence IDs, required
+   validation i blocked claims. Każdy preview ma `api_mutation_ready=false`,
+   `apply_allowed=false`, `destructive=false`; WILQ nadal blokuje budget apply
+   bez `human_budget_goal`, apply safety i mutation audit. Live proof po
+   `scripts/local_stack.sh restart`: `/api/ads/diagnostics` zwraca 18 budget
+   preview rows i decision `ads_review_budget_context` z
+   `action_ids=["act_prepare_ads_campaign_review_queue"]`;
+   `/api/actions/act_prepare_ads_campaign_review_queue` zwraca 8 preview rows,
+   `preview_contract=budget_apply_preview_v1`, a walidacja ActionObject daje
+   `valid=true`. Focused ruff, mypy, backend Ads tests, shared schema
+   typecheck, dashboard typecheck i `App.test.tsx` passed. Full
+   `scripts/verify.sh` passed: backend `116 passed`, dashboard unit
+   `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
+   dashboard production build passed.
+
+2. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
    Daily runtime cache TTL wzrósł z 2s do 30s
    (`WILQ_DAILY_RUNTIME_CACHE_SECONDS` nadal może to nadpisać), a dashboardowy
    TanStack Query client używa `staleTime=30000` i
@@ -77,7 +103,7 @@ Aktualny maintenance:
    `0.007s`, `0.009s`, `0.010s`, `0.007s` w oknie cache. Focused ruff, mypy,
    backend cache tests, dashboard `App.test.tsx`, dashboard typecheck passed.
 
-2. Ads recommendation apply payload preview, 2026-06-20 00:20 Europe/Warsaw.
+3. Ads recommendation apply payload preview, 2026-06-20 00:20 Europe/Warsaw.
    Google Ads recommendations mają teraz review-only apply payload preview w
    typed API, dashboardzie, ActionObject i scoped `wilq-ads-doctor`
    context-packu. To nie jest apply support: payload używa
@@ -98,7 +124,7 @@ Aktualny maintenance:
    dashboard production build passed. `uv.lock` zaktualizowany przy okazji
    security gate: `msgpack 1.2.0 -> 1.2.1`.
 
-3. Ads recommendation impact preview, 2026-06-19 23:44 Europe/Warsaw.
+4. Ads recommendation impact preview, 2026-06-19 23:44 Europe/Warsaw.
    Google Ads recommendations query pobiera read-only `recommendation.impact`.
    WILQ zapisuje impact metric facts jako
    `recommendation_impact_{base|potential}_*`, `/api/ads/diagnostics` pokazuje
@@ -113,7 +139,7 @@ Aktualny maintenance:
    `115 passed`, dashboard unit `13 passed`, Playwright e2e `9 passed`, skill
    smokes and dashboard production build passed.
 
-4. Ads account currency read contract, 2026-06-19 23:12 Europe/Warsaw.
+5. Ads account currency read contract, 2026-06-19 23:12 Europe/Warsaw.
    Google Ads campaign read query pobiera `customer.currency_code` jako
    read-only fact. WILQ zapisuje `account_currency_code` z evidence ID,
    `/api/ads/diagnostics` wystawia `account_currency_read_contract`, scoped
@@ -126,22 +152,6 @@ Aktualny maintenance:
    passed: backend `115 passed`, dashboard unit `13 passed`, Playwright e2e
    `9 passed` and dashboard production build passed.
 
-5. Non-daily skill context-pack compaction, 2026-06-19 22:45 Europe/Warsaw.
-   Default context-packs pomijają ciężkie diagnostic sections i metric facts
-   dla content, GA4 i Merchant scoped packs. Campaign Builder nie ciągnie już
-   Merchant jako domyślnego scope'u i używa lekkiego `content_landing_context`.
-   Demand Gen buduje Ads + GA4 równolegle i nie ciągnie Merchant bez konkretnego
-   kontraktu Demand Gen/Merchant. Live proof po `scripts/local_stack.sh restart`:
-   `wilq-campaign-builder` `90711 bytes`, cold `1.867s`, warm `0.158s`;
-   `wilq-demand-gen-operator` `100349 bytes`, cold `2.574s`, warm `0.156s`;
-   `wilq-content-strategist` `91731 bytes`, cold `2.044s`, warm `0.166s`;
-   `wilq-ga4-analyst` `28578 bytes`, cold `1.927s`, warm `0.147s`;
-   `wilq-merchant-feed-operator` `24007 bytes`, cold `1.819s`,
-   warm `0.153s`; `wilq-ads-doctor` `185126 bytes`, cold `1.392s`,
-   warm `0.156s`; `wilq-custom-segments` `187121 bytes`, cold `1.408s`,
-   warm `0.194s`; `wilq-daily-command` `120504 bytes`, cold `1.918s`,
-   warm `0.236s`. Full `scripts/verify.sh` passed.
-
 ## Active Gaps
 
 - Demand Gen cold context-pack is still about `2.6s`; payload and warm runtime
@@ -149,7 +159,7 @@ Aktualny maintenance:
   browser/Codex proof.
 - Full BDOS-class Ads optimizer is not done. Remaining areas include Keyword
   Planner enrichment, forecast/audience size, profit-margin/business-goal
-  interpretation, human strategy review, budget/apply previews, apply safety,
+  interpretation, human strategy review, budget apply safety/confirmation,
   impact sanity checks and mutation audit.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety

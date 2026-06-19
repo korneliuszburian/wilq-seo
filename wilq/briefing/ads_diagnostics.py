@@ -3,7 +3,11 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
-from wilq.actions.google_ads.campaign_review import CAMPAIGN_REVIEW_ACTION_ID
+from wilq.actions.google_ads.campaign_review import (
+    CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION,
+    CAMPAIGN_REVIEW_ACTION_ID,
+    CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+)
 from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     CUSTOM_SEGMENT_BLOCKED_CLAIMS,
@@ -27,6 +31,7 @@ from wilq.schemas import (
     ActionRisk,
     AdsAccountCurrencyReadContract,
     AdsBlockedHandoff,
+    AdsBudgetApplyPreview,
     AdsBudgetPacingReadContract,
     AdsBudgetPacingRow,
     AdsCampaignMetricRow,
@@ -319,6 +324,15 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
                 "missing_read_contracts": _remove_missing_contract_names(
                     impression_share_read_contract.missing_read_contracts,
                     "change_history",
+                )
+            }
+        )
+    if budget_pacing_read_contract.payload_preview:
+        impression_share_read_contract = impression_share_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    impression_share_read_contract.missing_read_contracts,
+                    "budget_apply_preview",
                 )
             }
         )
@@ -880,6 +894,9 @@ def _budget_pacing_read_contract(
     latest_refresh: ConnectorRefreshRun | None,
 ) -> AdsBudgetPacingReadContract:
     rows = _budget_pacing_rows(metric_facts)
+    payload_preview = [
+        row.payload_preview for row in rows if row.payload_preview is not None
+    ]
     missing_read_contracts = [
         "shared_budget_distribution",
         "budget_target_or_seasonality",
@@ -920,6 +937,8 @@ def _budget_pacing_read_contract(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             budget_rows=rows,
+            payload_preview=payload_preview,
+            action_ids=[CAMPAIGN_REVIEW_ACTION_ID] if payload_preview else [],
             next_step=(
                 "Użyj tego jako kontekstu review: które kampanie mają koszt względem "
                 "budżetu dziennego i czy Google pokazuje recommended budget. Nie "
@@ -939,6 +958,8 @@ def _budget_pacing_read_contract(
         evidence_ids=campaign_read_contract.evidence_ids
         or _refresh_or_connector_evidence_ids(latest_refresh),
         budget_rows=[],
+        payload_preview=[],
+        action_ids=[],
         next_step=(
             "Uruchom read-only Google Ads vendor_read z campaign_budget fields. "
             "Nie oceniaj tempa budżetu bez budget_amount_micros."
@@ -1011,6 +1032,17 @@ def _budget_pacing_row(
     missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
     if budget_period != "DAILY":
         missing_metrics.append("daily_budget_period_for_7d_ratio")
+    payload_preview = _budget_apply_preview(
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        budget_id=first_dimensions.get("budget_id"),
+        budget_name=first_dimensions.get("budget_name"),
+        budget_amount_micros=budget_amount_micros,
+        has_recommended_budget=has_recommended_budget,
+        recommended_budget_amount_micros=recommended_budget_amount_micros,
+        source_metric_names=_unique(fact.name for fact in facts),
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+    )
     return AdsBudgetPacingRow(
         campaign_id=campaign_id,
         campaign_name=campaign_name,
@@ -1029,14 +1061,62 @@ def _budget_pacing_row(
         recommended_budget_delta_micros=recommended_budget_delta_micros,
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
+        payload_preview=payload_preview,
         missing_metrics=_unique(missing_metrics),
-        blocked_claims=[
-            "budget scaling",
-            "budget apply",
-            "profitability",
-            "wasted budget",
-            "recommendation apply",
-        ],
+        blocked_claims=CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+    )
+
+
+def _budget_apply_preview(
+    *,
+    campaign_id: str | None,
+    campaign_name: str,
+    budget_id: str | None,
+    budget_name: str | None,
+    budget_amount_micros: int | None,
+    has_recommended_budget: bool | None,
+    recommended_budget_amount_micros: int | None,
+    source_metric_names: list[str],
+    evidence_ids: list[str],
+) -> AdsBudgetApplyPreview:
+    proposed_budget_amount_micros = (
+        recommended_budget_amount_micros
+        if has_recommended_budget and recommended_budget_amount_micros is not None
+        else None
+    )
+    proposed_budget_delta_micros = (
+        proposed_budget_amount_micros - budget_amount_micros
+        if proposed_budget_amount_micros is not None and budget_amount_micros is not None
+        else None
+    )
+    reason = (
+        "Review-only podgląd CampaignBudgetOperation z Google recommended budget. "
+        "WILQ nie może zmienić budżetu bez celu budżetowego, review strategii, "
+        "potwierdzenia człowieka i audytu."
+        if proposed_budget_amount_micros is not None
+        else (
+            "Review-only podgląd CampaignBudgetOperation. Google Ads nie zwrócił "
+            "recommended budget, więc WILQ pokazuje bieżący budżet i blokuje "
+            "propozycję kwoty do czasu human_budget_goal."
+        )
+    )
+    return AdsBudgetApplyPreview(
+        id=(
+            f"budget_apply_preview_{_slug(campaign_id or campaign_name)}_"
+            f"{_slug(budget_id or budget_name or 'budget')}"
+        ),
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        campaign_budget_id=budget_id,
+        campaign_budget_name=budget_name,
+        current_budget_amount_micros=budget_amount_micros,
+        proposed_budget_amount_micros=proposed_budget_amount_micros,
+        proposed_budget_delta_micros=proposed_budget_delta_micros,
+        reason=reason,
+        evidence_ids=evidence_ids,
+        source_metric_names=source_metric_names,
+        required_validation=CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION,
+        blocked_claims=CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
     )
 
 
@@ -1060,7 +1140,7 @@ def _budget_pacing_section(
         source_connectors=budget_pacing_read_contract.source_connectors,
         evidence_ids=budget_pacing_read_contract.evidence_ids,
         metric_facts=metric_facts[:12],
-        action_ids=[],
+        action_ids=budget_pacing_read_contract.action_ids,
         blocked_claims=budget_pacing_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
@@ -3128,6 +3208,7 @@ def _ads_decision_queue(
                 evidence_ids=budget_pacing_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 budget_rows=budget_pacing_read_contract.budget_rows,
+                budget_apply_preview=budget_pacing_read_contract.payload_preview,
                 action_ids=campaign_review_action_ids,
                 blocked_claims=budget_pacing_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
