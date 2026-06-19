@@ -44,6 +44,7 @@ def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
     command = build_command_center_response(
         connectors=connectors,
         tactical_queue=tactical_queue,
+        actions=actions,
     )
     brief = build_marketing_brief(
         connectors=connectors,

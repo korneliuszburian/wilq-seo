@@ -71,6 +71,15 @@ Current performance slice truth:
   conflicting-lock runtime risk. Remaining cold-run bottleneck: diagnostics
   inside Command Center, especially the tactical/diagnostic joins used before
   Merchant issue-level triage and URL normalization are fully shaped.
+- 2026-06-19 follow-up in progress: Command Center first-screen cards now reuse
+  preloaded `tactical_queue`/`actions`; Content/GA4 cards no longer build full
+  diagnostics; Merchant card reads `google_merchant_center` metric facts
+  directly instead of full Merchant Diagnostics. Direct cold proof improved to
+  `build_command_center_response() ~=1.7-2.1s` and
+  `build_daily_runtime() ~=2.1s`; HTTP proof on fresh `:8016` showed cold
+  Command Center `2.526s` and warm TTL `0.011-0.012s`. Daily context-pack can
+  still spike after TTL (`3.451s` observed), so this is not final performance
+  completion.
 
 Current Merchant slice truth:
 

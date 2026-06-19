@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 10:38 Europe/Warsaw.
+Last updated: 2026-06-19 11:06 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -1139,7 +1139,8 @@ Current slice result:
   scripts/verify.sh
   ```
 
-Current uncommitted follow-up on 2026-06-19:
+Completed follow-up on 2026-06-19, pushed as
+`35d8be3 perf(api): share daily runtime endpoints`:
 
 - Public dashboard endpoints are being moved onto the same `DailyRuntime`
   cache:
@@ -1151,7 +1152,7 @@ Current uncommitted follow-up on 2026-06-19:
   Command Center, Marketing Brief and Codex daily context should share one
   daily view-model in the API process instead of rebuilding overlapping daily
   state through separate endpoint paths.
-- Current changed files:
+- Changed files were:
   - `apps/api/wilq_api/main.py`,
   - `tests/test_api_contracts.py`,
   - `docs/CONTEXT.md`,
@@ -1193,6 +1194,39 @@ Remaining blocker:
   Center diagnostics/tactical joins and should be reduced by the next product
   slices: Merchant issue-level triage, URL normalization and slimmer
   `DailyDecision` data. Do not hide this in skill references.
+
+Current 2026-06-19 follow-up:
+
+- `build_command_center_response()` and `build_command_center_brief()` now
+  accept preloaded `tactical_queue` and `actions`, so DailyRuntime can build
+  Command Center without refetching action/tactical state.
+- Command Center no longer builds full Content Diagnostics, GA4 Diagnostics and
+  Merchant Diagnostics just to render first-screen daily cards. Content and GA4
+  summaries are derived from the already-built tactical queue; Merchant summary
+  reads `google_merchant_center` metric facts directly and keeps full issue
+  clustering on `/merchant`.
+- Measured before this follow-up from local direct profiling:
+  - `build_command_center_response()`: about `4.896s`;
+  - `build_daily_runtime()`: about `6.600s`;
+  - after removing Content/GA4 duplicate diagnostics:
+    `build_command_center_response()` about `2.7-2.8s`;
+  - after replacing Merchant Diagnostics in Command Center:
+    `build_command_center_response()` about `1.685-2.073s`,
+    `build_daily_runtime()` about `2.053-2.104s`.
+- HTTP proof on fresh `:8016` after this follow-up:
+  - cold `GET /api/dashboard/command-center`: `2.526s`, `26629 bytes`;
+  - warm repeated Command Center within TTL: `0.011-0.012s`;
+  - `POST /api/codex/context-pack {"skill":"wilq-daily-command"}`:
+    `0.882-0.934s` while warm, `3.451s` after TTL expiry, `171000 bytes`.
+- Full `scripts/verify.sh` passed after this follow-up:
+  - backend API contracts: `103 passed`;
+  - dashboard route tests: `13 passed`;
+  - Playwright e2e: `9 passed`;
+  - API smoke, skill API smoke and dashboard production build passed.
+- This is useful progress, not final performance completion. The next
+  bottleneck is the daily context-pack after cache expiry and any remaining
+  route-level render cost in the dashboard. Keep evidence IDs, ActionObject IDs
+  and blocked claims intact when optimizing.
 
 ### 5. Verification And Commit
 

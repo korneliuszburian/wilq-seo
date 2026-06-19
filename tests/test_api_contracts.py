@@ -3942,9 +3942,11 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     def command_builder(
         connectors: list[ConnectorStatus] | None = None,
         tactical_queue: TacticalQueueResponse | None = None,
+        actions: list[ActionObject] | None = None,
     ) -> CommandCenterResponse:
         seen["command_connectors"] = connectors
         seen["command_tactical_queue"] = tactical_queue
+        seen["command_actions"] = actions
         return command
 
     def brief_builder(
@@ -3969,6 +3971,7 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     assert runtime.marketing_brief == brief
     assert seen["command_connectors"] == [connector]
     assert seen["command_tactical_queue"] == tactical_queue
+    assert seen["command_actions"] == [action]
     assert seen["brief_connectors"] == [connector]
     assert seen["brief_refresh_runs"] == [refresh_run]
     assert seen["brief_actions"] == [action]

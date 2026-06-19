@@ -1739,3 +1739,77 @@ Next Localo product gap:
 - Add a real Localo visibility read contract before any local SEO
   recommendation: rankings, GBP visibility, competitor comparison, reviews or
   local task facts.
+
+## 2026-06-19 - Command Center Cold Runtime Slimming
+
+Current stage:
+
+- Active performance follow-up after `35d8be3`.
+- Goal: reduce cold Command Center work without changing public API contracts
+  or hiding evidence/action traceability.
+
+What changed:
+
+- `build_command_center_response()` and `build_command_center_brief()` now take
+  preloaded `actions` along with preloaded `connectors` and `tactical_queue`.
+  `DailyRuntime` passes the same action list into Command Center and Marketing
+  Brief, avoiding duplicated action reads.
+- Command Center no longer builds full Content Diagnostics and GA4 Diagnostics
+  for first-screen summary cards. Those summaries now use the tactical queue
+  already built for daily decisions.
+- Command Center no longer builds full Merchant Diagnostics for the first
+  screen. The Merchant card reads `google_merchant_center` metric facts directly
+  and leaves issue clustering/detail work to `/merchant`.
+
+Focused proof so far:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py wilq/briefing/daily_runtime.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/command_center.py wilq/briefing/daily_runtime.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_returns_valid_shape or command_center_exposes_polish_operator_brief or daily_runtime_reuses_preloaded_daily_inputs or command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache'
+```
+
+Result:
+
+- ruff passed.
+- mypy passed.
+- selected API tests: 5 passed.
+
+Measured runtime:
+
+- Before this follow-up, local direct profiling showed:
+  - `build_command_center_response()`: about `4.896s`;
+  - `build_daily_runtime()`: about `6.600s`.
+- After removing Content/GA4 duplicate diagnostics:
+  - `build_command_center_response()`: about `2.7-2.8s`.
+- After replacing Merchant Diagnostics in Command Center:
+  - `build_command_center_response()`: `1.685s`, `1.753s`, `2.073s`;
+  - `build_daily_runtime()`: `2.053s`, `2.101s`, `2.104s`.
+- Fresh HTTP proof on `:8016`:
+  - cold `GET /api/dashboard/command-center`: `2.526s`, `26629 bytes`;
+  - warm Command Center within TTL: `0.011-0.012s`, `26629 bytes`;
+  - `POST /api/codex/context-pack {"skill":"wilq-daily-command"}`:
+    `0.882-0.934s` while warm, `3.451s` after TTL expiry, `171000 bytes`.
+
+Remaining performance gap:
+
+- This is a real improvement, but not final. Daily context-pack still spikes
+  after cache expiry because it rebuilds the daily model and pack. Treat that
+  as the next bottleneck, not as solved frontend lag.
+- Keep full Merchant issue clusters on `/merchant`; do not put that heavy
+  diagnostic work back into Command Center.
+
+Full proof:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- Backend API contracts: `103 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- API smoke and skill API smoke passed.
+- Dashboard production build passed.
+- Non-blocking warning: Vite reports the main JS chunk is above 500 KB.

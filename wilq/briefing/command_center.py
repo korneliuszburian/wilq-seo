@@ -4,16 +4,15 @@ from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
+from wilq.actions.service import list_actions
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
-from wilq.briefing.content_diagnostics import build_content_diagnostics
-from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
-from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
+    ActionObject,
     ActionRisk,
     AdsDiagnosticsResponse,
     CommandCenterActionPlanItem,
@@ -23,13 +22,14 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     ConnectorStatus,
     ConnectorSummary,
-    ContentDiagnosticsResponse,
     DailyDecision,
-    Ga4DiagnosticsResponse,
-    MerchantDiagnosticsResponse,
+    MetricFact,
+    OpportunityDomain,
+    TacticalQueueItem,
     TacticalQueueResponse,
 )
 from wilq.storage.local_state import local_state_store
+from wilq.storage.metric_store import metric_store
 
 STRICT_DAILY_INSTRUCTION = (
     "WILQ pokazuje tylko metryki z API/evidence. Brak danych oznacza blocker, "
@@ -40,10 +40,15 @@ STRICT_DAILY_INSTRUCTION = (
 def build_command_center_response(
     connectors: list[ConnectorStatus] | None = None,
     tactical_queue: TacticalQueueResponse | None = None,
+    actions: list[ActionObject] | None = None,
 ) -> CommandCenterResponse:
     connectors = connectors if connectors is not None else list_connector_statuses()
-    operator_brief, primary_next_step, blocker_count = build_command_center_brief()
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
+    actions = actions if actions is not None else list_actions()
+    operator_brief, primary_next_step, blocker_count = build_command_center_brief(
+        tactical_queue=tactical_queue,
+        actions=actions,
+    )
     action_plan = build_command_center_action_plan(operator_brief, tactical_queue.items)
     return CommandCenterResponse(
         strict_instruction=STRICT_DAILY_INSTRUCTION,
@@ -70,23 +75,28 @@ def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
     )
 
 
-def build_command_center_brief() -> tuple[list[CommandCenterBriefItem], str, int]:
-    with ThreadPoolExecutor(max_workers=4) as executor:
+def build_command_center_brief(
+    tactical_queue: TacticalQueueResponse | None = None,
+    actions: list[ActionObject] | None = None,
+) -> tuple[list[CommandCenterBriefItem], str, int]:
+    tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
+    actions = actions if actions is not None else list_actions()
+    with ThreadPoolExecutor(max_workers=2) as executor:
         ads_future = executor.submit(build_ads_diagnostics)
-        merchant_future = executor.submit(build_merchant_diagnostics)
-        content_future = executor.submit(build_content_diagnostics)
-        ga4_future = executor.submit(build_ga4_diagnostics)
+        merchant_facts_future = executor.submit(
+            metric_store().list_metric_facts,
+            "google_merchant_center",
+            2000,
+        )
         ads = ads_future.result()
-        merchant = merchant_future.result()
-        content = content_future.result()
-        ga4 = ga4_future.result()
+        merchant_facts = merchant_facts_future.result()
     localo = get_connector_status("localo")
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
         _ads_item(ads),
-        _merchant_item(merchant),
-        _content_item(content),
-        _ga4_item(ga4),
+        _merchant_item_from_facts(tactical_queue.items, merchant_facts, actions),
+        _content_item_from_tactical(tactical_queue.items, actions),
+        _ga4_item_from_tactical(tactical_queue.items, actions),
     ]
     if localo is not None:
         localo_item = _localo_item(localo, localo_runs)
@@ -233,45 +243,75 @@ def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
     )
 
 
-def _merchant_item(data: MerchantDiagnosticsResponse) -> CommandCenterBriefItem:
-    issue_count = data.issue_count if data.issue_count is not None else _metric_total(
-        data,
-        "issue_product_count",
-    )
+def _merchant_item_from_facts(
+    tactical_items: list[TacticalQueueItem],
+    facts: list[MetricFact],
+    actions: list[ActionObject],
+) -> CommandCenterBriefItem:
+    merchant_items = [
+        item for item in tactical_items if item.domain == OpportunityDomain.merchant
+    ]
+    product_count = _latest_numeric_fact(facts, "total_products")
+    if product_count is None:
+        product_count = _latest_numeric_fact(facts, "active_products")
+    product_count = product_count or 0
+    issue_count = _latest_numeric_fact(facts, "item_level_issue_count")
+    if issue_count is None:
+        issue_count = _latest_numeric_fact(facts, "disapproved_products")
+    if issue_count is None:
+        issue_count = _sum_latest_dimension_facts(facts, "issue_product_count")
+    issue_count = issue_count or len(merchant_items)
+    evidence_ids = _merchant_evidence_ids(facts, merchant_items)
+    live_data_available = bool(evidence_ids)
     return CommandCenterBriefItem(
         id="daily_merchant_feed",
         title="Merchant: feed/product issues do przeglądu",
         route="/merchant",
-        status="ready" if data.live_data_available else "blocked",
-        priority=10 if data.live_data_available and issue_count > 0 else 35,
+        status="ready" if live_data_available else "blocked",
+        priority=10 if live_data_available and issue_count > 0 else 35,
         summary=(
-            f"Produkty={data.product_count or 0}, issues={issue_count}. "
+            f"Produkty={product_count}, issues={issue_count}. "
             "To jest read-only queue, nie automatyczna naprawa feedu."
         ),
         next_step="Otwórz /merchant i waliduj `act_review_merchant_feed_issues`.",
         source_connectors=["google_merchant_center"],
-        evidence_ids=_limited_ids(data.evidence_ids),
-        action_ids=data.action_ids,
+        evidence_ids=_limited_ids(
+            evidence_ids or [connector_evidence_id("google_merchant_center")]
+        ),
+        action_ids=_action_ids_for(actions, connector="google_merchant_center"),
         metric_tiles={
-            "produkty": data.product_count or 0,
+            "produkty": product_count,
             "issues": issue_count,
-            "blockery": data.blocker_count,
+            "blockery": 0 if live_data_available else 1,
         },
         blocked_claims=["approval restored", "revenue recovered", "automatic feed edit"],
         risk=ActionRisk.medium,
     )
 
 
-def _content_item(data: ContentDiagnosticsResponse) -> CommandCenterBriefItem:
+def _content_item_from_tactical(
+    tactical_items: list[TacticalQueueItem],
+    actions: list[ActionObject],
+) -> CommandCenterBriefItem:
+    gsc_items = [item for item in tactical_items if item.domain == OpportunityDomain.gsc_seo]
+    matched_items = [
+        item for item in gsc_items if item.dimensions.get("wordpress_match") == "found"
+    ]
+    action_ids = _action_ids_for(
+        actions,
+        connector="wordpress_ekologus",
+        domain=OpportunityDomain.content,
+    )
+    live_data_available = bool(gsc_items)
     return CommandCenterBriefItem(
         id="daily_content_queue",
         title="Content: GSC query/page + WordPress inventory",
         route="/content-planner",
-        status="ready" if data.live_data_available else "blocked",
-        priority=12 if data.live_data_available else 40,
+        status="ready" if live_data_available else "blocked",
+        priority=12 if live_data_available else 40,
         summary=(
-            f"Query/page={data.query_page_count}, WordPress match="
-            f"{data.matched_inventory_count}. WILQ może przygotować refresh queue."
+            f"Query/page={len(gsc_items)}, WordPress match={len(matched_items)}. "
+            "WILQ może przygotować refresh queue."
         ),
         next_step="Otwórz /content-planner i przygotuj queue refresh/create/merge/block.",
         source_connectors=[
@@ -279,40 +319,61 @@ def _content_item(data: ContentDiagnosticsResponse) -> CommandCenterBriefItem:
             "wordpress_ekologus",
             "wordpress_sklep",
         ],
-        evidence_ids=_limited_ids(data.evidence_ids),
-        action_ids=data.action_ids,
+        evidence_ids=_limited_ids(
+            _unique(evidence_id for item in gsc_items for evidence_id in item.evidence_ids)
+            or [connector_evidence_id("google_search_console")]
+        ),
+        action_ids=action_ids,
         metric_tiles={
-            "query/page": data.query_page_count,
-            "WP match": data.matched_inventory_count,
-            "blockery": data.blocker_count,
+            "query/page": len(gsc_items),
+            "WP match": len(matched_items),
+            "blockery": 0 if live_data_available else 1,
         },
         blocked_claims=["lead uplift", "revenue impact", "ranking guarantee"],
-        risk=ActionRisk.low if data.live_data_available else ActionRisk.medium,
+        risk=ActionRisk.low if live_data_available else ActionRisk.medium,
     )
 
 
-def _ga4_item(data: Ga4DiagnosticsResponse) -> CommandCenterBriefItem:
+def _ga4_item_from_tactical(
+    tactical_items: list[TacticalQueueItem],
+    actions: list[ActionObject],
+) -> CommandCenterBriefItem:
+    ga4_items = [item for item in tactical_items if item.domain == OpportunityDomain.ga4]
+    low_engagement_items = [
+        item for item in ga4_items if item.intent == "landing_page_quality"
+    ]
+    matched_items = [
+        item for item in ga4_items if item.dimensions.get("wordpress_match") == "found"
+    ]
+    action_ids = _action_ids_for(
+        actions,
+        connector="google_analytics_4",
+    )
+    live_data_available = bool(ga4_items)
     return CommandCenterBriefItem(
         id="daily_ga4_landing_quality",
         title="GA4: landing/source/campaign quality review",
         route="/ga4",
-        status="ready" if data.live_data_available else "blocked",
-        priority=14 if data.live_data_available else 42,
+        status="ready" if live_data_available else "blocked",
+        priority=14 if live_data_available else 42,
         summary=(
-            f"Landing groups={data.landing_group_count}, low engagement="
-            f"{data.low_engagement_count}, WP match={data.wordpress_match_count}."
+            f"Landing groups={len(ga4_items)}, low engagement="
+            f"{len(low_engagement_items)}, WP match={len(matched_items)}."
         ),
         next_step="Otwórz /ga4 i waliduj `act_review_ga4_tracking_quality`.",
         source_connectors=["google_analytics_4"],
-        evidence_ids=_limited_ids(data.evidence_ids),
-        action_ids=data.action_ids,
+        evidence_ids=_limited_ids(
+            _unique(evidence_id for item in ga4_items for evidence_id in item.evidence_ids)
+            or [connector_evidence_id("google_analytics_4")]
+        ),
+        action_ids=action_ids,
         metric_tiles={
-            "landing groups": data.landing_group_count,
-            "low engagement": data.low_engagement_count,
-            "WP match": data.wordpress_match_count,
+            "landing groups": len(ga4_items),
+            "low engagement": len(low_engagement_items),
+            "WP match": len(matched_items),
         },
         blocked_claims=["ROAS", "revenue", "conversion drop", "tracking fixed"],
-        risk=ActionRisk.low if data.live_data_available else ActionRisk.medium,
+        risk=ActionRisk.low if live_data_available else ActionRisk.medium,
     )
 
 
@@ -392,15 +453,67 @@ def _limited_ids(values: list[str], limit: int = 12) -> list[str]:
     return values[:limit]
 
 
-def _metric_total(data: MerchantDiagnosticsResponse, metric_name: str) -> int:
-    total = 0
-    for section in data.sections:
-        for fact in section.metric_facts:
-            if fact.name != metric_name:
-                continue
-            if isinstance(fact.value, int | float):
-                total += int(fact.value)
-    return total
+def _action_ids_for(
+    actions: list[ActionObject],
+    *,
+    connector: str,
+    domain: OpportunityDomain | None = None,
+) -> list[str]:
+    return _unique(
+        action.id
+        for action in actions
+        if action.connector == connector or (domain is not None and action.domain == domain)
+    )
+
+
+def _unique(values: Iterable[object]) -> list[str]:
+    unique_values: list[str] = []
+    for value in values:
+        text = str(value)
+        if text and text not in unique_values:
+            unique_values.append(text)
+    return unique_values
+
+
+def _latest_numeric_fact(facts: list[MetricFact], name: str) -> int | None:
+    for fact in facts:
+        if fact.name == name and isinstance(fact.value, int | float):
+            return int(fact.value)
+    return None
+
+
+def _sum_latest_dimension_facts(facts: list[MetricFact], name: str) -> int:
+    totals_by_dimensions: dict[tuple[tuple[str, str], ...], int] = {}
+    for fact in facts:
+        if fact.name != name or not isinstance(fact.value, int | float):
+            continue
+        key = tuple(sorted(fact.dimensions.items()))
+        if key in totals_by_dimensions:
+            continue
+        totals_by_dimensions[key] = int(fact.value)
+    return sum(totals_by_dimensions.values())
+
+
+def _merchant_evidence_ids(
+    facts: list[MetricFact],
+    tactical_items: list[TacticalQueueItem],
+) -> list[str]:
+    fact_evidence = [
+        fact.evidence_id
+        for fact in facts
+        if fact.name
+        in {
+            "total_products",
+            "item_level_issue_count",
+            "issue_product_count",
+            "active_products",
+            "disapproved_products",
+        }
+    ]
+    tactic_evidence = [
+        evidence_id for item in tactical_items for evidence_id in item.evidence_ids
+    ]
+    return _unique([*fact_evidence, *tactic_evidence])
 
 
 def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
