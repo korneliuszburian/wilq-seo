@@ -87,10 +87,11 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/ads-doctor", "/api/ads/diagnostics");
     await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
-    await expect(page.getByText("Google Ads: live data dostępne")).toBeVisible();
-    await expect(page.getByText(/clicks:/).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Bezpieczne akcje Ads" })).toBeVisible();
-    await expect(page.getByText(/WILQ ma read-only Google Ads evidence/)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
+    ).toBeVisible();
+    await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "05-ads-live-campaign-metrics.png"),
       fullPage: true,

@@ -68,20 +68,26 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
-    await expect(page.getByText("Google Ads: live data dostępne")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Google Ads: campaign activity rows" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Google Ads: search terms read-only rows" })
+      page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeVisible();
-    await expect(page.getByText("Brakujące read contracts:").first()).toBeVisible();
-    await expect(page.getByText(/clicks:/).first()).toBeVisible();
+    await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeVisible();
+    await expect(
+      page.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
+    ).toBeVisible();
+    await expect(page.getByText("Nie wdrażaj zmian Ads bez osobnego ActionObject")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
+    await expect(page.getByText("Brakujące kontrakty:").first()).toBeVisible();
     await expect(page.getByText("Konwersje").first()).toBeVisible();
     await expect(page.getByText("Wartość konw.").first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Bezpieczne akcje Ads" })).toBeVisible();
-    await expect(page.getByText(/WILQ ma read-only Google Ads evidence/)).toBeVisible();
     await expect(page.getByRole("link", { name: "ev_connector_google_ads_status" }).first()).toBeVisible();
     await expect(page.getByText("Handoff blockera Ads")).toHaveCount(0);
     await expect(page.getByText(/handoff blockera OAuth/i)).toHaveCount(0);
+    await expect(page.getByText("Read contract Ads")).toHaveCount(0);
+    await expect(page.getByText("Search terms read-only")).toHaveCount(0);
+    await expect(page.getByText("Campaign activity read contract")).toHaveCount(0);
+    await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
   });
 
   test("ga4 route exposes metric-backed workflow focus", async ({ page }) => {

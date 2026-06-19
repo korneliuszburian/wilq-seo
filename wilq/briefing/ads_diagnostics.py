@@ -13,6 +13,7 @@ from wilq.schemas import (
     AdsBlockedHandoff,
     AdsCampaignMetricRow,
     AdsCampaignReadContract,
+    AdsDecisionItem,
     AdsDiagnosticSection,
     AdsDiagnosticsResponse,
     AdsSearchTermMetricRow,
@@ -68,6 +69,14 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             live_data_available=live_data_available,
         ),
     ]
+    blocked_handoff = _blocked_handoff(live_data_available, latest_refresh, sections, action_ids)
+    decision_queue = _ads_decision_queue(
+        campaign_read_contract,
+        search_terms_read_contract,
+        sections,
+        blocked_handoff,
+        action_ids,
+    )
     return AdsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -75,13 +84,14 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
         search_terms_read_contract=search_terms_read_contract,
+        decision_queue=decision_queue,
         sections=sections,
-        blocked_handoff=_blocked_handoff(live_data_available, latest_refresh, sections, action_ids),
+        blocked_handoff=blocked_handoff,
         evidence_ids=_unique(
             evidence_id for section in sections for evidence_id in section.evidence_ids
         ),
         action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
-        blocker_count=sum(1 for section in sections if section.status == "blocked"),
+        blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
 
 
@@ -122,15 +132,15 @@ def _oauth_or_live_section(
             id="ads_live_data_status",
             title="Google Ads: live data dostępne",
             status="ready",
-            summary="WILQ ma zapisane metric facts z read-only Google Ads vendor_read.",
+            summary="WILQ ma zapisane metric facts z odczytu Google Ads vendor_read.",
             diagnosis=(
                 "Można przejść do diagnozy kampanii, ale nadal każda rekomendacja musi "
                 "wskazać evidence ID, metric facts i bezpieczny ActionObject."
             ),
             next_step=(
-                "Użyj campaign i search-term rows do read-only review. Następnie dodaj "
-                "recommendations, change events, safety checks i ActionObjecty przed "
-                "rekomendacjami apply."
+                "Użyj wierszy kampanii i zapytań do przeglądu. Następnie dodaj "
+                "rekomendacje, historię zmian, safety checks i ActionObjecty przed "
+                "rekomendacjami wdrożenia."
             ),
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=evidence_ids,
@@ -182,13 +192,13 @@ def _campaign_overview_section(
     if campaign_facts:
         return AdsDiagnosticSection(
             id="ads_campaign_overview",
-            title="Campaign activity read contract",
+            title="Aktywność kampanii Google Ads",
             status="ready",
             summary=campaign_read_contract.summary,
             diagnosis=(
-                "WILQ ma wymiarowe campaign activity rows z Google Ads. To wystarcza "
+                "WILQ ma wymiarowe wiersze aktywności kampanii z Google Ads. To wystarcza "
                 "do pierwszego przeglądu aktywności kampanii, ale nadal nie wystarcza "
-                "do diagnozy CPA, ROAS, search-term waste ani negative keywords."
+                "do diagnozy CPA, ROAS, waste na zapytaniach ani wykluczeń."
             ),
             next_step=campaign_read_contract.next_step,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -202,7 +212,7 @@ def _campaign_overview_section(
     evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
     return AdsDiagnosticSection(
         id="ads_campaign_overview",
-        title="Campaign overview",
+        title="Aktywność kampanii Google Ads",
         status="blocked",
         summary="Brak campaign metric facts z Google Ads.",
         diagnosis=(
@@ -246,12 +256,12 @@ def _campaign_read_contract(
         total_conversion_value = sum(row.conversion_value or 0 for row in rows)
         return AdsCampaignReadContract(
             status="ready",
-            title="Google Ads: campaign activity rows",
+            title="Google Ads: aktywność kampanii",
             summary=(
-                f"WILQ ma {len(rows)} campaign rows: clicks={total_clicks}, "
-                f"impressions={total_impressions}, cost_micros={total_cost_micros}, "
-                f"conversions={_format_float(total_conversions)}, "
-                f"conversion_value={_format_float(total_conversion_value)}."
+                f"WILQ ma {len(rows)} wierszy kampanii: kliknięcia={total_clicks}, "
+                f"wyświetlenia={total_impressions}, koszt_micros={total_cost_micros}, "
+                f"konwersje={_format_float(total_conversions)}, "
+                f"wartość_konwersji={_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "clicks",
@@ -266,14 +276,14 @@ def _campaign_read_contract(
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             campaign_rows=rows,
             next_step=(
-                "Użyj campaign rows do przeglądu aktywności. Przed wnioskami o waste, "
-                "CPA, ROAS albo negative keywords dodaj brakujące read contracts."
+                "Użyj wierszy kampanii do przeglądu aktywności. Przed wnioskami o waste, "
+                "CPA, ROAS albo wykluczenia dodaj brakujące kontrakty odczytu."
             ),
         )
 
     return AdsCampaignReadContract(
         status="blocked",
-        title="Google Ads: brak campaign activity rows",
+        title="Google Ads: brak aktywności kampanii",
         summary="WILQ nie ma wymiarowych campaign facts z Google Ads.",
         allowed_metrics=[],
         missing_read_contracts=["campaign activity", *missing_read_contracts],
@@ -401,12 +411,12 @@ def _search_terms_read_contract(
         total_conversion_value = sum(row.conversion_value or 0 for row in rows)
         return AdsSearchTermsReadContract(
             status="ready",
-            title="Google Ads: search terms read-only rows",
+            title="Google Ads: zapytania użytkowników",
             summary=(
-                f"WILQ ma {len(rows)} search term rows: clicks={total_clicks}, "
-                f"impressions={total_impressions}, cost_micros={total_cost_micros}, "
-                f"conversions={_format_float(total_conversions)}, "
-                f"conversion_value={_format_float(total_conversion_value)}."
+                f"WILQ ma {len(rows)} wierszy zapytań: kliknięcia={total_clicks}, "
+                f"wyświetlenia={total_impressions}, koszt_micros={total_cost_micros}, "
+                f"konwersje={_format_float(total_conversions)}, "
+                f"wartość_konwersji={_format_float(total_conversion_value)}."
             ),
             allowed_metrics=[
                 "search_term",
@@ -425,15 +435,15 @@ def _search_terms_read_contract(
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             search_term_rows=rows,
             next_step=(
-                "Użyj search term rows jako read-only przeglądu zapytań. Nie twórz "
-                "negative keywords ani waste claimów bez match contextu, 90-dniowego "
+                "Użyj wierszy zapytań jako przeglądu danych z reklam. Nie twórz "
+                "wykluczeń ani claimów o waste bez kontekstu dopasowania, 90-dniowego "
                 "checku i zwalidowanego ActionObject."
             ),
         )
 
     return AdsSearchTermsReadContract(
         status="blocked",
-        title="Google Ads: brak search terms rows",
+        title="Google Ads: brak zapytań użytkowników",
         summary="WILQ nie ma jeszcze wymiarowych facts z search_term_view.",
         allowed_metrics=[],
         missing_read_contracts=["search_term_view", *missing_read_contracts],
@@ -529,12 +539,12 @@ def _search_terms_section(
         ]
         return AdsDiagnosticSection(
             id="ads_search_terms",
-            title="Search terms read contract",
+            title="Zapytania użytkowników Google Ads",
             status="ready",
             summary=search_terms_read_contract.summary,
             diagnosis=(
-                "WILQ ma read-only search term rows z Google Ads. To jeszcze nie "
-                "odblokowuje negative keywords: brakuje match contextu, 90-dniowego "
+                "WILQ ma wiersze zapytań z Google Ads. To jeszcze nie "
+                "odblokowuje wykluczeń: brakuje kontekstu dopasowania, 90-dniowego "
                 "safety checku i zwalidowanego ActionObject."
             ),
             next_step=search_terms_read_contract.next_step,
@@ -548,7 +558,7 @@ def _search_terms_section(
 
     return AdsDiagnosticSection(
         id="ads_search_terms",
-        title="Search terms i waste",
+        title="Zapytania użytkowników Google Ads",
         status="blocked",
         summary=search_terms_read_contract.summary,
         diagnosis=(
@@ -574,13 +584,13 @@ def _safe_action_section(
     evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
     if live_data_available:
         summary = (
-            "WILQ ma read-only Google Ads evidence; write/apply nadal nie ma gotowego "
+            "WILQ ma dowody z odczytu Google Ads; ścieżka zapisu nadal nie ma gotowego "
             "ActionObject."
         )
         diagnosis = (
-            "Odczyt kampanii i search terms może wspierać analizę, ale zmiany budżetów, "
-            "kampanii, wykluczeń i segmentów wymagają osobnych payload preview, walidacji, "
-            "jawnego confirm i audit eventu."
+            "Odczyt kampanii i zapytań może wspierać analizę, ale zmiany budżetów, "
+            "kampanii, wykluczeń i segmentów wymagają osobnych podglądów akcji, "
+            "walidacji, jawnego potwierdzenia i audytu."
         )
         next_step = (
             "Rozszerz Ads workflow o prepare-only ActionObject dopiero po osobnym evidence "
@@ -589,8 +599,8 @@ def _safe_action_section(
     else:
         summary = "WILQ ma tylko prepare-only repair action dla Google Ads access."
         diagnosis = (
-            "Żadna zmiana Google Ads nie może przejść do apply bez payload preview, "
-            "walidacji, jawnego confirm i audit eventu. Obecnie jedyny sensowny "
+            "Żadna zmiana Google Ads nie może przejść do wdrożenia bez podglądu akcji, "
+            "walidacji, jawnego potwierdzenia i audytu. Obecnie jedyny sensowny "
             "ActionObject to naprawa dostępu."
         )
         next_step = (
@@ -610,6 +620,122 @@ def _safe_action_section(
         blocked_claims=["budget apply", "campaign creation", "negative keyword apply"],
         risk=ActionRisk.medium,
     )
+
+
+def _ads_decision_queue(
+    campaign_read_contract: AdsCampaignReadContract,
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    sections: list[AdsDiagnosticSection],
+    blocked_handoff: AdsBlockedHandoff | None,
+    action_ids: list[str],
+) -> list[AdsDecisionItem]:
+    if blocked_handoff is not None:
+        return [
+            AdsDecisionItem(
+                id="ads_fix_access_before_analysis",
+                decision_type="fix_ads_access",
+                status="blocked",
+                title="Napraw dostęp Google Ads przed analizą",
+                summary=blocked_handoff.summary,
+                rationale=blocked_handoff.marketer_message,
+                next_step="Wykonaj ścieżkę naprawy OAuth i dopiero potem odczyt Google Ads.",
+                source_connectors=blocked_handoff.source_connectors,
+                evidence_ids=blocked_handoff.evidence_ids,
+                action_ids=blocked_handoff.action_ids,
+                blocked_claims=blocked_handoff.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        ]
+
+    decisions: list[AdsDecisionItem] = []
+    if campaign_read_contract.campaign_rows:
+        metric_facts = [
+            fact for row in campaign_read_contract.campaign_rows for fact in row.metric_facts
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_campaign_activity",
+                decision_type="review_campaign_activity",
+                status="ready",
+                title="Przejrzyj aktywność kampanii Google Ads",
+                summary=campaign_read_contract.summary,
+                rationale=(
+                    "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, "
+                    "wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach. "
+                    "Nie ma jeszcze pełnego kontraktu CPA, ROAS, rekomendacji ani historii zmian."
+                ),
+                next_step=(
+                    "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów. "
+                    "Nie podejmuj decyzji budżetowych bez brakujących kontraktów odczytu."
+                ),
+                allowed_metrics=campaign_read_contract.allowed_metrics,
+                missing_read_contracts=campaign_read_contract.missing_read_contracts,
+                source_connectors=campaign_read_contract.source_connectors,
+                evidence_ids=campaign_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                campaign_rows=campaign_read_contract.campaign_rows,
+                action_ids=action_ids,
+                blocked_claims=campaign_read_contract.blocked_claims,
+                risk=ActionRisk.low,
+            )
+        )
+
+    if search_terms_read_contract.search_term_rows:
+        metric_facts = [
+            fact for row in search_terms_read_contract.search_term_rows for fact in row.metric_facts
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_search_terms",
+                decision_type="review_search_terms",
+                status="ready",
+                title="Przejrzyj zapytania z reklam bez automatycznych wykluczeń",
+                summary=search_terms_read_contract.summary,
+                rationale=(
+                    "WILQ widzi zapytania, kampanie, grupy reklam, koszt, kliknięcia "
+                    "i konwersje. To pozwala zrobić kontrolę jakości zapytań, ale nie "
+                    "wystarcza do claimów o waste ani do wdrożenia negative keywords."
+                ),
+                next_step=(
+                    "Przejrzyj zapytania z najwyższym kosztem. Jeśli chcesz wykluczenia, "
+                    "najpierw dodaj kontekst dopasowania, 90-dniowy safety check i "
+                    "prepare-only ActionObject."
+                ),
+                allowed_metrics=search_terms_read_contract.allowed_metrics,
+                missing_read_contracts=search_terms_read_contract.missing_read_contracts,
+                source_connectors=search_terms_read_contract.source_connectors,
+                evidence_ids=search_terms_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                search_term_rows=search_terms_read_contract.search_term_rows,
+                action_ids=action_ids,
+                blocked_claims=search_terms_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
+    safety_section = next(
+        (section for section in sections if section.id == "ads_action_safety"),
+        None,
+    )
+    if safety_section is not None:
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_block_write_actions_without_actionobject",
+                decision_type="block_write_actions",
+                status="blocked",
+                title="Nie wdrażaj zmian Ads bez osobnego ActionObject",
+                summary=safety_section.summary,
+                rationale=safety_section.diagnosis,
+                next_step=safety_section.next_step,
+                source_connectors=safety_section.source_connectors,
+                evidence_ids=safety_section.evidence_ids,
+                action_ids=safety_section.action_ids,
+                blocked_claims=safety_section.blocked_claims,
+                risk=safety_section.risk,
+            )
+        )
+
+    return decisions
 
 
 def _blocked_handoff(

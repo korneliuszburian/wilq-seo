@@ -304,6 +304,31 @@ export const AdsSearchTermsReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsDecisionItemSchema = z.object({
+  id: z.string(),
+  decision_type: z.enum([
+    "review_campaign_activity",
+    "review_search_terms",
+    "block_write_actions",
+    "fix_ads_access"
+  ]),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  rationale: z.string(),
+  next_step: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  campaign_rows: z.array(AdsCampaignMetricRowSchema),
+  search_term_rows: z.array(AdsSearchTermMetricRowSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
 export const AdsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -313,6 +338,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
+  decision_queue: z.array(AdsDecisionItemSchema),
   sections: z.array(AdsDiagnosticSectionSchema),
   blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
   evidence_ids: z.array(z.string()),

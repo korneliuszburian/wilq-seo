@@ -229,9 +229,9 @@ const adsDiagnostics = {
   campaign_read_contract: {
     id: "ads_campaign_activity_read_contract",
     status: "ready",
-    title: "Google Ads: campaign activity rows",
+    title: "Google Ads: aktywność kampanii",
     summary:
-      "WILQ ma 1 campaign rows: clicks=107, impressions=2783, cost_micros=164591174, conversions=2.5, conversion_value=450.75.",
+      "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
     missing_read_contracts: ["recommendations"],
     blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
@@ -271,14 +271,14 @@ const adsDiagnostics = {
         blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"]
       }
     ],
-    next_step: "Użyj campaign rows do przeglądu aktywności."
+    next_step: "Użyj wierszy kampanii do przeglądu aktywności."
   },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
     status: "ready",
-    title: "Google Ads: search terms read-only rows",
+    title: "Google Ads: zapytania użytkowników",
     summary:
-      "WILQ ma 1 search term rows: clicks=12, impressions=140, cost_micros=9000000, conversions=1, conversion_value=120.",
+      "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt_micros=9000000, konwersje=1, wartość_konwersji=120.",
     allowed_metrics: [
       "search_term",
       "campaign",
@@ -355,14 +355,109 @@ const adsDiagnostics = {
         blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
       }
     ],
-    next_step: "Użyj search term rows jako read-only przeglądu zapytań."
+    next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
   },
+  decision_queue: [
+    {
+      id: "ads_review_campaign_activity",
+      decision_type: "review_campaign_activity",
+      status: "ready",
+      title: "Przejrzyj aktywność kampanii Google Ads",
+      summary:
+        "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
+      rationale:
+        "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach.",
+      next_step: "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów.",
+      allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
+      missing_read_contracts: ["recommendations"],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [
+        {
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          clicks: 107,
+          impressions: 2783,
+          cost_micros: 164591174,
+          conversions: 2.5,
+          conversion_value: 450.75,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"]
+        }
+      ],
+      search_term_rows: [],
+      action_ids: [],
+      blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
+      risk: "low"
+    },
+    {
+      id: "ads_review_search_terms",
+      decision_type: "review_search_terms",
+      status: "ready",
+      title: "Przejrzyj zapytania z reklam bez automatycznych wykluczeń",
+      summary:
+        "WILQ ma 1 wierszy zapytań: kliknięcia=12, wyświetlenia=140, koszt_micros=9000000, konwersje=1, wartość_konwersji=120.",
+      rationale:
+        "WILQ widzi zapytania, kampanie, grupy reklam, koszt, kliknięcia i konwersje.",
+      next_step: "Przejrzyj zapytania z najwyższym kosztem.",
+      allowed_metrics: ["search_term", "campaign", "ad_group", "clicks", "conversions"],
+      missing_read_contracts: ["90_day_safety_check", "negative_keyword_action_validation"],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      search_term_rows: [
+        {
+          search_term: "bdo rejestracja",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "456",
+          ad_group_name: "BDO",
+          search_term_status: "ADDED",
+          clicks: 12,
+          impressions: 140,
+          cost_micros: 9000000,
+          conversions: 1,
+          conversion_value: 120,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+        }
+      ],
+      action_ids: [],
+      blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+      risk: "medium"
+    },
+    {
+      id: "ads_block_write_actions_without_actionobject",
+      decision_type: "block_write_actions",
+      status: "blocked",
+      title: "Nie wdrażaj zmian Ads bez osobnego ActionObject",
+      summary: "WILQ ma dowody z odczytu Google Ads; ścieżka zapisu nadal nie ma gotowego ActionObject.",
+      rationale: "Zmiany budżetów, kampanii, wykluczeń i segmentów wymagają walidacji.",
+      next_step: "Rozszerz Ads workflow o prepare-only ActionObject.",
+      allowed_metrics: [],
+      missing_read_contracts: [],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      search_term_rows: [],
+      action_ids: [],
+      blocked_claims: ["budget apply", "campaign creation", "negative keyword apply"],
+      risk: "medium"
+    }
+  ],
   sections: [
     {
       id: "ads_live_data_status",
       title: "Google Ads: live data dostępne",
       status: "ready",
-      summary: "WILQ ma zapisane metric facts z read-only Google Ads vendor_read.",
+      summary: "WILQ ma zapisane metric facts z odczytu Google Ads vendor_read.",
       diagnosis: "Ads Doctor może pokazać campaign i search-term metrics, ale nie CPA/ROAS.",
       next_step: "Analizuj tylko widoczne metric facts i evidence IDs.",
       source_connectors: ["google_ads"],
@@ -384,7 +479,7 @@ const adsDiagnostics = {
     },
     {
       id: "ads_campaign_overview",
-      title: "Campaign activity read contract",
+      title: "Aktywność kampanii Google Ads",
       status: "ready",
       summary: "Metric facts: clicks=107, impressions=2783.",
       diagnosis: "Są live campaign rows, ale CPA/ROAS wymagają osobnego read contract.",
@@ -1552,26 +1647,32 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Ads Doctor" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Google Ads: live data dostępne")).toBeInTheDocument();
-    expect(screen.getByText(/clicks: \d+/)).toBeInTheDocument();
-    expect(screen.getAllByText(/campaign_id=123/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeInTheDocument();
+    expect(
+      screen.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Nie wdrażaj zmian Ads bez osobnego ActionObject")).toBeInTheDocument();
     expect(screen.queryByText("Handoff blockera Ads")).not.toBeInTheDocument();
     expect(screen.queryByText(/handoff blockera OAuth/i)).not.toBeInTheDocument();
-    expect(screen.getByText("Google Ads: campaign activity rows")).toBeInTheDocument();
-    expect(screen.getByText("Read contract Ads")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeInTheDocument();
     expect(screen.getAllByText("Ekologus Search").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Konwersje").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Wartość konw.").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("450.75").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("120").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Brakujące read contracts/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Google Ads: search terms read-only rows")).toBeInTheDocument();
-    expect(screen.getByText("Search terms read-only")).toBeInTheDocument();
+    expect(screen.getAllByText("450,75").length).toBeGreaterThan(0);
+    expect(screen.getByText(/wartość_konwersji=120/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
     expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();
-    expect(screen.getByText(/90_day_safety_check/)).toBeInTheDocument();
-    expect(screen.getByText("Campaign activity read contract")).toBeInTheDocument();
+    expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
     expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
     expect(screen.queryByText(/wasted spend/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Read contract Ads")).not.toBeInTheDocument();
+    expect(screen.queryByText("Search terms read-only")).not.toBeInTheDocument();
+    expect(screen.queryByText("Campaign activity read contract")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
+    expect(screen.queryByText("configured")).not.toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {

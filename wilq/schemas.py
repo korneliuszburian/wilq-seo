@@ -533,6 +533,31 @@ class AdsSearchTermsReadContract(BaseModel):
     next_step: str
 
 
+class AdsDecisionItem(BaseModel):
+    id: str
+    decision_type: Literal[
+        "review_campaign_activity",
+        "review_search_terms",
+        "block_write_actions",
+        "fix_ads_access",
+    ]
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    rationale: str
+    next_step: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
+    search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
 class AdsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -542,6 +567,7 @@ class AdsDiagnosticsResponse(BaseModel):
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
+    decision_queue: list[AdsDecisionItem] = Field(default_factory=list)
     sections: list[AdsDiagnosticSection] = Field(default_factory=list)
     blocked_handoff: AdsBlockedHandoff | None = None
     evidence_ids: list[str] = Field(default_factory=list)

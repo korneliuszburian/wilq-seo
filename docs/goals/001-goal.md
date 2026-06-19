@@ -170,6 +170,13 @@ Do not rebuild these from scratch:
   primary marketer view, keeps evidence/action IDs, and no longer shows raw
   English diagnostic section titles such as `GA4: landing/source/campaign
   behavior`, `GA4: tracking/conversion readiness` or `Analytics Safety Gate`.
+- Ads Doctor route operator cleanup: `/api/ads/diagnostics` now exposes a typed
+  `decision_queue` with campaign review, search-term review and blocked write
+  path decisions. Dashboard `/ads-doctor` renders those decisions first, keeps
+  evidence/action traceability, translates status/blocked claims to Polish and
+  no longer shows raw `Read contract Ads`, `Search terms read-only`,
+  `Campaign activity read contract`, `Evidence`, `configured`, `READY`,
+  `payload preview` or stale OAuth blocker copy when live Ads data exists.
 - Metric store grouped batch reads for tactical/content surfaces: latest
   query/page groups keep clicks, impressions, CTR and position together instead
   of truncating by connector row count.
@@ -183,10 +190,10 @@ These are the current reasons Goal 001 is not complete:
    cleaned up for the current stale Ads/Localo/readiness issues and technical
    wording. `/content-planner` has also been cleaned up around its typed
    content decision queue. `/ga4` has been cleaned up around its typed GA4
+   decision queue. `/ads-doctor` has been cleaned up around its typed Ads
    decision queue. Remaining route work must continue top-to-bottom on
-   `/ads-doctor` and `/localo`, looking for
-   duplicate intent, stale copy, missing Codex bridge and technical wording that
-   masquerades as marketer insight.
+   `/localo`, looking for duplicate intent, stale copy, missing Codex bridge and
+   technical wording that masquerades as marketer insight.
 
 2. **Command Center and supporting registries must stay separated.**
    Evidence IDs and ActionObjects are required, but the marketer needs a clear
@@ -205,9 +212,10 @@ These are the current reasons Goal 001 is not complete:
    surfaces, not competing first-screen decision queues.
 
 3. **Ads Doctor is only partially useful.**
-   Campaign-level activity facts now have an explicit read contract, but search
-   terms, recommendations, quality, budget pacing, impression share, CPA/ROAS
-   and negative keyword workflows still need explicit read contracts before WILQ
+   Campaign-level activity and search-term facts now have explicit read
+   contracts and a marketer-facing decision queue. Recommendations, quality,
+   budget pacing, impression share, derived CPA/ROAS and negative keyword
+   workflows still need explicit read/safety/ActionObject contracts before WILQ
    can claim BDOS-class Ads value.
 
 4. **Codex skill usefulness is not proven end-to-end.**
@@ -443,18 +451,27 @@ Work in this order:
    `conversions`, `conversion_value`, evidence IDs and blocked claims.
 
    Current local status: `/api/ads/diagnostics.search_terms_read_contract` is
-   now typed too. Google Ads `vendor_read` queries `search_term_view` read-only
-   and stores `search_term_clicks`, `search_term_impressions`,
+   now typed too. Google Ads `vendor_read` queries `search_term_view` in read
+   mode and stores `search_term_clicks`, `search_term_impressions`,
    `search_term_cost_micros`, `search_term_conversions` and
    `search_term_conversion_value` metric facts with campaign/ad group/search
-   term dimensions. Dashboard `/ads-doctor` renders this as a second dedicated
-   read-only panel. Live read `refresh_google_ads_c2f62ee2b43a` completed on
+   term dimensions. Live read `refresh_google_ads_c2f62ee2b43a` completed on
    2026-06-18 with 18 campaign rows, 50 search term rows, campaign
    `conversions=2.0`, campaign `conversion_value=2.0`, search-term
    `search_term_conversions=0.0` and
    `search_term_conversion_value=0.0`. This unlocks honest campaign/search-term
    review with conversion context, not automatic waste or negative keyword
    claims.
+
+   Current local status: `/api/ads/diagnostics.decision_queue` is typed and
+   dashboard `/ads-doctor` renders it as the primary marketer view:
+   `ads_review_campaign_activity`, `ads_review_search_terms` and
+   `ads_block_write_actions_without_actionobject`. Browser proof on 2026-06-19
+   found no stale visible `Read contract Ads`, `Search terms read-only`,
+   `Campaign activity read contract`, `Search terms read contract`,
+   `Google Ads: campaign activity rows`, `Google Ads: search terms read-only rows`,
+   `Evidence`, `configured`, `READY`, `payload preview`, `write/apply` or
+   `WILQ ma read-only Google Ads evidence`.
 
    Fresh correction: Ads diagnostics now selects the latest Google Ads
    `vendor_read` as the evidence-bearing refresh. A later `status_probe` cannot
@@ -468,16 +485,17 @@ Work in this order:
    The output is Polish, uses WILQ API, cites
    `ev_connector_google_ads_status` and
    `ev_refresh_refresh_google_ads_c2f62ee2b43a`, shows 18 campaign read-only
-   rows and 50 search-term read-only rows, and blocks CPA, ROAS,
+   rows and 50 search-term rows, and blocks CPA, ROAS,
    search-term waste, wasted budget and negative keywords until missing
    read/safety/ActionObject contracts exist.
 
    Still missing for BDOS-class Ads value: recommendations, change history,
    budget pacing, impression share, keyword/match context, 90-day safety check,
    explicit CPA/ROAS derived KPI contract and prepare-only negative keyword
-   ActionObjects. Full `scripts/verify.sh` passed after this conversion-metrics
-   slice: backend API contracts 97 passed, dashboard route tests 12 passed,
-   Playwright e2e 8 passed and dashboard production build passed.
+   ActionObjects. Full `scripts/verify.sh` passed after the Ads route decision
+   cleanup on 2026-06-19: backend API contracts 98 passed, dashboard route
+   tests 13 passed, Playwright e2e 9 passed and dashboard production build
+   passed.
 
 7. **Later P2/P3 data contracts.**
    Localo needs rankings, GBP visibility, competitors and reviews before local
@@ -1044,6 +1062,35 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 `/ads-doctor` decision route cleanup:
+
+```bash
+uv run ruff check wilq/briefing/ads_diagnostics.py wilq/schemas.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/ads_diagnostics.py wilq/schemas.py
+uv run pytest tests/test_api_contracts.py -q -k 'ads_diagnostics'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts
+scripts/verify.sh
+```
+
+Result:
+
+- API focused pytest: passed.
+- Dashboard lint/typecheck: passed.
+- Dashboard route tests: 13 passed.
+- Playwright e2e: 9 passed.
+- `agent-browser` proof: `/ads-doctor` has decisions for campaign review,
+  search-term review and blocked write path, with no visible stale
+  `Read contract Ads`, `Search terms read-only`, `Campaign activity read contract`,
+  `Search terms read contract`, `Google Ads: campaign activity rows`,
+  `Google Ads: search terms read-only rows`, `Evidence`, `configured`, `READY`,
+  `payload preview`, `write/apply` or stale read-only evidence copy.
+- Full `scripts/verify.sh`: passed with backend API contracts `98 passed`,
+  dashboard route tests `13 passed`, Playwright e2e `9 passed` and dashboard
+  production build passed.
 
 Passed after the 2026-06-19 `/merchant` operator cleanup:
 

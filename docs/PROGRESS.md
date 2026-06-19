@@ -67,14 +67,24 @@ Data: 2026-06-19
   IDs i blocked claims.
 - Ads Doctor ma drugi typed read contract:
   `/api/ads/diagnostics.search_terms_read_contract`. Google Ads `vendor_read`
-  odpytuje read-only `search_term_view` i zapisuje `search_term_clicks`,
+  odpytuje `search_term_view` w trybie odczytu i zapisuje `search_term_clicks`,
   `search_term_impressions`, `search_term_cost_micros`,
   `search_term_conversions`, `search_term_conversion_value` z wymiarami
   `campaign_id`, `campaign_name`, `ad_group_id`, `ad_group_name`,
-  `search_term`, `search_term_status`. Dashboard `/ads-doctor` pokazuje osobny
-  panel `Search terms read-only`. To odblokowuje uczciwy przegląd zapytań z
+  `search_term`, `search_term_status`. To odblokowuje uczciwy przegląd zapytań z
   kontekstem konwersji, ale nie odblokowuje waste/negative keyword claims bez
   `keyword match context`, `90_day_safety_check` i walidowanego ActionObject.
+- Ads Doctor ma teraz typed decision queue:
+  `/api/ads/diagnostics.decision_queue` zwraca
+  `ads_review_campaign_activity`, `ads_review_search_terms` i
+  `ads_block_write_actions_without_actionobject`. Dashboard `/ads-doctor`
+  renderuje te decyzje jako primary marketer view oraz przenosi kampanie i
+  zapytania do `Dowody i ograniczenia Ads`. Browser proof po restarcie API nie
+  znalazł starych fraz: `Read contract Ads`, `Search terms read-only`,
+  `Campaign activity read contract`, `Search terms read contract`,
+  `Google Ads: campaign activity rows`, `Google Ads: search terms read-only rows`,
+  `Evidence`, `configured`, `READY`, `payload preview`, `write/apply` ani
+  `WILQ ma read-only Google Ads evidence`.
 - Live Google Ads proof po restarcie API: `uv run wilq connectors refresh
   google_ads --mode vendor_read --reason "Goal 001 Ads conversion read
   contract proof"` zakończył się `completed`,
@@ -100,9 +110,10 @@ Data: 2026-06-19
   contracts.
 - Ads Doctor nie zwraca już `blocked_handoff` przy live Google Ads data.
   `/api/ads/diagnostics` w stanie live ma teraz `blocked_handoff=null`,
-  `action_ids=[]`, campaign/search-term read contracts i osobną sekcję
-  `Bezpieczne akcje Ads` dla zablokowanego write/apply. OAuth repair handoff
-  jest zarezerwowany wyłącznie dla realnego access blockera.
+  `action_ids=[]`, campaign/search-term read contracts i decyzję
+  `ads_block_write_actions_without_actionobject` dla zablokowanego write path.
+  OAuth repair handoff jest zarezerwowany wyłącznie dla realnego access
+  blockera.
 - `/localo` nie dokleja już generycznej globalnej kolejki `Taktyki z WILQ API`.
   Localo pokazuje access/readiness oraz brak ranking/GBP facts bez fałszywych
   liczników typu `24 Taktyki` i bez angielskiego `Metric facts`.
@@ -118,6 +129,9 @@ Data: 2026-06-19
 - Pełny `scripts/verify.sh` przeszedł po Ads search terms i Command Center
   duplicate-stats slice: backend API contracts 97 passed, dashboard route
   tests 12 passed, Playwright e2e 8 passed i dashboard production build passed.
+- Pełny `scripts/verify.sh` przeszedł po Ads Doctor decision route cleanup:
+  backend API contracts 98 passed, dashboard route tests 13 passed,
+  Playwright e2e 9 passed i dashboard production build passed.
 
 ## Latest Verified Checks
 

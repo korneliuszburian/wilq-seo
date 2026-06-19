@@ -2139,7 +2139,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_campaign_overview"
     )
     assert campaign_section["status"] == "ready"
-    assert campaign_section["title"] == "Campaign activity read contract"
+    assert campaign_section["title"] == "Aktywność kampanii Google Ads"
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
     assert facts_by_name["clicks"]["value"] == 9
     assert facts_by_name["conversions"]["value"] == 2.5
@@ -2190,7 +2190,26 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_search_terms"
     )
     assert search_terms_section["status"] == "ready"
-    assert search_terms_section["title"] == "Search terms read contract"
+    assert search_terms_section["title"] == "Zapytania użytkowników Google Ads"
+    decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
+    assert set(decisions_by_id) == {
+        "ads_review_campaign_activity",
+        "ads_review_search_terms",
+        "ads_block_write_actions_without_actionobject",
+    }
+    campaign_decision = decisions_by_id["ads_review_campaign_activity"]
+    assert campaign_decision["status"] == "ready"
+    assert campaign_decision["title"] == "Przejrzyj aktywność kampanii Google Ads"
+    assert campaign_decision["campaign_rows"][0]["campaign_name"] == "Brand Search"
+    assert campaign_decision["search_term_rows"] == []
+    search_terms_decision = decisions_by_id["ads_review_search_terms"]
+    assert search_terms_decision["status"] == "ready"
+    assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
+    assert "negative keyword apply" in search_terms_decision["blocked_claims"]
+    safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
+    assert safety_decision["status"] == "blocked"
+    assert "campaign creation" in safety_decision["blocked_claims"]
+    assert payload["blocker_count"] == 1
 
     status_probe_response = client.post(
         "/api/connectors/google_ads/refresh",

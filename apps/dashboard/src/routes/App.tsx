@@ -1418,13 +1418,13 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/ads-doctor": {
     title: "Ads Doctor",
     description:
-      "Widok Google Ads oparty o WILQ MarketingBrief. Pokazuje live evidence, read contracts i ActionObjecty; jeśli Ads jest zablokowany, pokazuje blocker zamiast diagnozy spendu.",
-    focusTitle: "Ads Focus",
+      "Widok Google Ads oparty o WILQ API. Pokazuje dowody, decyzje i blokady claimów; jeśli Ads jest zablokowany, pokazuje blocker zamiast diagnozy spendu.",
+    focusTitle: "Decyzje Ads",
     emptyMessage:
       "Brak Google Ads evidence w /api/marketing/brief. WILQ nie pokaże spend/campaign rekomendacji bez odczytu Ads API.",
-    safetyTitle: "Spend Safety Gate",
+    safetyTitle: "Brama bezpieczeństwa Ads",
     safetyText:
-      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają payload preview, walidacji ActionObject i audytu. Brak search terms, CPA albo ROAS evidence oznacza zakres blokad, nie powód do zgadywania.",
+      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, walidacji ActionObject i audytu. Brak zapytań, CPA albo ROAS evidence oznacza zakres blokad, nie powód do zgadywania.",
     connectorIds: ["google_ads"],
     textNeedles: []
   },
@@ -1516,10 +1516,11 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   }
 };
 
-type AdsDiagnosticSection = AdsDiagnosticsResponse["sections"][number];
 type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
-type AdsCampaignReadContract = AdsDiagnosticsResponse["campaign_read_contract"];
-type AdsSearchTermsReadContract = AdsDiagnosticsResponse["search_terms_read_contract"];
+type AdsDecisionItem = AdsDiagnosticsResponse["decision_queue"][number];
+type AdsCampaignMetricRow = AdsDiagnosticsResponse["campaign_read_contract"]["campaign_rows"][number];
+type AdsSearchTermMetricRow =
+  AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 
 function AdsDoctorSurface() {
   const diagnostics = useQuery({
@@ -1542,7 +1543,7 @@ function AdsDoctorSurface() {
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/actions. Ads Doctor nie może pokazać walidacji ani payload preview." />
+        <BlockerNotice message="Nie udało się odczytać /api/actions. Ads Doctor nie może pokazać walidacji ani podglądu akcji." />
       </main>
     );
   }
@@ -1550,7 +1551,9 @@ function AdsDoctorSurface() {
   const data = diagnostics.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
   const latestRefresh = data.latest_refresh;
-  const liveLabel = data.live_data_available ? "live metryki" : "blokada danych";
+  const blockedDecisionCount = data.decision_queue.filter(
+    (decision) => decision.status === "blocked"
+  ).length;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -1558,15 +1561,15 @@ function AdsDoctorSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Ads Doctor</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok Google Ads z WILQ API. Pokazuje live campaign facts dopiero
-            po udanym vendor_read; przy blockerze dostępu pokazuje dokładny powód i bezpieczny
-            ActionObject zamiast zmyślać spend, CPA albo ROAS.
+            Dedykowany widok Google Ads z WILQ API. Pokazuje, co marketer może
+            uczciwie sprawdzić na podstawie kampanii i zapytań oraz które claimy
+            pozostają zablokowane bez kolejnych kontraktów odczytu.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Stan" value={data.blocker_count} />
-          <MetricTile label="Sekcje" value={data.sections.length} />
-          <MetricTile label="Evidence" value={data.evidence_ids.length} />
+          <MetricTile label="Decyzje" value={data.decision_queue.length} />
+          <MetricTile label="Blockery" value={blockedDecisionCount} />
+          <MetricTile label="Dowody" value={data.evidence_ids.length} />
         </div>
       </div>
 
@@ -1579,13 +1582,15 @@ function AdsDoctorSurface() {
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <StatusBadge value={data.connector.status} />
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {liveLabel}
+              {data.connector.id}: {adsConnectorStatusLabel(data.connector.status)}
+            </span>
+            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+              {data.live_data_available ? "metryki Ads dostępne" : "brak metryk Ads"}
             </span>
             {latestRefresh ? (
               <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-                ostatni refresh: {latestRefresh.status}
+                ostatni odczyt: {adsRefreshStatusLabel(latestRefresh.status)}
               </span>
             ) : null}
           </div>
@@ -1599,15 +1604,9 @@ function AdsDoctorSurface() {
 
       {data.blocked_handoff ? <AdsBlockedHandoffPanel handoff={data.blocked_handoff} /> : null}
 
-      <AdsCampaignReadContractPanel contract={data.campaign_read_contract} />
+      <AdsOperatorSummary data={data} />
 
-      <AdsSearchTermsReadContractPanel contract={data.search_terms_read_contract} />
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        {data.sections.map((section) => (
-          <AdsDiagnosticCard key={section.id} section={section} />
-        ))}
-      </div>
+      <AdsMetricEvidencePanel data={data} />
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
@@ -1619,139 +1618,249 @@ function AdsDoctorSurface() {
   );
 }
 
-function AdsCampaignReadContractPanel({ contract }: { contract: AdsCampaignReadContract }) {
+function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
+  const decisions = data.decision_queue
+    .slice()
+    .sort((left, right) => adsDecisionSortValue(left) - adsDecisionSortValue(right));
+  const allowedMetrics = uniqueValues(
+    decisions.flatMap((decision) => decision.allowed_metrics).map(adsAllowedMetricLabel)
+  );
+  const missingReadContracts = uniqueValues(
+    decisions.flatMap((decision) => decision.missing_read_contracts).map(adsMissingReadContractLabel)
+  );
+  const blockedClaims = uniqueValues(
+    decisions.flatMap((decision) => decision.blocked_claims).map(adsBlockedClaimLabel)
+  );
+
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Read contract Ads
+            Operator Ads
           </div>
-          <h2 className="mt-1 text-base font-semibold tracking-normal">{contract.title}</h2>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">
+            Co marketer ma sprawdzić teraz w Google Ads
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ pokazuje tylko decyzje, które wynikają z odczytu Google Ads.
+            Kampanie i zapytania można przeglądać, ale optymalizacje CPA, ROAS,
+            budżetów i wykluczeń wymagają kolejnych kontraktów oraz ActionObject.
+          </p>
         </div>
-        <StatusBadge value={contract.status} />
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Kampanie" value={data.campaign_read_contract.campaign_rows.length} />
+          <MetricTile
+            label="Zapytania"
+            value={data.search_terms_read_contract.search_term_rows.length}
+          />
+          <MetricTile label="Decyzje" value={decisions.length} />
+        </div>
       </div>
-      <p className="text-sm leading-6 text-slate-700">{contract.summary}</p>
-      <p className="mt-2 text-sm font-medium text-ink">{contract.next_step}</p>
 
-      {contract.campaign_rows.length > 0 ? (
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-line text-xs uppercase tracking-normal text-slate-500">
-              <tr>
-                <th className="py-2 pr-4 font-semibold">Kampania</th>
-                <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
-                <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
-                <th className="py-2 pr-4 font-semibold">Koszt micros</th>
-                <th className="py-2 pr-4 font-semibold">Konwersje</th>
-                <th className="py-2 pr-4 font-semibold">Wartość konw.</th>
-                <th className="py-2 pr-4 font-semibold">Evidence</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {contract.campaign_rows.map((row) => (
-                <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}`}>
-                  <td className="py-2 pr-4 font-medium text-ink">{row.campaign_name}</td>
-                  <td className="py-2 pr-4 text-slate-700">{row.clicks ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">{row.impressions ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">{row.cost_micros ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">{row.conversions ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">
-                    {row.conversion_value ?? "brak"}
-                  </td>
-                  <td className="py-2 pr-4 text-xs text-slate-600">
-                    {row.evidence_ids.length} ID
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid gap-3">
+          {decisions.length > 0 ? (
+            decisions.map((decision) => (
+              <AdsDecisionCard key={decision.id} decision={decision} />
+            ))
+          ) : (
+            <BlockerNotice message="Brak decyzji Ads. Najpierw uruchom odczyt Google Ads." />
+          )}
         </div>
-      ) : (
-        <BlockerNotice message="Brak wymiarowych campaign rows. Ads Doctor nie może analizować kampanii bez vendor_read." />
-      )}
 
-      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
-        <TraceLine label="Wolno użyć metryk" values={contract.allowed_metrics} />
-        <TraceLine label="Brakujące read contracts" values={contract.missing_read_contracts} />
-        <LinkedTraceLine label="Evidence" values={contract.evidence_ids.slice(0, 4)} kind="evidence" />
-        <TraceLine label="Zablokowane claimy" values={contract.blocked_claims} />
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb Ads</h3>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600">
+            <TraceLine label="Metryki dostępne" values={allowedMetrics} empty="brak" />
+            <TraceLine label="Brakujące kontrakty" values={missingReadContracts} empty="brak" />
+            <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
+            <LinkedTraceLine label="ActionObjecty" values={data.action_ids} kind="actions" />
+            <TraceLine label="Nie wolno twierdzić" values={blockedClaims} empty="brak" />
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-function AdsSearchTermsReadContractPanel({ contract }: { contract: AdsSearchTermsReadContract }) {
+function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
   return (
-    <section className="mb-6 rounded-md border border-line bg-white p-4">
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {adsDecisionTypeLabel(decision.decision_type)} / {adsDecisionStatusLabel(decision.status)}
+          </p>
+        </div>
+        <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
+          ryzyko: {adsRiskLabel(decision.risk)}
+        </span>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{decision.summary}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{decision.rationale}</p>
+      <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+        {decision.campaign_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Kampanie: {decision.campaign_rows.length}
+          </span>
+        ) : null}
+        {decision.search_term_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Zapytania: {decision.search_term_rows.length}
+          </span>
+        ) : null}
+        {decision.allowed_metrics.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Źródła" values={decision.source_connectors} />
+        <LinkedTraceLine label="ActionObjecty" values={decision.action_ids} kind="actions" />
+        <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claims.map(adsBlockedClaimLabel)} />
+      </div>
+    </article>
+  );
+}
+
+function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
+  const campaignRows = data.campaign_read_contract.campaign_rows;
+  const searchTermRows = data.search_terms_read_contract.search_term_rows;
+  const missingReadContracts = uniqueValues([
+    ...data.campaign_read_contract.missing_read_contracts,
+    ...data.search_terms_read_contract.missing_read_contracts
+  ]).map(adsMissingReadContractLabel);
+  const blockedClaims = uniqueValues([
+    ...data.campaign_read_contract.blocked_claims,
+    ...data.search_terms_read_contract.blocked_claims,
+    ...data.sections.flatMap((section) => section.blocked_claims)
+  ]).map(adsBlockedClaimLabel);
+
+  return (
+    <section className="rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Search terms read-only
-          </div>
-          <h2 className="mt-1 text-base font-semibold tracking-normal">{contract.title}</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Dowody i ograniczenia Ads
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            To jest skrót kontraktu WILQ API. Decyzje dla marketera są powyżej;
+            tutaj widać kampanie, zapytania i blokady claimów.
+          </p>
         </div>
-        <StatusBadge value={contract.status} />
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Kampanie" value={campaignRows.length} />
+          <MetricTile label="Zapytania" value={searchTermRows.length} />
+          <MetricTile label="Sekcje API" value={data.sections.length} />
+        </div>
       </div>
-      <p className="text-sm leading-6 text-slate-700">{contract.summary}</p>
-      <p className="mt-2 text-sm font-medium text-ink">{contract.next_step}</p>
 
-      {contract.search_term_rows.length > 0 ? (
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-line text-xs uppercase tracking-normal text-slate-500">
-              <tr>
-                <th className="py-2 pr-4 font-semibold">Search term</th>
-                <th className="py-2 pr-4 font-semibold">Kampania</th>
-                <th className="py-2 pr-4 font-semibold">Ad group</th>
-                <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
-                <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
-                <th className="py-2 pr-4 font-semibold">Koszt micros</th>
-                <th className="py-2 pr-4 font-semibold">Konwersje</th>
-                <th className="py-2 pr-4 font-semibold">Wartość konw.</th>
-                <th className="py-2 pr-4 font-semibold">Evidence</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {contract.search_term_rows.map((row) => (
-                <tr
-                  key={`${row.search_term}-${row.campaign_id ?? "unknown"}-${
-                    row.ad_group_id ?? "unknown"
-                  }`}
-                >
-                  <td className="py-2 pr-4 font-medium text-ink">{row.search_term}</td>
-                  <td className="py-2 pr-4 text-slate-700">
-                    {row.campaign_name ?? row.campaign_id ?? "brak"}
-                  </td>
-                  <td className="py-2 pr-4 text-slate-700">
-                    {row.ad_group_name ?? row.ad_group_id ?? "brak"}
-                  </td>
-                  <td className="py-2 pr-4 text-slate-700">{row.clicks ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">{row.impressions ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">{row.cost_micros ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">{row.conversions ?? "brak"}</td>
-                  <td className="py-2 pr-4 text-slate-700">
-                    {row.conversion_value ?? "brak"}
-                  </td>
-                  <td className="py-2 pr-4 text-xs text-slate-600">
-                    {row.evidence_ids.length} ID
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <BlockerNotice message="Brak wymiarowych search term rows. Ads Doctor nie może analizować zapytań ani waste bez search_term_view evidence." />
-      )}
+      <div className="grid gap-4">
+        <AdsCampaignRowsTable rows={campaignRows} />
+        <AdsSearchTermRowsTable rows={searchTermRows} />
+      </div>
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
-        <TraceLine label="Wolno użyć metryk" values={contract.allowed_metrics} />
-        <TraceLine label="Brakujące read contracts" values={contract.missing_read_contracts} />
-        <LinkedTraceLine label="Evidence" values={contract.evidence_ids.slice(0, 4)} kind="evidence" />
-        <TraceLine label="Zablokowane claimy" values={contract.blocked_claims} />
+        <TraceLine label="Brakujące kontrakty" values={missingReadContracts} />
+        <TraceLine label="Nie wolno twierdzić" values={blockedClaims} />
+        <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
+        <TraceLine
+          label="Sekcje źródłowe"
+          values={data.sections.map((section) => adsSectionLabel(section.id))}
+        />
       </div>
     </section>
+  );
+}
+
+function AdsCampaignRowsTable({ rows }: { rows: AdsCampaignMetricRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak wymiarowych wierszy kampanii. Ads Doctor nie może analizować kampanii bez odczytu Google Ads." />
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
+            <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
+            <th className="py-2 pr-4 font-semibold">Koszt</th>
+            <th className="py-2 pr-4 font-semibold">Konwersje</th>
+            <th className="py-2 pr-4 font-semibold">Wartość konw.</th>
+            <th className="py-2 pr-3 font-semibold">Dowody</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.slice(0, 12).map((row) => (
+            <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}`}>
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.campaign_name}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsCost(row.cost_micros)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversion_value)}</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AdsSearchTermRowsTable({ rows }: { rows: AdsSearchTermMetricRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak wymiarowych wierszy zapytań. Ads Doctor nie może analizować zapytań ani waste bez danych z search_term_view." />
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Zapytanie</th>
+            <th className="py-2 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-4 font-semibold">Grupa reklam</th>
+            <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
+            <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
+            <th className="py-2 pr-4 font-semibold">Koszt</th>
+            <th className="py-2 pr-4 font-semibold">Konwersje</th>
+            <th className="py-2 pr-3 font-semibold">Dowody</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.slice(0, 12).map((row) => (
+            <tr
+              key={`${row.search_term}-${row.campaign_id ?? "unknown"}-${
+                row.ad_group_id ?? "unknown"
+              }`}
+            >
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.search_term}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.campaign_name ?? row.campaign_id ?? "brak"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.ad_group_name ?? row.ad_group_id ?? "brak"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsCost(row.cost_micros)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -1765,7 +1874,9 @@ function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">{handoff.title}</h2>
         </div>
-        <StatusBadge value={handoff.status} />
+        <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
+          {adsDecisionStatusLabel(handoff.status)}
+        </span>
       </div>
       <p className="text-sm leading-6 text-slate-700">{handoff.summary}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">{handoff.marketer_message}</p>
@@ -1790,41 +1901,136 @@ function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
       </div>
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <LinkedTraceLine label="Evidence" values={handoff.evidence_ids} kind="evidence" />
+        <LinkedTraceLine label="Dowody" values={handoff.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={handoff.source_connectors} />
-        <LinkedTraceLine label="Akcje" values={handoff.action_ids} kind="actions" />
-        <TraceLine label="Zablokowane claimy" values={handoff.blocked_claims} />
+        <LinkedTraceLine label="ActionObjecty" values={handoff.action_ids} kind="actions" />
+        <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claims.map(adsBlockedClaimLabel)} />
       </div>
     </section>
   );
 }
 
-function AdsDiagnosticCard({ section }: { section: AdsDiagnosticSection }) {
-  return (
-    <section className="rounded-md border border-line bg-white p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            {section.status}
-          </div>
-          <h2 className="mt-1 text-base font-semibold tracking-normal">{section.title}</h2>
-        </div>
-        <StatusBadge value={section.status} />
-      </div>
-      <p className="text-sm leading-6 text-slate-700">{section.summary}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{section.diagnosis}</p>
-      <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700">
-        {section.next_step}
-      </div>
-      {section.metric_facts.length > 0 ? <MetricFactChips facts={section.metric_facts} /> : null}
-      <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <LinkedTraceLine label="Evidence" values={section.evidence_ids} kind="evidence" />
-        <TraceLine label="Źródła" values={section.source_connectors} />
-        <LinkedTraceLine label="Akcje" values={section.action_ids} kind="actions" />
-        <TraceLine label="Zablokowane claimy" values={section.blocked_claims} />
-      </div>
-    </section>
-  );
+function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
+  if (decisionType === "review_campaign_activity") return "przegląd kampanii";
+  if (decisionType === "review_search_terms") return "przegląd zapytań";
+  if (decisionType === "block_write_actions") return "blokada zmian";
+  return "naprawa dostępu";
+}
+
+function adsDecisionStatusLabel(status: string) {
+  if (status === "ready") return "gotowe";
+  if (status === "blocked") return "zablokowane";
+  return status;
+}
+
+function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
+  if (risk === "critical") return "krytyczne";
+  if (risk === "high") return "wysokie";
+  if (risk === "medium") return "średnie";
+  return "niskie";
+}
+
+function adsDecisionSortValue(decision: AdsDecisionItem) {
+  const statusRank: Record<AdsDecisionItem["status"], number> = {
+    ready: 0,
+    blocked: 1
+  };
+  const typeRank: Record<AdsDecisionItem["decision_type"], number> = {
+    review_campaign_activity: 0,
+    review_search_terms: 1,
+    block_write_actions: 2,
+    fix_ads_access: 0
+  };
+  return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
+}
+
+function adsConnectorStatusLabel(status: string) {
+  if (status === "configured") return "dostęp skonfigurowany";
+  if (status === "missing_credentials") return "brakuje credentiali";
+  if (status === "disabled") return "źródło wyłączone";
+  return `status: ${status}`;
+}
+
+function adsRefreshStatusLabel(status: string) {
+  if (status === "completed") return "zakończony";
+  if (status === "blocked") return "zablokowany";
+  if (status === "failed") return "błąd";
+  if (status === "running") return "w toku";
+  return status;
+}
+
+function adsSectionLabel(sectionId: string) {
+  if (sectionId === "ads_live_data_status") return "Status odczytu Google Ads";
+  if (sectionId === "ads_campaign_overview") return "Aktywność kampanii";
+  if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
+  if (sectionId === "ads_action_safety") return "Bezpieczeństwo akcji Ads";
+  if (sectionId === "ads_oauth_blocker") return "Dostęp Google Ads";
+  return sectionId;
+}
+
+function adsAllowedMetricLabel(value: string) {
+  const labels: Record<string, string> = {
+    clicks: "kliknięcia",
+    impressions: "wyświetlenia",
+    cost_micros: "koszt",
+    conversions: "konwersje",
+    conversion_value: "wartość konwersji",
+    search_term: "zapytanie",
+    campaign: "kampania",
+    ad_group: "grupa reklam",
+    status: "status zapytania"
+  };
+  return labels[value] ?? value;
+}
+
+function adsMissingReadContractLabel(value: string) {
+  const labels: Record<string, string> = {
+    recommendations: "rekomendacje Google Ads",
+    change_history: "historia zmian",
+    budget_pacing: "tempo wydawania budżetu",
+    impression_share: "udział w wyświetleniach",
+    "keyword match context": "kontekst dopasowania słów kluczowych",
+    "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
+    negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń",
+    "campaign activity": "aktywność kampanii",
+    search_term_view: "widok zapytań użytkowników"
+  };
+  return labels[value] ?? value;
+}
+
+function adsBlockedClaimLabel(value: string) {
+  const labels: Record<string, string> = {
+    CPA: "CPA",
+    ROAS: "ROAS",
+    "search-term waste": "waste na zapytaniach",
+    "wasted budget": "zmarnowany budżet",
+    "wasted spend": "zmarnowany spend",
+    "negative keyword candidates": "kandydaci do wykluczeń",
+    "negative keyword apply": "wdrożenie wykluczeń",
+    "budget apply": "zmiana budżetu",
+    "budget mutation": "zmiana budżetu",
+    "campaign mutation": "zmiana kampanii",
+    "campaign creation": "tworzenie kampanii",
+    "budget scaling": "skalowanie budżetu",
+    "conversion drop": "spadek konwersji",
+    "conversion loss": "utrata konwersji",
+    "search terms": "zapytania użytkowników",
+    "campaign scaling": "skalowanie kampanii"
+  };
+  return labels[value] ?? value;
+}
+
+function adsNumber(value: number | null | undefined) {
+  if (value === null || value === undefined) return "brak";
+  return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 4 }).format(value);
+}
+
+function adsCost(value: number | null | undefined) {
+  if (value === null || value === undefined) return "brak";
+  const accountUnits = value / 1_000_000;
+  return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
+    accountUnits
+  )} jedn. konta`;
 }
 
 type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
