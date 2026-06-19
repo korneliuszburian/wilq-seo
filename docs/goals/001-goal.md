@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 12:12 Europe/Warsaw.
+Last updated: 2026-06-19 12:48 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -332,7 +332,8 @@ Examples of real value:
   message match; do not claim ROAS/revenue."
 - Ads: "Campaign and search-term metric facts exist, including conversion
   counts/value; review live activity and prepare safety review candidates, but
-  keep waste/CPA/ROAS/negative keyword apply claims blocked until derived KPI,
+  keep profitability, wasted budget, budget scaling, negative keyword apply and
+  recommendation/apply claims blocked until currency, margin, pacing,
   match-context, safety and ActionObject apply contracts exist."
 - Localo: "MCP access działa (`mcp_initialize_status=200`), ale lokalna
   widoczność nie może być analizowana, dopóki WILQ API nie zbierze konkretnych
@@ -591,9 +592,9 @@ Work in this order:
    The output is Polish, uses WILQ API, cites
    `ev_connector_google_ads_status` and
    `ev_refresh_refresh_google_ads_c2f62ee2b43a`, shows 18 campaign read-only
-   rows and 50 search-term rows, and blocks CPA, ROAS,
+   rows and 50 search-term rows, and blocks CPA/ROAS profitability verdicts,
    search-term waste, wasted budget and negative keywords until missing
-   read/safety/ActionObject contracts exist.
+   interpretation/read/safety/ActionObject contracts exist.
 
    Fresh negative keyword safety proof: `wilq-ads-doctor` passed a new
    non-interactive Codex eval after `negative_keywords_read_contract` and
@@ -603,6 +604,18 @@ Work in this order:
    `ev_connector_google_ads_status` and
    `ev_refresh_refresh_google_ads_c2f62ee2b43a`, returns
    `negative_keywords_read_contract.status=ready`, `candidate_count=7`, one
+   prepare-only ActionObject and blocked apply/waste/CPA/ROAS claims.
+
+   Fresh manual usefulness proof: a 2026-06-19 `wilq-ads-doctor` run over live
+   Ads evidence produced a useful Polish triage: 18 campaigns, 50 search-term
+   rows, top campaign/search-term observations, and valid prepare-only
+   ActionObjects `act_prepare_negative_keyword_review_queue` plus
+   `act_prepare_custom_segments_from_search_terms`. This is recorded in
+   `docs/evals/skill-eval-ledger.md`. It still blocks profitability, wasted
+   budget, negative keyword apply, budget scaling and recommendation/apply
+   claims until match context, full 90-day safety, payload preview, currency or
+   margin interpretation, pacing, recommendations, change history and
+   impression share exist.
    action candidate `act_prepare_negative_keyword_review_queue`, usefulness
    score 5 and no safety findings. It blocks `negative keyword apply`,
    search-term waste, wasted budget, CPA and ROAS without
@@ -630,9 +643,9 @@ Work in this order:
 
    Still missing for BDOS-class Ads value: recommendations, change history,
    budget pacing, impression share, keyword/match context, full 90-day safety
-   history, explicit CPA/ROAS derived KPI contract, Keyword Planner enrichment,
-   forecast/audience-size contract, custom segment payload preview and all
-   Ads apply previews. Full `scripts/verify.sh` passed after the custom
+   history, Keyword Planner enrichment, forecast/audience-size contract, custom
+   segment payload preview, margin/currency interpretation and all Ads apply
+   previews. Full `scripts/verify.sh` passed after the custom
    segments slice on 2026-06-19: backend API contracts `100 passed`, dashboard
    route tests `13 passed`, Playwright e2e `9 passed` and dashboard production
    build passed. For the negative keyword safety slice, focused
@@ -1015,9 +1028,10 @@ Current eval progress:
 - `wilq-ads-doctor`: passed at
   `.local-lab/evals/codex-skill/20260618T102132Z/wilq-ads-doctor/result.json`.
   Important correction: Ads is currently live campaign review, not OAuth repair.
-  The skill may use campaign-level evidence from `google_ads`, but must block
-  `search terms`, `CPA`, `ROAS` and `wasted budget` until WILQ exposes stronger
-  evidence/read contracts.
+  The skill may use campaign and search-term evidence from `google_ads`, plus
+  read-only derived KPI rows. It must still block profitability, wasted budget,
+  negative keyword apply, budget scaling and recommendation/apply claims until
+  WILQ exposes stronger interpretation, safety and apply contracts.
 - `wilq-localo-operator`: passed at
   `.local-lab/evals/codex-skill/20260618T102743Z/wilq-localo-operator/result.json`.
   Important correction: Localo is currently access-ready, not missing
@@ -1372,6 +1386,34 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 GA4 blocked-copy correction and manual
+`wilq-ads-doctor` usefulness proof:
+
+```bash
+uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/command_center.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief'
+pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-demo-proof.spec.ts --workers=1
+scripts/verify.sh
+```
+
+Result:
+
+- Live `/api/dashboard/command-center` now exposes
+  `decision_review_ga4_landing_quality` as `blocked`, with title
+  `GA4: brak danych do oceny ruchu` and copy that frames `/ga4` as a missing
+  contract diagnostic, not a ready performance recommendation.
+- Manual `wilq-ads-doctor` proof is recorded in
+  `docs/evals/skill-eval-ledger.md`: 18 campaigns, 50 search-term rows,
+  Google Ads evidence IDs, valid prepare-only ActionObjects and blocked
+  waste/profitability/apply claims.
+- Focused checks passed: ruff, mypy, selected backend contract test and
+  targeted Playwright demo proof.
+- Full gate passed: backend API contracts `106 passed`, dashboard route tests
+  `13 passed`, Playwright e2e `9 passed`, API smoke, skill structure smoke,
+  skill API smoke and dashboard production build passed. Non-blocking warning:
+  Vite main JS chunk remains above 500 KB.
 
 Passed after the 2026-06-19 `wilq-ga4-analyst` decision_queue repair:
 

@@ -612,17 +612,21 @@ def _action_plan_item(
         tactic_summary = _ga4_tactic_summary(review_tactics)
         return CommandCenterActionPlanItem(
             id="plan_review_ga4_landing_quality",
-            title="Sprawdź jakość ruchu i landing page w GA4",
+            title=item.title,
             route=item.route,
             status=_action_plan_status(item),
             priority=14,
             category="GA4",
             why_it_matters=(
-                f"WILQ widzi {item.metric_tiles.get('landing groups', 0)} grup landing/source "
-                f"i {item.metric_tiles.get('low engagement', 0)} niskiej jakości grupy. "
-                f"{tactic_summary}"
+                "GA4 ma status blocked, bo brakuje pełnego kontraktu do claimów "
+                "ROAS/revenue/conversion drop/tracking fixed. "
+                f"{item.summary} {tactic_summary}"
             ),
-            operator_action="Otwórz /ga4 i waliduj jakość ruchu bez ROAS/revenue claimów.",
+            operator_action=(
+                "Otwórz /ga4 jako diagnostykę brakującego kontraktu i waliduj "
+                "`act_review_ga4_tracking_quality`; nie traktuj tego jako gotowej "
+                "rekomendacji performance."
+            ),
             skill_id="wilq-ga4-analyst",
             codex_prompt=(
                 "Użyj skilla wilq-ga4-analyst. Sprawdź jakość ruchu Ekologus po "

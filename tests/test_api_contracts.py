@@ -1055,7 +1055,14 @@ def test_command_center_exposes_polish_operator_brief(
     )
     assert plan_by_id["plan_review_ga4_landing_quality"]["route"] == "/ga4"
     assert plan_by_id["plan_review_ga4_landing_quality"]["skill_id"] == "wilq-ga4-analyst"
-    assert "GA4:" not in plan_by_id["plan_review_ga4_landing_quality"]["why_it_matters"]
+    assert plan_by_id["plan_review_ga4_landing_quality"]["status"] == "blocked"
+    assert "brak pełnego kontraktu" in plan_by_id["plan_review_ga4_landing_quality"]["title"]
+    assert "GA4 ma status blocked" in plan_by_id[
+        "plan_review_ga4_landing_quality"
+    ]["why_it_matters"]
+    assert "gotowej rekomendacji performance" in plan_by_id[
+        "plan_review_ga4_landing_quality"
+    ]["operator_action"]
     assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["status"] == "blocked"
     assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["skill_id"] == (
         "wilq-ads-doctor"
@@ -1081,6 +1088,8 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["evidence_ids"]
     assert merchant_decision["blocked_claims"]
     ga4_decision = decisions_by_id["decision_review_ga4_landing_quality"]
+    assert ga4_decision["status"] == "blocked"
+    assert "brak pełnego kontraktu" in ga4_decision["title"]
     assert ga4_decision["metric_tiles"]["landing groups"] >= 1
     assert "landing groups=0" not in ga4_decision["co_widzimy"]
 

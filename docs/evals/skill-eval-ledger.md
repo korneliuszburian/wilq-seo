@@ -1558,3 +1558,78 @@ Product gap still open:
   non-interactive eval, so the result correctly keeps the ActionObject in
   `pending_validation`. Next stricter eval should require validation-call proof
   before recommending any payload preview or execution step.
+
+## 2026-06-19 - wilq-ads-doctor Manual Campaign/Search-Term Review
+
+Prompt:
+
+```text
+Użyj skilla wilq-ads-doctor. Pokaż przestrzeń do polepszenia Ads w Ekologus,
+ostatnie kampanie, ich efekty i bezpieczne next steps. Nie zmyślaj waste,
+CPA/ROAS ani negative keywords bez WILQ evidence i ActionObject validation.
+```
+
+Observed behavior:
+
+- WILQ API działał.
+- `google_ads` był `configured`, bez brakujących credentiali.
+- Ostatni live `vendor_read`: `refresh_google_ads_c2f62ee2b43a`,
+  `status=completed`.
+- Evidence:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- `blocked_handoff=null`, czyli brak fałszywego OAuth/access blockera.
+- `ads_action_safety.status=blocked`, czyli write/apply path pozostaje
+  zamknięty.
+
+Useful output:
+
+- Campaign facts: 18 kampanii, 107 kliknięć, 2783 wyświetlenia,
+  `cost_micros=164591174`, 2 konwersje, `conversion_value=2`.
+- Najważniejsze kampanie:
+  - `Kompendium PPWR`: 25 kliknięć, 358 wyświetleń,
+    `cost_micros=110380246`, 2 konwersje.
+  - `(2026) Ekologus Ogólna`: 82 kliknięcia, 2425 wyświetleń,
+    `cost_micros=54210928`, 0 konwersji.
+- Search-term facts: 50 wierszy, 8 kliknięć, 71 wyświetleń,
+  `cost_micros=48090179`, 0 konwersji.
+- Największe po koszcie search terms do review:
+  `asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a`,
+  `alba czeladź`, `darmowy odbiór elektrośmieci`,
+  `bezpłatny odbiór elektrośmieci katowice`, `bdo szkolenia stacjonarne`.
+- Skill poprawnie wskazał triage kampanii i search terms jako analizę, nie
+  automatyczną decyzję.
+- Skill poprawnie nie nazwał `(2026) Ekologus Ogólna` wasted budget mimo
+  aktywności i 0 konwersji, bo brakuje kontraktów safety/interpretacji.
+- Skill rozpoznał dwa prepare-only ActionObjecty:
+  `act_prepare_negative_keyword_review_queue`,
+  `act_prepare_custom_segments_from_search_terms`.
+- Walidacja obu ActionObjectów zwróciła `valid=true`, ale tylko dla
+  przygotowania/review, nie apply.
+
+Blocked claims preserved:
+
+- Nie claimować profitability, wasted budget, budget scaling, negative keyword
+  apply ani recommendation/apply.
+- `ads_derived_kpi.status=ready` pozwala liczyć KPI z bieżących facts, ale bez
+  waluty/marży/pacingu/historii zmian/rekomendacji nie jest werdyktem
+  opłacalności.
+- Negative keywords pozostają review-only, bo brakuje `keyword match context`,
+  `90_day_safety_check` i `negative_keyword_payload_preview`.
+
+Product gaps found:
+
+1. Ads workflow potrzebuje `keyword match context`, pełnego
+   `90_day_safety_check` i `negative_keyword_payload_preview`, zanim może
+   mówić o kandydaturach negative keywords albo search-term waste.
+2. Kampanie potrzebują `recommendations`, `change_history`, `budget_pacing`,
+   `impression_share`, waluty i marży, zanim dashboard lub skill mogą uczciwie
+   mówić o waste, profitability, scaling albo apply decisions.
+3. Stricter eval powinien wymagać walidacji obu ActionObjectów i jawnego
+   rozdzielenia: "review campaign/search terms" vs "blocked apply/waste".
+
+Verdict:
+
+Useful. To jest aktualny dobry wzorzec Ads skilla: live facts -> polska
+diagnoza -> validowane prepare-only Actions -> blocked claims -> lista
+konkretnych missing read contracts.

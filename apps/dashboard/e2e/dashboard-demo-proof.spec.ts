@@ -32,7 +32,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       page.getByRole("heading", { name: "Ułóż kolejkę refresh/merge/create dla treści SEO" })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Sprawdź jakość ruchu i landing page w GA4" })
+      page.getByRole("heading", { name: "GA4: brak danych do oceny ruchu" })
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Przejrzyj kampanie Google Ads z live metryk" })

@@ -165,8 +165,37 @@ Data: 2026-06-19
   ograniczone do `recommendations`, `change_history`, `budget_pacing`,
   `impression_share`, `keyword match context`, `90_day_safety_check` i
   `negative_keyword_action_validation`.
+- Manualny przebieg `wilq-ads-doctor` po tym proofie został zapisany w
+  `docs/evals/skill-eval-ledger.md`. Skill użył live Google Ads evidence
+  `ev_connector_google_ads_status` i
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`, pokazał 18 kampanii
+  (`107` kliknięć, `2783` wyświetlenia, `cost_micros=164591174`,
+  `2` konwersje), 50 search-term rows (`8` kliknięć, `71` wyświetleń,
+  `cost_micros=48090179`, `0` konwersji) i zwalidował prepare-only
+  ActionObjecty `act_prepare_negative_keyword_review_queue` oraz
+  `act_prepare_custom_segments_from_search_terms` jako `valid=true`.
+  Wniosek produktowy: to jest użyteczne jako triage kampanii/search terms, ale
+  nadal nie odblokowuje waste, profitability, negative keyword apply,
+  budget scaling ani recommendations bez match-context, 90-day safety,
+  payload preview, currency/margin, pacing, recommendations, change history i
+  impression share.
 - Nadal nie wolno claimować CPA, ROAS, wasted budget, negative keyword
   candidates, budget scaling ani conversion drop bez osobnych read contracts.
+- Command Center GA4 po restarcie API pokazuje `decision_review_ga4_landing_quality`
+  jako `blocked`, z tytułem `GA4: brak danych do oceny ruchu` i operatorem
+  instruowanym, że `/ga4` jest diagnostyką brakującego kontraktu, a nie gotową
+  rekomendacją performance. To zachowuje celowy sygnał, że coś jest niegotowe.
+- Focused GA4 blocked-copy proof:
+  - live `/api/dashboard/command-center` zwrócił GA4 decision jako `blocked`;
+  - `uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py` passed;
+  - `uv run mypy wilq/briefing/command_center.py` passed;
+  - `uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief'` passed.
+- Pełny `scripts/verify.sh` przeszedł po GA4 blocked-copy update, e2e demo proof
+  update i zapisaniu manualnego `wilq-ads-doctor` przebiegu: backend API
+  contracts `106 passed`, dashboard route tests `13 passed`, Playwright e2e
+  `9 passed`, API smoke, skill structure smoke, skill API smoke i dashboard
+  production build passed. Non-blocking: Vite nadal ostrzega, że główny JS
+  chunk ma ponad 500 KB.
 - Command Center nie renderuje już zdublowanego zestawu kafli
   `Decyzje/Blockery/Źródła`; globalne stats zostają tylko w nagłówku strony.
   Test dashboardu ma regresję `Decyzje` count = 1.
