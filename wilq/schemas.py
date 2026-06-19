@@ -455,6 +455,8 @@ class AdsDiagnosticSection(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
 
@@ -693,6 +695,8 @@ class AdsDecisionItem(BaseModel):
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
 

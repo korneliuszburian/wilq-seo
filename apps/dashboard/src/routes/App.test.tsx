@@ -656,6 +656,15 @@ const adsDiagnostics = {
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
       action_ids: [],
+      knowledge_card_ids: [
+        "card_google_ads_search_playbook",
+        "card_google_ads_budget_review_playbook"
+      ],
+      expert_rule_ids: [
+        "ads_diagnostics_v1",
+        "ads_scaling_candidates_v1",
+        "ads_recommendations_v1"
+      ],
       blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
       risk: "low"
     },
@@ -2240,6 +2249,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Koszt 7 dni")).toBeInTheDocument();
     expect(screen.getByText("7-dniowy budżet")).toBeInTheDocument();
     expect(screen.getByText("78,38%")).toBeInTheDocument();
+    expect(screen.getByText(/Karty wiedzy:/)).toBeInTheDocument();
+    expect(screen.getByText(/card_google_ads_budget_review_playbook/)).toBeInTheDocument();
+    expect(screen.getByText(/Reguły:/)).toBeInTheDocument();
+    expect(screen.getByText(/ads_scaling_candidates_v1/)).toBeInTheDocument();
     expect(screen.getByText(/wartość_konwersji=120/)).toBeInTheDocument();
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
     expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();

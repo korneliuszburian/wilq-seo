@@ -368,7 +368,16 @@ SKILL_CONNECTOR_SCOPES: dict[str, set[str]] = {
 }
 
 SKILL_KEYWORD_SCOPES: dict[str, set[str]] = {
-    "wilq-ads-doctor": {"ads", "google_ads", "negative", "search", "pmax"},
+    "wilq-ads-doctor": {
+        "ads",
+        "budget",
+        "google_ads",
+        "negative",
+        "recommendations",
+        "scaling",
+        "search",
+        "pmax",
+    },
     "wilq-ahrefs-gap-finder": {"ahrefs", "gap", "content", "seo"},
     "wilq-campaign-builder": {"ads", "campaign", "pmax", "search", "shopping"},
     "wilq-content-strategist": {"content", "seo", "gsc", "wordpress", "ahrefs"},
@@ -379,6 +388,29 @@ SKILL_KEYWORD_SCOPES: dict[str, set[str]] = {
     "wilq-localo-operator": {"localo", "local", "gbp"},
     "wilq-merchant-feed-operator": {"merchant", "feed", "shopping", "product"},
     "wilq-social-publisher": {"social", "linkedin", "facebook", "content"},
+}
+
+SKILL_KNOWLEDGE_CARD_IDS: dict[str, list[str]] = {
+    "wilq-ads-doctor": [
+        "card_google_ads_search_playbook",
+        "card_google_ads_budget_review_playbook",
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_custom_segments_playbook",
+        "card_goal_001_rules",
+    ],
+}
+
+SKILL_EXPERT_RULE_IDS: dict[str, list[str]] = {
+    "wilq-ads-doctor": [
+        "ads_diagnostics_v1",
+        "ads_principles_v1",
+        "ads_scaling_candidates_v1",
+        "ads_recommendations_v1",
+        "ads_search_terms_v1",
+        "ads_negative_keywords_v1",
+        "ads_custom_segments_v1",
+        "ads_keyword_planner_v1",
+    ],
 }
 
 
@@ -725,23 +757,32 @@ def _actions_for_scope(
 
 
 def _knowledge_cards_for_skill(skill: str) -> list[KnowledgeCard]:
+    explicit_ids = SKILL_KNOWLEDGE_CARD_IDS.get(skill, [])
     keywords = SKILL_KEYWORD_SCOPES.get(skill, set())
-    return [
+    cards = compile_playbook_cards()
+    explicit_cards = [card for card in cards if card.id in explicit_ids]
+    scoped_cards = [
         card
-        for card in compile_playbook_cards()
-        if _text_matches_scope(
+        for card in cards
+        if card.id not in explicit_ids
+        and _text_matches_scope(
             [card.id, card.card_type, card.title, card.summary, card.source_id],
             keywords,
         )
-    ][:8]
+    ]
+    return [*explicit_cards, *scoped_cards][:8]
 
 
 def _expert_rules_for_skill(skill: str) -> list[ExpertRuleSummary]:
+    explicit_ids = SKILL_EXPERT_RULE_IDS.get(skill, [])
     keywords = SKILL_KEYWORD_SCOPES.get(skill, set())
-    return [
+    rules = list_expert_rule_summaries(limit=50)
+    explicit_rules = [rule for rule in rules if rule.id in explicit_ids]
+    scoped_rules = [
         rule
-        for rule in list_expert_rule_summaries(limit=50)
-        if _text_matches_scope(
+        for rule in rules
+        if rule.id not in explicit_ids
+        and _text_matches_scope(
             [
                 rule.id,
                 rule.name,
@@ -751,7 +792,8 @@ def _expert_rules_for_skill(skill: str) -> list[ExpertRuleSummary]:
             ],
             keywords,
         )
-    ][:8]
+    ]
+    return [*explicit_rules, *scoped_rules][:8]
 
 
 def _text_matches_scope(values: list[str], keywords: set[str]) -> bool:

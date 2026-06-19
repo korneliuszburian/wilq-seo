@@ -226,6 +226,8 @@ export const AdsDiagnosticSectionSchema = z.object({
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   action_ids: z.array(z.string()),
+  knowledge_card_ids: z.array(z.string()).optional().default([]),
+  expert_rule_ids: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
@@ -464,6 +466,8 @@ export const AdsDecisionItemSchema = z.object({
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
   action_ids: z.array(z.string()),
+  knowledge_card_ids: z.array(z.string()).optional().default([]),
+  expert_rule_ids: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   risk: z.enum(["low", "medium", "high", "critical"])
 });

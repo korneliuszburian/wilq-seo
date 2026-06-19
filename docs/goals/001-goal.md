@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 14:53 Europe/Warsaw.
+Last updated: 2026-06-19 16:34 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -138,6 +138,20 @@ Current connector truth:
   wasted-budget, negative keyword apply, audience size, budget scaling,
   campaign-performance and recommendation/apply claims still need explicit
   read/safety/apply contracts.
+  Source-backed decision lineage now exists for Ads diagnostics: sections and
+  decision queue items expose `knowledge_card_ids` and `expert_rule_ids`.
+  Current proof chain for the budget slice is
+  `google_ads_budget_review_playbook` ->
+  `card_google_ads_budget_review_playbook` ->
+  `ads_review_budget_context` with expert rules
+  `ads_scaling_candidates_v1`, `ads_recommendations_v1` and
+  `ads_principles_v1`. Dashboard `/ads-doctor` renders those trace IDs, and
+  `wilq-ads-doctor` scoped context-pack preserves them for Codex.
+  Full `scripts/verify.sh` passed for this lineage slice on 2026-06-19:
+  backend API contracts `111 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed`, API smoke, skill structure smoke, skill API smoke,
+  security checks and dashboard production build passed. Non-blocking warning:
+  Vite main JS chunk is `530.51 kB`, above the 500 KB warning threshold.
 - `google_merchant_center`: live product/feed facts exist and support a review
   queue. Merchant diagnostics now distinguishes report occurrences from unique
   affected products: `/merchant` labels them as `Zgłoszenia`/`kontekst`, not
@@ -303,10 +317,17 @@ These are the current reasons Goal 001 is not complete:
    source -> knowledge card/rule -> API view model -> dashboard card ->
    non-interactive Codex skill output.
 
-   Current local slice moves this in the right direction for content:
+   Current progress moves this in the right direction for content and Ads:
    `content_diagnostics.decision_queue` is typed API state, not skill-reference
-   logic. The follow-up daily context-pack slice also moved metric fact reads
-   into batched/read-only API storage paths instead of skill-reference patches.
+   logic. Ads diagnostics now has a first source-backed chain for budget
+   review: `google_ads_budget_review_playbook` compiles to
+   `card_google_ads_budget_review_playbook`, API decisions expose
+   `knowledge_card_ids` and `expert_rule_ids`, `/ads-doctor` renders those
+   trace IDs and `wilq-ads-doctor` context-pack preserves them. The remaining
+   proof is a non-interactive Codex eval that verifies the skill uses that
+   lineage in a Polish marketer answer. The follow-up daily context-pack slice
+   also moved metric fact reads into batched/read-only API storage paths instead
+   of skill-reference patches.
 
    This is the explicit home for the "best standards / practitioner sources /
    papers / doctoral-quality sources" layer. It is not a vague memory dump.
@@ -996,15 +1017,27 @@ Goal: prove that research sources shape WILQ behavior, not only docs.
 
 Tasks:
 
-- Pick one high-value chain from `docs/research/wilq-marketing-source-map.md`.
-  Preferred first chain:
-  Google Ads or GSC/content because these matter most to the marketer demo.
-- Encode the source-backed rule in the right product layer:
-  - expert YAML / knowledge card,
-  - schema/API view model,
-  - dashboard card,
-  - skill reference or prompt contract.
-- Define required evidence fields and blocked claims.
+- In progress: Google Ads budget review chain.
+  - Product layer added: `google_ads_budget_review_playbook`.
+  - Compiled knowledge card:
+    `card_google_ads_budget_review_playbook`.
+  - Expert rules bound to API decisions:
+    `ads_scaling_candidates_v1`, `ads_recommendations_v1`,
+    `ads_principles_v1`.
+  - API view model: `AdsDiagnosticSection` and `AdsDecisionItem` expose
+    `knowledge_card_ids` and `expert_rule_ids`.
+  - Dashboard proof: `/ads-doctor` renders those trace IDs only when present.
+  - Skill context proof: `POST /api/codex/context-pack` for
+    `wilq-ads-doctor` preserves the same decision lineage.
+  - Safety proof: redaction allowlist preserves `knowledge_card_ids` and
+    `expert_rule_ids`, while still redacting secret values.
+- Still required for this chain: run a non-interactive `wilq-ads-doctor` Codex
+  eval that proves a Polish answer references the budget review context,
+  evidence IDs, missing contracts and blocked budget/apply claims.
+- Next chains after Ads budget review:
+  - Google Ads recommendations/change-history/impression-share.
+  - GSC/content source-to-decision quality.
+  - Localo visibility once ranking/GBP evidence exists.
 - Use official docs first, then practitioner/academic sources only where they
   add operating value.
 

@@ -408,6 +408,8 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "api_key": "sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "decision_type": "merge_create_after_inventory_check",
+            "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
+            "expert_rule_ids": ["ads_scaling_candidates_v1"],
             "normalized_page_path": "/europejski-zielony-lad-co-to-takiego",
             "wordpress_content_url": (
                 "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
@@ -423,6 +425,8 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["error"] == "[REDACTED]"
     assert redacted["api_key"] == "[REDACTED]"
     assert redacted["decision_type"] == "merge_create_after_inventory_check"
+    assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
+    assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
     assert redacted["normalized_page_path"] == "/europejski-zielony-lad-co-to-takiego"
     assert redacted["wordpress_content_url"] == (
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
@@ -2651,6 +2655,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert budget_section["status"] == "ready"
     assert "skalowania" in budget_section["diagnosis"]
+    assert budget_section["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
+    assert budget_section["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
     assert facts_by_name["clicks"]["value"] == 9
     assert facts_by_name["conversions"]["value"] == 2.5
@@ -2794,6 +2804,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert budget_decision["budget_rows"][0]["campaign_name"] == "Brand Search"
     assert budget_decision["budget_rows"][0]["spend_to_budget_ratio_7d"] == 0.057143
     assert budget_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert budget_decision["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert budget_decision["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
     assert "budget apply" in budget_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
@@ -2840,6 +2858,31 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
     assert after_probe_payload["budget_pacing_read_contract"]["budget_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-ads-doctor"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    context_decisions = {
+        decision["id"]: decision
+        for decision in context_payload["ads_diagnostics"]["decision_queue"]
+    }
+    context_budget_decision = context_decisions["ads_review_budget_context"]
+    assert context_budget_decision["knowledge_card_ids"] == budget_decision[
+        "knowledge_card_ids"
+    ]
+    assert context_budget_decision["expert_rule_ids"] == budget_decision["expert_rule_ids"]
+    context_card_ids = {
+        card["id"] for card in context_payload["knowledge_card_summaries"]
+    }
+    assert "card_google_ads_budget_review_playbook" in context_card_ids
+    context_rule_ids = {
+        rule["id"] for rule in context_payload["expert_rule_summaries"]
+    }
+    assert "ads_scaling_candidates_v1" in context_rule_ids
+    assert "ads_recommendations_v1" in context_rule_ids
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
@@ -4495,6 +4538,7 @@ def test_knowledge_playbooks_are_machine_readable_and_evidence_gated() -> None:
     families = {playbook["family"] for playbook in playbooks}
     assert {
         "google_ads_search_playbook",
+        "google_ads_budget_review_playbook",
         "google_ads_demand_gen_playbook",
         "google_ads_pmax_playbook",
         "google_ads_negative_keywords_playbook",
@@ -4541,6 +4585,7 @@ def test_codex_context_pack_includes_compiled_knowledge_cards() -> None:
     data = response.json()
     card_ids = {card["id"] for card in data["knowledge_card_summaries"]}
     assert "card_google_ads_search_playbook" in card_ids
+    assert "card_google_ads_budget_review_playbook" in card_ids
     assert "card_goal_001_rules" in card_ids
     evidence_ids = {item["id"] for item in data["evidence_summaries"]}
     assert "ev_connector_google_ads_status" in evidence_ids

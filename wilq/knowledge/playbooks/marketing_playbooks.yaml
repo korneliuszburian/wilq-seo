@@ -28,6 +28,34 @@ playbooks:
       - Refuse to recommend spend changes from connector status alone.
     output_contract: Evidence-backed search-term opportunity and optional ActionObject IDs.
 
+  - id: google_ads_budget_review_playbook
+    family: google_ads_budget_review_playbook
+    title: Google Ads budget review
+    card_type: campaign_card
+    source_anchors:
+      - Google Ads campaign budgets
+      - Google Ads recommendations review
+    required_evidence:
+      - campaign_budget
+      - cost_micros
+      - campaign_ids
+      - evidence_ids
+    maps_to_opportunity_types:
+      - google_ads_waste
+      - google_ads_budget_review
+    maps_to_action_types:
+      - campaign_change_review
+    expert_rule_ids:
+      - ads_scaling_candidates_v1
+      - ads_recommendations_v1
+      - ads_principles_v1
+    compact_playbook: Use campaign budget fields and recent cost only as review context. Do not scale, cut or apply budgets without impression share, change history, business budget goal, payload preview and ActionObject validation.
+    refusal_rules:
+      - Refuse budget changes without campaign_budget evidence IDs.
+      - Refuse profitability or wasted-budget claims without margin, conversion quality and review contracts.
+      - Refuse to apply Google recommendations automatically.
+    output_contract: Budget review decision with evidence, missing read contracts and blocked write claims.
+
   - id: google_ads_demand_gen_playbook
     family: google_ads_demand_gen_playbook
     title: Demand Gen readiness

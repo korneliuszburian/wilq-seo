@@ -128,7 +128,10 @@ scripts/verify.sh
 - If `agent-browser` fails with `Failed to create socket directory: Permission denied`, set a writable runtime dir first: `mkdir -p .local-lab/xdg-runtime && chmod 700 .local-lab/xdg-runtime && XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser ...`. In this WSL session `/run/user/1000` may not exist.
 - After changing `pyproject.toml` entrypoints or build metadata, run `uv sync --all-extras` before expecting `uv run wilq ...` to exist.
 - The canonical goal file is `docs/goals/001-goal.md`. Do not recreate old duplicate numbered goal files.
-- Redaction must preserve audit identifiers such as evidence IDs, action IDs, workflow IDs, job IDs and connector refresh run IDs. Redact secret values, not product traceability.
+- Redaction must preserve audit identifiers such as evidence IDs, action IDs,
+  knowledge card IDs, expert rule IDs, workflow IDs, job IDs and connector
+  refresh run IDs. Long underscore IDs can look token-like to generic regexes;
+  allowlist product traceability keys and redact secret values, not lineage.
 - Skill eval progress belongs in `docs/evals/skill-eval-ledger.md`; current
   slice status belongs in `docs/PROGRESS.md`. Do not keep these only in chat.
 - `POST /api/codex/context-pack` can be much slower than narrow diagnostics

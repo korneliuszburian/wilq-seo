@@ -8,6 +8,27 @@ artifacts.
 
 Data: 2026-06-19
 
+- Source-to-product Ads slice, 2026-06-19 16:21 Europe/Warsaw: current active
+  proof is Google Ads budget review lineage, not another prompt/reference patch.
+  Added `google_ads_budget_review_playbook`; compiled card
+  `card_google_ads_budget_review_playbook` now backs
+  `/api/ads/diagnostics` budget decisions. `AdsDiagnosticSection` and
+  `AdsDecisionItem` expose `knowledge_card_ids` and `expert_rule_ids`;
+  `ads_review_budget_context` carries `card_google_ads_budget_review_playbook`
+  plus `ads_scaling_candidates_v1`, `ads_recommendations_v1` and
+  `ads_principles_v1`. Dashboard `/ads-doctor` renders these trace IDs only
+  when present, and `wilq-ads-doctor` scoped context-pack preserves the same
+  lineage. Redaction now allowlists `knowledge_card_ids` and `expert_rule_ids`
+  so traceability is not destroyed as `[REDACTED]`; secret values still redact.
+  Focused proof passed: ruff, mypy, four API contract tests and dashboard
+  `App.test.tsx` with Vitest single-worker profile. Full `scripts/verify.sh`
+  also passed after one transient `pip-audit` network retry: backend API
+  contracts `111 passed`, dashboard route tests `13 passed`, Playwright e2e
+  `9 passed`, API smoke, skill structure smoke, skill API smoke, security
+  checks and dashboard production build passed. Non-blocking warning: Vite main
+  JS chunk is `530.51 kB`. Remaining proof for this slice: a non-interactive
+  `wilq-ads-doctor` eval proving the Polish answer uses the same budget lineage
+  and blocked claims.
 - Runtime-manager slice, 2026-06-19 15:12 Europe/Warsaw: current active fix is
   to stop hand-rolling local server lifecycle. Added `scripts/local_stack.sh`
   as the canonical local API/dashboard manager with `start|stop|restart|status|logs`.

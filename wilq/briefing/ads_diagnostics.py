@@ -45,6 +45,85 @@ from wilq.storage.metric_store import metric_store
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
 ADS_METRIC_FACT_LIMIT = 500
+CARD_GOAL_001_RULES = "card_goal_001_rules"
+CARD_ADS_SEARCH = "card_google_ads_search_playbook"
+CARD_ADS_BUDGET_REVIEW = "card_google_ads_budget_review_playbook"
+CARD_ADS_NEGATIVE_KEYWORDS = "card_google_ads_negative_keywords_playbook"
+CARD_ADS_CUSTOM_SEGMENTS = "card_google_ads_custom_segments_playbook"
+
+ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
+    "ads_live_data_status": (
+        [CARD_ADS_SEARCH, CARD_GOAL_001_RULES],
+        ["ads_diagnostics_v1", "ads_principles_v1"],
+    ),
+    "ads_oauth_blocker": (
+        [CARD_GOAL_001_RULES],
+        ["ads_principles_v1"],
+    ),
+    "ads_campaign_overview": (
+        [CARD_ADS_SEARCH, CARD_ADS_BUDGET_REVIEW],
+        ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
+    ),
+    "ads_derived_kpi": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
+    ),
+    "ads_budget_pacing": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_scaling_candidates_v1", "ads_recommendations_v1", "ads_principles_v1"],
+    ),
+    "ads_search_terms": (
+        [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
+        ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
+    ),
+    "ads_custom_segments": (
+        [CARD_ADS_CUSTOM_SEGMENTS],
+        ["ads_custom_segments_v1", "ads_keyword_planner_v1"],
+    ),
+    "ads_negative_keyword_safety": (
+        [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
+        ["ads_negative_keywords_v1", "ads_search_terms_v1"],
+    ),
+    "ads_action_safety": (
+        [CARD_GOAL_001_RULES],
+        ["ads_principles_v1"],
+    ),
+}
+
+ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
+    "ads_fix_access_before_analysis": (
+        [CARD_GOAL_001_RULES],
+        ["ads_principles_v1"],
+    ),
+    "ads_review_campaign_activity": (
+        [CARD_ADS_SEARCH, CARD_ADS_BUDGET_REVIEW],
+        ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
+    ),
+    "ads_review_derived_kpis": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
+    ),
+    "ads_review_budget_context": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_scaling_candidates_v1", "ads_recommendations_v1", "ads_principles_v1"],
+    ),
+    "ads_review_search_terms": (
+        [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
+        ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
+    ),
+    "ads_review_negative_keyword_safety": (
+        [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
+        ["ads_negative_keywords_v1", "ads_search_terms_v1"],
+    ),
+    "ads_prepare_custom_segments_from_search_terms": (
+        [CARD_ADS_CUSTOM_SEGMENTS],
+        ["ads_custom_segments_v1", "ads_keyword_planner_v1"],
+    ),
+    "ads_block_write_actions_without_actionobject": (
+        [CARD_GOAL_001_RULES],
+        ["ads_principles_v1"],
+    ),
+}
 
 
 def build_ads_diagnostics() -> AdsDiagnosticsResponse:
@@ -105,6 +184,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             live_data_available=live_data_available,
         ),
     ]
+    sections = [_with_ads_section_lineage(section) for section in sections]
     blocked_handoff = _blocked_handoff(live_data_available, latest_refresh, sections, action_ids)
     decision_queue = _ads_decision_queue(
         campaign_read_contract,
@@ -1390,7 +1470,7 @@ def _ads_decision_queue(
 ) -> list[AdsDecisionItem]:
     if blocked_handoff is not None:
         return [
-            AdsDecisionItem(
+            _with_ads_decision_lineage(AdsDecisionItem(
                 id="ads_fix_access_before_analysis",
                 decision_type="fix_ads_access",
                 status="blocked",
@@ -1403,7 +1483,7 @@ def _ads_decision_queue(
                 action_ids=blocked_handoff.action_ids,
                 blocked_claims=blocked_handoff.blocked_claims,
                 risk=ActionRisk.medium,
-            )
+            ))
         ]
 
     decisions: list[AdsDecisionItem] = []
@@ -1641,7 +1721,7 @@ def _ads_decision_queue(
             )
         )
 
-    return decisions
+    return [_with_ads_decision_lineage(decision) for decision in decisions]
 
 
 def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
@@ -1717,6 +1797,26 @@ def _refresh_or_connector_evidence_ids(latest_refresh: ConnectorRefreshRun | Non
     if latest_refresh:
         return latest_refresh.evidence_ids
     return [connector_evidence_id(GOOGLE_ADS_CONNECTOR_ID)]
+
+
+def _with_ads_section_lineage(section: AdsDiagnosticSection) -> AdsDiagnosticSection:
+    knowledge_card_ids, expert_rule_ids = ADS_SECTION_LINEAGE.get(section.id, ([], []))
+    return section.model_copy(
+        update={
+            "knowledge_card_ids": _unique([*section.knowledge_card_ids, *knowledge_card_ids]),
+            "expert_rule_ids": _unique([*section.expert_rule_ids, *expert_rule_ids]),
+        }
+    )
+
+
+def _with_ads_decision_lineage(decision: AdsDecisionItem) -> AdsDecisionItem:
+    knowledge_card_ids, expert_rule_ids = ADS_DECISION_LINEAGE.get(decision.id, ([], []))
+    return decision.model_copy(
+        update={
+            "knowledge_card_ids": _unique([*decision.knowledge_card_ids, *knowledge_card_ids]),
+            "expert_rule_ids": _unique([*decision.expert_rule_ids, *expert_rule_ids]),
+        }
+    )
 
 
 def _metric_sentence(facts: list[MetricFact]) -> str:

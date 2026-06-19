@@ -1761,6 +1761,12 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
         <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={decision.source_connectors} />
         <LinkedTraceLine label="ActionObjecty" values={decision.action_ids} kind="actions" />
+        {decision.knowledge_card_ids.length > 0 ? (
+          <TraceLine label="Karty wiedzy" values={decision.knowledge_card_ids} />
+        ) : null}
+        {decision.expert_rule_ids.length > 0 ? (
+          <TraceLine label="Reguły" values={decision.expert_rule_ids} />
+        ) : null}
         <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claims.map(adsBlockedClaimLabel)} />
       </div>
     </article>

@@ -27,6 +27,17 @@ Audit `docs/audits/001-output.md` is now folded into
    `http://127.0.0.1:8000/api/health` and
    `http://127.0.0.1:5173/command-center`. Do not hand-roll `nohup`, `setsid`,
    detached `uvicorn`, detached Vite or ad hoc `kill` loops for these ports.
+0. Source-to-product lineage rule, 2026-06-19 16:21 Europe/Warsaw: do not fix
+   Ads/marketing reasoning by stuffing more edge cases into skill references.
+   Current Ads budget review proof lives in typed product state:
+   `google_ads_budget_review_playbook` ->
+   `card_google_ads_budget_review_playbook` ->
+   `/api/ads/diagnostics.ads_review_budget_context` with
+   `knowledge_card_ids` and `expert_rule_ids` ->
+   dashboard `/ads-doctor` trace lines ->
+   `wilq-ads-doctor` scoped context-pack. Redaction must preserve
+   `knowledge_card_ids` and `expert_rule_ids`, just like evidence/action IDs.
+   Remaining proof: run non-interactive `wilq-ads-doctor` eval for this lineage.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.
