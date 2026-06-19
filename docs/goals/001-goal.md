@@ -271,8 +271,10 @@ These are the current reasons Goal 001 is not complete:
    Localo access/readiness has a typed API surface in `/api/localo/diagnostics`.
    It proves MCP initialize/access state and names missing contracts, but local
    ranking/GBP/competitor/review insight remains blocked until a concrete Localo
-   visibility read contract exists. Social publishing remains permission-gated;
-   drafting can be prepare-only and evidence-backed.
+   visibility read contract exists. Fresh `wilq-localo-operator` eval passed on
+   2026-06-19 and proves this exact state: access is ready, local visibility
+   insight is blocked. Social publishing remains permission-gated; drafting can
+   be prepare-only and evidence-backed.
 
 7. **Full verification after the latest changes passed.**
    `scripts/verify.sh` passed after the 2026-06-19 Localo diagnostics route
@@ -614,7 +616,8 @@ Work in this order:
      negative keyword safety review contract passed on 2026-06-19;
    - `wilq-localo-operator` after `/api/localo/diagnostics` for
      access/readiness and again after real ranking/GBP/competitor/review facts
-     exist;
+     exist. Fresh access-ready blocker eval passed on 2026-06-19:
+     `.local-lab/evals/codex-skill/20260619T072709Z/wilq-localo-operator/result.json`;
    - done for `wilq-custom-segments` after
      `ads_diagnostics.custom_segments_read_contract` and
      `act_prepare_custom_segments_from_search_terms`; keep rerunning when

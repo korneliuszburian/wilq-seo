@@ -139,6 +139,17 @@ skill consume it.
 - API health: `curl -sf http://127.0.0.1:8000/api/health`
 - Final gate: `scripts/verify.sh`
 
+## Latest Localo Skill Proof
+
+- `wilq-localo-operator` passed non-interactive Codex eval at
+  `.local-lab/evals/codex-skill/20260619T072709Z/wilq-localo-operator/result.json`.
+- Localo access is ready: `localo_access_status=access_ready`,
+  `localo_refresh_status=completed`, `mcp_initialize_status=200`.
+- The skill correctly blocks ranking, GBP, competitor and local visibility
+  uplift claims because WILQ has no Localo visibility facts beyond MCP/OAuth
+  access probe.
+- There is no Localo write/apply path yet: `action_ids=[]`.
+
 ## Skill Eval Harness
 
 Istniejący harness non-interactive:

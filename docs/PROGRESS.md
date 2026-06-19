@@ -1664,3 +1664,36 @@ Codex eval proof:
   build passed. The first rerun hit a transient Vite readiness `curl` timeout
   while a manual API process was still running; after cleaning that process,
   the full gate passed.
+
+## 2026-06-19 - Localo Operator Access-Ready Eval
+
+Current stage:
+
+- `wilq-localo-operator` has a fresh non-interactive eval after the Localo route
+  cleanup.
+- Localo access is not the blocker anymore. Local visibility facts are the
+  blocker.
+
+Codex eval proof:
+
+- Command:
+  `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8014`
+- Artifact:
+  `.local-lab/evals/codex-skill/20260619T072709Z/wilq-localo-operator/result.json`.
+- Result: `pl-PL`, Polish diacritics, `api_used=true`,
+  `operator_usefulness_score=4`, no safety findings.
+- Evidence IDs include:
+  `ev_connector_localo_status`,
+  `ev_refresh_refresh_localo_1485ee61056c`.
+- Output confirms `localo_access_status=access_ready`,
+  `localo_refresh_status=completed` and `mcp_initialize_status=200`.
+- Output blocks ranking, GBP, competitor and local visibility uplift claims
+  because WILQ still has no Localo ranking/GBP/competitor/local visibility
+  facts.
+- Output returns no apply/write path: `action_ids=[]`, `action_count=0`.
+
+Next Localo product gap:
+
+- Add a real Localo visibility read contract before any local SEO
+  recommendation: rankings, GBP visibility, competitor comparison, reviews or
+  local task facts.

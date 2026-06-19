@@ -1418,3 +1418,46 @@ Product correction recorded:
 - Future Ads work should add keyword/match context, full 90-day safety history,
   payload preview and derived CPA/ROAS contracts before any apply or performance
   verdict.
+
+## 2026-06-19 - wilq-localo-operator Access-Ready Blocker Eval
+
+Artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T072709Z/wilq-localo-operator/result.json
+```
+
+Why rerun:
+
+- Localo route/API cleanup changed the product truth from "missing access" to
+  "MCP access works, but visibility facts are still missing".
+- The skill had to prove it uses Localo diagnostics and blocks ranking/GBP/
+  competitor/local visibility claims without inventing data.
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- Evidence IDs include:
+  `ev_connector_localo_status`,
+  `ev_refresh_refresh_localo_1485ee61056c`.
+- `operator_usefulness_score=4`.
+- `recommendations_count=2`, `actions_count=1`.
+- No safety findings.
+
+Useful output:
+
+- The skill confirms only technical access: connector `localo` is configured,
+  `localo_access_status=access_ready`, `localo_refresh_status=completed`,
+  and Localo MCP probe has `mcp_initialize_status=200`.
+- It blocks ranking, GBP, competitor and local visibility uplift claims because
+  WILQ has no Localo ranking/GBP/competitor/local visibility facts yet.
+- It returns no write/apply action: `action_ids=[]`, `action_count=0`.
+
+Product gap still open:
+
+- This is a correct blocker eval, not a full Localo value eval. Next Localo
+  product work must add a concrete read contract for rankings, GBP visibility,
+  competitors, reviews or local tasks before the skill can produce local SEO
+  recommendations.
