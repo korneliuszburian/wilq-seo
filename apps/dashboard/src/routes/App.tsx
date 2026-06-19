@@ -1526,6 +1526,8 @@ type AdsBudgetPacingRow =
   AdsDiagnosticsResponse["budget_pacing_read_contract"]["budget_rows"][number];
 type AdsRecommendationRow =
   AdsDiagnosticsResponse["recommendations_read_contract"]["recommendation_rows"][number];
+type AdsImpressionShareRow =
+  AdsDiagnosticsResponse["impression_share_read_contract"]["impression_share_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 type AdsCustomSegmentCandidate =
@@ -1667,6 +1669,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             value={data.recommendations_read_contract.recommendation_rows.length}
           />
           <MetricTile
+            label="Udział"
+            value={data.impression_share_read_contract.impression_share_rows.length}
+          />
+          <MetricTile
             label="Zapytania"
             value={data.search_terms_read_contract.search_term_rows.length}
           />
@@ -1743,6 +1749,11 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
             Rekomendacje: {decision.recommendation_rows.length}
           </span>
         ) : null}
+        {decision.impression_share_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Udział w wyśw.: {decision.impression_share_rows.length}
+          </span>
+        ) : null}
         {decision.allowed_metrics.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
@@ -1789,6 +1800,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
   const budgetRows = data.budget_pacing_read_contract.budget_rows;
   const recommendationRows = data.recommendations_read_contract.recommendation_rows;
+  const impressionShareRows = data.impression_share_read_contract.impression_share_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
@@ -1797,6 +1809,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.derived_kpi_read_contract.missing_read_contracts,
     ...data.budget_pacing_read_contract.missing_read_contracts,
     ...data.recommendations_read_contract.missing_read_contracts,
+    ...data.impression_share_read_contract.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
@@ -1806,6 +1819,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.derived_kpi_read_contract.blocked_claims,
     ...data.budget_pacing_read_contract.blocked_claims,
     ...data.recommendations_read_contract.blocked_claims,
+    ...data.impression_share_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
     ...data.negative_keywords_read_contract.blocked_claims,
@@ -1829,6 +1843,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
           <MetricTile label="KPI" value={derivedKpiRows.length} />
           <MetricTile label="Budżety" value={budgetRows.length} />
           <MetricTile label="Rekom." value={recommendationRows.length} />
+          <MetricTile label="Udział" value={impressionShareRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
@@ -1840,6 +1855,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
         <AdsDerivedKpiRowsTable rows={derivedKpiRows} />
         <AdsBudgetPacingRowsTable rows={budgetRows} />
         <AdsRecommendationRowsPanel rows={recommendationRows} />
+        <AdsImpressionShareRowsTable rows={impressionShareRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} />
         <AdsNegativeKeywordCandidatesPanel candidates={negativeKeywordCandidates} />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
@@ -2035,6 +2051,48 @@ function AdsRecommendationRowsPanel({ rows }: { rows: AdsRecommendationRow[] }) 
           </article>
         ))}
       </div>
+    </div>
+  );
+}
+
+function AdsImpressionShareRowsTable({ rows }: { rows: AdsImpressionShareRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak wierszy udziału w wyświetleniach. WILQ nie może ocenić utraconej ekspozycji przez budżet albo ranking bez impression share facts." />
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-4 font-semibold">Search IS</th>
+            <th className="py-2 pr-4 font-semibold">Lost IS budget</th>
+            <th className="py-2 pr-4 font-semibold">Lost IS rank</th>
+            <th className="py-2 pr-3 font-semibold">Blokady</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.slice(0, 12).map((row) => (
+            <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}-impression-share`}>
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.campaign_name}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsPercent(row.search_impression_share)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsPercent(row.search_budget_lost_impression_share)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsPercent(row.search_rank_lost_impression_share)}
+              </td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -2261,6 +2319,7 @@ function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_derived_kpi") return "wyliczone KPI";
   if (decisionType === "review_budget_context") return "kontekst budżetu";
   if (decisionType === "review_recommendations") return "rekomendacje do review";
+  if (decisionType === "review_impression_share") return "udział w wyświetleniach";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
   if (decisionType === "review_negative_keyword_safety") return "review wykluczeń";
   if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
@@ -2291,10 +2350,11 @@ function adsDecisionSortValue(decision: AdsDecisionItem) {
     review_derived_kpi: 1,
     review_budget_context: 2,
     review_recommendations: 3,
-    review_search_terms: 4,
-    review_negative_keyword_safety: 5,
-    prepare_custom_segments: 6,
-    block_write_actions: 7,
+    review_impression_share: 4,
+    review_search_terms: 5,
+    review_negative_keyword_safety: 6,
+    prepare_custom_segments: 7,
+    block_write_actions: 8,
     fix_ads_access: 0
   };
   return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
@@ -2321,6 +2381,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_derived_kpi") return "Wyliczone KPI";
   if (sectionId === "ads_budget_pacing") return "Kontekst budżetu";
   if (sectionId === "ads_recommendations") return "Rekomendacje Google Ads";
+  if (sectionId === "ads_impression_share") return "Udział w wyświetleniach";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
   if (sectionId === "ads_custom_segments") return "Custom segments";
@@ -2344,6 +2405,9 @@ function adsAllowedMetricLabel(value: string) {
     budget_recommended_amount_micros: "rekomendowany budżet",
     recommendation_available: "rekomendacja dostępna",
     recommendation_campaign_count: "kampanie w rekomendacji",
+    search_impression_share: "udział w wyświetleniach",
+    search_budget_lost_impression_share: "utracony udział przez budżet",
+    search_rank_lost_impression_share: "utracony udział przez ranking",
     search_term: "zapytanie",
     campaign: "kampania",
     ad_group: "grupa reklam",
@@ -2392,6 +2456,7 @@ function adsBlockedClaimLabel(value: string) {
     "budget mutation": "zmiana budżetu",
     "campaign mutation": "zmiana kampanii",
     "campaign creation": "tworzenie kampanii",
+    "impression share": "udział w wyświetleniach",
     "recommendation apply": "wdrożenie rekomendacji",
     "automatic recommendation accept": "automatyczne przyjęcie rekomendacji",
     "performance uplift": "wzrost performance",

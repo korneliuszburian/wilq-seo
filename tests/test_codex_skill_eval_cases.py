@@ -26,6 +26,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ads_recommendations_v1",
                 "recommendations_read_contract",
                 "ads_review_recommendations",
+                "impression_share_read_contract",
+                "ads_review_impression_share",
                 "recommendation apply",
                 "search terms",
                 "negative_keywords_read_contract",

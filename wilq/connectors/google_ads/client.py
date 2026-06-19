@@ -46,7 +46,10 @@ SELECT
   metrics.impressions,
   metrics.cost_micros,
   metrics.conversions,
-  metrics.conversions_value
+  metrics.conversions_value,
+  metrics.search_impression_share,
+  metrics.search_budget_lost_impression_share,
+  metrics.search_rank_lost_impression_share
 FROM campaign
 WHERE segments.date DURING LAST_7_DAYS
   AND campaign.status != 'REMOVED'
@@ -479,6 +482,7 @@ def _summarize_search_stream_response(
     conversion_value = 0.0
     budgeted_campaign_count = 0
     recommended_budget_count = 0
+    impression_share_row_count = 0
     metric_facts: list[VendorMetricFact] = []
     for row in rows:
         metrics = row.get("metrics", {})
@@ -550,6 +554,28 @@ def _summarize_search_stream_response(
                         dimensions,
                     )
                 )
+            impression_share_values = {
+                "search_impression_share": _optional_float_metric(
+                    metrics.get("searchImpressionShare", metrics.get("search_impression_share"))
+                ),
+                "search_budget_lost_impression_share": _optional_float_metric(
+                    metrics.get(
+                        "searchBudgetLostImpressionShare",
+                        metrics.get("search_budget_lost_impression_share"),
+                    )
+                ),
+                "search_rank_lost_impression_share": _optional_float_metric(
+                    metrics.get(
+                        "searchRankLostImpressionShare",
+                        metrics.get("search_rank_lost_impression_share"),
+                    )
+                ),
+            }
+            if any(value is not None for value in impression_share_values.values()):
+                impression_share_row_count += 1
+            for name, value in impression_share_values.items():
+                if value is not None:
+                    metric_facts.append(VendorMetricFact(name, value, dimensions))
     return (
         {
             "api_version": GOOGLE_ADS_API_VERSION,
@@ -562,6 +588,7 @@ def _summarize_search_stream_response(
             "conversion_value": conversion_value,
             "budgeted_campaign_count": budgeted_campaign_count,
             "recommended_budget_count": recommended_budget_count,
+            "impression_share_row_count": impression_share_row_count,
         },
         metric_facts,
     )
@@ -728,6 +755,19 @@ def _float_metric(value: Any) -> float:
         except ValueError:
             return 0.0
     return 0.0
+
+
+def _optional_float_metric(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
 
 
 def _campaign_dimensions(

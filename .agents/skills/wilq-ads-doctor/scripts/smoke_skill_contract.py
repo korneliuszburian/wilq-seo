@@ -84,6 +84,9 @@ def main() -> int:
     recommendations_read_contract = (
         ads_diagnostics.get("recommendations_read_contract") or {}
     )
+    impression_share_read_contract = (
+        ads_diagnostics.get("impression_share_read_contract") or {}
+    )
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
@@ -151,6 +154,25 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Blocked recommendations contract must list missing recommendations")
+    if impression_share_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose impression_share_read_contract")
+    if not impression_share_read_contract.get("blocked_claims"):
+        raise SystemExit("Impression share contract must list blocked claims")
+    if impression_share_read_contract.get("status") == "ready":
+        pack_impression_share_contract = (
+            pack.get("ads_diagnostics", {}).get("impression_share_read_contract") or {}
+        )
+        if pack_impression_share_contract.get("summary") != impression_share_read_contract.get(
+            "summary"
+        ):
+            raise SystemExit("Context pack impression share contract differs")
+        if "budget apply" not in impression_share_read_contract.get("blocked_claims", []):
+            raise SystemExit("Impression share contract must keep budget apply blocked")
+    elif "impression_share" not in impression_share_read_contract.get(
+        "missing_read_contracts",
+        [],
+    ):
+        raise SystemExit("Blocked impression share contract must list missing impression_share")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -291,6 +313,25 @@ def main() -> int:
                             recommendations_read_contract.get("recommendation_rows") or []
                         ),
                         "blocked_claims": recommendations_read_contract.get(
+                            "blocked_claims",
+                            [],
+                        ),
+                    },
+                    "impression_share_read_contract": {
+                        "status": impression_share_read_contract.get("status"),
+                        "summary": impression_share_read_contract.get("summary"),
+                        "allowed_metrics": impression_share_read_contract.get(
+                            "allowed_metrics",
+                            [],
+                        ),
+                        "missing_read_contracts": impression_share_read_contract.get(
+                            "missing_read_contracts",
+                            [],
+                        ),
+                        "row_count": len(
+                            impression_share_read_contract.get("impression_share_rows") or []
+                        ),
+                        "blocked_claims": impression_share_read_contract.get(
                             "blocked_claims",
                             [],
                         ),

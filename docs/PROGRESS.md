@@ -8,6 +8,32 @@ artifacts.
 
 Data: 2026-06-19
 
+- Ads impression share read contract, 2026-06-19 17:55 Europe/Warsaw: current
+  active proof is read-only auction/exposure context, not budget apply. Google
+  Ads `vendor_read` now stores `search_impression_share`,
+  `search_budget_lost_impression_share` and
+  `search_rank_lost_impression_share` facts from the campaign read. Live proof:
+  `refresh_google_ads_baba7f993f1a` with evidence
+  `ev_refresh_refresh_google_ads_baba7f993f1a` returned 18 campaign rows, 50
+  search-term rows, 4 recommendation rows and `impression_share_row_count=2`.
+  `/api/ads/diagnostics.impression_share_read_contract.status=ready`; decision
+  queue includes `ads_review_impression_share`. Current live impression-share
+  rows show `Kompendium PPWR` with search IS `0.2322`, budget-lost IS `0.5924`,
+  rank-lost IS `0.1754`, and `(2026) Ekologus Ogólna` with search IS `0.1819`,
+  budget-lost IS `0.0075`, rank-lost IS `0.8106`. This is review context
+  only: change history, human budget goal and budget apply preview remain
+  missing; budget scaling, budget apply, wasted budget, performance uplift and
+  campaign mutation stay blocked. Focused proof passed: ruff, mypy, selected
+  API/eval-case tests, dashboard route test, Ads skill smoke and scoped
+  context-pack check. Non-interactive `wilq-ads-doctor` eval passed at
+  `.local-lab/evals/codex-skill/20260619T155358Z/wilq-ads-doctor/result.json`;
+  final JSON includes `impression_share_read_contract`,
+  `ads_review_impression_share`, Google Ads evidence IDs and no safety
+  findings. Full `scripts/verify.sh` passed: backend API contracts
+  `111 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`,
+  API smoke, skill structure smoke, skill API smoke, security checks and
+  dashboard production build passed. Non-blocking warning: Vite main JS chunk
+  is `536.68 kB`, above the 500 KB warning threshold.
 - Ads recommendations read contract, 2026-06-19 17:22 Europe/Warsaw: current
   active proof is read-only Google Ads recommendation review, not apply.
   Google Ads `vendor_read` now queries active `recommendation` rows and stores
@@ -111,8 +137,8 @@ Data: 2026-06-19
   they block publishing, not evidence-backed social drafting. Current product
   state is close to a useful Ekologus demo, not close to full BDOS-class parity.
   The remaining high-value work is Ads optimizer contracts
-  (recommendations, change history, impression share, Keyword Planner,
-  currency/value semantics, human budget goals, previews/apply/audit), Localo
+  (change history, Keyword Planner, currency/value semantics, human budget
+  goals, previews/apply/audit), Localo
   visibility contracts beyond MCP initialize, richer Ahrefs gap evidence, strict
   skill usefulness evals across remaining skills, and a proven source-backed
   knowledge loop.

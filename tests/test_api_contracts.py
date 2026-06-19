@@ -1704,6 +1704,9 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
             assert "campaign_budget.recommended_budget_amount_micros" in query
             assert "metrics.conversions" in query
             assert "metrics.conversions_value" in query
+            assert "metrics.search_impression_share" in query
+            assert "metrics.search_budget_lost_impression_share" in query
+            assert "metrics.search_rank_lost_impression_share" in query
             return httpx.Response(
                 200,
                 json=[
@@ -1731,6 +1734,9 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                     "costMicros": "3000000",
                                     "conversions": "1.5",
                                     "conversionsValue": "250.75",
+                                    "searchImpressionShare": 0.73,
+                                    "searchBudgetLostImpressionShare": 0.18,
+                                    "searchRankLostImpressionShare": 0.09,
                                 }
                             },
                             {
@@ -1836,6 +1842,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["conversion_value"] == 250.75
     assert result.metric_summary["budgeted_campaign_count"] == 2
     assert result.metric_summary["recommended_budget_count"] == 1
+    assert result.metric_summary["impression_share_row_count"] == 1
     assert result.metric_summary["search_term_row_count"] == 1
     assert result.metric_summary["search_term_clicks"] == 4
     assert result.metric_summary["search_term_impressions"] == 20
@@ -1894,6 +1901,17 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         fact for fact in result.metric_facts if fact.name == "search_term_conversions"
     )
     assert search_term_conversion_fact.value == 1.0
+    impression_share_fact = next(
+        fact for fact in result.metric_facts if fact.name == "search_impression_share"
+    )
+    assert impression_share_fact.value == 0.73
+    assert impression_share_fact.dimensions["campaign_id"] == "101"
+    budget_lost_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "search_budget_lost_impression_share"
+    )
+    assert budget_lost_fact.value == 0.18
     recommendation_fact = next(
         fact for fact in result.metric_facts if fact.name == "recommendation_available"
     )
@@ -2375,6 +2393,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "recommendation_row_count": 1,
                 "recommendation_campaign_count": 1,
                 "recommendation_types": "CAMPAIGN_BUDGET",
+                "impression_share_row_count": 1,
             },
             metric_facts=[
                 VendorMetricFact(
@@ -2442,6 +2461,36 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "budget_name": "Brand budget",
                         "budget_period": "DAILY",
                         "budget_status": "ENABLED",
+                    },
+                ),
+                VendorMetricFact(
+                    "search_impression_share",
+                    0.73,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                    },
+                ),
+                VendorMetricFact(
+                    "search_budget_lost_impression_share",
+                    0.18,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                    },
+                ),
+                VendorMetricFact(
+                    "search_rank_lost_impression_share",
+                    0.09,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
                     },
                 ),
                 VendorMetricFact(
@@ -2619,6 +2668,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "conversions" not in read_contract["missing_read_contracts"]
     assert "conversion_value" not in read_contract["missing_read_contracts"]
     assert "recommendations" not in read_contract["missing_read_contracts"]
+    assert "impression_share" not in read_contract["missing_read_contracts"]
     assert "ROAS" in read_contract["blocked_claims"]
     assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
@@ -2648,6 +2698,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "profit_margin" in derived_kpi_contract["missing_read_contracts"]
     assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
+    assert "impression_share" not in derived_kpi_contract["missing_read_contracts"]
     assert "profitability" in derived_kpi_contract["blocked_claims"]
     assert derived_kpi_contract["kpi_rows"] == [
         {
@@ -2703,6 +2754,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "budget scaling" in budget_contract["blocked_claims"]
     assert "budget_pacing" not in budget_contract["missing_read_contracts"]
     assert "recommendations" not in budget_contract["missing_read_contracts"]
+    assert "impression_share" not in budget_contract["missing_read_contracts"]
     assert budget_contract["budget_rows"] == [
         {
             "campaign_id": "101",
@@ -2750,6 +2802,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "recommendation_campaign_count",
     ]
     assert "recommendations" not in recommendations_contract["missing_read_contracts"]
+    assert "impression_share" not in recommendations_contract["missing_read_contracts"]
     assert "recommendation apply" in recommendations_contract["blocked_claims"]
     assert recommendations_contract["recommendation_rows"] == [
         {
@@ -2781,6 +2834,48 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert recommendations_section["expert_rule_ids"] == [
         "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
+    impression_share_contract = payload["impression_share_read_contract"]
+    assert impression_share_contract["status"] == "ready"
+    assert impression_share_contract["allowed_metrics"] == [
+        "search_impression_share",
+        "search_budget_lost_impression_share",
+        "search_rank_lost_impression_share",
+    ]
+    assert "impression_share" not in impression_share_contract["missing_read_contracts"]
+    assert "budget apply" in impression_share_contract["blocked_claims"]
+    assert impression_share_contract["impression_share_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "advertising_channel_type": "SEARCH",
+            "search_impression_share": 0.73,
+            "search_budget_lost_impression_share": 0.18,
+            "search_rank_lost_impression_share": 0.09,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "metric_facts": impression_share_contract["impression_share_rows"][0][
+                "metric_facts"
+            ],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "budget scaling",
+                "budget apply",
+                "wasted budget",
+                "performance uplift",
+            ],
+        }
+    ]
+    impression_share_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_impression_share"
+    )
+    assert impression_share_section["status"] == "ready"
+    assert impression_share_section["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert impression_share_section["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
         "ads_principles_v1",
     ]
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
@@ -2902,6 +2997,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_review_derived_kpis",
         "ads_review_budget_context",
         "ads_review_recommendations",
+        "ads_review_impression_share",
         "ads_review_search_terms",
         "ads_review_negative_keyword_safety",
         "ads_prepare_custom_segments_from_search_terms",
@@ -2951,6 +3047,21 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_principles_v1",
     ]
     assert "recommendation apply" in recommendations_decision["blocked_claims"]
+    impression_share_decision = decisions_by_id["ads_review_impression_share"]
+    assert impression_share_decision["status"] == "ready"
+    assert impression_share_decision["decision_type"] == "review_impression_share"
+    assert impression_share_decision["impression_share_rows"][0]["campaign_name"] == (
+        "Brand Search"
+    )
+    assert impression_share_decision["action_ids"] == []
+    assert impression_share_decision["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert impression_share_decision["expert_rule_ids"] == [
+        "ads_scaling_candidates_v1",
+        "ads_principles_v1",
+    ]
+    assert "budget apply" in impression_share_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
@@ -2996,6 +3107,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
     assert after_probe_payload["budget_pacing_read_contract"]["budget_rows"]
     assert after_probe_payload["recommendations_read_contract"]["recommendation_rows"]
+    assert after_probe_payload["impression_share_read_contract"]["impression_share_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
 
     context_response = client.post(

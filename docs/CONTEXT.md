@@ -61,6 +61,18 @@ Audit `docs/audits/001-output.md` is now folded into
    apply-ready: impact preview, change history, impression share, human review
    and recommendation apply preview remain missing, so apply/performance-uplift
    claims stay blocked.
+0. Ads impression-share truth, 2026-06-19 17:55 Europe/Warsaw: Google Ads
+   impression share is now a typed read-only contract, not a missing Ads
+   optimizer blocker. Live proof `refresh_google_ads_baba7f993f1a` /
+   `ev_refresh_refresh_google_ads_baba7f993f1a` returned
+   `impression_share_row_count=2`. `/api/ads/diagnostics` exposes
+   `impression_share_read_contract.status=ready` and decision
+   `ads_review_impression_share`; scoped `wilq-ads-doctor` context-pack exposes
+   the same contract. Current live rows: `Kompendium PPWR` has search IS
+   `0.2322`, budget-lost IS `0.5924`, rank-lost IS `0.1754`; `(2026) Ekologus
+   Ogólna` has search IS `0.1819`, budget-lost IS `0.0075`, rank-lost IS
+   `0.8106`. Do not call this budget scaling or wasted-budget proof: change
+   history, human budget goal and budget apply preview remain missing.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.
@@ -84,14 +96,14 @@ Audit `docs/audits/001-output.md` is now folded into
 1. Command Center first-screen cleanup is implemented and verified: one
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
-2. Ads campaign/search-term/budget/recommendation read contracts are
+2. Ads campaign/search-term/budget/recommendation/impression-share read contracts are
    implemented with conversion counts/value, read-only budget context and
-   read-only recommendation review. Latest local work adds
-   `recommendations_read_contract.status=ready`, 4 active recommendation rows
-   from `refresh_google_ads_138befce0a2c`, and decision
-   `ads_review_recommendations`. This is still not budget/waste/apply.
-   Continue with change history, impression share, keyword/match context,
-   full 90-day safety, human budget goals, impact/apply previews and
+   read-only recommendation/impression-share review. Latest local work adds
+   `impression_share_read_contract.status=ready`, 2 impression-share rows from
+   `refresh_google_ads_baba7f993f1a`, and decision
+   `ads_review_impression_share`. This is still not budget/waste/apply.
+   Continue with change history, keyword/match context, full 90-day safety,
+   human budget goals, impact/apply previews and
    value/account-currency semantics before any money-leak/CPA/ROAS/budget
    scaling/negative-keyword apply claims. Full `scripts/verify.sh` passed for
    this slice with backend `108 passed`, dashboard unit `13 passed`,
@@ -169,9 +181,10 @@ Current performance slice truth:
   `act_prepare_ads_campaign_review_queue` is implemented with payload type
   `campaign_change_review`. It is generated from live `google_ads` campaign
   metric facts, exposes up to 8 campaign candidates, includes budget context
-  when available, and requires impression share, change history,
-  recommendations, value/currency review, budget/apply preview and human
-  confirmation before any apply path. It keeps `apply_allowed=false` plus
+  when available, and now also has read-only recommendations and
+  impression-share contracts. It still requires change history, value/currency
+  review, budget/apply preview and human confirmation before any apply path. It
+  keeps `apply_allowed=false` plus
   `destructive=false`. Live `:8000` proof after restart: Ads diagnostics
   includes the new action ID, campaign and derived KPI decisions attach only
   this campaign action, and validation returns `valid=true`. This closes the

@@ -375,7 +375,6 @@ const adsDiagnostics = {
       "shared_budget_distribution",
       "budget_target_or_seasonality",
       "change_history",
-      "impression_share",
       "human_budget_goal"
     ],
     blocked_claims: [
@@ -428,7 +427,6 @@ const adsDiagnostics = {
     missing_read_contracts: [
       "recommendation_impact_preview",
       "change_history",
-      "impression_share",
       "human_strategy_review",
       "recommendation_apply_preview"
     ],
@@ -462,6 +460,49 @@ const adsDiagnostics = {
     ],
     next_step:
       "Potraktuj rekomendacje Google jako input do review, nie jako gotową strategię."
+  },
+  impression_share_read_contract: {
+    id: "ads_impression_share_read_contract",
+    status: "ready",
+    title: "Google Ads: udział w wyświetleniach",
+    summary: "WILQ ma impression share dla 1 kampanii; budget-lost > 0 w 1, rank-lost > 0 w 1.",
+    allowed_metrics: [
+      "search_impression_share",
+      "search_budget_lost_impression_share",
+      "search_rank_lost_impression_share"
+    ],
+    missing_read_contracts: ["change_history", "human_budget_goal", "budget_apply_preview"],
+    blocked_claims: [
+      "budget scaling",
+      "budget apply",
+      "wasted budget",
+      "performance uplift",
+      "campaign mutation"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    impression_share_rows: [
+      {
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        campaign_status: "ENABLED",
+        advertising_channel_type: "SEARCH",
+        search_impression_share: 0.73,
+        search_budget_lost_impression_share: 0.18,
+        search_rank_lost_impression_share: 0.09,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        missing_metrics: [],
+        blocked_claims: [
+          "budget scaling",
+          "budget apply",
+          "wasted budget",
+          "performance uplift"
+        ]
+      }
+    ],
+    next_step:
+      "Użyj udziału w wyświetleniach jako kontekstu review, nie jako decyzji budżetowej."
   },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
@@ -695,6 +736,7 @@ const adsDiagnostics = {
       derived_kpi_rows: [],
       budget_rows: [],
       recommendation_rows: [],
+      impression_share_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -725,7 +767,6 @@ const adsDiagnostics = {
       missing_read_contracts: [
         "recommendation_impact_preview",
         "change_history",
-        "impression_share",
         "human_strategy_review",
         "recommendation_apply_preview"
       ],
@@ -754,6 +795,7 @@ const adsDiagnostics = {
           ]
         }
       ],
+      impression_share_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -766,6 +808,64 @@ const adsDiagnostics = {
         "budget apply",
         "campaign mutation",
         "performance uplift"
+      ],
+      risk: "medium"
+    },
+    {
+      id: "ads_review_impression_share",
+      decision_type: "review_impression_share",
+      status: "ready",
+      title: "Sprawdź utracony udział w wyświetleniach",
+      summary: "WILQ ma impression share dla 1 kampanii; budget-lost > 0 w 1, rank-lost > 0 w 1.",
+      rationale:
+        "Impression share pokazuje, czy kampania traci ekspozycję przez budżet albo ranking.",
+      next_step:
+        "Użyj udziału w wyświetleniach jako kontekstu review, nie jako decyzji budżetowej.",
+      allowed_metrics: [
+        "search_impression_share",
+        "search_budget_lost_impression_share",
+        "search_rank_lost_impression_share"
+      ],
+      missing_read_contracts: ["change_history", "human_budget_goal", "budget_apply_preview"],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      derived_kpi_rows: [],
+      budget_rows: [],
+      recommendation_rows: [],
+      impression_share_rows: [
+        {
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          campaign_status: "ENABLED",
+          advertising_channel_type: "SEARCH",
+          search_impression_share: 0.73,
+          search_budget_lost_impression_share: 0.18,
+          search_rank_lost_impression_share: 0.09,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: [
+            "budget scaling",
+            "budget apply",
+            "wasted budget",
+            "performance uplift"
+          ]
+        }
+      ],
+      search_term_rows: [],
+      custom_segment_candidates: [],
+      negative_keyword_candidates: [],
+      action_ids: [],
+      knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
+      expert_rule_ids: ["ads_scaling_candidates_v1", "ads_principles_v1"],
+      blocked_claims: [
+        "budget scaling",
+        "budget apply",
+        "wasted budget",
+        "performance uplift",
+        "campaign mutation"
       ],
       risk: "medium"
     },
@@ -788,6 +888,7 @@ const adsDiagnostics = {
       derived_kpi_rows: [],
       budget_rows: [],
       recommendation_rows: [],
+      impression_share_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -841,6 +942,7 @@ const adsDiagnostics = {
       derived_kpi_rows: [],
       budget_rows: [],
       recommendation_rows: [],
+      impression_share_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [
@@ -895,6 +997,7 @@ const adsDiagnostics = {
       derived_kpi_rows: [],
       budget_rows: [],
       recommendation_rows: [],
+      impression_share_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -960,6 +1063,7 @@ const adsDiagnostics = {
       derived_kpi_rows: [],
       budget_rows: [],
       recommendation_rows: [],
+      impression_share_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],

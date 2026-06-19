@@ -595,6 +595,34 @@ class AdsRecommendationsReadContract(BaseModel):
     next_step: str
 
 
+class AdsImpressionShareRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    campaign_status: str | None = None
+    advertising_channel_type: str | None = None
+    search_impression_share: float | None = None
+    search_budget_lost_impression_share: float | None = None
+    search_rank_lost_impression_share: float | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsImpressionShareReadContract(BaseModel):
+    id: str = "ads_impression_share_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    impression_share_rows: list[AdsImpressionShareRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsSearchTermMetricRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
@@ -700,6 +728,7 @@ class AdsDecisionItem(BaseModel):
         "review_derived_kpi",
         "review_budget_context",
         "review_recommendations",
+        "review_impression_share",
         "review_search_terms",
         "review_negative_keyword_safety",
         "prepare_custom_segments",
@@ -720,6 +749,7 @@ class AdsDecisionItem(BaseModel):
     derived_kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
+    impression_share_rows: list[AdsImpressionShareRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
@@ -741,6 +771,7 @@ class AdsDiagnosticsResponse(BaseModel):
     derived_kpi_read_contract: AdsDerivedKpiReadContract
     budget_pacing_read_contract: AdsBudgetPacingReadContract
     recommendations_read_contract: AdsRecommendationsReadContract
+    impression_share_read_contract: AdsImpressionShareReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract
