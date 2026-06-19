@@ -539,6 +539,19 @@ Work in this order:
    search-term waste, wasted budget and negative keywords until missing
    read/safety/ActionObject contracts exist.
 
+   Fresh negative keyword safety proof: `wilq-ads-doctor` passed a new
+   non-interactive Codex eval after `negative_keywords_read_contract` and
+   `act_prepare_negative_keyword_review_queue` were added:
+   `.local-lab/evals/codex-skill/20260619T065511Z/wilq-ads-doctor/result.json`.
+   The output is Polish, uses WILQ API, cites
+   `ev_connector_google_ads_status` and
+   `ev_refresh_refresh_google_ads_c2f62ee2b43a`, returns
+   `negative_keywords_read_contract.status=ready`, `candidate_count=7`, one
+   action candidate `act_prepare_negative_keyword_review_queue`, usefulness
+   score 5 and no safety findings. It blocks `negative keyword apply`,
+   search-term waste, wasted budget, CPA and ROAS without
+   `90_day_safety_check`, payload preview and validated ActionObject.
+
    Fresh skill proof: `wilq-custom-segments` passed non-interactive Codex eval
    at
    `.local-lab/evals/codex-skill/20260619T035937Z/wilq-custom-segments/result.json`.
@@ -597,7 +610,8 @@ Work in this order:
    - done for `wilq-ads-doctor` after campaign table,
      search terms/conversions and blocked-claim matrix; keep rerunning when
      recommendations, change history, budget pacing, impression share, derived
-     CPA/ROAS or negative keyword safety/apply contracts are added;
+     CPA/ROAS or negative keyword apply contracts are added. Fresh rerun after
+     negative keyword safety review contract passed on 2026-06-19;
    - `wilq-localo-operator` after `/api/localo/diagnostics` for
      access/readiness and again after real ranking/GBP/competitor/review facts
      exist;

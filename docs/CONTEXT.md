@@ -379,6 +379,8 @@ Result:
 Ads safety slice is implemented and verified locally. Nie zaczynaj od zera i
 nie cofaj poprzednich route/performance cleanupów.
 
+Commit: `c68a9fd feat(ads): add negative keyword safety review`.
+
 Cel slice'a:
 
 - Dodać Ads negative keyword safety review jako prepare-only contract.
@@ -388,7 +390,7 @@ Cel slice'a:
 - Zablokować `negative keyword apply`, `search-term waste`, CPA, ROAS,
   conversion loss i automatyczne zmiany bez walidacji.
 
-Zmienione pliki w toku:
+Main files:
 
 - `wilq/actions/google_ads/negative_keywords.py`
 - `wilq/actions/payloads.py`
@@ -405,7 +407,7 @@ Zmienione pliki w toku:
 - `tests/test_codex_skill_eval_cases.py`
 - `docs/evals/cases/wilq-skill-eval-cases.json`
 
-Zmiany kodu w toku:
+Implemented contract:
 
 - New ActionObject ID: `act_prepare_negative_keyword_review_queue`.
 - New diagnostics contract:
@@ -455,3 +457,20 @@ Result:
 - skill API smoke: passed;
 - dashboard production build: passed;
 - non-blocking warning: Vite main chunk is above 500 KB.
+
+Fresh Codex eval proof:
+
+- Artifact:
+  `.local-lab/evals/codex-skill/20260619T065511Z/wilq-ads-doctor/result.json`.
+- Result: `pl-PL`, Polish diacritics, `api_used=true`,
+  `operator_usefulness_score=5`, no safety findings.
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- Confirms `negative_keywords_read_contract.status=ready`,
+  `candidate_count=7` and `act_prepare_negative_keyword_review_queue`.
+- Blocks `negative keyword apply`, search-term waste, wasted budget, CPA and
+  ROAS without `90_day_safety_check`, payload preview and validated
+  ActionObject.
+- Smoke script now summarizes `blocked_handoff=null` correctly for live Ads
+  diagnostics instead of assuming an OAuth blocker object.

@@ -1575,6 +1575,7 @@ Still open after this slice:
 Current stage:
 
 - Implemented and verified locally.
+- Committed as `c68a9fd feat(ads): add negative keyword safety review`.
 - Goal: add a review-only negative keyword safety contract for Ads Doctor,
   dashboard and `wilq-ads-doctor`.
 - This is not a waste detector and not an apply path. It only prepares a
@@ -1638,8 +1639,28 @@ Full gate result:
 - Dashboard production build: passed.
 - Non-blocking warning: Vite main JS chunk is above 500 KB.
 
-Then commit as:
+Codex eval proof:
 
-```text
-feat(ads): add negative keyword safety review
-```
+- `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8013`
+- Artifact:
+  `.local-lab/evals/codex-skill/20260619T065511Z/wilq-ads-doctor/result.json`.
+- Result: `pl-PL`, Polish diacritics, `api_used=true`,
+  `operator_usefulness_score=5`, no safety findings.
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- Output confirms `negative_keywords_read_contract.status=ready`,
+  `candidate_count=7` and ActionObject
+  `act_prepare_negative_keyword_review_queue`.
+- The skill blocks `negative keyword apply`, search-term waste, wasted budget,
+  CPA and ROAS without `90_day_safety_check`, payload preview and validated
+  ActionObject.
+- Non-blocking stderr note: global ChatGPT MCP transport warning appeared, but
+  the isolated WILQ eval passed.
+- After the eval, `wilq-ads-doctor` smoke output was fixed to support the live
+  Ads state where `blocked_handoff=null`. Full `scripts/verify.sh` passed again:
+  backend API contracts `102 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed`, skill API smoke passed and dashboard production
+  build passed. The first rerun hit a transient Vite readiness `curl` timeout
+  while a manual API process was still running; after cleaning that process,
+  the full gate passed.

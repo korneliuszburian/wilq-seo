@@ -181,13 +181,7 @@ def main() -> int:
                         ),
                         "action_ids": negative_keywords_read_contract.get("action_ids", []),
                     },
-                    "blocked_handoff": {
-                        "status": blocked_handoff.get("status"),
-                        "title": blocked_handoff.get("title"),
-                        "source_connectors": blocked_handoff.get("source_connectors", []),
-                        "evidence_ids": blocked_handoff.get("evidence_ids", []),
-                        "action_ids": blocked_handoff.get("action_ids", []),
-                    },
+                    "blocked_handoff": _blocked_handoff_summary(blocked_handoff),
                     "section_ids": [
                         section.get("id")
                         for section in ads_diagnostics.get("sections", [])
@@ -229,6 +223,18 @@ def main() -> int:
         )
     )
     return 0
+
+
+def _blocked_handoff_summary(blocked_handoff: dict[str, Any] | None) -> dict[str, Any] | None:
+    if blocked_handoff is None:
+        return None
+    return {
+        "status": blocked_handoff.get("status"),
+        "title": blocked_handoff.get("title"),
+        "source_connectors": blocked_handoff.get("source_connectors", []),
+        "evidence_ids": blocked_handoff.get("evidence_ids", []),
+        "action_ids": blocked_handoff.get("action_ids", []),
+    }
 
 
 if __name__ == "__main__":
