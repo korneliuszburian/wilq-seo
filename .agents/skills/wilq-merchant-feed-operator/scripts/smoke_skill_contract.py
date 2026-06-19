@@ -63,6 +63,13 @@ def main() -> int:
         raise SystemExit("Context pack merchant_diagnostics evidence IDs differ from endpoint")
     if packed_merchant.get("action_ids") != merchant_diagnostics.get("action_ids"):
         raise SystemExit("Context pack merchant_diagnostics action IDs differ from endpoint")
+    issue_clusters = merchant_diagnostics.get("issue_clusters") or []
+    if (
+        merchant_diagnostics.get("live_data_available")
+        and merchant_diagnostics.get("issue_count", 0) > 0
+        and not issue_clusters
+    ):
+        raise SystemExit("Live Merchant diagnostics with issue_count must expose issue_clusters")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -112,6 +119,8 @@ def main() -> int:
                     "live_data_available": merchant_diagnostics.get("live_data_available"),
                     "product_count": merchant_diagnostics.get("product_count"),
                     "issue_count": merchant_diagnostics.get("issue_count"),
+                    "issue_cluster_count": len(issue_clusters),
+                    "top_issue_clusters": issue_clusters[:5],
                     "blocker_count": merchant_diagnostics.get("blocker_count"),
                     "section_ids": [
                         section.get("id")

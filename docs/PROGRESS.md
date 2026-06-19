@@ -8,6 +8,30 @@ artifacts.
 
 Data: 2026-06-19
 
+- Recovery snapshot 2026-06-19 09:37 Europe/Warsaw: after the overnight run
+  the latest pushed commit is `3a7d4ab test(skills): prove localo access-ready
+  blocker`; this slice continues from that Merchant handoff.
+- Active Merchant WIP: live Merchant data has `product_count=10900` and
+  `issue_count=15`, but `/api/merchant/diagnostics.issue_clusters` disappeared
+  in the latest live check because `MERCHANT_METRIC_FACT_LIMIT=240` let newer
+  aggregate rows push issue-level `issue_product_count` facts outside the read
+  window. The local patch raises the limit to `2000` and makes
+  `wilq-merchant-feed-operator` smoke fail whenever live Merchant diagnostics
+  has issues but no issue clusters. This is a real API contract fix, not a
+  skill-reference workaround.
+- Merchant WIP proof so far: `/api/merchant/diagnostics` on `:8015` now returns
+  `issue_cluster_count=11`; the Merchant skill smoke passes and exposes the
+  top clusters. Non-interactive Codex eval passed at
+  `.local-lab/evals/codex-skill/20260619T073915Z/wilq-merchant-feed-operator/result.json`
+  with `pl-PL`, `api_used=true`, `operator_usefulness_score=5`,
+  `act_review_merchant_feed_issues`, no safety findings and blocked automatic
+  feed/product mutation claims. Focused ruff/mypy/API tests passed. Full
+  `scripts/verify.sh` passed after fixing the stale Merchant demo e2e
+  assertion: backend API contracts `102 passed`, dashboard route tests
+  `13 passed`, Playwright e2e `9 passed`, skill API smoke passed and dashboard
+  production build passed. Non-blocking notes: one transient dashboard unit
+  timing failure passed on rerun, and Vite still warns that the main JS chunk
+  is above 500 KB. Temporary API/e2e ports were cleaned up after verification.
 - API działa lokalnie: `http://127.0.0.1:8000`.
 - Dashboard działa lokalnie: `http://127.0.0.1:5173/command-center`.
 - `/api/marketing/brief` został zawężony do marketer decision brief:

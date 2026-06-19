@@ -20,6 +20,17 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
 
+0. Overnight recovery truth, 2026-06-19 09:37 Europe/Warsaw: after
+   `3a7d4ab test(skills): prove localo access-ready blocker`, the next Merchant
+   slice fixed issue-cluster preservation. `MERCHANT_METRIC_FACT_LIMIT` was too
+   low and live issue-level facts were truncated out of
+   `/api/merchant/diagnostics`. Fresh proof on temporary API `:8015` showed
+   `issue_cluster_count=11`, and non-interactive eval passed:
+   `.local-lab/evals/codex-skill/20260619T073915Z/wilq-merchant-feed-operator/result.json`.
+   Final proof for this Merchant fix: `scripts/verify.sh` passed with backend
+   API contracts `102 passed`, dashboard route tests `13 passed`, Playwright
+   e2e `9 passed`, skill API smoke passed and dashboard build passed.
+   Temporary API/e2e ports were cleaned up after verification.
 1. Command Center first-screen cleanup is implemented and verified: one
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
@@ -71,6 +82,20 @@ Current Merchant slice truth:
 - Full `scripts/verify.sh` passed for this slice on 2026-06-18.
 - Current Merchant read contract still exposes aggregate issue dimensions and
   counts only; no sample product IDs/titles yet.
+- Active WIP on 2026-06-19: if live Merchant diagnostics reports
+  `issue_count > 0`, the smoke script must require `issue_clusters`. This guards
+  against a regression where DuckDB metric fact row limits hide issue-level
+  rows while aggregate Merchant facts remain visible.
+- Fresh Merchant skill proof: `wilq-merchant-feed-operator` passed
+  non-interactive Codex eval at
+  `.local-lab/evals/codex-skill/20260619T073915Z/wilq-merchant-feed-operator/result.json`.
+  It reports `product_count=10900`, `issue_count=15`,
+  `issue_cluster_count=11`, recommends `act_review_merchant_feed_issues`, and
+  blocks automatic feed edit/product mutation claims.
+- Dashboard demo proof now asserts the Merchant issue-cluster view
+  (`Zgłoszenia` plus issue types such as
+  `missing_potentially_required_attribute` / `availability_updated`) instead of
+  the old stale `Merchant: status produktów PL` copy.
 
 Current content URL normalization truth:
 

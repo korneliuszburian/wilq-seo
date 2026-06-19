@@ -23,7 +23,7 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 MERCHANT_CONNECTOR_ID = "google_merchant_center"
-MERCHANT_METRIC_FACT_LIMIT = 240
+MERCHANT_METRIC_FACT_LIMIT = 2000
 MERCHANT_HEALTH_METRIC_NAMES = {
     "total_products",
     "active_products",

@@ -54,7 +54,10 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z feedem" })).toBeVisible();
     await expect(page.getByText("Dowody i ograniczenia Merchant")).toBeVisible();
-    await expect(page.getByText(/Merchant: status produktów PL/).first()).toBeVisible();
+    await expect(page.getByText("Zgłoszenia", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(/missing_potentially_required_attribute|availability_updated/).first()
+    ).toBeVisible();
     await expect(page.getByText(/item_level_issue_count: \d+/).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "act_review_merchant_feed_issues" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first()).toBeVisible();

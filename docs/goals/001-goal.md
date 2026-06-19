@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19.
+Last updated: 2026-06-19 09:37 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -117,6 +117,11 @@ Current connector truth:
   affected products: `/merchant` labels them as `Zgłoszenia`/`kontekst`, not
   `Affected`, and aggregate `product_count`/`issue_count` may fallback to latest
   refresh summary when issue-level metric facts are the only stored facts.
+  Latest Merchant regression fix: live issue clusters can disappear when the
+  Merchant metric fact read limit is too low, because newer aggregate facts push
+  issue-level rows out of the window. The fix raises that limit and makes the
+  Merchant skill smoke fail if live diagnostics has issues but no
+  `issue_clusters`.
 - `google_search_console`: query/page facts exist and support content decisions.
   Tactical/content reads now preserve complete latest metric groups per
   `(connector, evidence, dimensions)`, so query/page cards do not show false
@@ -465,6 +470,22 @@ Work in this order:
    queue. Full `scripts/verify.sh` passed for this slice on 2026-06-18. The
    current Merchant API read contract still does not return sample product IDs
    or product titles; the UI must state that limit honestly.
+
+   Latest Merchant follow-up after overnight context handoff: latest live check found a
+   regression where `issue_count=15` but `issue_clusters=[]` because
+   `MERCHANT_METRIC_FACT_LIMIT=240` was too low for the current DuckDB history.
+   The fix raises the limit to `2000` and strengthens
+   `wilq-merchant-feed-operator` smoke to fail on live issue data without
+   clusters. Proof so far: `/api/merchant/diagnostics` on `:8015` returns
+   `issue_cluster_count=11`; the Merchant smoke passes; non-interactive
+   `wilq-merchant-feed-operator` eval passed at
+   `.local-lab/evals/codex-skill/20260619T073915Z/wilq-merchant-feed-operator/result.json`
+   with `operator_usefulness_score=5`, `act_review_merchant_feed_issues` and
+   blocked feed/product mutation claims. Focused ruff/mypy/API tests passed.
+   Full `scripts/verify.sh` passed after updating the stale Merchant demo e2e
+   assertion: backend API contracts `102 passed`, dashboard route tests
+   `13 passed`, Playwright e2e `9 passed`, skill API smoke passed and dashboard
+   production build passed.
 
 5. **Slice 4: Content/GSC/GA4/WordPress URL normalizer.**
    Normalize host, path, slash, sitemap, post/page type and GA4 landing path to

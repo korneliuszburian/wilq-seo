@@ -1461,3 +1461,51 @@ Product gap still open:
   product work must add a concrete read contract for rankings, GBP visibility,
   competitors, reviews or local tasks before the skill can produce local SEO
   recommendations.
+
+## 2026-06-19 - wilq-merchant-feed-operator Issue Cluster Eval
+
+Artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T073915Z/wilq-merchant-feed-operator/result.json
+```
+
+Why rerun:
+
+- Live Merchant diagnostics had `issue_count=15` but temporarily lost
+  `issue_clusters` because the Merchant metric fact read limit was too low for
+  the current DuckDB history.
+- The skill must prove that Merchant value comes from issue-level clusters and
+  `act_review_merchant_feed_issues`, not generic product/feed readiness.
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- Evidence IDs include:
+  `ev_refresh_refresh_google_merchant_center_a3ef2f66703f`,
+  `ev_refresh_refresh_google_merchant_center_1363bc3d8d8d`,
+  `ev_connector_google_merchant_center_status`.
+- `operator_usefulness_score=5`.
+- `recommendations_count=2`, `actions_count=1`.
+- No safety findings.
+
+Useful output:
+
+- Merchant diagnostics are live and access-ready:
+  `live_data_available=true`, `latest_refresh_status=completed`.
+- The skill sees `product_count=10900`, `issue_count=15` and
+  `issue_cluster_count=11`.
+- Highest-priority issue clusters include
+  `missing_potentially_required_attribute` for `n:unit_pricing_measure` and
+  `availability_updated` for `n:availability`.
+- The only action candidate is `act_review_merchant_feed_issues`.
+- The skill explicitly keeps this as review-only and blocks automatic feed edit,
+  primary feed overwrite and product data mutation.
+
+Product gap still open:
+
+- The current Merchant read contract exposes issue dimensions and occurrence
+  counts, but not sample product IDs or titles. Add product samples only through
+  a typed read contract; do not invent them in skills or dashboard copy.
