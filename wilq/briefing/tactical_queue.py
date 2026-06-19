@@ -622,8 +622,11 @@ def _gsc_diagnosis(
 ) -> str:
     wordpress_note = _wordpress_match_note(wordpress_match)
     return (
-        f"Query `{query}` prowadzi do `{page}`. GSC facts: clicks={clicks or 0}, "
-        f"impressions={impressions or 0}, ctr={ctr or 0}, average_position={position or 0}. "
+        f"Zapytanie `{query}` prowadzi do `{page}`. Metryki GSC: "
+        f"clicks={_metric_or_missing(clicks)}, "
+        f"impressions={_metric_or_missing(impressions)}, "
+        f"ctr={_metric_or_missing(ctr)}, "
+        f"average_position={_metric_or_missing(position)}. "
         f"{wordpress_note}"
     )
 
@@ -644,14 +647,17 @@ def _ga4_diagnosis(
             "GA4 ma brakujące wymiary raportu: "
             f"landing_page=`{landing_page}`, source_medium=`{source_medium}`, "
             f"campaign_name=`{campaign_name}`. To jest problem pomiaru/atrybucji, "
-            f"nie zwykła taktyka landing page. active_users={active_users or 0}, "
-            f"sessions={sessions or 0}, engagement_rate={engagement_rate or 0}. "
+            "nie zwykła taktyka landing page. "
+            f"active_users={_metric_or_missing(active_users)}, "
+            f"sessions={_metric_or_missing(sessions)}, "
+            f"engagement_rate={_metric_or_missing(engagement_rate)}. "
             f"{wordpress_note}"
         )
     return (
         f"Landing `{landing_page}` z `{source_medium}` i kampanii `{campaign_name}` ma "
-        f"active_users={active_users or 0}, sessions={sessions or 0}, "
-        f"engagement_rate={engagement_rate or 0}. {wordpress_note}"
+        f"active_users={_metric_or_missing(active_users)}, "
+        f"sessions={_metric_or_missing(sessions)}, "
+        f"engagement_rate={_metric_or_missing(engagement_rate)}. {wordpress_note}"
     )
 
 
@@ -723,10 +729,34 @@ def _wordpress_match_note(wordpress_match: WordPressMatch) -> str:
     dimensions = wordpress_fact.dimensions
     return (
         "WordPress inventory potwierdza istniejący obiekt "
-        f"{dimensions.get('content_type', 'content')} "
-        f"status={dimensions.get('status', 'unknown')} "
-        f"confidence={wordpress_match.confidence}."
+        f"typu {dimensions.get('content_type', 'content')}, "
+        f"status: {_wordpress_status_label(dimensions.get('status'))}, "
+        f"dopasowanie: {_wordpress_match_confidence_label(wordpress_match.confidence)}."
     )
+
+
+def _metric_or_missing(value: float | int | None) -> str:
+    if value is None:
+        return "brak w evidence"
+    return str(value)
+
+
+def _wordpress_status_label(status: str | None) -> str:
+    if status == "indexed":
+        return "zaindeksowany"
+    if status:
+        return status
+    return "brak statusu"
+
+
+def _wordpress_match_confidence_label(confidence: WordPressMatchConfidence) -> str:
+    if confidence == "exact_url":
+        return "dokładny URL"
+    if confidence == "host_alias_sitemap":
+        return "alias hosta z sitemap"
+    if confidence == "path_fallback":
+        return "dopasowanie ścieżki"
+    return "brak dopasowania"
 
 
 def _action_ids_by_connector(actions: Iterable[object]) -> dict[str, list[str]]:

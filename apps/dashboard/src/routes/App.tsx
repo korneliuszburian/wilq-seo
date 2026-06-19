@@ -798,7 +798,7 @@ function TacticalQueuePanel({
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {compact
-              ? "Skondensowana kolejka decyzji z WILQ API. Duplikaty query/page są zgrupowane; pełny drilldown jest w dedykowanych widokach."
+              ? "Skondensowana kolejka decyzji z WILQ API. Duplikaty zapytań i URL-i są zgrupowane; pełny drilldown jest w dedykowanych widokach."
               : "Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródło, evidence IDs, ActionObject i claimy, których WILQ nie wolno dopowiadać."}
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
@@ -1450,7 +1450,7 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Brak GSC evidence w /api/marketing/brief. Uruchom read-only refresh Search Console przed rekomendacją treści.",
     safetyTitle: "SEO Evidence Gate",
     safetyText:
-      "Rekomendacje contentowe wymagają query/page evidence, źródła i jasnego następnego kroku. Bez CTR/impressions/clicks WILQ pokazuje blocker.",
+      "Rekomendacje contentowe wymagają metryk zapytań i URL-i, źródła i jasnego następnego kroku. Bez CTR/impressions/clicks WILQ pokazuje blocker.",
     connectorIds: ["google_search_console"],
     textNeedles: []
   },
@@ -1827,7 +1827,7 @@ function AdsDiagnosticCard({ section }: { section: AdsDiagnosticSection }) {
   );
 }
 
-type ContentDiagnosticSection = ContentDiagnosticsResponse["sections"][number];
+type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
 
 type Ga4DiagnosticSection = Ga4DiagnosticsResponse["sections"][number];
 
@@ -2110,7 +2110,7 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
   if (actions.error || !actions.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/actions. Content route nie może pokazać walidacji ani payload preview." />
+        <BlockerNotice message="Nie udało się odczytać /api/actions. Content route nie może pokazać walidacji ani podglądu payloadu." />
       </main>
     );
   }
@@ -2118,7 +2118,7 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
   const data = diagnostics.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
   const latestStatuses = data.latest_refreshes.map(
-    (refresh) => `${refresh.connector_id}: ${refresh.status}`
+    (refresh) => `${refresh.connector_id}: ${contentRefreshStatusLabel(refresh.status)}`
   );
 
   return (
@@ -2127,15 +2127,15 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok SEO/content z WILQ API. Łączy GSC query-page matrix,
-            WordPress inventory i ActionObjecty, żeby marketer wiedział co odświeżyć,
+            Dedykowany widok SEO i treści z WILQ API. Łączy zapytania i URL-e z GSC,
+            inventory WordPress i ActionObjecty, żeby marketer wiedział co odświeżyć,
             połączyć, utworzyć albo zablokować bez duplikowania treści.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Query/page" value={data.query_page_count} />
-          <MetricTile label="WP match" value={data.matched_inventory_count} />
-          <MetricTile label="Evidence" value={data.evidence_ids.length} />
+          <MetricTile label="Zapytania/URL" value={data.query_page_count} />
+          <MetricTile label="Dopasowania WP" value={data.matched_inventory_count} />
+          <MetricTile label="Dowody" value={data.evidence_ids.length} />
         </div>
       </div>
 
@@ -2149,23 +2149,24 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
-              {data.live_data_available ? "live content facts" : "brak live content facts"}
+              {data.live_data_available ? "metryki treści dostępne" : "brak metryk treści"}
             </span>
             {data.connectors.map((connector) => (
-              <StatusBadge key={connector.id} value={connector.status} />
+              <span
+                key={connector.id}
+                className="rounded-md border border-line px-2 py-1 text-slate-600"
+              >
+                {connector.id}: {contentConnectorStatusLabel(connector.status)}
+              </span>
             ))}
           </div>
         </div>
-        <TraceLine label="Ostatnie refresh" values={latestStatuses} />
+        <TraceLine label="Ostatnie odczyty" values={latestStatuses} />
       </section>
 
       <ContentOperatorSummary data={data} />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        {data.sections.map((section) => (
-          <ContentDiagnosticCard key={section.id} section={section} />
-        ))}
-      </div>
+      <ContentDiagnosticProof data={data} />
 
       {routeActions.length > 0 ? (
         <div className="mt-6">
@@ -2180,18 +2181,18 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
           </div>
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Content Safety Gate
+              Brama bezpieczeństwa treści
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              WILQ może przygotować brief, refresh queue i payload preview, ale nie
-              publikuje ani nie zmienia WordPress bez walidacji ActionObject, jawnej
-              zgody operatora i audytu.
+              WILQ może przygotować brief, kolejkę odświeżenia i podgląd payloadu,
+              ale nie publikuje ani nie zmienia WordPress bez walidacji ActionObject,
+              jawnej zgody operatora i audytu.
             </p>
           </div>
         </div>
         <TraceLine
           label="Zablokowane claimy"
-          values={data.sections.flatMap((section) => section.blocked_claims)}
+          values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
       </section>
     </main>
@@ -2199,16 +2200,15 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
 }
 
 function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
-  const tacticalItems = data.sections.flatMap((section) => section.tactical_items);
-  const uniqueItems = Array.from(new Map(tacticalItems.map((item) => [item.id, item])).values());
-  const topItems = uniqueItems
+  const decisions = data.decision_queue;
+  const topDecisions = decisions
     .slice()
-    .sort((left, right) => left.priority - right.priority)
+    .sort((left, right) => contentDecisionSortValue(left) - contentDecisionSortValue(right))
     .slice(0, 4);
-  const matchedCount = uniqueItems.filter((item) => item.dimensions.wordpress_match === "found").length;
-  const missingCount = uniqueItems.filter((item) => item.dimensions.wordpress_match === "missing").length;
-  const intentLabels = Array.from(
-    new Set(uniqueItems.map((item) => tacticalIntentLabels[item.intent] ?? item.intent))
+  const matchedCount = decisions.filter((decision) => decision.wordpress_match === "found").length;
+  const missingCount = decisions.filter((decision) => decision.wordpress_match === "missing").length;
+  const decisionTypeLabels = Array.from(
+    new Set(decisions.map((decision) => contentDecisionTypeLabel(decision.decision_type)))
   );
   const actionIds = data.action_ids.length ? data.action_ids : ["act_prepare_content_refresh_queue"];
 
@@ -2223,61 +2223,45 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
             Co marketer ma zrobić teraz z treściami
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ łączy GSC query/page z WordPress inventory. Najpierw obsłuż
+            WILQ łączy zapytania i URL-e z GSC z inventory WordPress. Najpierw obsłuż
             istniejące URL-e i klastry zapytań, potem dopiero twórz nowe treści. Bez
-            evidence nie wolno claimować wzrostu leadów, pozycji ani konwersji.
+            dowodów nie wolno twierdzić, że wzrosną leady, pozycje albo konwersje.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Query/page" value={data.query_page_count} />
-          <MetricTile label="WP match" value={data.matched_inventory_count} />
-          <MetricTile label="Taktyki" value={uniqueItems.length} />
+          <MetricTile label="Zapytania/URL" value={data.query_page_count} />
+          <MetricTile label="Dopasowania WP" value={data.matched_inventory_count} />
+          <MetricTile label="Decyzje" value={decisions.length} />
         </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
-          {topItems.length > 0 ? (
-            topItems.map((item) => (
-              <article key={item.id} className="rounded-md border border-line bg-slate-50 p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-semibold text-ink">{item.title}</h3>
-                    <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                      {tacticalIntentLabels[item.intent]} / {priorityLabel(item.priority)}
-                    </p>
-                  </div>
-                  <StatusBadge value={item.risk} />
-                </div>
-                <p className="mt-2 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
-                <p className="mt-2 text-sm font-medium text-ink">{item.next_step}</p>
-                <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
-                  {tacticalContextPairs(item).map(([key, value]) => (
-                    <span key={key} className="rounded border border-line bg-white px-2 py-1">
-                      {tacticalDimensionLabels[key] ?? key}: {value}
-                    </span>
-                  ))}
-                </div>
-              </article>
+          {topDecisions.length > 0 ? (
+            topDecisions.map((decision) => (
+              <ContentDecisionCard key={decision.id} decision={decision} />
             ))
           ) : (
-            <BlockerNotice message="Brak query/page tactical items. Najpierw uruchom GSC i WordPress read-only refresh." />
+            <BlockerNotice message="Brak decyzji contentowych. Najpierw uruchom odczyt GSC i WordPress." />
           )}
         </div>
 
         <div className="rounded-md border border-line bg-slate-50 p-3">
-          <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb content</h3>
+          <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb treści</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <TraceLine label="Tryby pracy" values={intentLabels} empty="brak" />
+            <TraceLine label="Tryby decyzji" values={decisionTypeLabels} empty="brak" />
             <TraceLine
-              label="WordPress match"
-              values={[`found: ${matchedCount}`, `missing: ${missingCount}`]}
+              label="Dopasowania WordPress"
+              values={[
+                `potwierdzone: ${matchedCount}`,
+                `brak potwierdzenia: ${missingCount}`
+              ]}
             />
-            <LinkedTraceLine label="Evidence" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
+            <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
             <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
             <TraceLine
-              label="Nie wolno claimować"
-              values={data.sections.flatMap((section) => section.blocked_claims)}
+              label="Nie wolno twierdzić"
+              values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
             />
           </div>
           <a
@@ -2292,43 +2276,184 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
   );
 }
 
-function ContentDiagnosticCard({ section }: { section: ContentDiagnosticSection }) {
+function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">{contentDecisionTitle(decision)}</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {contentDecisionTypeLabel(decision.decision_type)}
+          </p>
+        </div>
+        <StatusBadge value={decision.risk} />
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
+      <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+        {decision.page ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Strona: {shortPath(decision.page)}
+          </span>
+        ) : null}
+        {decision.queries.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Zapytania: {decision.queries.slice(0, 4).join(", ")}
+          </span>
+        ) : null}
+        {decision.query_count > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Liczba zapytań: {decision.query_count}
+          </span>
+        ) : null}
+        {decision.wordpress_match ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            WordPress: {wordpressMatchLabel(decision.wordpress_match)}
+          </span>
+        ) : null}
+        {decision.wordpress_match_confidence ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Dopasowanie: {wordpressMatchConfidenceLabel(decision.wordpress_match_confidence)}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Źródła" values={decision.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={decision.action_ids} kind="actions" />
+        <TraceLine label="Nie wolno twierdzić" values={contentBlockedClaimLabels(decision.blocked_claims)} />
+      </div>
+      {decision.metric_facts.length > 0 ? <MetricFactChips facts={decision.metric_facts.slice(0, 4)} /> : null}
+    </article>
+  );
+}
+
+function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) {
+  const metricFacts = data.sections.flatMap((section) => section.metric_facts);
+  const sourceConnectors = uniqueValues([
+    ...data.sections.flatMap((section) => section.source_connectors),
+    ...data.decision_queue.flatMap((decision) => decision.source_connectors)
+  ]);
   return (
     <section className="rounded-md border border-line bg-white p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            {section.status}
-          </div>
-          <h2 className="mt-1 text-base font-semibold tracking-normal">{section.title}</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Dowody i ograniczenia Content
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            To jest skrót kontraktu WILQ API. Decyzje dla marketera są powyżej;
+            tutaj widać, z jakich źródeł i blokad wynikają.
+          </p>
         </div>
-        <StatusBadge value={section.status} />
-      </div>
-      <p className="text-sm leading-6 text-slate-700">{section.summary}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{section.diagnosis}</p>
-      <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-700">
-        {section.next_step}
-      </div>
-      {section.metric_facts.length > 0 ? <MetricFactChips facts={section.metric_facts} /> : null}
-      {section.tactical_items.length > 0 ? (
-        <div className="mt-3 grid gap-2">
-          {section.tactical_items.slice(0, 4).map((item) => (
-            <div key={item.id} className="rounded-md border border-line bg-white p-3 text-xs">
-              <div className="font-semibold text-ink">{item.title}</div>
-              <div className="mt-1 text-slate-600">{item.diagnosis}</div>
-              <TraceLine label="Intent" values={[item.intent]} />
-            </div>
-          ))}
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Sekcje API" value={data.sections.length} />
+          <MetricTile label="Metryki" value={metricFacts.length} />
+          <MetricTile label="Decyzje" value={data.decision_queue.length} />
         </div>
-      ) : null}
+      </div>
+      {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 8)} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <LinkedTraceLine label="Evidence" values={section.evidence_ids} kind="evidence" />
-        <TraceLine label="Źródła" values={section.source_connectors} />
-        <LinkedTraceLine label="Akcje" values={section.action_ids} kind="actions" />
-        <TraceLine label="Zablokowane claimy" values={section.blocked_claims} />
+        <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => contentSectionLabel(section.id))} />
+        <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
+        <TraceLine label="Źródła" values={sourceConnectors} />
+        <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
+        <TraceLine
+          label="Zablokowane claimy"
+          values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+        />
       </div>
     </section>
   );
+}
+
+function contentDecisionTitle(decision: ContentDecisionItem) {
+  if (decision.page) {
+    return `${contentDecisionVerb(decision.decision_type)}: ${shortPath(decision.page)}`;
+  }
+  return decision.title;
+}
+
+function contentDecisionVerb(decisionType: ContentDecisionItem["decision_type"]) {
+  if (decisionType === "refresh_or_merge") return "Odśwież lub scal";
+  if (decisionType === "merge_create_after_inventory_check") return "Zweryfikuj klaster";
+  if (decisionType === "inventory_check_before_create") return "Sprawdź inventory";
+  return "Zablokuj jako problem pomiaru";
+}
+
+function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_type"]) {
+  if (decisionType === "refresh_or_merge") return "odświeżenie albo scalenie";
+  if (decisionType === "merge_create_after_inventory_check") {
+    return "scalenie lub utworzenie po kontroli inventory";
+  }
+  if (decisionType === "inventory_check_before_create") return "kontrola inventory przed briefem";
+  return "blokada zadania contentowego";
+}
+
+function contentDecisionSortValue(decision: ContentDecisionItem) {
+  const riskRank: Record<ContentDecisionItem["risk"], number> = {
+    critical: 0,
+    high: 1,
+    medium: 2,
+    low: 3
+  };
+  return riskRank[decision.risk] * 100 - decision.query_count;
+}
+
+function contentSectionLabel(sectionId: string) {
+  if (sectionId === "content_query_page_matrix") return "Zapytania i URL-e z GSC";
+  if (sectionId === "content_inventory_match") return "Dopasowanie WordPress";
+  if (sectionId === "content_action_safety") return "Bezpieczeństwo akcji";
+  return sectionId;
+}
+
+function contentConnectorStatusLabel(status: string) {
+  if (status === "configured") return "dostęp skonfigurowany";
+  if (status === "missing_credentials") return "brakuje credentiali";
+  if (status === "disabled") return "źródło wyłączone";
+  return `status: ${status}`;
+}
+
+function contentRefreshStatusLabel(status: string) {
+  if (status === "completed") return "zakończony";
+  if (status === "blocked") return "zablokowany";
+  if (status === "failed") return "błąd";
+  if (status === "running") return "w toku";
+  return status;
+}
+
+function wordpressMatchLabel(value: string) {
+  if (value === "found") return "potwierdzony";
+  if (value === "missing") return "brak potwierdzenia";
+  return value;
+}
+
+function wordpressMatchConfidenceLabel(value: string) {
+  if (value === "exact_url") return "dokładny URL";
+  if (value === "host_alias_sitemap") return "alias hosta z sitemap";
+  if (value === "path_fallback") return "dopasowanie ścieżki";
+  if (value === "missing") return "brak dopasowania";
+  return value;
+}
+
+function contentBlockedClaimLabels(claims: string[]) {
+  const labels: Record<string, string> = {
+    "auto publish": "automatyczna publikacja",
+    "content rewrite": "rewrite treści bez dowodu",
+    "conversion uplift": "wzrost konwersji",
+    "duplicate avoidance": "uniknięcie duplikacji",
+    "duplicate-free guarantee": "gwarancja braku duplikatów",
+    "lead uplift": "wzrost leadów",
+    "merge plan": "plan scalenia",
+    "new article without inventory check": "nowy artykuł bez kontroli inventory",
+    "ranking guarantee": "gwarancja pozycji",
+    "ranking win": "wygrana pozycji",
+    "refresh plan": "plan odświeżenia",
+    "revenue impact": "wpływ na przychód",
+    "ROAS": "ROAS",
+    "wordpress write": "zapis do WordPress"
+  };
+  return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }
 
 function MerchantDiagnosticSurface() {

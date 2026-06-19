@@ -144,14 +144,17 @@ def _query_page_section(
     if not gsc_items and not gsc_facts:
         return ContentDiagnosticSection(
             id="content_query_page_matrix",
-            title="GSC: brak query/page matrix",
+            title="GSC: brak metryk zapytań i URL",
             status="blocked",
             summary=_content_blocker_reason(latest_refreshes, "google_search_console"),
             diagnosis=(
-                "WILQ nie ma query/page facts z Google Search Console, więc nie może "
+                "WILQ nie ma metryk zapytań i URL-i z Google Search Console, więc nie może "
                 "wskazać refresh/create/merge bez zmyślania intencji."
             ),
-            next_step="Uruchom read-only GSC vendor_read i dopiero potem buduj content queue.",
+            next_step=(
+                "Uruchom odczyt GSC w trybie vendor_read i dopiero potem buduj "
+                "kolejkę treści."
+            ),
             source_connectors=["google_search_console"],
             evidence_ids=_refresh_or_connector_evidence_ids(
                 latest_refreshes,
@@ -163,17 +166,17 @@ def _query_page_section(
         )
     return ContentDiagnosticSection(
         id="content_query_page_matrix",
-        title="GSC: query/page matrix",
+        title="GSC: zapytania i URL-e",
         status="ready",
         summary=(
-            f"WILQ ma {len(gsc_items)} GSC tactical items i "
-            f"{len(gsc_facts)} query/page metric facts."
+            f"WILQ ma {len(gsc_items)} zadań GSC i "
+            f"{len(gsc_facts)} metryk zapytań i URL-i."
         ),
         diagnosis=(
-            "Query/page matrix pozwala wskazać konkretne strony i zapytania do "
-            "refresh/create/merge. To nie jest ogólny brainstorming tematów."
+            "Macierz zapytań i URL-i pozwala wskazać konkretne strony do "
+            "odświeżenia, scalenia albo kontroli. To nie jest ogólny brainstorming tematów."
         ),
-        next_step="Otwórz najwyższe priorytety i sprawdź intent oraz WordPress match.",
+        next_step="Otwórz najwyższe priorytety i sprawdź intencję oraz dopasowanie WordPress.",
         source_connectors=["google_search_console"],
         evidence_ids=_unique(
             [
@@ -215,7 +218,7 @@ def _inventory_match_section(
     if not inventory_facts:
         return ContentDiagnosticSection(
             id="content_inventory_match",
-            title="WordPress: brak inventory facts",
+            title="WordPress: brak metryk inventory",
             status="blocked",
             summary=_content_blocker_reason(latest_refreshes, "wordpress_ekologus"),
             diagnosis=(
@@ -234,20 +237,21 @@ def _inventory_match_section(
         )
     return ContentDiagnosticSection(
         id="content_inventory_match",
-        title="WordPress: inventory protection",
+        title="WordPress: ochrona przed duplikacją",
         status="ready",
         summary=(
-            f"WILQ ma {len(inventory_facts)} inventory facts, "
-            f"{len(matched_items)} matched queue items i {len(missing_items)} missing matches."
+            f"WILQ ma {len(inventory_facts)} metryk inventory, "
+            f"{len(matched_items)} potwierdzonych dopasowań i "
+            f"{len(missing_items)} braków dopasowania."
         ),
         diagnosis=(
             "WordPress inventory chroni marketera przed pisaniem drugi raz tego samego. "
-            "Matched items idą w refresh/merge, missing items wymagają ręcznej kontroli "
-            "przed nowym briefem."
+            "Potwierdzone dopasowania idą w odświeżenie lub scalenie, a brak "
+            "dopasowania wymaga ręcznej kontroli przed nowym briefem."
         ),
         next_step=(
-            "Najpierw obsłuż matched refresh/merge; nowe treści twórz tylko "
-            "po duplicate check."
+            "Najpierw obsłuż potwierdzone odświeżenia i scalenia; nowe treści "
+            "twórz tylko po kontroli duplikacji."
         ),
         source_connectors=_unique(fact.source_connector for fact in inventory_facts),
         evidence_ids=_unique(
@@ -272,14 +276,18 @@ def _content_action_safety_section(
 ) -> ContentDiagnosticSection:
     return ContentDiagnosticSection(
         id="content_action_safety",
-        title="Content Planner: bezpieczne akcje",
+        title="Bezpieczeństwo akcji contentowych",
         status="ready" if facts or tactical_items else "blocked",
-        summary="Content actions pozostają prepare-only do czasu walidacji payloadu i audytu.",
-        diagnosis=(
-            "WILQ może przygotować kolejkę refresh/create/merge/block i payload preview, "
-            "ale nie może publikować ani zmieniać WordPress bez walidacji i zgody operatora."
+        summary=(
+            "Akcje contentowe pozostają w trybie przygotowania do czasu walidacji "
+            "payloadu i audytu."
         ),
-        next_step="Waliduj `act_prepare_content_refresh_queue` i pokaż payload preview.",
+        diagnosis=(
+            "WILQ może przygotować kolejkę odświeżenia, tworzenia, scalania albo "
+            "blokowania oraz podgląd payloadu, ale nie może publikować ani zmieniać "
+            "WordPress bez walidacji i zgody operatora."
+        ),
+        next_step="Waliduj `act_prepare_content_refresh_queue` i pokaż podgląd payloadu.",
         source_connectors=list(CONTENT_CONNECTOR_IDS),
         evidence_ids=_unique(
             [
@@ -372,13 +380,21 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
             title = f"Odśwież lub scal istniejącą treść: {page}"
-            next_step = "Przygotuj refresh/merge brief na podstawie GSC i WordPress inventory."
-            rationale = "WordPress inventory potwierdza istniejącą stronę dla query z GSC."
+            next_step = (
+                "Przygotuj brief odświeżenia albo scalenia na podstawie GSC "
+                "i inventory WordPress."
+            )
+            rationale = "Inventory WordPress potwierdza istniejącą stronę dla zapytania z GSC."
         elif query_count > 1:
             decision_type = "merge_create_after_inventory_check"
-            title = f"Zweryfikuj klaster query przed tworzeniem treści: {page}"
-            next_step = "Sprawdź mapping URL i duplikaty w WordPress przed create/restore."
-            rationale = "Wiele query prowadzi do jednego URL, ale inventory nie potwierdza strony."
+            title = f"Zweryfikuj klaster zapytań przed tworzeniem treści: {page}"
+            next_step = (
+                "Sprawdź mapowanie URL i duplikaty w WordPress przed utworzeniem "
+                "albo odtworzeniem strony."
+            )
+            rationale = (
+                "Wiele zapytań prowadzi do jednego URL, ale inventory nie potwierdza strony."
+            )
         else:
             decision_type = "inventory_check_before_create"
             title = f"Sprawdź inventory przed briefem treści: {page}"

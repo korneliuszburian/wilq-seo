@@ -160,6 +160,10 @@ Do not rebuild these from scratch:
   issue clusters, translated blocked claims, ActionObject validation and
   `Dowody i ograniczenia Merchant` instead of duplicate diagnostic sections or
   English technical copy.
+- Content Planner route operator cleanup: `/content-planner` now renders
+  typed content decisions from `content_diagnostics.decision_queue`, blocks GA4
+  tracking gaps as non-content tasks, groups GSC/WordPress decisions per URL
+  and avoids false zero metrics when evidence is missing.
 - Metric store grouped batch reads for tactical/content surfaces: latest
   query/page groups keep clicks, impressions, CTR and position together instead
   of truncating by connector row count.
@@ -171,8 +175,9 @@ These are the current reasons Goal 001 is not complete:
 1. **Dashboard route audit is not finished.**
    Command Center, `/actions`, `/opportunities` and `/merchant` have been
    cleaned up for the current stale Ads/Localo/readiness issues and technical
-   wording. Remaining route work must continue top-to-bottom on
-   `/content-planner`, `/ga4`, `/ads-doctor` and `/localo`, looking for
+   wording. `/content-planner` has also been cleaned up around its typed
+   content decision queue. Remaining route work must continue top-to-bottom on
+   `/ga4`, `/ads-doctor` and `/localo`, looking for
    duplicate intent, stale copy, missing Codex bridge and technical wording that
    masquerades as marketer insight.
 
@@ -226,8 +231,10 @@ These are the current reasons Goal 001 is not complete:
    evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the Merchant occurrence wording/API fallback
-   slice. Keep this file current after every future slice.
+   `scripts/verify.sh` passed after the 2026-06-19 Content Planner route
+   cleanup: backend API contracts `98 passed`, dashboard route tests
+   `13 passed`, Playwright e2e `9 passed` and dashboard production build
+   passed. Keep this file current after every future slice.
 
 ## What WILQ Must Give The Marketer
 
@@ -244,7 +251,7 @@ Examples of real value:
 
 - Merchant: "15 product/feed issues require review; validate
   `act_review_merchant_feed_issues`; do not promise approval recovery."
-- Content: "GSC query/page + WordPress inventory suggests refresh/create/block;
+- Content: "GSC + inventory WordPress suggests refresh/create/block decisions;
   do not promise ranking or lead uplift."
 - GA4: "Landing/source/campaign traffic quality looks weak; review tracking and
   message match; do not claim ROAS/revenue."
@@ -325,13 +332,18 @@ produce high-value decisions.
 
 Work in this order:
 
-1. **Done: content decision queue.**
+1. **Done: content decision queue and Content Planner route cleanup.**
    `content_diagnostics.decision_queue` must remain typed API state, not skill
    reference logic. It must support `refresh_or_merge`,
    `merge_create_after_inventory_check`, `inventory_check_before_create` and
    `block_as_tracking_not_content`, with evidence IDs, source connectors,
    ActionObject IDs and blocked claims. This was committed as
    `2e0b0dc feat(content): expose content decision queue`.
+   Follow-up route cleanup on 2026-06-19 made `/content-planner` render this
+   decision queue as the primary marketer view, grouped duplicated GSC queries
+   per URL, blocked GA4 tracking gaps as non-content work and removed stale
+   labels such as `Query/page`, `WP match`, `exact_url`, `payload preview` and
+   false `impressions=0` / `ctr=0` for missing evidence.
 
 2. **Active local slice: Command Center as canonical `DailyDecision`.**
    Introduce one first-screen decision model instead of competing
@@ -685,8 +697,8 @@ Tasks:
   `.local-lab/evals/codex-skill/20260618T114810Z/wilq-content-strategist/result.json`.
   It uses API decisions `inventory_check_before_create`,
   `merge_create_after_inventory_check` and `block_as_tracking_not_content`.
-  This slice is not committed yet; see `docs/CONTEXT.md` and `docs/PROGRESS.md`
-  before resuming.
+  The follow-up route cleanup is documented in `docs/PROGRESS.md`; resume route
+  audit on `/ga4`, `/ads-doctor` and `/localo`.
 - Performance direction: follow TanStack/React guidance by avoiding client
   waterfalls and duplicated data models. Do not patch this with random
   `useMemo`; next performance slice should build a lightweight daily-decision
@@ -961,7 +973,7 @@ Commit rules:
 ## Immediate Next Tasks
 
 1. **Continue route audit beyond Command Center/actions/opportunities.**
-   Next routes: `/content-planner`, `/ga4`, `/ads-doctor` and `/localo`. Use
+   Next routes: `/ga4`, `/ads-doctor` and `/localo`. Use
    `agent-browser` after the page settles. For each route, remove or demote
    visible sections that cannot answer: `co widzę`, `co to znaczy`, `co zrobić
    teraz`, `czego nie wolno twierdzić`, and `jak Codex może pomóc`.
@@ -1209,7 +1221,7 @@ Important product note:
 - The Codex bridge is necessary but not sufficient. It only connects a dashboard
   decision to a WILQ skill. It is not yet the marketer value by itself.
 - The next useful slice must audit the primary dashboard routes
-  `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor` and `/localo`, then
+  `/ga4`, `/ads-doctor` and `/localo`, then
   replace technical inventory with real metric-backed decisions.
 - Every route should preserve evidence/action traceability while making the
   marketer-facing hierarchy obvious: real metric, diagnosis, safe next action,

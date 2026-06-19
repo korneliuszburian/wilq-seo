@@ -1658,22 +1658,21 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma zrobić teraz z treściami")).toBeInTheDocument();
-    expect(screen.getByText("Bezpieczny tryb content")).toBeInTheDocument();
-    expect(screen.getByText(/WILQ łączy GSC query\/page z WordPress inventory/)).toBeInTheDocument();
-    expect(screen.getByText(/Query: zielony ład/)).toBeInTheDocument();
+    expect(screen.getByText("Bezpieczny tryb treści")).toBeInTheDocument();
     expect(
-      screen.getAllByText(/WordPress match: found/).length
-    ).toBeGreaterThan(0);
+      screen.getByText(/WILQ łączy zapytania i URL-e z GSC z inventory WordPress/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Odśwież lub scal: \/bdo\//)).toBeInTheDocument();
+    expect(screen.getByText(/WordPress: potwierdzony/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
       "href",
       "/actions/act_prepare_content_refresh_queue"
     );
-    expect(screen.getByText("GSC: query/page matrix")).toBeInTheDocument();
-    expect(screen.getByText("WordPress: inventory protection")).toBeInTheDocument();
-    expect(
-      screen.getAllByText("GSC: zielony ład -> /europejski-zielony-lad-co-to-takiego/").length
-    ).toBeGreaterThan(0);
-    expect(screen.getByText("Content Safety Gate")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
+    expect(screen.queryByText("GSC: query/page matrix")).not.toBeInTheDocument();
+    expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
+    expect(screen.queryByText("WordPress match: found")).not.toBeInTheDocument();
+    expect(screen.getByText("Brama bezpieczeństwa treści")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "act_prepare_content_refresh_queue" })[0]).toHaveAttribute(
       "href",
       "/actions/act_prepare_content_refresh_queue"
@@ -1714,7 +1713,8 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Content Planner" })).toBeInTheDocument()
     );
     expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
-    expect(screen.getByText("WordPress: inventory protection")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
+    expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
     ).toBeInTheDocument();

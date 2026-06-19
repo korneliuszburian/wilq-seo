@@ -1180,3 +1180,90 @@ Remaining product risk:
 - Continue route audit on `/content-planner`, `/ga4`, `/ads-doctor` and
   `/localo` for stale copy, duplicate intent, missing Codex/action bridge and
   performance cost.
+
+## 2026-06-19 - Content Planner Decision Route Cleanup
+
+What changed:
+
+- `/content-planner` now renders the typed
+  `content_diagnostics.decision_queue` as the primary marketer view instead of
+  re-rendering raw diagnostic sections and tactical rows.
+- The route starts from `Co marketer ma zrobić teraz z treściami`, then shows
+  content decisions, safe mode, `Dowody i ograniczenia Content`, ActionObject
+  validation and the content safety gate.
+- GSC/WordPress decisions are grouped per URL. The Zielony Ład cluster is one
+  decision, not several duplicated query cards.
+- GA4 `(not set)` tracking gaps are explicitly blocked as content tasks and
+  routed to GA4 tracking review instead of pretending to be content
+  recommendations.
+- Missing GSC metrics are no longer coerced to zero. If a metric is absent from
+  evidence, the API says `brak w evidence` instead of rendering false
+  `impressions=0` or `ctr=0`.
+- Visible Content Planner copy no longer shows stale English/technical labels
+  such as `payload preview`, `refresh queue`, `read-only`, `Evidence`,
+  `READY`, `configured`, `Query/page`, `WP match`, `WordPress match`,
+  `missing`, `found`, `exact_url`, `GSC: query/page matrix`,
+  `WordPress: inventory protection`,
+  `Content Planner: bezpieczne akcje`, `CONTENT SAFETY GATE`,
+  `impressions=0` or `ctr=0`.
+- Backend content/GSC copy now uses Polish operator wording:
+  `zapytania i URL-e`, `Zapytanie`, `Metryki GSC`,
+  `Inventory WordPress`, `dokładny URL`, `zaindeksowany`,
+  `brak w evidence`. Stable API field names and enum values remain unchanged.
+
+Browser proof:
+
+- `agent-browser` `/content-planner` after API restart and a 10s settle:
+  - headings include `Co marketer ma zrobić teraz z treściami`,
+    `Zablokuj GA4 tracking gaps jako zadania contentowe`,
+    `Odśwież lub scal: /europejski-zielony-lad-co-to-takiego/`,
+    `Bezpieczny tryb treści`, `Dowody i ograniczenia Content`,
+    `ActionObjecty do walidacji` and `Brama bezpieczeństwa treści`;
+  - suspect hits are empty for `payload preview`, `refresh queue`,
+    `read-only`, `Evidence`, `READY`, `configured`, `Query/page`,
+    `query/page`, ` query `, `WP match`, `WordPress match`, `missing`,
+    `found`, `exact_url`, `GSC: query/page matrix`,
+    `WordPress: inventory protection`,
+    `Content Planner: bezpieczne akcje`, `CONTENT SAFETY GATE`,
+    `impressions=0`, `ctr=0`.
+
+Focused proof passed:
+
+```bash
+uv run ruff check wilq/briefing/content_diagnostics.py wilq/briefing/tactical_queue.py
+uv run mypy wilq/briefing/content_diagnostics.py wilq/briefing/tactical_queue.py
+uv run pytest tests/test_api_contracts.py -q -k 'content_diagnostics or tactical_queue'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+```
+
+Focused Playwright note:
+
+- A direct `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`
+  attempt was interrupted because Playwright started the API webServer on
+  `8875` but did not proceed to the dashboard webServer on `5373` within the
+  interactive wait window. No test assertion failed before interruption.
+  Browser proof against the live API/dashboard completed instead, and the full
+  repo `scripts/verify.sh` later ran the same Playwright suite successfully.
+
+Full proof passed:
+
+```bash
+scripts/verify.sh
+```
+
+Full gate result:
+
+- Backend API contracts: `98 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- Dashboard production build: passed.
+
+Remaining product risk:
+
+- `/content-planner` is now a usable decision route for content work, but the
+  underlying decision model still needs richer ranking/impact logic before it
+  can prioritize beyond evidence availability, WordPress match state and risk.
+- Continue route audit on `/ga4`, `/ads-doctor` and `/localo` for stale copy,
+  duplicate intent, missing Codex/action bridge and performance cost.

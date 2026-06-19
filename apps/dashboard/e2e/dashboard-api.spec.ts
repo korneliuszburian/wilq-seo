@@ -104,11 +104,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "SEO / GSC" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "GSC: query/page matrix" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "WordPress: inventory protection" })).toBeVisible();
-    await expect(page.getByText(/GSC: .*->/).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Content" })).toBeVisible();
+    await expect(page.getByText(/Odśwież lub scal:/).first()).toBeVisible();
+    await expect(page.getByText("GSC: query/page matrix")).toHaveCount(0);
+    await expect(page.getByText("WordPress: inventory protection")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "act_prepare_content_refresh_queue" }).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Content Safety Gate" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa treści" })).toBeVisible();
 
     await page.goto("/content-planner");
 
