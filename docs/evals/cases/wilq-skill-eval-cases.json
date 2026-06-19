@@ -15,17 +15,25 @@
       "act_prepare_content_refresh_queue",
       "act_review_ga4_tracking_quality"
     ],
-    "expected_connectors": [
-      "google_ads",
-      "google_search_console",
-      "google_analytics_4",
-      "google_merchant_center",
+  "expected_connectors": [
+    "google_ads",
+    "google_search_console",
+    "google_analytics_4",
+    "google_merchant_center",
       "ahrefs",
       "localo",
-      "wordpress_ekologus",
-      "wordpress_sklep"
-    ]
-  },
+    "wordpress_ekologus",
+    "wordpress_sklep"
+  ],
+  "required_source_connectors": [
+    "google_ads",
+    "google_search_console",
+    "google_analytics_4",
+    "google_merchant_center",
+    "wordpress_ekologus",
+    "wordpress_sklep"
+  ]
+},
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",

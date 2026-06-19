@@ -261,7 +261,7 @@ def _daily_command_context_pack(
             opportunity.model_dump(mode="json") for opportunity in scoped_opportunities
         ],
         "active_action_objects": [
-            action.model_dump(mode="json") for action in active_actions
+            _compact_daily_action_for_context(action) for action in active_actions
         ],
         "connector_refresh_runs": [
             run.model_dump(mode="json")
@@ -281,11 +281,120 @@ def _daily_command_context_pack(
         "expert_capabilities": [
             capability.model_dump(mode="json") for capability in list_expert_capabilities()
         ],
-        "command_center": command.model_dump(mode="json"),
-        "marketing_brief": brief.model_dump(mode="json"),
+        "command_center": _compact_command_center_for_daily_context(command),
+        "marketing_brief": _compact_marketing_brief_for_daily_context(brief),
+        "context_pack_compaction": {
+            "mode": "daily_default",
+            "full_context_available": True,
+            "full_context_request": {
+                "skill": "wilq-daily-command",
+                "full_context": True,
+            },
+            "active_actions_compacted": True,
+            "command_center_connector_health_omitted": True,
+            "marketing_brief_metric_facts_compacted": True,
+            "full_action_endpoint_template": "/api/actions/{action_id}",
+            "full_marketing_brief_endpoint": "/api/marketing/brief",
+            "full_command_center_endpoint": "/api/dashboard/command-center",
+        },
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
     }
     return redact_mapping(pack)
+
+
+def _compact_daily_action_for_context(action: ActionObject) -> dict[str, Any]:
+    dumped = action.model_dump(mode="json")
+    payload = dumped.get("payload")
+    payload_keys = sorted(payload) if isinstance(payload, dict) else []
+    return {
+        "id": dumped["id"],
+        "title": dumped["title"],
+        "domain": dumped["domain"],
+        "connector": dumped["connector"],
+        "mode": dumped["mode"],
+        "risk": dumped["risk"],
+        "status": dumped["status"],
+        "validation_status": dumped["validation_status"],
+        "evidence_ids": dumped["evidence_ids"],
+        "human_diagnosis": dumped["human_diagnosis"],
+        "recommended_reason": dumped["recommended_reason"],
+        "metric_count": len(dumped.get("metrics", [])),
+        "payload_keys": payload_keys,
+        "api_endpoint_template": "/api/actions/{action_id}",
+    }
+
+
+def _compact_command_center_for_daily_context(command: CommandCenterResponse) -> dict[str, Any]:
+    dumped = command.model_dump(mode="json")
+    return {
+        "generated_at": dumped["generated_at"],
+        "strict_instruction": dumped["strict_instruction"],
+        "primary_next_step": dumped["primary_next_step"],
+        "blocker_count": dumped["blocker_count"],
+        "tactical_item_count": dumped["tactical_item_count"],
+        "daily_decisions": dumped["daily_decisions"],
+        "operator_brief": dumped["operator_brief"],
+        "demo_script": dumped["demo_script"],
+        "action_plan": dumped["action_plan"],
+        "connector_summary": dumped["connector_summary"],
+    }
+
+
+def _compact_marketing_brief_for_daily_context(brief: MarketingBrief) -> dict[str, Any]:
+    dumped = brief.model_dump(mode="json")
+    compact_sections = []
+    for section in dumped["sections"]:
+        compact_items = []
+        for item in section["items"]:
+            item_copy = dict(item)
+            metric_facts = item_copy.get("metric_facts", [])
+            item_copy["metric_fact_count"] = len(metric_facts)
+            item_copy["metric_facts"] = [
+                _compact_metric_fact_for_context(fact) for fact in metric_facts[:3]
+            ]
+            compact_items.append(item_copy)
+        section_copy = dict(section)
+        section_copy["items"] = compact_items
+        compact_sections.append(section_copy)
+    return {
+        "generated_at": dumped["generated_at"],
+        "language": dumped["language"],
+        "strict_instruction": dumped["strict_instruction"],
+        "connector_summary": dumped["connector_summary"],
+        "sections": compact_sections,
+        "top_metric_facts": [
+            _compact_metric_fact_for_context(fact)
+            for fact in dumped.get("top_metric_facts", [])[:8]
+        ],
+        "evidence_ids": dumped["evidence_ids"],
+        "action_ids": dumped["action_ids"],
+        "blocker_count": dumped["blocker_count"],
+        "recommendation_count": dumped["recommendation_count"],
+    }
+
+
+def _compact_metric_fact_for_context(fact: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": fact.get("name"),
+        "value": fact.get("value"),
+        "unit": fact.get("unit"),
+        "period": fact.get("period"),
+        "source_connector": fact.get("source_connector"),
+        "evidence_id": fact.get("evidence_id"),
+        "dimensions": _compact_dimensions_for_context(fact.get("dimensions")),
+        "freshness_label": fact.get("freshness_label"),
+        "trend": fact.get("trend"),
+    }
+
+
+def _compact_dimensions_for_context(dimensions: Any) -> dict[str, str]:
+    if not isinstance(dimensions, dict):
+        return {}
+    compact: dict[str, str] = {}
+    for key, value in list(dimensions.items())[:8]:
+        text = str(value)
+        compact[str(key)] = text if len(text) <= 160 else f"{text[:157]}..."
+    return compact
 
 
 def _daily_context_evidence_ids(

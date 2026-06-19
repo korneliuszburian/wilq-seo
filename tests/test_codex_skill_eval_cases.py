@@ -138,6 +138,12 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert set(content_case["required_source_connectors"]) <= set(
         content_case["expected_connectors"]
     )
+    daily_case = cases["wilq-daily-command"]
+    assert "localo" in daily_case["expected_connectors"]
+    assert "localo" not in daily_case["required_source_connectors"]
+    assert set(daily_case["required_source_connectors"]) <= set(
+        daily_case["expected_connectors"]
+    )
 
 
 def test_codex_skill_eval_harness_validates_route_markers() -> None:

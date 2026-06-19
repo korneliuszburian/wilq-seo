@@ -8,6 +8,29 @@ artifacts.
 
 Data: 2026-06-19
 
+- Daily command context-pack payload compaction, 2026-06-19 21:32
+  Europe/Warsaw: current active proof is Codex runtime performance, not a new
+  marketer decision contract. Default `wilq-daily-command` context-pack now
+  compacts `active_action_objects`, removes heavy `connector_health` from the
+  embedded `command_center`, caps Marketing Brief item `metric_facts` to 3
+  compact examples and caps top metric facts to 8. Full data remains available
+  through `full_context=true`, `/api/marketing/brief`,
+  `/api/dashboard/command-center` and `/api/actions/{action_id}`. Local proof
+  after `scripts/local_stack.sh restart`: default daily context-pack
+  `120436 bytes` versus previous `235159 bytes`. The pack still keeps
+  `operator_brief`, `action_plan`, `daily_decisions`, evidence IDs,
+  source connectors and core ActionObject IDs. Focused proof passed: ruff,
+  mypy, context-pack API tests, dashboard route tests and
+  `wilq-daily-command` smoke. Non-interactive `wilq-daily-command` eval passed:
+  `.local-lab/evals/codex-skill/20260619T193056Z/wilq-daily-command/result.json`
+  with `language=pl-PL`, `api_used=true`, 19 evidence IDs and source
+  connectors for Merchant, GSC, WordPress, GA4, Ads and Ahrefs. The daily eval
+  contract now treats Localo as available-but-not-required for daily source
+  connectors unless Localo ranking/GBP evidence exists. Full
+  `scripts/verify.sh` passed after this slice: backend API contracts
+  `112 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`,
+  API smoke, skill smokes and dashboard production build passed. Remaining
+  performance gap: Vite main JS chunk is still above 500 KB.
 - DailyRuntime cold-path compaction, 2026-06-19 21:13 Europe/Warsaw:
   current active proof is backend performance only, not a new marketing
   decision contract. Profiling showed cold daily runtime was dominated by

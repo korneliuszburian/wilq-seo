@@ -5003,6 +5003,12 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     assert context_payload["context_scope"]["mode"] == "daily"
     assert context_payload["context_scope"]["skill"] == "wilq-daily-command"
     assert context_payload["context_scope"]["full_context_available"] is True
+    assert context_payload["context_pack_compaction"]["mode"] == "daily_default"
+    assert context_payload["context_pack_compaction"]["full_context_available"] is True
+    assert (
+        context_payload["context_pack_compaction"]["full_marketing_brief_endpoint"]
+        == "/api/marketing/brief"
+    )
     assert "command_center" in context_payload
     assert "tactical_queue" not in context_payload
     assert "ads_diagnostics" not in context_payload
@@ -5017,6 +5023,17 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
     assert [section["id"] for section in context_brief["sections"]] == [
         section["id"] for section in brief["sections"]
     ]
+    assert len(context_brief["top_metric_facts"]) <= 8
+    assert "connector_health" not in context_payload["command_center"]
+    assert context_payload["command_center"]["daily_decisions"]
+    for action in context_payload["active_action_objects"]:
+        assert "metrics" not in action
+        assert "payload" not in action
+        assert action["api_endpoint_template"] == "/api/actions/{action_id}"
+    for section in context_brief["sections"]:
+        for item in section["items"]:
+            assert item["metric_fact_count"] >= len(item["metric_facts"])
+            assert len(item["metric_facts"]) <= 3
 
 
 def test_list_evidence_by_ids_returns_metric_fact_evidence_without_full_scan(

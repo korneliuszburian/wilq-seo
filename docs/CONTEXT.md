@@ -60,6 +60,17 @@ Audit `docs/audits/001-output.md` is now folded into
    `/api/marketing/brief` after TTL is about `1.42-1.50s`, and daily
    `wilq-daily-command` context-pack after TTL is about `1.67-1.76s`. Remaining
    gaps are dashboard JS chunk size and daily context-pack payload size.
+0. Daily context-pack payload truth, 2026-06-19 21:32 Europe/Warsaw: default
+   `wilq-daily-command` context-pack is intentionally compact. It keeps
+   `operator_brief`, `action_plan`, `daily_decisions`, evidence IDs, source
+   connectors and core ActionObject IDs, but compacts Marketing Brief metric
+   facts, compacts active ActionObjects and omits Command Center
+   `connector_health`; full detail stays in `full_context=true` and the API
+   endpoints. Current proof: default daily context-pack is `120436 bytes`
+   instead of the previous `235159 bytes`, and non-interactive eval passed at
+   `.local-lab/evals/codex-skill/20260619T193056Z/wilq-daily-command/result.json`.
+   Localo is not a required daily source connector while WILQ lacks Localo
+   ranking/GBP evidence.
 0. Ads recommendations truth, 2026-06-19 17:22 Europe/Warsaw: Google Ads
    recommendation review is now a typed read-only contract, not a prompt TODO.
    Live proof `refresh_google_ads_138befce0a2c` /

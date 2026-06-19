@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 21:13 Europe/Warsaw.
+Last updated: 2026-06-19 21:32 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -1460,6 +1460,21 @@ Active 2026-06-19 follow-up:
   - Marketing Brief reads 200 latest metric groups per connector instead of
     500. Live checks confirmed this still preserves dimensional Merchant issue,
     GA4 landing/source, GSC query/page, WordPress and Ads facts.
+- Follow-up 2026-06-19 21:32 Europe/Warsaw reduces default daily
+  `wilq-daily-command` context-pack payload:
+  - compacted active ActionObjects keep IDs, status, risk, evidence IDs,
+    diagnosis/reason and full endpoint template, but drop heavy metrics/payload
+    rows from the default packet;
+  - embedded Command Center keeps `operator_brief`, `action_plan`,
+    `daily_decisions` and primary counts, but omits duplicated
+    `connector_health`;
+  - embedded Marketing Brief caps item metric facts to 3 compact examples and
+    top metric facts to 8 compact examples;
+  - full data remains available via `full_context=true`,
+    `/api/marketing/brief`, `/api/dashboard/command-center` and
+    `/api/actions/{action_id}`;
+  - Localo remains available in connector context, but is not required as a
+    daily source connector until WILQ has Localo ranking/GBP evidence.
 - Focused proof passed:
   ```bash
   uv run ruff check apps/api/wilq_api/main.py wilq/evidence/registry.py wilq/storage/metric_store.py wilq/briefing/daily_runtime.py tests/test_api_contracts.py
@@ -1478,6 +1493,8 @@ Active 2026-06-19 follow-up:
     `71215 bytes`;
   - daily `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` after
     TTL `1.671s`, `1.764s`, `1.707s` at `235159 bytes`;
+  - after the 21:32 context-pack payload compaction:
+    default daily context-pack `120436 bytes`;
   - warm cache hits remain millisecond-level.
 - Full `scripts/verify.sh` passed after this follow-up:
   - backend API contracts: `106 passed`;
@@ -1491,10 +1508,21 @@ Active 2026-06-19 follow-up:
   - Playwright e2e: `9 passed`;
   - API smoke, skill structure smoke, skill API smoke and dashboard production
     build passed.
+- Non-interactive `wilq-daily-command` eval passed after the 21:32 payload
+  compaction:
+  `.local-lab/evals/codex-skill/20260619T193056Z/wilq-daily-command/result.json`.
+  Result has `language=pl-PL`, `api_used=true`, 19 evidence IDs and source
+  connectors for Merchant, GSC, WordPress, GA4, Ads and Ahrefs.
+- Full `scripts/verify.sh` passed after the 21:32 payload compaction:
+  - backend API contracts: `112 passed`;
+  - dashboard route tests: `13 passed`;
+  - Playwright e2e: `9 passed`;
+  - API smoke, skill structure smoke, skill API smoke and dashboard production
+    build passed.
 - This improves the known daily context-pack TTL spike and shared daily cold
   path, but does not close the full performance budget. Remaining future work:
-  smaller dashboard JS chunk, daily context-pack payload reduction and richer
-  value contracts rather than hidden frontend-only memoization.
+  smaller dashboard JS chunk and richer value contracts rather than hidden
+  frontend-only memoization.
 - Active Ads skill performance follow-up:
   - scoped `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now
     removes nested `*_metric_facts` from the skill packet, strips duplicated

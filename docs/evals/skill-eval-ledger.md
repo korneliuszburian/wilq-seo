@@ -25,6 +25,31 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-19 - wilq-daily-command compact daily context-pack
+
+Context-pack performance proof:
+
+- Default `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` was
+  reduced from `235159 bytes` to `120436 bytes`.
+- The compact default pack keeps `operator_brief`, `action_plan`,
+  `daily_decisions`, evidence IDs, source connectors and active ActionObject
+  IDs, but compacts active ActionObjects and Marketing Brief metric facts.
+- Full data remains available through `full_context=true` and the API endpoints:
+  `/api/dashboard/command-center`, `/api/marketing/brief` and
+  `/api/actions/{action_id}`.
+
+Non-interactive eval:
+
+- Passed:
+  `.local-lab/evals/codex-skill/20260619T193056Z/wilq-daily-command/result.json`.
+- Result has `language=pl-PL`, `api_used=true`, 19 evidence IDs and source
+  connectors for `google_merchant_center`, `google_search_console`,
+  `wordpress_ekologus`, `wordpress_sklep`, `google_analytics_4`,
+  `google_ads` and `ahrefs`.
+- The eval case now uses `required_source_connectors` for real daily decision
+  sources. `localo` remains an expected available connector but is not required
+  in the daily source list until WILQ has Localo ranking/GBP evidence.
+
 ## 2026-06-19 - wilq-ads-doctor negative keyword payload preview
 
 Follow-up keyword context proof:
