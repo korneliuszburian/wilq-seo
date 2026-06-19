@@ -675,6 +675,30 @@ class Ga4DiagnosticSection(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class Ga4DecisionItem(BaseModel):
+    id: str
+    decision_type: Literal[
+        "fix_measurement",
+        "review_traffic_quality",
+        "review_landing_mapping",
+    ]
+    title: str
+    landing_page: str | None = None
+    source_medium: str | None = None
+    campaign_name: str | None = None
+    wordpress_match: str | None = None
+    wordpress_match_confidence: str | None = None
+    wordpress_content_url: str | None = None
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    rationale: str
+    next_step: str
+    risk: ActionRisk = ActionRisk.low
+
+
 class Ga4DiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -685,6 +709,7 @@ class Ga4DiagnosticsResponse(BaseModel):
     landing_group_count: int = 0
     low_engagement_count: int = 0
     wordpress_match_count: int = 0
+    decision_queue: list[Ga4DecisionItem] = Field(default_factory=list)
     sections: list[Ga4DiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

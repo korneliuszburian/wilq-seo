@@ -1002,10 +1002,33 @@ const ga4Diagnostics = {
   landing_group_count: 1,
   low_engagement_count: 1,
   wordpress_match_count: 0,
+  decision_queue: [
+    {
+      id: "ga4_decision_tq_ga4_landing",
+      decision_type: "review_landing_mapping",
+      title: "Sprawdź mapowanie landing page: /oferta/",
+      landing_page: "/oferta/",
+      source_medium: "google / cpc",
+      campaign_name: "Ekologus Ogólna",
+      wordpress_match: "missing",
+      wordpress_match_confidence: "missing",
+      wordpress_content_url: null,
+      source_connectors: ["google_analytics_4"],
+      evidence_ids: ["ev_refresh_ga4"],
+      metric_facts: [metricFacts[4]],
+      action_ids: ["act_review_ga4_tracking_quality"],
+      blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"],
+      rationale:
+        "GA4 widzi ruch na landingu /oferta/, ale WordPress inventory nie potwierdza dopasowania URL.",
+      next_step:
+        "Sprawdź mapowanie landing page i dopiero potem oceniaj message match albo jakość ruchu.",
+      risk: "medium"
+    }
+  ],
   sections: [
     {
       id: "ga4_landing_behavior",
-      title: "GA4: landing/source/campaign behavior",
+      title: "GA4: jakość ruchu z landingów",
       status: "ready",
       summary: "WILQ ma 1 landing/source/campaign groups i 1 GA4 metric facts.",
       diagnosis: "GA4 behavior facts pozwalają wskazać landing pages do kontroli jakości ruchu.",
@@ -1020,11 +1043,11 @@ const ga4Diagnostics = {
     },
     {
       id: "ga4_tracking_readiness",
-      title: "GA4: tracking/conversion readiness",
+      title: "GA4: gotowość pomiaru konwersji",
       status: "missing",
-      summary: "WILQ ma 1 behavior facts i 0 conversion-like facts.",
+      summary: "WILQ ma 1 metrykę zachowania i 0 metryk konwersji albo kluczowych zdarzeń.",
       diagnosis: "Aktualne dane wspierają review jakości ruchu, ale nie dowodzą konwersji.",
-      next_step: "Waliduj ActionObject i przygotuj tracking-gap checklist bez apply.",
+      next_step: "Waliduj ActionObject i zatrzymaj wnioski o konwersjach bez metryk.",
       source_connectors: ["google_analytics_4"],
       evidence_ids: ["ev_refresh_ga4"],
       metric_facts: [metricFacts[4]],
@@ -1632,17 +1655,21 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Status GA4 / Landing Quality")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
-    expect(screen.getByText(/Brak conversion-like facts oznacza/)).toBeInTheDocument();
+    expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź mapowanie landing page: /oferta/")).toBeInTheDocument();
     expect(screen.getAllByText(/Landing: \/oferta\//).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Źródło: google \/ cpc/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Tracking readiness/)).toBeInTheDocument();
-    expect(screen.getByText("GA4: landing/source/campaign behavior")).toBeInTheDocument();
-    expect(screen.getByText("GA4: tracking/conversion readiness")).toBeInTheDocument();
+    expect(screen.getByText(/WordPress: brak potwierdzenia/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Gotowość pomiaru/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Dowody i ograniczenia GA4")).toBeInTheDocument();
+    expect(screen.queryByText(/Tracking readiness/)).not.toBeInTheDocument();
+    expect(screen.queryByText("GA4: landing/source/campaign behavior")).not.toBeInTheDocument();
+    expect(screen.queryByText("GA4: tracking/conversion readiness")).not.toBeInTheDocument();
     expect(
       screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
-    expect(screen.getAllByText("GA4: /oferta/ / google / cpc").length).toBeGreaterThan(0);
-    expect(screen.getByText("Analytics Safety Gate")).toBeInTheDocument();
+    expect(screen.queryByText("Analytics Safety Gate")).not.toBeInTheDocument();
+    expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
     expect(screen.getAllByText(/active_users: 20/).length).toBeGreaterThan(0);
     expect(
       screen.getAllByRole("link", { name: "act_review_ga4_tracking_quality" })[0]

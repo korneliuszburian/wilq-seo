@@ -164,6 +164,12 @@ Do not rebuild these from scratch:
   typed content decisions from `content_diagnostics.decision_queue`, blocks GA4
   tracking gaps as non-content tasks, groups GSC/WordPress decisions per URL
   and avoids false zero metrics when evidence is missing.
+- GA4 route operator cleanup: `/api/ga4/diagnostics` now exposes a typed
+  `decision_queue` with `fix_measurement`, `review_landing_mapping` and
+  `review_traffic_quality` decisions. Dashboard `/ga4` renders this as the
+  primary marketer view, keeps evidence/action IDs, and no longer shows raw
+  English diagnostic section titles such as `GA4: landing/source/campaign
+  behavior`, `GA4: tracking/conversion readiness` or `Analytics Safety Gate`.
 - Metric store grouped batch reads for tactical/content surfaces: latest
   query/page groups keep clicks, impressions, CTR and position together instead
   of truncating by connector row count.
@@ -176,8 +182,9 @@ These are the current reasons Goal 001 is not complete:
    Command Center, `/actions`, `/opportunities` and `/merchant` have been
    cleaned up for the current stale Ads/Localo/readiness issues and technical
    wording. `/content-planner` has also been cleaned up around its typed
-   content decision queue. Remaining route work must continue top-to-bottom on
-   `/ga4`, `/ads-doctor` and `/localo`, looking for
+   content decision queue. `/ga4` has been cleaned up around its typed GA4
+   decision queue. Remaining route work must continue top-to-bottom on
+   `/ads-doctor` and `/localo`, looking for
    duplicate intent, stale copy, missing Codex bridge and technical wording that
    masquerades as marketer insight.
 
@@ -207,8 +214,10 @@ These are the current reasons Goal 001 is not complete:
    Skills have contracts and smokes, and `wilq-daily-command` now has a
    strengthened usefulness guardrail plus a fresh non-interactive eval pass.
    `wilq-content-strategist` and `wilq-ads-doctor` also have strict usefulness
-   passes after their matching API contracts. Goal 001 still needs the same
-   strict usefulness pass across the remaining high-value skills and a clean
+   passes after their matching API contracts. `wilq-ga4-analyst` should be
+   repaired and re-evaluated next now that `/api/ga4/diagnostics.decision_queue`
+   exists. Goal 001 still needs the same strict usefulness pass across the
+   remaining high-value skills and a clean
    plug-and-play Codex session proving Polish prompts -> WILQ API calls -> same
    evidence IDs as dashboard -> useful next actions.
 
@@ -231,10 +240,10 @@ These are the current reasons Goal 001 is not complete:
    evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the 2026-06-19 Content Planner route
-   cleanup: backend API contracts `98 passed`, dashboard route tests
-   `13 passed`, Playwright e2e `9 passed` and dashboard production build
-   passed. Keep this file current after every future slice.
+   `scripts/verify.sh` passed after the 2026-06-19 GA4 decision route cleanup:
+   backend API contracts `98 passed`, dashboard route tests `13 passed`,
+   Playwright e2e `9 passed` and dashboard production build passed. Keep this
+   file current after every future slice.
 
 ## What WILQ Must Give The Marketer
 
@@ -375,6 +384,18 @@ Work in this order:
    proof with `agent-browser` found no stale Ads OAuth action, no generic
    registry dump on `/actions`, and no old readiness phrases on
    `/opportunities`. Focused Playwright e2e passed: `9 passed`.
+
+   Follow-up completed on 2026-06-19: `/ga4` now consumes a typed
+   `Ga4DecisionItem` queue from `/api/ga4/diagnostics.decision_queue` and shows
+   marketer-facing decisions instead of raw `landing/source/campaign behavior`
+   diagnostic sections. Browser proof found no stale phrases:
+   `payload preview`, `read-only`, `Evidence`, `READY`, `configured`,
+   `WP match`, `WP missing`, `landing/source/campaign`,
+   `Analytics Safety Gate`, `Tracking readiness`, `conversion-like`,
+   `tracking-gap checklist` or `metric_facts`. Full `scripts/verify.sh` passed
+   after this slice with backend API contracts `98 passed`, dashboard route
+   tests `13 passed`, Playwright e2e `9 passed` and dashboard production build
+   passed.
 
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when

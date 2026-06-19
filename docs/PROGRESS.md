@@ -6,7 +6,7 @@ artifacts.
 
 ## Current Snapshot
 
-Data: 2026-06-18
+Data: 2026-06-19
 
 - API działa lokalnie: `http://127.0.0.1:8000`.
 - Dashboard działa lokalnie: `http://127.0.0.1:5173/command-center`.
@@ -106,6 +106,15 @@ Data: 2026-06-18
 - `/localo` nie dokleja już generycznej globalnej kolejki `Taktyki z WILQ API`.
   Localo pokazuje access/readiness oraz brak ranking/GBP facts bez fałszywych
   liczników typu `24 Taktyki` i bez angielskiego `Metric facts`.
+- `/ga4` ma teraz typed decision queue w `/api/ga4/diagnostics.decision_queue`
+  i renderuje ją jako primary marketer view. Widok pokazuje decyzje
+  `fix_measurement`, `review_landing_mapping` i `review_traffic_quality`,
+  dowody, ActionObject `act_review_ga4_tracking_quality` i zablokowane claimy.
+  Stare surowe sekcje typu `GA4: landing/source/campaign behavior`,
+  `GA4: tracking/conversion readiness`, `Analytics Safety Gate`,
+  `payload preview`, `read-only`, `configured`, `WP match`, `conversion-like`
+  i `tracking-gap checklist` nie pojawiają się w browser proof.
+  `agent-browser` proof: `.local-lab/proof/ga4-route-audit/screenshot-1781832367747.png`.
 - Pełny `scripts/verify.sh` przeszedł po Ads search terms i Command Center
   duplicate-stats slice: backend API contracts 97 passed, dashboard route
   tests 12 passed, Playwright e2e 8 passed i dashboard production build passed.
@@ -124,6 +133,8 @@ Data: 2026-06-18
 - `pnpm --filter @wilq/dashboard lint`
 - `pnpm --filter @wilq/dashboard typecheck`
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts`
+- `scripts/verify.sh`
 - `pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts`
 - `scripts/verify.sh`
 - `uv run ruff check wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py wilq/storage/metric_store.py wilq/security/redaction.py wilq/schemas.py tests/test_api_contracts.py`
@@ -166,6 +177,12 @@ Data: 2026-06-18
 - `uv run mypy wilq/storage/metric_store.py wilq/briefing/tactical_queue.py wilq/briefing/content_diagnostics.py`
 - `uv run pytest tests/test_metric_store_and_cli.py -q`
 - `uv run pytest tests/test_api_contracts.py -q -k 'marketing_tactical_queue_uses_dimensioned_metric_facts or content_diagnostics_exposes_query_page_inventory_queue'`
+- `uv run ruff check wilq/briefing/ga4_diagnostics.py wilq/schemas.py tests/test_api_contracts.py`
+- `uv run mypy wilq/briefing/ga4_diagnostics.py wilq/schemas.py`
+- `uv run pytest tests/test_api_contracts.py -q -k 'ga4_diagnostics'`
+- `pnpm --filter @wilq/dashboard lint`
+- `pnpm --filter @wilq/dashboard typecheck`
+- `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
 
 ```text
 scripts/verify.sh passed
@@ -216,6 +233,16 @@ dashboard production build: passed
 ```
 
 Po Ads/Localo stale-state cleanup 2026-06-18:
+
+```text
+scripts/verify.sh passed
+backend API contracts: 98 passed
+dashboard route tests: 13 passed
+Playwright e2e: 9 passed
+dashboard production build: passed
+```
+
+Po GA4 decision queue route cleanup 2026-06-19:
 
 ```text
 scripts/verify.sh passed
@@ -1267,3 +1294,75 @@ Remaining product risk:
   can prioritize beyond evidence availability, WordPress match state and risk.
 - Continue route audit on `/ga4`, `/ads-doctor` and `/localo` for stale copy,
   duplicate intent, missing Codex/action bridge and performance cost.
+
+## 2026-06-19 - GA4 Decision Route Cleanup
+
+What changed:
+
+- `/api/ga4/diagnostics` now exposes `decision_queue` as typed API state.
+- `Ga4DecisionItem` supports `fix_measurement`, `review_landing_mapping` and
+  `review_traffic_quality`.
+- Dashboard `/ga4` renders `Co marketer ma sprawdzić teraz w jakości ruchu` as
+  the primary route surface instead of repeating raw diagnostic sections.
+- The route keeps evidence IDs, source connectors, ActionObject
+  `act_review_ga4_tracking_quality`, blocked claims and metric facts, but
+  translates the proof layer into Polish operator wording.
+- Old GA4 slop was removed from the route and proof tests:
+  `GA4: landing/source/campaign behavior`,
+  `GA4: tracking/conversion readiness`, `Analytics Safety Gate`,
+  `payload preview`, `read-only`, `configured`, `WP match`, `WP missing`,
+  `conversion-like`, `tracking-gap checklist` and `metric_facts`.
+- Playwright Merchant assertions were also hardened to current live data:
+  they verify Merchant review metrics, ActionObject and evidence rather than a
+  single volatile issue type like `availability_updated`.
+
+Browser proof:
+
+- `agent-browser` `/ga4` after API restart and 10s settle:
+  - headings include `GA4`, `Status GA4 / Landing Quality`,
+    `Co marketer ma sprawdzić teraz w jakości ruchu`,
+    `Napraw problem pomiaru GA4`, `Sprawdź mapowanie landing page: /`,
+    `Sprawdź jakość ruchu: /europejski-zielony-lad-co-to-takiego/`,
+    `Bezpieczny tryb analityki`, `Dowody i ograniczenia GA4`,
+    `ActionObjecty do walidacji` and `Brama bezpieczeństwa GA4`;
+  - suspect hits were empty for `payload preview`, `read-only`, `Evidence`,
+    `READY`, `configured`, `WP match`, `WP missing`,
+    `landing/source/campaign`, `Analytics Safety Gate`,
+    `Tracking readiness`, `conversion-like`, `tracking-gap checklist` and
+    `metric_facts`.
+- Screenshot artifact:
+  `.local-lab/proof/ga4-route-audit/screenshot-1781832367747.png`.
+
+Focused proof passed:
+
+```bash
+uv run ruff check wilq/briefing/ga4_diagnostics.py wilq/schemas.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/ga4_diagnostics.py wilq/schemas.py
+uv run pytest tests/test_api_contracts.py -q -k 'ga4_diagnostics'
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts dashboard-demo-proof.spec.ts
+```
+
+Full proof passed:
+
+```bash
+scripts/verify.sh
+```
+
+Full gate result:
+
+- Backend API contracts: `98 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- Dashboard production build: passed.
+
+Remaining product risk:
+
+- `/ga4` is now a usable decision route for traffic-quality review, but still
+  does not unlock ROAS, revenue, conversion-drop or campaign-blame claims
+  without conversion/cost/read contracts.
+- Next route audit: `/ads-doctor`, then `/localo`.
+- Next matching skill repair: `wilq-ga4-analyst` should consume the new
+  `decision_queue` and pass strict non-interactive usefulness eval.

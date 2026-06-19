@@ -54,8 +54,8 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma zrobić teraz z feedem" })).toBeVisible();
     await expect(page.getByText("Dowody i ograniczenia Merchant")).toBeVisible();
-    await expect(page.getByText(/availability_updated \/ n:availability/).first()).toBeVisible();
-    await expect(page.getByText(/najpierw przygotuj podgląd payloadu/).first()).toBeVisible();
+    await expect(page.getByText(/Merchant: status produktów PL/).first()).toBeVisible();
+    await expect(page.getByText(/item_level_issue_count: \d+/).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "act_review_merchant_feed_issues" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first()).toBeVisible();
     await page.screenshot({
@@ -74,11 +74,11 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/ga4", "/api/ga4/diagnostics");
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
-    await expect(
-      page.getByRole("heading", {
-        name: /GA4: (landing\/source\/campaign behavior|brak landing\/source\/campaign breakdown)/
-      })
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w jakości ruchu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia GA4" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa GA4" })).toBeVisible();
+    await expect(page.getByText("GA4: landing/source/campaign behavior")).toHaveCount(0);
+    await expect(page.getByText("Analytics Safety Gate")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "act_review_ga4_tracking_quality" }).first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "04-ga4-landing-quality.png"),

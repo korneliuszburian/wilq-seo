@@ -89,14 +89,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Status GA4 / Landing Quality" })).toBeVisible();
-    await expect(
-      page.getByRole("heading", {
-        name: /GA4: (landing\/source\/campaign behavior|brak landing\/source\/campaign breakdown)/
-      })
-    ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "GA4: tracking/conversion readiness" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia GA4" })).toBeVisible();
     await expect(page.getByRole("link", { name: "act_review_ga4_tracking_quality" }).first()).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Analytics Safety Gate" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa GA4" })).toBeVisible();
+    await expect(page.getByText("GA4: landing/source/campaign behavior")).toHaveCount(0);
+    await expect(page.getByText("GA4: tracking/conversion readiness")).toHaveCount(0);
+    await expect(page.getByText("Analytics Safety Gate")).toHaveCount(0);
   });
 
   test("seo and content routes expose dedicated Content Diagnostics", async ({ page }) => {
@@ -162,9 +160,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Evidence", { exact: true })).toHaveCount(0);
     await expect(page.getByText("dostęp skonfigurowany")).toBeVisible();
     await expect(page.getByText("metryki feedu dostępne")).toBeVisible();
-    await expect(page.getByText(/zgłoszenia:/).first()).toBeVisible();
-    await expect(page.getByText(/kontekst:/).first()).toBeVisible();
-    await expect(page.getByText(/Merchant: .*availability_updated/)).toHaveCount(0);
+    await expect(page.getByText(/item_level_issue_count: \d+/).first()).toBeVisible();
+    await expect(page.getByText(/total_products: \d+/).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "ActionObjecty do walidacji" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()

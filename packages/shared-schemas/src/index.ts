@@ -446,6 +446,30 @@ export const Ga4DiagnosticSectionSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const Ga4DecisionItemSchema = z.object({
+  id: z.string(),
+  decision_type: z.enum([
+    "fix_measurement",
+    "review_traffic_quality",
+    "review_landing_mapping"
+  ]),
+  title: z.string(),
+  landing_page: z.string().nullable().optional(),
+  source_medium: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  wordpress_match: z.string().nullable().optional(),
+  wordpress_match_confidence: z.string().nullable().optional(),
+  wordpress_content_url: z.string().nullable().optional(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  rationale: z.string(),
+  next_step: z.string(),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
 export const Ga4DiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -456,6 +480,7 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   landing_group_count: z.number(),
   low_engagement_count: z.number(),
   wordpress_match_count: z.number(),
+  decision_queue: z.array(Ga4DecisionItemSchema),
   sections: z.array(Ga4DiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
@@ -692,6 +717,7 @@ export type MerchantDiagnosticSection = z.infer<typeof MerchantDiagnosticSection
 export type MerchantDiagnosticsResponse = z.infer<typeof MerchantDiagnosticsResponseSchema>;
 export type ContentDiagnosticSection = z.infer<typeof ContentDiagnosticSectionSchema>;
 export type ContentDiagnosticsResponse = z.infer<typeof ContentDiagnosticsResponseSchema>;
+export type Ga4DecisionItem = z.infer<typeof Ga4DecisionItemSchema>;
 export type Ga4DiagnosticSection = z.infer<typeof Ga4DiagnosticSectionSchema>;
 export type Ga4DiagnosticsResponse = z.infer<typeof Ga4DiagnosticsResponseSchema>;
 export type MarketingBrief = z.infer<typeof MarketingBriefSchema>;
