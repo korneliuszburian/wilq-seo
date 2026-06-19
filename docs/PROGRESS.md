@@ -8,6 +8,29 @@ artifacts.
 
 Data: 2026-06-19
 
+- DailyRuntime cold-path compaction, 2026-06-19 21:13 Europe/Warsaw:
+  current active proof is backend performance only, not a new marketing
+  decision contract. Profiling showed cold daily runtime was dominated by
+  repeated wide DuckDB metric fact materialization and duplicate Ads action
+  seeding inside Command Center. `build_daily_runtime()` now builds independent
+  daily inputs in parallel, Command Center passes its preloaded ActionObjects
+  into `build_ads_diagnostics(actions=...)`, and Marketing Brief reads 200
+  latest metric groups per connector instead of 500. The 200 limit was checked
+  against live data and still preserves dimensional Merchant issue, GA4
+  landing/source, GSC query/page, WordPress and Ads facts. Local proof after
+  `scripts/local_stack.sh restart`: `GET /api/dashboard/command-center` after
+  TTL `1.448s`, `1.466s`, `1.505s` at `27575 bytes`;
+  `GET /api/marketing/brief` after TTL `1.423s`, `1.503s`, `1.476s` at
+  `71215 bytes`; daily `POST /api/codex/context-pack {"skill":"wilq-daily-command"}`
+  after TTL `1.671s`, `1.764s`, `1.707s` at `235159 bytes`. Warm cache hits
+  stay millisecond-level. Focused proof passed: ruff, mypy and six selected API
+  tests, including the regression that Command Center passes preloaded actions
+  to Ads diagnostics. Full `scripts/verify.sh` passed after this slice:
+  backend API contracts `112 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed`, API smoke, skill smokes and dashboard production
+  build passed. Remaining performance gaps: Vite main JS chunk is still above
+  500 KB, and daily context-pack payload size is still above the desired
+  lightweight packet target.
 - Ads scoped context-pack compaction after keyword context, 2026-06-19 20:50
   Europe/Warsaw: current active proof is performance-only, not a new Ads
   decision contract. After keyword match context inflated

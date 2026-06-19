@@ -48,6 +48,18 @@ Audit `docs/audits/001-output.md` is now folded into
    because the managed API child was stale; after restart,
    `/api/ads/diagnostics` and the scoped context-pack exposed the expected
    `knowledge_card_ids` and `expert_rule_ids`.
+0. DailyRuntime performance truth, 2026-06-19 21:13 Europe/Warsaw: the current
+   cold-path fix is shared backend work, not frontend memoization. Profiling
+   showed repeated wide DuckDB metric fact materialization and duplicate Ads
+   action seeding. `build_daily_runtime()` now parallelizes independent daily
+   inputs; Command Center passes preloaded ActionObjects into
+   `build_ads_diagnostics(actions=...)`; Marketing Brief reads 200 latest metric
+   groups per connector, which preserves live dimensional Merchant, GA4, GSC,
+   WordPress and Ads facts. Current proof after restart:
+   `/api/dashboard/command-center` after TTL is about `1.45-1.51s`,
+   `/api/marketing/brief` after TTL is about `1.42-1.50s`, and daily
+   `wilq-daily-command` context-pack after TTL is about `1.67-1.76s`. Remaining
+   gaps are dashboard JS chunk size and daily context-pack payload size.
 0. Ads recommendations truth, 2026-06-19 17:22 Europe/Warsaw: Google Ads
    recommendation review is now a typed read-only contract, not a prompt TODO.
    Live proof `refresh_google_ads_138befce0a2c` /

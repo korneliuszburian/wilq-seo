@@ -84,7 +84,7 @@ def build_command_center_brief(
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
     with ThreadPoolExecutor(max_workers=3) as executor:
-        ads_future = executor.submit(build_ads_diagnostics)
+        ads_future = executor.submit(build_ads_diagnostics, actions=actions)
         merchant_facts_future = executor.submit(
             metric_store().list_metric_facts,
             "google_merchant_center",

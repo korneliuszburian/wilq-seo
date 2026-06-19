@@ -29,6 +29,7 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     ActionStatus,
+    CommandCenterBriefItem,
     CommandCenterResponse,
     ConnectorCapability,
     ConnectorRefreshMode,
@@ -5160,6 +5161,104 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     assert seen["brief_connectors"] == [connector]
     assert seen["brief_refresh_runs"] == [refresh_run]
     assert seen["brief_actions"] == [action]
+
+
+def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import command_center
+
+    action = ActionObject(
+        id="act_prepare_ads_campaign_review_queue",
+        title="Przygotuj kolejkę przeglądu kampanii Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_ads"],
+        human_diagnosis="Ads wymaga review.",
+        recommended_reason="Przygotuj review.",
+        payload={},
+        validation_status="not_validated",
+        created_by="wilq",
+    )
+    tactical_queue = TacticalQueueResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        items=[],
+    )
+    ads_item = CommandCenterBriefItem(
+        id="daily_ads_status",
+        title="Ads: live campaign metrics dostępne",
+        route="/ads-doctor",
+        status="ready",
+        priority=30,
+        summary="Google Ads ma live metric facts.",
+        next_step="Otwórz /ads-doctor.",
+        source_connectors=["google_ads"],
+        evidence_ids=["ev_ads"],
+        action_ids=[action.id],
+    )
+    seen: dict[str, object] = {}
+
+    def ads_builder(actions: list[ActionObject] | None = None) -> object:
+        seen["actions"] = actions
+        return object()
+
+    monkeypatch.setattr(command_center, "build_ads_diagnostics", ads_builder)
+    monkeypatch.setattr(command_center, "_ads_item", lambda _ads: ads_item)
+    monkeypatch.setattr(
+        command_center,
+        "_merchant_item_from_facts",
+        lambda _tactical_items, _merchant_facts, _actions: CommandCenterBriefItem(
+            id="daily_merchant_feed",
+            title="Merchant",
+            route="/merchant",
+            status="ready",
+            priority=10,
+            summary="Merchant.",
+            next_step="Otwórz /merchant.",
+        ),
+    )
+    monkeypatch.setattr(
+        command_center,
+        "_content_item_from_tactical",
+        lambda _tactical_items, _actions: CommandCenterBriefItem(
+            id="daily_content_queue",
+            title="Content",
+            route="/content-planner",
+            status="ready",
+            priority=12,
+            summary="Content.",
+            next_step="Otwórz /content-planner.",
+        ),
+    )
+    monkeypatch.setattr(
+        command_center,
+        "_ga4_item_from_tactical",
+        lambda _tactical_items, _actions, _facts: CommandCenterBriefItem(
+            id="daily_ga4_landing_quality",
+            title="GA4",
+            route="/ga4",
+            status="blocked",
+            priority=14,
+            summary="GA4.",
+            next_step="Otwórz /ga4.",
+        ),
+    )
+    class EmptyMetricStore:
+        def list_metric_facts(self, *_args: object) -> list[object]:
+            return []
+
+    monkeypatch.setattr(command_center, "metric_store", lambda: EmptyMetricStore())
+    monkeypatch.setattr(command_center, "get_connector_status", lambda _connector_id: None)
+
+    command_center.build_command_center_brief(
+        tactical_queue=tactical_queue,
+        actions=[action],
+    )
+
+    assert seen["actions"] == [action]
 
 
 def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(

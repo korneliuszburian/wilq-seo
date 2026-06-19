@@ -173,7 +173,7 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
 }
 
 
-def build_ads_diagnostics() -> AdsDiagnosticsResponse:
+def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagnosticsResponse:
     connector = get_connector_status(GOOGLE_ADS_CONNECTOR_ID)
     if connector is None:
         raise RuntimeError("Google Ads connector is not registered.")
@@ -346,7 +346,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             }
         )
     action_ids = _google_ads_action_ids(
-        list_actions(),
+        actions if actions is not None else list_actions(),
         live_data_available=live_data_available,
     )
     custom_segments_read_contract = _custom_segments_read_contract(

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 20:17 Europe/Warsaw.
+Last updated: 2026-06-19 21:13 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -1452,6 +1452,14 @@ Active 2026-06-19 follow-up:
 - Daily Codex context-pack now uses targeted `list_evidence_by_ids()` instead
   of scanning the full evidence registry. Metric-fact evidence can be fetched
   directly by evidence ID through DuckDB.
+- Follow-up 2026-06-19 21:13 Europe/Warsaw reduces the shared daily cold path
+  further without changing external API contracts:
+  - `build_daily_runtime()` builds independent daily inputs in parallel;
+  - Command Center passes preloaded ActionObjects into
+    `build_ads_diagnostics(actions=...)` instead of reseeding action state;
+  - Marketing Brief reads 200 latest metric groups per connector instead of
+    500. Live checks confirmed this still preserves dimensional Merchant issue,
+    GA4 landing/source, GSC query/page, WordPress and Ads facts.
 - Focused proof passed:
   ```bash
   uv run ruff check apps/api/wilq_api/main.py wilq/evidence/registry.py wilq/storage/metric_store.py wilq/briefing/daily_runtime.py tests/test_api_contracts.py
@@ -1460,22 +1468,33 @@ Active 2026-06-19 follow-up:
   uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
   ```
 - HTTP proof on local `:8000` after this follow-up:
-  - `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` cold after
-    TTL: `2.548s`, `171000 bytes`;
-  - warm repeats: `0.273s` and `0.324s`, `171000 bytes`;
-  - `GET /api/dashboard/command-center` after TTL: `2.009s`,
-    `26629 bytes`;
-  - warm Command Center: `0.008s`, `26629 bytes`.
+  - earlier daily context follow-up:
+    `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` cold after
+    TTL `2.548s`, warm `0.273s` and `0.324s`;
+  - after the 21:13 follow-up and `scripts/local_stack.sh restart`:
+    `GET /api/dashboard/command-center` after TTL `1.448s`, `1.466s`,
+    `1.505s` at `27575 bytes`;
+  - `GET /api/marketing/brief` after TTL `1.423s`, `1.503s`, `1.476s` at
+    `71215 bytes`;
+  - daily `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` after
+    TTL `1.671s`, `1.764s`, `1.707s` at `235159 bytes`;
+  - warm cache hits remain millisecond-level.
 - Full `scripts/verify.sh` passed after this follow-up:
   - backend API contracts: `106 passed`;
   - dashboard route tests: `13 passed`;
   - Playwright e2e: `9 passed`;
   - API smoke, skill structure smoke, skill API smoke and dashboard production
     build passed.
-- This improves the known daily context-pack TTL spike, but does not close the
-  full performance budget. Remaining future work: smaller dashboard JS chunk,
-  lower cold DailyRuntime cost and richer value contracts rather than hidden
-  frontend-only memoization.
+- Full `scripts/verify.sh` passed after the 21:13 follow-up:
+  - backend API contracts: `112 passed`;
+  - dashboard route tests: `13 passed`;
+  - Playwright e2e: `9 passed`;
+  - API smoke, skill structure smoke, skill API smoke and dashboard production
+    build passed.
+- This improves the known daily context-pack TTL spike and shared daily cold
+  path, but does not close the full performance budget. Remaining future work:
+  smaller dashboard JS chunk, daily context-pack payload reduction and richer
+  value contracts rather than hidden frontend-only memoization.
 - Active Ads skill performance follow-up:
   - scoped `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now
     removes nested `*_metric_facts` from the skill packet, strips duplicated

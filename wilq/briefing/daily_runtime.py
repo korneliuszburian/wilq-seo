@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from time import monotonic
 
@@ -44,20 +45,32 @@ def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
         cached_runtime = _read_daily_runtime_cache()
         if cached_runtime is not None:
             return cached_runtime
-    connectors = list_connector_statuses()
-    actions = list_actions()
-    refresh_runs = list_connector_refresh_runs()
-    tactical_queue = build_tactical_queue()
-    command = build_command_center_response(
-        connectors=connectors,
-        tactical_queue=tactical_queue,
-        actions=actions,
-    )
-    brief = build_marketing_brief(
-        connectors=connectors,
-        refresh_runs=refresh_runs,
-        actions=actions,
-    )
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        connectors_future = executor.submit(list_connector_statuses)
+        actions_future = executor.submit(list_actions)
+        refresh_runs_future = executor.submit(list_connector_refresh_runs)
+        tactical_queue_future = executor.submit(build_tactical_queue)
+
+        connectors = connectors_future.result()
+        actions = actions_future.result()
+        refresh_runs = refresh_runs_future.result()
+        brief_future = executor.submit(
+            build_marketing_brief,
+            connectors=connectors,
+            refresh_runs=refresh_runs,
+            actions=actions,
+        )
+
+        tactical_queue = tactical_queue_future.result()
+        command_future = executor.submit(
+            build_command_center_response,
+            connectors=connectors,
+            tactical_queue=tactical_queue,
+            actions=actions,
+        )
+
+        command = command_future.result()
+        brief = brief_future.result()
     runtime = DailyRuntime(
         connectors=connectors,
         actions=actions,
