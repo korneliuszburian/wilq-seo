@@ -32,6 +32,8 @@ CONTENT_CONNECTOR_IDS = (
 )
 PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
+CONTENT_GSC_METRIC_FACT_LIMIT = 1200
+CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
 ContentDecisionType = Literal[
     "refresh_or_merge",
     "merge_create_after_inventory_check",
@@ -82,15 +84,23 @@ def build_content_diagnostics() -> ContentDiagnosticsResponse:
 
 
 def _content_metric_facts(connector_ids: Iterable[str]) -> list[MetricFact]:
+    facts_by_connector = metric_store().list_metric_facts_by_connector(
+        list(connector_ids),
+        limit_per_connector=CONTENT_WORDPRESS_METRIC_FACT_LIMIT,
+    )
     facts: list[MetricFact] = []
     for connector_id in connector_ids:
-        facts.extend(
-            metric_store().list_metric_facts(
-                connector_id=connector_id,
-                limit=CONTENT_METRIC_FACT_LIMIT,
-            )
-        )
+        connector_limit = _content_connector_metric_fact_limit(connector_id)
+        facts.extend(facts_by_connector.get(connector_id, [])[:connector_limit])
     return facts
+
+
+def _content_connector_metric_fact_limit(connector_id: str) -> int:
+    if connector_id == "google_search_console":
+        return CONTENT_GSC_METRIC_FACT_LIMIT
+    if connector_id.startswith("wordpress"):
+        return CONTENT_WORDPRESS_METRIC_FACT_LIMIT
+    return CONTENT_METRIC_FACT_LIMIT
 
 
 def _latest_refreshes(connector_ids: Iterable[str]) -> list[ConnectorRefreshRun]:

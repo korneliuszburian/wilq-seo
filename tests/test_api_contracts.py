@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -2868,6 +2869,162 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     serialized = json.dumps(payload)
     assert "google_adc.json" not in serialized
     assert "app-password" not in serialized
+
+
+def test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_window_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "content_window_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    clear_wordpress_env(monkeypatch)
+    service_account_json = tmp_path / "google_adc.json"
+    service_account_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(service_account_json))
+    monkeypatch.setenv("GOOGLE_SEARCH_CONSOLE_SITE_URL", "sc-domain:ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+
+    dimensioned_at = datetime(2026, 6, 18, 8, 0, tzinfo=UTC)
+    query_page_run = ConnectorRefreshRun(
+        id="refresh_gsc_query_page",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=dimensioned_at,
+        completed_at=dimensioned_at,
+        evidence_ids=["ev_refresh_gsc_query_page"],
+        metric_summary={"clicks": 4, "impressions": 4429},
+        vendor_data_collected=True,
+        summary="Older GSC query/page vendor read.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        query_page_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "clicks",
+                4,
+                {
+                    "query": "bdo co to",
+                    "page": (
+                        "https://www.ekologus.pl/"
+                        "bdo-co-musi-wiedziec-przedsiebiorca/"
+                    ),
+                },
+            ),
+            VendorMetricFact(
+                "impressions",
+                4429,
+                {
+                    "query": "bdo co to",
+                    "page": (
+                        "https://www.ekologus.pl/"
+                        "bdo-co-musi-wiedziec-przedsiebiorca/"
+                    ),
+                },
+            ),
+            VendorMetricFact(
+                "ctr",
+                0.0009031384059607134,
+                {
+                    "query": "bdo co to",
+                    "page": (
+                        "https://www.ekologus.pl/"
+                        "bdo-co-musi-wiedziec-przedsiebiorca/"
+                    ),
+                },
+            ),
+            VendorMetricFact(
+                "average_position",
+                9.441183111311808,
+                {
+                    "query": "bdo co to",
+                    "page": (
+                        "https://www.ekologus.pl/"
+                        "bdo-co-musi-wiedziec-przedsiebiorca/"
+                    ),
+                },
+            ),
+        ],
+    )
+
+    wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_inventory",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=dimensioned_at,
+        completed_at=dimensioned_at,
+        evidence_ids=["ev_refresh_wordpress_inventory"],
+        metric_summary={"content_object_count": 16, "pages_total": 4},
+        vendor_data_collected=True,
+        summary="WordPress inventory vendor read.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "content_object_seen",
+                1,
+                {
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "sitemap",
+                    "status": "indexed",
+                    "content_url": (
+                        "https://www.ekologus.pl/"
+                        "bdo-co-musi-wiedziec-przedsiebiorca/"
+                    ),
+                    "inventory_source": "public_sitemap",
+                },
+            )
+        ],
+    )
+    local_state_store().save_connector_refresh_run(wordpress_run)
+
+    latest_aggregate_run: ConnectorRefreshRun | None = None
+    for index in range(151):
+        collected_at = datetime(2026, 6, 19, 8, index % 60, tzinfo=UTC)
+        aggregate_run = ConnectorRefreshRun(
+            id=f"refresh_gsc_aggregate_{index}",
+            connector_id="google_search_console",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=collected_at,
+            completed_at=collected_at,
+            evidence_ids=[f"ev_refresh_gsc_aggregate_{index}"],
+            metric_summary={"clicks": 12, "impressions": 120},
+            vendor_data_collected=True,
+            summary="Newer aggregate GSC vendor read.",
+        )
+        metric_store().save_connector_refresh_metrics(aggregate_run)
+        latest_aggregate_run = aggregate_run
+    assert latest_aggregate_run is not None
+    local_state_store().save_connector_refresh_run(latest_aggregate_run)
+
+    response = client.get("/api/content/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["live_data_available"] is True
+    assert payload["query_page_count"] >= 1
+    assert payload["decision_queue"]
+    assert any(
+        decision["page"]
+        == "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+        for decision in payload["decision_queue"]
+    )
+    query_section = next(
+        section for section in payload["sections"] if section["id"] == "content_query_page_matrix"
+    )
+    assert query_section["status"] == "ready"
+    assert any(
+        item["dimensions"].get("query") == "bdo co to"
+        for item in query_section["tactical_items"]
+    )
 
 
 def test_gsc_vendor_read_uses_search_analytics(

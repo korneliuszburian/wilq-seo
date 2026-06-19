@@ -26,6 +26,7 @@ TACTICAL_QUEUE_SOURCE_CONNECTORS = (
     "wordpress_sklep",
 )
 TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT = 300
+GSC_QUERY_PAGE_FACT_LIMIT = 1200
 WORDPRESS_INVENTORY_FACT_LIMIT = 1200
 TacticalIntent = Literal[
     "content_refresh",
@@ -94,13 +95,17 @@ def _tactical_metric_facts() -> list[MetricFact]:
     )
     facts: list[MetricFact] = []
     for connector_id in TACTICAL_QUEUE_SOURCE_CONNECTORS:
-        connector_limit = (
-            WORDPRESS_INVENTORY_FACT_LIMIT
-            if connector_id.startswith("wordpress")
-            else TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT
-        )
+        connector_limit = _tactical_connector_fact_limit(connector_id)
         facts.extend(facts_by_connector.get(connector_id, [])[:connector_limit])
     return facts
+
+
+def _tactical_connector_fact_limit(connector_id: str) -> int:
+    if connector_id == "google_search_console":
+        return GSC_QUERY_PAGE_FACT_LIMIT
+    if connector_id.startswith("wordpress"):
+        return WORDPRESS_INVENTORY_FACT_LIMIT
+    return TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT
 
 
 def _balanced_tactical_items(

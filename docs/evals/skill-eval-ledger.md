@@ -1509,3 +1509,52 @@ Product gap still open:
 - The current Merchant read contract exposes issue dimensions and occurrence
   counts, but not sample product IDs or titles. Add product samples only through
   a typed read contract; do not invent them in skills or dashboard copy.
+
+## 2026-06-19 - wilq-gsc-content-doctor Query/Page Decision Eval
+
+Artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T083631Z/wilq-gsc-content-doctor/result.json
+```
+
+Why rerun:
+
+- Live DuckDB had 40 GSC query/page metric facts, but newer aggregate GSC
+  refresh rows pushed them outside the previous tactical/content read window.
+- The skill must prove it uses `content_diagnostics.decision_queue` and returns
+  concrete content decisions, not just a safe schema/blocker pass.
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- Evidence IDs include:
+  `ev_refresh_refresh_google_search_console_554550c44ec7`,
+  `ev_refresh_refresh_wordpress_ekologus_25f9090bdfe6`,
+  `ev_refresh_refresh_wordpress_ekologus_cb7716f3c0e6`.
+- Source connectors:
+  `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`.
+- Action candidate:
+  `act_prepare_content_refresh_queue` with `pending_validation`.
+- `operator_usefulness_score=4`.
+- No safety findings.
+
+Useful output:
+
+- The skill surfaces a concrete `refresh_or_merge` queue for existing pages
+  matched in WordPress inventory.
+- The strongest recommended item is Zielony Ład:
+  `https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/` with query
+  cluster `co to jest zielony ład`, `co to zielony ład`,
+  `na czym polega zielony ład`, `zielony ład co to`.
+- It correctly keeps content work as prepare/review-only and does not promise
+  leads, revenue or ranking gains.
+
+Product gap still open:
+
+- The skill did not validate `act_prepare_content_refresh_queue` during the
+  non-interactive eval, so the result correctly keeps the ActionObject in
+  `pending_validation`. Next stricter eval should require validation-call proof
+  before recommending any payload preview or execution step.

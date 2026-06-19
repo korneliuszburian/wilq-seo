@@ -81,6 +81,24 @@ Data: 2026-06-19
   już fałszywego `impressions=0` przy istniejących `clicks`/`ctr`; live browser
   proof po restarcie API pokazał m.in. `bdo co to` z `impressions=4429`,
   `ekologus` z `impressions=80` i Zielony Ład z realnymi impressions.
+- GSC/content selection ma nową regresję zabezpieczoną testem: nowsze aggregate
+  GSC refresh rows nie mogą już wypchnąć starszych, wymiarowych query/page facts
+  poza okno tactical/content API. Live proof na `:8016` po fixie:
+  tactical queue ma `gsc_qp=40`, `gsc_items=10`, a
+  `/api/content/diagnostics` ma `query_page_count=10`,
+  `matched_inventory_count=10`, `decision_count=4` z decyzjami dla homepage,
+  BDO, Zielonego Ładu i remediacji. `wilq-gsc-content-doctor` smoke widzi
+  `gsc_query_page_metric_fact_count=40` i wymaga konkretnych decyzji
+  `refresh_or_merge`/`merge_create_after_inventory_check`/
+  `inventory_check_before_create`, jeśli takie facts istnieją.
+- Non-interactive Codex eval dla `wilq-gsc-content-doctor` przeszedł po tym
+  fixie:
+  `.local-lab/evals/codex-skill/20260619T083631Z/wilq-gsc-content-doctor/result.json`.
+  Wynik: `pl-PL`, `api_used=true`, `operator_usefulness_score=4`, evidence
+  `ev_refresh_refresh_google_search_console_554550c44ec7`,
+  `ev_refresh_refresh_wordpress_ekologus_25f9090bdfe6`,
+  `ev_refresh_refresh_wordpress_ekologus_cb7716f3c0e6`,
+  ActionObject `act_prepare_content_refresh_queue` jako pending validation.
 - Command Center first screen został odchudzony do jednego boardu
   `Dzisiejsze decyzje marketera`. Stary dubel `Dzisiejszy panel operatora` +
   `Plan działań marketera` został usunięty, a pełne connector blocker cards

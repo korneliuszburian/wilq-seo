@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 09:37 Europe/Warsaw.
+Last updated: 2026-06-19 10:38 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -51,6 +51,18 @@ Skills are thin operator workflows over WILQ API. Do not put product decision
 logic, dedupe rules, edge-case fixes or dashboard cleanup logic into skill
 references. If a skill needs a smarter decision, implement the typed
 API/schema/view-model first and make the skill consume that field.
+
+## Delivery Expectation
+
+Do not claim "better than BDOS" as done until the data/action contracts prove
+it. A strong Ekologus demo can be delivered before the full product is complete:
+dashboard decisions, WILQ API evidence, Polish Codex skills, ActionObject
+safety, eval ledger and visible blocked claims. Full BDOS-class parity still
+requires explicit Ads optimizer contracts such as derived CPA/ROAS, budget
+pacing, recommendations, change history, Keyword Planner enrichment, forecast or
+audience-size checks, payload previews, apply safety and audit paths, plus real
+Localo ranking/GBP/competitor/review read contracts. Missing contracts must be
+shown as blockers, not hidden with prompt language.
 
 ## Research And Knowledge Contract
 
@@ -125,7 +137,12 @@ Current connector truth:
 - `google_search_console`: query/page facts exist and support content decisions.
   Tactical/content reads now preserve complete latest metric groups per
   `(connector, evidence, dimensions)`, so query/page cards do not show false
-  `impressions=0` when the same evidence group has real impressions.
+  `impressions=0` when the same evidence group has real impressions. Latest
+  GSC/content regression fix: newer aggregate GSC refresh rows can push older
+  but still useful query/page facts outside a generic 300-row read window. The
+  tactical/content selectors now preserve a larger GSC window for query/page
+  evidence, and `wilq-gsc-content-doctor` smoke fails if query/page metric
+  facts exist but `content_diagnostics.decision_queue` is empty.
 - `google_analytics_4`: landing/source/campaign facts exist and
   `/api/ga4/diagnostics.decision_queue` now feeds both dashboard `/ga4` and
   `wilq-ga4-analyst`. Current live decisions are traffic-quality review; ROAS,
@@ -501,6 +518,15 @@ Work in this order:
    and GA4 landing paths as `found path_fallback`. Full `scripts/verify.sh`
    passed for this slice on 2026-06-18.
 
+   Latest follow-up on 2026-06-19: content/tactical GSC selection now preserves
+   older dimensioned query/page evidence even when newer aggregate GSC refreshes
+   exist. Live proof on `:8016` after the fix:
+   `query_page_count=10`, `matched_inventory_count=10`, `decision_count=4`
+   with decisions for homepage, BDO, Zielony Ład and remediacja. Regression test
+   `test_content_diagnostics_preserves_gsc_query_page_after_newer_aggregate_runs`
+   seeds newer aggregate GSC runs and fails if the older query/page group is
+   lost again.
+
 6. **Slice 5: Ads Doctor read contracts.**
    Keep Ads as live campaign-level review until WILQ has explicit read
    contracts for search terms, conversions, campaign budget/spend/clicks,
@@ -626,7 +652,10 @@ Work in this order:
    - `wilq-daily-command` after canonical `DailyDecision`;
    - `wilq-merchant-feed-operator` after Merchant issue-level triage;
    - `wilq-content-strategist` and `wilq-gsc-content-doctor` after
-     `content_diagnostics.decision_queue` and URL normalization;
+     `content_diagnostics.decision_queue` and URL normalization. Fresh
+     `wilq-gsc-content-doctor` eval passed on 2026-06-19 after the GSC
+     query/page preservation fix:
+     `.local-lab/evals/codex-skill/20260619T083631Z/wilq-gsc-content-doctor/result.json`;
    - done for `wilq-ga4-analyst` after GA4 decision queue repair; keep rerunning
      when conversion/cost/read contracts, tracking validation or richer
      landing/source/campaign classifiers are added;
