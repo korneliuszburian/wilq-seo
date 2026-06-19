@@ -133,6 +133,18 @@ Data: 2026-06-19
   `payload preview`, `read-only`, `configured`, `WP match`, `conversion-like`
   i `tracking-gap checklist` nie pojawiają się w browser proof.
   `agent-browser` proof: `.local-lab/proof/ga4-route-audit/screenshot-1781832367747.png`.
+- `wilq-ga4-analyst` został dopięty do typed GA4 decision queue. Smoke skilla
+  wymaga teraz `ga4_diagnostics.decision_queue`, evidence IDs,
+  `google_analytics_4`, ActionObject `act_review_ga4_tracking_quality` i
+  rozróżnienia `fix_measurement`, `review_landing_mapping`,
+  `review_traffic_quality`. Fresh runtime proof po restarcie API:
+  `/api/ga4/diagnostics` ma `live_data_available=true`,
+  `landing_group_count=10`, `decision_count=6`, a smoke skilla widzi
+  `decision_count=6`. Non-interactive Codex eval passed:
+  `.local-lab/evals/codex-skill/20260619T032712Z/wilq-ga4-analyst/result.json`.
+  Pełny `scripts/verify.sh` przeszedł po tym slice: backend API contracts
+  `100 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
+  i dashboard production build passed.
 - Pełny `scripts/verify.sh` przeszedł po Ads search terms i Command Center
   duplicate-stats slice: backend API contracts 97 passed, dashboard route
   tests 12 passed, Playwright e2e 8 passed i dashboard production build passed.
@@ -212,6 +224,12 @@ Data: 2026-06-19
 - `pnpm --filter @wilq/dashboard lint`
 - `pnpm --filter @wilq/dashboard typecheck`
 - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`
+- `uv run ruff check wilq/briefing/ga4_diagnostics.py .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py`
+- `uv run mypy wilq/briefing/ga4_diagnostics.py .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py wilq/schemas.py`
+- `uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ga4_diagnostics or route_specific'`
+- `uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+- `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000`
+- `scripts/verify.sh`
 
 ```text
 scripts/verify.sh passed

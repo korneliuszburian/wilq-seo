@@ -310,6 +310,88 @@ Useful as a guardrailed GA4 readiness and behavior-review skill. It is not yet a
 deep landing/source/campaign analyst until eval cases require concrete ranked
 diagnostic items.
 
+## 2026-06-19 - wilq-ga4-analyst strict decision_queue pass
+
+Why this rerun happened:
+
+The 2026-06-18 GA4 eval was safe, but too broad. After `/api/ga4/diagnostics`
+started exposing a typed `decision_queue`, the skill had to consume that API
+state directly instead of relying on generic GA4 readiness language.
+
+Pre-eval API/smoke proof:
+
+- `/api/ga4/diagnostics` returned `live_data_available=true`,
+  `landing_group_count=10`, `low_engagement_count=0` and `decision_count=6`.
+- Decision types in live data were `review_traffic_quality`.
+- The deterministic smoke script verified:
+  - `ga4_diagnostics.decision_queue` exists when live landing groups exist,
+  - each decision has evidence IDs,
+  - source connector `google_analytics_4` is present,
+  - `act_review_ga4_tracking_quality` is carried from the route action IDs,
+  - only supported decision types appear:
+    `fix_measurement`, `review_landing_mapping`,
+    `review_traffic_quality`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260619T032712Z/wilq-ga4-analyst/result.json
+trace: .local-lab/evals/codex-skill/20260619T032712Z/wilq-ga4-analyst/trace.jsonl
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `google_analytics_4`.
+- Evidence IDs include:
+  `ev_refresh_refresh_google_analytics_4_681b6bcefc85`,
+  `ev_refresh_refresh_google_analytics_4_31909f58c0e0`,
+  `ev_connector_google_analytics_4_status`.
+- Action candidate:
+  `act_review_ga4_tracking_quality` with `pending_validation`.
+- Operator next step explicitly points to `/ga4` and
+  `ga4_diagnostics.decision_queue`.
+- The answer distinguishes the allowed decision taxonomy:
+  `fix_measurement`, `review_landing_mapping`, `review_traffic_quality`.
+- `operator_usefulness_score=4`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill now uses the same typed GA4 decision queue as the dashboard.
+- It recommends traffic-quality review only for evidence-backed
+  `review_traffic_quality` decisions.
+- It does not invent `fix_measurement` or `review_landing_mapping` decisions
+  when the current evidence does not contain them.
+- It keeps ROAS, revenue, conversion rate, conversion drop, attribution verdict
+  and tracking fixed claims blocked.
+
+Product gaps found:
+
+1. This is a real improvement over the old readiness eval, but GA4 still needs
+   conversion/cost/read contracts before it can support profitability,
+   conversion-drop or campaign-blame claims.
+2. Current live GA4 decisions are all `review_traffic_quality`; future data or
+   fixtures should also exercise `fix_measurement` and
+   `review_landing_mapping`.
+3. The eval proves pending ActionObject selection, not action validation. A
+   manual or stronger eval should call
+   `POST /api/actions/act_review_ga4_tracking_quality/validate`.
+
+Verdict:
+
+Useful. `wilq-ga4-analyst` is now aligned with the typed GA4 route model and can
+serve as the pattern for repairing remaining skills: API contract first,
+skill references second, Codex eval last.
+
 ## 2026-06-18 - wilq-gsc-content-doctor
 
 Prompt source:

@@ -9,6 +9,7 @@ import urllib.request
 from typing import Any
 
 SKILL_NAME = "wilq-ga4-analyst"
+GA4_CONNECTOR_ID = "google_analytics_4"
 REQUIRED_CONNECTORS = ["google_analytics_4"]
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
@@ -69,6 +70,50 @@ def main() -> int:
         raise SystemExit("Context-pack ga4_diagnostics evidence IDs differ from route")
     if context_ga4.get("action_ids") != ga4_diagnostics.get("action_ids"):
         raise SystemExit("Context-pack ga4_diagnostics action IDs differ from route")
+    if _decision_trace(context_ga4.get("decision_queue", [])) != _decision_trace(
+        ga4_diagnostics.get("decision_queue", [])
+    ):
+        raise SystemExit("Context-pack ga4_diagnostics decision trace differs from route")
+
+    decision_queue = ga4_diagnostics.get("decision_queue", [])
+    has_live_landing_groups = (
+        ga4_diagnostics.get("live_data_available")
+        and ga4_diagnostics.get("landing_group_count", 0) > 0
+    )
+    if has_live_landing_groups:
+        if not decision_queue:
+            raise SystemExit("Live GA4 diagnostics must expose decision_queue")
+        decision_types = {decision.get("decision_type") for decision in decision_queue}
+        allowed_decision_types = {
+            "fix_measurement",
+            "review_landing_mapping",
+            "review_traffic_quality",
+        }
+        unknown_decision_types = sorted(decision_types - allowed_decision_types)
+        if unknown_decision_types:
+            raise SystemExit(
+                "GA4 diagnostics expose unknown decision types: "
+                + ", ".join(str(item) for item in unknown_decision_types)
+            )
+        if not decision_types & allowed_decision_types:
+            raise SystemExit("GA4 diagnostics decision_queue has no useful decision types")
+        for decision in decision_queue:
+            if not decision.get("evidence_ids"):
+                raise SystemExit(f"GA4 decision lacks evidence IDs: {decision.get('id')}")
+            if GA4_CONNECTOR_ID not in decision.get("source_connectors", []):
+                raise SystemExit(f"GA4 decision lacks source connector: {decision.get('id')}")
+            if not decision.get("next_step"):
+                raise SystemExit(f"GA4 decision lacks next_step: {decision.get('id')}")
+        decision_action_ids = {
+            action_id
+            for decision in decision_queue
+            for action_id in decision.get("action_ids", [])
+        }
+        if (
+            "act_review_ga4_tracking_quality" in ga4_diagnostics.get("action_ids", [])
+            and "act_review_ga4_tracking_quality" not in decision_action_ids
+        ):
+            raise SystemExit("GA4 decision_queue must carry act_review_ga4_tracking_quality")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -139,6 +184,17 @@ def main() -> int:
                     "low_engagement_count": ga4_diagnostics.get("low_engagement_count"),
                     "wordpress_match_count": ga4_diagnostics.get("wordpress_match_count"),
                     "blocker_count": ga4_diagnostics.get("blocker_count"),
+                    "decision_count": len(decision_queue),
+                    "decision_ids": [
+                        decision.get("id") for decision in decision_queue if decision.get("id")
+                    ][:20],
+                    "decision_types": sorted(
+                        {
+                            decision.get("decision_type")
+                            for decision in decision_queue
+                            if decision.get("decision_type")
+                        }
+                    ),
                     "section_ids": section_ids,
                     "evidence_ids": ga4_diagnostics.get("evidence_ids", [])[:20],
                     "action_ids": ga4_diagnostics.get("action_ids", []),
@@ -156,6 +212,19 @@ def main() -> int:
         )
     )
     return 0
+
+
+def _decision_trace(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": decision.get("id"),
+            "decision_type": decision.get("decision_type"),
+            "source_connectors": decision.get("source_connectors", []),
+            "evidence_ids": decision.get("evidence_ids", []),
+            "action_ids": decision.get("action_ids", []),
+        }
+        for decision in decisions
+    ]
 
 
 if __name__ == "__main__":

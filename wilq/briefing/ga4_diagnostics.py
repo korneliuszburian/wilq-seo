@@ -24,7 +24,7 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 GA4_CONNECTOR_ID = "google_analytics_4"
-GA4_METRIC_FACT_LIMIT = 240
+GA4_METRIC_FACT_LIMIT = 2000
 Ga4DecisionType = Literal[
     "fix_measurement",
     "review_traffic_quality",
@@ -53,7 +53,8 @@ def build_ga4_diagnostics() -> Ga4DiagnosticsResponse:
         item for item in build_tactical_queue().items if item.domain == OpportunityDomain.ga4
     ]
     action_ids = _ga4_action_ids(list_actions())
-    decision_queue = _ga4_decision_queue(tactical_items, action_ids)
+    dimensioned_facts = _dimensioned_ga4_facts(trusted_facts)
+    decision_queue = _ga4_decision_queue(tactical_items, action_ids, dimensioned_facts)
     sections = [
         _landing_behavior_section(latest_refresh, trusted_facts, tactical_items, action_ids),
         _tracking_readiness_section(latest_refresh, trusted_facts, tactical_items, action_ids),
@@ -256,6 +257,7 @@ def _ga4_action_safety_section(
 def _ga4_decision_queue(
     tactical_items: list[TacticalQueueItem],
     action_ids: list[str],
+    dimensioned_facts: list[MetricFact],
 ) -> list[Ga4DecisionItem]:
     decisions: list[Ga4DecisionItem] = []
     for item in _unique_tactical_items(tactical_items):
@@ -331,7 +333,81 @@ def _ga4_decision_queue(
                 risk=risk,
             )
         )
-    return sorted(decisions, key=lambda decision: (decision.risk.value, decision.id))[:6]
+    if not decisions:
+        decisions.extend(_ga4_decisions_from_dimensioned_facts(dimensioned_facts, action_ids))
+    return sorted(decisions, key=lambda decision: (_risk_rank(decision.risk), decision.id))[:6]
+
+
+def _ga4_decisions_from_dimensioned_facts(
+    facts: list[MetricFact],
+    action_ids: list[str],
+) -> list[Ga4DecisionItem]:
+    grouped: dict[tuple[str, str, str], list[MetricFact]] = {}
+    for fact in facts:
+        key = (
+            fact.dimensions.get("landing_page", ""),
+            fact.dimensions.get("source_medium", ""),
+            fact.dimensions.get("campaign_name", ""),
+        )
+        grouped.setdefault(key, []).append(fact)
+
+    decisions: list[Ga4DecisionItem] = []
+    for (landing_page, source_medium, campaign_name), group_facts in grouped.items():
+        has_missing_reporting_dimension = any(
+            value == "(not set)" for value in (landing_page, source_medium, campaign_name)
+        )
+        if has_missing_reporting_dimension:
+            decision_type: Ga4DecisionType = "fix_measurement"
+            title = "Napraw problem pomiaru GA4"
+            rationale = (
+                "GA4 ma wymiar `(not set)`, więc najpierw trzeba sprawdzić pomiar, "
+                "UTM-y i atrybucję zamiast oceniać kampanię lub landing."
+            )
+            next_step = (
+                "Zweryfikuj landing page, source/medium i campaign_name w GA4. "
+                "Nie oceniaj jakości kampanii po wierszu z brakującymi wymiarami."
+            )
+            risk = ActionRisk.medium
+        else:
+            decision_type = "review_traffic_quality"
+            title = f"Sprawdź jakość ruchu: {landing_page}"
+            rationale = (
+                "GA4 ma landing/source/campaign facts. To wystarcza do review jakości "
+                "ruchu i message match, ale nie do claimów o ROAS albo revenue."
+            )
+            next_step = (
+                "Porównaj landing, źródło i kampanię z intencją strony. Jeśli trzeba, "
+                "waliduj `act_review_ga4_tracking_quality` jako review-only."
+            )
+            risk = ActionRisk.low
+
+        decisions.append(
+            Ga4DecisionItem(
+                id=(
+                    "ga4_decision_metric_"
+                    f"{_slug(landing_page)}_{_slug(source_medium)}_{_slug(campaign_name)}"
+                ),
+                decision_type=decision_type,
+                title=title,
+                landing_page=landing_page,
+                source_medium=source_medium,
+                campaign_name=campaign_name,
+                source_connectors=[GA4_CONNECTOR_ID],
+                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
+                metric_facts=group_facts[:8],
+                action_ids=action_ids,
+                blocked_claims=[
+                    "conversion rate",
+                    "ROAS",
+                    "revenue",
+                    "profitability",
+                ],
+                rationale=rationale,
+                next_step=next_step,
+                risk=risk,
+            )
+        )
+    return decisions
 
 
 def _dimensioned_ga4_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
@@ -341,6 +417,15 @@ def _dimensioned_ga4_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
         if fact.source_connector == GA4_CONNECTOR_ID
         and {"landing_page", "source_medium", "campaign_name"}.issubset(fact.dimensions)
     ]
+
+
+def _risk_rank(risk: ActionRisk) -> int:
+    return {
+        ActionRisk.critical: 0,
+        ActionRisk.high: 1,
+        ActionRisk.medium: 2,
+        ActionRisk.low: 3,
+    }[risk]
 
 
 def _landing_group_count(facts: Iterable[MetricFact]) -> int:

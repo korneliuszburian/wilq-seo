@@ -117,8 +117,11 @@ Current connector truth:
   Tactical/content reads now preserve complete latest metric groups per
   `(connector, evidence, dimensions)`, so query/page cards do not show false
   `impressions=0` when the same evidence group has real impressions.
-- `google_analytics_4`: landing/source/campaign facts exist, but ROAS/revenue
-  and conversion-drop claims are blocked unless conversion evidence exists.
+- `google_analytics_4`: landing/source/campaign facts exist and
+  `/api/ga4/diagnostics.decision_queue` now feeds both dashboard `/ga4` and
+  `wilq-ga4-analyst`. Current live decisions are traffic-quality review; ROAS,
+  revenue, conversion-drop, attribution verdict and tracking-fixed claims stay
+  blocked unless conversion/cost/read contracts exist.
 - `wordpress_ekologus` and `wordpress_sklep`: inventory context exists and must
   protect against duplicate content.
 - `ahrefs`: aggregate authority/rank facts exist; deeper gap workflows still
@@ -228,18 +231,19 @@ These are the current reasons Goal 001 is not complete:
    workflows still need explicit read/safety/ActionObject contracts before WILQ
    can claim BDOS-class Ads value.
 
-4. **Codex skill usefulness is not proven end-to-end.**
+4. **Codex skill usefulness is not fully proven end-to-end.**
    Skills have contracts and smokes, and `wilq-daily-command` now has a
    strengthened usefulness guardrail plus a fresh non-interactive eval pass.
    `wilq-content-strategist` and `wilq-ads-doctor` also have strict usefulness
-   passes after their matching API contracts. `wilq-ga4-analyst` should be
-   repaired and re-evaluated now that `/api/ga4/diagnostics.decision_queue`
-   exists. `wilq-localo-operator` should consume `/api/localo/diagnostics` for
-   access/readiness and must continue blocking ranking/GBP/competitor claims
-   until actual Localo visibility facts exist. Goal 001 still needs the same
-   strict usefulness pass across the remaining high-value skills and a clean
-   plug-and-play Codex session proving Polish prompts -> WILQ API calls -> same
-   evidence IDs as dashboard -> useful next actions.
+   passes after their matching API contracts. `wilq-ga4-analyst` has now been
+   repaired against `/api/ga4/diagnostics.decision_queue` and passed a fresh
+   strict non-interactive eval on 2026-06-19. `wilq-localo-operator` should
+   consume `/api/localo/diagnostics` for access/readiness and must continue
+   blocking ranking/GBP/competitor claims until actual Localo visibility facts
+   exist. Goal 001 still needs the same strict usefulness pass across the
+   remaining high-value skills and a clean plug-and-play Codex session proving
+   Polish prompts -> WILQ API calls -> same evidence IDs as dashboard -> useful
+   next actions.
 
 5. **Knowledge condensation is not fully proven.**
    Playbooks and knowledge cards exist, but we must prove they influence skill
@@ -538,8 +542,9 @@ Work in this order:
    - `wilq-merchant-feed-operator` after Merchant issue-level triage;
    - `wilq-content-strategist` and `wilq-gsc-content-doctor` after
      `content_diagnostics.decision_queue` and URL normalization;
-   - `wilq-ga4-analyst` after ranked GA4 landing/source/campaign diagnostics
-     and clear tracking-gap separation;
+   - done for `wilq-ga4-analyst` after GA4 decision queue repair; keep rerunning
+     when conversion/cost/read contracts, tracking validation or richer
+     landing/source/campaign classifiers are added;
    - done for `wilq-ads-doctor` after campaign table,
      search terms/conversions and blocked-claim matrix; keep rerunning when
      recommendations, change history, budget pacing, impression share, derived
@@ -742,6 +747,18 @@ Tasks:
   Remaining quality gap: future GA4 evals should assert ranked
   landing/source/campaign diagnostic items and explicit ActionObject validation
   proof.
+- 2026-06-19 follow-up: `wilq-ga4-analyst` now consumes
+  `/api/ga4/diagnostics.decision_queue` as the primary decision source. Fresh
+  runtime proof after API restart showed `live_data_available=true`,
+  `landing_group_count=10`, `decision_count=6` and
+  `act_review_ga4_tracking_quality`. Fresh non-interactive Codex eval passed:
+  `.local-lab/evals/codex-skill/20260619T032712Z/wilq-ga4-analyst/result.json`.
+  It proves `pl-PL`, Polish diacritics, `api_used=true`, GA4 evidence IDs,
+  `review_traffic_quality` decisions, pending validation for
+  `act_review_ga4_tracking_quality`, and blocked ROAS/revenue/conversion/
+  attribution/tracking-fixed claims. Remaining gap: no current evidence
+  exercises `fix_measurement` or `review_landing_mapping`, and ActionObject
+  validation is still pending.
 - 2026-06-18 follow-up: fourth real non-interactive Codex eval passed for
   `wilq-gsc-content-doctor`:
   `.local-lab/evals/codex-skill/20260618T101550Z/wilq-gsc-content-doctor/result.json`.
@@ -859,10 +876,12 @@ Current eval progress:
   `.local-lab/evals/codex-skill/20260618T094236Z/wilq-merchant-feed-operator/result.json`.
   Strong Merchant pass with `product_count=10900`, `issue_count=15` and
   `act_review_merchant_feed_issues`.
-- `wilq-ga4-analyst`: passed at
-  `.local-lab/evals/codex-skill/20260618T101220Z/wilq-ga4-analyst/result.json`.
-  Safe GA4 pass; blocks ROAS/revenue/conversion claims without stronger
-  evidence.
+- `wilq-ga4-analyst`: strict decision_queue pass at
+  `.local-lab/evals/codex-skill/20260619T032712Z/wilq-ga4-analyst/result.json`.
+  The skill uses `/api/ga4/diagnostics.decision_queue`, returns
+  `review_traffic_quality` decisions with GA4 evidence IDs, carries
+  `act_review_ga4_tracking_quality` as pending validation, and blocks
+  ROAS/revenue/conversion/attribution/tracking-fixed claims.
 - `wilq-gsc-content-doctor`: passed at
   `.local-lab/evals/codex-skill/20260618T101550Z/wilq-gsc-content-doctor/result.json`.
   Safe GSC/content pass; future eval must force concrete query/page decisions.
@@ -916,10 +935,11 @@ Current eval progress:
   ActionObject validation are missing.
 
 Current eval coverage: 12/12 WILQ skills have recorded non-interactive Codex
-evals. This proves API integration and guardrails, not Goal 001 completion. The
-next product work must convert eval findings into fixes: social action filtering
-in daily context, Ads read contracts, campaign ActionObjects, source-term
-evidence, Localo facts, Ahrefs gap records and Demand Gen diagnostics.
+evals, and GA4 has a fresh strict decision_queue rerun. This proves API
+integration and guardrails, not Goal 001 completion. The next product work must
+convert eval findings into fixes: Localo facts, Ahrefs gap records,
+source-term/custom-segment evidence, campaign ActionObjects, Demand Gen
+diagnostics and the final plug-and-play Codex acceptance session.
 
 ### 4. Performance Slice
 
@@ -1039,11 +1059,13 @@ Commit rules:
 
 ## Immediate Next Tasks
 
-1. **Continue route audit beyond Command Center/actions/opportunities.**
-   Next routes: `/ga4`, `/ads-doctor` and `/localo`. Use
-   `agent-browser` after the page settles. For each route, remove or demote
-   visible sections that cannot answer: `co widzę`, `co to znaczy`, `co zrobić
-   teraz`, `czego nie wolno twierdzić`, and `jak Codex może pomóc`.
+1. **Preserve the cleaned marketer routes and move to value contracts.**
+   Command Center, `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor`,
+   `/localo`, `/actions` and `/opportunities` have current decision-first
+   cleanup proof. Do not restart those audits unless browser proof shows a
+   regression. Next product work should add missing value contracts: Localo
+   visibility facts, Ahrefs gap records, source-term/custom-segment evidence,
+   campaign ActionObjects and Demand Gen diagnostics.
 
 2. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a
@@ -1075,12 +1097,13 @@ Commit rules:
    scripts/verify.sh
    ```
 
-6. **Run a real Codex/API proof.**
+6. **Run stricter Codex/API proof for the next high-value gap.**
    Use `codex exec` or Codex Desktop/CLI against the local WILQ API. Plain
    static prompt evaluation is not enough. The proof must show API use, Polish
    output, evidence IDs, source connectors, blocked claims and safe next actions.
-   First proof exists for `wilq-content-strategist`; continue with the remaining
-   skills and strengthen eval cases to score usefulness, not only schema pass.
+   GA4 now has a strict decision_queue rerun. Continue with Localo after real
+   visibility facts, or Ahrefs/custom-segments/campaign-builder after their API
+   read/action contracts exist.
 
 7. **Commit semantically and push.**
    Use Conventional Commits only. Do not commit `.env`, `.local-lab`, test
@@ -1090,6 +1113,29 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 `wilq-ga4-analyst` decision_queue repair:
+
+```bash
+uv run ruff check wilq/briefing/ga4_diagnostics.py .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/briefing/ga4_diagnostics.py .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py wilq/schemas.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ga4_diagnostics or route_specific'
+uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+scripts/verify.sh
+```
+
+Result:
+
+- API runtime proof: `live_data_available=true`, `landing_group_count=10`,
+  `decision_count=6`.
+- Deterministic smoke: passed with `act_review_ga4_tracking_quality`, GA4
+  evidence IDs and supported decision types.
+- Non-interactive Codex eval: passed at
+  `.local-lab/evals/codex-skill/20260619T032712Z/wilq-ga4-analyst/result.json`.
+- Narrow backend checks: ruff passed, mypy passed, focused pytest `3 passed`.
+- Full gate: backend API contracts `100 passed`, dashboard route tests
+  `13 passed`, Playwright e2e `9 passed` and dashboard production build passed.
 
 Passed after the 2026-06-19 `/ads-doctor` decision route cleanup:
 

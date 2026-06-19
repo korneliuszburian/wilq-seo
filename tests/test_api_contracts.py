@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -108,6 +109,19 @@ def clear_localo_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "LOCALO_ACCESS_TOKEN",
     ):
         monkeypatch.delenv(key, raising=False)
+
+
+def ga4_decision_trace(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": decision["id"],
+            "decision_type": decision["decision_type"],
+            "source_connectors": decision["source_connectors"],
+            "evidence_ids": decision["evidence_ids"],
+            "action_ids": decision["action_ids"],
+        }
+        for decision in decisions
+    ]
 
 
 def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -887,6 +901,23 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert payload["low_engagement_count"] >= 1
     assert payload["wordpress_match_count"] >= 1
     assert "act_review_ga4_tracking_quality" in payload["action_ids"]
+    decision_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
+    assert decision_by_id
+    assert {
+        "fix_measurement",
+        "review_landing_mapping",
+        "review_traffic_quality",
+    } & {decision["decision_type"] for decision in decision_by_id.values()}
+    assert any(
+        "act_review_ga4_tracking_quality" in decision["action_ids"]
+        for decision in decision_by_id.values()
+    )
+    assert all(decision["evidence_ids"] for decision in decision_by_id.values())
+    assert all(
+        "google_analytics_4" in decision["source_connectors"]
+        for decision in decision_by_id.values()
+    )
+    assert all(decision["next_step"] for decision in decision_by_id.values())
     sections = {section["id"]: section for section in payload["sections"]}
     assert sections["ga4_landing_behavior"]["status"] == "ready"
     assert sections["ga4_landing_behavior"]["tactical_items"]
@@ -902,6 +933,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     context_ga4 = context_response.json()["ga4_diagnostics"]
     assert context_ga4["evidence_ids"] == payload["evidence_ids"]
     assert context_ga4["action_ids"] == payload["action_ids"]
+    assert ga4_decision_trace(context_ga4["decision_queue"]) == ga4_decision_trace(
+        payload["decision_queue"]
+    )
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
 

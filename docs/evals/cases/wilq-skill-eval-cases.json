@@ -125,9 +125,18 @@
   {
     "skill": "wilq-ga4-analyst",
     "surface_path": "/ga4",
-    "task_pl": "Zrób krótką diagnozę GA4 behavior/conversion readiness z evidence IDs i wskaż, co jest blockerem albo następnym krokiem.",
+    "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż evidence IDs, ActionObject oraz claimy, których nie wolno mówić.",
     "expected_connectors": ["google_analytics_4"],
-    "expected_terms_pl": ["GA4", "active_users", "ga4_diagnostics", "landing/source/campaign"],
+    "expected_terms_pl": [
+      "GA4",
+      "active_users",
+      "ga4_diagnostics",
+      "decision_queue",
+      "fix_measurement",
+      "review_landing_mapping",
+      "review_traffic_quality",
+      "landing/source/campaign"
+    ],
     "expected_action_ids": ["act_review_ga4_tracking_quality"]
   },
   {

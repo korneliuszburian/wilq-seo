@@ -28,7 +28,16 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-ga4-analyst": {
             "surface_path": "/ga4",
-            "terms": {"GA4", "active_users", "ga4_diagnostics", "landing/source/campaign"},
+            "terms": {
+                "GA4",
+                "active_users",
+                "ga4_diagnostics",
+                "decision_queue",
+                "fix_measurement",
+                "review_landing_mapping",
+                "review_traffic_quality",
+                "landing/source/campaign",
+            },
             "action_ids": {"act_review_ga4_tracking_quality"},
         },
         "wilq-gsc-content-doctor": {
@@ -149,6 +158,8 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "GET /api/ga4/diagnostics" in ga4_skill_doc
     assert 'request_json(args.api_base, "GET", "/api/ga4/diagnostics")' in ga4_smoke_script
     assert '"ga4_diagnostics": {' in ga4_smoke_script
+    assert "decision_queue" in ga4_smoke_script
+    assert "Live GA4 diagnostics must expose decision_queue" in ga4_smoke_script
 
     for skill in ("wilq-gsc-content-doctor", "wilq-content-strategist"):
         content_skill_doc = (Path(".agents/skills") / skill / "SKILL.md").read_text(
