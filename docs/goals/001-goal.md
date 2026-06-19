@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 21:32 Europe/Warsaw.
+Last updated: 2026-06-19 21:44 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -1475,6 +1475,14 @@ Active 2026-06-19 follow-up:
     `/api/actions/{action_id}`;
   - Localo remains available in connector context, but is not required as a
     daily source connector until WILQ has Localo ranking/GBP evidence.
+- Follow-up 2026-06-19 21:44 Europe/Warsaw resolves the current Vite main
+  chunk warning by splitting dashboard vendor bundles:
+  - no `chunkSizeWarningLimit` bypass was added;
+  - Rollup manual chunks split React, TanStack, icons, schemas and misc vendor
+    code;
+  - current build chunks are app `142.44 kB`, `vendor-react` `192.70 kB`,
+    `vendor-tanstack` `126.96 kB`, `vendor-schemas` `76.67 kB`,
+    `vendor-icons` `7.91 kB`, `vendor-misc` `2.16 kB`.
 - Focused proof passed:
   ```bash
   uv run ruff check apps/api/wilq_api/main.py wilq/evidence/registry.py wilq/storage/metric_store.py wilq/briefing/daily_runtime.py tests/test_api_contracts.py
@@ -1519,9 +1527,20 @@ Active 2026-06-19 follow-up:
   - Playwright e2e: `9 passed`;
   - API smoke, skill structure smoke, skill API smoke and dashboard production
     build passed.
+- Focused dashboard proof passed after the 21:44 bundle split:
+  - `pnpm --filter @wilq/dashboard typecheck`;
+  - `pnpm --filter @wilq/dashboard test -- --run App.test.tsx` -> `13 passed`;
+  - `WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1` -> `8 passed`;
+  - `pnpm --filter @wilq/dashboard build` -> no >500 KB chunk warning.
+- Full `scripts/verify.sh` passed after the 21:44 bundle split:
+  - API smoke passed;
+  - skill structure smoke passed;
+  - skill API smoke passed;
+  - Playwright dashboard suite `9 passed`;
+  - production dashboard build passed with no >500 KB chunk warning.
 - This improves the known daily context-pack TTL spike and shared daily cold
-  path, but does not close the full performance budget. Remaining future work:
-  smaller dashboard JS chunk and richer value contracts rather than hidden
+  path, compacts daily context payload and removes the current dashboard chunk
+  warning. Remaining future work: richer value contracts rather than hidden
   frontend-only memoization.
 - Active Ads skill performance follow-up:
   - scoped `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now

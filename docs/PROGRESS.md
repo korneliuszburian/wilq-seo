@@ -8,6 +8,19 @@ artifacts.
 
 Data: 2026-06-19
 
+- Dashboard bundle split, 2026-06-19 21:44 Europe/Warsaw: current active proof
+  is build/runtime performance only, not a UI redesign. Vite build now uses
+  Rollup manual chunks for React, TanStack, icons, schemas and misc vendor
+  code instead of shipping one `549.44 kB` JS chunk. Current
+  `pnpm --filter @wilq/dashboard build` output has no >500 KB chunk warning
+  and no circular chunk warning. Chunks: app `142.44 kB`, `vendor-react`
+  `192.70 kB`, `vendor-tanstack` `126.96 kB`, `vendor-schemas` `76.67 kB`,
+  `vendor-icons` `7.91 kB`, `vendor-misc` `2.16 kB`. Focused proof passed:
+  dashboard typecheck, dashboard `App.test.tsx` route tests `13 passed`,
+  Playwright `dashboard-api.spec.ts` `8 passed` and dashboard production build.
+  Full `scripts/verify.sh` also passed after this split: API smoke, skill
+  structure/API smoke, Playwright dashboard suite `9 passed`, and production
+  dashboard build still had no >500 KB chunk warning.
 - Daily command context-pack payload compaction, 2026-06-19 21:32
   Europe/Warsaw: current active proof is Codex runtime performance, not a new
   marketer decision contract. Default `wilq-daily-command` context-pack now

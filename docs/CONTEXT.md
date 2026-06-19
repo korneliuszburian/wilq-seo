@@ -71,6 +71,13 @@ Audit `docs/audits/001-output.md` is now folded into
    `.local-lab/evals/codex-skill/20260619T193056Z/wilq-daily-command/result.json`.
    Localo is not a required daily source connector while WILQ lacks Localo
    ranking/GBP evidence.
+0. Dashboard bundle truth, 2026-06-19 21:44 Europe/Warsaw: the main Vite JS
+   chunk warning was fixed by Rollup manual chunks, not by raising
+   `chunkSizeWarningLimit`. Current production build chunks are below 500 KB:
+   app `142.44 kB`, `vendor-react` `192.70 kB`, `vendor-tanstack`
+   `126.96 kB`, `vendor-schemas` `76.67 kB`, `vendor-icons` `7.91 kB`,
+   `vendor-misc` `2.16 kB`. Preserve this split unless a better measured
+   lazy-route split replaces it.
 0. Ads recommendations truth, 2026-06-19 17:22 Europe/Warsaw: Google Ads
    recommendation review is now a typed read-only contract, not a prompt TODO.
    Live proof `refresh_google_ads_138befce0a2c` /
