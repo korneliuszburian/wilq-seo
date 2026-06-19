@@ -72,8 +72,25 @@ import {
 import { StatusBadge } from "../components/StatusBadge";
 import { Shell } from "../components/Shell";
 
+const WILQ_QUERY_STALE_TIME_MS = 30_000;
+
 export function createWilqQueryClient(config?: QueryClientConfig): QueryClient {
-  return new QueryClient(config);
+  return new QueryClient({
+    ...config,
+    defaultOptions: {
+      ...config?.defaultOptions,
+      queries: {
+        staleTime: WILQ_QUERY_STALE_TIME_MS,
+        gcTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        retry: 1,
+        ...config?.defaultOptions?.queries
+      },
+      mutations: {
+        ...config?.defaultOptions?.mutations
+      }
+    }
+  });
 }
 
 export const queryClient = createWilqQueryClient();

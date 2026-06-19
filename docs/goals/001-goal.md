@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 00:20 Europe/Warsaw.
+Last updated: 2026-06-20 00:31 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -128,6 +128,18 @@ Local API:
 ```bash
 http://127.0.0.1:8000/api/health
 ```
+
+Current performance truth:
+
+- `WILQ_DAILY_RUNTIME_CACHE_SECONDS` now defaults to `30`, while tests still
+  disable runtime cache and connector refresh/action validation/action apply
+  paths clear the cache.
+- Dashboard TanStack Query now treats WILQ server state as a short operator
+  snapshot: `staleTime=30000` and `refetchOnWindowFocus=false` by default.
+- Live proof after local stack restart on 2026-06-20:
+  `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, then `0.007s`,
+  `0.009s`, `0.010s`, `0.007s` within the operator cache window. Daily Codex
+  context-pack was `126449 bytes`, `0.382s`, then `0.237s`, `0.234s`.
 
 Use `uv run ...` for Python/WILQ commands. Do not use global `python`.
 
@@ -1387,7 +1399,7 @@ Current slice result:
 - Current follow-up adds a shared `DailyRuntime` for daily Codex context:
   `command_center`, `marketing_brief` and core daily ActionObjects are built
   from one connector/action/refresh snapshot and cached for a short TTL.
-  `WILQ_DAILY_RUNTIME_CACHE_SECONDS` controls the TTL, default `2`; tests
+  `WILQ_DAILY_RUNTIME_CACHE_SECONDS` controls the TTL, default `30`; tests
   disable the cache. The cache is invalidated after connector refresh and
   action validation/apply paths.
 - Fresh helper API proof on `:8011` after this follow-up:

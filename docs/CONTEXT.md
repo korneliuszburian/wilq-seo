@@ -303,7 +303,9 @@ Current performance slice truth:
 - Current follow-up adds a shared `DailyRuntime` view-model for
   daily Codex context. It builds `command_center`, `marketing_brief` and core
   actions from one connector/action/refresh snapshot and caches that runtime
-  for a short TTL. Fresh helper API proof on `:8011`: cold daily context
+  for a short operator TTL. The default TTL is now 30 seconds and is still
+  invalidated after connector refresh and action validation/apply paths. Fresh
+  helper API proof on `:8011`: cold daily context
   `3.047s`, then warm cached daily context `0.467s`, `0.544s`, `0.470s`, same
   payload size `160478 bytes`.
 - This is improved from the old full context-pack (`~996 KB`, `~15s`) but not

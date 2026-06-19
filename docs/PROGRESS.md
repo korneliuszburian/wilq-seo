@@ -34,6 +34,11 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center ma teraz 30-sekundowy operator snapshot cache po stronie WILQ
+  API i dashboardu. Live proof po `scripts/local_stack.sh restart`:
+  `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, potem
+  `0.007s`, `0.009s`, `0.010s`, `0.007s` w oknie cache; daily Codex
+  context-pack `126449 bytes`, `0.382s`, potem `0.237s`, `0.234s`.
 - Najnowszy live Ads proof: `refresh_google_ads_60956db2c42f` /
   `ev_refresh_refresh_google_ads_60956db2c42f` odczytał
   `customer_currency_code=PLN`, 18 kampanii, 50 search terms, 200 wierszy
@@ -61,7 +66,18 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ads recommendation apply payload preview, 2026-06-20 00:20 Europe/Warsaw.
+1. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
+   Daily runtime cache TTL wzrósł z 2s do 30s
+   (`WILQ_DAILY_RUNTIME_CACHE_SECONDS` nadal może to nadpisać), a dashboardowy
+   TanStack Query client używa `staleTime=30000` i
+   `refetchOnWindowFocus=false` jako domyślnego server-state cache. Semantyka
+   danych nie zmienia się: cache jest czyszczony po connector refresh oraz
+   action validation/apply paths. Live proof po `scripts/local_stack.sh restart`:
+   `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, potem
+   `0.007s`, `0.009s`, `0.010s`, `0.007s` w oknie cache. Focused ruff, mypy,
+   backend cache tests, dashboard `App.test.tsx`, dashboard typecheck passed.
+
+2. Ads recommendation apply payload preview, 2026-06-20 00:20 Europe/Warsaw.
    Google Ads recommendations mają teraz review-only apply payload preview w
    typed API, dashboardzie, ActionObject i scoped `wilq-ads-doctor`
    context-packu. To nie jest apply support: payload używa
@@ -82,7 +98,7 @@ Aktualny maintenance:
    dashboard production build passed. `uv.lock` zaktualizowany przy okazji
    security gate: `msgpack 1.2.0 -> 1.2.1`.
 
-2. Ads recommendation impact preview, 2026-06-19 23:44 Europe/Warsaw.
+3. Ads recommendation impact preview, 2026-06-19 23:44 Europe/Warsaw.
    Google Ads recommendations query pobiera read-only `recommendation.impact`.
    WILQ zapisuje impact metric facts jako
    `recommendation_impact_{base|potential}_*`, `/api/ads/diagnostics` pokazuje
@@ -97,7 +113,7 @@ Aktualny maintenance:
    `115 passed`, dashboard unit `13 passed`, Playwright e2e `9 passed`, skill
    smokes and dashboard production build passed.
 
-3. Ads account currency read contract, 2026-06-19 23:12 Europe/Warsaw.
+4. Ads account currency read contract, 2026-06-19 23:12 Europe/Warsaw.
    Google Ads campaign read query pobiera `customer.currency_code` jako
    read-only fact. WILQ zapisuje `account_currency_code` z evidence ID,
    `/api/ads/diagnostics` wystawia `account_currency_read_contract`, scoped
@@ -110,7 +126,7 @@ Aktualny maintenance:
    passed: backend `115 passed`, dashboard unit `13 passed`, Playwright e2e
    `9 passed` and dashboard production build passed.
 
-4. Non-daily skill context-pack compaction, 2026-06-19 22:45 Europe/Warsaw.
+5. Non-daily skill context-pack compaction, 2026-06-19 22:45 Europe/Warsaw.
    Default context-packs pomijają ciężkie diagnostic sections i metric facts
    dla content, GA4 i Merchant scoped packs. Campaign Builder nie ciągnie już
    Merchant jako domyślnego scope'u i używa lekkiego `content_landing_context`.
@@ -125,15 +141,6 @@ Aktualny maintenance:
    warm `0.156s`; `wilq-custom-segments` `187121 bytes`, cold `1.408s`,
    warm `0.194s`; `wilq-daily-command` `120504 bytes`, cold `1.918s`,
    warm `0.236s`. Full `scripts/verify.sh` passed.
-
-5. Custom segments review-only payload preview, 2026-06-19 22:08
-   Europe/Warsaw. `/api/ads/diagnostics.custom_segments_read_contract` exposes
-   `payload_preview` with `member_type=KEYWORD`, `api_mutation_ready=false`,
-   `apply_allowed=false` and `destructive=false`. Remaining missing contracts:
-   `keyword_planner_enrichment` and `forecast_or_audience_size`. Non-interactive
-   eval passed:
-   `.local-lab/evals/codex-skill/20260619T201200Z/wilq-custom-segments/result.json`.
-   Full `scripts/verify.sh` passed.
 
 ## Active Gaps
 

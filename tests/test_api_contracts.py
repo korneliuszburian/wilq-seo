@@ -803,6 +803,25 @@ def test_marketing_brief_endpoint_uses_daily_runtime_cache(
     assert calls == {"daily_runtime": 1}
 
 
+def test_daily_runtime_cache_seconds_default_and_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import daily_runtime
+
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.delenv("WILQ_DAILY_RUNTIME_CACHE_SECONDS", raising=False)
+    assert daily_runtime._cache_seconds() == 30.0
+
+    monkeypatch.setenv("WILQ_DAILY_RUNTIME_CACHE_SECONDS", "7.5")
+    assert daily_runtime._cache_seconds() == 7.5
+
+    monkeypatch.setenv("WILQ_DAILY_RUNTIME_CACHE_SECONDS", "-1")
+    assert daily_runtime._cache_seconds() == 0.0
+
+    monkeypatch.setenv("WILQ_DAILY_RUNTIME_CACHE_SECONDS", "invalid")
+    assert daily_runtime._cache_seconds() == 30.0
+
+
 def test_marketing_brief_aggregates_metric_facts_and_blockers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

@@ -19,7 +19,7 @@ from wilq.schemas import (
     MarketingBrief,
 )
 
-DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 2.0
+DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 30.0
 _cached_runtime: DailyRuntimeCacheEntry | None = None
 
 
