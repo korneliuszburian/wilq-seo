@@ -1528,6 +1528,8 @@ type AdsRecommendationRow =
   AdsDiagnosticsResponse["recommendations_read_contract"]["recommendation_rows"][number];
 type AdsImpressionShareRow =
   AdsDiagnosticsResponse["impression_share_read_contract"]["impression_share_rows"][number];
+type AdsChangeHistoryRow =
+  AdsDiagnosticsResponse["change_history_read_contract"]["change_history_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 type AdsCustomSegmentCandidate =
@@ -1673,6 +1675,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             value={data.impression_share_read_contract.impression_share_rows.length}
           />
           <MetricTile
+            label="Zmiany"
+            value={data.change_history_read_contract.change_history_rows.length}
+          />
+          <MetricTile
             label="Zapytania"
             value={data.search_terms_read_contract.search_term_rows.length}
           />
@@ -1754,6 +1760,11 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
             Udział w wyśw.: {decision.impression_share_rows.length}
           </span>
         ) : null}
+        {decision.change_history_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Zmiany: {decision.change_history_rows.length}
+          </span>
+        ) : null}
         {decision.allowed_metrics.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
@@ -1801,6 +1812,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const budgetRows = data.budget_pacing_read_contract.budget_rows;
   const recommendationRows = data.recommendations_read_contract.recommendation_rows;
   const impressionShareRows = data.impression_share_read_contract.impression_share_rows;
+  const changeHistoryRows = data.change_history_read_contract.change_history_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
@@ -1810,6 +1822,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.budget_pacing_read_contract.missing_read_contracts,
     ...data.recommendations_read_contract.missing_read_contracts,
     ...data.impression_share_read_contract.missing_read_contracts,
+    ...data.change_history_read_contract.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
@@ -1820,6 +1833,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.budget_pacing_read_contract.blocked_claims,
     ...data.recommendations_read_contract.blocked_claims,
     ...data.impression_share_read_contract.blocked_claims,
+    ...data.change_history_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
     ...data.negative_keywords_read_contract.blocked_claims,
@@ -1844,6 +1858,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
           <MetricTile label="Budżety" value={budgetRows.length} />
           <MetricTile label="Rekom." value={recommendationRows.length} />
           <MetricTile label="Udział" value={impressionShareRows.length} />
+          <MetricTile label="Zmiany" value={changeHistoryRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
@@ -1856,6 +1871,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
         <AdsBudgetPacingRowsTable rows={budgetRows} />
         <AdsRecommendationRowsPanel rows={recommendationRows} />
         <AdsImpressionShareRowsTable rows={impressionShareRows} />
+        <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} />
         <AdsNegativeKeywordCandidatesPanel candidates={negativeKeywordCandidates} />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
@@ -2097,6 +2113,52 @@ function AdsImpressionShareRowsTable({ rows }: { rows: AdsImpressionShareRow[] }
   );
 }
 
+function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak wierszy historii zmian. WILQ nie może łączyć performance ze zmianami kampanii bez change_event facts." />
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Data zmiany</th>
+            <th className="py-2 pr-4 font-semibold">Zasób</th>
+            <th className="py-2 pr-4 font-semibold">Operacja</th>
+            <th className="py-2 pr-4 font-semibold">Klient</th>
+            <th className="py-2 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-3 font-semibold">Pola</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.slice(0, 12).map((row) => (
+            <tr key={`${row.change_event_id ?? "unknown"}-${row.change_date_time ?? "no-date"}`}>
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">
+                {row.change_date_time ?? "brak daty"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.change_resource_type ?? "brak"} / {row.change_resource_id ?? "brak ID"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.resource_change_operation ?? "brak"}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">{row.client_type ?? "brak"}</td>
+              <td className="py-2 pr-4 text-slate-700">{row.campaign_id ?? "brak"}</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {row.changed_fields.length > 0
+                  ? row.changed_fields.slice(0, 4).join(", ")
+                  : `${row.changed_field_count ?? 0} pól`}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function AdsSearchTermRowsTable({ rows }: { rows: AdsSearchTermMetricRow[] }) {
   if (rows.length === 0) {
     return (
@@ -2320,6 +2382,7 @@ function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_budget_context") return "kontekst budżetu";
   if (decisionType === "review_recommendations") return "rekomendacje do review";
   if (decisionType === "review_impression_share") return "udział w wyświetleniach";
+  if (decisionType === "review_change_history") return "historia zmian";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
   if (decisionType === "review_negative_keyword_safety") return "review wykluczeń";
   if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
@@ -2351,10 +2414,11 @@ function adsDecisionSortValue(decision: AdsDecisionItem) {
     review_budget_context: 2,
     review_recommendations: 3,
     review_impression_share: 4,
-    review_search_terms: 5,
-    review_negative_keyword_safety: 6,
-    prepare_custom_segments: 7,
-    block_write_actions: 8,
+    review_change_history: 5,
+    review_search_terms: 6,
+    review_negative_keyword_safety: 7,
+    prepare_custom_segments: 8,
+    block_write_actions: 9,
     fix_ads_access: 0
   };
   return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
@@ -2382,6 +2446,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_budget_pacing") return "Kontekst budżetu";
   if (sectionId === "ads_recommendations") return "Rekomendacje Google Ads";
   if (sectionId === "ads_impression_share") return "Udział w wyświetleniach";
+  if (sectionId === "ads_change_history") return "Historia zmian";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
   if (sectionId === "ads_custom_segments") return "Custom segments";
@@ -2408,6 +2473,8 @@ function adsAllowedMetricLabel(value: string) {
     search_impression_share: "udział w wyświetleniach",
     search_budget_lost_impression_share: "utracony udział przez budżet",
     search_rank_lost_impression_share: "utracony udział przez ranking",
+    change_event_available: "historia zmian dostępna",
+    change_event_changed_field_count: "liczba zmienionych pól",
     search_term: "zapytanie",
     campaign: "kampania",
     ad_group: "grupa reklam",
@@ -2428,6 +2495,10 @@ function adsMissingReadContractLabel(value: string) {
     shared_budget_distribution: "podział shared budget",
     budget_target_or_seasonality: "cel budżetowy lub sezonowość",
     human_budget_goal: "cel budżetu od człowieka",
+    pre_change_performance_window: "okno wyników przed zmianą",
+    post_change_performance_window: "okno wyników po zmianie",
+    human_change_impact_review: "ręczny review wpływu zmian",
+    apply_preview: "podgląd wdrożenia",
     impression_share: "udział w wyświetleniach",
     "keyword match context": "kontekst dopasowania słów kluczowych",
     "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
@@ -2455,6 +2526,8 @@ function adsBlockedClaimLabel(value: string) {
     "budget apply": "zmiana budżetu",
     "budget mutation": "zmiana budżetu",
     "campaign mutation": "zmiana kampanii",
+    "change history": "historia zmian",
+    "change impact": "wpływ zmian",
     "campaign creation": "tworzenie kampanii",
     "impression share": "udział w wyświetleniach",
     "recommendation apply": "wdrożenie rekomendacji",

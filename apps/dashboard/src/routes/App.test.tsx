@@ -504,6 +504,53 @@ const adsDiagnostics = {
     next_step:
       "Użyj udziału w wyświetleniach jako kontekstu review, nie jako decyzji budżetowej."
   },
+  change_history_read_contract: {
+    id: "ads_change_history_read_contract",
+    status: "ready",
+    title: "Google Ads: historia zmian",
+    summary:
+      "WILQ ma 1 zdarzeń historii zmian Google Ads z ostatnich 14 dni. Typy zasobów: CAMPAIGN; operacje: UPDATE.",
+    allowed_metrics: ["change_event_available", "change_event_changed_field_count"],
+    missing_read_contracts: [
+      "pre_change_performance_window",
+      "post_change_performance_window",
+      "human_change_impact_review",
+      "apply_preview"
+    ],
+    blocked_claims: [
+      "change impact",
+      "performance uplift",
+      "budget scaling",
+      "budget apply",
+      "campaign mutation"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    change_history_rows: [
+      {
+        change_event_id: "change-1",
+        change_date_time: "2026-06-18 12:30:00.000000",
+        change_resource_id: "123",
+        change_resource_type: "CAMPAIGN",
+        resource_change_operation: "UPDATE",
+        client_type: "GOOGLE_ADS_WEB_CLIENT",
+        campaign_id: "123",
+        changed_field_count: 2,
+        changed_fields: ["campaign.status", "campaign_budget.amount_micros"],
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        missing_metrics: [],
+        blocked_claims: [
+          "change impact",
+          "performance uplift",
+          "budget apply",
+          "campaign mutation"
+        ]
+      }
+    ],
+    next_step:
+      "Użyj historii zmian jako kontekstu audytu, nie jako dowodu wpływu zmiany."
+  },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
     status: "ready",
@@ -737,6 +784,7 @@ const adsDiagnostics = {
       budget_rows: [],
       recommendation_rows: [],
       impression_share_rows: [],
+      change_history_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -796,6 +844,7 @@ const adsDiagnostics = {
         }
       ],
       impression_share_rows: [],
+      change_history_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -854,6 +903,7 @@ const adsDiagnostics = {
           ]
         }
       ],
+      change_history_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -865,6 +915,68 @@ const adsDiagnostics = {
         "budget apply",
         "wasted budget",
         "performance uplift",
+        "campaign mutation"
+      ],
+      risk: "medium"
+    },
+    {
+      id: "ads_review_change_history",
+      decision_type: "review_change_history",
+      status: "ready",
+      title: "Sprawdź historię zmian Google Ads",
+      summary:
+        "WILQ ma 1 zdarzeń historii zmian Google Ads z ostatnich 14 dni. Typy zasobów: CAMPAIGN; operacje: UPDATE.",
+      rationale:
+        "Historia zmian mówi, co ostatnio zmieniano w koncie, ale nie dowodzi wpływu na wynik.",
+      next_step:
+        "Użyj historii zmian jako kontekstu audytu, nie jako dowodu wpływu zmiany.",
+      allowed_metrics: ["change_event_available", "change_event_changed_field_count"],
+      missing_read_contracts: [
+        "pre_change_performance_window",
+        "post_change_performance_window",
+        "human_change_impact_review",
+        "apply_preview"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      derived_kpi_rows: [],
+      budget_rows: [],
+      recommendation_rows: [],
+      impression_share_rows: [],
+      change_history_rows: [
+        {
+          change_event_id: "change-1",
+          change_date_time: "2026-06-18 12:30:00.000000",
+          change_resource_id: "123",
+          change_resource_type: "CAMPAIGN",
+          resource_change_operation: "UPDATE",
+          client_type: "GOOGLE_ADS_WEB_CLIENT",
+          campaign_id: "123",
+          changed_field_count: 2,
+          changed_fields: ["campaign.status", "campaign_budget.amount_micros"],
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: [
+            "change impact",
+            "performance uplift",
+            "budget apply",
+            "campaign mutation"
+          ]
+        }
+      ],
+      search_term_rows: [],
+      custom_segment_candidates: [],
+      negative_keyword_candidates: [],
+      action_ids: [],
+      knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
+      expert_rule_ids: ["ads_diagnostics_v1", "ads_principles_v1"],
+      blocked_claims: [
+        "change impact",
+        "performance uplift",
+        "budget apply",
         "campaign mutation"
       ],
       risk: "medium"
@@ -889,6 +1001,7 @@ const adsDiagnostics = {
       budget_rows: [],
       recommendation_rows: [],
       impression_share_rows: [],
+      change_history_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -943,6 +1056,7 @@ const adsDiagnostics = {
       budget_rows: [],
       recommendation_rows: [],
       impression_share_rows: [],
+      change_history_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [
@@ -998,6 +1112,7 @@ const adsDiagnostics = {
       budget_rows: [],
       recommendation_rows: [],
       impression_share_rows: [],
+      change_history_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -1064,6 +1179,7 @@ const adsDiagnostics = {
       budget_rows: [],
       recommendation_rows: [],
       impression_share_rows: [],
+      change_history_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],

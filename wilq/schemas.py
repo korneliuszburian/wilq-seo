@@ -623,6 +623,36 @@ class AdsImpressionShareReadContract(BaseModel):
     next_step: str
 
 
+class AdsChangeHistoryRow(BaseModel):
+    change_event_id: str | None = None
+    change_date_time: str | None = None
+    change_resource_id: str | None = None
+    change_resource_type: str | None = None
+    resource_change_operation: str | None = None
+    client_type: str | None = None
+    campaign_id: str | None = None
+    changed_field_count: int | None = None
+    changed_fields: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsChangeHistoryReadContract(BaseModel):
+    id: str = "ads_change_history_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsSearchTermMetricRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
@@ -729,6 +759,7 @@ class AdsDecisionItem(BaseModel):
         "review_budget_context",
         "review_recommendations",
         "review_impression_share",
+        "review_change_history",
         "review_search_terms",
         "review_negative_keyword_safety",
         "prepare_custom_segments",
@@ -750,6 +781,7 @@ class AdsDecisionItem(BaseModel):
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
     impression_share_rows: list[AdsImpressionShareRow] = Field(default_factory=list)
+    change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
@@ -772,6 +804,7 @@ class AdsDiagnosticsResponse(BaseModel):
     budget_pacing_read_contract: AdsBudgetPacingReadContract
     recommendations_read_contract: AdsRecommendationsReadContract
     impression_share_read_contract: AdsImpressionShareReadContract
+    change_history_read_contract: AdsChangeHistoryReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract

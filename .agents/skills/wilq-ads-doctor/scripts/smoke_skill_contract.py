@@ -87,6 +87,9 @@ def main() -> int:
     impression_share_read_contract = (
         ads_diagnostics.get("impression_share_read_contract") or {}
     )
+    change_history_read_contract = (
+        ads_diagnostics.get("change_history_read_contract") or {}
+    )
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
@@ -173,6 +176,25 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Blocked impression share contract must list missing impression_share")
+    if change_history_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose change_history_read_contract")
+    if not change_history_read_contract.get("blocked_claims"):
+        raise SystemExit("Change history contract must list blocked claims")
+    if change_history_read_contract.get("status") == "ready":
+        pack_change_history_contract = (
+            pack.get("ads_diagnostics", {}).get("change_history_read_contract") or {}
+        )
+        if pack_change_history_contract.get("summary") != change_history_read_contract.get(
+            "summary"
+        ):
+            raise SystemExit("Context pack change history contract differs")
+        if "change impact" not in change_history_read_contract.get("blocked_claims", []):
+            raise SystemExit("Change history contract must keep change impact blocked")
+    elif "change_history" not in change_history_read_contract.get(
+        "missing_read_contracts",
+        [],
+    ):
+        raise SystemExit("Blocked change history contract must list missing change_history")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -332,6 +354,25 @@ def main() -> int:
                             impression_share_read_contract.get("impression_share_rows") or []
                         ),
                         "blocked_claims": impression_share_read_contract.get(
+                            "blocked_claims",
+                            [],
+                        ),
+                    },
+                    "change_history_read_contract": {
+                        "status": change_history_read_contract.get("status"),
+                        "summary": change_history_read_contract.get("summary"),
+                        "allowed_metrics": change_history_read_contract.get(
+                            "allowed_metrics",
+                            [],
+                        ),
+                        "missing_read_contracts": change_history_read_contract.get(
+                            "missing_read_contracts",
+                            [],
+                        ),
+                        "row_count": len(
+                            change_history_read_contract.get("change_history_rows") or []
+                        ),
+                        "blocked_claims": change_history_read_contract.get(
                             "blocked_claims",
                             [],
                         ),

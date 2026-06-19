@@ -1797,6 +1797,42 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
+        if "FROM change_event" in query:
+            assert "change_event.resource_name" in query
+            assert "change_event.change_date_time" in query
+            assert "change_event.change_resource_name" in query
+            assert "change_event.client_type" in query
+            assert "change_event.change_resource_type" in query
+            assert "change_event.resource_change_operation" in query
+            assert "change_event.changed_fields" in query
+            assert "change_event.campaign" in query
+            assert "change_event.user_email" not in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "changeEvent": {
+                                    "resourceName": "customers/test/changeEvents/change-1",
+                                    "changeDateTime": "2026-06-18 12:30:00.000000",
+                                    "changeResourceName": "customers/test/campaigns/101",
+                                    "clientType": "GOOGLE_ADS_WEB_CLIENT",
+                                    "changeResourceType": "CAMPAIGN",
+                                    "resourceChangeOperation": "UPDATE",
+                                    "changedFields": {
+                                        "paths": [
+                                            "campaign.status",
+                                            "campaign_budget.amount_micros",
+                                        ]
+                                    },
+                                    "campaign": "customers/test/campaigns/101",
+                                },
+                            },
+                        ]
+                    }
+                ],
+            )
         assert "FROM search_term_view" in query
         assert "search_term_view.search_term" in query
         assert "metrics.conversions" in query
@@ -1853,9 +1889,16 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["recommendation_row_count"] == 1
     assert result.metric_summary["recommendation_campaign_count"] == 1
     assert result.metric_summary["recommendation_types"] == "CAMPAIGN_BUDGET"
+    assert result.metric_summary["change_event_query"] == "change_event_last_14_days"
+    assert result.metric_summary["change_event_row_count"] == 1
+    assert result.metric_summary["change_event_campaign_count"] == 1
+    assert result.metric_summary["change_event_resource_types"] == "CAMPAIGN"
+    assert result.metric_summary["change_event_operations"] == "UPDATE"
+    assert result.metric_summary["change_event_client_types"] == "GOOGLE_ADS_WEB_CLIENT"
     assert any("FROM campaign" in query for query in search_stream_queries)
     assert any("FROM search_term_view" in query for query in search_stream_queries)
     assert any("FROM recommendation" in query for query in search_stream_queries)
+    assert any("FROM change_event" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
@@ -1925,9 +1968,33 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "campaign_budget_id": "701",
         "recommendation_campaign_count": "1",
     }
+    change_event_fact = next(
+        fact for fact in result.metric_facts if fact.name == "change_event_available"
+    )
+    assert change_event_fact.value == 1
+    assert change_event_fact.period == "change_history"
+    assert change_event_fact.dimensions == {
+        "change_event_id": "change-1",
+        "change_date_time": "2026-06-18 12:30:00.000000",
+        "change_resource_id": "101",
+        "client_type": "GOOGLE_ADS_WEB_CLIENT",
+        "change_resource_type": "CAMPAIGN",
+        "resource_change_operation": "UPDATE",
+        "campaign_id": "101",
+        "changed_field_count": "2",
+        "changed_fields": "campaign.status,campaign_budget.amount_micros",
+    }
+    changed_field_count_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "change_event_changed_field_count"
+    )
+    assert changed_field_count_fact.value == 2
     serialized = json.dumps(result.metric_summary)
     assert "developer-token-test" not in serialized
     assert "refresh-token-test" not in serialized
+    serialized_facts = json.dumps([fact.__dict__ for fact in result.metric_facts])
+    assert "user_email" not in serialized_facts
 
 
 def test_google_ads_vendor_read_discovers_child_accounts_for_manager_customer(
@@ -2394,6 +2461,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "recommendation_campaign_count": 1,
                 "recommendation_types": "CAMPAIGN_BUDGET",
                 "impression_share_row_count": 1,
+                "change_event_query": "change_event_last_14_days",
+                "change_event_row_count": 1,
+                "change_event_campaign_count": 1,
+                "change_event_resource_types": "CAMPAIGN",
+                "change_event_operations": "UPDATE",
+                "change_event_client_types": "GOOGLE_ADS_WEB_CLIENT",
             },
             metric_facts=[
                 VendorMetricFact(
@@ -2518,6 +2591,38 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "recommendation_campaign_count": "1",
                     },
                     period="recommendation",
+                ),
+                VendorMetricFact(
+                    "change_event_available",
+                    1,
+                    {
+                        "change_event_id": "change-1",
+                        "change_date_time": "2026-06-18 12:30:00.000000",
+                        "change_resource_id": "101",
+                        "client_type": "GOOGLE_ADS_WEB_CLIENT",
+                        "change_resource_type": "CAMPAIGN",
+                        "resource_change_operation": "UPDATE",
+                        "campaign_id": "101",
+                        "changed_field_count": "2",
+                        "changed_fields": "campaign.status,campaign_budget.amount_micros",
+                    },
+                    period="change_history",
+                ),
+                VendorMetricFact(
+                    "change_event_changed_field_count",
+                    2,
+                    {
+                        "change_event_id": "change-1",
+                        "change_date_time": "2026-06-18 12:30:00.000000",
+                        "change_resource_id": "101",
+                        "client_type": "GOOGLE_ADS_WEB_CLIENT",
+                        "change_resource_type": "CAMPAIGN",
+                        "resource_change_operation": "UPDATE",
+                        "campaign_id": "101",
+                        "changed_field_count": "2",
+                        "changed_fields": "campaign.status,campaign_budget.amount_micros",
+                    },
+                    period="change_history",
                 ),
                 VendorMetricFact(
                     "search_term_clicks",
@@ -2669,6 +2774,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "conversion_value" not in read_contract["missing_read_contracts"]
     assert "recommendations" not in read_contract["missing_read_contracts"]
     assert "impression_share" not in read_contract["missing_read_contracts"]
+    assert "change_history" not in read_contract["missing_read_contracts"]
     assert "ROAS" in read_contract["blocked_claims"]
     assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
@@ -2699,6 +2805,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "profit_margin" in derived_kpi_contract["missing_read_contracts"]
     assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
     assert "impression_share" not in derived_kpi_contract["missing_read_contracts"]
+    assert "change_history" not in derived_kpi_contract["missing_read_contracts"]
     assert "profitability" in derived_kpi_contract["blocked_claims"]
     assert derived_kpi_contract["kpi_rows"] == [
         {
@@ -2755,6 +2862,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "budget_pacing" not in budget_contract["missing_read_contracts"]
     assert "recommendations" not in budget_contract["missing_read_contracts"]
     assert "impression_share" not in budget_contract["missing_read_contracts"]
+    assert "change_history" not in budget_contract["missing_read_contracts"]
     assert budget_contract["budget_rows"] == [
         {
             "campaign_id": "101",
@@ -2803,6 +2911,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "recommendations" not in recommendations_contract["missing_read_contracts"]
     assert "impression_share" not in recommendations_contract["missing_read_contracts"]
+    assert "change_history" not in recommendations_contract["missing_read_contracts"]
     assert "recommendation apply" in recommendations_contract["blocked_claims"]
     assert recommendations_contract["recommendation_rows"] == [
         {
@@ -2844,6 +2953,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "search_rank_lost_impression_share",
     ]
     assert "impression_share" not in impression_share_contract["missing_read_contracts"]
+    assert "change_history" not in impression_share_contract["missing_read_contracts"]
     assert "budget apply" in impression_share_contract["blocked_claims"]
     assert impression_share_contract["impression_share_rows"] == [
         {
@@ -2876,6 +2986,49 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert impression_share_section["expert_rule_ids"] == [
         "ads_scaling_candidates_v1",
+        "ads_principles_v1",
+    ]
+    change_history_contract = payload["change_history_read_contract"]
+    assert change_history_contract["status"] == "ready"
+    assert change_history_contract["allowed_metrics"] == [
+        "change_event_available",
+        "change_event_changed_field_count",
+    ]
+    assert "change_history" not in change_history_contract["missing_read_contracts"]
+    assert "change impact" in change_history_contract["blocked_claims"]
+    assert change_history_contract["change_history_rows"] == [
+        {
+            "change_event_id": "change-1",
+            "change_date_time": "2026-06-18 12:30:00.000000",
+            "change_resource_id": "101",
+            "change_resource_type": "CAMPAIGN",
+            "resource_change_operation": "UPDATE",
+            "client_type": "GOOGLE_ADS_WEB_CLIENT",
+            "campaign_id": "101",
+            "changed_field_count": 2,
+            "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "metric_facts": change_history_contract["change_history_rows"][0][
+                "metric_facts"
+            ],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "change impact",
+                "performance uplift",
+                "budget apply",
+                "campaign mutation",
+            ],
+        }
+    ]
+    change_history_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_change_history"
+    )
+    assert change_history_section["status"] == "ready"
+    assert change_history_section["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert change_history_section["expert_rule_ids"] == [
+        "ads_diagnostics_v1",
         "ads_principles_v1",
     ]
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
@@ -2998,6 +3151,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_review_budget_context",
         "ads_review_recommendations",
         "ads_review_impression_share",
+        "ads_review_change_history",
         "ads_review_search_terms",
         "ads_review_negative_keyword_safety",
         "ads_prepare_custom_segments_from_search_terms",
@@ -3062,6 +3216,21 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_principles_v1",
     ]
     assert "budget apply" in impression_share_decision["blocked_claims"]
+    change_history_decision = decisions_by_id["ads_review_change_history"]
+    assert change_history_decision["status"] == "ready"
+    assert change_history_decision["decision_type"] == "review_change_history"
+    assert change_history_decision["change_history_rows"][0]["change_resource_type"] == (
+        "CAMPAIGN"
+    )
+    assert change_history_decision["action_ids"] == []
+    assert change_history_decision["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert change_history_decision["expert_rule_ids"] == [
+        "ads_diagnostics_v1",
+        "ads_principles_v1",
+    ]
+    assert "change impact" in change_history_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
@@ -3108,6 +3277,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert after_probe_payload["budget_pacing_read_contract"]["budget_rows"]
     assert after_probe_payload["recommendations_read_contract"]["recommendation_rows"]
     assert after_probe_payload["impression_share_read_contract"]["impression_share_rows"]
+    assert after_probe_payload["change_history_read_contract"]["change_history_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
 
     context_response = client.post(

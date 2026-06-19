@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
+from datetime import date, timedelta
 from typing import Any
 
 import httpx
@@ -14,6 +15,7 @@ GOOGLE_ADS_API_VERSION = "v24"
 OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
 GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords"
 SAFE_ERROR_LABEL = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
+SAFE_FIELD_PATH = re.compile(r"^[A-Za-z0-9_.]{1,120}$")
 
 
 def _google_ads_env_name(*parts: str) -> str:
@@ -86,6 +88,24 @@ WHERE recommendation.dismissed = false
 LIMIT 50
 """.strip()
 
+CHANGE_EVENT_LOOKBACK_DAYS = 14
+CHANGE_EVENT_SUMMARY_QUERY_TEMPLATE = """
+SELECT
+  change_event.resource_name,
+  change_event.change_date_time,
+  change_event.change_resource_name,
+  change_event.client_type,
+  change_event.change_resource_type,
+  change_event.resource_change_operation,
+  change_event.changed_fields,
+  change_event.campaign
+FROM change_event
+WHERE change_event.change_date_time >= '{start_date}'
+  AND change_event.change_date_time <= '{end_date}'
+ORDER BY change_event.change_date_time DESC
+LIMIT 50
+""".strip()
+
 CUSTOMER_CLIENT_QUERY = """
 SELECT
   customer_client.client_customer,
@@ -146,10 +166,17 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
+            change_event_summary, change_event_facts = _fetch_change_event_summary(
+                client,
+                credentials,
+                access_token,
+            )
             metric_summary.update(search_term_summary)
             metric_summary.update(recommendation_summary)
+            metric_summary.update(change_event_summary)
             metric_facts.extend(search_term_facts)
             metric_facts.extend(recommendation_facts)
+            metric_facts.extend(change_event_facts)
         except httpx.HTTPStatusError as exc:
             detail = _sanitized_http_error_detail(exc.response)
             if detail and "ads_error=queryError.REQUESTED_METRICS_FOR_MANAGER" in detail:
@@ -194,7 +221,8 @@ def refresh_google_ads_campaign_summary(
             "Google Ads vendor read completed through googleAds:searchStream. "
             f"Campaign rows: {metric_summary['row_count']}; "
             f"search term rows: {metric_summary.get('search_term_row_count', 0)}; "
-            f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}."
+            f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}; "
+            f"change events: {metric_summary.get('change_event_row_count', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -397,6 +425,36 @@ def _fetch_recommendation_summary(
     )
     response.raise_for_status()
     return _summarize_recommendation_response(response.json())
+
+
+def _fetch_change_event_summary(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    customer_id = credentials["customer_id"]
+    response = client.post(
+        f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+        f"{customer_id}/googleAds:searchStream",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "developer-token": str(credentials["developer_token"]),
+            "login-customer-id": str(credentials["login_customer_id"]),
+            "Content-Type": "application/json",
+        },
+        json={"query": _change_event_summary_query()},
+    )
+    response.raise_for_status()
+    return _summarize_change_event_response(response.json())
+
+
+def _change_event_summary_query(today: date | None = None) -> str:
+    end_date = today or date.today()
+    start_date = end_date - timedelta(days=CHANGE_EVENT_LOOKBACK_DAYS)
+    return CHANGE_EVENT_SUMMARY_QUERY_TEMPLATE.format(
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+    )
 
 
 def _fetch_customer_client_summary(
@@ -639,6 +697,63 @@ def _summarize_recommendation_response(
     )
 
 
+def _summarize_change_event_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    metric_facts: list[VendorMetricFact] = []
+    resource_types: set[str] = set()
+    operations: set[str] = set()
+    client_types: set[str] = set()
+    campaign_ids: set[str] = set()
+    for row in rows:
+        change_event = row.get("changeEvent", row.get("change_event", {}))
+        if not isinstance(change_event, dict):
+            continue
+        dimensions = _change_event_dimensions(change_event)
+        resource_type = dimensions.get("change_resource_type")
+        operation = dimensions.get("resource_change_operation")
+        client_type = dimensions.get("client_type")
+        campaign_id = dimensions.get("campaign_id")
+        if resource_type:
+            resource_types.add(resource_type)
+        if operation:
+            operations.add(operation)
+        if client_type:
+            client_types.add(client_type)
+        if campaign_id:
+            campaign_ids.add(campaign_id)
+        if dimensions:
+            changed_field_count = _int_metric(dimensions.get("changed_field_count"))
+            metric_facts.extend(
+                [
+                    VendorMetricFact(
+                        "change_event_available",
+                        1,
+                        dimensions,
+                        period="change_history",
+                    ),
+                    VendorMetricFact(
+                        "change_event_changed_field_count",
+                        changed_field_count,
+                        dimensions,
+                        period="change_history",
+                    ),
+                ]
+            )
+    return (
+        {
+            "change_event_query": f"change_event_last_{CHANGE_EVENT_LOOKBACK_DAYS}_days",
+            "change_event_row_count": len(rows),
+            "change_event_campaign_count": len(campaign_ids),
+            "change_event_resource_types": ",".join(sorted(resource_types)),
+            "change_event_operations": ",".join(sorted(operations)),
+            "change_event_client_types": ",".join(sorted(client_types)),
+        },
+        metric_facts,
+    )
+
+
 def _summarize_search_term_response(
     payload: Any,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
@@ -867,3 +982,60 @@ def _recommendation_campaign_count(recommendation: dict[str, Any]) -> int:
     if isinstance(campaigns, list):
         return len(campaigns)
     return 1 if _customer_resource_id(recommendation.get("campaign")) else 0
+
+
+def _change_event_dimensions(change_event: dict[str, Any]) -> dict[str, str]:
+    dimensions: dict[str, str] = {}
+    resource_name = change_event.get("resourceName", change_event.get("resource_name"))
+    change_event_id = _customer_resource_id(resource_name)
+    if change_event_id:
+        dimensions["change_event_id"] = change_event_id
+    change_date_time = change_event.get(
+        "changeDateTime",
+        change_event.get("change_date_time"),
+    )
+    if isinstance(change_date_time, str) and change_date_time:
+        dimensions["change_date_time"] = change_date_time[:32]
+    change_resource_name = change_event.get(
+        "changeResourceName",
+        change_event.get("change_resource_name"),
+    )
+    change_resource_id = _customer_resource_id(change_resource_name)
+    if change_resource_id:
+        dimensions["change_resource_id"] = change_resource_id
+    for source_key, target_key in (
+        ("clientType", "client_type"),
+        ("changeResourceType", "change_resource_type"),
+        ("resourceChangeOperation", "resource_change_operation"),
+    ):
+        value = change_event.get(source_key, change_event.get(target_key))
+        if isinstance(value, str) and SAFE_ERROR_LABEL.fullmatch(value):
+            dimensions[target_key] = value
+    campaign_id = _customer_resource_id(change_event.get("campaign"))
+    if campaign_id:
+        dimensions["campaign_id"] = campaign_id
+    changed_fields = _field_mask_paths(
+        change_event.get("changedFields", change_event.get("changed_fields"))
+    )
+    dimensions["changed_field_count"] = str(len(changed_fields))
+    if changed_fields:
+        dimensions["changed_fields"] = ",".join(changed_fields[:8])
+    return dimensions
+
+
+def _field_mask_paths(value: Any) -> list[str]:
+    raw_paths: list[Any]
+    if isinstance(value, dict):
+        paths = value.get("paths")
+        raw_paths = paths if isinstance(paths, list) else []
+    elif isinstance(value, list):
+        raw_paths = value
+    elif isinstance(value, str):
+        raw_paths = [path.strip() for path in value.split(",")]
+    else:
+        raw_paths = []
+    return [
+        path
+        for path in (str(raw_path).strip() for raw_path in raw_paths)
+        if path and SAFE_FIELD_PATH.fullmatch(path)
+    ]

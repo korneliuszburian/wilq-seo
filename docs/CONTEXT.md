@@ -73,6 +73,19 @@ Audit `docs/audits/001-output.md` is now folded into
    Ogólna` has search IS `0.1819`, budget-lost IS `0.0075`, rank-lost IS
    `0.8106`. Do not call this budget scaling or wasted-budget proof: change
    history, human budget goal and budget apply preview remain missing.
+0. Ads change-history truth, 2026-06-19 18:19 Europe/Warsaw: Google Ads
+   change history is now a typed read-only contract. Live proof
+   `refresh_google_ads_e7f371e9efac` /
+   `ev_refresh_refresh_google_ads_e7f371e9efac` returned
+   `change_event_row_count=0`; `/api/ads/diagnostics` exposes
+   `change_history_read_contract.status=ready`, decision
+   `ads_review_change_history`, and section `ads_change_history`. This means
+   WILQ successfully queried `change_event` for the last 14 days and found no
+   events. It is not change-impact proof. Keep `change impact`,
+   `performance uplift`, `budget scaling`, `budget apply` and
+   `campaign mutation` blocked until pre/post performance windows, human review
+   and apply preview exist. Non-interactive `wilq-ads-doctor` eval passed at
+   `.local-lab/evals/codex-skill/20260619T162014Z/wilq-ads-doctor/result.json`.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.

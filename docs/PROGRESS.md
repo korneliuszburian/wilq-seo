@@ -8,6 +8,33 @@ artifacts.
 
 Data: 2026-06-19
 
+- Ads change history read contract, 2026-06-19 18:19 Europe/Warsaw: current
+  active proof is read-only Google Ads audit context, not change-impact proof.
+  Google Ads `vendor_read` now queries `change_event` for the last 14 days and
+  stores only redacted/sanitized facts: event ID, timestamp, resource type,
+  operation, client type, campaign ID and changed field names/count. It does
+  not store `user_email`, old/new resource payloads or raw vendor bodies. Live
+  proof: `refresh_google_ads_e7f371e9efac` with evidence
+  `ev_refresh_refresh_google_ads_e7f371e9efac` returned 18 campaign rows, 50
+  search-term rows, 4 recommendation rows, 2 impression-share rows and
+  `change_event_row_count=0`. `/api/ads/diagnostics` exposes
+  `change_history_read_contract.status=ready`, row count `0`, decision
+  `ads_review_change_history`, and section `ads_change_history`. Because Google
+  Ads returned no change events in the 14-day window, this proves read access
+  and blocker behavior, not campaign change impact. Still blocked:
+  `change impact`, `performance uplift`, `budget scaling`, `budget apply` and
+  `campaign mutation`; missing contracts remain pre/post performance windows,
+  human change-impact review and apply preview. Focused proof passed: ruff,
+  mypy, selected API/eval-case tests, dashboard TypeScript, dashboard
+  `App.test.tsx`, live WILQ refresh, `/api/ads/diagnostics` check and Ads skill
+  smoke. Non-interactive `wilq-ads-doctor` eval passed at
+  `.local-lab/evals/codex-skill/20260619T162014Z/wilq-ads-doctor/result.json`;
+  final JSON has `language=pl-PL`, `api_used=true`, Google Ads evidence IDs and
+  no safety findings. Full `scripts/verify.sh` passed: backend API contracts
+  `111 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`,
+  API smoke, skill structure smoke, skill API smoke, security checks and
+  dashboard production build passed. Non-blocking warning: Vite main JS chunk
+  is `540.14 kB`, above the 500 KB warning threshold.
 - Ads impression share read contract, 2026-06-19 17:55 Europe/Warsaw: current
   active proof is read-only auction/exposure context, not budget apply. Google
   Ads `vendor_read` now stores `search_impression_share`,

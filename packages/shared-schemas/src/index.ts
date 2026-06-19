@@ -394,6 +394,36 @@ export const AdsImpressionShareReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsChangeHistoryRowSchema = z.object({
+  change_event_id: z.string().nullable().optional(),
+  change_date_time: z.string().nullable().optional(),
+  change_resource_id: z.string().nullable().optional(),
+  change_resource_type: z.string().nullable().optional(),
+  resource_change_operation: z.string().nullable().optional(),
+  client_type: z.string().nullable().optional(),
+  campaign_id: z.string().nullable().optional(),
+  changed_field_count: z.number().nullable().optional(),
+  changed_fields: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsChangeHistoryReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  change_history_rows: z.array(AdsChangeHistoryRowSchema),
+  next_step: z.string()
+});
+
 export const AdsSearchTermMetricRowSchema = z.object({
   search_term: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -500,6 +530,7 @@ export const AdsDecisionItemSchema = z.object({
     "review_budget_context",
     "review_recommendations",
     "review_impression_share",
+    "review_change_history",
     "review_search_terms",
     "review_negative_keyword_safety",
     "prepare_custom_segments",
@@ -521,6 +552,7 @@ export const AdsDecisionItemSchema = z.object({
   budget_rows: z.array(AdsBudgetPacingRowSchema),
   recommendation_rows: z.array(AdsRecommendationRowSchema),
   impression_share_rows: z.array(AdsImpressionShareRowSchema),
+  change_history_rows: z.array(AdsChangeHistoryRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
@@ -543,6 +575,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   budget_pacing_read_contract: AdsBudgetPacingReadContractSchema,
   recommendations_read_contract: AdsRecommendationsReadContractSchema,
   impression_share_read_contract: AdsImpressionShareReadContractSchema,
+  change_history_read_contract: AdsChangeHistoryReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,

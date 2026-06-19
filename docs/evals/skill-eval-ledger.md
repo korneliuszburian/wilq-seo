@@ -25,6 +25,55 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-19 - wilq-ads-doctor change history contract
+
+Prompt class:
+
+```text
+Użyj skilla wilq-ads-doctor. Sprawdź przestrzeń do polepszenia Google Ads dla
+Ekologus, uwzględniając kampanie, search terms, rekomendacje, impression share
+i historię zmian. Nie wdrażaj zmian i nie twierdź, że znasz wpływ zmian bez
+evidence.
+```
+
+Observed behavior:
+
+- Live Google Ads `vendor_read` completed as `refresh_google_ads_e7f371e9efac`.
+- Evidence used: `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_e7f371e9efac`.
+- `/api/ads/diagnostics.change_history_read_contract.status=ready`.
+- Google Ads returned `change_event_row_count=0` for the last 14 days.
+- Decision queue includes `ads_review_change_history`.
+- Skill smoke passed against `http://127.0.0.1:8000`.
+- Non-interactive Codex eval passed:
+  `.local-lab/evals/codex-skill/20260619T162014Z/wilq-ads-doctor/result.json`.
+
+Useful output:
+
+- The skill has enough API context to say that change history was queried.
+- Because there were no change events, the correct marketer-facing conclusion
+  is a blocker/limitation: no claim about impact, uplift, budget scaling or
+  campaign mutation.
+- The contract keeps change history as audit context only and still requires
+  pre/post performance windows, human review and apply preview before mutation.
+
+Product gaps found:
+
+1. Change-history access works, but a 0-row window means WILQ still needs a
+   longer lookback or explicit date range if the marketer asks "what changed
+   recently?" and expects older account changes.
+2. Change impact still needs a derived comparison contract that joins change
+   event rows with pre/post campaign/search-term performance windows.
+3. Dashboard can show the contract in Ads Doctor, but Command Center should not
+   promote 0-row change history as a top decision unless it helps explain a
+   specific performance question.
+
+Verdict:
+
+Useful as a safety/readiness contract. Not enough yet for optimization advice.
+It removes the old "change_history missing" blocker after a real read attempt,
+but correctly keeps impact and mutation claims blocked.
+
 ## 2026-06-18 - wilq-content-strategist
 
 Prompt:

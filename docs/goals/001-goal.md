@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 17:55 Europe/Warsaw.
+Last updated: 2026-06-19 18:19 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -60,12 +60,13 @@ dashboard decisions, WILQ API evidence, Polish Codex skills, ActionObject
 safety, eval ledger and visible blocked claims. Ads now has a derived KPI read
 contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
 facts, a read-only budget context contract for campaign daily budgets versus
-7-day cost, a read-only Google Ads recommendations contract and a read-only
-Google Ads impression-share contract. Full BDOS-class
-parity still requires optimizer contracts such as account currency/profit-margin
-interpretation, recommendation impact/apply previews, change history,
-Keyword Planner enrichment, forecast or audience-size checks,
-budget/apply previews, apply safety and audit paths, plus real Localo
+7-day cost, a read-only Google Ads recommendations contract, a read-only Google
+Ads impression-share contract and a read-only Google Ads change-history
+contract. Full BDOS-class parity still requires optimizer contracts such as
+account currency/profit-margin interpretation, recommendation impact/apply
+previews, pre/post change-impact windows, Keyword Planner enrichment, forecast
+or audience-size checks, budget/apply previews, apply safety and mutation audit
+paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
@@ -132,18 +133,21 @@ Current connector truth:
   read proves that. Google Ads now has live campaign rows, search-term rows,
   a derived KPI read contract for CTR/CPC/conversion rate/CPA/ROAS, a
   read-only budget context contract, a read-only recommendations contract, a
-  read-only impression-share contract, a prepare-only custom segment candidate
-  contract and a prepare-only negative keyword safety review contract. Latest
-  live impression-share proof: `refresh_google_ads_baba7f993f1a` exposes 18
-  campaign rows, 50 search-term rows, 4 active Google Ads recommendation rows
-  and 2 impression-share rows. `/api/ads/diagnostics` reports
-  `impression_share_read_contract.status=ready` and decision
-  `ads_review_impression_share`. CPA/ROAS are allowed only as calculations from
-  campaign facts; budget context, recommendations and impression share are
-  allowed only as review context. Profitability, wasted-budget, negative keyword
-  apply, audience size, budget scaling, campaign-performance, recommendation
-  impact, recommendation apply and performance-uplift claims still need explicit
-  read/safety/apply contracts.
+  read-only impression-share contract, a read-only change-history contract, a
+  prepare-only custom segment candidate contract and a prepare-only negative
+  keyword safety review contract. Latest live Ads proof:
+  `refresh_google_ads_e7f371e9efac` exposes 18 campaign rows, 50 search-term
+  rows, 4 active Google Ads recommendation rows, 2 impression-share rows and
+  `change_event_row_count=0` for the last 14 days. `/api/ads/diagnostics`
+  reports `impression_share_read_contract.status=ready`,
+  `change_history_read_contract.status=ready`, decisions
+  `ads_review_impression_share` and `ads_review_change_history`. CPA/ROAS are
+  allowed only as calculations from campaign facts; budget context,
+  recommendations, impression share and change history are allowed only as
+  review/audit context. Profitability, wasted-budget, negative keyword apply,
+  audience size, budget scaling, campaign-performance, recommendation impact,
+  recommendation apply, change impact and performance-uplift claims still need
+  explicit read/safety/apply contracts.
   Source-backed decision lineage now exists for Ads diagnostics: sections and
   decision queue items expose `knowledge_card_ids` and `expert_rule_ids`.
   Current proof chain for the budget slice is
@@ -1030,8 +1034,32 @@ Goal: prove that research sources shape WILQ behavior, not only docs.
 
 Tasks:
 
-- Done locally, pending commit: Google Ads impression-share read
-  chain.
+- Done: Google Ads change-history read chain.
+  - Product layer added:
+    `/api/ads/diagnostics.change_history_read_contract`.
+  - Live evidence:
+    `refresh_google_ads_e7f371e9efac` /
+    `ev_refresh_refresh_google_ads_e7f371e9efac`.
+  - Live result: `change_event_row_count=0` for the last 14 days. This proves
+    read access and blocker behavior, not change-impact.
+  - API view model: `AdsChangeHistoryReadContract`, `AdsChangeHistoryRow` and
+    decision `ads_review_change_history`.
+  - Dashboard proof: `/ads-doctor` renders change-history read state and, when
+    rows exist, sanitized event rows only.
+  - Skill proof: `wilq-ads-doctor` smoke, scoped context-pack and
+    non-interactive eval expose the same change-history contract.
+  - Safety proof: change impact, performance uplift, budget scaling, budget
+    apply and campaign mutation remain blocked.
+  - Non-interactive Codex proof:
+    `.local-lab/evals/codex-skill/20260619T162014Z/wilq-ads-doctor/result.json`
+    has `language=pl-PL`, `api_used=true`, Google Ads evidence IDs and no
+    safety findings.
+  - Full proof: `scripts/verify.sh` passed with backend API contracts
+    `111 passed`, dashboard route tests `13 passed`, Playwright e2e
+    `9 passed`, API smoke, skill structure smoke, skill API smoke, security
+    checks and dashboard production build passed. Non-blocking warning: Vite
+    main JS chunk `540.14 kB`.
+- Done: Google Ads impression-share read chain.
   - Product layer added:
     `/api/ads/diagnostics.impression_share_read_contract`.
   - Live evidence:
@@ -1093,8 +1121,9 @@ Tasks:
   It proves the Polish answer references the budget review knowledge/rule
   lineage, evidence IDs, prepare-only ActionObjects and blocked budget/apply
   claims.
-- Next chains after Ads impression share:
-  - Google Ads change-history.
+- Next chains after Ads change history:
+  - Ads pre/post change-impact window joined to campaign/search-term facts.
+  - Ads Keyword Planner enrichment for search terms and custom segments.
   - GSC/content source-to-decision quality.
   - Localo visibility once ranking/GBP evidence exists.
 - Use official docs first, then practitioner/academic sources only where they
@@ -1587,7 +1616,7 @@ Remaining Ads optimizer blockers:
 
 - no budget/apply preview or human budget-goal contract,
 - no recommendation impact/apply preview contract,
-- no change-history contract,
+- no pre/post change-impact window contract,
 - no account-currency/profit-margin interpretation contract,
 - no campaign pause/budget apply audit path.
 

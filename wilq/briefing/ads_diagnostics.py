@@ -25,6 +25,8 @@ from wilq.schemas import (
     AdsBudgetPacingRow,
     AdsCampaignMetricRow,
     AdsCampaignReadContract,
+    AdsChangeHistoryReadContract,
+    AdsChangeHistoryRow,
     AdsCustomSegmentCandidate,
     AdsCustomSegmentsReadContract,
     AdsDecisionItem,
@@ -84,6 +86,10 @@ ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
         [CARD_ADS_BUDGET_REVIEW],
         ["ads_scaling_candidates_v1", "ads_principles_v1"],
     ),
+    "ads_change_history": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_diagnostics_v1", "ads_principles_v1"],
+    ),
     "ads_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
         ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
@@ -126,6 +132,10 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_review_impression_share": (
         [CARD_ADS_BUDGET_REVIEW],
         ["ads_scaling_candidates_v1", "ads_principles_v1"],
+    ),
+    "ads_review_change_history": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_diagnostics_v1", "ads_principles_v1"],
     ),
     "ads_review_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
@@ -174,6 +184,10 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         latest_refresh,
     )
     impression_share_read_contract = _impression_share_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
+    change_history_read_contract = _change_history_read_contract(
         trusted_metric_facts,
         latest_refresh,
     )
@@ -235,6 +249,47 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
                 )
             }
         )
+    if change_history_read_contract.status == "ready":
+        campaign_read_contract = campaign_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    campaign_read_contract.missing_read_contracts,
+                    "change_history",
+                )
+            }
+        )
+        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    derived_kpi_read_contract.missing_read_contracts,
+                    "change_history",
+                )
+            }
+        )
+        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    budget_pacing_read_contract.missing_read_contracts,
+                    "change_history",
+                )
+            }
+        )
+        recommendations_read_contract = recommendations_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    recommendations_read_contract.missing_read_contracts,
+                    "change_history",
+                )
+            }
+        )
+        impression_share_read_contract = impression_share_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    impression_share_read_contract.missing_read_contracts,
+                    "change_history",
+                )
+            }
+        )
     search_terms_read_contract = _search_terms_read_contract(
         trusted_metric_facts,
         latest_refresh,
@@ -263,6 +318,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         _budget_pacing_section(budget_pacing_read_contract),
         _recommendations_section(recommendations_read_contract),
         _impression_share_section(impression_share_read_contract),
+        _change_history_section(change_history_read_contract),
         _search_terms_section(search_terms_read_contract, action_ids),
         _custom_segments_section(custom_segments_read_contract),
         _negative_keywords_section(negative_keywords_read_contract),
@@ -280,6 +336,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         budget_pacing_read_contract,
         recommendations_read_contract,
         impression_share_read_contract,
+        change_history_read_contract,
         search_terms_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
@@ -297,6 +354,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         budget_pacing_read_contract=budget_pacing_read_contract,
         recommendations_read_contract=recommendations_read_contract,
         impression_share_read_contract=impression_share_read_contract,
+        change_history_read_contract=change_history_read_contract,
         search_terms_read_contract=search_terms_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
@@ -1241,6 +1299,178 @@ def _impression_share_row_sort_key(
     return (-budget_lost, -rank_lost, row.campaign_name)
 
 
+def _change_history_read_contract(
+    metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsChangeHistoryReadContract:
+    rows = _change_history_rows(metric_facts)
+    read_attempted = _latest_refresh_has_summary_metric(
+        latest_refresh,
+        "change_event_row_count",
+    )
+    missing_read_contracts = [
+        "pre_change_performance_window",
+        "post_change_performance_window",
+        "human_change_impact_review",
+        "apply_preview",
+    ]
+    blocked_claims = [
+        "change impact",
+        "performance uplift",
+        "budget scaling",
+        "budget apply",
+        "campaign mutation",
+    ]
+    if rows or read_attempted:
+        if rows:
+            resource_types = _unique(
+                row.change_resource_type
+                for row in rows
+                if row.change_resource_type is not None
+            )
+            operations = _unique(
+                row.resource_change_operation
+                for row in rows
+                if row.resource_change_operation is not None
+            )
+            summary = (
+                f"WILQ ma {len(rows)} zdarzeń historii zmian Google Ads z ostatnich "
+                f"14 dni. Typy zasobów: {', '.join(resource_types[:5])}; "
+                f"operacje: {', '.join(operations[:5])}."
+            )
+        else:
+            summary = (
+                "WILQ wykonał read-only change history read; Google Ads nie zwrócił "
+                "zdarzeń zmian w ostatnich 14 dniach."
+            )
+        return AdsChangeHistoryReadContract(
+            status="ready",
+            title="Google Ads: historia zmian",
+            summary=summary,
+            allowed_metrics=[
+                "change_event_available",
+                "change_event_changed_field_count",
+            ],
+            missing_read_contracts=missing_read_contracts,
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(
+                [*(evidence_id for row in rows for evidence_id in row.evidence_ids)]
+                or _refresh_or_connector_evidence_ids(latest_refresh)
+            ),
+            change_history_rows=rows,
+            next_step=(
+                "Użyj historii zmian jako kontekstu audytu: co zmieniono, kiedy i na "
+                "jakim typie zasobu. Nie claimuj wpływu zmiany bez okna przed/po, "
+                "celu biznesowego i ręcznego review."
+            ),
+        )
+    return AdsChangeHistoryReadContract(
+        status="blocked",
+        title="Google Ads: brak historii zmian",
+        summary="WILQ nie ma jeszcze read-only metric facts z zasobu change_event.",
+        allowed_metrics=[],
+        missing_read_contracts=["change_history", *missing_read_contracts],
+        blocked_claims=["change history", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        change_history_rows=[],
+        next_step=(
+            "Uruchom Google Ads vendor_read z change_event read. Nie interpretuj "
+            "wpływu zmian kampanii bez tych facts."
+        ),
+    )
+
+
+def _change_history_rows(metric_facts: list[MetricFact]) -> list[AdsChangeHistoryRow]:
+    grouped_facts: dict[str, list[MetricFact]] = {}
+    seen_metric_keys: set[tuple[str, str]] = set()
+    for fact in metric_facts:
+        if fact.name not in {"change_event_available", "change_event_changed_field_count"}:
+            continue
+        change_event_id = fact.dimensions.get("change_event_id")
+        if not change_event_id:
+            continue
+        metric_key = (change_event_id, fact.name)
+        if metric_key in seen_metric_keys:
+            continue
+        seen_metric_keys.add(metric_key)
+        grouped_facts.setdefault(change_event_id, []).append(fact)
+
+    rows = [
+        _change_history_row(change_event_id, facts)
+        for change_event_id, facts in grouped_facts.items()
+    ]
+    return sorted(rows, key=_change_history_row_sort_key)
+
+
+def _change_history_row(
+    change_event_id: str,
+    facts: list[MetricFact],
+) -> AdsChangeHistoryRow:
+    facts_by_name = {fact.name: fact for fact in facts}
+    first_dimensions = facts[0].dimensions if facts else {}
+    changed_fields = [
+        field.strip()
+        for field in first_dimensions.get("changed_fields", "").split(",")
+        if field.strip()
+    ]
+    expected_metrics = ["change_event_available", "change_event_changed_field_count"]
+    return AdsChangeHistoryRow(
+        change_event_id=change_event_id,
+        change_date_time=first_dimensions.get("change_date_time"),
+        change_resource_id=first_dimensions.get("change_resource_id"),
+        change_resource_type=first_dimensions.get("change_resource_type"),
+        resource_change_operation=first_dimensions.get("resource_change_operation"),
+        client_type=first_dimensions.get("client_type"),
+        campaign_id=first_dimensions.get("campaign_id"),
+        changed_field_count=_int_metric_value(
+            facts_by_name.get("change_event_changed_field_count")
+        ),
+        changed_fields=changed_fields,
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        blocked_claims=[
+            "change impact",
+            "performance uplift",
+            "budget apply",
+            "campaign mutation",
+        ],
+    )
+
+
+def _change_history_section(
+    change_history_read_contract: AdsChangeHistoryReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in change_history_read_contract.change_history_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_change_history",
+        title="Historia zmian Google Ads",
+        status=change_history_read_contract.status,
+        summary=change_history_read_contract.summary,
+        diagnosis=(
+            "WILQ pokazuje ostatnie zmiany jako kontekst audytu kampanii. To nie "
+            "jest jeszcze dowód wpływu zmiany na wynik ani zgoda na kolejną mutację."
+        ),
+        next_step=change_history_read_contract.next_step,
+        source_connectors=change_history_read_contract.source_connectors,
+        evidence_ids=change_history_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=[],
+        blocked_claims=change_history_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def _change_history_row_sort_key(row: AdsChangeHistoryRow) -> tuple[str, str]:
+    return (row.change_date_time or "", row.change_event_id or "")
+
+
 def _ratio(
     numerator: float | int | None,
     denominator: float | int | None,
@@ -1913,6 +2143,7 @@ def _ads_decision_queue(
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
     recommendations_read_contract: AdsRecommendationsReadContract,
     impression_share_read_contract: AdsImpressionShareReadContract,
+    change_history_read_contract: AdsChangeHistoryReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
@@ -1967,6 +2198,7 @@ def _ads_decision_queue(
                     budget_pacing_read_contract,
                     recommendations_read_contract,
                     impression_share_read_contract,
+                    change_history_read_contract,
                 ),
                 source_connectors=campaign_read_contract.source_connectors,
                 evidence_ids=campaign_read_contract.evidence_ids,
@@ -1999,6 +2231,7 @@ def _ads_decision_queue(
                     budget_pacing_read_contract,
                     recommendations_read_contract,
                     impression_share_read_contract,
+                    change_history_read_contract,
                 ),
                 source_connectors=derived_kpi_read_contract.source_connectors,
                 evidence_ids=derived_kpi_read_contract.evidence_ids,
@@ -2100,6 +2333,37 @@ def _ads_decision_queue(
                 impression_share_rows=impression_share_read_contract.impression_share_rows,
                 action_ids=[],
                 blocked_claims=impression_share_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
+    if change_history_read_contract.status == "ready":
+        metric_facts = [
+            fact
+            for row in change_history_read_contract.change_history_rows
+            for fact in row.metric_facts
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_change_history",
+                decision_type="review_change_history",
+                status="ready",
+                title="Sprawdź historię zmian Google Ads",
+                summary=change_history_read_contract.summary,
+                rationale=(
+                    "Historia zmian mówi, co ostatnio zmieniano w koncie. WILQ może "
+                    "ją pokazać jako kontekst audytu, ale blokuje claimy o wpływie "
+                    "zmian na wynik bez porównania przed/po i ręcznego review."
+                ),
+                next_step=change_history_read_contract.next_step,
+                allowed_metrics=change_history_read_contract.allowed_metrics,
+                missing_read_contracts=change_history_read_contract.missing_read_contracts,
+                source_connectors=change_history_read_contract.source_connectors,
+                evidence_ids=change_history_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                change_history_rows=change_history_read_contract.change_history_rows,
+                action_ids=[],
+                blocked_claims=change_history_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
         )
@@ -2258,6 +2522,7 @@ def _remove_available_contracts(
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
     recommendations_read_contract: AdsRecommendationsReadContract | None = None,
     impression_share_read_contract: AdsImpressionShareReadContract | None = None,
+    change_history_read_contract: AdsChangeHistoryReadContract | None = None,
 ) -> list[str]:
     unavailable = list(missing_read_contracts)
     if budget_pacing_read_contract.status == "ready":
@@ -2277,6 +2542,13 @@ def _remove_available_contracts(
     ):
         unavailable = [
             contract for contract in unavailable if contract != "impression_share"
+        ]
+    if (
+        change_history_read_contract is not None
+        and change_history_read_contract.status == "ready"
+    ):
+        unavailable = [
+            contract for contract in unavailable if contract != "change_history"
         ]
     return unavailable
 
