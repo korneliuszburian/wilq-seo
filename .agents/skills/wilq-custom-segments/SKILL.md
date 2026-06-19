@@ -69,7 +69,7 @@ Wymagane powierzchnie connectorów dla tego skilla:
 - `google_ads`
 - `google_search_console`
 
-Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli `custom_segments_read_contract.status=blocked`, zwróć blocker i brakujące kontrakty zamiast wymyślać audience terms. Jeśli contract ma kandydatów, używaj wyłącznie `source_terms`, `evidence_ids`, `action_ids` i `blocked_claims` z API.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli `custom_segments_read_contract.status=blocked`, zwróć blocker i brakujące kontrakty zamiast wymyślać audience terms. Jeśli contract ma kandydatów, używaj wyłącznie `source_terms`, `payload_preview`, `evidence_ids`, `action_ids` i `blocked_claims` z API.
 
 </evidence_requirements>
 

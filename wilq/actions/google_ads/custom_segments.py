@@ -23,6 +23,11 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("Custom segment payload must not contain invented terms.")
     if not payload.get("evidence_ids"):
         errors.append("Custom segment payload requires evidence IDs.")
+    preview = payload.get("payload_preview")
+    if not isinstance(preview, list) or not preview:
+        errors.append("Custom segment payload requires review-only payload_preview.")
+    elif any(item.get("apply_allowed") is not False for item in preview if isinstance(item, dict)):
+        errors.append("Custom segment payload preview must keep apply_allowed=false.")
     return errors
 
 
@@ -46,13 +51,39 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
         "mode": "prepare_only",
         "terms": terms[:20],
         "source_terms": terms[:20],
+        "preview_contract": "custom_segment_payload_preview_v1",
+        "payload_preview": [
+            {
+                "id": "custom_segment_preview_google_ads_search_terms",
+                "custom_segment_name": "WILQ search-term intent review",
+                "member_type": "KEYWORD",
+                "source_terms": terms[:20],
+                "reason": (
+                    "Review-only custom audience keyword members from Google Ads "
+                    "search-term evidence."
+                ),
+                "evidence_ids": evidence_ids,
+                "source_metric_names": _unique(fact.name for fact in eligible_facts),
+                "required_validation": [
+                    "review_source_terms",
+                    "reject_brand_or_low_intent_terms",
+                    "keyword_planner_enrichment",
+                    "forecast_or_audience_size",
+                    "human_confirm_before_apply",
+                ],
+                "blocked_claims": CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+                "api_mutation_ready": False,
+                "apply_allowed": False,
+                "destructive": False,
+            }
+        ],
         "source_metric_names": _unique(fact.name for fact in eligible_facts),
         "evidence_ids": evidence_ids,
         "required_validation": [
             "review_source_terms",
             "reject_brand_or_low_intent_terms",
             "keyword_planner_enrichment",
-            "payload_preview",
+            "forecast_or_audience_size",
             "human_confirm_before_apply",
         ],
         "blocked_claims": CUSTOM_SEGMENT_BLOCKED_CLAIMS,

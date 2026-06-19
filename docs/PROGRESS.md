@@ -8,6 +8,29 @@ artifacts.
 
 Data: 2026-06-19
 
+- Custom segments review-only payload preview, 2026-06-19 22:08
+  Europe/Warsaw: current active proof is a safer Ads audience/action contract,
+  not an apply path. `/api/ads/diagnostics.custom_segments_read_contract` now
+  exposes `payload_preview` with `member_type=KEYWORD`,
+  `api_mutation_ready=false`, `apply_allowed=false` and `destructive=false`.
+  The contract no longer lists `custom_segment_payload_preview` as missing when
+  candidates exist; remaining missing contracts are
+  `keyword_planner_enrichment` and `forecast_or_audience_size`. Live proof on
+  `:8000`: `candidate_count=1`, `preview_count=1`, evidence
+  `ev_refresh_refresh_google_ads_eb8c239bc32b`, ActionObject
+  `act_prepare_custom_segments_from_search_terms` validates successfully and
+  still blocks audience size, conversion uplift, ROAS, targeting applied and
+  campaign performance. Default `wilq-custom-segments` context-pack now omits
+  `content_diagnostics`, caps ActionObject metrics and is about `186317 bytes`.
+  Non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260619T201200Z/wilq-custom-segments/result.json`
+  with `language=pl-PL`, `api_used=true`, source connectors
+  `google_ads`/`google_search_console`, evidence IDs, validated ActionObject,
+  `custom_segment_payload_preview`, `operator_usefulness_score=5` and
+  `safety_findings=[]`. Full `scripts/verify.sh` passed after this slice:
+  backend API contracts `113 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed`, API smoke, skill structure/API smoke and
+  dashboard production build passed without a >500 KB chunk warning.
 - Dashboard bundle split, 2026-06-19 21:44 Europe/Warsaw: current active proof
   is build/runtime performance only, not a UI redesign. Vite build now uses
   Rollup manual chunks for React, TanStack, icons, schemas and misc vendor

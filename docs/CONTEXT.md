@@ -78,6 +78,16 @@ Audit `docs/audits/001-output.md` is now folded into
    `126.96 kB`, `vendor-schemas` `76.67 kB`, `vendor-icons` `7.91 kB`,
    `vendor-misc` `2.16 kB`. Preserve this split unless a better measured
    lazy-route split replaces it.
+0. Custom segments payload-preview truth, 2026-06-19 22:08 Europe/Warsaw:
+   custom segments now have a typed review-only payload preview in
+   `/api/ads/diagnostics`, `/api/actions/act_prepare_custom_segments_from_search_terms`
+   and `/ads-doctor`. This is not apply support. Keep
+   `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false` until
+   Keyword Planner enrichment, forecast/audience-size, human confirmation and
+   Ads apply/audit contracts exist. Default `wilq-custom-segments`
+   context-pack is scoped to Ads diagnostics, omits `content_diagnostics` and
+   measures about `186317 bytes`. Latest eval artifact:
+   `.local-lab/evals/codex-skill/20260619T201200Z/wilq-custom-segments/result.json`.
 0. Ads recommendations truth, 2026-06-19 17:22 Europe/Warsaw: Google Ads
    recommendation review is now a typed read-only contract, not a prompt TODO.
    Live proof `refresh_google_ads_138befce0a2c` /

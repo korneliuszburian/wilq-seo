@@ -2073,3 +2073,51 @@ Product finding:
 - Impression share is now usable as review context for exposure lost through
   budget or rank. It is not proof of wasted budget or a permission to scale:
   change history, human budget goal and budget apply preview remain required.
+
+## 2026-06-19 - wilq-custom-segments payload-preview eval
+
+Purpose:
+
+- Prove that the Custom Segments Codex skill sees the new review-only
+  `custom_segment_payload_preview` contract and keeps audience size, ROAS,
+  targeting and campaign-performance claims blocked.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T201200Z/wilq-custom-segments/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `source_connectors=["google_ads","google_search_console"]`
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_connector_google_search_console_status`,
+  `ev_refresh_refresh_google_ads_eb8c239bc32b`.
+- Final JSON includes marker terms:
+  `custom_segments_read_contract`,
+  `custom_segment_payload_preview`,
+  `source_terms`,
+  `audience size`,
+  `ROAS`.
+- Action candidate:
+  `act_prepare_custom_segments_from_search_terms` with
+  `validation_state=validated`.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- Custom segments now have a useful review-only payload preview from real
+  Google Ads search-term evidence. This is not a targeting/apply path:
+  Keyword Planner enrichment, forecast/audience-size, human confirmation and
+  Ads apply/audit contracts remain required.

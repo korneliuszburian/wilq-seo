@@ -517,6 +517,23 @@ export const AdsKeywordMatchContextReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsCustomSegmentPayloadPreviewSchema = z.object({
+  id: z.string(),
+  custom_segment_name: z.string(),
+  member_type: z.literal("KEYWORD"),
+  source_terms: z.array(z.string()),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  reason: z.string(),
+  evidence_ids: z.array(z.string()),
+  source_metric_names: z.array(z.string()),
+  required_validation: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsCustomSegmentCandidateSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -530,6 +547,7 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   confidence: z.enum(["low", "medium", "high"]),
   validation_status: z.enum(["pending_validation", "blocked"]),
+  payload_preview: AdsCustomSegmentPayloadPreviewSchema.nullable().optional(),
   blocked_claims: z.array(z.string()),
   next_step: z.string()
 });
@@ -540,6 +558,7 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   title: z.string(),
   summary: z.string(),
   candidates: z.array(AdsCustomSegmentCandidateSchema),
+  payload_preview: z.array(AdsCustomSegmentPayloadPreviewSchema),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
@@ -652,6 +671,9 @@ export const AdsDecisionItemSchema = z.object({
     .optional()
     .default([]),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
+  custom_segment_payload_preview: z.array(AdsCustomSegmentPayloadPreviewSchema)
+    .optional()
+    .default([]),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
   negative_keyword_payload_preview: z.array(AdsNegativeKeywordPayloadPreviewSchema),
   action_ids: z.array(z.string()),

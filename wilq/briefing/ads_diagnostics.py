@@ -28,6 +28,7 @@ from wilq.schemas import (
     AdsChangeHistoryReadContract,
     AdsChangeHistoryRow,
     AdsCustomSegmentCandidate,
+    AdsCustomSegmentPayloadPreview,
     AdsCustomSegmentsReadContract,
     AdsDecisionItem,
     AdsDerivedKpiReadContract,
@@ -2247,14 +2248,21 @@ def _custom_segments_read_contract(
         )
 
     source_terms_count = sum(len(candidate.source_terms) for candidate in candidates)
+    payload_preview = [
+        candidate.payload_preview
+        for candidate in candidates
+        if candidate.payload_preview is not None
+    ]
     return AdsCustomSegmentsReadContract(
         status="ready",
         title="Custom segments z realnych search terms",
         summary=(
             f"WILQ ma {len(candidates)} kandydatów custom segments i "
-            f"{source_terms_count} source terms z Google Ads evidence."
+            f"{source_terms_count} source terms z Google Ads evidence oraz "
+            f"{len(payload_preview)} review-only payload preview."
         ),
         candidates=candidates,
+        payload_preview=payload_preview,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_unique(
             evidence_id
@@ -2264,13 +2272,12 @@ def _custom_segments_read_contract(
         missing_read_contracts=[
             "keyword_planner_enrichment",
             "forecast_or_audience_size",
-            "custom_segment_payload_preview",
         ],
         blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
         action_ids=custom_segment_action_ids,
         next_step=(
-            "Przejrzyj source terms, odrzuć nietrafione frazy, dodaj Keyword Planner "
-            "enrichment i waliduj ActionObject przed jakimkolwiek apply."
+            "Przejrzyj source terms i payload preview, odrzuć nietrafione frazy, "
+            "dodaj Keyword Planner enrichment i waliduj ActionObject przed apply."
         ),
     )
 
@@ -2303,9 +2310,19 @@ def _custom_segment_candidates(
             evidence_id for row in sorted_rows for evidence_id in row.evidence_ids
         )
         metric_facts = [fact for row in sorted_rows for fact in row.metric_facts][:20]
+        payload_preview = _custom_segment_payload_preview(
+            candidate_id=f"ads_custom_segment_{_slug(campaign_id or campaign_name or str(index))}",
+            name=name,
+            source_terms=source_terms,
+            rows=sorted_rows,
+            evidence_ids=evidence_ids,
+            metric_facts=metric_facts,
+            campaign_id=campaign_id,
+            campaign_name=campaign_name,
+        )
         candidates.append(
             AdsCustomSegmentCandidate(
-                id=f"ads_custom_segment_{_slug(campaign_id or campaign_name or str(index))}",
+                id=payload_preview.id.removeprefix("preview_"),
                 name=name,
                 intent="search_term_interest",
                 source_terms=source_terms,
@@ -2317,14 +2334,57 @@ def _custom_segment_candidates(
                 metric_facts=metric_facts,
                 confidence=_custom_segment_confidence(sorted_rows),
                 validation_status="pending_validation",
+                payload_preview=payload_preview,
                 blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
                 next_step=(
-                    "Użyj tych terminów jako prepare-only candidate. Przed apply wymagaj "
-                    "Keyword Planner enrichment, payload preview i walidacji ActionObject."
+                    "Użyj tych terminów jako prepare-only candidate. Payload preview "
+                    "jest tylko do review; przed apply wymagaj Keyword Planner "
+                    "enrichment, forecastu i walidacji ActionObject."
                 ),
             )
         )
     return candidates[:4]
+
+
+def _custom_segment_payload_preview(
+    candidate_id: str,
+    name: str,
+    source_terms: list[str],
+    rows: list[AdsSearchTermMetricRow],
+    evidence_ids: list[str],
+    metric_facts: list[MetricFact],
+    campaign_id: str | None,
+    campaign_name: str | None,
+) -> AdsCustomSegmentPayloadPreview:
+    source_metric_names = _unique(
+        fact.name for fact in metric_facts if fact.name.startswith("search_term_")
+    )
+    row_terms = _unique(row.search_term for row in rows)
+    return AdsCustomSegmentPayloadPreview(
+        id=f"preview_{candidate_id}",
+        custom_segment_name=name,
+        member_type="KEYWORD",
+        source_terms=[term for term in source_terms if term in row_terms],
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        reason=(
+            "Podgląd review-only dla Google Ads custom audience keyword members "
+            "z realnych search terms. To nie jest gotowa mutacja ani targetowanie."
+        ),
+        evidence_ids=evidence_ids,
+        source_metric_names=source_metric_names,
+        required_validation=[
+            "review_source_terms",
+            "reject_brand_or_low_intent_terms",
+            "keyword_planner_enrichment",
+            "forecast_or_audience_size",
+            "human_confirm_before_apply",
+        ],
+        blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        api_mutation_ready=False,
+        apply_allowed=False,
+        destructive=False,
+    )
 
 
 def _custom_segments_section(
@@ -3092,7 +3152,8 @@ def _ads_decision_queue(
                 rationale=(
                     "WILQ ma source terms z Google Ads evidence, więc może przygotować "
                     "kandydatów segmentów. To nie jest apply ani obietnica skuteczności: "
-                    "brakuje Keyword Planner enrichment, audience size i payload preview."
+                    "payload preview jest review-only, a nadal brakuje Keyword Planner "
+                    "enrichment, audience size i zgody człowieka."
                 ),
                 next_step=custom_segments_read_contract.next_step,
                 allowed_metrics=[
@@ -3109,6 +3170,7 @@ def _ads_decision_queue(
                 metric_facts=metric_facts[:12],
                 search_term_rows=search_term_rows[:12],
                 custom_segment_candidates=custom_segments_read_contract.candidates,
+                custom_segment_payload_preview=custom_segments_read_contract.payload_preview,
                 action_ids=custom_segments_read_contract.action_ids,
                 blocked_claims=custom_segments_read_contract.blocked_claims,
                 risk=ActionRisk.medium,

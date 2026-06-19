@@ -45,6 +45,7 @@ Required WILQ output:
 | Source | URL | WILQ use |
 | --- | --- | --- |
 | Google Ads API Recommendations | https://developers.google.com/google-ads/api/docs/recommendations | Fetch recommendation types and optimization score, then filter through WILQ rules before action. |
+| Google Ads API Custom Audiences | https://developers.google.com/google-ads/api/docs/remarketing/audience-segments/custom-audiences | Build review-only custom segment payload previews from evidence-backed terms; never apply targeting without validation, forecast/audience context and audit. |
 | Google Ads negative keywords | https://support.google.com/google-ads/answer/2453972 | Search-term waste workflow and negative keyword candidate safety checks. |
 | Google Ads Query Language | https://developers.google.com/google-ads/api/docs/query/overview | GAQL contracts; no arbitrary model-written GAQL in apply paths. |
 | Google Ads partial failures | https://developers.google.com/google-ads/api/docs/best-practices/partial-failures | Bulk preview/apply must expose per-operation failures. |

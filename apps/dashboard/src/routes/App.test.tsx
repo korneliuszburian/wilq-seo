@@ -797,6 +797,34 @@ const adsDiagnostics = {
         metric_facts: [],
         confidence: "medium",
         validation_status: "pending_validation",
+        payload_preview: {
+          id: "preview_ads_custom_segment_123",
+          custom_segment_name: "Search terms: Ekologus Search",
+          member_type: "KEYWORD",
+          source_terms: ["bdo rejestracja"],
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          reason: "Review-only custom audience keyword members from search-term evidence.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: ["search_term_clicks", "search_term_impressions"],
+          required_validation: [
+            "review_source_terms",
+            "reject_brand_or_low_intent_terms",
+            "keyword_planner_enrichment",
+            "forecast_or_audience_size",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: [
+            "audience size",
+            "conversion uplift",
+            "ROAS",
+            "targeting applied",
+            "campaign performance"
+          ],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        },
         blocked_claims: [
           "audience size",
           "conversion uplift",
@@ -807,12 +835,41 @@ const adsDiagnostics = {
         next_step: "Użyj tych terminów jako prepare-only candidate."
       }
     ],
+    payload_preview: [
+      {
+        id: "preview_ads_custom_segment_123",
+        custom_segment_name: "Search terms: Ekologus Search",
+        member_type: "KEYWORD",
+        source_terms: ["bdo rejestracja"],
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        reason: "Review-only custom audience keyword members from search-term evidence.",
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        source_metric_names: ["search_term_clicks", "search_term_impressions"],
+        required_validation: [
+          "review_source_terms",
+          "reject_brand_or_low_intent_terms",
+          "keyword_planner_enrichment",
+          "forecast_or_audience_size",
+          "human_confirm_before_apply"
+        ],
+        blocked_claims: [
+          "audience size",
+          "conversion uplift",
+          "ROAS",
+          "targeting applied",
+          "campaign performance"
+        ],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     missing_read_contracts: [
       "keyword_planner_enrichment",
-      "forecast_or_audience_size",
-      "custom_segment_payload_preview"
+      "forecast_or_audience_size"
     ],
     blocked_claims: [
       "audience size",
@@ -1450,8 +1507,7 @@ const adsDiagnostics = {
       allowed_metrics: ["search_term", "search_term_clicks", "search_term_impressions"],
       missing_read_contracts: [
         "keyword_planner_enrichment",
-        "forecast_or_audience_size",
-        "custom_segment_payload_preview"
+        "forecast_or_audience_size"
       ],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -1496,6 +1552,34 @@ const adsDiagnostics = {
           metric_facts: [],
           confidence: "medium",
           validation_status: "pending_validation",
+          payload_preview: {
+            id: "preview_ads_custom_segment_123",
+            custom_segment_name: "Search terms: Ekologus Search",
+            member_type: "KEYWORD",
+            source_terms: ["bdo rejestracja"],
+            campaign_id: "123",
+            campaign_name: "Ekologus Search",
+            reason: "Review-only custom audience keyword members from search-term evidence.",
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+            source_metric_names: ["search_term_clicks", "search_term_impressions"],
+            required_validation: [
+              "review_source_terms",
+              "reject_brand_or_low_intent_terms",
+              "keyword_planner_enrichment",
+              "forecast_or_audience_size",
+              "human_confirm_before_apply"
+            ],
+            blocked_claims: [
+              "audience size",
+              "conversion uplift",
+              "ROAS",
+              "targeting applied",
+              "campaign performance"
+            ],
+            api_mutation_ready: false,
+            apply_allowed: false,
+            destructive: false
+          },
           blocked_claims: [
             "audience size",
             "conversion uplift",
@@ -1504,6 +1588,35 @@ const adsDiagnostics = {
             "campaign performance"
           ],
           next_step: "Użyj tych terminów jako prepare-only candidate."
+        }
+      ],
+      custom_segment_payload_preview: [
+        {
+          id: "preview_ads_custom_segment_123",
+          custom_segment_name: "Search terms: Ekologus Search",
+          member_type: "KEYWORD",
+          source_terms: ["bdo rejestracja"],
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          reason: "Review-only custom audience keyword members from search-term evidence.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          source_metric_names: ["search_term_clicks", "search_term_impressions"],
+          required_validation: [
+            "review_source_terms",
+            "reject_brand_or_low_intent_terms",
+            "keyword_planner_enrichment",
+            "forecast_or_audience_size",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: [
+            "audience size",
+            "conversion uplift",
+            "ROAS",
+            "targeting applied"
+          ],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
         }
       ],
       negative_keyword_candidates: [],

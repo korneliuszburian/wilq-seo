@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 21:44 Europe/Warsaw.
+Last updated: 2026-06-19 22:17 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -64,12 +64,13 @@ facts, a read-only budget context contract for campaign daily budgets versus
 Ads impression-share contract, a read-only Google Ads change-history contract,
 a read-only 90-day search-term safety contract and a review-only negative
 keyword payload preview plus read-only keyword match context for negative
-keyword review.
+keyword review. Custom segments now have a review-only payload preview from
+real search terms, but no targeting/apply support.
 Full BDOS-class parity still requires optimizer contracts such as account
 currency/profit-margin interpretation, recommendation impact/apply previews,
 pre/post change-impact windows, Keyword Planner enrichment, forecast or
-audience-size checks, budget/apply previews, apply safety and mutation audit
-paths, plus real Localo
+audience-size checks, custom segment targeting/apply previews, budget/apply
+previews, apply safety and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
@@ -138,8 +139,9 @@ Current connector truth:
   read-only budget context contract, a read-only recommendations contract, a
   read-only impression-share contract, a read-only change-history contract, a
   read-only 90-day search-term safety contract, a prepare-only custom segment
-  candidate contract and a prepare-only negative keyword safety review contract
-  with review-only payload preview plus read-only keyword match context.
+  candidate contract with review-only payload preview and a prepare-only
+  negative keyword safety review contract with review-only payload preview plus
+  read-only keyword match context.
   Latest live Ads proof: `refresh_google_ads_eb8c239bc32b` exposes 18 campaign
   rows, 50 30-day search-term rows, 200 90-day search-term safety rows, 211
   keyword match context rows, 4 active Google Ads recommendation rows, 2
@@ -661,12 +663,14 @@ Work in this order:
    Current local status: `/api/ads/diagnostics.custom_segments_read_contract`
    is typed and ready when Google Ads search-term evidence exists. It exposes
    1 prepare-only candidate for campaign `Kompendium PPWR`, real
-   `source_terms`, evidence `ev_refresh_refresh_google_ads_c2f62ee2b43a`,
-   missing contracts `keyword_planner_enrichment`,
-   `forecast_or_audience_size`, `custom_segment_payload_preview`, and
-   ActionObject `act_prepare_custom_segments_from_search_terms`. Dashboard
-   `/ads-doctor` renders these candidates; the skill `wilq-custom-segments`
-   consumes the same contract.
+   `source_terms`, review-only `custom_segment_payload_preview`, evidence
+   `ev_refresh_refresh_google_ads_eb8c239bc32b`, missing contracts
+   `keyword_planner_enrichment` and `forecast_or_audience_size`, and
+   ActionObject `act_prepare_custom_segments_from_search_terms`. The preview
+   uses `member_type=KEYWORD`, `api_mutation_ready=false`,
+   `apply_allowed=false` and `destructive=false`. Dashboard `/ads-doctor`
+   renders these candidates; the skill `wilq-custom-segments` consumes the
+   same contract.
 
    Fresh correction: Ads diagnostics now selects the latest Google Ads
    `vendor_read` as the evidence-bearing refresh. A later `status_probe` cannot
@@ -760,9 +764,10 @@ Work in this order:
    Localo has access/readiness diagnostics, but still needs rankings, GBP
    visibility, competitors, reviews and local tasks before local SEO claims.
    Ahrefs needs competitor pages/backlink/content-gap records before gap claims.
-   Custom Segments have real source terms and a prepare-only ActionObject, but
-   still need Keyword Planner enrichment, forecast/audience-size and payload
-   preview before any apply path. Campaign Builder needs campaign
+   Custom Segments have real source terms, a prepare-only ActionObject and a
+   review-only payload preview, but still need Keyword Planner enrichment,
+   forecast/audience-size and targeting/apply contracts before any apply path.
+   Campaign Builder needs campaign
    ActionObjects and payload preview contracts. Demand Gen needs
    creative/asset/landing-quality diagnostics. Social publishing stays explicit
    workflow only.
@@ -791,9 +796,10 @@ Work in this order:
      exist. Fresh access-ready blocker eval passed on 2026-06-19:
      `.local-lab/evals/codex-skill/20260619T072709Z/wilq-localo-operator/result.json`;
    - done for `wilq-custom-segments` after
-     `ads_diagnostics.custom_segments_read_contract` and
+     `ads_diagnostics.custom_segments_read_contract`,
+     review-only `custom_segment_payload_preview` and
      `act_prepare_custom_segments_from_search_terms`; keep rerunning when
-     Keyword Planner enrichment, forecast/audience-size or payload preview
+     Keyword Planner enrichment, forecast/audience-size or targeting/apply
      contracts are added;
    - `wilq-ahrefs-gap-finder`, `wilq-campaign-builder`,
      `wilq-demand-gen-operator` and `wilq-social-publisher` only after their
@@ -1685,6 +1691,51 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 Custom Segments review-only payload preview slice:
+
+```bash
+uv run ruff check wilq/schemas.py wilq/actions/google_ads/custom_segments.py wilq/briefing/ads_diagnostics.py apps/api/wilq_api/main.py .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/schemas.py wilq/actions/google_ads/custom_segments.py wilq/briefing/ads_diagnostics.py apps/api/wilq_api/main.py .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ads_diagnostics or custom_segments or route_specific'
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Live `:8000` proof after `scripts/local_stack.sh restart`:
+
+- `/api/ads/diagnostics.custom_segments_read_contract.status=ready`;
+- `candidate_count=1`, `payload_preview_count=1`;
+- remaining missing contracts:
+  `keyword_planner_enrichment`, `forecast_or_audience_size`;
+- `custom_segment_payload_preview` uses `member_type=KEYWORD`,
+  `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false`;
+- `/api/actions/act_prepare_custom_segments_from_search_terms` exposes
+  `preview_contract=custom_segment_payload_preview_v1` and validates;
+- scoped `wilq-custom-segments` context-pack omits `content_diagnostics`, caps
+  ActionObject metrics and measures about `186317 bytes`;
+- non-interactive `wilq-custom-segments` eval passed:
+  `.local-lab/evals/codex-skill/20260619T201200Z/wilq-custom-segments/result.json`
+  with `operator_usefulness_score=5` and `safety_findings=[]`.
+- full `scripts/verify.sh` passed after this slice:
+  - backend API contracts `113 passed`;
+  - dashboard route tests `13 passed`;
+  - Playwright e2e `9 passed`;
+  - API smoke, skill structure smoke, skill API smoke and dashboard production
+    build passed;
+  - production build chunks remain below the 500 KB warning threshold.
+
+Still blocked:
+
+- custom segment targeting/apply;
+- audience-size, conversion-uplift, ROAS, targeting-applied and
+  campaign-performance claims;
+- Keyword Planner enrichment, forecast/audience-size, human confirmation and
+  Ads apply/audit contracts.
 
 Passed after the 2026-06-19 Ads negative keyword payload preview slice:
 

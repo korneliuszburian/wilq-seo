@@ -90,6 +90,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "custom segments",
                 "ads_diagnostics",
                 "custom_segments_read_contract",
+                "custom_segment_payload_preview",
                 "source_terms",
                 "blocked claims",
                 "audience size",

@@ -146,22 +146,22 @@ playbooks:
       - Keyword Planner
     required_evidence:
       - search_terms
-      - keyword_planner_enrichment
       - campaign_context
       - evidence_ids
+      - custom_segment_payload_preview
     maps_to_opportunity_types:
       - custom_segment_candidate
     maps_to_action_types:
       - prepare_custom_segment
-      - apply_custom_segment_targeting
+      - prepare_custom_segment_review
     expert_rule_ids:
       - ads_custom_segments_v1
       - ads_keyword_planner_v1
-    compact_playbook: Build segment candidates from real search terms and Keyword Planner enrichment. Keep rejected low-intent or invented terms visible.
+    compact_playbook: Build review-only segment candidates from real search terms. Keep rejected low-intent or invented terms visible. Require Keyword Planner enrichment, forecast/audience-size and human approval before any apply path.
     refusal_rules:
       - Refuse invented audience terms.
       - Refuse segment payloads without source search terms.
-    output_contract: Custom segment candidate with evidence, rejected terms and validation notes.
+    output_contract: Custom segment candidate with evidence, rejected terms, review-only payload preview and blocked apply claims.
 
   - id: gsc_seo_content_playbook
     family: gsc_seo_content_playbook

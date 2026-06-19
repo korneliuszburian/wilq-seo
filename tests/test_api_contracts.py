@@ -3412,11 +3412,22 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "act_prepare_custom_segments_from_search_terms"
     ]
     assert "keyword_planner_enrichment" in custom_segments_contract["missing_read_contracts"]
+    assert "forecast_or_audience_size" in custom_segments_contract["missing_read_contracts"]
+    assert "custom_segment_payload_preview" not in custom_segments_contract[
+        "missing_read_contracts"
+    ]
     assert "audience size" in custom_segments_contract["blocked_claims"]
     assert custom_segments_contract["candidates"][0]["source_terms"] == [
         "bdo rejestracja",
         "odpady cena",
     ]
+    assert custom_segments_contract["payload_preview"][0] == (
+        custom_segments_contract["candidates"][0]["payload_preview"]
+    )
+    assert custom_segments_contract["payload_preview"][0]["member_type"] == "KEYWORD"
+    assert custom_segments_contract["payload_preview"][0]["apply_allowed"] is False
+    assert custom_segments_contract["payload_preview"][0]["api_mutation_ready"] is False
+    assert custom_segments_contract["payload_preview"][0]["destructive"] is False
     assert custom_segments_contract["candidates"][0]["confidence"] == "low"
     assert custom_segments_contract["candidates"][0]["validation_status"] == (
         "pending_validation"
@@ -3602,6 +3613,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "bdo rejestracja",
         "odpady cena",
     ]
+    assert custom_segments_decision["custom_segment_payload_preview"][0][
+        "custom_segment_name"
+    ] == "Search terms: Brand Search"
+    assert custom_segments_decision["custom_segment_payload_preview"][0][
+        "apply_allowed"
+    ] is False
     assert custom_segments_decision["action_ids"] == [
         "act_prepare_custom_segments_from_search_terms"
     ]
@@ -3704,6 +3721,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "odpady cena",
     ]
     assert custom_segment_action["payload"]["invented_terms"] is False
+    assert custom_segment_action["payload"]["preview_contract"] == (
+        "custom_segment_payload_preview_v1"
+    )
+    assert custom_segment_action["payload"]["payload_preview"][0]["member_type"] == "KEYWORD"
+    assert custom_segment_action["payload"]["payload_preview"][0]["apply_allowed"] is False
     assert custom_segment_action["payload"]["destructive"] is False
     validation_response = client.post(
         "/api/actions/act_prepare_custom_segments_from_search_terms/validate",
@@ -5458,6 +5480,37 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     )
     assert '"metric_facts":' not in json.dumps(ads_context)
     assert "safety_metric_facts" not in json.dumps(ads_context)
+
+
+def test_codex_context_pack_scopes_custom_segments_payload() -> None:
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-custom-segments"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    ads_context = data["ads_diagnostics"]
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-custom-segments"
+    assert "content_diagnostics" not in data
+    assert "command_center" not in data
+    assert ads_context["custom_segments_read_contract"]["payload_preview"]
+    assert "custom_segment_payload_preview" not in ads_context[
+        "custom_segments_read_contract"
+    ]["missing_read_contracts"]
+    assert ads_context["context_pack_compaction"][
+        "custom_segment_payload_preview_included"
+    ] <= 8
+    for action in data["active_action_objects"]:
+        assert action["metrics_included"] <= 3
+        assert action["metrics_total"] >= action["metrics_included"]
+        payload = action.get("payload") or {}
+        rows = payload.get("payload_preview")
+        if isinstance(rows, list):
+            assert rows == []
+            assert payload["payload_preview_included"] == 0
+            assert payload["payload_preview_total"] >= 0
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

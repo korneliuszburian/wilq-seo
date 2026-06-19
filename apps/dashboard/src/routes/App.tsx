@@ -2482,6 +2482,21 @@ function AdsCustomSegmentCandidatesPanel({
               </span>
             </div>
             <p className="mt-2 text-sm font-medium text-ink">{candidate.next_step}</p>
+            {candidate.payload_preview ? (
+              <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2 text-xs leading-5 text-slate-700">
+                <div className="font-semibold uppercase tracking-normal text-blue-700">
+                  Podgląd segmentu
+                </div>
+                <div>{candidate.payload_preview.custom_segment_name}</div>
+                <div className="text-slate-600">
+                  Typ wejścia: {candidate.payload_preview.member_type}. Wdrożenie:{" "}
+                  {candidate.payload_preview.apply_allowed
+                    ? "wymaga walidacji"
+                    : "zablokowany"}
+                  .
+                </div>
+              </div>
+            ) : null}
             <div className="mt-2 grid gap-2 text-xs text-slate-600">
               <TraceLine label="Source terms" values={candidate.source_terms.slice(0, 8)} />
               <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />

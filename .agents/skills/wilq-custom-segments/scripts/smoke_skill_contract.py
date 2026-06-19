@@ -81,6 +81,16 @@ def main() -> int:
             raise SystemExit("Custom segment candidate must expose source_terms")
         if not first_candidate.get("evidence_ids"):
             raise SystemExit("Custom segment candidate must expose evidence_ids")
+        if not first_candidate.get("payload_preview"):
+            raise SystemExit("Custom segment candidate must expose payload_preview")
+        if first_candidate["payload_preview"].get("apply_allowed") is not False:
+            raise SystemExit("Custom segment payload preview must keep apply_allowed=false")
+        if "custom_segment_payload_preview" in (
+            custom_segments_read_contract.get("missing_read_contracts") or []
+        ):
+            raise SystemExit("Ready custom segments contract must not miss payload preview")
+        if not custom_segments_read_contract.get("payload_preview"):
+            raise SystemExit("Ready custom segments contract must expose payload_preview")
         if CUSTOM_SEGMENT_ACTION_ID not in custom_segments_read_contract.get("action_ids", []):
             raise SystemExit(
                 "Custom segments read contract must expose custom segment ActionObject"
@@ -148,6 +158,9 @@ def main() -> int:
                         "status": custom_segments_read_contract.get("status"),
                         "summary": custom_segments_read_contract.get("summary"),
                         "candidate_count": len(custom_segment_candidates),
+                        "payload_preview_count": len(
+                            custom_segments_read_contract.get("payload_preview") or []
+                        ),
                         "missing_read_contracts": custom_segments_read_contract.get(
                             "missing_read_contracts", []
                         ),

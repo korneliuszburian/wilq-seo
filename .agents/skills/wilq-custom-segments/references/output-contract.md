@@ -35,6 +35,7 @@ Dla każdego kandydata z `custom_segments_read_contract.candidates` pokaż:
 
 - nazwę i intent z API;
 - `source_terms` bez dopisywania nowych fraz;
+- `payload_preview` jako review-only podgląd, z informacją że `apply_allowed=false`;
 - `evidence_ids` i `source_connectors`;
 - `confidence` oraz `validation_status`;
 - `action_ids`, jeśli API je wystawia;

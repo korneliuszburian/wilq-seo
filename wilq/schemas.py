@@ -746,6 +746,23 @@ class AdsKeywordMatchContextReadContract(BaseModel):
     next_step: str
 
 
+class AdsCustomSegmentPayloadPreview(BaseModel):
+    id: str
+    custom_segment_name: str
+    member_type: Literal["KEYWORD"] = "KEYWORD"
+    source_terms: list[str] = Field(default_factory=list)
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_metric_names: list[str] = Field(default_factory=list)
+    required_validation: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class AdsCustomSegmentCandidate(BaseModel):
     id: str
     name: str
@@ -759,6 +776,7 @@ class AdsCustomSegmentCandidate(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     confidence: Literal["low", "medium", "high"] = "low"
     validation_status: Literal["pending_validation", "blocked"] = "pending_validation"
+    payload_preview: AdsCustomSegmentPayloadPreview | None = None
     blocked_claims: list[str] = Field(default_factory=list)
     next_step: str
 
@@ -769,6 +787,7 @@ class AdsCustomSegmentsReadContract(BaseModel):
     title: str
     summary: str
     candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
+    payload_preview: list[AdsCustomSegmentPayloadPreview] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
@@ -885,6 +904,9 @@ class AdsDecisionItem(BaseModel):
         default_factory=list
     )
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
+    custom_segment_payload_preview: list[AdsCustomSegmentPayloadPreview] = Field(
+        default_factory=list
+    )
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
     negative_keyword_payload_preview: list[AdsNegativeKeywordPayloadPreview] = Field(
         default_factory=list
