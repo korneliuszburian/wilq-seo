@@ -1766,3 +1766,53 @@ Product finding:
 - This is the right pattern for future usefulness evals: deterministic smoke
   scripts must expose the typed API evidence the model is allowed to cite.
   Do not ask Codex to mention IDs that the smoke output does not show.
+
+## 2026-06-19 - wilq-ads-doctor recommendations read-contract eval
+
+Purpose:
+
+- Prove that the Ads Doctor Codex skill sees the new read-only Google Ads
+  recommendations contract and keeps recommendation apply/performance claims
+  blocked.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T153351Z/wilq-ads-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `source_connectors=["google_ads"]`
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_138befce0a2c`.
+- Final JSON includes marker terms:
+  `recommendations_read_contract`,
+  `ads_review_recommendations`,
+  `recommendation apply`.
+- Knowledge lineage includes:
+  `card_google_ads_budget_review_playbook`.
+- Expert lineage includes:
+  `ads_recommendations_v1`,
+  `ads_principles_v1` and other Ads rules returned by context-pack.
+- Action candidates remain prepare-only:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_negative_keyword_review_queue`.
+- `safety_findings=[]`.
+
+Product finding:
+
+- Google Ads recommendations are now usable as read-only review input for the
+  marketer. This does not make recommendation apply, automatic accept, budget
+  mutation or performance uplift safe; those remain blocked until impact
+  preview, change history, impression share, human review and apply preview
+  contracts exist.

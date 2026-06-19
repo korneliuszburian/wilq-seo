@@ -1524,6 +1524,8 @@ type AdsCampaignMetricRow = AdsDiagnosticsResponse["campaign_read_contract"]["ca
 type AdsDerivedKpiRow = AdsDiagnosticsResponse["derived_kpi_read_contract"]["kpi_rows"][number];
 type AdsBudgetPacingRow =
   AdsDiagnosticsResponse["budget_pacing_read_contract"]["budget_rows"][number];
+type AdsRecommendationRow =
+  AdsDiagnosticsResponse["recommendations_read_contract"]["recommendation_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 type AdsCustomSegmentCandidate =
@@ -1661,6 +1663,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
           <MetricTile label="Kampanie" value={data.campaign_read_contract.campaign_rows.length} />
           <MetricTile label="Budżety" value={data.budget_pacing_read_contract.budget_rows.length} />
           <MetricTile
+            label="Rekom."
+            value={data.recommendations_read_contract.recommendation_rows.length}
+          />
+          <MetricTile
             label="Zapytania"
             value={data.search_terms_read_contract.search_term_rows.length}
           />
@@ -1732,6 +1738,11 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
             Budżety: {decision.budget_rows.length}
           </span>
         ) : null}
+        {decision.recommendation_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Rekomendacje: {decision.recommendation_rows.length}
+          </span>
+        ) : null}
         {decision.allowed_metrics.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
@@ -1777,6 +1788,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const campaignRows = data.campaign_read_contract.campaign_rows;
   const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
   const budgetRows = data.budget_pacing_read_contract.budget_rows;
+  const recommendationRows = data.recommendations_read_contract.recommendation_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
@@ -1784,6 +1796,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.campaign_read_contract.missing_read_contracts,
     ...data.derived_kpi_read_contract.missing_read_contracts,
     ...data.budget_pacing_read_contract.missing_read_contracts,
+    ...data.recommendations_read_contract.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
@@ -1792,6 +1805,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
     ...data.campaign_read_contract.blocked_claims,
     ...data.derived_kpi_read_contract.blocked_claims,
     ...data.budget_pacing_read_contract.blocked_claims,
+    ...data.recommendations_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
     ...data.negative_keywords_read_contract.blocked_claims,
@@ -1814,6 +1828,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
           <MetricTile label="Kampanie" value={campaignRows.length} />
           <MetricTile label="KPI" value={derivedKpiRows.length} />
           <MetricTile label="Budżety" value={budgetRows.length} />
+          <MetricTile label="Rekom." value={recommendationRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
@@ -1824,6 +1839,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
         <AdsCampaignRowsTable rows={campaignRows} />
         <AdsDerivedKpiRowsTable rows={derivedKpiRows} />
         <AdsBudgetPacingRowsTable rows={budgetRows} />
+        <AdsRecommendationRowsPanel rows={recommendationRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} />
         <AdsNegativeKeywordCandidatesPanel candidates={negativeKeywordCandidates} />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
@@ -1974,6 +1990,51 @@ function AdsBudgetPacingRowsTable({ rows }: { rows: AdsBudgetPacingRow[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function AdsRecommendationRowsPanel({ rows }: { rows: AdsRecommendationRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak aktywnych rekomendacji Google Ads w ostatnim read-only odczycie albo brak kontraktu recommendations. WILQ nie przyjmuje rekomendacji bez review." />
+    );
+  }
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Rekomendacje Google Ads</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            Read-only lista typów rekomendacji do review. Apply pozostaje zablokowany.
+          </p>
+        </div>
+        <MetricTile label="Do review" value={rows.length} />
+      </div>
+      <div className="grid gap-2 md:grid-cols-2">
+        {rows.slice(0, 6).map((row) => (
+          <article
+            key={`${row.recommendation_id ?? row.recommendation_type}-${row.campaign_id ?? "account"}`}
+            className="rounded-md border border-line bg-white p-3"
+          >
+            <div className="text-sm font-semibold text-ink">{row.recommendation_type}</div>
+            <div className="mt-1 text-xs leading-5 text-slate-600">
+              Kampania: {row.campaign_id ?? "brak"} / budżet:{" "}
+              {row.campaign_budget_id ?? "brak"} / zakres kampanii:{" "}
+              {row.campaign_count ?? 0}
+            </div>
+            <TraceLine
+              label="Nie wolno twierdzić"
+              values={row.blocked_claims.map(adsBlockedClaimLabel)}
+            />
+            <LinkedTraceLine
+              label="Dowody"
+              values={row.evidence_ids.slice(0, 2)}
+              kind="evidence"
+            />
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -2199,6 +2260,7 @@ function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_campaign_activity") return "przegląd kampanii";
   if (decisionType === "review_derived_kpi") return "wyliczone KPI";
   if (decisionType === "review_budget_context") return "kontekst budżetu";
+  if (decisionType === "review_recommendations") return "rekomendacje do review";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
   if (decisionType === "review_negative_keyword_safety") return "review wykluczeń";
   if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
@@ -2228,10 +2290,11 @@ function adsDecisionSortValue(decision: AdsDecisionItem) {
     review_campaign_activity: 0,
     review_derived_kpi: 1,
     review_budget_context: 2,
-    review_search_terms: 3,
-    review_negative_keyword_safety: 4,
-    prepare_custom_segments: 5,
-    block_write_actions: 6,
+    review_recommendations: 3,
+    review_search_terms: 4,
+    review_negative_keyword_safety: 5,
+    prepare_custom_segments: 6,
+    block_write_actions: 7,
     fix_ads_access: 0
   };
   return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
@@ -2257,6 +2320,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_campaign_overview") return "Aktywność kampanii";
   if (sectionId === "ads_derived_kpi") return "Wyliczone KPI";
   if (sectionId === "ads_budget_pacing") return "Kontekst budżetu";
+  if (sectionId === "ads_recommendations") return "Rekomendacje Google Ads";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
   if (sectionId === "ads_custom_segments") return "Custom segments";
@@ -2278,6 +2342,8 @@ function adsAllowedMetricLabel(value: string) {
     spend_to_budget_ratio_7d: "wydanie względem budżetu",
     budget_has_recommended_budget: "sygnał recommended budget",
     budget_recommended_amount_micros: "rekomendowany budżet",
+    recommendation_available: "rekomendacja dostępna",
+    recommendation_campaign_count: "kampanie w rekomendacji",
     search_term: "zapytanie",
     campaign: "kampania",
     ad_group: "grupa reklam",
@@ -2289,6 +2355,9 @@ function adsAllowedMetricLabel(value: string) {
 function adsMissingReadContractLabel(value: string) {
   const labels: Record<string, string> = {
     recommendations: "rekomendacje Google Ads",
+    recommendation_impact_preview: "impact preview rekomendacji",
+    recommendation_apply_preview: "podgląd apply rekomendacji",
+    human_strategy_review: "review strategii przez człowieka",
     change_history: "historia zmian",
     budget_pacing: "tempo wydawania budżetu",
     campaign_budget: "budżet kampanii",
@@ -2323,6 +2392,9 @@ function adsBlockedClaimLabel(value: string) {
     "budget mutation": "zmiana budżetu",
     "campaign mutation": "zmiana kampanii",
     "campaign creation": "tworzenie kampanii",
+    "recommendation apply": "wdrożenie rekomendacji",
+    "automatic recommendation accept": "automatyczne przyjęcie rekomendacji",
+    "performance uplift": "wzrost performance",
     "budget scaling": "skalowanie budżetu",
     "budget amount": "kwota budżetu",
     "budget pacing": "tempo wydawania budżetu",

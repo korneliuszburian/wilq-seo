@@ -339,6 +339,33 @@ export const AdsBudgetPacingReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsRecommendationRowSchema = z.object({
+  recommendation_id: z.string().nullable().optional(),
+  recommendation_type: z.string(),
+  dismissed: z.boolean(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_budget_id: z.string().nullable().optional(),
+  campaign_count: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsRecommendationsReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  recommendation_rows: z.array(AdsRecommendationRowSchema),
+  next_step: z.string()
+});
+
 export const AdsSearchTermMetricRowSchema = z.object({
   search_term: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -443,6 +470,7 @@ export const AdsDecisionItemSchema = z.object({
     "review_campaign_activity",
     "review_derived_kpi",
     "review_budget_context",
+    "review_recommendations",
     "review_search_terms",
     "review_negative_keyword_safety",
     "prepare_custom_segments",
@@ -462,6 +490,7 @@ export const AdsDecisionItemSchema = z.object({
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
   derived_kpi_rows: z.array(AdsDerivedKpiRowSchema),
   budget_rows: z.array(AdsBudgetPacingRowSchema),
+  recommendation_rows: z.array(AdsRecommendationRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
@@ -482,6 +511,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   campaign_read_contract: AdsCampaignReadContractSchema,
   derived_kpi_read_contract: AdsDerivedKpiReadContractSchema,
   budget_pacing_read_contract: AdsBudgetPacingReadContractSchema,
+  recommendations_read_contract: AdsRecommendationsReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,

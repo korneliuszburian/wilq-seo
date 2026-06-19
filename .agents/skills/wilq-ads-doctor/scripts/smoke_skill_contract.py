@@ -81,6 +81,9 @@ def main() -> int:
             raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
     budget_pacing_read_contract = ads_diagnostics.get("budget_pacing_read_contract") or {}
+    recommendations_read_contract = (
+        ads_diagnostics.get("recommendations_read_contract") or {}
+    )
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
@@ -126,6 +129,28 @@ def main() -> int:
             "expert_rule_ids"
         ):
             raise SystemExit("Context pack budget decision expert rules differ")
+    if recommendations_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose recommendations_read_contract")
+    if not recommendations_read_contract.get("blocked_claims"):
+        raise SystemExit("Recommendations contract must list blocked claims")
+    if recommendations_read_contract.get("status") == "ready":
+        pack_recommendations_contract = (
+            pack.get("ads_diagnostics", {}).get("recommendations_read_contract") or {}
+        )
+        if pack_recommendations_contract.get("summary") != recommendations_read_contract.get(
+            "summary"
+        ):
+            raise SystemExit("Context pack recommendations contract differs")
+        if "recommendation apply" not in recommendations_read_contract.get(
+            "blocked_claims",
+            [],
+        ):
+            raise SystemExit("Recommendations contract must keep apply blocked")
+    elif "recommendations" not in recommendations_read_contract.get(
+        "missing_read_contracts",
+        [],
+    ):
+        raise SystemExit("Blocked recommendations contract must list missing recommendations")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -250,6 +275,25 @@ def main() -> int:
                         "expert_rule_ids": budget_decision.get("expert_rule_ids", []),
                         "action_ids": budget_decision.get("action_ids", []),
                         "blocked_claims": budget_decision.get("blocked_claims", []),
+                    },
+                    "recommendations_read_contract": {
+                        "status": recommendations_read_contract.get("status"),
+                        "summary": recommendations_read_contract.get("summary"),
+                        "allowed_metrics": recommendations_read_contract.get(
+                            "allowed_metrics",
+                            [],
+                        ),
+                        "missing_read_contracts": recommendations_read_contract.get(
+                            "missing_read_contracts",
+                            [],
+                        ),
+                        "row_count": len(
+                            recommendations_read_contract.get("recommendation_rows") or []
+                        ),
+                        "blocked_claims": recommendations_read_contract.get(
+                            "blocked_claims",
+                            [],
+                        ),
                     },
                     "search_terms_read_contract": {
                         "status": search_terms_read_contract.get("status"),

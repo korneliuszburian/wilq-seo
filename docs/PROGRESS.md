@@ -8,6 +8,34 @@ artifacts.
 
 Data: 2026-06-19
 
+- Ads recommendations read contract, 2026-06-19 17:22 Europe/Warsaw: current
+  active proof is read-only Google Ads recommendation review, not apply.
+  Google Ads `vendor_read` now queries active `recommendation` rows and stores
+  redacted recommendation facts. Live proof:
+  `refresh_google_ads_138befce0a2c` with evidence
+  `ev_refresh_refresh_google_ads_138befce0a2c` returned 18 campaign rows, 50
+  search-term rows and 4 active recommendation rows:
+  `DISPLAY_EXPANSION_OPT_IN`, `DYNAMIC_IMAGE_EXTENSION_OPT_IN`,
+  `IMPROVE_PERFORMANCE_MAX_AD_STRENGTH`, `SEARCH_PARTNERS_OPT_IN`.
+  `/api/ads/diagnostics.recommendations_read_contract.status=ready`; decision
+  queue includes `ads_review_recommendations`. Missing contracts remain
+  `recommendation_impact_preview`, `change_history`, `impression_share`,
+  `human_strategy_review` and `recommendation_apply_preview`. Blocked claims
+  remain `recommendation apply`, `automatic recommendation accept`,
+  `budget apply`, `campaign mutation` and `performance uplift`. Dashboard
+  `/ads-doctor`, shared schemas and `wilq-ads-doctor` smoke/context-pack expose
+  the same read contract. Focused proof passed: ruff, mypy, two selected API
+  contract tests, dashboard TypeScript, dashboard `App.test.tsx`, Ads skill
+  smoke and scoped Codex context-pack check. Full `scripts/verify.sh` passed:
+  backend API contracts `111 passed`, dashboard route tests `13 passed`,
+  Playwright e2e `9 passed`, API smoke, skill structure smoke, skill API smoke,
+  security checks and dashboard production build passed. Non-blocking warning:
+  Vite main JS chunk is `533.57 kB`, above the 500 KB warning threshold.
+  Non-interactive `wilq-ads-doctor` eval also passed at
+  `.local-lab/evals/codex-skill/20260619T153351Z/wilq-ads-doctor/result.json`;
+  final JSON includes `recommendations_read_contract`,
+  `ads_review_recommendations`, `recommendation apply`, Google Ads evidence IDs
+  and no safety findings.
 - Source-to-product Ads slice, 2026-06-19 16:21 Europe/Warsaw: current active
   proof is Google Ads budget review lineage, not another prompt/reference patch.
   Added `google_ads_budget_review_playbook`; compiled card

@@ -70,6 +70,19 @@ WHERE segments.date DURING LAST_30_DAYS
 LIMIT 50
 """.strip()
 
+RECOMMENDATION_SUMMARY_QUERY = """
+SELECT
+  recommendation.resource_name,
+  recommendation.type,
+  recommendation.dismissed,
+  recommendation.campaign,
+  recommendation.campaign_budget,
+  recommendation.campaigns
+FROM recommendation
+WHERE recommendation.dismissed = false
+LIMIT 50
+""".strip()
+
 CUSTOMER_CLIENT_QUERY = """
 SELECT
   customer_client.client_customer,
@@ -125,8 +138,15 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
+            recommendation_summary, recommendation_facts = _fetch_recommendation_summary(
+                client,
+                credentials,
+                access_token,
+            )
             metric_summary.update(search_term_summary)
+            metric_summary.update(recommendation_summary)
             metric_facts.extend(search_term_facts)
+            metric_facts.extend(recommendation_facts)
         except httpx.HTTPStatusError as exc:
             detail = _sanitized_http_error_detail(exc.response)
             if detail and "ads_error=queryError.REQUESTED_METRICS_FOR_MANAGER" in detail:
@@ -170,7 +190,8 @@ def refresh_google_ads_campaign_summary(
         summary=(
             "Google Ads vendor read completed through googleAds:searchStream. "
             f"Campaign rows: {metric_summary['row_count']}; "
-            f"search term rows: {metric_summary.get('search_term_row_count', 0)}."
+            f"search term rows: {metric_summary.get('search_term_row_count', 0)}; "
+            f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -354,6 +375,27 @@ def _fetch_search_term_summary(
     return _summarize_search_term_response(response.json())
 
 
+def _fetch_recommendation_summary(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    customer_id = credentials["customer_id"]
+    response = client.post(
+        f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+        f"{customer_id}/googleAds:searchStream",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "developer-token": str(credentials["developer_token"]),
+            "login-customer-id": str(credentials["login_customer_id"]),
+            "Content-Type": "application/json",
+        },
+        json={"query": RECOMMENDATION_SUMMARY_QUERY},
+    )
+    response.raise_for_status()
+    return _summarize_recommendation_response(response.json())
+
+
 def _fetch_customer_client_summary(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
@@ -520,6 +562,51 @@ def _summarize_search_stream_response(
             "conversion_value": conversion_value,
             "budgeted_campaign_count": budgeted_campaign_count,
             "recommended_budget_count": recommended_budget_count,
+        },
+        metric_facts,
+    )
+
+
+def _summarize_recommendation_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    metric_facts: list[VendorMetricFact] = []
+    recommendation_types: set[str] = set()
+    campaign_count = 0
+    for row in rows:
+        recommendation = row.get("recommendation", {})
+        if not isinstance(recommendation, dict):
+            continue
+        dimensions = _recommendation_dimensions(recommendation)
+        recommendation_type = dimensions.get("recommendation_type")
+        if recommendation_type:
+            recommendation_types.add(recommendation_type)
+        row_campaign_count = _recommendation_campaign_count(recommendation)
+        campaign_count += row_campaign_count
+        if dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact(
+                        "recommendation_available",
+                        1,
+                        dimensions,
+                        period="recommendation",
+                    ),
+                    VendorMetricFact(
+                        "recommendation_campaign_count",
+                        row_campaign_count,
+                        dimensions,
+                        period="recommendation",
+                    ),
+                ]
+            )
+    return (
+        {
+            "recommendation_query": "active_recommendations",
+            "recommendation_row_count": len(rows),
+            "recommendation_campaign_count": campaign_count,
+            "recommendation_types": ",".join(sorted(recommendation_types)),
         },
         metric_facts,
     )
@@ -709,3 +796,34 @@ def _search_term_dimensions(row: dict[str, Any]) -> dict[str, str]:
         if isinstance(status, str) and status:
             dimensions["search_term_status"] = status
     return dimensions
+
+
+def _recommendation_dimensions(recommendation: dict[str, Any]) -> dict[str, str]:
+    dimensions: dict[str, str] = {}
+    resource_name = recommendation.get("resourceName", recommendation.get("resource_name"))
+    recommendation_id = _customer_resource_id(resource_name)
+    if recommendation_id:
+        dimensions["recommendation_id"] = recommendation_id
+    recommendation_type = recommendation.get("type")
+    if isinstance(recommendation_type, str) and recommendation_type:
+        dimensions["recommendation_type"] = recommendation_type
+    dismissed = _bool_metric(recommendation.get("dismissed"))
+    dimensions["dismissed"] = "true" if dismissed else "false"
+    campaign_id = _customer_resource_id(recommendation.get("campaign"))
+    if campaign_id:
+        dimensions["campaign_id"] = campaign_id
+    campaign_budget_id = _customer_resource_id(
+        recommendation.get("campaignBudget", recommendation.get("campaign_budget"))
+    )
+    if campaign_budget_id:
+        dimensions["campaign_budget_id"] = campaign_budget_id
+    campaign_count = _recommendation_campaign_count(recommendation)
+    dimensions["recommendation_campaign_count"] = str(campaign_count)
+    return dimensions
+
+
+def _recommendation_campaign_count(recommendation: dict[str, Any]) -> int:
+    campaigns = recommendation.get("campaigns")
+    if isinstance(campaigns, list):
+        return len(campaigns)
+    return 1 if _customer_resource_id(recommendation.get("campaign")) else 0

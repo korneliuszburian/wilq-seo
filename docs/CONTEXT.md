@@ -48,6 +48,19 @@ Audit `docs/audits/001-output.md` is now folded into
    because the managed API child was stale; after restart,
    `/api/ads/diagnostics` and the scoped context-pack exposed the expected
    `knowledge_card_ids` and `expert_rule_ids`.
+0. Ads recommendations truth, 2026-06-19 17:22 Europe/Warsaw: Google Ads
+   recommendation review is now a typed read-only contract, not a prompt TODO.
+   Live proof `refresh_google_ads_138befce0a2c` /
+   `ev_refresh_refresh_google_ads_138befce0a2c` returned 4 active
+   recommendations: `DISPLAY_EXPANSION_OPT_IN`,
+   `DYNAMIC_IMAGE_EXTENSION_OPT_IN`,
+   `IMPROVE_PERFORMANCE_MAX_AD_STRENGTH`, `SEARCH_PARTNERS_OPT_IN`.
+   `/api/ads/diagnostics.recommendations_read_contract.status=ready`, decision
+   queue includes `ads_review_recommendations`, and scoped
+   `wilq-ads-doctor` context-pack exposes the same contract. Do not call this
+   apply-ready: impact preview, change history, impression share, human review
+   and recommendation apply preview remain missing, so apply/performance-uplift
+   claims stay blocked.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.
@@ -71,13 +84,14 @@ Audit `docs/audits/001-output.md` is now folded into
 1. Command Center first-screen cleanup is implemented and verified: one
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
-2. Ads campaign/search-term/budget read contracts are implemented with
-   conversion counts/value and read-only budget context. Latest local work adds
-   `budget_pacing_read_contract.status=ready`, 18 campaign budget rows from
-   `refresh_google_ads_c91c9e9638c8`, and the `ads_review_budget_context`
-   decision. This is still not budget/waste/apply. Continue with
-   recommendations, change history, impression share, keyword/match context,
-   full 90-day safety, human budget goals, budget/apply previews and
+2. Ads campaign/search-term/budget/recommendation read contracts are
+   implemented with conversion counts/value, read-only budget context and
+   read-only recommendation review. Latest local work adds
+   `recommendations_read_contract.status=ready`, 4 active recommendation rows
+   from `refresh_google_ads_138befce0a2c`, and decision
+   `ads_review_recommendations`. This is still not budget/waste/apply.
+   Continue with change history, impression share, keyword/match context,
+   full 90-day safety, human budget goals, impact/apply previews and
    value/account-currency semantics before any money-leak/CPA/ROAS/budget
    scaling/negative-keyword apply claims. Full `scripts/verify.sh` passed for
    this slice with backend `108 passed`, dashboard unit `13 passed`,

@@ -259,7 +259,7 @@ const adsDiagnostics = {
     summary:
       "WILQ ma 1 wierszy kampanii: kliknięcia=107, wyświetlenia=2783, koszt_micros=164591174, konwersje=2.5, wartość_konwersji=450.75.",
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
-    missing_read_contracts: ["recommendations"],
+    missing_read_contracts: [],
     blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
@@ -316,8 +316,7 @@ const adsDiagnostics = {
     missing_read_contracts: [
       "account_currency",
       "profit_margin",
-      "change_history",
-      "recommendations"
+      "change_history"
     ],
     blocked_claims: [
       "profitability",
@@ -376,7 +375,6 @@ const adsDiagnostics = {
       "shared_budget_distribution",
       "budget_target_or_seasonality",
       "change_history",
-      "recommendations",
       "impression_share",
       "human_budget_goal"
     ],
@@ -420,6 +418,50 @@ const adsDiagnostics = {
     ],
     next_step:
       "Użyj tego jako kontekstu review; nie skaluj budżetu bez historii zmian i walidowanego ActionObject."
+  },
+  recommendations_read_contract: {
+    id: "ads_recommendations_read_contract",
+    status: "ready",
+    title: "Google Ads: rekomendacje do review",
+    summary: "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET.",
+    allowed_metrics: ["recommendation_available", "recommendation_campaign_count"],
+    missing_read_contracts: [
+      "recommendation_impact_preview",
+      "change_history",
+      "impression_share",
+      "human_strategy_review",
+      "recommendation_apply_preview"
+    ],
+    blocked_claims: [
+      "recommendation apply",
+      "automatic recommendation accept",
+      "budget apply",
+      "campaign mutation",
+      "performance uplift"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    recommendation_rows: [
+      {
+        recommendation_id: "rec-1",
+        recommendation_type: "CAMPAIGN_BUDGET",
+        dismissed: false,
+        campaign_id: "123",
+        campaign_budget_id: "777",
+        campaign_count: 1,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        missing_metrics: [],
+        blocked_claims: [
+          "recommendation apply",
+          "automatic recommendation accept",
+          "budget apply",
+          "campaign mutation"
+        ]
+      }
+    ],
+    next_step:
+      "Potraktuj rekomendacje Google jako input do review, nie jako gotową strategię."
   },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
@@ -631,7 +673,7 @@ const adsDiagnostics = {
         "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach.",
       next_step: "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów.",
       allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
-      missing_read_contracts: ["recommendations"],
+      missing_read_contracts: [],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
@@ -652,6 +694,7 @@ const adsDiagnostics = {
       ],
       derived_kpi_rows: [],
       budget_rows: [],
+      recommendation_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -667,6 +710,64 @@ const adsDiagnostics = {
       ],
       blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
       risk: "low"
+    },
+    {
+      id: "ads_review_recommendations",
+      decision_type: "review_recommendations",
+      status: "ready",
+      title: "Przejrzyj rekomendacje Google Ads bez apply",
+      summary: "WILQ ma 1 aktywnych rekomendacji Google Ads do review. Typy: CAMPAIGN_BUDGET.",
+      rationale:
+        "Google Ads recommendations są sygnałem do kontroli, nie automatyczną strategią.",
+      next_step:
+        "Potraktuj rekomendacje Google jako input do review, nie jako gotową strategię.",
+      allowed_metrics: ["recommendation_available", "recommendation_campaign_count"],
+      missing_read_contracts: [
+        "recommendation_impact_preview",
+        "change_history",
+        "impression_share",
+        "human_strategy_review",
+        "recommendation_apply_preview"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      derived_kpi_rows: [],
+      budget_rows: [],
+      recommendation_rows: [
+        {
+          recommendation_id: "rec-1",
+          recommendation_type: "CAMPAIGN_BUDGET",
+          dismissed: false,
+          campaign_id: "123",
+          campaign_budget_id: "777",
+          campaign_count: 1,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: [
+            "recommendation apply",
+            "automatic recommendation accept",
+            "budget apply",
+            "campaign mutation"
+          ]
+        }
+      ],
+      search_term_rows: [],
+      custom_segment_candidates: [],
+      negative_keyword_candidates: [],
+      action_ids: [],
+      knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
+      expert_rule_ids: ["ads_recommendations_v1", "ads_principles_v1"],
+      blocked_claims: [
+        "recommendation apply",
+        "automatic recommendation accept",
+        "budget apply",
+        "campaign mutation",
+        "performance uplift"
+      ],
+      risk: "medium"
     },
     {
       id: "ads_review_search_terms",
@@ -686,6 +787,7 @@ const adsDiagnostics = {
       campaign_rows: [],
       derived_kpi_rows: [],
       budget_rows: [],
+      recommendation_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -738,6 +840,7 @@ const adsDiagnostics = {
       campaign_rows: [],
       derived_kpi_rows: [],
       budget_rows: [],
+      recommendation_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [
@@ -791,6 +894,7 @@ const adsDiagnostics = {
       campaign_rows: [],
       derived_kpi_rows: [],
       budget_rows: [],
+      recommendation_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -855,6 +959,7 @@ const adsDiagnostics = {
       campaign_rows: [],
       derived_kpi_rows: [],
       budget_rows: [],
+      recommendation_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -2238,6 +2343,7 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
     ).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj rekomendacje Google Ads bez apply")).toBeInTheDocument();
     expect(screen.getByText("Nie wdrażaj zmian Ads bez osobnego ActionObject")).toBeInTheDocument();
     expect(screen.queryByText("Handoff blockera Ads")).not.toBeInTheDocument();
     expect(screen.queryByText(/handoff blockera OAuth/i)).not.toBeInTheDocument();
@@ -2249,10 +2355,12 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Koszt 7 dni")).toBeInTheDocument();
     expect(screen.getByText("7-dniowy budżet")).toBeInTheDocument();
     expect(screen.getByText("78,38%")).toBeInTheDocument();
-    expect(screen.getByText(/Karty wiedzy:/)).toBeInTheDocument();
-    expect(screen.getByText(/card_google_ads_budget_review_playbook/)).toBeInTheDocument();
-    expect(screen.getByText(/Reguły:/)).toBeInTheDocument();
-    expect(screen.getByText(/ads_scaling_candidates_v1/)).toBeInTheDocument();
+    expect(screen.getAllByText("CAMPAIGN_BUDGET").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/automatyczne przyjęcie rekomendacji/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Karty wiedzy:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/card_google_ads_budget_review_playbook/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Reguły:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ads_scaling_candidates_v1/).length).toBeGreaterThan(0);
     expect(screen.getByText(/wartość_konwersji=120/)).toBeInTheDocument();
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
     expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();

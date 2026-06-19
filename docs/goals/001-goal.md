@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 16:55 Europe/Warsaw.
+Last updated: 2026-06-19 17:22 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -59,13 +59,14 @@ it. A strong Ekologus demo can be delivered before the full product is complete:
 dashboard decisions, WILQ API evidence, Polish Codex skills, ActionObject
 safety, eval ledger and visible blocked claims. Ads now has a derived KPI read
 contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
-facts and a read-only budget context contract for campaign daily budgets versus
-7-day cost. Full BDOS-class parity still requires optimizer contracts such as
-account currency/profit-margin interpretation, recommendation review, change
-history, impression share, Keyword Planner enrichment, forecast or audience-size
-checks, budget/apply previews, apply safety and audit paths, plus real Localo
-ranking/GBP/competitor/review read contracts. Missing contracts must be shown as
-blockers, not hidden with prompt language.
+facts, a read-only budget context contract for campaign daily budgets versus
+7-day cost and a read-only Google Ads recommendations contract. Full BDOS-class
+parity still requires optimizer contracts such as account currency/profit-margin
+interpretation, recommendation impact/apply previews, change history, impression
+share, Keyword Planner enrichment, forecast or audience-size checks,
+budget/apply previews, apply safety and audit paths, plus real Localo
+ranking/GBP/competitor/review read contracts. Missing contracts must be shown
+as blockers, not hidden with prompt language.
 
 ## Research And Knowledge Contract
 
@@ -129,15 +130,20 @@ Current connector truth:
   is the child metrics customer. Do not call Ads an OAuth blocker unless a fresh
   read proves that. Google Ads now has live campaign rows, search-term rows,
   a derived KPI read contract for CTR/CPC/conversion rate/CPA/ROAS, a
-  read-only budget context contract, a prepare-only custom segment candidate
-  contract and a prepare-only negative keyword safety review contract. Latest
-  live budget proof: `refresh_google_ads_c91c9e9638c8` exposes 18 campaign
-  budget rows, `ads_review_budget_context` and `budget_pacing_read_contract`
-  status `ready`. CPA/ROAS are allowed only as calculations from campaign facts;
-  budget context is allowed only as review context. Profitability,
-  wasted-budget, negative keyword apply, audience size, budget scaling,
-  campaign-performance and recommendation/apply claims still need explicit
-  read/safety/apply contracts.
+  read-only budget context contract, a read-only recommendations contract, a
+  prepare-only custom segment candidate contract and a prepare-only negative
+  keyword safety review contract. Latest live recommendations proof:
+  `refresh_google_ads_138befce0a2c` exposes 18 campaign rows, 50 search-term
+  rows and 4 active Google Ads recommendation rows. Recommendation types:
+  `DISPLAY_EXPANSION_OPT_IN`, `DYNAMIC_IMAGE_EXTENSION_OPT_IN`,
+  `IMPROVE_PERFORMANCE_MAX_AD_STRENGTH`, `SEARCH_PARTNERS_OPT_IN`.
+  `/api/ads/diagnostics.recommendations_read_contract.status=ready` and the
+  decision queue includes `ads_review_recommendations`. CPA/ROAS are allowed
+  only as calculations from campaign facts; budget context and recommendations
+  are allowed only as review context. Profitability, wasted-budget, negative
+  keyword apply, audience size, budget scaling, campaign-performance,
+  recommendation impact, recommendation apply and performance-uplift claims
+  still need explicit read/safety/apply contracts.
   Source-backed decision lineage now exists for Ads diagnostics: sections and
   decision queue items expose `knowledge_card_ids` and `expert_rule_ids`.
   Current proof chain for the budget slice is
@@ -1024,7 +1030,31 @@ Goal: prove that research sources shape WILQ behavior, not only docs.
 
 Tasks:
 
-- In progress: Google Ads budget review chain.
+- Done locally, pending commit: Google Ads recommendations read
+  chain.
+  - Product layer added:
+    `/api/ads/diagnostics.recommendations_read_contract`.
+  - Live evidence:
+    `refresh_google_ads_138befce0a2c` /
+    `ev_refresh_refresh_google_ads_138befce0a2c`.
+  - API view model: `AdsRecommendationsReadContract`,
+    `AdsRecommendationRow` and decision `ads_review_recommendations`.
+  - Dashboard proof: `/ads-doctor` renders active recommendation types as
+    read-only review input.
+  - Skill proof: `wilq-ads-doctor` smoke and scoped context-pack expose the
+    same recommendations contract.
+  - Safety proof: apply, automatic accept, budget mutation and performance
+    uplift claims remain blocked.
+  - Full proof: `scripts/verify.sh` passed with backend API contracts
+    `111 passed`, dashboard route tests `13 passed`, Playwright e2e
+    `9 passed`, API smoke, skill structure smoke, skill API smoke, security
+    checks and dashboard production build passed. Non-blocking warning: Vite
+    main JS chunk `533.57 kB`.
+  - Non-interactive Codex proof:
+    `.local-lab/evals/codex-skill/20260619T153351Z/wilq-ads-doctor/result.json`
+    includes `recommendations_read_contract`, `ads_review_recommendations`,
+    `recommendation apply`, Google Ads evidence IDs and no safety findings.
+- Done: Google Ads budget review chain.
   - Product layer added: `google_ads_budget_review_playbook`.
   - Compiled knowledge card:
     `card_google_ads_budget_review_playbook`.
@@ -1043,8 +1073,8 @@ Tasks:
   It proves the Polish answer references the budget review knowledge/rule
   lineage, evidence IDs, prepare-only ActionObjects and blocked budget/apply
   claims.
-- Next chains after Ads budget review:
-  - Google Ads recommendations/change-history/impression-share.
+- Next chains after Ads recommendations:
+  - Google Ads change-history/impression-share.
   - GSC/content source-to-decision quality.
   - Localo visibility once ranking/GBP evidence exists.
 - Use official docs first, then practitioner/academic sources only where they
@@ -1536,7 +1566,8 @@ Live `:8000` proof after API restart:
 Remaining Ads optimizer blockers:
 
 - no budget/apply preview or human budget-goal contract,
-- no recommendations/change-history contract,
+- no recommendation impact/apply preview contract,
+- no change-history contract,
 - no impression share contract,
 - no account-currency/profit-margin interpretation contract,
 - no campaign pause/budget apply audit path.

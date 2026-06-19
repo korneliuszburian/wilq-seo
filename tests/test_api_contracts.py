@@ -1760,6 +1760,37 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
+        if "FROM recommendation" in query:
+            assert "recommendation.resource_name" in query
+            assert "recommendation.type" in query
+            assert "recommendation.dismissed" in query
+            assert "recommendation.campaign_budget" in query
+            assert "recommendation.campaigns" in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "recommendation": {
+                                    "resourceName": (
+                                        "customers/test/recommendations/rec-1"
+                                    ),
+                                    "type": "CAMPAIGN_BUDGET",
+                                    "dismissed": False,
+                                    "campaign": "customers/test/campaigns/101",
+                                    "campaignBudget": (
+                                        "customers/test/campaignBudgets/701"
+                                    ),
+                                    "campaigns": [
+                                        "customers/test/campaigns/101",
+                                    ],
+                                },
+                            },
+                        ]
+                    }
+                ],
+            )
         assert "FROM search_term_view" in query
         assert "search_term_view.search_term" in query
         assert "metrics.conversions" in query
@@ -1811,8 +1842,13 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["search_term_cost_micros"] == 5000000
     assert result.metric_summary["search_term_conversions"] == 1.0
     assert result.metric_summary["search_term_conversion_value"] == 120.0
+    assert result.metric_summary["recommendation_query"] == "active_recommendations"
+    assert result.metric_summary["recommendation_row_count"] == 1
+    assert result.metric_summary["recommendation_campaign_count"] == 1
+    assert result.metric_summary["recommendation_types"] == "CAMPAIGN_BUDGET"
     assert any("FROM campaign" in query for query in search_stream_queries)
     assert any("FROM search_term_view" in query for query in search_stream_queries)
+    assert any("FROM recommendation" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
@@ -1858,6 +1894,19 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         fact for fact in result.metric_facts if fact.name == "search_term_conversions"
     )
     assert search_term_conversion_fact.value == 1.0
+    recommendation_fact = next(
+        fact for fact in result.metric_facts if fact.name == "recommendation_available"
+    )
+    assert recommendation_fact.value == 1
+    assert recommendation_fact.period == "recommendation"
+    assert recommendation_fact.dimensions == {
+        "recommendation_id": "rec-1",
+        "recommendation_type": "CAMPAIGN_BUDGET",
+        "dismissed": "false",
+        "campaign_id": "101",
+        "campaign_budget_id": "701",
+        "recommendation_campaign_count": "1",
+    }
     serialized = json.dumps(result.metric_summary)
     assert "developer-token-test" not in serialized
     assert "refresh-token-test" not in serialized
@@ -2322,6 +2371,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "search_term_cost_micros": 12000000,
                 "search_term_conversions": 1.0,
                 "search_term_conversion_value": 120.0,
+                "recommendation_query": "active_recommendations",
+                "recommendation_row_count": 1,
+                "recommendation_campaign_count": 1,
+                "recommendation_types": "CAMPAIGN_BUDGET",
             },
             metric_facts=[
                 VendorMetricFact(
@@ -2390,6 +2443,32 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "budget_period": "DAILY",
                         "budget_status": "ENABLED",
                     },
+                ),
+                VendorMetricFact(
+                    "recommendation_available",
+                    1,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation",
+                ),
+                VendorMetricFact(
+                    "recommendation_campaign_count",
+                    1,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation",
                 ),
                 VendorMetricFact(
                     "search_term_clicks",
@@ -2539,6 +2618,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "conversions" not in read_contract["missing_read_contracts"]
     assert "conversion_value" not in read_contract["missing_read_contracts"]
+    assert "recommendations" not in read_contract["missing_read_contracts"]
     assert "ROAS" in read_contract["blocked_claims"]
     assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
@@ -2567,6 +2647,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "value_per_conversion",
     ]
     assert "profit_margin" in derived_kpi_contract["missing_read_contracts"]
+    assert "recommendations" not in derived_kpi_contract["missing_read_contracts"]
     assert "profitability" in derived_kpi_contract["blocked_claims"]
     assert derived_kpi_contract["kpi_rows"] == [
         {
@@ -2621,6 +2702,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "budget scaling" in budget_contract["blocked_claims"]
     assert "budget_pacing" not in budget_contract["missing_read_contracts"]
+    assert "recommendations" not in budget_contract["missing_read_contracts"]
     assert budget_contract["budget_rows"] == [
         {
             "campaign_id": "101",
@@ -2658,6 +2740,46 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert budget_section["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert budget_section["expert_rule_ids"] == [
         "ads_scaling_candidates_v1",
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
+    recommendations_contract = payload["recommendations_read_contract"]
+    assert recommendations_contract["status"] == "ready"
+    assert recommendations_contract["allowed_metrics"] == [
+        "recommendation_available",
+        "recommendation_campaign_count",
+    ]
+    assert "recommendations" not in recommendations_contract["missing_read_contracts"]
+    assert "recommendation apply" in recommendations_contract["blocked_claims"]
+    assert recommendations_contract["recommendation_rows"] == [
+        {
+            "recommendation_id": "rec-1",
+            "recommendation_type": "CAMPAIGN_BUDGET",
+            "dismissed": False,
+            "campaign_id": "101",
+            "campaign_budget_id": "701",
+            "campaign_count": 1,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "metric_facts": recommendations_contract["recommendation_rows"][0][
+                "metric_facts"
+            ],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "recommendation apply",
+                "automatic recommendation accept",
+                "budget apply",
+                "campaign mutation",
+            ],
+        }
+    ]
+    recommendations_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_recommendations"
+    )
+    assert recommendations_section["status"] == "ready"
+    assert recommendations_section["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert recommendations_section["expert_rule_ids"] == [
         "ads_recommendations_v1",
         "ads_principles_v1",
     ]
@@ -2779,6 +2901,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_review_campaign_activity",
         "ads_review_derived_kpis",
         "ads_review_budget_context",
+        "ads_review_recommendations",
         "ads_review_search_terms",
         "ads_review_negative_keyword_safety",
         "ads_prepare_custom_segments_from_search_terms",
@@ -2813,6 +2936,21 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_principles_v1",
     ]
     assert "budget apply" in budget_decision["blocked_claims"]
+    recommendations_decision = decisions_by_id["ads_review_recommendations"]
+    assert recommendations_decision["status"] == "ready"
+    assert recommendations_decision["decision_type"] == "review_recommendations"
+    assert recommendations_decision["recommendation_rows"][0]["recommendation_type"] == (
+        "CAMPAIGN_BUDGET"
+    )
+    assert recommendations_decision["action_ids"] == []
+    assert recommendations_decision["knowledge_card_ids"] == [
+        "card_google_ads_budget_review_playbook"
+    ]
+    assert recommendations_decision["expert_rule_ids"] == [
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    ]
+    assert "recommendation apply" in recommendations_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
@@ -2857,6 +2995,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert after_probe_payload["blocked_handoff"] is None
     assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
     assert after_probe_payload["budget_pacing_read_contract"]["budget_rows"]
+    assert after_probe_payload["recommendations_read_contract"]["recommendation_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
 
     context_response = client.post(

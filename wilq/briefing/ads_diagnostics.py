@@ -34,6 +34,8 @@ from wilq.schemas import (
     AdsDiagnosticsResponse,
     AdsNegativeKeywordCandidate,
     AdsNegativeKeywordsReadContract,
+    AdsRecommendationRow,
+    AdsRecommendationsReadContract,
     AdsSearchTermMetricRow,
     AdsSearchTermsReadContract,
     ConnectorRefreshMode,
@@ -72,6 +74,10 @@ ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
         [CARD_ADS_BUDGET_REVIEW],
         ["ads_scaling_candidates_v1", "ads_recommendations_v1", "ads_principles_v1"],
     ),
+    "ads_recommendations": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_recommendations_v1", "ads_principles_v1"],
+    ),
     "ads_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
         ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
@@ -106,6 +112,10 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_review_budget_context": (
         [CARD_ADS_BUDGET_REVIEW],
         ["ads_scaling_candidates_v1", "ads_recommendations_v1", "ads_principles_v1"],
+    ),
+    "ads_review_recommendations": (
+        [CARD_ADS_BUDGET_REVIEW],
+        ["ads_recommendations_v1", "ads_principles_v1"],
     ),
     "ads_review_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
@@ -149,6 +159,35 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         campaign_read_contract,
         latest_refresh,
     )
+    recommendations_read_contract = _recommendations_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
+    if recommendations_read_contract.status == "ready":
+        campaign_read_contract = campaign_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    campaign_read_contract.missing_read_contracts,
+                    "recommendations",
+                )
+            }
+        )
+        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    derived_kpi_read_contract.missing_read_contracts,
+                    "recommendations",
+                )
+            }
+        )
+        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    budget_pacing_read_contract.missing_read_contracts,
+                    "recommendations",
+                )
+            }
+        )
     search_terms_read_contract = _search_terms_read_contract(
         trusted_metric_facts,
         latest_refresh,
@@ -175,6 +214,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         ),
         _derived_kpi_section(derived_kpi_read_contract),
         _budget_pacing_section(budget_pacing_read_contract),
+        _recommendations_section(recommendations_read_contract),
         _search_terms_section(search_terms_read_contract, action_ids),
         _custom_segments_section(custom_segments_read_contract),
         _negative_keywords_section(negative_keywords_read_contract),
@@ -190,6 +230,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         campaign_read_contract,
         derived_kpi_read_contract,
         budget_pacing_read_contract,
+        recommendations_read_contract,
         search_terms_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
@@ -205,6 +246,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         campaign_read_contract=campaign_read_contract,
         derived_kpi_read_contract=derived_kpi_read_contract,
         budget_pacing_read_contract=budget_pacing_read_contract,
+        recommendations_read_contract=recommendations_read_contract,
         search_terms_read_contract=search_terms_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
@@ -789,6 +831,180 @@ def _budget_pacing_section(
 def _budget_pacing_row_sort_key(row: AdsBudgetPacingRow) -> tuple[float, int, str]:
     ratio = row.spend_to_budget_ratio_7d if row.spend_to_budget_ratio_7d is not None else -1
     return (-ratio, -(row.cost_micros_7d or 0), row.campaign_name)
+
+
+def _recommendation_row_sort_key(row: AdsRecommendationRow) -> tuple[str, str]:
+    return (row.recommendation_type, row.recommendation_id or "")
+
+
+def _latest_refresh_has_summary_metric(
+    latest_refresh: ConnectorRefreshRun | None,
+    metric_name: str,
+) -> bool:
+    if latest_refresh is None:
+        return False
+    return metric_name in latest_refresh.metric_summary
+
+
+def _remove_missing_contract_names(
+    missing_read_contracts: list[str],
+    *contract_names: str,
+) -> list[str]:
+    removals = set(contract_names)
+    return [contract for contract in missing_read_contracts if contract not in removals]
+
+
+def _recommendations_read_contract(
+    metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsRecommendationsReadContract:
+    rows = _recommendation_rows(metric_facts)
+    read_attempted = _latest_refresh_has_summary_metric(
+        latest_refresh,
+        "recommendation_row_count",
+    )
+    missing_read_contracts = [
+        "recommendation_impact_preview",
+        "change_history",
+        "impression_share",
+        "human_strategy_review",
+        "recommendation_apply_preview",
+    ]
+    blocked_claims = [
+        "recommendation apply",
+        "automatic recommendation accept",
+        "budget apply",
+        "campaign mutation",
+        "performance uplift",
+    ]
+    if rows or read_attempted:
+        if rows:
+            types = _unique(row.recommendation_type for row in rows)
+            summary = (
+                f"WILQ ma {len(rows)} aktywnych rekomendacji Google Ads do review. "
+                f"Typy: {', '.join(types[:5])}."
+            )
+        else:
+            summary = (
+                "WILQ wykonał read-only recommendations read; Google Ads zwrócił "
+                "0 aktywnych rekomendacji."
+            )
+        return AdsRecommendationsReadContract(
+            status="ready",
+            title="Google Ads: rekomendacje do review",
+            summary=summary,
+            allowed_metrics=[
+                "recommendation_available",
+                "recommendation_campaign_count",
+            ],
+            missing_read_contracts=missing_read_contracts,
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(
+                [*(evidence_id for row in rows for evidence_id in row.evidence_ids)]
+                or _refresh_or_connector_evidence_ids(latest_refresh)
+            ),
+            recommendation_rows=rows,
+            next_step=(
+                "Potraktuj rekomendacje Google jako input do review, nie jako gotową "
+                "strategię. Przed apply wymagaj historii zmian, impact preview, "
+                "impression share, celu biznesowego i walidowanego ActionObject."
+            ),
+        )
+    return AdsRecommendationsReadContract(
+        status="blocked",
+        title="Google Ads: brak kontraktu rekomendacji",
+        summary="WILQ nie ma jeszcze read-only facts z zasobu recommendation.",
+        allowed_metrics=[],
+        missing_read_contracts=["recommendations", *missing_read_contracts],
+        blocked_claims=["Google recommendations", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        recommendation_rows=[],
+        next_step=(
+            "Uruchom Google Ads vendor_read z recommendation fields. Nie przyjmuj "
+            "ani nie odrzucaj rekomendacji bez osobnego ActionObject."
+        ),
+    )
+
+
+def _recommendation_rows(metric_facts: list[MetricFact]) -> list[AdsRecommendationRow]:
+    grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
+    seen_metric_keys: set[tuple[str | None, str, str]] = set()
+    for fact in metric_facts:
+        if fact.name not in {"recommendation_available", "recommendation_campaign_count"}:
+            continue
+        recommendation_type = fact.dimensions.get("recommendation_type")
+        recommendation_id = fact.dimensions.get("recommendation_id")
+        if not recommendation_type and not recommendation_id:
+            continue
+        row_key = (recommendation_id, recommendation_type or f"recommendation {recommendation_id}")
+        metric_key = (recommendation_id, row_key[1], fact.name)
+        if metric_key in seen_metric_keys:
+            continue
+        seen_metric_keys.add(metric_key)
+        grouped_facts.setdefault(row_key, []).append(fact)
+
+    rows = [
+        _recommendation_row(recommendation_id, recommendation_type, facts)
+        for (recommendation_id, recommendation_type), facts in grouped_facts.items()
+    ]
+    return sorted(rows, key=_recommendation_row_sort_key)
+
+
+def _recommendation_row(
+    recommendation_id: str | None,
+    recommendation_type: str,
+    facts: list[MetricFact],
+) -> AdsRecommendationRow:
+    facts_by_name = {fact.name: fact for fact in facts}
+    first_dimensions = facts[0].dimensions if facts else {}
+    expected_metrics = ["recommendation_available", "recommendation_campaign_count"]
+    return AdsRecommendationRow(
+        recommendation_id=recommendation_id,
+        recommendation_type=recommendation_type,
+        dismissed=first_dimensions.get("dismissed") == "true",
+        campaign_id=first_dimensions.get("campaign_id"),
+        campaign_budget_id=first_dimensions.get("campaign_budget_id"),
+        campaign_count=_int_metric_value(facts_by_name.get("recommendation_campaign_count")),
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        blocked_claims=[
+            "recommendation apply",
+            "automatic recommendation accept",
+            "budget apply",
+            "campaign mutation",
+        ],
+    )
+
+
+def _recommendations_section(
+    recommendations_read_contract: AdsRecommendationsReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in recommendations_read_contract.recommendation_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_recommendations",
+        title="Rekomendacje Google Ads do review",
+        status=recommendations_read_contract.status,
+        summary=recommendations_read_contract.summary,
+        diagnosis=(
+            "WILQ może pokazać typy aktywnych rekomendacji Google Ads jako input "
+            "do review. To nie jest zgoda na apply ani dowód, że rekomendacja jest "
+            "biznesowo dobra dla Ekologus."
+        ),
+        next_step=recommendations_read_contract.next_step,
+        source_connectors=recommendations_read_contract.source_connectors,
+        evidence_ids=recommendations_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=[],
+        blocked_claims=recommendations_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
 
 
 def _ratio(
@@ -1461,6 +1677,7 @@ def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
     derived_kpi_read_contract: AdsDerivedKpiReadContract,
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
@@ -1513,6 +1730,7 @@ def _ads_decision_queue(
                 missing_read_contracts=_remove_available_contracts(
                     campaign_read_contract.missing_read_contracts,
                     budget_pacing_read_contract,
+                    recommendations_read_contract,
                 ),
                 source_connectors=campaign_read_contract.source_connectors,
                 evidence_ids=campaign_read_contract.evidence_ids,
@@ -1543,6 +1761,7 @@ def _ads_decision_queue(
                 missing_read_contracts=_remove_available_contracts(
                     derived_kpi_read_contract.missing_read_contracts,
                     budget_pacing_read_contract,
+                    recommendations_read_contract,
                 ),
                 source_connectors=derived_kpi_read_contract.source_connectors,
                 evidence_ids=derived_kpi_read_contract.evidence_ids,
@@ -1580,6 +1799,38 @@ def _ads_decision_queue(
                 budget_rows=budget_pacing_read_contract.budget_rows,
                 action_ids=campaign_review_action_ids,
                 blocked_claims=budget_pacing_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
+    if recommendations_read_contract.status == "ready":
+        metric_facts = [
+            fact
+            for row in recommendations_read_contract.recommendation_rows
+            for fact in row.metric_facts
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_recommendations",
+                decision_type="review_recommendations",
+                status="ready",
+                title="Przejrzyj rekomendacje Google Ads bez apply",
+                summary=recommendations_read_contract.summary,
+                rationale=(
+                    "Google Ads recommendations są sygnałem do kontroli, nie "
+                    "automatyczną strategią. WILQ pokazuje typ rekomendacji i "
+                    "powiązanie z kampanią/budżetem, ale blokuje accept/apply bez "
+                    "impact preview, historii zmian, celu biznesowego i ActionObject."
+                ),
+                next_step=recommendations_read_contract.next_step,
+                allowed_metrics=recommendations_read_contract.allowed_metrics,
+                missing_read_contracts=recommendations_read_contract.missing_read_contracts,
+                source_connectors=recommendations_read_contract.source_connectors,
+                evidence_ids=recommendations_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                recommendation_rows=recommendations_read_contract.recommendation_rows,
+                action_ids=[],
+                blocked_claims=recommendations_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
         )
@@ -1736,11 +1987,19 @@ def _search_term_action_ids(action_ids: list[str]) -> list[str]:
 def _remove_available_contracts(
     missing_read_contracts: list[str],
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract | None = None,
 ) -> list[str]:
     unavailable = list(missing_read_contracts)
     if budget_pacing_read_contract.status == "ready":
         unavailable = [
             contract for contract in unavailable if contract != "budget_pacing"
+        ]
+    if (
+        recommendations_read_contract is not None
+        and recommendations_read_contract.status == "ready"
+    ):
+        unavailable = [
+            contract for contract in unavailable if contract != "recommendations"
         ]
     return unavailable
 
