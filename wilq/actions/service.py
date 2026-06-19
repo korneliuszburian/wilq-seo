@@ -222,7 +222,7 @@ ACTION_METRIC_CONNECTORS = (
     "ahrefs",
 )
 ACTION_METRIC_FACT_LIMIT = 120
-ACTION_METRIC_FACT_LIMITS = {"google_ads": 500}
+ACTION_METRIC_FACT_LIMITS = {"google_ads": 2000}
 
 
 def list_actions() -> list[ActionObject]:

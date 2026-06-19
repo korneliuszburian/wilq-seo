@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 18:19 Europe/Warsaw.
+Last updated: 2026-06-19 18:57 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -61,12 +61,13 @@ safety, eval ledger and visible blocked claims. Ads now has a derived KPI read
 contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
 facts, a read-only budget context contract for campaign daily budgets versus
 7-day cost, a read-only Google Ads recommendations contract, a read-only Google
-Ads impression-share contract and a read-only Google Ads change-history
-contract. Full BDOS-class parity still requires optimizer contracts such as
-account currency/profit-margin interpretation, recommendation impact/apply
-previews, pre/post change-impact windows, Keyword Planner enrichment, forecast
-or audience-size checks, budget/apply previews, apply safety and mutation audit
-paths, plus real Localo
+Ads impression-share contract, a read-only Google Ads change-history contract
+and a read-only 90-day search-term safety contract for negative keyword review.
+Full BDOS-class parity still requires optimizer contracts such as account
+currency/profit-margin interpretation, recommendation impact/apply previews,
+pre/post change-impact windows, Keyword Planner enrichment, forecast or
+audience-size checks, keyword match context, negative keyword payload previews,
+budget/apply previews, apply safety and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
@@ -134,17 +135,24 @@ Current connector truth:
   a derived KPI read contract for CTR/CPC/conversion rate/CPA/ROAS, a
   read-only budget context contract, a read-only recommendations contract, a
   read-only impression-share contract, a read-only change-history contract, a
-  prepare-only custom segment candidate contract and a prepare-only negative
-  keyword safety review contract. Latest live Ads proof:
-  `refresh_google_ads_e7f371e9efac` exposes 18 campaign rows, 50 search-term
-  rows, 4 active Google Ads recommendation rows, 2 impression-share rows and
+  read-only 90-day search-term safety contract, a prepare-only custom segment
+  candidate contract and a prepare-only negative keyword safety review contract.
+  Latest live Ads proof: `refresh_google_ads_5a0c672b5000` exposes 18 campaign
+  rows, 50 30-day search-term rows, 200 90-day search-term safety rows, 4 active
+  Google Ads recommendation rows, 2 impression-share rows and
   `change_event_row_count=0` for the last 14 days. `/api/ads/diagnostics`
   reports `impression_share_read_contract.status=ready`,
-  `change_history_read_contract.status=ready`, decisions
-  `ads_review_impression_share` and `ads_review_change_history`. CPA/ROAS are
-  allowed only as calculations from campaign facts; budget context,
-  recommendations, impression share and change history are allowed only as
-  review/audit context. Profitability, wasted-budget, negative keyword apply,
+  `change_history_read_contract.status=ready`,
+  `search_term_safety_read_contract.status=ready`, decisions
+  `ads_review_impression_share`, `ads_review_change_history` and
+  `ads_review_search_term_safety`. CPA/ROAS are allowed only as calculations
+  from campaign facts; budget context, recommendations, impression share,
+  change history and 90-day search-term safety are allowed only as review/audit
+  context. Current `negative_keywords_read_contract` has 7 review-only
+  candidates and no `90_day_safety_check` missing contract, but still blocks
+  `negative keyword apply`, `search-term waste`, CPA, ROAS and conversion-loss
+  claims until keyword match context, negative keyword payload preview,
+  ActionObject validation and human review exist. Profitability, wasted-budget,
   audience size, budget scaling, campaign-performance, recommendation impact,
   recommendation apply, change impact and performance-uplift claims still need
   explicit read/safety/apply contracts.
@@ -157,8 +165,9 @@ Current connector truth:
   `ads_scaling_candidates_v1`, `ads_recommendations_v1` and
   `ads_principles_v1`. Dashboard `/ads-doctor` renders those trace IDs, and
   `wilq-ads-doctor` scoped context-pack preserves them for Codex. Fresh
-  non-interactive `wilq-ads-doctor` eval passed for this source-backed lineage:
-  `.local-lab/evals/codex-skill/20260619T144600Z/wilq-ads-doctor/result.json`.
+  non-interactive `wilq-ads-doctor` eval passed for the newest 90-day safety
+  slice:
+  `.local-lab/evals/codex-skill/20260619T165729Z/wilq-ads-doctor/result.json`.
   Eval result includes `card_google_ads_budget_review_playbook`,
   `ads_scaling_candidates_v1`, `ads_recommendations_v1`,
   `ads_principles_v1`, Google Ads evidence IDs and prepare-only

@@ -41,6 +41,8 @@ from wilq.schemas import (
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
     AdsSearchTermMetricRow,
+    AdsSearchTermSafetyReadContract,
+    AdsSearchTermSafetyRow,
     AdsSearchTermsReadContract,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
@@ -50,7 +52,7 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
-ADS_METRIC_FACT_LIMIT = 500
+ADS_METRIC_FACT_LIMIT = 2500
 CARD_GOAL_001_RULES = "card_goal_001_rules"
 CARD_ADS_SEARCH = "card_google_ads_search_playbook"
 CARD_ADS_BUDGET_REVIEW = "card_google_ads_budget_review_playbook"
@@ -93,6 +95,10 @@ ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
         ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
+    ),
+    "ads_search_term_safety": (
+        [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
+        ["ads_negative_keywords_v1", "ads_search_terms_v1", "ads_principles_v1"],
     ),
     "ads_custom_segments": (
         [CARD_ADS_CUSTOM_SEGMENTS],
@@ -140,6 +146,10 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_review_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
         ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
+    ),
+    "ads_review_search_term_safety": (
+        [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
+        ["ads_negative_keywords_v1", "ads_search_terms_v1", "ads_principles_v1"],
     ),
     "ads_review_negative_keyword_safety": (
         [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
@@ -294,6 +304,19 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         trusted_metric_facts,
         latest_refresh,
     )
+    search_term_safety_read_contract = _search_term_safety_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
+    if search_term_safety_read_contract.status == "ready":
+        search_terms_read_contract = search_terms_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    search_terms_read_contract.missing_read_contracts,
+                    "90_day_safety_check",
+                )
+            }
+        )
     action_ids = _google_ads_action_ids(
         list_actions(),
         live_data_available=live_data_available,
@@ -304,6 +327,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     )
     negative_keywords_read_contract = _negative_keywords_read_contract(
         search_terms_read_contract,
+        search_term_safety_read_contract,
         action_ids,
     )
     sections = [
@@ -320,6 +344,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         _impression_share_section(impression_share_read_contract),
         _change_history_section(change_history_read_contract),
         _search_terms_section(search_terms_read_contract, action_ids),
+        _search_term_safety_section(search_term_safety_read_contract),
         _custom_segments_section(custom_segments_read_contract),
         _negative_keywords_section(negative_keywords_read_contract),
         _safe_action_section(
@@ -338,6 +363,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         impression_share_read_contract,
         change_history_read_contract,
         search_terms_read_contract,
+        search_term_safety_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
         sections,
@@ -356,6 +382,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         impression_share_read_contract=impression_share_read_contract,
         change_history_read_contract=change_history_read_contract,
         search_terms_read_contract=search_terms_read_contract,
+        search_term_safety_read_contract=search_term_safety_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
         decision_queue=decision_queue,
@@ -1670,6 +1697,180 @@ def _search_term_row_sort_key(row: AdsSearchTermMetricRow) -> tuple[int, int, st
     return (-(row.cost_micros or 0), -(row.clicks or 0), row.search_term)
 
 
+def _search_term_safety_read_contract(
+    metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsSearchTermSafetyReadContract:
+    rows = _search_term_safety_rows(metric_facts)
+    read_attempted = _latest_refresh_has_summary_metric(
+        latest_refresh,
+        "search_term_safety_row_count",
+    )
+    blocked_claims = [
+        "negative keyword apply",
+        "search-term waste",
+        "conversion loss",
+        "CPA",
+        "ROAS",
+    ]
+    if rows or read_attempted:
+        total_clicks = sum(row.clicks_90d or 0 for row in rows)
+        total_impressions = sum(row.impressions_90d or 0 for row in rows)
+        total_cost_micros = sum(row.cost_micros_90d or 0 for row in rows)
+        total_conversions = sum(row.conversions_90d or 0 for row in rows)
+        total_conversion_value = sum(row.conversion_value_90d or 0 for row in rows)
+        return AdsSearchTermSafetyReadContract(
+            status="ready",
+            title="Google Ads: 90-dniowy safety read zapytań",
+            summary=(
+                f"WILQ ma 90-dniowy read safety dla {len(rows)} zapytań: "
+                f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
+                f"koszt_micros={total_cost_micros}, "
+                f"konwersje={_format_float(total_conversions)}, "
+                f"wartość_konwersji={_format_float(total_conversion_value)}."
+            ),
+            allowed_metrics=[
+                "search_term",
+                "campaign",
+                "ad_group",
+                "status",
+                "search_term_90d_clicks",
+                "search_term_90d_impressions",
+                "search_term_90d_cost_micros",
+                "search_term_90d_conversions",
+                "search_term_90d_conversion_value",
+            ],
+            missing_read_contracts=[
+                "keyword match context",
+                "negative_keyword_payload_preview",
+                "human_intent_review",
+            ],
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(
+                evidence_id for row in rows for evidence_id in row.evidence_ids
+            )
+            or _refresh_or_connector_evidence_ids(latest_refresh),
+            safety_rows=rows,
+            next_step=(
+                "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa. Jeśli termin "
+                "ma konwersje w 90 dniach, nie kwalifikuj go do wykluczenia; jeśli "
+                "nie ma konwersji, nadal wymagaj review intencji, match context i "
+                "payload preview."
+            ),
+        )
+
+    return AdsSearchTermSafetyReadContract(
+        status="blocked",
+        title="Google Ads: brak 90-dniowego safety read",
+        summary="WILQ nie ma jeszcze 90-dniowych facts dla search_term_view.",
+        allowed_metrics=[],
+        missing_read_contracts=[
+            "search_term_90d_read",
+            "keyword match context",
+            "negative_keyword_payload_preview",
+        ],
+        blocked_claims=["90-day negative keyword safety", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        safety_rows=[],
+        next_step=(
+            "Uruchom read-only Google Ads vendor_read po wdrożeniu "
+            "search_term_90d_* metric facts. Nie twórz wykluczeń bez tego "
+            "kontraktu."
+        ),
+    )
+
+
+def _search_term_safety_rows(metric_facts: list[MetricFact]) -> list[AdsSearchTermSafetyRow]:
+    grouped_facts: dict[tuple[str, str | None, str | None], list[MetricFact]] = {}
+    seen_metric_keys: set[tuple[str, str | None, str | None, str]] = set()
+    for fact in metric_facts:
+        if fact.name not in {
+            "search_term_90d_clicks",
+            "search_term_90d_impressions",
+            "search_term_90d_cost_micros",
+            "search_term_90d_conversions",
+            "search_term_90d_conversion_value",
+        }:
+            continue
+        search_term = fact.dimensions.get("search_term")
+        if not search_term:
+            continue
+        campaign_id = fact.dimensions.get("campaign_id")
+        ad_group_id = fact.dimensions.get("ad_group_id")
+        row_key = (search_term, campaign_id, ad_group_id)
+        metric_key = (*row_key, fact.name)
+        if metric_key in seen_metric_keys:
+            continue
+        seen_metric_keys.add(metric_key)
+        grouped_facts.setdefault(row_key, []).append(fact)
+
+    rows = [
+        _search_term_safety_row(search_term, campaign_id, ad_group_id, facts)
+        for (search_term, campaign_id, ad_group_id), facts in grouped_facts.items()
+    ]
+    return sorted(rows, key=_search_term_safety_row_sort_key)
+
+
+def _search_term_safety_row(
+    search_term: str,
+    campaign_id: str | None,
+    ad_group_id: str | None,
+    facts: list[MetricFact],
+) -> AdsSearchTermSafetyRow:
+    facts_by_name = {fact.name: fact for fact in facts}
+    expected_metrics = [
+        "search_term_90d_clicks",
+        "search_term_90d_impressions",
+        "search_term_90d_cost_micros",
+        "search_term_90d_conversions",
+        "search_term_90d_conversion_value",
+    ]
+    first_dimensions = facts[0].dimensions if facts else {}
+    return AdsSearchTermSafetyRow(
+        search_term=search_term,
+        campaign_id=campaign_id,
+        campaign_name=first_dimensions.get("campaign_name"),
+        ad_group_id=ad_group_id,
+        ad_group_name=first_dimensions.get("ad_group_name"),
+        search_term_status=first_dimensions.get("search_term_status"),
+        clicks_90d=_int_metric_value(facts_by_name.get("search_term_90d_clicks")),
+        impressions_90d=_int_metric_value(
+            facts_by_name.get("search_term_90d_impressions")
+        ),
+        cost_micros_90d=_int_metric_value(
+            facts_by_name.get("search_term_90d_cost_micros")
+        ),
+        conversions_90d=_float_metric_value(
+            facts_by_name.get("search_term_90d_conversions")
+        ),
+        conversion_value_90d=_float_metric_value(
+            facts_by_name.get("search_term_90d_conversion_value")
+        ),
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        blocked_claims=["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+    )
+
+
+def _search_term_safety_row_sort_key(
+    row: AdsSearchTermSafetyRow,
+) -> tuple[int, int, str]:
+    return (-(row.cost_micros_90d or 0), -(row.clicks_90d or 0), row.search_term)
+
+
+def _search_term_safety_key(
+    row: AdsSearchTermMetricRow | AdsSearchTermSafetyRow,
+) -> tuple[str, str | None, str | None]:
+    return (row.search_term, row.campaign_id, row.ad_group_id)
+
+
+def _safety_row_has_conversion_signal(row: AdsSearchTermSafetyRow) -> bool:
+    return bool((row.conversions_90d or 0) > 0 or (row.conversion_value_90d or 0) > 0)
+
+
 def _custom_segment_rejection_reason(row: AdsSearchTermMetricRow) -> str | None:
     term = row.search_term.strip()
     normalized = term.lower()
@@ -1756,6 +1957,34 @@ def _search_terms_section(
         evidence_ids=search_terms_read_contract.evidence_ids,
         action_ids=action_ids,
         blocked_claims=search_terms_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def _search_term_safety_section(
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in search_term_safety_read_contract.safety_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_search_term_safety",
+        title="90-dniowy safety read zapytań",
+        status=search_term_safety_read_contract.status,
+        summary=search_term_safety_read_contract.summary,
+        diagnosis=(
+            "Ten kontrakt chroni przed pochopnym wykluczeniem zapytań. "
+            "WILQ sprawdza dłuższe okno, ale nadal blokuje apply bez intencji, "
+            "kontekstu dopasowania i payload preview."
+        ),
+        next_step=search_term_safety_read_contract.next_step,
+        source_connectors=search_term_safety_read_contract.source_connectors,
+        evidence_ids=search_term_safety_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=[],
+        blocked_claims=search_term_safety_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
 
@@ -1922,6 +2151,7 @@ def _custom_segments_section(
 
 def _negative_keywords_read_contract(
     search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
     action_ids: list[str],
 ) -> AdsNegativeKeywordsReadContract:
     if not search_terms_read_contract.search_term_rows:
@@ -1945,7 +2175,10 @@ def _negative_keywords_read_contract(
             ),
         )
 
-    candidates = _negative_keyword_candidates(search_terms_read_contract.search_term_rows)
+    candidates = _negative_keyword_candidates(
+        search_terms_read_contract.search_term_rows,
+        search_term_safety_read_contract.safety_rows,
+    )
     negative_keyword_action_ids = [
         action_id for action_id in action_ids if action_id == NEGATIVE_KEYWORD_ACTION_ID
     ]
@@ -1962,7 +2195,11 @@ def _negative_keywords_read_contract(
             missing_read_contracts=[
                 "zero_conversion_search_terms",
                 "keyword match context",
-                "90_day_safety_check",
+                *(
+                    []
+                    if search_term_safety_read_contract.status == "ready"
+                    else ["90_day_safety_check"]
+                ),
                 "negative_keyword_payload_preview",
             ],
             blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
@@ -1973,23 +2210,30 @@ def _negative_keywords_read_contract(
             ),
         )
 
+    missing_read_contracts = [
+        "keyword match context",
+        "negative_keyword_payload_preview",
+    ]
+    if any(
+        candidate.safety_status != "read_ready_needs_human_review"
+        for candidate in candidates
+    ):
+        missing_read_contracts.insert(1, "90_day_safety_check")
+
     return AdsNegativeKeywordsReadContract(
         status="ready",
         title="Review wykluczeń z search terms",
         summary=(
-            f"WILQ ma {len(candidates)} terminów do review: mają koszt lub kliknięcia "
-            "i zero konwersji w bieżącym Google Ads evidence."
+            f"WILQ ma {len(candidates)} terminów do review: mają koszt lub kliknięcia, "
+            "zero konwersji w bieżącym evidence i są sprawdzone przez dostępny "
+            "90-dniowy read, jeśli WILQ ma matching row."
         ),
         candidates=candidates,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_unique(
             evidence_id for candidate in candidates for evidence_id in candidate.evidence_ids
         ),
-        missing_read_contracts=[
-            "keyword match context",
-            "90_day_safety_check",
-            "negative_keyword_payload_preview",
-        ],
+        missing_read_contracts=missing_read_contracts,
         blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
         action_ids=negative_keyword_action_ids,
         next_step=(
@@ -2002,12 +2246,23 @@ def _negative_keywords_read_contract(
 
 def _negative_keyword_candidates(
     rows: list[AdsSearchTermMetricRow],
+    safety_rows: list[AdsSearchTermSafetyRow],
 ) -> list[AdsNegativeKeywordCandidate]:
     candidates: list[AdsNegativeKeywordCandidate] = []
+    safety_by_key = {_search_term_safety_key(row): row for row in safety_rows}
     for row in sorted(rows, key=_search_term_row_sort_key):
         if not _is_negative_keyword_review_candidate(row):
             continue
+        safety_row = safety_by_key.get(_search_term_safety_key(row))
+        if safety_row is not None and _safety_row_has_conversion_signal(safety_row):
+            continue
         metric_facts = row.metric_facts[:12]
+        safety_metric_facts = safety_row.metric_facts[:12] if safety_row else []
+        safety_status: Literal["needs_90_day_review", "read_ready_needs_human_review"]
+        if safety_row is None:
+            safety_status = "needs_90_day_review"
+        else:
+            safety_status = "read_ready_needs_human_review"
         candidates.append(
             AdsNegativeKeywordCandidate(
                 id=(
@@ -2026,15 +2281,24 @@ def _negative_keyword_candidates(
                 cost_micros=row.cost_micros,
                 conversions=row.conversions,
                 conversion_value=row.conversion_value,
+                clicks_90d=safety_row.clicks_90d if safety_row else None,
+                impressions_90d=safety_row.impressions_90d if safety_row else None,
+                cost_micros_90d=safety_row.cost_micros_90d if safety_row else None,
+                conversions_90d=safety_row.conversions_90d if safety_row else None,
+                conversion_value_90d=(
+                    safety_row.conversion_value_90d if safety_row else None
+                ),
                 evidence_ids=row.evidence_ids,
+                safety_evidence_ids=safety_row.evidence_ids if safety_row else [],
                 metric_facts=metric_facts,
+                safety_metric_facts=safety_metric_facts,
                 required_checks=[
                     "review_search_term_context",
                     "check_existing_keywords_and_match_types",
                     "90_day_safety_check",
                     "human_confirm_before_apply",
                 ],
-                safety_status="needs_90_day_review",
+                safety_status=safety_status,
                 validation_status="pending_validation",
                 blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
                 next_step=(
@@ -2145,6 +2409,7 @@ def _ads_decision_queue(
     impression_share_read_contract: AdsImpressionShareReadContract,
     change_history_read_contract: AdsChangeHistoryReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
     sections: list[AdsDiagnosticSection],
@@ -2402,11 +2667,49 @@ def _ads_decision_queue(
             )
         )
 
+    if search_term_safety_read_contract.status == "ready":
+        metric_facts = [
+            fact
+            for row in search_term_safety_read_contract.safety_rows
+            for fact in row.metric_facts
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_search_term_safety",
+                decision_type="review_search_term_safety",
+                status="ready",
+                title="Sprawdź 90-dniową historię zapytań przed wykluczeniami",
+                summary=search_term_safety_read_contract.summary,
+                rationale=(
+                    "WILQ ma oddzielny 90-dniowy odczyt search terms jako hamulec "
+                    "bezpieczeństwa. To nadal nie jest rekomendacja wykluczeń: "
+                    "brakuje kontekstu dopasowania, intencji i payload preview."
+                ),
+                next_step=search_term_safety_read_contract.next_step,
+                allowed_metrics=search_term_safety_read_contract.allowed_metrics,
+                missing_read_contracts=(
+                    search_term_safety_read_contract.missing_read_contracts
+                ),
+                source_connectors=search_term_safety_read_contract.source_connectors,
+                evidence_ids=search_term_safety_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                search_term_safety_rows=search_term_safety_read_contract.safety_rows,
+                action_ids=[],
+                blocked_claims=search_term_safety_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
     if negative_keywords_read_contract.candidates:
         metric_facts = [
             fact
             for candidate in negative_keywords_read_contract.candidates
             for fact in candidate.metric_facts
+        ]
+        safety_metric_facts = [
+            fact
+            for candidate in negative_keywords_read_contract.candidates
+            for fact in candidate.safety_metric_facts
         ]
         decisions.append(
             AdsDecisionItem(
@@ -2427,11 +2730,16 @@ def _ads_decision_queue(
                     "search_term_cost_micros",
                     "search_term_conversions",
                     "search_term_conversion_value",
+                    "search_term_90d_clicks",
+                    "search_term_90d_cost_micros",
+                    "search_term_90d_conversions",
+                    "search_term_90d_conversion_value",
                 ],
                 missing_read_contracts=negative_keywords_read_contract.missing_read_contracts,
                 source_connectors=negative_keywords_read_contract.source_connectors,
                 evidence_ids=negative_keywords_read_contract.evidence_ids,
-                metric_facts=metric_facts[:12],
+                metric_facts=[*metric_facts, *safety_metric_facts][:12],
+                search_term_safety_rows=search_term_safety_read_contract.safety_rows[:12],
                 negative_keyword_candidates=negative_keywords_read_contract.candidates,
                 action_ids=negative_keywords_read_contract.action_ids,
                 blocked_claims=negative_keywords_read_contract.blocked_claims,

@@ -685,6 +685,38 @@ class AdsSearchTermsReadContract(BaseModel):
     next_step: str
 
 
+class AdsSearchTermSafetyRow(BaseModel):
+    search_term: str
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    ad_group_id: str | None = None
+    ad_group_name: str | None = None
+    search_term_status: str | None = None
+    clicks_90d: int | None = None
+    impressions_90d: int | None = None
+    cost_micros_90d: int | None = None
+    conversions_90d: float | None = None
+    conversion_value_90d: float | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsSearchTermSafetyReadContract(BaseModel):
+    id: str = "ads_search_term_safety_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    safety_rows: list[AdsSearchTermSafetyRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsCustomSegmentCandidate(BaseModel):
     id: str
     name: str
@@ -728,10 +760,21 @@ class AdsNegativeKeywordCandidate(BaseModel):
     cost_micros: int | None = None
     conversions: float | None = None
     conversion_value: float | None = None
+    clicks_90d: int | None = None
+    impressions_90d: int | None = None
+    cost_micros_90d: int | None = None
+    conversions_90d: float | None = None
+    conversion_value_90d: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
+    safety_evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    safety_metric_facts: list[MetricFact] = Field(default_factory=list)
     required_checks: list[str] = Field(default_factory=list)
-    safety_status: Literal["needs_90_day_review", "blocked"] = "needs_90_day_review"
+    safety_status: Literal[
+        "needs_90_day_review",
+        "read_ready_needs_human_review",
+        "blocked",
+    ] = "needs_90_day_review"
     validation_status: Literal["pending_validation", "blocked"] = "pending_validation"
     blocked_claims: list[str] = Field(default_factory=list)
     next_step: str
@@ -760,6 +803,7 @@ class AdsDecisionItem(BaseModel):
         "review_recommendations",
         "review_impression_share",
         "review_change_history",
+        "review_search_term_safety",
         "review_search_terms",
         "review_negative_keyword_safety",
         "prepare_custom_segments",
@@ -783,6 +827,7 @@ class AdsDecisionItem(BaseModel):
     impression_share_rows: list[AdsImpressionShareRow] = Field(default_factory=list)
     change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
+    search_term_safety_rows: list[AdsSearchTermSafetyRow] = Field(default_factory=list)
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
@@ -806,6 +851,7 @@ class AdsDiagnosticsResponse(BaseModel):
     impression_share_read_contract: AdsImpressionShareReadContract
     change_history_read_contract: AdsChangeHistoryReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
+    search_term_safety_read_contract: AdsSearchTermSafetyReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract
     decision_queue: list[AdsDecisionItem] = Field(default_factory=list)

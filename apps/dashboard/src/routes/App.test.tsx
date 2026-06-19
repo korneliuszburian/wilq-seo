@@ -635,6 +635,59 @@ const adsDiagnostics = {
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
   },
+  search_term_safety_read_contract: {
+    id: "ads_search_term_safety_read_contract",
+    status: "ready",
+    title: "Google Ads: 90-dniowy safety read zapytań",
+    summary:
+      "WILQ ma 90-dniowy read safety dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt_micros=8000000, konwersje=0, wartość_konwersji=0.",
+    allowed_metrics: [
+      "search_term",
+      "campaign",
+      "ad_group",
+      "status",
+      "search_term_90d_clicks",
+      "search_term_90d_impressions",
+      "search_term_90d_cost_micros",
+      "search_term_90d_conversions",
+      "search_term_90d_conversion_value"
+    ],
+    missing_read_contracts: [
+      "keyword match context",
+      "negative_keyword_payload_preview",
+      "human_intent_review"
+    ],
+    blocked_claims: [
+      "negative keyword apply",
+      "search-term waste",
+      "conversion loss",
+      "CPA",
+      "ROAS"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    safety_rows: [
+      {
+        search_term: "odpady cena",
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        ad_group_id: "789",
+        ad_group_name: "Odpady",
+        search_term_status: "NONE",
+        clicks_90d: 10,
+        impressions_90d: 120,
+        cost_micros_90d: 8000000,
+        conversions_90d: 0,
+        conversion_value_90d: 0,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        missing_metrics: [],
+        blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+      }
+    ],
+    next_step:
+      "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa przed wykluczeniem."
+  },
   custom_segments_read_contract: {
     id: "ads_custom_segments_read_contract",
     status: "ready",
@@ -718,15 +771,22 @@ const adsDiagnostics = {
         cost_micros: 5000000,
         conversions: 0,
         conversion_value: 0,
+        clicks_90d: 10,
+        impressions_90d: 120,
+        cost_micros_90d: 8000000,
+        conversions_90d: 0,
+        conversion_value_90d: 0,
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        safety_evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         metric_facts: [],
+        safety_metric_facts: [],
         required_checks: [
           "review_search_term_context",
           "check_existing_keywords_and_match_types",
           "90_day_safety_check",
           "human_confirm_before_apply"
         ],
-        safety_status: "needs_90_day_review",
+        safety_status: "read_ready_needs_human_review",
         validation_status: "pending_validation",
         blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
         next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
@@ -786,6 +846,7 @@ const adsDiagnostics = {
       impression_share_rows: [],
       change_history_rows: [],
       search_term_rows: [],
+      search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
       action_ids: [],
@@ -846,6 +907,7 @@ const adsDiagnostics = {
       impression_share_rows: [],
       change_history_rows: [],
       search_term_rows: [],
+      search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
       action_ids: [],
@@ -905,6 +967,7 @@ const adsDiagnostics = {
       ],
       change_history_rows: [],
       search_term_rows: [],
+      search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
       action_ids: [],
@@ -968,6 +1031,7 @@ const adsDiagnostics = {
         }
       ],
       search_term_rows: [],
+      search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
       action_ids: [],
@@ -1022,9 +1086,77 @@ const adsDiagnostics = {
         }
       ],
       custom_segment_candidates: [],
+      search_term_safety_rows: [],
       negative_keyword_candidates: [],
       action_ids: [],
       blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+      risk: "medium"
+    },
+    {
+      id: "ads_review_search_term_safety",
+      decision_type: "review_search_term_safety",
+      status: "ready",
+      title: "Sprawdź 90-dniową historię zapytań przed wykluczeniami",
+      summary:
+        "WILQ ma 90-dniowy read safety dla 1 zapytań: kliknięcia=10, wyświetlenia=120, koszt_micros=8000000, konwersje=0, wartość_konwersji=0.",
+      rationale:
+        "WILQ ma oddzielny 90-dniowy odczyt search terms jako hamulec bezpieczeństwa.",
+      next_step:
+        "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa przed wykluczeniem.",
+      allowed_metrics: [
+        "search_term_90d_clicks",
+        "search_term_90d_impressions",
+        "search_term_90d_cost_micros",
+        "search_term_90d_conversions",
+        "search_term_90d_conversion_value"
+      ],
+      missing_read_contracts: [
+        "keyword match context",
+        "negative_keyword_payload_preview",
+        "human_intent_review"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      derived_kpi_rows: [],
+      budget_rows: [],
+      recommendation_rows: [],
+      impression_share_rows: [],
+      change_history_rows: [],
+      search_term_rows: [],
+      search_term_safety_rows: [
+        {
+          search_term: "odpady cena",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "789",
+          ad_group_name: "Odpady",
+          search_term_status: "NONE",
+          clicks_90d: 10,
+          impressions_90d: 120,
+          cost_micros_90d: 8000000,
+          conversions_90d: 0,
+          conversion_value_90d: 0,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+        }
+      ],
+      custom_segment_candidates: [],
+      negative_keyword_candidates: [],
+      action_ids: [],
+      knowledge_card_ids: [
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_search_playbook"
+      ],
+      expert_rule_ids: [
+        "ads_negative_keywords_v1",
+        "ads_search_terms_v1",
+        "ads_principles_v1"
+      ],
+      blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
       risk: "medium"
     },
     {
@@ -1058,6 +1190,25 @@ const adsDiagnostics = {
       impression_share_rows: [],
       change_history_rows: [],
       search_term_rows: [],
+      search_term_safety_rows: [
+        {
+          search_term: "odpady cena",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "789",
+          ad_group_name: "Odpady",
+          search_term_status: "NONE",
+          clicks_90d: 10,
+          impressions_90d: 120,
+          cost_micros_90d: 8000000,
+          conversions_90d: 0,
+          conversion_value_90d: 0,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+        }
+      ],
       custom_segment_candidates: [],
       negative_keyword_candidates: [
         {
@@ -1072,15 +1223,22 @@ const adsDiagnostics = {
           cost_micros: 5000000,
           conversions: 0,
           conversion_value: 0,
+          clicks_90d: 10,
+          impressions_90d: 120,
+          cost_micros_90d: 8000000,
+          conversions_90d: 0,
+          conversion_value_90d: 0,
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          safety_evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],
+          safety_metric_facts: [],
           required_checks: [
             "review_search_term_context",
             "check_existing_keywords_and_match_types",
             "90_day_safety_check",
             "human_confirm_before_apply"
           ],
-          safety_status: "needs_90_day_review",
+          safety_status: "read_ready_needs_human_review",
           validation_status: "pending_validation",
           blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
           next_step: "Sprawdź intencję i 90-dniową historię przed wykluczeniem."
@@ -1132,6 +1290,7 @@ const adsDiagnostics = {
           blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
         }
       ],
+      search_term_safety_rows: [],
       custom_segment_candidates: [
         {
           id: "ads_custom_segment_123",
@@ -1181,6 +1340,7 @@ const adsDiagnostics = {
       impression_share_rows: [],
       change_history_rows: [],
       search_term_rows: [],
+      search_term_safety_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
       action_ids: [],

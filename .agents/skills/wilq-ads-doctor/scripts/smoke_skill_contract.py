@@ -91,6 +91,9 @@ def main() -> int:
         ads_diagnostics.get("change_history_read_contract") or {}
     )
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
+    search_term_safety_read_contract = (
+        ads_diagnostics.get("search_term_safety_read_contract") or {}
+    )
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
     )
@@ -195,6 +198,28 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Blocked change history contract must list missing change_history")
+    if search_term_safety_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose search_term_safety_read_contract")
+    if not search_term_safety_read_contract.get("blocked_claims"):
+        raise SystemExit("Search-term safety contract must list blocked claims")
+    if search_term_safety_read_contract.get("status") == "ready":
+        pack_safety_contract = (
+            pack.get("ads_diagnostics", {}).get("search_term_safety_read_contract") or {}
+        )
+        if pack_safety_contract.get("summary") != search_term_safety_read_contract.get(
+            "summary"
+        ):
+            raise SystemExit("Context pack search-term safety contract differs")
+        if "negative keyword apply" not in search_term_safety_read_contract.get(
+            "blocked_claims",
+            [],
+        ):
+            raise SystemExit("Search-term safety contract must keep apply blocked")
+    elif "search_term_90d_read" not in search_term_safety_read_contract.get(
+        "missing_read_contracts",
+        [],
+    ):
+        raise SystemExit("Blocked search-term safety contract must list missing 90d read")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -388,6 +413,25 @@ def main() -> int:
                         ),
                         "row_count": len(
                             search_terms_read_contract.get("search_term_rows") or []
+                        ),
+                    },
+                    "search_term_safety_read_contract": {
+                        "status": search_term_safety_read_contract.get("status"),
+                        "summary": search_term_safety_read_contract.get("summary"),
+                        "allowed_metrics": search_term_safety_read_contract.get(
+                            "allowed_metrics",
+                            [],
+                        ),
+                        "missing_read_contracts": search_term_safety_read_contract.get(
+                            "missing_read_contracts",
+                            [],
+                        ),
+                        "row_count": len(
+                            search_term_safety_read_contract.get("safety_rows") or []
+                        ),
+                        "blocked_claims": search_term_safety_read_contract.get(
+                            "blocked_claims",
+                            [],
                         ),
                     },
                     "negative_keywords_read_contract": {

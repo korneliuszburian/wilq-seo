@@ -113,7 +113,12 @@ def _candidate_fact_groups(facts: list[MetricFact]) -> list[list[MetricFact]]:
 
 
 def _fact_has_conversion_signal(fact: MetricFact) -> bool:
-    if fact.name not in {"search_term_conversions", "search_term_conversion_value"}:
+    if fact.name not in {
+        "search_term_conversions",
+        "search_term_conversion_value",
+        "search_term_90d_conversions",
+        "search_term_90d_conversion_value",
+    }:
         return False
     value = fact.value
     return isinstance(value, int | float) and value > 0

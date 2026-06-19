@@ -456,6 +456,38 @@ export const AdsSearchTermsReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsSearchTermSafetyRowSchema = z.object({
+  search_term: z.string(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  ad_group_id: z.string().nullable().optional(),
+  ad_group_name: z.string().nullable().optional(),
+  search_term_status: z.string().nullable().optional(),
+  clicks_90d: z.number().nullable().optional(),
+  impressions_90d: z.number().nullable().optional(),
+  cost_micros_90d: z.number().nullable().optional(),
+  conversions_90d: z.number().nullable().optional(),
+  conversion_value_90d: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsSearchTermSafetyReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  safety_rows: z.array(AdsSearchTermSafetyRowSchema),
+  next_step: z.string()
+});
+
 export const AdsCustomSegmentCandidateSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -499,10 +531,17 @@ export const AdsNegativeKeywordCandidateSchema = z.object({
   cost_micros: z.number().nullable().optional(),
   conversions: z.number().nullable().optional(),
   conversion_value: z.number().nullable().optional(),
+  clicks_90d: z.number().nullable().optional(),
+  impressions_90d: z.number().nullable().optional(),
+  cost_micros_90d: z.number().nullable().optional(),
+  conversions_90d: z.number().nullable().optional(),
+  conversion_value_90d: z.number().nullable().optional(),
   evidence_ids: z.array(z.string()),
+  safety_evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
+  safety_metric_facts: z.array(MetricFactSchema),
   required_checks: z.array(z.string()),
-  safety_status: z.enum(["needs_90_day_review", "blocked"]),
+  safety_status: z.enum(["needs_90_day_review", "read_ready_needs_human_review", "blocked"]),
   validation_status: z.enum(["pending_validation", "blocked"]),
   blocked_claims: z.array(z.string()),
   next_step: z.string()
@@ -531,6 +570,7 @@ export const AdsDecisionItemSchema = z.object({
     "review_recommendations",
     "review_impression_share",
     "review_change_history",
+    "review_search_term_safety",
     "review_search_terms",
     "review_negative_keyword_safety",
     "prepare_custom_segments",
@@ -554,6 +594,7 @@ export const AdsDecisionItemSchema = z.object({
   impression_share_rows: z.array(AdsImpressionShareRowSchema),
   change_history_rows: z.array(AdsChangeHistoryRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
+  search_term_safety_rows: z.array(AdsSearchTermSafetyRowSchema),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
   action_ids: z.array(z.string()),
@@ -577,6 +618,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   impression_share_read_contract: AdsImpressionShareReadContractSchema,
   change_history_read_contract: AdsChangeHistoryReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
+  search_term_safety_read_contract: AdsSearchTermSafetyReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,
   decision_queue: z.array(AdsDecisionItemSchema),

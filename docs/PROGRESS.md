@@ -8,6 +8,33 @@ artifacts.
 
 Data: 2026-06-19
 
+- Ads 90-day search-term safety read, 2026-06-19 18:57 Europe/Warsaw:
+  current active proof is read-only negative-keyword safety context, not
+  negative keyword apply. Google Ads `vendor_read` now runs a separate
+  `search_term_view` query with a custom `segments.date BETWEEN` 90-day date
+  range and stores `search_term_90d_*` facts under period
+  `search_term_safety_90d`. Live proof: `refresh_google_ads_5a0c672b5000`
+  with evidence `ev_refresh_refresh_google_ads_5a0c672b5000` returned 18
+  campaign rows, 50 30-day search-term rows, 200 90-day safety rows, 4
+  recommendation rows, 2 impression-share rows and `change_event_row_count=0`.
+  `/api/ads/diagnostics.search_term_safety_read_contract.status=ready`;
+  decision queue includes `ads_review_search_term_safety`. Normal Ads
+  diagnostics and ActionObject generation now read a larger Google Ads metric
+  window so the 200 safety rows do not push 30-day search-term facts out of
+  view. Current live negative keyword review has 7 candidates with matching
+  90-day safety facts and no `90_day_safety_check` missing contract, but still
+  blocks `negative keyword apply`, `search-term waste`, CPA, ROAS and
+  conversion-loss claims until keyword match context, payload preview,
+  ActionObject validation and human review exist. Focused proof passed: ruff,
+  mypy, selected API/eval-case tests, dashboard TypeScript and dashboard
+  `App.test.tsx`. Live skill smoke passed after fixing the action-service Ads
+  metric window; `/api/actions` exposes
+  `act_prepare_negative_keyword_review_queue` with `search_term_90d_*` source
+  metrics and `apply_allowed=false`. Non-interactive `wilq-ads-doctor` eval
+  passed at
+  `.local-lab/evals/codex-skill/20260619T165729Z/wilq-ads-doctor/result.json`;
+  final JSON has `language=pl-PL`, `api_used=true`, Google Ads evidence IDs,
+  `search_term_safety_read_contract` and no safety findings.
 - Ads change history read contract, 2026-06-19 18:19 Europe/Warsaw: current
   active proof is read-only Google Ads audit context, not change-impact proof.
   Google Ads `vendor_read` now queries `change_event` for the last 14 days and

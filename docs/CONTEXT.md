@@ -86,6 +86,22 @@ Audit `docs/audits/001-output.md` is now folded into
    `campaign mutation` blocked until pre/post performance windows, human review
    and apply preview exist. Non-interactive `wilq-ads-doctor` eval passed at
    `.local-lab/evals/codex-skill/20260619T162014Z/wilq-ads-doctor/result.json`.
+0. Ads 90-day search-term safety truth, 2026-06-19 18:57 Europe/Warsaw:
+   Google Ads negative keyword review now has a typed 90-day safety read.
+   Live proof `refresh_google_ads_5a0c672b5000` /
+   `ev_refresh_refresh_google_ads_5a0c672b5000` returned 50 30-day
+   search-term rows and 200 90-day `search_term_90d_*` rows.
+   `/api/ads/diagnostics.search_term_safety_read_contract.status=ready`, the
+   decision queue includes `ads_review_search_term_safety`, and
+   `negative_keywords_read_contract` has 7 review-only candidates without
+   `90_day_safety_check` as a missing contract. Do not call this apply-ready:
+   `negative keyword apply`, `search-term waste`, CPA, ROAS and
+   conversion-loss claims remain blocked until keyword match context, payload
+   preview, ActionObject validation and human review exist. Gotcha: Ads
+   diagnostics and action generation must use a large enough Google Ads metric
+   fact window, otherwise 200 safety rows can push 30-day search-term facts out
+   of view. Non-interactive `wilq-ads-doctor` eval passed at
+   `.local-lab/evals/codex-skill/20260619T165729Z/wilq-ads-doctor/result.json`.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.

@@ -1833,6 +1833,36 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
+        if "FROM search_term_view" in query and "BETWEEN" in query:
+            assert "segments.date BETWEEN" in query
+            assert "LAST_90_DAYS" not in query
+            assert "search_term_view.search_term" in query
+            assert "metrics.conversions" in query
+            assert "metrics.conversions_value" in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "campaign": {"id": "101", "name": "Brand Search"},
+                                "adGroup": {"id": "201", "name": "BDO"},
+                                "searchTermView": {
+                                    "searchTerm": "bdo rejestracja",
+                                    "status": "ADDED",
+                                },
+                                "metrics": {
+                                    "clicks": "8",
+                                    "impressions": "70",
+                                    "costMicros": "9000000",
+                                    "conversions": "2",
+                                    "conversionsValue": "240",
+                                },
+                            },
+                        ]
+                    }
+                ],
+            )
         assert "FROM search_term_view" in query
         assert "search_term_view.search_term" in query
         assert "metrics.conversions" in query
@@ -1885,6 +1915,13 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["search_term_cost_micros"] == 5000000
     assert result.metric_summary["search_term_conversions"] == 1.0
     assert result.metric_summary["search_term_conversion_value"] == 120.0
+    assert result.metric_summary["search_term_safety_query"] == "search_term_last_90_days"
+    assert result.metric_summary["search_term_safety_row_count"] == 1
+    assert result.metric_summary["search_term_safety_clicks"] == 8
+    assert result.metric_summary["search_term_safety_impressions"] == 70
+    assert result.metric_summary["search_term_safety_cost_micros"] == 9000000
+    assert result.metric_summary["search_term_safety_conversions"] == 2.0
+    assert result.metric_summary["search_term_safety_conversion_value"] == 240.0
     assert result.metric_summary["recommendation_query"] == "active_recommendations"
     assert result.metric_summary["recommendation_row_count"] == 1
     assert result.metric_summary["recommendation_campaign_count"] == 1
@@ -1897,6 +1934,10 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["change_event_client_types"] == "GOOGLE_ADS_WEB_CLIENT"
     assert any("FROM campaign" in query for query in search_stream_queries)
     assert any("FROM search_term_view" in query for query in search_stream_queries)
+    assert any(
+        "FROM search_term_view" in query and "segments.date BETWEEN" in query
+        for query in search_stream_queries
+    )
     assert any("FROM recommendation" in query for query in search_stream_queries)
     assert any("FROM change_event" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
@@ -1944,6 +1985,19 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         fact for fact in result.metric_facts if fact.name == "search_term_conversions"
     )
     assert search_term_conversion_fact.value == 1.0
+    search_term_safety_fact = next(
+        fact for fact in result.metric_facts if fact.name == "search_term_90d_clicks"
+    )
+    assert search_term_safety_fact.value == 8
+    assert search_term_safety_fact.period == "search_term_safety_90d"
+    assert search_term_safety_fact.dimensions == {
+        "campaign_id": "101",
+        "campaign_name": "Brand Search",
+        "ad_group_id": "201",
+        "ad_group_name": "BDO",
+        "search_term": "bdo rejestracja",
+        "search_term_status": "ADDED",
+    }
     impression_share_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_impression_share"
     )
@@ -2456,6 +2510,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "search_term_cost_micros": 12000000,
                 "search_term_conversions": 1.0,
                 "search_term_conversion_value": 120.0,
+                "search_term_safety_query": "search_term_last_90_days",
+                "search_term_safety_row_count": 1,
+                "search_term_safety_clicks": 10,
+                "search_term_safety_impressions": 120,
+                "search_term_safety_cost_micros": 8000000,
+                "search_term_safety_conversions": 0.0,
+                "search_term_safety_conversion_value": 0.0,
                 "recommendation_query": "active_recommendations",
                 "recommendation_row_count": 1,
                 "recommendation_campaign_count": 1,
@@ -2743,6 +2804,71 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "search_term": "odpady cena",
                         "search_term_status": "NONE",
                     },
+                ),
+                VendorMetricFact(
+                    "search_term_90d_clicks",
+                    10,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "search_term": "odpady cena",
+                        "search_term_status": "NONE",
+                    },
+                    period="search_term_safety_90d",
+                ),
+                VendorMetricFact(
+                    "search_term_90d_impressions",
+                    120,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "search_term": "odpady cena",
+                        "search_term_status": "NONE",
+                    },
+                    period="search_term_safety_90d",
+                ),
+                VendorMetricFact(
+                    "search_term_90d_cost_micros",
+                    8000000,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "search_term": "odpady cena",
+                        "search_term_status": "NONE",
+                    },
+                    period="search_term_safety_90d",
+                ),
+                VendorMetricFact(
+                    "search_term_90d_conversions",
+                    0.0,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "search_term": "odpady cena",
+                        "search_term_status": "NONE",
+                    },
+                    period="search_term_safety_90d",
+                ),
+                VendorMetricFact(
+                    "search_term_90d_conversion_value",
+                    0.0,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "ad_group_id": "202",
+                        "ad_group_name": "Odpady",
+                        "search_term": "odpady cena",
+                        "search_term_status": "NONE",
+                    },
+                    period="search_term_safety_90d",
                 ),
             ],
         ),
@@ -3056,7 +3182,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "conversions" not in search_terms_contract["missing_read_contracts"]
     assert "conversion_value" not in search_terms_contract["missing_read_contracts"]
-    assert "90_day_safety_check" in search_terms_contract["missing_read_contracts"]
+    assert "90_day_safety_check" not in search_terms_contract["missing_read_contracts"]
     assert "negative keyword apply" in search_terms_contract["blocked_claims"]
     assert search_terms_contract["search_term_rows"] == [
         {
@@ -3099,6 +3225,52 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert search_terms_section["status"] == "ready"
     assert search_terms_section["title"] == "Zapytania użytkowników Google Ads"
+    search_term_safety_contract = payload["search_term_safety_read_contract"]
+    assert search_term_safety_contract["status"] == "ready"
+    assert search_term_safety_contract["allowed_metrics"] == [
+        "search_term",
+        "campaign",
+        "ad_group",
+        "status",
+        "search_term_90d_clicks",
+        "search_term_90d_impressions",
+        "search_term_90d_cost_micros",
+        "search_term_90d_conversions",
+        "search_term_90d_conversion_value",
+    ]
+    assert "90_day_safety_check" not in search_term_safety_contract[
+        "missing_read_contracts"
+    ]
+    assert "negative keyword apply" in search_term_safety_contract["blocked_claims"]
+    assert search_term_safety_contract["safety_rows"] == [
+        {
+            "search_term": "odpady cena",
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "ad_group_id": "202",
+            "ad_group_name": "Odpady",
+            "search_term_status": "NONE",
+            "clicks_90d": 10,
+            "impressions_90d": 120,
+            "cost_micros_90d": 8000000,
+            "conversions_90d": 0.0,
+            "conversion_value_90d": 0.0,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "metric_facts": search_term_safety_contract["safety_rows"][0][
+                "metric_facts"
+            ],
+            "missing_metrics": [],
+            "blocked_claims": ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+        }
+    ]
+    search_term_safety_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_search_term_safety"
+    )
+    assert search_term_safety_section["status"] == "ready"
+    assert search_term_safety_section["knowledge_card_ids"] == [
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_search_playbook",
+    ]
     custom_segments_contract = payload["custom_segments_read_contract"]
     assert custom_segments_contract["status"] == "ready"
     assert custom_segments_contract["title"] == "Custom segments z realnych search terms"
@@ -3128,11 +3300,17 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["action_ids"] == [
         "act_prepare_negative_keyword_review_queue"
     ]
-    assert "90_day_safety_check" in negative_keywords_contract["missing_read_contracts"]
+    assert "90_day_safety_check" not in negative_keywords_contract["missing_read_contracts"]
     assert "negative keyword apply" in negative_keywords_contract["blocked_claims"]
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
+    assert negative_keywords_contract["candidates"][0]["clicks_90d"] == 10
+    assert negative_keywords_contract["candidates"][0]["cost_micros_90d"] == 8000000
+    assert negative_keywords_contract["candidates"][0]["conversions_90d"] == 0
+    assert negative_keywords_contract["candidates"][0]["safety_evidence_ids"] == [
+        refresh_response.json()["evidence_ids"][-1]
+    ]
     assert negative_keywords_contract["candidates"][0]["safety_status"] == (
-        "needs_90_day_review"
+        "read_ready_needs_human_review"
     )
     assert negative_keywords_contract["candidates"][0]["validation_status"] == (
         "pending_validation"
@@ -3153,6 +3331,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_review_impression_share",
         "ads_review_change_history",
         "ads_review_search_terms",
+        "ads_review_search_term_safety",
         "ads_review_negative_keyword_safety",
         "ads_prepare_custom_segments_from_search_terms",
         "ads_block_write_actions_without_actionobject",
@@ -3235,12 +3414,24 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
     assert "negative keyword apply" in search_terms_decision["blocked_claims"]
+    search_term_safety_decision = decisions_by_id["ads_review_search_term_safety"]
+    assert search_term_safety_decision["status"] == "ready"
+    assert search_term_safety_decision["decision_type"] == "review_search_term_safety"
+    assert search_term_safety_decision["search_term_safety_rows"][0]["search_term"] == (
+        "odpady cena"
+    )
+    assert "negative keyword apply" in search_term_safety_decision["blocked_claims"]
+    assert search_term_safety_decision["knowledge_card_ids"] == [
+        "card_google_ads_negative_keywords_playbook",
+        "card_google_ads_search_playbook",
+    ]
     negative_keyword_decision = decisions_by_id["ads_review_negative_keyword_safety"]
     assert negative_keyword_decision["status"] == "ready"
     assert negative_keyword_decision["decision_type"] == "review_negative_keyword_safety"
     assert negative_keyword_decision["negative_keyword_candidates"][0]["search_term"] == (
         "odpady cena"
     )
+    assert negative_keyword_decision["search_term_safety_rows"][0]["clicks_90d"] == 10
     assert negative_keyword_decision["action_ids"] == [
         "act_prepare_negative_keyword_review_queue"
     ]
@@ -3279,6 +3470,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert after_probe_payload["impression_share_read_contract"]["impression_share_rows"]
     assert after_probe_payload["change_history_read_contract"]["change_history_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
+    assert after_probe_payload["search_term_safety_read_contract"]["safety_rows"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -3366,6 +3558,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         if action["id"] == "act_prepare_negative_keyword_review_queue"
     )
     assert negative_keyword_action["payload"]["terms"] == ["odpady cena"]
+    assert "search_term_90d_clicks" in negative_keyword_action["payload"][
+        "source_metric_names"
+    ]
     assert negative_keyword_action["payload"]["apply_allowed"] is False
     assert negative_keyword_action["payload"]["destructive"] is False
     assert "90_day_safety_check" in negative_keyword_action["payload"]["required_validation"]

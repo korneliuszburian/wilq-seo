@@ -25,6 +25,60 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-19 - wilq-ads-doctor 90-day search-term safety
+
+Prompt class:
+
+```text
+Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż live campaign facts,
+search terms read-only rows, 90-day search-term safety read, recommendations,
+impression share i negative keyword safety review queue. Zablokuj CPA, ROAS,
+search-term waste, wasted budget, recommendation apply i negative keyword apply
+bez match context, payload preview i walidacji ActionObject.
+```
+
+Observed behavior:
+
+- Live Google Ads `vendor_read` completed as `refresh_google_ads_5a0c672b5000`.
+- Evidence used: `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_5a0c672b5000`.
+- `/api/ads/diagnostics.search_term_safety_read_contract.status=ready`.
+- Google Ads returned 50 30-day search-term rows and 200 90-day safety rows.
+- Decision queue includes `ads_review_search_term_safety`.
+- `negative_keywords_read_contract` has 7 review-only candidates and no
+  `90_day_safety_check` missing contract.
+- `/api/actions` exposes `act_prepare_negative_keyword_review_queue` with
+  `search_term_90d_*` source metric names and `apply_allowed=false`.
+- Skill smoke passed against `http://127.0.0.1:8000`.
+- Non-interactive Codex eval passed:
+  `.local-lab/evals/codex-skill/20260619T165729Z/wilq-ads-doctor/result.json`.
+
+Useful output:
+
+- The skill explicitly reported `search_term_safety_read_contract.status=ready`
+  and 200 `search_term_90d` rows.
+- The skill kept negative keywords as review-only and blocked apply without
+  keyword match context, payload preview, ActionObject validation and human
+  review.
+- The output stayed in Polish, used WILQ API evidence and did not invent Ads
+  metrics.
+
+Product gaps found:
+
+1. 90-day safety read removes one blocker, but keyword match context and
+   negative keyword payload preview are still missing.
+2. Keyword Planner enrichment and audience-size/forecast contracts are still
+   missing for custom segments.
+3. Action/service and diagnostics must keep Google Ads metric fact windows large
+   enough for campaign, 30-day search-term and 90-day safety facts to coexist;
+   otherwise later rows can hide useful evidence.
+
+Verdict:
+
+Useful as a real safety contract. It makes Ads Doctor safer and more useful for
+reviewing search terms, but still does not authorize negative keyword apply or
+wasted-budget claims.
+
 ## 2026-06-19 - wilq-ads-doctor change history contract
 
 Prompt class:

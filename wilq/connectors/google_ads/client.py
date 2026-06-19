@@ -75,6 +75,25 @@ WHERE segments.date DURING LAST_30_DAYS
 LIMIT 50
 """.strip()
 
+SEARCH_TERM_SAFETY_LOOKBACK_DAYS = 90
+SEARCH_TERM_SAFETY_QUERY_TEMPLATE = """
+SELECT
+  campaign.id,
+  campaign.name,
+  ad_group.id,
+  ad_group.name,
+  search_term_view.search_term,
+  search_term_view.status,
+  metrics.clicks,
+  metrics.impressions,
+  metrics.cost_micros,
+  metrics.conversions,
+  metrics.conversions_value
+FROM search_term_view
+WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
+LIMIT 200
+""".strip()
+
 RECOMMENDATION_SUMMARY_QUERY = """
 SELECT
   recommendation.resource_name,
@@ -161,6 +180,13 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
+            search_term_safety_summary, search_term_safety_facts = (
+                _fetch_search_term_safety_summary(
+                    client,
+                    credentials,
+                    access_token,
+                )
+            )
             recommendation_summary, recommendation_facts = _fetch_recommendation_summary(
                 client,
                 credentials,
@@ -172,9 +198,11 @@ def refresh_google_ads_campaign_summary(
                 access_token,
             )
             metric_summary.update(search_term_summary)
+            metric_summary.update(search_term_safety_summary)
             metric_summary.update(recommendation_summary)
             metric_summary.update(change_event_summary)
             metric_facts.extend(search_term_facts)
+            metric_facts.extend(search_term_safety_facts)
             metric_facts.extend(recommendation_facts)
             metric_facts.extend(change_event_facts)
         except httpx.HTTPStatusError as exc:
@@ -221,6 +249,8 @@ def refresh_google_ads_campaign_summary(
             "Google Ads vendor read completed through googleAds:searchStream. "
             f"Campaign rows: {metric_summary['row_count']}; "
             f"search term rows: {metric_summary.get('search_term_row_count', 0)}; "
+            "90-day search term safety rows: "
+            f"{metric_summary.get('search_term_safety_row_count', 0)}; "
             f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}; "
             f"change events: {metric_summary.get('change_event_row_count', 0)}."
         ),
@@ -406,6 +436,27 @@ def _fetch_search_term_summary(
     return _summarize_search_term_response(response.json())
 
 
+def _fetch_search_term_safety_summary(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    customer_id = credentials["customer_id"]
+    response = client.post(
+        f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+        f"{customer_id}/googleAds:searchStream",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "developer-token": str(credentials["developer_token"]),
+            "login-customer-id": str(credentials["login_customer_id"]),
+            "Content-Type": "application/json",
+        },
+        json={"query": _search_term_safety_query()},
+    )
+    response.raise_for_status()
+    return _summarize_search_term_safety_response(response.json())
+
+
 def _fetch_recommendation_summary(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
@@ -452,6 +503,15 @@ def _change_event_summary_query(today: date | None = None) -> str:
     end_date = today or date.today()
     start_date = end_date - timedelta(days=CHANGE_EVENT_LOOKBACK_DAYS)
     return CHANGE_EVENT_SUMMARY_QUERY_TEMPLATE.format(
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+    )
+
+
+def _search_term_safety_query(today: date | None = None) -> str:
+    end_date = today or date.today()
+    start_date = end_date - timedelta(days=SEARCH_TERM_SAFETY_LOOKBACK_DAYS)
+    return SEARCH_TERM_SAFETY_QUERY_TEMPLATE.format(
         start_date=start_date.isoformat(),
         end_date=end_date.isoformat(),
     )
@@ -802,6 +862,82 @@ def _summarize_search_term_response(
             "search_term_cost_micros": cost_micros,
             "search_term_conversions": conversions,
             "search_term_conversion_value": conversion_value,
+        },
+        metric_facts,
+    )
+
+
+def _summarize_search_term_safety_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    clicks = 0
+    impressions = 0
+    cost_micros = 0
+    conversions = 0.0
+    conversion_value = 0.0
+    metric_facts: list[VendorMetricFact] = []
+    for row in rows:
+        metrics = row.get("metrics", {})
+        row_clicks = _int_metric(metrics.get("clicks"))
+        row_impressions = _int_metric(metrics.get("impressions"))
+        row_cost_micros = _int_metric(metrics.get("costMicros", metrics.get("cost_micros")))
+        row_conversions = _float_metric(metrics.get("conversions"))
+        row_conversion_value = _float_metric(
+            metrics.get("conversionsValue", metrics.get("conversions_value"))
+        )
+        clicks += row_clicks
+        impressions += row_impressions
+        cost_micros += row_cost_micros
+        conversions += row_conversions
+        conversion_value += row_conversion_value
+        dimensions = _search_term_dimensions(row)
+        if dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact(
+                        "search_term_90d_clicks",
+                        row_clicks,
+                        dimensions,
+                        period="search_term_safety_90d",
+                    ),
+                    VendorMetricFact(
+                        "search_term_90d_impressions",
+                        row_impressions,
+                        dimensions,
+                        period="search_term_safety_90d",
+                    ),
+                    VendorMetricFact(
+                        "search_term_90d_cost_micros",
+                        row_cost_micros,
+                        dimensions,
+                        period="search_term_safety_90d",
+                    ),
+                    VendorMetricFact(
+                        "search_term_90d_conversions",
+                        row_conversions,
+                        dimensions,
+                        period="search_term_safety_90d",
+                    ),
+                    VendorMetricFact(
+                        "search_term_90d_conversion_value",
+                        row_conversion_value,
+                        dimensions,
+                        period="search_term_safety_90d",
+                    ),
+                ]
+            )
+    return (
+        {
+            "search_term_safety_query": (
+                f"search_term_last_{SEARCH_TERM_SAFETY_LOOKBACK_DAYS}_days"
+            ),
+            "search_term_safety_row_count": len(rows),
+            "search_term_safety_clicks": clicks,
+            "search_term_safety_impressions": impressions,
+            "search_term_safety_cost_micros": cost_micros,
+            "search_term_safety_conversions": conversions,
+            "search_term_safety_conversion_value": conversion_value,
         },
         metric_facts,
     )
