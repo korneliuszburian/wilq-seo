@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 12:48 Europe/Warsaw.
+Last updated: 2026-06-19 14:53 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -59,10 +59,11 @@ it. A strong Ekologus demo can be delivered before the full product is complete:
 dashboard decisions, WILQ API evidence, Polish Codex skills, ActionObject
 safety, eval ledger and visible blocked claims. Ads now has a derived KPI read
 contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
-facts, but full BDOS-class parity still requires optimizer contracts such as
-account currency/profit-margin interpretation, budget pacing, recommendations,
-change history, Keyword Planner enrichment, forecast or audience-size checks,
-payload previews, apply safety and audit paths, plus real Localo
+facts and a read-only budget context contract for campaign daily budgets versus
+7-day cost. Full BDOS-class parity still requires optimizer contracts such as
+account currency/profit-margin interpretation, recommendation review, change
+history, impression share, Keyword Planner enrichment, forecast or audience-size
+checks, budget/apply previews, apply safety and audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown as
 blockers, not hidden with prompt language.
 
@@ -117,16 +118,25 @@ Use `uv run ...` for Python/WILQ commands. Do not use global `python`.
 
 Current connector truth:
 
+- Connector summary live check 2026-06-19 14:53 Europe/Warsaw:
+  `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
+  The disabled connector is `google_sheets`, intentionally outside current
+  Ekologus scope. The missing connectors are `linkedin` and `facebook`;
+  they block publishing only, not evidence-backed drafting.
 - `google_ads`: credentials are configured and live campaign-level
   `vendor_read` works after the 2026-06-18 OAuth + MCC/child-account fix.
   `596-895-8639 Agencja Proud Media` is the MCC/login customer. `Ekologus NOWY`
   is the child metrics customer. Do not call Ads an OAuth blocker unless a fresh
   read proves that. Google Ads now has live campaign rows, search-term rows,
   a derived KPI read contract for CTR/CPC/conversion rate/CPA/ROAS, a
-  prepare-only custom segment candidate contract and a prepare-only negative
-  keyword safety review contract. CPA/ROAS are allowed only as calculations from
-  campaign facts; profitability, wasted-budget, negative keyword apply, audience
-  size, budget scaling and campaign-performance claims still need explicit
+  read-only budget context contract, a prepare-only custom segment candidate
+  contract and a prepare-only negative keyword safety review contract. Latest
+  live budget proof: `refresh_google_ads_c91c9e9638c8` exposes 18 campaign
+  budget rows, `ads_review_budget_context` and `budget_pacing_read_contract`
+  status `ready`. CPA/ROAS are allowed only as calculations from campaign facts;
+  budget context is allowed only as review context. Profitability,
+  wasted-budget, negative keyword apply, audience size, budget scaling,
+  campaign-performance and recommendation/apply claims still need explicit
   read/safety/apply contracts.
 - `google_merchant_center`: live product/feed facts exist and support a review
   queue. Merchant diagnostics now distinguishes report occurrences from unique
@@ -168,7 +178,7 @@ Current connector truth:
   OAuth/initialize probe.
 - `linkedin` and `facebook`: publishing is permission-gated. Drafting can be
   prepare-only and evidence-backed; publishing cannot be claimed.
-- `google_sheets`: intentionally not needed for current scope.
+- `google_sheets`: disabled intentionally and not needed for current scope.
 
 Known important local paths are documented in `AGENTS.md`; do not print secret
 values.
@@ -208,12 +218,12 @@ Do not rebuild these from scratch:
   behavior`, `GA4: tracking/conversion readiness` or `Analytics Safety Gate`.
 - Ads Doctor route operator cleanup: `/api/ads/diagnostics` now exposes a typed
   `decision_queue` with campaign review, search-term review, custom segment
-  candidate review and blocked write path decisions. Dashboard `/ads-doctor`
-  renders those decisions first, keeps evidence/action traceability, translates
-  status/blocked claims to Polish and no longer shows raw `Read contract Ads`,
-  `Search terms read-only`, `Campaign activity read contract`, `Evidence`,
-  `configured`, `READY`, `payload preview` or stale OAuth blocker copy when
-  live Ads data exists.
+  candidate review, budget context review and blocked write path decisions.
+  Dashboard `/ads-doctor` renders those decisions first, keeps evidence/action
+  traceability, translates status/blocked claims to Polish and no longer shows
+  raw `Read contract Ads`, `Search terms read-only`,
+  `Campaign activity read contract`, `Evidence`, `configured`, `READY`,
+  `payload preview` or stale OAuth blocker copy when live Ads data exists.
 - Localo route operator cleanup: `/api/localo/diagnostics` now exposes a typed
   access/readiness contract with missing Localo visibility contracts and blocked
   claims. Dashboard `/localo` renders `Status Localo / MCP access`,
@@ -261,10 +271,12 @@ These are the current reasons Goal 001 is not complete:
 3. **Ads Doctor is useful for read-only review, but not yet a full optimizer.**
    Campaign-level activity, search-term facts, custom segment candidates and
    the latest negative keyword safety review queue now have explicit
-   read/decision contracts. The negative keyword queue is prepare-only safety
-   review, not a waste verdict or apply path. Recommendations, quality scoring,
-   budget pacing, impression share, derived CPA/ROAS, keyword/match context,
-   full 90-day safety history, Keyword Planner enrichment,
+   read/decision contracts. Budget context is also explicit and read-only:
+   WILQ can compare campaign daily budget against 7-day cost, but cannot
+   recommend scaling, pausing or applying budget changes. The negative keyword
+   queue is prepare-only safety review, not a waste verdict or apply path.
+   Recommendations, quality scoring, budget optimization decisions, impression
+   share, keyword/match context, full 90-day safety history, Keyword Planner enrichment,
    forecast/audience-size contracts and apply previews still need explicit
    read/safety/ActionObject contracts before WILQ can claim BDOS-class Ads
    optimization value.
@@ -295,6 +307,14 @@ These are the current reasons Goal 001 is not complete:
    `content_diagnostics.decision_queue` is typed API state, not skill-reference
    logic. The follow-up daily context-pack slice also moved metric fact reads
    into batched/read-only API storage paths instead of skill-reference patches.
+
+   This is the explicit home for the "best standards / practitioner sources /
+   papers / doctoral-quality sources" layer. It is not a vague memory dump.
+   The required shape is: source map -> knowledge card or expert rule ->
+   typed WILQ evidence requirements -> blocked claims -> API view model ->
+   dashboard + Codex skill proof. Do not close this problem by adding long
+   prompt text to skills; close it by proving source-backed rules change
+   concrete marketer decisions.
 
 6. **Localo and social remain limited-evidence surfaces.**
    Localo access/readiness has a typed API surface in `/api/localo/diagnostics`.
@@ -614,7 +634,7 @@ Work in this order:
    `docs/evals/skill-eval-ledger.md`. It still blocks profitability, wasted
    budget, negative keyword apply, budget scaling and recommendation/apply
    claims until match context, full 90-day safety, payload preview, currency or
-   margin interpretation, pacing, recommendations, change history and
+   margin interpretation, recommendations, change history and
    impression share exist.
    action candidate `act_prepare_negative_keyword_review_queue`, usefulness
    score 5 and no safety findings. It blocks `negative keyword apply`,
@@ -641,11 +661,23 @@ Work in this order:
    IDs and `90_day_safety_check`. It blocks `negative keyword apply`,
    `search-term waste`, `conversion loss`, CPA and ROAS.
 
+   Latest local Ads budget context slice: Google Ads `campaign_budget` fields
+   are stored as metric facts, `/api/ads/diagnostics` exposes
+   `budget_pacing_read_contract.status=ready`, and `/ads-doctor` renders
+   `Koszt 7 dni`, `7-dniowy budżet`, spend ratio and Google recommended-budget
+   signal as read-only review context. This does not unlock budget scaling,
+   campaign pause, wasted-budget or recommendation/apply claims.
+   Full `scripts/verify.sh` passed for this slice on 2026-06-19: backend API
+   contracts `108 passed`, dashboard route tests `13 passed`, Playwright e2e
+   `9 passed`, API smoke, skill structure smoke, skill API smoke and dashboard
+   production build passed. Known non-blocking warning: Vite main JS chunk
+   `530.14 kB` exceeds the 500 KB warning threshold.
+
    Still missing for BDOS-class Ads value: recommendations, change history,
-   budget pacing, impression share, keyword/match context, full 90-day safety
-   history, Keyword Planner enrichment, forecast/audience-size contract, custom
-   segment payload preview, margin/currency interpretation and all Ads apply
-   previews. Full `scripts/verify.sh` passed after the custom
+   impression share, keyword/match context, full 90-day safety history, Keyword
+   Planner enrichment, forecast/audience-size contract, custom segment payload
+   preview, margin/currency interpretation, explicit budget/apply previews and
+   all Ads apply/audit paths. Full `scripts/verify.sh` passed after the custom
    segments slice on 2026-06-19: backend API contracts `100 passed`, dashboard
    route tests `13 passed`, Playwright e2e `9 passed` and dashboard production
    build passed. For the negative keyword safety slice, focused
@@ -680,10 +712,10 @@ Work in this order:
      when conversion/cost/read contracts, tracking validation or richer
      landing/source/campaign classifiers are added;
    - done for `wilq-ads-doctor` after campaign table,
-     search terms/conversions and blocked-claim matrix; keep rerunning when
-     recommendations, change history, budget pacing, impression share, derived
-     CPA/ROAS or negative keyword apply contracts are added. Fresh rerun after
-     negative keyword safety review contract passed on 2026-06-19;
+     search terms/conversions, budget context and blocked-claim matrix; keep
+     rerunning when recommendations, change history, impression share, budget
+     apply previews or negative keyword apply contracts are added. Fresh smoke
+     after budget context passed on 2026-06-19;
    - `wilq-localo-operator` after `/api/localo/diagnostics` for
      access/readiness and again after real ranking/GBP/competitor/review facts
      exist. Fresh access-ready blocker eval passed on 2026-06-19:
@@ -1451,11 +1483,11 @@ Live `:8000` proof after API restart:
 
 Remaining Ads optimizer blockers:
 
-- no budget pacing contract,
+- no budget/apply preview or human budget-goal contract,
 - no recommendations/change-history contract,
 - no impression share contract,
 - no account-currency/profit-margin interpretation contract,
-- no campaign pause/budget apply preview.
+- no campaign pause/budget apply audit path.
 
 Passed after the 2026-06-19 Command Center GA4 metric-fact fallback:
 

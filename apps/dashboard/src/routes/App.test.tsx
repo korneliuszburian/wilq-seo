@@ -316,7 +316,6 @@ const adsDiagnostics = {
     missing_read_contracts: [
       "account_currency",
       "profit_margin",
-      "budget_pacing",
       "change_history",
       "recommendations"
     ],
@@ -358,6 +357,69 @@ const adsDiagnostics = {
     ],
     next_step:
       "Użyj KPI do triage kampanii. Przed decyzją budżetową sprawdź walutę konta, marżę, pacing budżetu, historię zmian i rekomendacje."
+  },
+  budget_pacing_read_contract: {
+    id: "ads_budget_pacing_read_contract",
+    status: "ready",
+    title: "Google Ads: kontekst budżetu kampanii",
+    summary:
+      "WILQ ma budżetowy kontekst dla 1 kampanii; 1 ma policzalny stosunek kosztu z 7 dni do budżetu dziennego.",
+    allowed_metrics: [
+      "budget_amount_micros",
+      "cost_micros_7d",
+      "seven_day_budget_micros",
+      "spend_to_budget_ratio_7d",
+      "budget_has_recommended_budget",
+      "budget_recommended_amount_micros"
+    ],
+    missing_read_contracts: [
+      "shared_budget_distribution",
+      "budget_target_or_seasonality",
+      "change_history",
+      "recommendations",
+      "impression_share",
+      "human_budget_goal"
+    ],
+    blocked_claims: [
+      "budget scaling",
+      "budget apply",
+      "profitability",
+      "wasted budget",
+      "recommendation apply"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    budget_rows: [
+      {
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        campaign_status: "ENABLED",
+        advertising_channel_type: "SEARCH",
+        budget_id: "777",
+        budget_name: "Ekologus Search budget",
+        budget_period: "DAILY",
+        budget_status: "ENABLED",
+        budget_amount_micros: 30000000,
+        cost_micros_7d: 164591174,
+        seven_day_budget_micros: 210000000,
+        spend_to_budget_ratio_7d: 0.783768,
+        has_recommended_budget: true,
+        recommended_budget_amount_micros: 42000000,
+        recommended_budget_delta_micros: 12000000,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        missing_metrics: [],
+        blocked_claims: [
+          "budget scaling",
+          "budget apply",
+          "profitability",
+          "wasted budget",
+          "recommendation apply"
+        ]
+      }
+    ],
+    next_step:
+      "Użyj tego jako kontekstu review; nie skaluj budżetu bez historii zmian i walidowanego ActionObject."
   },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
@@ -589,6 +651,7 @@ const adsDiagnostics = {
         }
       ],
       derived_kpi_rows: [],
+      budget_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -613,6 +676,7 @@ const adsDiagnostics = {
       metric_facts: [],
       campaign_rows: [],
       derived_kpi_rows: [],
+      budget_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -664,6 +728,7 @@ const adsDiagnostics = {
       metric_facts: [],
       campaign_rows: [],
       derived_kpi_rows: [],
+      budget_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [
@@ -716,6 +781,7 @@ const adsDiagnostics = {
       metric_facts: [],
       campaign_rows: [],
       derived_kpi_rows: [],
+      budget_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -779,6 +845,7 @@ const adsDiagnostics = {
       metric_facts: [],
       campaign_rows: [],
       derived_kpi_rows: [],
+      budget_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -2170,6 +2237,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("Konwersje").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Wartość konw.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("450,75").length).toBeGreaterThan(0);
+    expect(screen.getByText("Koszt 7 dni")).toBeInTheDocument();
+    expect(screen.getByText("7-dniowy budżet")).toBeInTheDocument();
+    expect(screen.getByText("78,38%")).toBeInTheDocument();
     expect(screen.getByText(/wartość_konwersji=120/)).toBeInTheDocument();
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
     expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();

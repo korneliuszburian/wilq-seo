@@ -1522,6 +1522,8 @@ type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
 type AdsDecisionItem = AdsDiagnosticsResponse["decision_queue"][number];
 type AdsCampaignMetricRow = AdsDiagnosticsResponse["campaign_read_contract"]["campaign_rows"][number];
 type AdsDerivedKpiRow = AdsDiagnosticsResponse["derived_kpi_read_contract"]["kpi_rows"][number];
+type AdsBudgetPacingRow =
+  AdsDiagnosticsResponse["budget_pacing_read_contract"]["budget_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 type AdsCustomSegmentCandidate =
@@ -1657,6 +1659,7 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Kampanie" value={data.campaign_read_contract.campaign_rows.length} />
+          <MetricTile label="Budżety" value={data.budget_pacing_read_contract.budget_rows.length} />
           <MetricTile
             label="Zapytania"
             value={data.search_terms_read_contract.search_term_rows.length}
@@ -1724,6 +1727,11 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
             KPI: {decision.derived_kpi_rows.length}
           </span>
         ) : null}
+        {decision.budget_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Budżety: {decision.budget_rows.length}
+          </span>
+        ) : null}
         {decision.allowed_metrics.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
@@ -1762,12 +1770,14 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
 function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const campaignRows = data.campaign_read_contract.campaign_rows;
   const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
+  const budgetRows = data.budget_pacing_read_contract.budget_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
   const missingReadContracts = uniqueValues([
     ...data.campaign_read_contract.missing_read_contracts,
     ...data.derived_kpi_read_contract.missing_read_contracts,
+    ...data.budget_pacing_read_contract.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
@@ -1775,6 +1785,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const blockedClaims = uniqueValues([
     ...data.campaign_read_contract.blocked_claims,
     ...data.derived_kpi_read_contract.blocked_claims,
+    ...data.budget_pacing_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
     ...data.negative_keywords_read_contract.blocked_claims,
@@ -1793,9 +1804,10 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
             tutaj widać kampanie, zapytania i blokady claimów.
           </p>
         </div>
-        <div className="grid grid-cols-4 gap-2 text-center text-xs">
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
           <MetricTile label="Kampanie" value={campaignRows.length} />
           <MetricTile label="KPI" value={derivedKpiRows.length} />
+          <MetricTile label="Budżety" value={budgetRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
@@ -1805,6 +1817,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
       <div className="grid gap-4">
         <AdsCampaignRowsTable rows={campaignRows} />
         <AdsDerivedKpiRowsTable rows={derivedKpiRows} />
+        <AdsBudgetPacingRowsTable rows={budgetRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} />
         <AdsNegativeKeywordCandidatesPanel candidates={negativeKeywordCandidates} />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
@@ -1892,6 +1905,62 @@ function AdsDerivedKpiRowsTable({ rows }: { rows: AdsDerivedKpiRow[] }) {
                 {adsCost(row.cost_per_conversion_micros)}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.roas)}</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AdsBudgetPacingRowsTable({ rows }: { rows: AdsBudgetPacingRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak kontekstu budżetu kampanii. WILQ potrzebuje campaign_budget.amount_micros z Google Ads, żeby pokazać koszt względem budżetu dziennego." />
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-4 font-semibold">Budżet</th>
+            <th className="py-2 pr-4 font-semibold">Koszt 7 dni</th>
+            <th className="py-2 pr-4 font-semibold">7-dniowy budżet</th>
+            <th className="py-2 pr-4 font-semibold">Wydanie</th>
+            <th className="py-2 pr-4 font-semibold">Rekomendacja Google</th>
+            <th className="py-2 pr-3 font-semibold">Blokady</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.slice(0, 12).map((row) => (
+            <tr key={`${row.campaign_id ?? "unknown"}-${row.budget_id ?? row.budget_name}`}>
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">
+                <div>{row.campaign_name}</div>
+                <div className="text-xs font-normal text-slate-500">
+                  {row.advertising_channel_type ?? "kanał: brak"} /{" "}
+                  {row.budget_period ?? "okres: brak"}
+                </div>
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.budget_amount_micros)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">{adsCost(row.cost_micros_7d)}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.seven_day_budget_micros)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsPercent(row.spend_to_budget_ratio_7d)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {row.has_recommended_budget
+                  ? adsCost(row.recommended_budget_amount_micros)
+                  : "brak"}
+              </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
               </td>
@@ -2123,6 +2192,7 @@ function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
 function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_campaign_activity") return "przegląd kampanii";
   if (decisionType === "review_derived_kpi") return "wyliczone KPI";
+  if (decisionType === "review_budget_context") return "kontekst budżetu";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
   if (decisionType === "review_negative_keyword_safety") return "review wykluczeń";
   if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
@@ -2151,10 +2221,11 @@ function adsDecisionSortValue(decision: AdsDecisionItem) {
   const typeRank: Record<AdsDecisionItem["decision_type"], number> = {
     review_campaign_activity: 0,
     review_derived_kpi: 1,
-    review_search_terms: 2,
-    review_negative_keyword_safety: 3,
-    prepare_custom_segments: 4,
-    block_write_actions: 5,
+    review_budget_context: 2,
+    review_search_terms: 3,
+    review_negative_keyword_safety: 4,
+    prepare_custom_segments: 5,
+    block_write_actions: 6,
     fix_ads_access: 0
   };
   return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
@@ -2179,6 +2250,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_live_data_status") return "Status odczytu Google Ads";
   if (sectionId === "ads_campaign_overview") return "Aktywność kampanii";
   if (sectionId === "ads_derived_kpi") return "Wyliczone KPI";
+  if (sectionId === "ads_budget_pacing") return "Kontekst budżetu";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
   if (sectionId === "ads_custom_segments") return "Custom segments";
@@ -2194,6 +2266,12 @@ function adsAllowedMetricLabel(value: string) {
     cost_micros: "koszt",
     conversions: "konwersje",
     conversion_value: "wartość konwersji",
+    budget_amount_micros: "budżet",
+    cost_micros_7d: "koszt 7 dni",
+    seven_day_budget_micros: "budżet 7 dni",
+    spend_to_budget_ratio_7d: "wydanie względem budżetu",
+    budget_has_recommended_budget: "sygnał recommended budget",
+    budget_recommended_amount_micros: "rekomendowany budżet",
     search_term: "zapytanie",
     campaign: "kampania",
     ad_group: "grupa reklam",
@@ -2207,6 +2285,10 @@ function adsMissingReadContractLabel(value: string) {
     recommendations: "rekomendacje Google Ads",
     change_history: "historia zmian",
     budget_pacing: "tempo wydawania budżetu",
+    campaign_budget: "budżet kampanii",
+    shared_budget_distribution: "podział shared budget",
+    budget_target_or_seasonality: "cel budżetowy lub sezonowość",
+    human_budget_goal: "cel budżetu od człowieka",
     impression_share: "udział w wyświetleniach",
     "keyword match context": "kontekst dopasowania słów kluczowych",
     "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
@@ -2236,6 +2318,8 @@ function adsBlockedClaimLabel(value: string) {
     "campaign mutation": "zmiana kampanii",
     "campaign creation": "tworzenie kampanii",
     "budget scaling": "skalowanie budżetu",
+    "budget amount": "kwota budżetu",
+    "budget pacing": "tempo wydawania budżetu",
     "conversion drop": "spadek konwersji",
     "conversion loss": "utrata konwersji",
     "search terms": "zapytania użytkowników",

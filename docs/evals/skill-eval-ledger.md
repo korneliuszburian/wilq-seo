@@ -1665,3 +1665,35 @@ Important finding:
   must remain available through `/api/ads/diagnostics`, and skills must still
   block CPA/ROAS/waste/apply claims unless the matching contracts and
   validations exist.
+
+## 2026-06-19 - wilq-ads-doctor budget context API smoke
+
+Purpose:
+
+- Verify that the Ads skill smoke and scoped context-pack understand the new
+  read-only Google Ads budget context contract.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Smoke passed against live local WILQ API.
+- `/api/ads/diagnostics.budget_pacing_read_contract.status=ready`.
+- The contract exposed 18 campaign budget rows from
+  `ev_refresh_refresh_google_ads_c91c9e9638c8`.
+- The scoped context-pack also included budget rows.
+- The skill smoke required `budget apply` to stay blocked.
+
+Interpretation:
+
+- This is not a full `codex exec` eval. It proves the API + context-pack +
+  smoke contract for `wilq-ads-doctor`.
+- Budget can now be shown as read-only review context: daily budget, 7-day cost,
+  spend ratio and Google recommended-budget signal.
+- WILQ still must block budget scaling, campaign pause, profitability, wasted
+  budget and recommendation/apply until recommendation, change-history,
+  impression-share, human-budget-goal and apply-preview contracts exist.

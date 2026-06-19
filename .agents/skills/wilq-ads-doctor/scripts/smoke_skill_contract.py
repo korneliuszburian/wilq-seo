@@ -80,6 +80,7 @@ def main() -> int:
         if not {"ROAS", "search terms"} <= blocked_claims:
             raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
+    budget_pacing_read_contract = ads_diagnostics.get("budget_pacing_read_contract") or {}
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
@@ -91,6 +92,18 @@ def main() -> int:
         not in (ads_diagnostics.get("action_ids") or [])
     ):
         raise SystemExit("Ready campaign diagnostics must expose campaign review ActionObject")
+    if budget_pacing_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose budget_pacing_read_contract")
+    if budget_pacing_read_contract.get("status") == "ready":
+        if not budget_pacing_read_contract.get("budget_rows"):
+            raise SystemExit("Ready budget pacing contract must expose budget rows")
+        pack_budget_contract = (
+            pack.get("ads_diagnostics", {}).get("budget_pacing_read_contract") or {}
+        )
+        if not pack_budget_contract.get("budget_rows"):
+            raise SystemExit("Context pack must include ready budget pacing rows")
+        if "budget apply" not in budget_pacing_read_contract.get("blocked_claims", []):
+            raise SystemExit("Budget pacing contract must keep budget apply blocked")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -163,6 +176,19 @@ def main() -> int:
                         "has_campaign_review_action": (
                             "act_prepare_ads_campaign_review_queue"
                             in (ads_diagnostics.get("action_ids") or [])
+                        ),
+                    },
+                    "budget_pacing_read_contract": {
+                        "status": budget_pacing_read_contract.get("status"),
+                        "summary": budget_pacing_read_contract.get("summary"),
+                        "allowed_metrics": budget_pacing_read_contract.get(
+                            "allowed_metrics", []
+                        ),
+                        "missing_read_contracts": budget_pacing_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "row_count": len(
+                            budget_pacing_read_contract.get("budget_rows") or []
                         ),
                     },
                     "search_terms_read_contract": {

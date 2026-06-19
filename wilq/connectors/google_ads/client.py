@@ -33,6 +33,15 @@ CAMPAIGN_SUMMARY_QUERY = """
 SELECT
   campaign.id,
   campaign.name,
+  campaign.status,
+  campaign.advertising_channel_type,
+  campaign_budget.id,
+  campaign_budget.name,
+  campaign_budget.amount_micros,
+  campaign_budget.period,
+  campaign_budget.status,
+  campaign_budget.has_recommended_budget,
+  campaign_budget.recommended_budget_amount_micros,
   metrics.clicks,
   metrics.impressions,
   metrics.cost_micros,
@@ -426,6 +435,8 @@ def _summarize_search_stream_response(
     cost_micros = 0
     conversions = 0.0
     conversion_value = 0.0
+    budgeted_campaign_count = 0
+    recommended_budget_count = 0
     metric_facts: list[VendorMetricFact] = []
     for row in rows:
         metrics = row.get("metrics", {})
@@ -442,7 +453,8 @@ def _summarize_search_stream_response(
         conversions += row_conversions
         conversion_value += row_conversion_value
         campaign = row.get("campaign", {})
-        dimensions = _campaign_dimensions(campaign)
+        campaign_budget = row.get("campaignBudget", row.get("campaign_budget", {}))
+        dimensions = _campaign_dimensions(campaign, campaign_budget)
         if dimensions:
             metric_facts.extend(
                 [
@@ -453,6 +465,49 @@ def _summarize_search_stream_response(
                     VendorMetricFact("conversion_value", row_conversion_value, dimensions),
                 ]
             )
+            budget_amount_micros = _optional_int_metric(
+                _budget_value(campaign_budget, "amountMicros", "amount_micros")
+            )
+            if budget_amount_micros is not None:
+                budgeted_campaign_count += 1
+                metric_facts.append(
+                    VendorMetricFact(
+                        "budget_amount_micros",
+                        budget_amount_micros,
+                        dimensions,
+                    )
+                )
+            has_recommended_budget = _bool_metric(
+                _budget_value(
+                    campaign_budget,
+                    "hasRecommendedBudget",
+                    "has_recommended_budget",
+                )
+            )
+            if has_recommended_budget:
+                recommended_budget_count += 1
+            metric_facts.append(
+                VendorMetricFact(
+                    "budget_has_recommended_budget",
+                    1 if has_recommended_budget else 0,
+                    dimensions,
+                )
+            )
+            recommended_budget_amount_micros = _optional_int_metric(
+                _budget_value(
+                    campaign_budget,
+                    "recommendedBudgetAmountMicros",
+                    "recommended_budget_amount_micros",
+                )
+            )
+            if recommended_budget_amount_micros is not None:
+                metric_facts.append(
+                    VendorMetricFact(
+                        "budget_recommended_amount_micros",
+                        recommended_budget_amount_micros,
+                        dimensions,
+                    )
+                )
     return (
         {
             "api_version": GOOGLE_ADS_API_VERSION,
@@ -463,6 +518,8 @@ def _summarize_search_stream_response(
             "cost_micros": cost_micros,
             "conversions": conversions,
             "conversion_value": conversion_value,
+            "budgeted_campaign_count": budgeted_campaign_count,
+            "recommended_budget_count": recommended_budget_count,
         },
         metric_facts,
     )
@@ -561,6 +618,18 @@ def _int_metric(value: Any) -> int:
     return 0
 
 
+def _optional_int_metric(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return None
+
+
 def _float_metric(value: Any) -> float:
     if value is None:
         return 0.0
@@ -574,7 +643,10 @@ def _float_metric(value: Any) -> float:
     return 0.0
 
 
-def _campaign_dimensions(campaign: Any) -> dict[str, str]:
+def _campaign_dimensions(
+    campaign: Any,
+    campaign_budget: Any | None = None,
+) -> dict[str, str]:
     if not isinstance(campaign, dict):
         return {}
     dimensions: dict[str, str] = {}
@@ -584,7 +656,38 @@ def _campaign_dimensions(campaign: Any) -> dict[str, str]:
     campaign_name = campaign.get("name")
     if isinstance(campaign_name, str) and campaign_name:
         dimensions["campaign_name"] = campaign_name
+    campaign_status = campaign.get("status")
+    if isinstance(campaign_status, str) and campaign_status:
+        dimensions["campaign_status"] = campaign_status
+    advertising_channel_type = campaign.get(
+        "advertisingChannelType",
+        campaign.get("advertising_channel_type"),
+    )
+    if isinstance(advertising_channel_type, str) and advertising_channel_type:
+        dimensions["advertising_channel_type"] = advertising_channel_type
+    if isinstance(campaign_budget, dict):
+        budget_id = campaign_budget.get("id")
+        if budget_id is not None:
+            dimensions["budget_id"] = str(budget_id)
+        budget_name = campaign_budget.get("name")
+        if isinstance(budget_name, str) and budget_name:
+            dimensions["budget_name"] = budget_name
+        budget_period = campaign_budget.get("period")
+        if isinstance(budget_period, str) and budget_period:
+            dimensions["budget_period"] = budget_period
+        budget_status = campaign_budget.get("status")
+        if isinstance(budget_status, str) and budget_status:
+            dimensions["budget_status"] = budget_status
     return dimensions
+
+
+def _budget_value(campaign_budget: Any, *keys: str) -> Any:
+    if not isinstance(campaign_budget, dict):
+        return None
+    for key in keys:
+        if key in campaign_budget:
+            return campaign_budget[key]
+    return None
 
 
 def _search_term_dimensions(row: dict[str, Any]) -> dict[str, str]:

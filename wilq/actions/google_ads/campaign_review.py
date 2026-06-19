@@ -110,6 +110,9 @@ def _campaign_fact_groups(
             "cost_micros",
             "conversions",
             "conversion_value",
+            "budget_amount_micros",
+            "budget_has_recommended_budget",
+            "budget_recommended_amount_micros",
         }:
             continue
         campaign_id = fact.dimensions.get("campaign_id")
@@ -133,6 +136,10 @@ def _campaign_candidate(
     cost_micros = _int_metric_value(facts_by_name.get("cost_micros"))
     conversions = _float_metric_value(facts_by_name.get("conversions"))
     conversion_value = _float_metric_value(facts_by_name.get("conversion_value"))
+    budget_amount_micros = _int_metric_value(facts_by_name.get("budget_amount_micros"))
+    recommended_budget_amount_micros = _int_metric_value(
+        facts_by_name.get("budget_recommended_amount_micros")
+    )
     return {
         "campaign_id": campaign_id,
         "campaign_name": campaign_name,
@@ -148,6 +155,21 @@ def _campaign_candidate(
             "cost_per_conversion_micros": _ratio(cost_micros, conversions),
             "roas": _ratio(conversion_value, _micros_to_account_units(cost_micros)),
             "value_per_conversion": _ratio(conversion_value, conversions),
+        },
+        "budget_context": {
+            "budget_amount_micros": budget_amount_micros,
+            "cost_micros_7d": cost_micros,
+            "seven_day_budget_micros": budget_amount_micros * 7
+            if budget_amount_micros is not None
+            else None,
+            "spend_to_budget_ratio_7d": _ratio(
+                cost_micros,
+                budget_amount_micros * 7 if budget_amount_micros is not None else None,
+            ),
+            "has_recommended_budget": _bool_metric_value(
+                facts_by_name.get("budget_has_recommended_budget")
+            ),
+            "recommended_budget_amount_micros": recommended_budget_amount_micros,
         },
         "source_metric_names": _unique(fact.name for fact in facts),
         "evidence_ids": _unique(fact.evidence_id for fact in facts),
@@ -177,6 +199,14 @@ def _float_metric_value(fact: MetricFact | None) -> float | None:
         except ValueError:
             return None
     return float(fact.value)
+
+
+def _bool_metric_value(fact: MetricFact | None) -> bool | None:
+    if fact is None:
+        return None
+    if isinstance(fact.value, str):
+        return fact.value.lower() in {"1", "true", "yes"}
+    return bool(fact.value)
 
 
 def _ratio(

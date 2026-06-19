@@ -8,6 +8,42 @@ artifacts.
 
 Data: 2026-06-19
 
+- Recovery snapshot 2026-06-19 14:53 Europe/Warsaw: active local slice is Ads
+  budget context, not full Ads optimization. Live `/api/ads/diagnostics` after
+  API restart reports `budget_pacing_read_contract.status=ready`, 18 budget
+  rows from `refresh_google_ads_c91c9e9638c8`, decision
+  `ads_review_budget_context`, campaign missing contracts
+  `recommendations/change_history/impression_share`, and derived KPI missing
+  contracts `account_currency/profit_margin/change_history/recommendations`.
+  The old generic `budget_pacing` missing contract is no longer shown in
+  campaign/derived KPI contracts when budget rows are available. WILQ may show
+  daily budget versus 7-day cost as review context only; it still blocks budget
+  scaling, budget apply, profitability, wasted budget and recommendation apply.
+  Focused backend tests, dashboard route tests and `wilq-ads-doctor` API smoke
+  passed. Full `scripts/verify.sh` also passed: backend API contracts
+  `108 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`,
+  API smoke, skill structure smoke, skill API smoke and dashboard production
+  build passed. Non-blocking warning: Vite main JS chunk is `530.14 kB`, above
+  its 500 KB warning threshold.
+- Recovery snapshot 2026-06-19 14:27 Europe/Warsaw: live connector registry is
+  `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
+  `google_sheets` is the single disabled connector and is intentionally outside
+  current scope. The two missing connectors are `linkedin` and `facebook`;
+  they block publishing, not evidence-backed social drafting. Current product
+  state is close to a useful Ekologus demo, not close to full BDOS-class parity.
+  The remaining high-value work is Ads optimizer contracts
+  (recommendations, change history, impression share, Keyword Planner,
+  currency/value semantics, human budget goals, previews/apply/audit), Localo
+  visibility contracts beyond MCP initialize, richer Ahrefs gap evidence, strict
+  skill usefulness evals across remaining skills, and a proven source-backed
+  knowledge loop.
+- Knowledge/research layer status: it is explicitly part of
+  `docs/goals/001-goal.md` under `Research And Knowledge Contract` and points
+  to `docs/research/wilq-marketing-source-map.md`. It is not done. The required
+  proof is source map -> knowledge card/expert rule -> typed API evidence
+  requirements -> dashboard decision -> non-interactive Codex skill output.
+  Do not fix knowledge quality by stuffing long problem lists into skill
+  references.
 - Recovery snapshot 2026-06-19 09:37 Europe/Warsaw: after the overnight run
   the latest pushed commit is `3a7d4ab test(skills): prove localo access-ready
   blocker`; this slice continues from that Merchant handoff.
@@ -2227,6 +2263,6 @@ Remaining gap:
 
 - This is not full Ads optimizer. WILQ can now prepare a campaign review queue,
   but still blocks budget scaling, campaign pause, wasted budget, CPA/ROAS
-  verdicts and recommendation apply until budget pacing, recommendations,
-  change history, impression share, account currency/margin semantics and apply
-  previews exist.
+  verdicts and recommendation apply until recommendations, change history,
+  impression share, account currency/margin semantics, human budget goals and
+  apply previews exist.

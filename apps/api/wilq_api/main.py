@@ -587,10 +587,16 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
     compact = dict(_without_metric_facts(ads_diagnostics))
     campaign_rows = _list_at(compact, "campaign_read_contract", "campaign_rows")
     kpi_rows = _list_at(compact, "derived_kpi_read_contract", "kpi_rows")
+    budget_rows = _list_at(compact, "budget_pacing_read_contract", "budget_rows")
     search_term_rows = _list_at(
         compact,
         "search_terms_read_contract",
         "search_term_rows",
+    )
+    _limit_contract_rows(
+        compact,
+        ("budget_pacing_read_contract", "budget_rows"),
+        ADS_CONTEXT_ROW_LIMIT,
     )
     _limit_contract_rows(
         compact,
@@ -609,6 +615,10 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "full_endpoint": "/api/ads/diagnostics",
         "campaign_rows_total": len(campaign_rows),
         "derived_kpi_rows_total": len(kpi_rows),
+        "budget_rows_total": len(budget_rows),
+        "budget_rows_included": len(
+            _list_at(compact, "budget_pacing_read_contract", "budget_rows")
+        ),
         "search_term_rows_total": len(search_term_rows),
         "search_term_rows_included": len(
             _list_at(compact, "search_terms_read_contract", "search_term_rows")
@@ -667,6 +677,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
         for rows_key in (
             "campaign_rows",
             "derived_kpi_rows",
+            "budget_rows",
             "search_term_rows",
             "custom_segment_candidates",
             "negative_keyword_candidates",

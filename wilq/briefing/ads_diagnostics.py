@@ -21,6 +21,8 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     AdsBlockedHandoff,
+    AdsBudgetPacingReadContract,
+    AdsBudgetPacingRow,
     AdsCampaignMetricRow,
     AdsCampaignReadContract,
     AdsCustomSegmentCandidate,
@@ -63,6 +65,11 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     live_data_available = bool(trusted_metric_facts)
     campaign_read_contract = _campaign_read_contract(trusted_metric_facts, latest_refresh)
     derived_kpi_read_contract = _derived_kpi_read_contract(campaign_read_contract)
+    budget_pacing_read_contract = _budget_pacing_read_contract(
+        trusted_metric_facts,
+        campaign_read_contract,
+        latest_refresh,
+    )
     search_terms_read_contract = _search_terms_read_contract(
         trusted_metric_facts,
         latest_refresh,
@@ -88,6 +95,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             campaign_read_contract,
         ),
         _derived_kpi_section(derived_kpi_read_contract),
+        _budget_pacing_section(budget_pacing_read_contract),
         _search_terms_section(search_terms_read_contract, action_ids),
         _custom_segments_section(custom_segments_read_contract),
         _negative_keywords_section(negative_keywords_read_contract),
@@ -101,6 +109,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     decision_queue = _ads_decision_queue(
         campaign_read_contract,
         derived_kpi_read_contract,
+        budget_pacing_read_contract,
         search_terms_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
@@ -115,6 +124,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
         derived_kpi_read_contract=derived_kpi_read_contract,
+        budget_pacing_read_contract=budget_pacing_read_contract,
         search_terms_read_contract=search_terms_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
@@ -292,7 +302,6 @@ def _campaign_read_contract(
     missing_read_contracts = [
         "recommendations",
         "change_history",
-        "budget_pacing",
         "impression_share",
     ]
     blocked_claims = [
@@ -415,7 +424,6 @@ def _derived_kpi_read_contract(
     missing_read_contracts = [
         "account_currency",
         "profit_margin",
-        "budget_pacing",
         "change_history",
         "recommendations",
     ]
@@ -506,6 +514,203 @@ def _derived_kpi_row(row: AdsCampaignMetricRow) -> AdsDerivedKpiRow:
     )
 
 
+def _budget_pacing_read_contract(
+    metric_facts: list[MetricFact],
+    campaign_read_contract: AdsCampaignReadContract,
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsBudgetPacingReadContract:
+    rows = _budget_pacing_rows(metric_facts)
+    missing_read_contracts = [
+        "shared_budget_distribution",
+        "budget_target_or_seasonality",
+        "change_history",
+        "recommendations",
+        "impression_share",
+        "human_budget_goal",
+    ]
+    blocked_claims = [
+        "budget scaling",
+        "budget apply",
+        "profitability",
+        "wasted budget",
+        "recommendation apply",
+    ]
+    if rows:
+        daily_rows = [row for row in rows if row.spend_to_budget_ratio_7d is not None]
+        recommended_rows = [row for row in rows if row.has_recommended_budget]
+        return AdsBudgetPacingReadContract(
+            status="ready",
+            title="Google Ads: kontekst budżetu kampanii",
+            summary=(
+                f"WILQ ma budżetowy kontekst dla {len(rows)} kampanii; "
+                f"{len(daily_rows)} ma policzalny stosunek kosztu z 7 dni do "
+                f"budżetu dziennego, a {len(recommended_rows)} ma sygnał "
+                "recommended budget z Google Ads."
+            ),
+            allowed_metrics=[
+                "budget_amount_micros",
+                "cost_micros_7d",
+                "seven_day_budget_micros",
+                "spend_to_budget_ratio_7d",
+                "budget_has_recommended_budget",
+                "budget_recommended_amount_micros",
+            ],
+            missing_read_contracts=missing_read_contracts,
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            budget_rows=rows,
+            next_step=(
+                "Użyj tego jako kontekstu review: które kampanie mają koszt względem "
+                "budżetu dziennego i czy Google pokazuje recommended budget. Nie "
+                "skaluj budżetu bez historii zmian, impression share, celu biznesowego "
+                "i walidowanego ActionObject."
+            ),
+        )
+
+    return AdsBudgetPacingReadContract(
+        status="blocked",
+        title="Google Ads: brak kontekstu budżetu kampanii",
+        summary="WILQ nie ma jeszcze budget metric facts z Google Ads campaign_budget.",
+        allowed_metrics=[],
+        missing_read_contracts=["campaign_budget", *missing_read_contracts],
+        blocked_claims=["budget amount", "budget pacing", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=campaign_read_contract.evidence_ids
+        or _refresh_or_connector_evidence_ids(latest_refresh),
+        budget_rows=[],
+        next_step=(
+            "Uruchom read-only Google Ads vendor_read z campaign_budget fields. "
+            "Nie oceniaj tempa budżetu bez budget_amount_micros."
+        ),
+    )
+
+
+def _budget_pacing_rows(metric_facts: list[MetricFact]) -> list[AdsBudgetPacingRow]:
+    grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
+    seen_metric_keys: set[tuple[str | None, str, str]] = set()
+    for fact in metric_facts:
+        if fact.name not in {
+            "cost_micros",
+            "budget_amount_micros",
+            "budget_has_recommended_budget",
+            "budget_recommended_amount_micros",
+        }:
+            continue
+        campaign_id = fact.dimensions.get("campaign_id")
+        campaign_name = fact.dimensions.get("campaign_name")
+        if not campaign_id and not campaign_name:
+            continue
+        row_key = (campaign_id, campaign_name or f"campaign {campaign_id}")
+        metric_key = (campaign_id, row_key[1], fact.name)
+        if metric_key in seen_metric_keys:
+            continue
+        seen_metric_keys.add(metric_key)
+        grouped_facts.setdefault(row_key, []).append(fact)
+
+    rows = [
+        _budget_pacing_row(campaign_id, campaign_name, facts)
+        for (campaign_id, campaign_name), facts in grouped_facts.items()
+    ]
+    return sorted(
+        [row for row in rows if row.budget_amount_micros is not None],
+        key=_budget_pacing_row_sort_key,
+    )
+
+
+def _budget_pacing_row(
+    campaign_id: str | None,
+    campaign_name: str,
+    facts: list[MetricFact],
+) -> AdsBudgetPacingRow:
+    facts_by_name = {fact.name: fact for fact in facts}
+    first_dimensions = next(
+        (fact.dimensions for fact in facts if fact.dimensions.get("budget_id")),
+        facts[0].dimensions if facts else {},
+    )
+    budget_amount_micros = _int_metric_value(facts_by_name.get("budget_amount_micros"))
+    cost_micros_7d = _int_metric_value(facts_by_name.get("cost_micros"))
+    budget_period = first_dimensions.get("budget_period")
+    seven_day_budget_micros = (
+        budget_amount_micros * 7
+        if budget_amount_micros is not None and budget_period == "DAILY"
+        else None
+    )
+    has_recommended_budget = _bool_metric_value(
+        facts_by_name.get("budget_has_recommended_budget")
+    )
+    recommended_budget_amount_micros = _int_metric_value(
+        facts_by_name.get("budget_recommended_amount_micros")
+    )
+    recommended_budget_delta_micros = (
+        recommended_budget_amount_micros - budget_amount_micros
+        if recommended_budget_amount_micros is not None and budget_amount_micros is not None
+        else None
+    )
+    expected_metrics = ["budget_amount_micros", "cost_micros"]
+    missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
+    if budget_period != "DAILY":
+        missing_metrics.append("daily_budget_period_for_7d_ratio")
+    return AdsBudgetPacingRow(
+        campaign_id=campaign_id,
+        campaign_name=campaign_name,
+        campaign_status=first_dimensions.get("campaign_status"),
+        advertising_channel_type=first_dimensions.get("advertising_channel_type"),
+        budget_id=first_dimensions.get("budget_id"),
+        budget_name=first_dimensions.get("budget_name"),
+        budget_period=budget_period,
+        budget_status=first_dimensions.get("budget_status"),
+        budget_amount_micros=budget_amount_micros,
+        cost_micros_7d=cost_micros_7d,
+        seven_day_budget_micros=seven_day_budget_micros,
+        spend_to_budget_ratio_7d=_ratio(cost_micros_7d, seven_day_budget_micros),
+        has_recommended_budget=has_recommended_budget,
+        recommended_budget_amount_micros=recommended_budget_amount_micros,
+        recommended_budget_delta_micros=recommended_budget_delta_micros,
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        missing_metrics=_unique(missing_metrics),
+        blocked_claims=[
+            "budget scaling",
+            "budget apply",
+            "profitability",
+            "wasted budget",
+            "recommendation apply",
+        ],
+    )
+
+
+def _budget_pacing_section(
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact for row in budget_pacing_read_contract.budget_rows for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_budget_pacing",
+        title="Kontekst budżetu Google Ads",
+        status=budget_pacing_read_contract.status,
+        summary=budget_pacing_read_contract.summary,
+        diagnosis=(
+            "WILQ może pokazać koszt z 7 dni względem budżetu dziennego, jeśli "
+            "campaign_budget facts istnieją. To nadal nie jest rekomendacja "
+            "skalowania ani apply budżetu."
+        ),
+        next_step=budget_pacing_read_contract.next_step,
+        source_connectors=budget_pacing_read_contract.source_connectors,
+        evidence_ids=budget_pacing_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=[],
+        blocked_claims=budget_pacing_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def _budget_pacing_row_sort_key(row: AdsBudgetPacingRow) -> tuple[float, int, str]:
+    ratio = row.spend_to_budget_ratio_7d if row.spend_to_budget_ratio_7d is not None else -1
+    return (-ratio, -(row.cost_micros_7d or 0), row.campaign_name)
+
+
 def _ratio(
     numerator: float | int | None,
     denominator: float | int | None,
@@ -545,6 +750,14 @@ def _float_metric_value(fact: MetricFact | None) -> float | None:
         except ValueError:
             return None
     return float(fact.value)
+
+
+def _bool_metric_value(fact: MetricFact | None) -> bool | None:
+    if fact is None:
+        return None
+    if isinstance(fact.value, str):
+        return fact.value.lower() in {"1", "true", "yes"}
+    return bool(fact.value)
 
 
 def _format_float(value: float) -> str:
@@ -1167,6 +1380,7 @@ def _safe_action_section(
 def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
     derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
@@ -1208,14 +1422,18 @@ def _ads_decision_queue(
                 rationale=(
                     "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, "
                     "wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach. "
-                    "Nie ma jeszcze pełnego kontraktu CPA, ROAS, rekomendacji ani historii zmian."
+                    "Nie ma jeszcze pełnego kontraktu rekomendacji, impression share "
+                    "ani historii zmian."
                 ),
                 next_step=(
                     "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów. "
                     "Nie podejmuj decyzji budżetowych bez brakujących kontraktów odczytu."
                 ),
                 allowed_metrics=campaign_read_contract.allowed_metrics,
-                missing_read_contracts=campaign_read_contract.missing_read_contracts,
+                missing_read_contracts=_remove_available_contracts(
+                    campaign_read_contract.missing_read_contracts,
+                    budget_pacing_read_contract,
+                ),
                 source_connectors=campaign_read_contract.source_connectors,
                 evidence_ids=campaign_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
@@ -1242,12 +1460,46 @@ def _ads_decision_queue(
                 ),
                 next_step=derived_kpi_read_contract.next_step,
                 allowed_metrics=derived_kpi_read_contract.allowed_metrics,
-                missing_read_contracts=derived_kpi_read_contract.missing_read_contracts,
+                missing_read_contracts=_remove_available_contracts(
+                    derived_kpi_read_contract.missing_read_contracts,
+                    budget_pacing_read_contract,
+                ),
                 source_connectors=derived_kpi_read_contract.source_connectors,
                 evidence_ids=derived_kpi_read_contract.evidence_ids,
                 derived_kpi_rows=derived_kpi_read_contract.kpi_rows,
                 action_ids=campaign_review_action_ids,
                 blocked_claims=derived_kpi_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
+    if budget_pacing_read_contract.budget_rows:
+        campaign_review_action_ids = _campaign_review_action_ids(action_ids)
+        metric_facts = [
+            fact for row in budget_pacing_read_contract.budget_rows for fact in row.metric_facts
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_budget_context",
+                decision_type="review_budget_context",
+                status="ready",
+                title="Sprawdź koszt kampanii względem budżetu dziennego",
+                summary=budget_pacing_read_contract.summary,
+                rationale=(
+                    "WILQ widzi campaign_budget amount i koszt z ostatnich 7 dni, więc "
+                    "może pokazać kontekst tempa wydawania. To nadal nie jest decyzja "
+                    "o skalowaniu: brakuje historii zmian, impression share, celu "
+                    "budżetowego i walidowanego preview apply."
+                ),
+                next_step=budget_pacing_read_contract.next_step,
+                allowed_metrics=budget_pacing_read_contract.allowed_metrics,
+                missing_read_contracts=budget_pacing_read_contract.missing_read_contracts,
+                source_connectors=budget_pacing_read_contract.source_connectors,
+                evidence_ids=budget_pacing_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                budget_rows=budget_pacing_read_contract.budget_rows,
+                action_ids=campaign_review_action_ids,
+                blocked_claims=budget_pacing_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
         )
@@ -1399,6 +1651,18 @@ def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
 def _search_term_action_ids(action_ids: list[str]) -> list[str]:
     allowed_ids = {CUSTOM_SEGMENT_ACTION_ID, NEGATIVE_KEYWORD_ACTION_ID}
     return [action_id for action_id in action_ids if action_id in allowed_ids]
+
+
+def _remove_available_contracts(
+    missing_read_contracts: list[str],
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+) -> list[str]:
+    unavailable = list(missing_read_contracts)
+    if budget_pacing_read_contract.status == "ready":
+        unavailable = [
+            contract for contract in unavailable if contract != "budget_pacing"
+        ]
+    return unavailable
 
 
 def _blocked_handoff(

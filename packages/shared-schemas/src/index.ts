@@ -301,6 +301,42 @@ export const AdsDerivedKpiReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsBudgetPacingRowSchema = z.object({
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string(),
+  campaign_status: z.string().nullable().optional(),
+  advertising_channel_type: z.string().nullable().optional(),
+  budget_id: z.string().nullable().optional(),
+  budget_name: z.string().nullable().optional(),
+  budget_period: z.string().nullable().optional(),
+  budget_status: z.string().nullable().optional(),
+  budget_amount_micros: z.number().nullable().optional(),
+  cost_micros_7d: z.number().nullable().optional(),
+  seven_day_budget_micros: z.number().nullable().optional(),
+  spend_to_budget_ratio_7d: z.number().nullable().optional(),
+  has_recommended_budget: z.boolean().nullable().optional(),
+  recommended_budget_amount_micros: z.number().nullable().optional(),
+  recommended_budget_delta_micros: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsBudgetPacingReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  budget_rows: z.array(AdsBudgetPacingRowSchema),
+  next_step: z.string()
+});
+
 export const AdsSearchTermMetricRowSchema = z.object({
   search_term: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -404,6 +440,7 @@ export const AdsDecisionItemSchema = z.object({
   decision_type: z.enum([
     "review_campaign_activity",
     "review_derived_kpi",
+    "review_budget_context",
     "review_search_terms",
     "review_negative_keyword_safety",
     "prepare_custom_segments",
@@ -422,6 +459,7 @@ export const AdsDecisionItemSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
   derived_kpi_rows: z.array(AdsDerivedKpiRowSchema),
+  budget_rows: z.array(AdsBudgetPacingRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
@@ -439,6 +477,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
   derived_kpi_read_contract: AdsDerivedKpiReadContractSchema,
+  budget_pacing_read_contract: AdsBudgetPacingReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,
@@ -909,6 +948,10 @@ export type CommandCenterDemoStep = z.infer<typeof CommandCenterDemoStepSchema>;
 export type CommandCenterActionPlanItem = z.infer<typeof CommandCenterActionPlanItemSchema>;
 export type DailyDecision = z.infer<typeof DailyDecisionSchema>;
 export type AdsDiagnosticSection = z.infer<typeof AdsDiagnosticSectionSchema>;
+export type AdsBudgetPacingRow = z.infer<typeof AdsBudgetPacingRowSchema>;
+export type AdsBudgetPacingReadContract = z.infer<
+  typeof AdsBudgetPacingReadContractSchema
+>;
 export type AdsCustomSegmentCandidate = z.infer<typeof AdsCustomSegmentCandidateSchema>;
 export type AdsCustomSegmentsReadContract = z.infer<
   typeof AdsCustomSegmentsReadContractSchema

@@ -530,6 +530,42 @@ class AdsDerivedKpiReadContract(BaseModel):
     next_step: str
 
 
+class AdsBudgetPacingRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    campaign_status: str | None = None
+    advertising_channel_type: str | None = None
+    budget_id: str | None = None
+    budget_name: str | None = None
+    budget_period: str | None = None
+    budget_status: str | None = None
+    budget_amount_micros: int | None = None
+    cost_micros_7d: int | None = None
+    seven_day_budget_micros: int | None = None
+    spend_to_budget_ratio_7d: float | None = None
+    has_recommended_budget: bool | None = None
+    recommended_budget_amount_micros: int | None = None
+    recommended_budget_delta_micros: int | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsBudgetPacingReadContract(BaseModel):
+    id: str = "ads_budget_pacing_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsSearchTermMetricRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
@@ -633,6 +669,7 @@ class AdsDecisionItem(BaseModel):
     decision_type: Literal[
         "review_campaign_activity",
         "review_derived_kpi",
+        "review_budget_context",
         "review_search_terms",
         "review_negative_keyword_safety",
         "prepare_custom_segments",
@@ -651,6 +688,7 @@ class AdsDecisionItem(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     derived_kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
+    budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
@@ -668,6 +706,7 @@ class AdsDiagnosticsResponse(BaseModel):
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
     derived_kpi_read_contract: AdsDerivedKpiReadContract
+    budget_pacing_read_contract: AdsBudgetPacingReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract

@@ -20,6 +20,15 @@ AGENTS.md; wskazuje, gdzie leży aktualna prawda operacyjna.
 Audit `docs/audits/001-output.md` is now folded into
 `docs/goals/001-goal.md`. The current order is:
 
+0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
+   `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
+   `google_sheets` is intentionally disabled for this Ekologus scope.
+   `linkedin` and `facebook` are missing credential surfaces; they block
+   publishing, not prepare-only evidence-backed drafting. The knowledge layer
+   is explicitly in the active goal, but it is not fully proven: future slices
+   must connect source-backed marketing standards/papers/practitioner sources
+   to knowledge cards or expert rules, then to typed WILQ API view-models,
+   dashboard decisions and non-interactive Codex skill outputs.
 0. Overnight recovery truth, 2026-06-19 09:37 Europe/Warsaw: after
    `3a7d4ab test(skills): prove localo access-ready blocker`, the next Merchant
    slice fixed issue-cluster preservation. `MERCHANT_METRIC_FACT_LIMIT` was too
@@ -34,12 +43,17 @@ Audit `docs/audits/001-output.md` is now folded into
 1. Command Center first-screen cleanup is implemented and verified: one
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
-2. Ads campaign/search-term read contracts are implemented with conversion
-   counts/value. Latest work adds prepare-only campaign review and negative
-   keyword safety review queues. They are not budget/waste/apply claims.
-   Continue with recommendations, change history, budget pacing, impression
-   share, keyword/match context, full 90-day safety and value/account-currency
-   semantics before any money-leak/CPA/ROAS/negative-keyword apply claims.
+2. Ads campaign/search-term/budget read contracts are implemented with
+   conversion counts/value and read-only budget context. Latest local work adds
+   `budget_pacing_read_contract.status=ready`, 18 campaign budget rows from
+   `refresh_google_ads_c91c9e9638c8`, and the `ads_review_budget_context`
+   decision. This is still not budget/waste/apply. Continue with
+   recommendations, change history, impression share, keyword/match context,
+   full 90-day safety, human budget goals, budget/apply previews and
+   value/account-currency semantics before any money-leak/CPA/ROAS/budget
+   scaling/negative-keyword apply claims. Full `scripts/verify.sh` passed for
+   this slice with backend `108 passed`, dashboard unit `13 passed`,
+   Playwright e2e `9 passed`, skill smokes and dashboard production build.
 3. Repair each skill only after the matching API/read contract exists.
 
 Recently completed and pushed foundations:
@@ -112,9 +126,10 @@ Current performance slice truth:
 - Active 2026-06-19 Ads campaign review ActionObject:
   `act_prepare_ads_campaign_review_queue` is implemented with payload type
   `campaign_change_review`. It is generated from live `google_ads` campaign
-  metric facts, exposes up to 8 campaign candidates, requires budget pacing,
-  impression share, change history, recommendations, value/currency review and
-  human confirmation, and keeps `apply_allowed=false` plus
+  metric facts, exposes up to 8 campaign candidates, includes budget context
+  when available, and requires impression share, change history,
+  recommendations, value/currency review, budget/apply preview and human
+  confirmation before any apply path. It keeps `apply_allowed=false` plus
   `destructive=false`. Live `:8000` proof after restart: Ads diagnostics
   includes the new action ID, campaign and derived KPI decisions attach only
   this campaign action, and validation returns `valid=true`. This closes the
@@ -210,9 +225,10 @@ Current Ads Doctor contract truth:
   term rows, `conversions=2.0`, `conversion_value=2.0`,
   `search_term_conversions=0.0` and
   `search_term_conversion_value=0.0`.
-- Still missing read contracts: recommendations, change history, budget
-  pacing, impression share, keyword/match context, full 90-day safety history,
-  payload previews for apply paths and explicit CPA/ROAS derived KPI contracts.
+- Still missing read contracts: recommendations, change history, impression
+  share, keyword/match context, full 90-day safety history, payload previews for
+  apply paths, human budget goals and explicit profitability/account-currency
+  interpretation.
 
 Do not repair product logic inside skill references. If a skill needs a better
 decision, add the typed WILQ API/schema/view-model field first and make the

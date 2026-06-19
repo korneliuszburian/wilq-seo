@@ -1692,6 +1692,12 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         search_stream_queries.append(query)
         if "FROM campaign" in query:
             assert "campaign.name" in query
+            assert "campaign.status" in query
+            assert "campaign.advertising_channel_type" in query
+            assert "campaign_budget.amount_micros" in query
+            assert "campaign_budget.period" in query
+            assert "campaign_budget.has_recommended_budget" in query
+            assert "campaign_budget.recommended_budget_amount_micros" in query
             assert "metrics.conversions" in query
             assert "metrics.conversions_value" in query
             return httpx.Response(
@@ -1700,7 +1706,21 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     {
                         "results": [
                             {
-                                "campaign": {"id": "101", "name": "Brand Search"},
+                                "campaign": {
+                                    "id": "101",
+                                    "name": "Brand Search",
+                                    "status": "ENABLED",
+                                    "advertisingChannelType": "SEARCH",
+                                },
+                                "campaignBudget": {
+                                    "id": "701",
+                                    "name": "Brand budget",
+                                    "amountMicros": "30000000",
+                                    "period": "DAILY",
+                                    "status": "ENABLED",
+                                    "hasRecommendedBudget": True,
+                                    "recommendedBudgetAmountMicros": "42000000",
+                                },
                                 "metrics": {
                                     "clicks": "2",
                                     "impressions": "10",
@@ -1710,7 +1730,20 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                                 }
                             },
                             {
-                                "campaign": {"id": "102", "name": "PMax Feed"},
+                                "campaign": {
+                                    "id": "102",
+                                    "name": "PMax Feed",
+                                    "status": "ENABLED",
+                                    "advertisingChannelType": "PERFORMANCE_MAX",
+                                },
+                                "campaignBudget": {
+                                    "id": "702",
+                                    "name": "PMax budget",
+                                    "amountMicros": "10000000",
+                                    "period": "DAILY",
+                                    "status": "ENABLED",
+                                    "hasRecommendedBudget": False,
+                                },
                                 "metrics": {
                                     "clicks": "1",
                                     "impressions": "5",
@@ -1766,6 +1799,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["cost_micros"] == 4000000
     assert result.metric_summary["conversions"] == 1.5
     assert result.metric_summary["conversion_value"] == 250.75
+    assert result.metric_summary["budgeted_campaign_count"] == 2
+    assert result.metric_summary["recommended_budget_count"] == 1
     assert result.metric_summary["search_term_row_count"] == 1
     assert result.metric_summary["search_term_clicks"] == 4
     assert result.metric_summary["search_term_impressions"] == 20
@@ -1777,6 +1812,12 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
+        "campaign_status": "ENABLED",
+        "advertising_channel_type": "SEARCH",
+        "budget_id": "701",
+        "budget_name": "Brand budget",
+        "budget_period": "DAILY",
+        "budget_status": "ENABLED",
     }
     assert result.metric_facts[0].name == "clicks"
     assert result.metric_facts[0].value == 2
@@ -1786,6 +1827,17 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         fact for fact in result.metric_facts if fact.name == "conversion_value"
     )
     assert conversion_value_fact.value == 250.75
+    budget_amount_fact = next(
+        fact for fact in result.metric_facts if fact.name == "budget_amount_micros"
+    )
+    assert budget_amount_fact.value == 30000000
+    assert budget_amount_fact.dimensions["budget_period"] == "DAILY"
+    recommended_budget_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "budget_recommended_amount_micros"
+    )
+    assert recommended_budget_fact.value == 42000000
     search_term_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_term_clicks"
     )
@@ -2294,6 +2346,48 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     {"campaign_id": "101", "campaign_name": "Brand Search"},
                 ),
                 VendorMetricFact(
+                    "budget_amount_micros",
+                    30000000,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                        "budget_id": "701",
+                        "budget_name": "Brand budget",
+                        "budget_period": "DAILY",
+                        "budget_status": "ENABLED",
+                    },
+                ),
+                VendorMetricFact(
+                    "budget_has_recommended_budget",
+                    1,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                        "budget_id": "701",
+                        "budget_name": "Brand budget",
+                        "budget_period": "DAILY",
+                        "budget_status": "ENABLED",
+                    },
+                ),
+                VendorMetricFact(
+                    "budget_recommended_amount_micros",
+                    42000000,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                        "budget_id": "701",
+                        "budget_name": "Brand budget",
+                        "budget_period": "DAILY",
+                        "budget_status": "ENABLED",
+                    },
+                ),
+                VendorMetricFact(
                     "search_term_clicks",
                     4,
                     {
@@ -2511,6 +2605,52 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert derived_kpi_section["status"] == "ready"
     assert "rentowności" in derived_kpi_section["diagnosis"]
+    budget_contract = payload["budget_pacing_read_contract"]
+    assert budget_contract["status"] == "ready"
+    assert budget_contract["allowed_metrics"] == [
+        "budget_amount_micros",
+        "cost_micros_7d",
+        "seven_day_budget_micros",
+        "spend_to_budget_ratio_7d",
+        "budget_has_recommended_budget",
+        "budget_recommended_amount_micros",
+    ]
+    assert "budget scaling" in budget_contract["blocked_claims"]
+    assert "budget_pacing" not in budget_contract["missing_read_contracts"]
+    assert budget_contract["budget_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "advertising_channel_type": "SEARCH",
+            "budget_id": "701",
+            "budget_name": "Brand budget",
+            "budget_period": "DAILY",
+            "budget_status": "ENABLED",
+            "budget_amount_micros": 30000000,
+            "cost_micros_7d": 12000000,
+            "seven_day_budget_micros": 210000000,
+            "spend_to_budget_ratio_7d": 0.057143,
+            "has_recommended_budget": True,
+            "recommended_budget_amount_micros": 42000000,
+            "recommended_budget_delta_micros": 12000000,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "metric_facts": budget_contract["budget_rows"][0]["metric_facts"],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "budget scaling",
+                "budget apply",
+                "profitability",
+                "wasted budget",
+                "recommendation apply",
+            ],
+        }
+    ]
+    budget_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_budget_pacing"
+    )
+    assert budget_section["status"] == "ready"
+    assert "skalowania" in budget_section["diagnosis"]
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
     assert facts_by_name["clicks"]["value"] == 9
     assert facts_by_name["conversions"]["value"] == 2.5
@@ -2628,6 +2768,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert set(decisions_by_id) == {
         "ads_review_campaign_activity",
         "ads_review_derived_kpis",
+        "ads_review_budget_context",
         "ads_review_search_terms",
         "ads_review_negative_keyword_safety",
         "ads_prepare_custom_segments_from_search_terms",
@@ -2646,6 +2787,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
     assert derived_kpi_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     assert "profitability" in derived_kpi_decision["blocked_claims"]
+    assert "budget_pacing" not in derived_kpi_decision["missing_read_contracts"]
+    budget_decision = decisions_by_id["ads_review_budget_context"]
+    assert budget_decision["status"] == "ready"
+    assert budget_decision["decision_type"] == "review_budget_context"
+    assert budget_decision["budget_rows"][0]["campaign_name"] == "Brand Search"
+    assert budget_decision["budget_rows"][0]["spend_to_budget_ratio_7d"] == 0.057143
+    assert budget_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert "budget apply" in budget_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
@@ -2689,6 +2838,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert after_probe_payload["latest_refresh"]["id"] == refresh_response.json()["id"]
     assert after_probe_payload["blocked_handoff"] is None
     assert after_probe_payload["campaign_read_contract"]["campaign_rows"]
+    assert after_probe_payload["budget_pacing_read_contract"]["budget_rows"]
     assert after_probe_payload["search_terms_read_contract"]["search_term_rows"]
 
     actions_response = client.get("/api/actions")
@@ -2711,6 +2861,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_review_action["payload"]["campaign_candidates"][0]["derived_kpis"][
         "roas"
     ] == 37.5625
+    assert campaign_review_action["payload"]["campaign_candidates"][0]["budget_context"] == {
+        "budget_amount_micros": 30000000,
+        "cost_micros_7d": 12000000,
+        "seven_day_budget_micros": 210000000,
+        "spend_to_budget_ratio_7d": 0.057143,
+        "has_recommended_budget": True,
+        "recommended_budget_amount_micros": 42000000,
+    }
     assert campaign_review_action["payload"]["apply_allowed"] is False
     assert campaign_review_action["payload"]["destructive"] is False
     assert "budget_pacing" in campaign_review_action["payload"]["required_validation"]
