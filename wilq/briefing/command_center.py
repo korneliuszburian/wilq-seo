@@ -352,13 +352,19 @@ def _ga4_item_from_tactical(
     live_data_available = bool(ga4_items)
     return CommandCenterBriefItem(
         id="daily_ga4_landing_quality",
-        title="GA4: landing/source/campaign quality review",
+        title=(
+            "GA4: brak pełnego kontraktu interpretacji ruchu"
+            if live_data_available
+            else "GA4: brak danych do oceny ruchu"
+        ),
         route="/ga4",
-        status="ready" if live_data_available else "blocked",
+        status="blocked",
         priority=14 if live_data_available else 42,
         summary=(
             f"Landing groups={len(ga4_items)}, low engagement="
-            f"{len(low_engagement_items)}, WP match={len(matched_items)}."
+            f"{len(low_engagement_items)}, WP match={len(matched_items)}. "
+            "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
+            "drop/tracking fixed, nie awarię connectora."
         ),
         next_step="Otwórz /ga4 i waliduj `act_review_ga4_tracking_quality`.",
         source_connectors=["google_analytics_4"],
@@ -371,9 +377,10 @@ def _ga4_item_from_tactical(
             "landing groups": len(ga4_items),
             "low engagement": len(low_engagement_items),
             "WP match": len(matched_items),
+            "blockery": 1,
         },
         blocked_claims=["ROAS", "revenue", "conversion drop", "tracking fixed"],
-        risk=ActionRisk.low if live_data_available else ActionRisk.medium,
+        risk=ActionRisk.medium,
     )
 
 

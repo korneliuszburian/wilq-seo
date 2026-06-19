@@ -272,6 +272,35 @@ export const AdsCampaignReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsDerivedKpiRowSchema = z.object({
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string(),
+  ctr: z.number().nullable().optional(),
+  average_cpc_micros: z.number().nullable().optional(),
+  conversion_rate: z.number().nullable().optional(),
+  cost_per_conversion_micros: z.number().nullable().optional(),
+  roas: z.number().nullable().optional(),
+  value_per_conversion: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  source_metric_names: z.array(z.string()),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsDerivedKpiReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  kpi_rows: z.array(AdsDerivedKpiRowSchema),
+  next_step: z.string()
+});
+
 export const AdsSearchTermMetricRowSchema = z.object({
   search_term: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -374,6 +403,7 @@ export const AdsDecisionItemSchema = z.object({
   id: z.string(),
   decision_type: z.enum([
     "review_campaign_activity",
+    "review_derived_kpi",
     "review_search_terms",
     "review_negative_keyword_safety",
     "prepare_custom_segments",
@@ -391,6 +421,7 @@ export const AdsDecisionItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
+  derived_kpi_rows: z.array(AdsDerivedKpiRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),
@@ -407,6 +438,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
+  derived_kpi_read_contract: AdsDerivedKpiReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,

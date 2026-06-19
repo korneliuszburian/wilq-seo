@@ -501,6 +501,35 @@ class AdsCampaignReadContract(BaseModel):
     next_step: str
 
 
+class AdsDerivedKpiRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    ctr: float | None = None
+    average_cpc_micros: float | None = None
+    conversion_rate: float | None = None
+    cost_per_conversion_micros: float | None = None
+    roas: float | None = None
+    value_per_conversion: float | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    source_metric_names: list[str] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsDerivedKpiReadContract(BaseModel):
+    id: str = "ads_derived_kpi_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsSearchTermMetricRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
@@ -603,6 +632,7 @@ class AdsDecisionItem(BaseModel):
     id: str
     decision_type: Literal[
         "review_campaign_activity",
+        "review_derived_kpi",
         "review_search_terms",
         "review_negative_keyword_safety",
         "prepare_custom_segments",
@@ -620,6 +650,7 @@ class AdsDecisionItem(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
+    derived_kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
@@ -636,6 +667,7 @@ class AdsDiagnosticsResponse(BaseModel):
     latest_refresh: ConnectorRefreshRun | None = None
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
+    derived_kpi_read_contract: AdsDerivedKpiReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract

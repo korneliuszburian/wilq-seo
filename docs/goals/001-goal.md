@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 11:43 Europe/Warsaw.
+Last updated: 2026-06-19 12:12 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -57,12 +57,14 @@ API/schema/view-model first and make the skill consume that field.
 Do not claim "better than BDOS" as done until the data/action contracts prove
 it. A strong Ekologus demo can be delivered before the full product is complete:
 dashboard decisions, WILQ API evidence, Polish Codex skills, ActionObject
-safety, eval ledger and visible blocked claims. Full BDOS-class parity still
-requires explicit Ads optimizer contracts such as derived CPA/ROAS, budget
-pacing, recommendations, change history, Keyword Planner enrichment, forecast or
-audience-size checks, payload previews, apply safety and audit paths, plus real
-Localo ranking/GBP/competitor/review read contracts. Missing contracts must be
-shown as blockers, not hidden with prompt language.
+safety, eval ledger and visible blocked claims. Ads now has a derived KPI read
+contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
+facts, but full BDOS-class parity still requires optimizer contracts such as
+account currency/profit-margin interpretation, budget pacing, recommendations,
+change history, Keyword Planner enrichment, forecast or audience-size checks,
+payload previews, apply safety and audit paths, plus real Localo
+ranking/GBP/competitor/review read contracts. Missing contracts must be shown as
+blockers, not hidden with prompt language.
 
 ## Research And Knowledge Contract
 
@@ -120,10 +122,12 @@ Current connector truth:
   `596-895-8639 Agencja Proud Media` is the MCC/login customer. `Ekologus NOWY`
   is the child metrics customer. Do not call Ads an OAuth blocker unless a fresh
   read proves that. Google Ads now has live campaign rows, search-term rows,
-  a prepare-only custom segment candidate contract and a prepare-only negative
-  keyword safety review contract. CPA, ROAS,
-  wasted-budget, negative keyword apply, audience size and campaign-performance
-  claims still need explicit read/safety/apply contracts.
+  a derived KPI read contract for CTR/CPC/conversion rate/CPA/ROAS, a
+  prepare-only custom segment candidate contract and a prepare-only negative
+  keyword safety review contract. CPA/ROAS are allowed only as calculations from
+  campaign facts; profitability, wasted-budget, negative keyword apply, audience
+  size, budget scaling and campaign-performance claims still need explicit
+  read/safety/apply contracts.
 - `google_merchant_center`: live product/feed facts exist and support a review
   queue. Merchant diagnostics now distinguishes report occurrences from unique
   affected products: `/merchant` labels them as `Zgłoszenia`/`kontekst`, not
@@ -147,7 +151,10 @@ Current connector truth:
   `/api/ga4/diagnostics.decision_queue` now feeds both dashboard `/ga4` and
   `wilq-ga4-analyst`. Current live decisions are traffic-quality review; ROAS,
   revenue, conversion-drop, attribution verdict and tracking-fixed claims stay
-  blocked unless conversion/cost/read contracts exist.
+  blocked unless conversion/cost/read contracts exist. Command Center must keep
+  GA4 as `blocked` while those interpretation contracts are missing, even when
+  live GA4 behavior facts exist; `ready` would imply a complete marketer
+  decision and causes confusion.
 - `wordpress_ekologus` and `wordpress_sklep`: inventory context exists and must
   protect against duplicate content.
 - `ahrefs`: aggregate authority/rank facts exist; deeper gap workflows still
@@ -1388,6 +1395,34 @@ Result:
 - Narrow backend checks: ruff passed, mypy passed, focused pytest `3 passed`.
 - Full gate: backend API contracts `100 passed`, dashboard route tests
   `13 passed`, Playwright e2e `9 passed` and dashboard production build passed.
+
+Passed after the 2026-06-19 Ads derived KPI + conservative GA4 Command Center
+status slice:
+
+```bash
+uv run ruff check wilq/schemas.py wilq/briefing/ads_diagnostics.py wilq/briefing/command_center.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/briefing/ads_diagnostics.py wilq/briefing/command_center.py
+uv run pytest tests/test_api_contracts.py -q -k 'command_center_exposes_polish_operator_brief or ads_diagnostics_exposes_live_campaign_metric_facts'
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+scripts/verify.sh
+```
+
+Result:
+
+- Command Center GA4 remains `blocked` when live behavior facts exist but
+  ROAS/revenue/conversion-drop/tracking-fixed interpretation contracts are
+  missing.
+- `/api/ads/diagnostics.derived_kpi_read_contract` exposes CTR/CPC/conversion
+  rate/CPA/ROAS/value per conversion as calculated read-only KPI rows with
+  evidence IDs and blocked profitability/waste/budget/apply claims.
+- Live runtime proof on `:8000`: derived KPI status `ready`, `kpi_rows=18`,
+  decision `ads_review_derived_kpis`.
+- Full gate: backend API contracts `106 passed`, dashboard route tests
+  `13 passed`, Playwright e2e `9 passed`, API smoke, skill structure smoke,
+  skill API smoke and dashboard production build passed. Non-blocking warning:
+  Vite main JS chunk remains above 500 KB.
 
 Passed after the 2026-06-19 `/ads-doctor` decision route cleanup:
 

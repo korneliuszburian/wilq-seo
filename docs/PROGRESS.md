@@ -48,6 +48,11 @@ Data: 2026-06-19
   `plan_prepare_content_refresh_queue`,
   `plan_review_ga4_landing_quality`,
   `plan_review_ads_campaign_metrics`.
+- Command Center GA4 ma konserwatywną semantykę statusu: live GA4 behavior
+  facts nie oznaczają `ready`, jeśli brakuje kontraktów na ROAS, revenue,
+  conversion-drop albo tracking-fixed. Na głównym boardzie GA4 zostaje
+  `blocked`, żeby sygnalizować brak pełnej interpretacji zamiast udawać gotową
+  decyzję marketera.
 - Localo access działa na poziomie MCP initialize. `/api/localo/diagnostics`
   ma teraz osobny typed contract dla access/readiness, missing visibility
   contracts i blocked claims. Dashboard `/localo` renderuje własny widok
@@ -121,17 +126,32 @@ Data: 2026-06-19
   `search_term`, `search_term_status`. To odblokowuje uczciwy przegląd zapytań z
   kontekstem konwersji, ale nie odblokowuje waste/negative keyword claims bez
   `keyword match context`, `90_day_safety_check` i walidowanego ActionObject.
+- Ads Doctor ma trzeci typed read contract:
+  `/api/ads/diagnostics.derived_kpi_read_contract`. Kontrakt wylicza CTR,
+  średni CPC, conversion rate, CPA, ROAS i value per conversion z istniejących
+  campaign facts, z evidence IDs per kampania. Live proof po restarcie API na
+  `:8000` zwrócił `status=ready`, `kpi_rows=18` i decyzję
+  `ads_review_derived_kpis`. To nadal nie odblokowuje claimów o
+  profitability, wasted budget, budget scaling, recommendation apply ani
+  incrementality.
 - Ads Doctor ma teraz typed decision queue:
   `/api/ads/diagnostics.decision_queue` zwraca
-  `ads_review_campaign_activity`, `ads_review_search_terms` i
+  `ads_review_campaign_activity`, `ads_review_derived_kpis`,
+  `ads_review_search_terms`, `ads_review_negative_keyword_safety`,
+  `ads_prepare_custom_segments_from_search_terms` i
   `ads_block_write_actions_without_actionobject`. Dashboard `/ads-doctor`
-  renderuje te decyzje jako primary marketer view oraz przenosi kampanie i
-  zapytania do `Dowody i ograniczenia Ads`. Browser proof po restarcie API nie
-  znalazł starych fraz: `Read contract Ads`, `Search terms read-only`,
+  renderuje te decyzje jako primary marketer view oraz przenosi kampanie,
+  wyliczone KPI i zapytania do `Dowody i ograniczenia Ads`. Browser proof po
+  restarcie API nie znalazł starych fraz: `Read contract Ads`, `Search terms read-only`,
   `Campaign activity read contract`, `Search terms read contract`,
   `Google Ads: campaign activity rows`, `Google Ads: search terms read-only rows`,
   `Evidence`, `configured`, `READY`, `payload preview`, `write/apply` ani
   `WILQ ma read-only Google Ads evidence`.
+- Pełny `scripts/verify.sh` przeszedł po Ads derived KPI i konserwatywnym GA4
+  Command Center status: backend API contracts `106 passed`, dashboard route
+  tests `13 passed`, Playwright e2e `9 passed`, API smoke, skill structure
+  smoke, skill API smoke i dashboard production build passed. Non-blocking:
+  Vite nadal ostrzega, że główny JS chunk ma ponad 500 KB.
 - Live Google Ads proof po restarcie API: `uv run wilq connectors refresh
   google_ads --mode vendor_read --reason "Goal 001 Ads conversion read
   contract proof"` zakończył się `completed`,

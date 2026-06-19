@@ -25,6 +25,8 @@ from wilq.schemas import (
     AdsCustomSegmentCandidate,
     AdsCustomSegmentsReadContract,
     AdsDecisionItem,
+    AdsDerivedKpiReadContract,
+    AdsDerivedKpiRow,
     AdsDiagnosticSection,
     AdsDiagnosticsResponse,
     AdsNegativeKeywordCandidate,
@@ -59,6 +61,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
     campaign_read_contract = _campaign_read_contract(trusted_metric_facts, latest_refresh)
+    derived_kpi_read_contract = _derived_kpi_read_contract(campaign_read_contract)
     search_terms_read_contract = _search_terms_read_contract(
         trusted_metric_facts,
         latest_refresh,
@@ -83,6 +86,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             action_ids,
             campaign_read_contract,
         ),
+        _derived_kpi_section(derived_kpi_read_contract),
         _search_terms_section(search_terms_read_contract, action_ids),
         _custom_segments_section(custom_segments_read_contract),
         _negative_keywords_section(negative_keywords_read_contract),
@@ -95,6 +99,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     blocked_handoff = _blocked_handoff(live_data_available, latest_refresh, sections, action_ids)
     decision_queue = _ads_decision_queue(
         campaign_read_contract,
+        derived_kpi_read_contract,
         search_terms_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
@@ -108,6 +113,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         latest_refresh=latest_refresh,
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
+        derived_kpi_read_contract=derived_kpi_read_contract,
         search_terms_read_contract=search_terms_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
@@ -255,6 +261,28 @@ def _campaign_overview_section(
     )
 
 
+def _derived_kpi_section(
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+) -> AdsDiagnosticSection:
+    return AdsDiagnosticSection(
+        id="ads_derived_kpi",
+        title="Wyliczone KPI kampanii Google Ads",
+        status=derived_kpi_read_contract.status,
+        summary=derived_kpi_read_contract.summary,
+        diagnosis=(
+            "WILQ może pokazać CTR, CPC, conversion rate, CPA i ROAS jako obliczenia "
+            "z bieżących campaign facts. To nie jest jeszcze diagnoza rentowności, "
+            "waste ani zgoda na zmianę budżetu."
+        ),
+        next_step=derived_kpi_read_contract.next_step,
+        source_connectors=derived_kpi_read_contract.source_connectors,
+        evidence_ids=derived_kpi_read_contract.evidence_ids,
+        action_ids=[],
+        blocked_claims=derived_kpi_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
 def _campaign_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
@@ -378,6 +406,118 @@ def _campaign_metric_row(
         missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
         blocked_claims=["CPA", "ROAS", "search-term waste", "wasted budget"],
     )
+
+
+def _derived_kpi_read_contract(
+    campaign_read_contract: AdsCampaignReadContract,
+) -> AdsDerivedKpiReadContract:
+    missing_read_contracts = [
+        "account_currency",
+        "profit_margin",
+        "budget_pacing",
+        "change_history",
+        "recommendations",
+    ]
+    blocked_claims = [
+        "profitability",
+        "budget scaling",
+        "wasted budget",
+        "recommendation apply",
+        "incrementality",
+    ]
+    kpi_rows = [_derived_kpi_row(row) for row in campaign_read_contract.campaign_rows]
+    if kpi_rows:
+        rows_with_cpa = sum(1 for row in kpi_rows if row.cost_per_conversion_micros is not None)
+        rows_with_roas = sum(1 for row in kpi_rows if row.roas is not None)
+        return AdsDerivedKpiReadContract(
+            status="ready",
+            title="Google Ads: wyliczone KPI kampanii",
+            summary=(
+                f"WILQ może policzyć KPI dla {len(kpi_rows)} kampanii: "
+                f"CPA dostępne dla {rows_with_cpa}, ROAS dostępny dla {rows_with_roas}. "
+                "To są obliczenia z bieżących metric facts, nie werdykt opłacalności."
+            ),
+            allowed_metrics=[
+                "ctr",
+                "average_cpc_micros",
+                "conversion_rate",
+                "cost_per_conversion_micros",
+                "roas",
+                "value_per_conversion",
+            ],
+            missing_read_contracts=missing_read_contracts,
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(
+                evidence_id for row in kpi_rows for evidence_id in row.evidence_ids
+            ),
+            kpi_rows=kpi_rows,
+            next_step=(
+                "Użyj KPI do triage kampanii. Przed decyzją budżetową sprawdź walutę konta, "
+                "marżę, pacing budżetu, historię zmian i rekomendacje."
+            ),
+        )
+    return AdsDerivedKpiReadContract(
+        status="blocked",
+        title="Google Ads: brak wyliczalnych KPI kampanii",
+        summary="WILQ nie ma kompletnych campaign facts do wyliczenia KPI.",
+        allowed_metrics=[],
+        missing_read_contracts=["campaign activity", *missing_read_contracts],
+        blocked_claims=["CTR", "CPC", "CPA", "ROAS", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=campaign_read_contract.evidence_ids,
+        kpi_rows=[],
+        next_step="Najpierw zbierz read-only campaign facts z Google Ads.",
+    )
+
+
+def _derived_kpi_row(row: AdsCampaignMetricRow) -> AdsDerivedKpiRow:
+    source_metric_names = [fact.name for fact in row.metric_facts]
+    missing_metrics = list(row.missing_metrics)
+    if not row.impressions:
+        missing_metrics.append("nonzero_impressions")
+    if not row.clicks:
+        missing_metrics.extend(["nonzero_clicks_for_cpc", "nonzero_clicks_for_conversion_rate"])
+    if not row.conversions:
+        missing_metrics.extend(
+            ["nonzero_conversions_for_cpa", "nonzero_conversions_for_value_per_conversion"]
+        )
+    if not row.cost_micros:
+        missing_metrics.append("nonzero_cost_for_roas")
+    return AdsDerivedKpiRow(
+        campaign_id=row.campaign_id,
+        campaign_name=row.campaign_name,
+        ctr=_ratio(row.clicks, row.impressions),
+        average_cpc_micros=_ratio(row.cost_micros, row.clicks),
+        conversion_rate=_ratio(row.conversions, row.clicks),
+        cost_per_conversion_micros=_ratio(row.cost_micros, row.conversions),
+        roas=_ratio(row.conversion_value, _micros_to_account_units(row.cost_micros)),
+        value_per_conversion=_ratio(row.conversion_value, row.conversions),
+        evidence_ids=row.evidence_ids,
+        source_metric_names=_unique(source_metric_names),
+        missing_metrics=_unique(missing_metrics),
+        blocked_claims=[
+            "profitability",
+            "budget scaling",
+            "wasted budget",
+            "recommendation apply",
+        ],
+    )
+
+
+def _ratio(
+    numerator: float | int | None,
+    denominator: float | int | None,
+) -> float | None:
+    if numerator is None or denominator is None or denominator == 0:
+        return None
+    return round(float(numerator) / float(denominator), 6)
+
+
+def _micros_to_account_units(value: float | int | None) -> float | None:
+    if value is None:
+        return None
+    return float(value) / 1_000_000
 
 
 def _campaign_row_sort_key(row: AdsCampaignMetricRow) -> tuple[int, int, str]:
@@ -1025,6 +1165,7 @@ def _safe_action_section(
 
 def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
@@ -1080,6 +1221,30 @@ def _ads_decision_queue(
                 action_ids=action_ids,
                 blocked_claims=campaign_read_contract.blocked_claims,
                 risk=ActionRisk.low,
+            )
+        )
+
+    if derived_kpi_read_contract.kpi_rows:
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_derived_kpis",
+                decision_type="review_derived_kpi",
+                status="ready",
+                title="Sprawdź wyliczone KPI kampanii bez decyzji budżetowych",
+                summary=derived_kpi_read_contract.summary,
+                rationale=(
+                    "CPA i ROAS są tu wartościami obliczonymi z kosztu, konwersji "
+                    "i wartości konwersji w bieżącym Google Ads evidence. WILQ nadal "
+                    "blokuje wniosek o rentowności, waste, skalowaniu budżetu i apply."
+                ),
+                next_step=derived_kpi_read_contract.next_step,
+                allowed_metrics=derived_kpi_read_contract.allowed_metrics,
+                missing_read_contracts=derived_kpi_read_contract.missing_read_contracts,
+                source_connectors=derived_kpi_read_contract.source_connectors,
+                evidence_ids=derived_kpi_read_contract.evidence_ids,
+                derived_kpi_rows=derived_kpi_read_contract.kpi_rows,
+                blocked_claims=derived_kpi_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
             )
         )
 

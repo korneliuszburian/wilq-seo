@@ -1521,6 +1521,7 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
 type AdsBlockedHandoff = NonNullable<AdsDiagnosticsResponse["blocked_handoff"]>;
 type AdsDecisionItem = AdsDiagnosticsResponse["decision_queue"][number];
 type AdsCampaignMetricRow = AdsDiagnosticsResponse["campaign_read_contract"]["campaign_rows"][number];
+type AdsDerivedKpiRow = AdsDiagnosticsResponse["derived_kpi_read_contract"]["kpi_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 type AdsCustomSegmentCandidate =
@@ -1718,6 +1719,11 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
             Zapytania: {decision.search_term_rows.length}
           </span>
         ) : null}
+        {decision.derived_kpi_rows.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            KPI: {decision.derived_kpi_rows.length}
+          </span>
+        ) : null}
         {decision.allowed_metrics.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
@@ -1755,17 +1761,20 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
 
 function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const campaignRows = data.campaign_read_contract.campaign_rows;
+  const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
   const missingReadContracts = uniqueValues([
     ...data.campaign_read_contract.missing_read_contracts,
+    ...data.derived_kpi_read_contract.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
   ]).map(adsMissingReadContractLabel);
   const blockedClaims = uniqueValues([
     ...data.campaign_read_contract.blocked_claims,
+    ...data.derived_kpi_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
     ...data.negative_keywords_read_contract.blocked_claims,
@@ -1786,6 +1795,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
         </div>
         <div className="grid grid-cols-4 gap-2 text-center text-xs">
           <MetricTile label="Kampanie" value={campaignRows.length} />
+          <MetricTile label="KPI" value={derivedKpiRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
@@ -1794,6 +1804,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
 
       <div className="grid gap-4">
         <AdsCampaignRowsTable rows={campaignRows} />
+        <AdsDerivedKpiRowsTable rows={derivedKpiRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} />
         <AdsNegativeKeywordCandidatesPanel candidates={negativeKeywordCandidates} />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
@@ -1842,6 +1853,48 @@ function AdsCampaignRowsTable({ rows }: { rows: AdsCampaignMetricRow[] }) {
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversion_value)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AdsDerivedKpiRowsTable({ rows }: { rows: AdsDerivedKpiRow[] }) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak wyliczalnych KPI kampanii. WILQ potrzebuje kosztu, kliknięć, konwersji i wartości konwersji w campaign facts." />
+    );
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-4 font-semibold">CTR</th>
+            <th className="py-2 pr-4 font-semibold">Śr. CPC</th>
+            <th className="py-2 pr-4 font-semibold">Conv. rate</th>
+            <th className="py-2 pr-4 font-semibold">CPA</th>
+            <th className="py-2 pr-4 font-semibold">ROAS</th>
+            <th className="py-2 pr-3 font-semibold">Blokady</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {rows.slice(0, 12).map((row) => (
+            <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}-kpi`}>
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.campaign_name}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsPercent(row.ctr)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsCost(row.average_cpc_micros)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsPercent(row.conversion_rate)}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.cost_per_conversion_micros)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.roas)}</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">
+                {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -2069,6 +2122,7 @@ function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
 
 function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_campaign_activity") return "przegląd kampanii";
+  if (decisionType === "review_derived_kpi") return "wyliczone KPI";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
   if (decisionType === "review_negative_keyword_safety") return "review wykluczeń";
   if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
@@ -2096,10 +2150,11 @@ function adsDecisionSortValue(decision: AdsDecisionItem) {
   };
   const typeRank: Record<AdsDecisionItem["decision_type"], number> = {
     review_campaign_activity: 0,
-    review_search_terms: 1,
-    review_negative_keyword_safety: 2,
-    prepare_custom_segments: 3,
-    block_write_actions: 4,
+    review_derived_kpi: 1,
+    review_search_terms: 2,
+    review_negative_keyword_safety: 3,
+    prepare_custom_segments: 4,
+    block_write_actions: 5,
     fix_ads_access: 0
   };
   return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
@@ -2123,6 +2178,7 @@ function adsRefreshStatusLabel(status: string) {
 function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_live_data_status") return "Status odczytu Google Ads";
   if (sectionId === "ads_campaign_overview") return "Aktywność kampanii";
+  if (sectionId === "ads_derived_kpi") return "Wyliczone KPI";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
   if (sectionId === "ads_custom_segments") return "Custom segments";
@@ -2199,6 +2255,13 @@ function adsCost(value: number | null | undefined) {
   return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
     accountUnits
   )} jedn. konta`;
+}
+
+function adsPercent(value: number | null | undefined) {
+  if (value === null || value === undefined) return "brak";
+  return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(
+    value * 100
+  )}%`;
 }
 
 type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];

@@ -299,6 +299,66 @@ const adsDiagnostics = {
     ],
     next_step: "Użyj wierszy kampanii do przeglądu aktywności."
   },
+  derived_kpi_read_contract: {
+    id: "ads_derived_kpi_read_contract",
+    status: "ready",
+    title: "Google Ads: wyliczone KPI kampanii",
+    summary:
+      "WILQ może policzyć KPI dla 1 kampanii: CPA dostępne dla 1, ROAS dostępny dla 1. To są obliczenia z bieżących metric facts, nie werdykt opłacalności.",
+    allowed_metrics: [
+      "ctr",
+      "average_cpc_micros",
+      "conversion_rate",
+      "cost_per_conversion_micros",
+      "roas",
+      "value_per_conversion"
+    ],
+    missing_read_contracts: [
+      "account_currency",
+      "profit_margin",
+      "budget_pacing",
+      "change_history",
+      "recommendations"
+    ],
+    blocked_claims: [
+      "profitability",
+      "budget scaling",
+      "wasted budget",
+      "recommendation apply",
+      "incrementality"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    kpi_rows: [
+      {
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        ctr: 0.038448,
+        average_cpc_micros: 1538235.271028,
+        conversion_rate: 0.023364,
+        cost_per_conversion_micros: 65836469.6,
+        roas: 2.738589,
+        value_per_conversion: 180.3,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        source_metric_names: [
+          "clicks",
+          "impressions",
+          "cost_micros",
+          "conversions",
+          "conversion_value"
+        ],
+        missing_metrics: [],
+        blocked_claims: [
+          "profitability",
+          "budget scaling",
+          "wasted budget",
+          "recommendation apply"
+        ]
+      }
+    ],
+    next_step:
+      "Użyj KPI do triage kampanii. Przed decyzją budżetową sprawdź walutę konta, marżę, pacing budżetu, historię zmian i rekomendacje."
+  },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
     status: "ready",
@@ -528,6 +588,7 @@ const adsDiagnostics = {
           blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"]
         }
       ],
+      derived_kpi_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -551,6 +612,7 @@ const adsDiagnostics = {
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
       campaign_rows: [],
+      derived_kpi_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -601,6 +663,7 @@ const adsDiagnostics = {
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
       campaign_rows: [],
+      derived_kpi_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [
@@ -652,6 +715,7 @@ const adsDiagnostics = {
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
       campaign_rows: [],
+      derived_kpi_rows: [],
       search_term_rows: [
         {
           search_term: "bdo rejestracja",
@@ -714,6 +778,7 @@ const adsDiagnostics = {
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
       campaign_rows: [],
+      derived_kpi_rows: [],
       search_term_rows: [],
       custom_segment_candidates: [],
       negative_keyword_candidates: [],
@@ -1787,18 +1852,24 @@ function mockFetch() {
               },
               {
                 id: "daily_ga4_landing_quality",
-                title: "GA4: landing/source/campaign quality review",
+                title: "GA4: brak pełnego kontraktu interpretacji ruchu",
                 route: "/ga4",
-                status: "ready",
+                status: "blocked",
                 priority: 14,
-                summary: "Landing groups=1, low engagement=1, WP match=0.",
+                summary:
+                  "Landing groups=1, low engagement=1, WP match=0. Status blocked oznacza brak kontraktu na ROAS/revenue/conversion drop/tracking fixed, nie awarię connectora.",
                 next_step: "Otwórz /ga4 i waliduj `act_review_ga4_tracking_quality`.",
                 source_connectors: ["google_analytics_4"],
                 evidence_ids: ["ev_refresh_ga4"],
                 action_ids: ["act_review_ga4_tracking_quality"],
-                metric_tiles: { "landing groups": 1, "low engagement": 1, "WP match": 0 },
-                blocked_claims: ["ROAS", "revenue", "conversion drop"],
-                risk: "low"
+                metric_tiles: {
+                  "landing groups": 1,
+                  "low engagement": 1,
+                  "WP match": 0,
+                  blockery: 1
+                },
+                blocked_claims: ["ROAS", "revenue", "conversion drop", "tracking fixed"],
+                risk: "medium"
               }
             ],
             demo_script: [

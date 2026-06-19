@@ -1027,7 +1027,11 @@ def test_command_center_exposes_polish_operator_brief(
     assert "act_review_merchant_feed_issues" in brief_by_id["daily_merchant_feed"]["action_ids"]
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["query/page"] >= 1
     assert "act_prepare_content_refresh_queue" in brief_by_id["daily_content_queue"]["action_ids"]
+    assert brief_by_id["daily_ga4_landing_quality"]["status"] == "blocked"
+    assert "brak pełnego kontraktu" in brief_by_id["daily_ga4_landing_quality"]["title"]
     assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["landing groups"] >= 1
+    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["blockery"] == 1
+    assert "ROAS" in brief_by_id["daily_ga4_landing_quality"]["blocked_claims"]
     assert (
         "act_review_ga4_tracking_quality"
         in brief_by_id["daily_ga4_landing_quality"]["action_ids"]
@@ -2382,6 +2386,45 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "blocked_claims": ["CPA", "ROAS", "search-term waste", "wasted budget"],
         }
     ]
+    derived_kpi_contract = payload["derived_kpi_read_contract"]
+    assert derived_kpi_contract["status"] == "ready"
+    assert derived_kpi_contract["allowed_metrics"] == [
+        "ctr",
+        "average_cpc_micros",
+        "conversion_rate",
+        "cost_per_conversion_micros",
+        "roas",
+        "value_per_conversion",
+    ]
+    assert "profit_margin" in derived_kpi_contract["missing_read_contracts"]
+    assert "profitability" in derived_kpi_contract["blocked_claims"]
+    assert derived_kpi_contract["kpi_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "ctr": 0.1,
+            "average_cpc_micros": 1333333.333333,
+            "conversion_rate": 0.277778,
+            "cost_per_conversion_micros": 4800000,
+            "roas": 37.5625,
+            "value_per_conversion": 180.3,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "source_metric_names": [
+                "clicks",
+                "conversion_value",
+                "conversions",
+                "cost_micros",
+                "impressions",
+            ],
+            "missing_metrics": [],
+            "blocked_claims": [
+                "profitability",
+                "budget scaling",
+                "wasted budget",
+                "recommendation apply",
+            ],
+        }
+    ]
     live_section = next(
         section for section in payload["sections"] if section["id"] == "ads_live_data_status"
     )
@@ -2391,6 +2434,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert campaign_section["status"] == "ready"
     assert campaign_section["title"] == "Aktywność kampanii Google Ads"
+    derived_kpi_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_derived_kpi"
+    )
+    assert derived_kpi_section["status"] == "ready"
+    assert "rentowności" in derived_kpi_section["diagnosis"]
     facts_by_name = {fact["name"]: fact for fact in campaign_section["metric_facts"]}
     assert facts_by_name["clicks"]["value"] == 9
     assert facts_by_name["conversions"]["value"] == 2.5
@@ -2507,6 +2555,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert set(decisions_by_id) == {
         "ads_review_campaign_activity",
+        "ads_review_derived_kpis",
         "ads_review_search_terms",
         "ads_review_negative_keyword_safety",
         "ads_prepare_custom_segments_from_search_terms",
@@ -2517,6 +2566,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_decision["title"] == "Przejrzyj aktywność kampanii Google Ads"
     assert campaign_decision["campaign_rows"][0]["campaign_name"] == "Brand Search"
     assert campaign_decision["search_term_rows"] == []
+    derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
+    assert derived_kpi_decision["status"] == "ready"
+    assert derived_kpi_decision["decision_type"] == "review_derived_kpi"
+    assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
+    assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
+    assert "profitability" in derived_kpi_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
