@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/session_start.py\"",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && uv run python .codex/hooks/session_start.py",
             "timeout": 20,
             "statusMessage": "Checking WILQ API status"
           }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/stop_log.py\"",
+            "command": "cd \"$(git rev-parse --show-toplevel)\" && uv run python .codex/hooks/stop_log.py",
             "timeout": 20,
             "statusMessage": "Recording WILQ Codex run summary"
           }
@@ -27,4 +27,3 @@
     ]
   }
 }
-

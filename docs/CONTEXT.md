@@ -48,6 +48,7 @@ Recently completed and pushed foundations:
 - `39511ac feat(command-center): add daily decision model`
 - `8cfdf83 perf(codex): scope daily command context pack`
 - `de09cab perf(api): batch metric fact reads`
+- `ad17223 perf(api): slim command center runtime`
 
 Current performance slice truth:
 
@@ -71,7 +72,7 @@ Current performance slice truth:
   conflicting-lock runtime risk. Remaining cold-run bottleneck: diagnostics
   inside Command Center, especially the tactical/diagnostic joins used before
   Merchant issue-level triage and URL normalization are fully shaped.
-- 2026-06-19 follow-up in progress: Command Center first-screen cards now reuse
+- 2026-06-19 follow-up pushed as `ad17223`: Command Center first-screen cards now reuse
   preloaded `tactical_queue`/`actions`; Content/GA4 cards no longer build full
   diagnostics; Merchant card reads `google_merchant_center` metric facts
   directly instead of full Merchant Diagnostics. Direct cold proof improved to
@@ -80,6 +81,16 @@ Current performance slice truth:
   Command Center `2.526s` and warm TTL `0.011-0.012s`. Daily context-pack can
   still spike after TTL (`3.451s` observed), so this is not final performance
   completion.
+
+Current hook-runtime truth:
+
+- If WILQ API is unreachable, SessionStart may report that as context. It is
+  not a product blocker by itself.
+- Stop hook must not print plain text on stdout. `.codex/hooks/stop_log.py`
+  emits valid JSON with `continue=true` for unreachable API or unsupported API
+  URL skip paths.
+- `.codex/hooks.json` must use `uv run python` from repo root for hooks; do not
+  reintroduce global `python3`.
 
 Current Merchant slice truth:
 

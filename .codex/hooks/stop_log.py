@@ -8,6 +8,19 @@ import urllib.request
 from urllib.parse import urlparse
 
 
+def emit_continue(message: str) -> None:
+    print(
+        json.dumps(
+            {
+                "continue": True,
+                "systemMessage": message,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+    )
+
+
 def allowed_base_url(base_url: str) -> bool:
     parsed = urlparse(base_url)
     allowed_hosts = {
@@ -22,9 +35,9 @@ def allowed_base_url(base_url: str) -> bool:
 def main() -> None:
     base_url = os.getenv("WILQ_API_BASE_URL", "http://127.0.0.1:8000")
     if not allowed_base_url(base_url):
-        print("WILQ Stop hook skipped non-local or unsupported API URL.")
+        emit_continue("WILQ Stop hook skipped non-local or unsupported API URL.")
         return
-    payload = {
+    payload: dict[str, object] = {
         "id": f"codex_stop_{int(time.time())}",
         "skill": None,
         "hook": "Stop",
@@ -43,7 +56,7 @@ def main() -> None:
     try:
         urllib.request.urlopen(request, timeout=2).close()  # noqa: S310  # nosec B310
     except (OSError, urllib.error.URLError):
-        print("WILQ Stop hook skipped Codex run logging because API is unreachable.")
+        emit_continue("WILQ Stop hook skipped Codex run logging because API is unreachable.")
 
 
 if __name__ == "__main__":

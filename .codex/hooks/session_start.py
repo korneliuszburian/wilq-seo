@@ -4,6 +4,7 @@ import json
 import os
 import urllib.error
 import urllib.request
+from typing import cast
 from urllib.parse import urlparse
 
 
@@ -20,7 +21,7 @@ def get_json(url: str) -> dict[str, object] | None:
         return None
     try:
         with urllib.request.urlopen(url, timeout=2) as response:  # noqa: S310  # nosec B310
-            return json.loads(response.read().decode("utf-8"))
+            return cast(dict[str, object], json.loads(response.read().decode("utf-8")))
     except (OSError, urllib.error.URLError, json.JSONDecodeError):
         return None
 

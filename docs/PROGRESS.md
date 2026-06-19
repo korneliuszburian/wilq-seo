@@ -1813,3 +1813,48 @@ Result:
 - API smoke and skill API smoke passed.
 - Dashboard production build passed.
 - Non-blocking warning: Vite reports the main JS chunk is above 500 KB.
+
+## 2026-06-19 - Codex Stop Hook JSON Runtime Fix
+
+Current stage:
+
+- Fixed the runtime failure reported by Codex:
+  `Stop hook (failed): hook returned invalid stop hook JSON output`.
+- This was caused by `.codex/hooks/stop_log.py` printing plain text when WILQ
+  API was unreachable. Stop hook skip/failure paths now emit valid JSON with
+  `continue=true`.
+- `.codex/hooks.json` now runs repo-local hooks via
+  `cd "$(git rev-parse --show-toplevel)" && uv run python ...`, avoiding the
+  global `python3` dependency.
+
+Focused proof:
+
+```bash
+uv run ruff check .codex/hooks/stop_log.py .codex/hooks/session_start.py tests/test_codex_hooks.py
+uv run mypy .codex/hooks/stop_log.py .codex/hooks/session_start.py tests/test_codex_hooks.py
+uv run pytest tests/test_codex_hooks.py -q
+WILQ_API_BASE_URL=http://127.0.0.1:9 uv run python .codex/hooks/stop_log.py | uv run python -m json.tool
+```
+
+Result:
+
+- ruff passed.
+- mypy passed.
+- hook regression tests: `2 passed`.
+- Manual unreachable-API smoke prints parseable JSON:
+  `{"continue": true, "systemMessage": "WILQ Stop hook skipped Codex run logging because API is unreachable."}`.
+
+Full proof:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- Backend API contracts: `105 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- API smoke, skill structure smoke and skill API smoke passed.
+- Dashboard production build passed.
+- Non-blocking warning: Vite reports the main JS chunk is above 500 KB.

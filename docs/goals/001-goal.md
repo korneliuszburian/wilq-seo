@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 11:06 Europe/Warsaw.
+Last updated: 2026-06-19 11:34 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -1195,7 +1195,8 @@ Remaining blocker:
   slices: Merchant issue-level triage, URL normalization and slimmer
   `DailyDecision` data. Do not hide this in skill references.
 
-Current 2026-06-19 follow-up:
+Completed 2026-06-19 follow-up, pushed as
+`ad17223 perf(api): slim command center runtime`:
 
 - `build_command_center_response()` and `build_command_center_brief()` now
   accept preloaded `tactical_queue` and `actions`, so DailyRuntime can build
@@ -1227,6 +1228,24 @@ Current 2026-06-19 follow-up:
   bottleneck is the daily context-pack after cache expiry and any remaining
   route-level render cost in the dashboard. Keep evidence IDs, ActionObject IDs
   and blocked claims intact when optimizing.
+
+Current hook-runtime fix:
+
+- The Stop hook must never print plain text on stdout when Codex expects Stop
+  hook JSON. The observed failure was:
+  `Stop hook (failed): hook returned invalid stop hook JSON output`.
+- `.codex/hooks/stop_log.py` now emits valid JSON with `continue=true` when it
+  skips run logging because WILQ API is unreachable or because the configured
+  API URL is unsupported. This keeps WILQ API unreachable as context, not as a
+  hook failure.
+- `.codex/hooks.json` must use `uv run python` from repo root, not global
+  `python3`.
+- Regression proof must cover unreachable local API and parse stdout as JSON.
+- Full `scripts/verify.sh` passed after the hook fix:
+  - backend API contracts: `105 passed`;
+  - dashboard route tests: `13 passed`;
+  - Playwright e2e: `9 passed`;
+  - API smoke, skill smokes and dashboard production build passed.
 
 ### 5. Verification And Commit
 
