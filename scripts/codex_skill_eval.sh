@@ -118,6 +118,8 @@ connectors = ", ".join(f"`{connector}`" for connector in case["expected_connecto
 surface_path = case.get("surface_path")
 expected_terms = case.get("expected_terms_pl", [])
 expected_action_ids = case.get("expected_action_ids", [])
+expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
+expected_expert_rule_ids = case.get("expected_expert_rule_ids", [])
 is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
@@ -149,6 +151,15 @@ expected_actions_instruction = (
     if expected_action_ids
     else ""
 )
+expected_lineage_instruction = (
+    "\n<expected_lineage_ids>\nJeżeli WILQ API zwraca te knowledge cards albo expert rules, "
+    "uwzględnij je w top-level `knowledge_card_ids` i `expert_rule_ids`: "
+    f"knowledge_card_ids={', '.join(expected_knowledge_card_ids)}; "
+    f"expert_rule_ids={', '.join(expected_expert_rule_ids)}.\n"
+    "</expected_lineage_ids>\n"
+    if expected_knowledge_card_ids or expected_expert_rule_ids
+    else ""
+)
 print(f"""<task>
 Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
 Zadanie: {case["task_pl"]}
@@ -156,6 +167,7 @@ Zadanie: {case["task_pl"]}
 {surface_instruction}
 {expected_terms_instruction}
 {expected_actions_instruction}
+{expected_lineage_instruction}
 
 <api>
 WILQ API base: {api_base}
@@ -311,6 +323,16 @@ action_ids = {action.get("action_id") for action in data.get("action_candidates"
 for action_id in case.get("expected_action_ids", []):
     if action_id not in action_ids:
         errors.append(f"expected action_id missing from action_candidates: {action_id}")
+
+knowledge_card_ids = set(data.get("knowledge_card_ids", []))
+for card_id in case.get("expected_knowledge_card_ids", []):
+    if card_id not in knowledge_card_ids:
+        errors.append(f"expected knowledge_card_id missing: {card_id}")
+
+expert_rule_ids = set(data.get("expert_rule_ids", []))
+for rule_id in case.get("expected_expert_rule_ids", []):
+    if rule_id not in expert_rule_ids:
+        errors.append(f"expected expert_rule_id missing: {rule_id}")
 
 if errors:
     raise SystemExit("; ".join(errors))

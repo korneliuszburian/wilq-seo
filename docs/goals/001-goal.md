@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 16:34 Europe/Warsaw.
+Last updated: 2026-06-19 16:55 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -146,8 +146,15 @@ Current connector truth:
   `ads_review_budget_context` with expert rules
   `ads_scaling_candidates_v1`, `ads_recommendations_v1` and
   `ads_principles_v1`. Dashboard `/ads-doctor` renders those trace IDs, and
-  `wilq-ads-doctor` scoped context-pack preserves them for Codex.
-  Full `scripts/verify.sh` passed for this lineage slice on 2026-06-19:
+  `wilq-ads-doctor` scoped context-pack preserves them for Codex. Fresh
+  non-interactive `wilq-ads-doctor` eval passed for this source-backed lineage:
+  `.local-lab/evals/codex-skill/20260619T144600Z/wilq-ads-doctor/result.json`.
+  Eval result includes `card_google_ads_budget_review_playbook`,
+  `ads_scaling_candidates_v1`, `ads_recommendations_v1`,
+  `ads_principles_v1`, Google Ads evidence IDs and prepare-only
+  `act_prepare_ads_campaign_review_queue` /
+  `act_prepare_negative_keyword_review_queue` action candidates.
+  Full `scripts/verify.sh` passed for this lineage/eval slice on 2026-06-19:
   backend API contracts `111 passed`, dashboard route tests `13 passed`,
   Playwright e2e `9 passed`, API smoke, skill structure smoke, skill API smoke,
   security checks and dashboard production build passed. Non-blocking warning:
@@ -1031,9 +1038,11 @@ Tasks:
     `wilq-ads-doctor` preserves the same decision lineage.
   - Safety proof: redaction allowlist preserves `knowledge_card_ids` and
     `expert_rule_ids`, while still redacting secret values.
-- Still required for this chain: run a non-interactive `wilq-ads-doctor` Codex
-  eval that proves a Polish answer references the budget review context,
-  evidence IDs, missing contracts and blocked budget/apply claims.
+- Done for this chain: non-interactive `wilq-ads-doctor` Codex eval passed at
+  `.local-lab/evals/codex-skill/20260619T144600Z/wilq-ads-doctor/result.json`.
+  It proves the Polish answer references the budget review knowledge/rule
+  lineage, evidence IDs, prepare-only ActionObjects and blocked budget/apply
+  claims.
 - Next chains after Ads budget review:
   - Google Ads recommendations/change-history/impression-share.
   - GSC/content source-to-decision quality.
@@ -1102,6 +1111,11 @@ Current eval progress:
   read-only derived KPI rows. It must still block profitability, wasted budget,
   negative keyword apply, budget scaling and recommendation/apply claims until
   WILQ exposes stronger interpretation, safety and apply contracts.
+  Fresh strict source-backed lineage eval passed at
+  `.local-lab/evals/codex-skill/20260619T144600Z/wilq-ads-doctor/result.json`
+  and requires `card_google_ads_budget_review_playbook`,
+  `ads_scaling_candidates_v1`, `ads_recommendations_v1` and
+  `ads_principles_v1`.
 - `wilq-localo-operator`: passed at
   `.local-lab/evals/codex-skill/20260618T102743Z/wilq-localo-operator/result.json`.
   Important correction: Localo is currently access-ready, not missing

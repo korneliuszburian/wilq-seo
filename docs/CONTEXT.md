@@ -27,7 +27,7 @@ Audit `docs/audits/001-output.md` is now folded into
    `http://127.0.0.1:8000/api/health` and
    `http://127.0.0.1:5173/command-center`. Do not hand-roll `nohup`, `setsid`,
    detached `uvicorn`, detached Vite or ad hoc `kill` loops for these ports.
-0. Source-to-product lineage rule, 2026-06-19 16:21 Europe/Warsaw: do not fix
+0. Source-to-product lineage rule, 2026-06-19 16:47 Europe/Warsaw: do not fix
    Ads/marketing reasoning by stuffing more edge cases into skill references.
    Current Ads budget review proof lives in typed product state:
    `google_ads_budget_review_playbook` ->
@@ -37,7 +37,17 @@ Audit `docs/audits/001-output.md` is now folded into
    dashboard `/ads-doctor` trace lines ->
    `wilq-ads-doctor` scoped context-pack. Redaction must preserve
    `knowledge_card_ids` and `expert_rule_ids`, just like evidence/action IDs.
-   Remaining proof: run non-interactive `wilq-ads-doctor` eval for this lineage.
+   Non-interactive proof passed at
+   `.local-lab/evals/codex-skill/20260619T144600Z/wilq-ads-doctor/result.json`.
+   The first strengthened eval failed because the smoke output did not expose
+   lineage IDs; the fix was to make the deterministic smoke script emit the
+   typed API lineage, not to make the skill invent it.
+0. Runtime truth gotcha, 2026-06-19 16:47 Europe/Warsaw: if live API output
+   contradicts source/tests, restart with `scripts/local_stack.sh restart`
+   before debugging product logic. The Ads lineage proof initially looked broken
+   because the managed API child was stale; after restart,
+   `/api/ads/diagnostics` and the scoped context-pack exposed the expected
+   `knowledge_card_ids` and `expert_rule_ids`.
 0. Recovery truth, 2026-06-19 14:53 Europe/Warsaw: connector summary is
    `total=12`, `configured=9`, `missing_credentials=2`, `disabled=1`.
    `google_sheets` is intentionally disabled for this Ekologus scope.

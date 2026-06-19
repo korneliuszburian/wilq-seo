@@ -124,6 +124,10 @@ scripts/verify.sh
   readiness, reports unmanaged port owners, and keeps the canonical local URLs:
   `http://127.0.0.1:8000/api/health` and
   `http://127.0.0.1:5173/command-center`.
+- If live API output contradicts current source/tests after a code slice, run
+  `scripts/local_stack.sh restart` before debugging product logic. A stale
+  managed API child can keep old response shapes even when the worktree is
+  correct.
 - Use `uv run ...` for every Python-facing repo command. This machine may not have a global `python`; use `uv run python ...` in scripts, pipes and smoke commands instead of bare `python`.
 - If `agent-browser` fails with `Failed to create socket directory: Permission denied`, set a writable runtime dir first: `mkdir -p .local-lab/xdg-runtime && chmod 700 .local-lab/xdg-runtime && XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime agent-browser ...`. In this WSL session `/run/user/1000` may not exist.
 - After changing `pyproject.toml` entrypoints or build metadata, run `uv sync --all-extras` before expecting `uv run wilq ...` to exist.

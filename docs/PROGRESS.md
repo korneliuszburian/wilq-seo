@@ -26,9 +26,22 @@ Data: 2026-06-19
   contracts `111 passed`, dashboard route tests `13 passed`, Playwright e2e
   `9 passed`, API smoke, skill structure smoke, skill API smoke, security
   checks and dashboard production build passed. Non-blocking warning: Vite main
-  JS chunk is `530.51 kB`. Remaining proof for this slice: a non-interactive
-  `wilq-ads-doctor` eval proving the Polish answer uses the same budget lineage
-  and blocked claims.
+  JS chunk is `530.51 kB`. Follow-up non-interactive `wilq-ads-doctor` eval
+  now proves the Polish answer uses the same budget lineage and blocked claims:
+  `.local-lab/evals/codex-skill/20260619T144600Z/wilq-ads-doctor/result.json`.
+  The eval result includes `card_google_ads_budget_review_playbook`,
+  `ads_scaling_candidates_v1`, `ads_recommendations_v1`,
+  `ads_principles_v1`, Google Ads evidence IDs and prepare-only
+  `act_prepare_ads_campaign_review_queue` /
+  `act_prepare_negative_keyword_review_queue` action candidates.
+  Runtime gotcha from this proof: if live API omits fields that are present in
+  code/tests, restart with `scripts/local_stack.sh restart` before debugging
+  product logic; the old managed API process can be stale.
+  Full `scripts/verify.sh` after the eval/harness update passed: backend API
+  contracts `111 passed`, dashboard route tests `13 passed`, Playwright e2e
+  `9 passed`, API smoke, skill structure smoke, skill API smoke, security
+  checks and dashboard production build passed. Non-blocking warning: Vite main
+  JS chunk remains `530.51 kB`.
 - Runtime-manager slice, 2026-06-19 15:12 Europe/Warsaw: current active fix is
   to stop hand-rolling local server lifecycle. Added `scripts/local_stack.sh`
   as the canonical local API/dashboard manager with `start|stop|restart|status|logs`.

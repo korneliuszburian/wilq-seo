@@ -1697,3 +1697,72 @@ Interpretation:
 - WILQ still must block budget scaling, campaign pause, profitability, wasted
   budget and recommendation/apply until recommendation, change-history,
   impression-share, human-budget-goal and apply-preview contracts exist.
+
+## 2026-06-19 - wilq-ads-doctor budget lineage non-interactive eval
+
+Purpose:
+
+- Prove that the Ads Doctor Codex skill does not only see Ads live facts, but
+  also carries source-backed decision lineage from the budget knowledge card and
+  expert rules into the final Polish operator JSON.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_TIMEOUT=420 CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+First run:
+
+- Failed intentionally after the eval harness was strengthened.
+- Failure: the final JSON omitted top-level `knowledge_card_ids` and
+  `expert_rule_ids`.
+- Root cause: `.agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py`
+  validated Ads diagnostics but did not expose the decision lineage in its
+  deterministic smoke output, so Codex correctly refused to invent those IDs.
+
+Fix:
+
+- The eval schema now includes top-level `knowledge_card_ids` and
+  `expert_rule_ids`.
+- The `wilq-ads-doctor` eval case requires:
+  `card_google_ads_budget_review_playbook`,
+  `ads_scaling_candidates_v1`,
+  `ads_recommendations_v1`,
+  `ads_principles_v1`.
+- The Ads Doctor smoke script now emits those IDs from
+  `/api/ads/diagnostics.decision_queue` and verifies that
+  `/api/codex/context-pack {"skill":"wilq-ads-doctor"}` preserves them.
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T144600Z/wilq-ads-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `operator_usefulness_score=5`
+- `source_connectors=["google_ads"]`
+- Evidence IDs include:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_c91c9e9638c8`.
+- Knowledge lineage includes:
+  `card_google_ads_budget_review_playbook`.
+- Expert lineage includes:
+  `ads_scaling_candidates_v1`,
+  `ads_recommendations_v1`,
+  `ads_principles_v1`.
+- Action candidates remain prepare-only:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_negative_keyword_review_queue`.
+- The output keeps CPA, ROAS, search-term waste, wasted budget, budget scaling
+  and negative keyword apply blocked without the missing safety/apply contracts.
+
+Product finding:
+
+- This is the right pattern for future usefulness evals: deterministic smoke
+  scripts must expose the typed API evidence the model is allowed to cite.
+  Do not ask Codex to mention IDs that the smoke output does not show.

@@ -41,6 +41,18 @@
         "type": "string"
       }
     },
+    "knowledge_card_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "expert_rule_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "recommendations": {
       "type": "array",
       "items": {
@@ -141,6 +153,8 @@
     "source_connectors",
     "evidence_ids",
     "opportunity_ids",
+    "knowledge_card_ids",
+    "expert_rule_ids",
     "recommendations",
     "action_candidates",
     "blocked",

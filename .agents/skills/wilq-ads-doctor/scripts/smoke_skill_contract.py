@@ -85,6 +85,10 @@ def main() -> int:
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
     )
+    decision_queue = ads_diagnostics.get("decision_queue") or []
+    pack_decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
+    budget_decision = _find_decision(decision_queue, "ads_review_budget_context")
+    pack_budget_decision = _find_decision(pack_decision_queue, "ads_review_budget_context")
     if (
         campaign_read_contract.get("status") == "ready"
         and campaign_read_contract.get("campaign_rows")
@@ -104,6 +108,24 @@ def main() -> int:
             raise SystemExit("Context pack must include ready budget pacing rows")
         if "budget apply" not in budget_pacing_read_contract.get("blocked_claims", []):
             raise SystemExit("Budget pacing contract must keep budget apply blocked")
+        expected_budget_card = "card_google_ads_budget_review_playbook"
+        expected_budget_rules = {
+            "ads_scaling_candidates_v1",
+            "ads_recommendations_v1",
+            "ads_principles_v1",
+        }
+        if expected_budget_card not in budget_decision.get("knowledge_card_ids", []):
+            raise SystemExit("Budget decision must expose budget review knowledge card")
+        if not expected_budget_rules <= set(budget_decision.get("expert_rule_ids", [])):
+            raise SystemExit("Budget decision must expose budget review expert rules")
+        if pack_budget_decision.get("knowledge_card_ids") != budget_decision.get(
+            "knowledge_card_ids"
+        ):
+            raise SystemExit("Context pack budget decision knowledge cards differ")
+        if pack_budget_decision.get("expert_rule_ids") != budget_decision.get(
+            "expert_rule_ids"
+        ):
+            raise SystemExit("Context pack budget decision expert rules differ")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -162,6 +184,34 @@ def main() -> int:
                 "api_base": args.api_base,
                 "health": health.get("status"),
                 "required_connectors": connector_results,
+                "knowledge_card_ids": _unique(
+                    [
+                        *[
+                            card_id
+                            for decision in decision_queue
+                            for card_id in decision.get("knowledge_card_ids", [])
+                        ],
+                        *[
+                            card.get("id")
+                            for card in pack.get("knowledge_card_summaries", [])
+                            if card.get("id")
+                        ],
+                    ]
+                ),
+                "expert_rule_ids": _unique(
+                    [
+                        *[
+                            rule_id
+                            for decision in decision_queue
+                            for rule_id in decision.get("expert_rule_ids", [])
+                        ],
+                        *[
+                            rule.get("id")
+                            for rule in pack.get("expert_rule_summaries", [])
+                            if rule.get("id")
+                        ],
+                    ]
+                ),
                 "ads_diagnostics": {
                     "live_data_available": ads_diagnostics.get("live_data_available"),
                     "blocker_count": ads_diagnostics.get("blocker_count"),
@@ -190,6 +240,16 @@ def main() -> int:
                         "row_count": len(
                             budget_pacing_read_contract.get("budget_rows") or []
                         ),
+                    },
+                    "budget_decision": {
+                        "id": budget_decision.get("id"),
+                        "status": budget_decision.get("status"),
+                        "knowledge_card_ids": budget_decision.get(
+                            "knowledge_card_ids", []
+                        ),
+                        "expert_rule_ids": budget_decision.get("expert_rule_ids", []),
+                        "action_ids": budget_decision.get("action_ids", []),
+                        "blocked_claims": budget_decision.get("blocked_claims", []),
                     },
                     "search_terms_read_contract": {
                         "status": search_terms_read_contract.get("status"),
@@ -272,6 +332,24 @@ def _blocked_handoff_summary(blocked_handoff: dict[str, Any] | None) -> dict[str
         "evidence_ids": blocked_handoff.get("evidence_ids", []),
         "action_ids": blocked_handoff.get("action_ids", []),
     }
+
+
+def _find_decision(decisions: list[dict[str, Any]], decision_id: str) -> dict[str, Any]:
+    for decision in decisions:
+        if decision.get("id") == decision_id:
+            return decision
+    return {}
+
+
+def _unique(values: list[str | None]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
 
 
 if __name__ == "__main__":

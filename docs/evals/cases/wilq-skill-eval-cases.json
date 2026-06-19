@@ -44,9 +44,22 @@
       "ROAS",
       "negative keywords",
       "blocked claims",
+      "ads_review_budget_context",
+      "budget_pacing_read_contract",
+      "card_google_ads_budget_review_playbook",
+      "ads_scaling_candidates_v1",
+      "ads_recommendations_v1",
       "negative_keywords_read_contract",
       "review_negative_keyword_safety",
       "90_day_safety_check"
+    ],
+    "expected_knowledge_card_ids": [
+      "card_google_ads_budget_review_playbook"
+    ],
+    "expected_expert_rule_ids": [
+      "ads_scaling_candidates_v1",
+      "ads_recommendations_v1",
+      "ads_principles_v1"
     ],
     "expected_action_ids": [
       "act_prepare_ads_campaign_review_queue",

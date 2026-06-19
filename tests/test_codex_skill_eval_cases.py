@@ -19,6 +19,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ads_diagnostics",
                 "live_data_available",
                 "campaign",
+                "ads_review_budget_context",
+                "budget_pacing_read_contract",
+                "card_google_ads_budget_review_playbook",
+                "ads_scaling_candidates_v1",
+                "ads_recommendations_v1",
                 "search terms",
                 "negative_keywords_read_contract",
                 "CPA",
@@ -105,6 +110,16 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         assert expected_action_ids.issuperset(contract["action_ids"])
         assert case["expected_connectors"]
 
+    ads_case = cases["wilq-ads-doctor"]
+    assert set(ads_case["expected_knowledge_card_ids"]) == {
+        "card_google_ads_budget_review_playbook"
+    }
+    assert set(ads_case["expected_expert_rule_ids"]) == {
+        "ads_scaling_candidates_v1",
+        "ads_recommendations_v1",
+        "ads_principles_v1",
+    }
+
     content_case = cases["wilq-content-strategist"]
     assert "wordpress_sklep" in content_case["expected_connectors"]
     assert "wordpress_sklep" not in content_case["required_source_connectors"]
@@ -121,6 +136,8 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "expected route term missing",
         "expected connector missing",
         "expected action_id missing",
+        "expected knowledge_card_id missing",
+        "expected expert_rule_id missing",
         "required_source_connectors",
     ):
         assert required in harness
