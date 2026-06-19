@@ -25,7 +25,10 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ROAS",
                 "blocked claims",
             },
-            "action_ids": {"act_prepare_negative_keyword_review_queue"},
+            "action_ids": {
+                "act_prepare_ads_campaign_review_queue",
+                "act_prepare_negative_keyword_review_queue",
+            },
         },
         "wilq-ga4-analyst": {
             "surface_path": "/ga4",

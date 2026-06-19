@@ -84,6 +84,13 @@ def main() -> int:
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
     )
+    if (
+        campaign_read_contract.get("status") == "ready"
+        and campaign_read_contract.get("campaign_rows")
+        and "act_prepare_ads_campaign_review_queue"
+        not in (ads_diagnostics.get("action_ids") or [])
+    ):
+        raise SystemExit("Ready campaign diagnostics must expose campaign review ActionObject")
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -153,6 +160,10 @@ def main() -> int:
                             "missing_read_contracts", []
                         ),
                         "row_count": len(campaign_read_contract.get("campaign_rows") or []),
+                        "has_campaign_review_action": (
+                            "act_prepare_ads_campaign_review_queue"
+                            in (ads_diagnostics.get("action_ids") or [])
+                        ),
                     },
                     "search_terms_read_contract": {
                         "status": search_terms_read_contract.get("status"),

@@ -1,0 +1,203 @@
+from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import Any
+
+from wilq.schemas import MetricFact
+
+CAMPAIGN_REVIEW_ACTION_ID = "act_prepare_ads_campaign_review_queue"
+CAMPAIGN_REVIEW_BLOCKED_CLAIMS = [
+    "budget scaling",
+    "campaign pause",
+    "wasted budget",
+    "profitability",
+    "CPA verdict",
+    "ROAS verdict",
+    "recommendation apply",
+]
+CAMPAIGN_REVIEW_REQUIRED_VALIDATION = [
+    "review_campaign_activity",
+    "verify_account_currency",
+    "budget_pacing",
+    "impression_share",
+    "change_history",
+    "recommendations",
+    "profit_margin_or_value_model",
+    "human_confirm_before_apply",
+]
+
+
+def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not payload.get("campaign_candidates"):
+        errors.append("Campaign review payload requires evidence-backed campaign candidates.")
+    if not payload.get("evidence_ids"):
+        errors.append("Campaign review payload requires evidence IDs.")
+    if payload.get("apply_allowed") is not False:
+        errors.append("Campaign review payload must keep apply_allowed=false.")
+    if payload.get("destructive") is not False:
+        errors.append("Campaign review payload must be non-destructive.")
+    required_validation = payload.get("required_validation")
+    if not isinstance(required_validation, list):
+        errors.append("Campaign review payload requires required_validation list.")
+        return errors
+    for required_check in CAMPAIGN_REVIEW_REQUIRED_VALIDATION:
+        if required_check not in required_validation:
+            errors.append(f"Campaign review payload requires {required_check}.")
+    return errors
+
+
+def campaign_review_payload_from_metric_facts(
+    facts: list[MetricFact],
+) -> dict[str, Any] | None:
+    campaign_groups = _campaign_fact_groups(facts)
+    if not campaign_groups:
+        return None
+    candidates = [
+        _campaign_candidate(campaign_id, campaign_name, group_facts)
+        for (campaign_id, campaign_name), group_facts in campaign_groups.items()
+    ]
+    candidates = sorted(
+        candidates,
+        key=lambda candidate: (
+            -int(candidate.get("cost_micros") or 0),
+            -int(candidate.get("clicks") or 0),
+            str(candidate["campaign_name"]),
+        ),
+    )[:8]
+    evidence_ids = _unique(
+        evidence_id
+        for candidate in candidates
+        for evidence_id in candidate.get("evidence_ids", [])
+    )
+    if not evidence_ids:
+        return None
+    source_metric_names = _unique(
+        metric_name
+        for candidate in candidates
+        for metric_name in candidate.get("source_metric_names", [])
+    )
+    return {
+        "action_type": "campaign_change_review",
+        "connector": "google_ads",
+        "mode": "prepare_only",
+        "campaign_candidates": candidates,
+        "source_metric_names": source_metric_names,
+        "evidence_ids": evidence_ids,
+        "required_validation": CAMPAIGN_REVIEW_REQUIRED_VALIDATION,
+        "missing_read_contracts": [
+            "account_currency",
+            "profit_margin",
+            "budget_pacing",
+            "impression_share",
+            "change_history",
+            "recommendations",
+        ],
+        "blocked_claims": CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+        "apply_allowed": False,
+        "destructive": False,
+    }
+
+
+def _campaign_fact_groups(
+    facts: list[MetricFact],
+) -> dict[tuple[str | None, str], list[MetricFact]]:
+    grouped: dict[tuple[str | None, str], list[MetricFact]] = {}
+    for fact in facts:
+        if fact.source_connector != "google_ads" or fact.name not in {
+            "clicks",
+            "impressions",
+            "cost_micros",
+            "conversions",
+            "conversion_value",
+        }:
+            continue
+        campaign_id = fact.dimensions.get("campaign_id")
+        campaign_name = fact.dimensions.get("campaign_name")
+        if not campaign_id and not campaign_name:
+            continue
+        grouped.setdefault((campaign_id, campaign_name or f"campaign {campaign_id}"), []).append(
+            fact
+        )
+    return grouped
+
+
+def _campaign_candidate(
+    campaign_id: str | None,
+    campaign_name: str,
+    facts: list[MetricFact],
+) -> dict[str, Any]:
+    facts_by_name = {fact.name: fact for fact in facts}
+    clicks = _int_metric_value(facts_by_name.get("clicks"))
+    impressions = _int_metric_value(facts_by_name.get("impressions"))
+    cost_micros = _int_metric_value(facts_by_name.get("cost_micros"))
+    conversions = _float_metric_value(facts_by_name.get("conversions"))
+    conversion_value = _float_metric_value(facts_by_name.get("conversion_value"))
+    return {
+        "campaign_id": campaign_id,
+        "campaign_name": campaign_name,
+        "clicks": clicks,
+        "impressions": impressions,
+        "cost_micros": cost_micros,
+        "conversions": conversions,
+        "conversion_value": conversion_value,
+        "derived_kpis": {
+            "ctr": _ratio(clicks, impressions),
+            "average_cpc_micros": _ratio(cost_micros, clicks),
+            "conversion_rate": _ratio(conversions, clicks),
+            "cost_per_conversion_micros": _ratio(cost_micros, conversions),
+            "roas": _ratio(conversion_value, _micros_to_account_units(cost_micros)),
+            "value_per_conversion": _ratio(conversion_value, conversions),
+        },
+        "source_metric_names": _unique(fact.name for fact in facts),
+        "evidence_ids": _unique(fact.evidence_id for fact in facts),
+        "required_checks": CAMPAIGN_REVIEW_REQUIRED_VALIDATION,
+        "blocked_claims": CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+        "apply_allowed": False,
+    }
+
+
+def _int_metric_value(fact: MetricFact | None) -> int | None:
+    if fact is None:
+        return None
+    if isinstance(fact.value, str):
+        try:
+            return int(float(fact.value))
+        except ValueError:
+            return None
+    return int(fact.value)
+
+
+def _float_metric_value(fact: MetricFact | None) -> float | None:
+    if fact is None:
+        return None
+    if isinstance(fact.value, str):
+        try:
+            return float(fact.value)
+        except ValueError:
+            return None
+    return float(fact.value)
+
+
+def _ratio(
+    numerator: float | int | None,
+    denominator: float | int | None,
+) -> float | None:
+    if numerator is None or denominator is None or denominator == 0:
+        return None
+    return round(float(numerator) / float(denominator), 6)
+
+
+def _micros_to_account_units(value: float | int | None) -> float | None:
+    if value is None:
+        return None
+    return float(value) / 1_000_000
+
+
+def _unique(values: Iterable[object]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        text = str(value)
+        if text and text not in result:
+            result.append(text)
+    return result

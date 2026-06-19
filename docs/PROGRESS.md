@@ -2136,3 +2136,97 @@ Result:
   build passed.
 - Non-blocking warning: Vite reports the main JS chunk at `525.96 kB`, above
   its 500 KB warning threshold.
+
+## 2026-06-19 - Ads Campaign Review ActionObject
+
+Current stage:
+
+- Active Goal 001 value-contract follow-up after route cleanup and Ads scoped
+  context-pack work.
+- Problem: `/api/ads/diagnostics` had live campaign rows, derived KPI rows and
+  search terms, but campaign-level review did not have its own prepare-only
+  ActionObject. That made Ads useful for reading facts, but weak as an
+  operator workflow.
+
+What changed:
+
+- Added `act_prepare_ads_campaign_review_queue` with payload type
+  `campaign_change_review`.
+- The payload is built only from real `google_ads` campaign metric facts and
+  contains up to 8 campaign candidates with:
+  `clicks`, `impressions`, `cost_micros`, `conversions`,
+  `conversion_value`, derived KPI preview, source metric names and evidence IDs.
+- The action is prepare-only:
+  `apply_allowed=false`, `destructive=false`.
+- Required validation explicitly includes:
+  `review_campaign_activity`, `verify_account_currency`, `budget_pacing`,
+  `impression_share`, `change_history`, `recommendations`,
+  `profit_margin_or_value_model`, `human_confirm_before_apply`.
+- Blocked claims stay explicit:
+  budget scaling, campaign pause, wasted budget, profitability, CPA verdict,
+  ROAS verdict and recommendation apply.
+- `/api/ads/diagnostics` now attaches this ActionObject only to campaign/derived
+  KPI decisions. Search-term decisions remain attached to custom segment and
+  negative keyword review actions only.
+- `wilq-ads-doctor` smoke and eval case now require the campaign review action
+  when campaign rows are ready.
+
+Live proof on local `:8000` after API restart:
+
+- `/api/ads/diagnostics.action_ids` includes:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_custom_segments_from_search_terms`,
+  `act_prepare_negative_keyword_review_queue`.
+- Campaign decision action IDs:
+  `["act_prepare_ads_campaign_review_queue"]`.
+- Derived KPI decision action IDs:
+  `["act_prepare_ads_campaign_review_queue"]`.
+- `/api/actions/act_prepare_ads_campaign_review_queue` exposes 8 campaign
+  candidates. First live candidate at proof time:
+  `Kompendium PPWR`, `clicks=25`, `impressions=358`,
+  `cost_micros=110380246`, `conversions=2`,
+  evidence `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- `POST /api/actions/act_prepare_ads_campaign_review_queue/validate`
+  returned `valid=true`.
+
+Focused proof:
+
+```bash
+uv run ruff check wilq/actions/google_ads/campaign_review.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/actions/google_ads/campaign_review.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py -k "ads_diagnostics" tests/test_codex_skill_eval_cases.py::test_route_specific_codex_eval_cases_define_surface_markers -q
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+pnpm --filter @wilq/dashboard test -- --run
+```
+
+Result:
+
+- ruff passed.
+- mypy passed.
+- selected backend/eval tests: `2 passed`.
+- `wilq-ads-doctor` smoke passed and reported `has_campaign_review_action=true`.
+- dashboard route tests: `13 passed`.
+
+Full proof before commit:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- Backend API contracts: `108 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- API smoke, skill structure smoke, skill API smoke and dashboard production
+  build passed.
+- Non-blocking warning: Vite reports the main JS chunk at `525.96 kB`, above
+  its 500 KB warning threshold.
+
+Remaining gap:
+
+- This is not full Ads optimizer. WILQ can now prepare a campaign review queue,
+  but still blocks budget scaling, campaign pause, wasted budget, CPA/ROAS
+  verdicts and recommendation apply until budget pacing, recommendations,
+  change history, impression share, account currency/margin semantics and apply
+  previews exist.

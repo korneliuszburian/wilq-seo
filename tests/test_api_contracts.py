@@ -2638,11 +2638,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_decision["title"] == "Przejrzyj aktywność kampanii Google Ads"
     assert campaign_decision["campaign_rows"][0]["campaign_name"] == "Brand Search"
     assert campaign_decision["search_term_rows"] == []
+    assert campaign_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
     assert derived_kpi_decision["decision_type"] == "review_derived_kpi"
     assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
     assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
+    assert derived_kpi_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     assert "profitability" in derived_kpi_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
@@ -2694,8 +2696,31 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     actions_payload = actions_response.json()
     action_ids = {action["id"] for action in actions_payload}
     assert "act_configure_google_ads_env" not in action_ids
+    assert "act_prepare_ads_campaign_review_queue" in action_ids
     assert "act_prepare_custom_segments_from_search_terms" in action_ids
     assert "act_prepare_negative_keyword_review_queue" in action_ids
+    campaign_review_action = next(
+        action
+        for action in actions_payload
+        if action["id"] == "act_prepare_ads_campaign_review_queue"
+    )
+    assert campaign_review_action["payload"]["action_type"] == "campaign_change_review"
+    assert campaign_review_action["payload"]["campaign_candidates"][0]["campaign_name"] == (
+        "Brand Search"
+    )
+    assert campaign_review_action["payload"]["campaign_candidates"][0]["derived_kpis"][
+        "roas"
+    ] == 37.5625
+    assert campaign_review_action["payload"]["apply_allowed"] is False
+    assert campaign_review_action["payload"]["destructive"] is False
+    assert "budget_pacing" in campaign_review_action["payload"]["required_validation"]
+    assert "budget scaling" in campaign_review_action["payload"]["blocked_claims"]
+    campaign_review_validation_response = client.post(
+        "/api/actions/act_prepare_ads_campaign_review_queue/validate",
+        json={},
+    )
+    assert campaign_review_validation_response.status_code == 200
+    assert campaign_review_validation_response.json()["valid"] is True
     custom_segment_action = next(
         action
         for action in actions_payload

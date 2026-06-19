@@ -1368,8 +1368,11 @@ Commit rules:
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
    regression. Next product work should add missing value contracts: Localo
-   visibility facts, Ahrefs gap records, source-term/custom-segment evidence,
-   campaign ActionObjects and Demand Gen diagnostics.
+   visibility facts, Ahrefs gap records, deeper source-term/custom-segment
+   evidence, remaining campaign optimization contracts and Demand Gen
+   diagnostics. Campaign ActionObjects are now partially started via
+   `act_prepare_ads_campaign_review_queue`; do not treat that as budget
+   optimization or apply support.
 
 2. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a
@@ -1417,6 +1420,42 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 Ads campaign review ActionObject:
+
+```bash
+uv run ruff check wilq/actions/google_ads/campaign_review.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/actions/google_ads/campaign_review.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py -k "ads_diagnostics" tests/test_codex_skill_eval_cases.py::test_route_specific_codex_eval_cases_define_surface_markers -q
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+pnpm --filter @wilq/dashboard test -- --run
+scripts/verify.sh
+```
+
+Live `:8000` proof after API restart:
+
+- `/api/ads/diagnostics.action_ids` includes
+  `act_prepare_ads_campaign_review_queue`.
+- Campaign and derived KPI decisions attach only
+  `act_prepare_ads_campaign_review_queue`.
+- `/api/actions/act_prepare_ads_campaign_review_queue` exposes 8 live campaign
+  candidates with evidence ID `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- Validation passed:
+  `POST /api/actions/act_prepare_ads_campaign_review_queue/validate`
+  returned `valid=true`.
+- Full `scripts/verify.sh` passed: backend API contracts `108 passed`,
+  dashboard route tests `13 passed`, Playwright e2e `9 passed`, API smoke,
+  skill structure smoke, skill API smoke and dashboard production build passed.
+  Known non-blocking warning: Vite main JS chunk `525.96 kB` exceeds the
+  500 KB warning threshold.
+
+Remaining Ads optimizer blockers:
+
+- no budget pacing contract,
+- no recommendations/change-history contract,
+- no impression share contract,
+- no account-currency/profit-margin interpretation contract,
+- no campaign pause/budget apply preview.
 
 Passed after the 2026-06-19 Command Center GA4 metric-fact fallback:
 

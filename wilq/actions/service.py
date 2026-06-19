@@ -3,6 +3,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.google_ads.campaign_review import (
+    CAMPAIGN_REVIEW_ACTION_ID,
+    campaign_review_payload_from_metric_facts,
+)
 from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     custom_segment_payload_from_metric_facts,
@@ -379,6 +383,53 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         actions[action.id] = action
 
     google_ads_facts = by_connector.get("google_ads", [])
+    campaign_review_payload = campaign_review_payload_from_metric_facts(google_ads_facts)
+    if campaign_review_payload is not None:
+        campaign_review_metric_names = set(campaign_review_payload["source_metric_names"])
+        campaign_review_evidence_ids = set(campaign_review_payload["evidence_ids"])
+        campaign_review_keys = {
+            (candidate.get("campaign_id"), candidate.get("campaign_name"))
+            for candidate in campaign_review_payload["campaign_candidates"][:4]
+            if isinstance(candidate, dict)
+        }
+        campaign_review_metrics = [
+            fact
+            for fact in google_ads_facts
+            if fact.name in campaign_review_metric_names
+            and fact.evidence_id in campaign_review_evidence_ids
+            and (
+                fact.dimensions.get("campaign_id"),
+                fact.dimensions.get("campaign_name"),
+            )
+            in campaign_review_keys
+        ][:12]
+        action = ActionObject(
+            id=CAMPAIGN_REVIEW_ACTION_ID,
+            title="Przygotuj kolejkę przeglądu kampanii Google Ads",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=campaign_review_payload["evidence_ids"],
+            metrics=campaign_review_metrics,
+            human_diagnosis=(
+                "Google Ads ma realne campaign metric facts. WILQ może przygotować "
+                "kolejkę przeglądu kampanii z KPI policzonymi z evidence, ale nadal "
+                "blokuje decyzje budżetowe bez pacingu, historii zmian, rekomendacji "
+                "i modelu wartości."
+            ),
+            recommended_reason=(
+                "Na /ads-doctor przejrzyj kampanie z największym kosztem i ruchem. "
+                "Traktuj payload jako review-only: bez pause, budget scaling ani "
+                "claimów o rentowności."
+            ),
+            payload=campaign_review_payload,
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
     custom_segment_payload = custom_segment_payload_from_metric_facts(google_ads_facts)
     if custom_segment_payload is not None:
         custom_segment_metrics = [

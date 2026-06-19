@@ -35,11 +35,11 @@ Audit `docs/audits/001-output.md` is now folded into
    `Dzisiejsze decyzje marketera` board, no duplicated `Plan działań marketera`
    and no full connector blocker cards on `/command-center`.
 2. Ads campaign/search-term read contracts are implemented with conversion
-   counts/value. Latest work adds a prepare-only negative keyword safety
-   review queue, but it is not a waste/apply claim. Continue with
-   recommendations, change history, budget pacing, impression share,
-   keyword/match context, full 90-day safety and derived KPI contracts before
-   any money-leak/CPA/ROAS/negative-keyword apply claims.
+   counts/value. Latest work adds prepare-only campaign review and negative
+   keyword safety review queues. They are not budget/waste/apply claims.
+   Continue with recommendations, change history, budget pacing, impression
+   share, keyword/match context, full 90-day safety and value/account-currency
+   semantics before any money-leak/CPA/ROAS/negative-keyword apply claims.
 3. Repair each skill only after the matching API/read contract exists.
 
 Recently completed and pushed foundations:
@@ -109,6 +109,19 @@ Current performance slice truth:
   evidence `ev_refresh_refresh_google_analytics_4_681b6bcefc85`, action
   `act_review_ga4_tracking_quality`. Targeted Playwright dashboard-api spec
   passed `8 passed` on `:8000/:5173`.
+- Active 2026-06-19 Ads campaign review ActionObject:
+  `act_prepare_ads_campaign_review_queue` is implemented with payload type
+  `campaign_change_review`. It is generated from live `google_ads` campaign
+  metric facts, exposes up to 8 campaign candidates, requires budget pacing,
+  impression share, change history, recommendations, value/currency review and
+  human confirmation, and keeps `apply_allowed=false` plus
+  `destructive=false`. Live `:8000` proof after restart: Ads diagnostics
+  includes the new action ID, campaign and derived KPI decisions attach only
+  this campaign action, and validation returns `valid=true`. This closes the
+  first campaign ActionObject gap, not the full Ads optimizer. Full
+  `scripts/verify.sh` passed for this slice with backend API contracts
+  `108 passed`, dashboard route tests `13 passed`, Playwright e2e `9 passed`
+  and dashboard production build passed.
 
 Current hook-runtime truth:
 

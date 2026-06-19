@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from wilq.actions.google_ads.campaign_review import validate_campaign_review_payload
 from wilq.actions.google_ads.custom_segments import validate_custom_segment_payload
 from wilq.actions.google_ads.negative_keywords import validate_negative_keyword_payload
 from wilq.connectors.registry import get_connector_status
@@ -50,5 +51,7 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         errors.extend(validate_custom_segment_payload(payload))
     if connector_id == "google_ads" and action_type == "negative_keyword_candidate":
         errors.extend(validate_negative_keyword_payload(payload))
+    if connector_id == "google_ads" and action_type == "campaign_change_review":
+        errors.extend(validate_campaign_review_payload(payload))
 
     return errors

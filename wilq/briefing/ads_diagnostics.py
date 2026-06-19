@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
+from wilq.actions.google_ads.campaign_review import CAMPAIGN_REVIEW_ACTION_ID
 from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     CUSTOM_SEGMENT_BLOCKED_CLAIMS,
@@ -1193,6 +1194,7 @@ def _ads_decision_queue(
 
     decisions: list[AdsDecisionItem] = []
     if campaign_read_contract.campaign_rows:
+        campaign_review_action_ids = _campaign_review_action_ids(action_ids)
         metric_facts = [
             fact for row in campaign_read_contract.campaign_rows for fact in row.metric_facts
         ]
@@ -1218,13 +1220,14 @@ def _ads_decision_queue(
                 evidence_ids=campaign_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 campaign_rows=campaign_read_contract.campaign_rows,
-                action_ids=action_ids,
+                action_ids=campaign_review_action_ids,
                 blocked_claims=campaign_read_contract.blocked_claims,
                 risk=ActionRisk.low,
             )
         )
 
     if derived_kpi_read_contract.kpi_rows:
+        campaign_review_action_ids = _campaign_review_action_ids(action_ids)
         decisions.append(
             AdsDecisionItem(
                 id="ads_review_derived_kpis",
@@ -1243,12 +1246,14 @@ def _ads_decision_queue(
                 source_connectors=derived_kpi_read_contract.source_connectors,
                 evidence_ids=derived_kpi_read_contract.evidence_ids,
                 derived_kpi_rows=derived_kpi_read_contract.kpi_rows,
+                action_ids=campaign_review_action_ids,
                 blocked_claims=derived_kpi_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
         )
 
     if search_terms_read_contract.search_term_rows:
+        search_term_action_ids = _search_term_action_ids(action_ids)
         metric_facts = [
             fact for row in search_terms_read_contract.search_term_rows for fact in row.metric_facts
         ]
@@ -1275,7 +1280,7 @@ def _ads_decision_queue(
                 evidence_ids=search_terms_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 search_term_rows=search_terms_read_contract.search_term_rows,
-                action_ids=action_ids,
+                action_ids=search_term_action_ids,
                 blocked_claims=search_terms_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
@@ -1385,6 +1390,15 @@ def _ads_decision_queue(
         )
 
     return decisions
+
+
+def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
+    return [action_id for action_id in action_ids if action_id == CAMPAIGN_REVIEW_ACTION_ID]
+
+
+def _search_term_action_ids(action_ids: list[str]) -> list[str]:
+    allowed_ids = {CUSTOM_SEGMENT_ACTION_ID, NEGATIVE_KEYWORD_ACTION_ID}
+    return [action_id for action_id in action_ids if action_id in allowed_ids]
 
 
 def _blocked_handoff(
