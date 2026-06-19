@@ -81,6 +81,12 @@ Current performance slice truth:
   Command Center `2.526s` and warm TTL `0.011-0.012s`. Daily context-pack can
   still spike after TTL (`3.451s` observed), so this is not final performance
   completion.
+- Active 2026-06-19 follow-up after `ad17223`: daily context-pack now reuses
+  `DailyRuntime.refresh_runs` and targeted `list_evidence_by_ids()` instead of
+  scanning the full evidence registry. Local `:8000` proof: daily context-pack
+  after TTL `2.548s`, warm `0.273-0.324s`, size `171000 bytes`; Command Center
+  after TTL `2.009s`, warm `0.008s`, size `26629 bytes`. This improves the
+  context-pack TTL spike, but full performance is not done.
 
 Current hook-runtime truth:
 

@@ -1858,3 +1858,70 @@ Result:
 - API smoke, skill structure smoke and skill API smoke passed.
 - Dashboard production build passed.
 - Non-blocking warning: Vite reports the main JS chunk is above 500 KB.
+
+## 2026-06-19 - Daily Context-Pack Targeted Evidence Read
+
+Current stage:
+
+- Active performance follow-up after `ad17223`.
+- Goal: reduce the `wilq-daily-command` context-pack TTL spike without removing
+  evidence IDs, source connectors, ActionObjects or blocked claims.
+
+What changed:
+
+- `DailyRuntime` now stores `refresh_runs`, so the daily context-pack can reuse
+  the same refresh snapshot instead of calling `list_connector_refresh_runs()`
+  again.
+- `wilq.evidence.registry.list_evidence_by_ids()` fetches only requested
+  evidence IDs. It preserves connector-status evidence, refresh-run evidence
+  and metric-fact evidence.
+- `DuckDbMetricStore.list_metric_facts_by_evidence_ids()` provides targeted
+  metric-fact reads by evidence ID instead of forcing daily context-pack to
+  build the full evidence registry.
+
+Focused proof:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py wilq/evidence/registry.py wilq/storage/metric_store.py wilq/briefing/daily_runtime.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py wilq/evidence/registry.py wilq/storage/metric_store.py wilq/briefing/daily_runtime.py
+uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack_embeds_marketing_brief_contract or list_evidence_by_ids_returns_metric_fact_evidence_without_full_scan or daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_includes_compiled_knowledge_cards or daily_context_pack_excludes_social_draft_action_objects or command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache'
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- ruff passed.
+- mypy passed.
+- selected API tests: `7 passed`.
+- `wilq-daily-command` context-pack smoke passed with `daily_decisions`,
+  evidence IDs, source connectors and core ActionObjects intact.
+
+Measured runtime on local `:8000`:
+
+- `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` cold after TTL:
+  `2.548s`, `171000 bytes`.
+- Warm repeats: `0.273s` and `0.324s`, `171000 bytes`.
+- `GET /api/dashboard/command-center` after TTL: `2.009s`,
+  `26629 bytes`.
+- Warm Command Center: `0.008s`, `26629 bytes`.
+
+Remaining performance gap:
+
+- This fixes a concrete duplicated-read bottleneck, but the full performance
+  budget is not complete. Future work still needs lower cold DailyRuntime cost
+  and smaller dashboard JS chunks without hiding evidence/action traceability.
+
+Full proof:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- Backend API contracts: `106 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- API smoke, skill structure smoke and skill API smoke passed.
+- Dashboard production build passed.
+- Non-blocking warning: Vite reports the main JS chunk is above 500 KB.

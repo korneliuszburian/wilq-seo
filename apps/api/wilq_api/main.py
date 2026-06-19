@@ -26,7 +26,7 @@ from wilq.connectors.refresh import (
 )
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.credentials.runtime import credential_runtime_status
-from wilq.evidence.registry import get_evidence, list_evidence
+from wilq.evidence.registry import get_evidence, list_evidence, list_evidence_by_ids
 from wilq.expert.rules import (
     get_expert_rule,
     list_expert_capabilities,
@@ -142,12 +142,12 @@ def connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
 
 
 def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
+    skill = request.skill if request else None
+    if request and skill == "wilq-daily-command" and not request.full_context:
+        return _daily_command_context_pack(request, list_opportunities())
     connectors = list_connector_statuses()
     opportunities = list_opportunities()
     max_opportunities = request.max_opportunities if request else 5
-    skill = request.skill if request else None
-    if request and skill == "wilq-daily-command" and not request.full_context:
-        return _daily_command_context_pack(request, connectors, opportunities)
     if request and skill and skill != "wilq-daily-command" and not request.full_context:
         return _skill_scoped_context_pack(request, connectors, opportunities)
     active_actions = _full_context_actions_for_skill(skill)
@@ -201,7 +201,6 @@ def _full_context_actions_for_skill(skill: str | None) -> list[ActionObject]:
 
 def _daily_command_context_pack(
     request: ContextPackRequest,
-    connectors: list[ConnectorStatus],
     opportunities: list[Opportunity],
 ) -> dict[str, Any]:
     daily_runtime = build_daily_runtime()
@@ -254,13 +253,12 @@ def _daily_command_context_pack(
         ],
         "connector_refresh_runs": [
             run.model_dump(mode="json")
-            for run in list_connector_refresh_runs()[:30]
+            for run in daily_runtime.refresh_runs[:30]
             if run.connector_id in source_connectors
         ][:10],
         "evidence_summaries": [
             evidence.model_dump(mode="json")
-            for evidence in list_evidence()
-            if evidence.id in evidence_ids
+            for evidence in list_evidence_by_ids(sorted(evidence_ids))
         ][:80],
         "knowledge_card_summaries": [
             card.model_dump(mode="json") for card in compile_playbook_cards()

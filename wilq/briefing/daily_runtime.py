@@ -10,7 +10,13 @@ from wilq.briefing.marketing_brief import build_marketing_brief, core_brief_acti
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
-from wilq.schemas import ActionObject, CommandCenterResponse, ConnectorStatus, MarketingBrief
+from wilq.schemas import (
+    ActionObject,
+    CommandCenterResponse,
+    ConnectorRefreshRun,
+    ConnectorStatus,
+    MarketingBrief,
+)
 
 DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 2.0
 _cached_runtime: DailyRuntimeCacheEntry | None = None
@@ -20,6 +26,7 @@ _cached_runtime: DailyRuntimeCacheEntry | None = None
 class DailyRuntime:
     connectors: list[ConnectorStatus]
     actions: list[ActionObject]
+    refresh_runs: list[ConnectorRefreshRun]
     core_actions: list[ActionObject]
     command_center: CommandCenterResponse
     marketing_brief: MarketingBrief
@@ -54,6 +61,7 @@ def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
     runtime = DailyRuntime(
         connectors=connectors,
         actions=actions,
+        refresh_runs=refresh_runs,
         core_actions=core_brief_actions(actions),
         command_center=command,
         marketing_brief=brief,

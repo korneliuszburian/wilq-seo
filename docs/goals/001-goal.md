@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-19 11:34 Europe/Warsaw.
+Last updated: 2026-06-19 11:43 Europe/Warsaw.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -1228,6 +1228,38 @@ Completed 2026-06-19 follow-up, pushed as
   bottleneck is the daily context-pack after cache expiry and any remaining
   route-level render cost in the dashboard. Keep evidence IDs, ActionObject IDs
   and blocked claims intact when optimizing.
+
+Active 2026-06-19 follow-up:
+
+- Daily Codex context-pack now reuses `DailyRuntime.refresh_runs` instead of
+  calling `list_connector_refresh_runs()` again.
+- Daily Codex context-pack now uses targeted `list_evidence_by_ids()` instead
+  of scanning the full evidence registry. Metric-fact evidence can be fetched
+  directly by evidence ID through DuckDB.
+- Focused proof passed:
+  ```bash
+  uv run ruff check apps/api/wilq_api/main.py wilq/evidence/registry.py wilq/storage/metric_store.py wilq/briefing/daily_runtime.py tests/test_api_contracts.py
+  uv run mypy apps/api/wilq_api/main.py wilq/evidence/registry.py wilq/storage/metric_store.py wilq/briefing/daily_runtime.py
+  uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack_embeds_marketing_brief_contract or list_evidence_by_ids_returns_metric_fact_evidence_without_full_scan or daily_runtime_reuses_preloaded_daily_inputs or codex_context_pack_includes_compiled_knowledge_cards or daily_context_pack_excludes_social_draft_action_objects or command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache'
+  uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+  ```
+- HTTP proof on local `:8000` after this follow-up:
+  - `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` cold after
+    TTL: `2.548s`, `171000 bytes`;
+  - warm repeats: `0.273s` and `0.324s`, `171000 bytes`;
+  - `GET /api/dashboard/command-center` after TTL: `2.009s`,
+    `26629 bytes`;
+  - warm Command Center: `0.008s`, `26629 bytes`.
+- Full `scripts/verify.sh` passed after this follow-up:
+  - backend API contracts: `106 passed`;
+  - dashboard route tests: `13 passed`;
+  - Playwright e2e: `9 passed`;
+  - API smoke, skill structure smoke, skill API smoke and dashboard production
+    build passed.
+- This improves the known daily context-pack TTL spike, but does not close the
+  full performance budget. Remaining future work: smaller dashboard JS chunk,
+  lower cold DailyRuntime cost and richer value contracts rather than hidden
+  frontend-only memoization.
 
 Current hook-runtime fix:
 

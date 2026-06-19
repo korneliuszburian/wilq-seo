@@ -57,11 +57,62 @@ def list_evidence() -> list[Evidence]:
     return [*connector_evidence, *refresh_evidence, *metric_evidence]
 
 
+def list_evidence_by_ids(evidence_ids: list[str]) -> list[Evidence]:
+    requested_ids = list(dict.fromkeys(evidence_ids))
+    if not requested_ids:
+        return []
+    requested_id_set = set(requested_ids)
+    evidence_by_id: dict[str, Evidence] = {}
+
+    for connector in list_connector_statuses():
+        evidence_id = connector_evidence_id(connector.id)
+        if evidence_id not in requested_id_set:
+            continue
+        evidence_by_id[evidence_id] = Evidence(
+            id=evidence_id,
+            source_connector=connector.id,
+            source_type="connector_status",
+            source_id=connector.id,
+            freshness=connector.freshness,
+            summary=_connector_summary(
+                connector.id,
+                connector.configured,
+                connector.missing_credentials,
+            ),
+            raw_ref=None,
+        )
+
+    for run in local_state_store().list_connector_refresh_runs():
+        evidence_id = refresh_run_evidence_id(run.id)
+        if evidence_id not in requested_id_set:
+            continue
+        evidence_by_id[evidence_id] = _refresh_run_evidence(run)
+
+    missing_metric_evidence_ids = [
+        evidence_id for evidence_id in requested_ids if evidence_id not in evidence_by_id
+    ]
+    for evidence in _metric_fact_evidence_for_ids(missing_metric_evidence_ids):
+        evidence_by_id.setdefault(evidence.id, evidence)
+
+    return [
+        evidence_by_id[evidence_id]
+        for evidence_id in requested_ids
+        if evidence_id in evidence_by_id
+    ]
+
+
 def get_evidence(evidence_id: str) -> Evidence | None:
-    return next(
-        (evidence for evidence in list_evidence() if evidence.id == evidence_id),
-        None,
-    )
+    evidence = list_evidence_by_ids([evidence_id])
+    return evidence[0] if evidence else None
+
+
+def _metric_fact_evidence_for_ids(evidence_ids: list[str]) -> list[Evidence]:
+    facts_by_evidence_id: dict[str, list[str]] = {}
+    connector_by_evidence_id: dict[str, str] = {}
+    for fact in metric_store().list_metric_facts_by_evidence_ids(evidence_ids):
+        facts_by_evidence_id.setdefault(fact.evidence_id, []).append(fact.name)
+        connector_by_evidence_id.setdefault(fact.evidence_id, fact.source_connector)
+    return _metric_fact_evidence_from_groups(facts_by_evidence_id, connector_by_evidence_id)
 
 
 def _connector_summary(
@@ -108,7 +159,13 @@ def _metric_fact_evidence() -> list[Evidence]:
         for fact in facts:
             facts_by_evidence_id.setdefault(fact.evidence_id, []).append(fact.name)
             connector_by_evidence_id.setdefault(fact.evidence_id, fact.source_connector)
+    return _metric_fact_evidence_from_groups(facts_by_evidence_id, connector_by_evidence_id)
 
+
+def _metric_fact_evidence_from_groups(
+    facts_by_evidence_id: dict[str, list[str]],
+    connector_by_evidence_id: dict[str, str],
+) -> list[Evidence]:
     evidence_items: list[Evidence] = []
     for evidence_id, fact_names in sorted(facts_by_evidence_id.items()):
         unique_fact_names = sorted(set(fact_names))

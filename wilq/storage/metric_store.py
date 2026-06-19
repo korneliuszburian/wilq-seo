@@ -250,6 +250,66 @@ class DuckDbMetricStore:
             facts_by_connector.setdefault(fact.source_connector, []).append(fact)
         return facts_by_connector
 
+    def list_metric_facts_by_evidence_ids(
+        self,
+        evidence_ids: list[str],
+    ) -> list[MetricFact]:
+        if not evidence_ids:
+            return []
+        unique_evidence_ids = list(dict.fromkeys(evidence_ids))
+        query = """
+            WITH metric_facts_with_previous AS (
+            SELECT
+              metric_name,
+              metric_value_double,
+              metric_value_text,
+              value_kind,
+              connector_id,
+              evidence_id,
+              collected_at,
+              period,
+              unit,
+              dimensions_json,
+              LAG(metric_value_double) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_metric_value_double,
+              LAG(metric_value_text) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_metric_value_text,
+              LAG(value_kind) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_value_kind
+            FROM connector_metric_facts
+            WHERE evidence_id = ANY(?)
+            )
+            SELECT
+              metric_name,
+              metric_value_double,
+              metric_value_text,
+              value_kind,
+              connector_id,
+              evidence_id,
+              collected_at,
+              period,
+              unit,
+              dimensions_json,
+              previous_metric_value_double,
+              previous_metric_value_text,
+              previous_value_kind
+            FROM metric_facts_with_previous
+            ORDER BY
+              evidence_id ASC,
+              connector_id ASC,
+              metric_name ASC,
+              dimensions_json ASC
+        """
+        with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
+            rows = connection.execute(query, [unique_evidence_ids]).fetchall()
+        return [_metric_fact_from_row(row) for row in rows]
+
     def _connect(self, read_only: bool = False) -> duckdb.DuckDBPyConnection:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if read_only and self.path.exists():
