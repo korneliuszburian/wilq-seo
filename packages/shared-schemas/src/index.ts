@@ -304,11 +304,43 @@ export const AdsSearchTermsReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsCustomSegmentCandidateSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  intent: z.string(),
+  source_terms: z.array(z.string()),
+  rejected_terms: z.array(z.string()),
+  rejection_reasons: z.array(z.string()),
+  search_term_rows: z.array(AdsSearchTermMetricRowSchema),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  confidence: z.enum(["low", "medium", "high"]),
+  validation_status: z.enum(["pending_validation", "blocked"]),
+  blocked_claims: z.array(z.string()),
+  next_step: z.string()
+});
+
+export const AdsCustomSegmentsReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  candidates: z.array(AdsCustomSegmentCandidateSchema),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  next_step: z.string()
+});
+
 export const AdsDecisionItemSchema = z.object({
   id: z.string(),
   decision_type: z.enum([
     "review_campaign_activity",
     "review_search_terms",
+    "prepare_custom_segments",
     "block_write_actions",
     "fix_ads_access"
   ]),
@@ -324,6 +356,7 @@ export const AdsDecisionItemSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
+  custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
   risk: z.enum(["low", "medium", "high", "critical"])
@@ -338,6 +371,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
+  custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   decision_queue: z.array(AdsDecisionItemSchema),
   sections: z.array(AdsDiagnosticSectionSchema),
   blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),
@@ -805,6 +839,10 @@ export type CommandCenterDemoStep = z.infer<typeof CommandCenterDemoStepSchema>;
 export type CommandCenterActionPlanItem = z.infer<typeof CommandCenterActionPlanItemSchema>;
 export type DailyDecision = z.infer<typeof DailyDecisionSchema>;
 export type AdsDiagnosticSection = z.infer<typeof AdsDiagnosticSectionSchema>;
+export type AdsCustomSegmentCandidate = z.infer<typeof AdsCustomSegmentCandidateSchema>;
+export type AdsCustomSegmentsReadContract = z.infer<
+  typeof AdsCustomSegmentsReadContractSchema
+>;
 export type AdsDiagnosticsResponse = z.infer<typeof AdsDiagnosticsResponseSchema>;
 export type MerchantDiagnosticSection = z.infer<typeof MerchantDiagnosticSectionSchema>;
 export type MerchantDiagnosticsResponse = z.infer<typeof MerchantDiagnosticsResponseSchema>;

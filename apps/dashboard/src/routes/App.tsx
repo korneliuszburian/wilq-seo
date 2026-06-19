@@ -1523,6 +1523,8 @@ type AdsDecisionItem = AdsDiagnosticsResponse["decision_queue"][number];
 type AdsCampaignMetricRow = AdsDiagnosticsResponse["campaign_read_contract"]["campaign_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
+type AdsCustomSegmentCandidate =
+  AdsDiagnosticsResponse["custom_segments_read_contract"]["candidates"][number];
 
 function AdsDoctorSurface() {
   const diagnostics = useQuery({
@@ -1719,7 +1721,15 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
             Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
           </span>
         ) : null}
+        {decision.custom_segment_candidates.length > 0 ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Segmenty: {decision.custom_segment_candidates.length}
+          </span>
+        ) : null}
       </div>
+      {decision.custom_segment_candidates.length > 0 ? (
+        <AdsCustomSegmentCandidatesPanel candidates={decision.custom_segment_candidates} compact />
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={decision.source_connectors} />
@@ -1733,13 +1743,16 @@ function AdsDecisionCard({ decision }: { decision: AdsDecisionItem }) {
 function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
   const campaignRows = data.campaign_read_contract.campaign_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
+  const customSegmentCandidates = data.custom_segments_read_contract.candidates;
   const missingReadContracts = uniqueValues([
     ...data.campaign_read_contract.missing_read_contracts,
-    ...data.search_terms_read_contract.missing_read_contracts
+    ...data.search_terms_read_contract.missing_read_contracts,
+    ...data.custom_segments_read_contract.missing_read_contracts
   ]).map(adsMissingReadContractLabel);
   const blockedClaims = uniqueValues([
     ...data.campaign_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
+    ...data.custom_segments_read_contract.blocked_claims,
     ...data.sections.flatMap((section) => section.blocked_claims)
   ]).map(adsBlockedClaimLabel);
 
@@ -1755,9 +1768,10 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
             tutaj widać kampanie, zapytania i blokady claimów.
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="grid grid-cols-4 gap-2 text-center text-xs">
           <MetricTile label="Kampanie" value={campaignRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
+          <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
           <MetricTile label="Sekcje API" value={data.sections.length} />
         </div>
       </div>
@@ -1765,6 +1779,7 @@ function AdsMetricEvidencePanel({ data }: { data: AdsDiagnosticsResponse }) {
       <div className="grid gap-4">
         <AdsCampaignRowsTable rows={campaignRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} />
+        <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
       </div>
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
@@ -1866,6 +1881,68 @@ function AdsSearchTermRowsTable({ rows }: { rows: AdsSearchTermMetricRow[] }) {
   );
 }
 
+function AdsCustomSegmentCandidatesPanel({
+  candidates,
+  compact = false
+}: {
+  candidates: AdsCustomSegmentCandidate[];
+  compact?: boolean;
+}) {
+  if (candidates.length === 0) {
+    return compact ? null : (
+      <BlockerNotice message="Brak kandydatów custom segments. WILQ potrzebuje realnych search terms i walidacji Keyword Planner, zanim przygotuje payload." />
+    );
+  }
+  return (
+    <div className={compact ? "mt-3 grid gap-2" : "rounded-md border border-line bg-slate-50 p-3"}>
+      {!compact ? (
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-ink">
+            Kandydaci custom segments z search terms
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            To jest prepare-only kolejka. WILQ nie twierdzi, że segment ma zasięg,
+            ROAS albo wpływ na kampanię bez osobnego forecastu i walidacji.
+          </p>
+        </div>
+      ) : null}
+      <div className={compact ? "grid gap-2" : "grid gap-3 md:grid-cols-2"}>
+        {candidates.slice(0, compact ? 2 : 6).map((candidate) => (
+          <article key={candidate.id} className="rounded-md border border-line bg-white p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h4 className="text-sm font-semibold text-ink">{candidate.name}</h4>
+                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                  {candidate.intent} / pewność: {candidate.confidence}
+                </p>
+              </div>
+              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                {candidate.validation_status === "pending_validation"
+                  ? "do walidacji"
+                  : "blocked"}
+              </span>
+            </div>
+            <p className="mt-2 text-sm font-medium text-ink">{candidate.next_step}</p>
+            <div className="mt-2 grid gap-2 text-xs text-slate-600">
+              <TraceLine label="Source terms" values={candidate.source_terms.slice(0, 8)} />
+              <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />
+              <LinkedTraceLine
+                label="Dowody"
+                values={candidate.evidence_ids.slice(0, 4)}
+                kind="evidence"
+              />
+              <TraceLine
+                label="Nie wolno twierdzić"
+                values={candidate.blocked_claims.map(adsBlockedClaimLabel)}
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -1915,6 +1992,7 @@ function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
 function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_campaign_activity") return "przegląd kampanii";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
+  if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
   if (decisionType === "block_write_actions") return "blokada zmian";
   return "naprawa dostępu";
 }
@@ -1940,7 +2018,8 @@ function adsDecisionSortValue(decision: AdsDecisionItem) {
   const typeRank: Record<AdsDecisionItem["decision_type"], number> = {
     review_campaign_activity: 0,
     review_search_terms: 1,
-    block_write_actions: 2,
+    prepare_custom_segments: 2,
+    block_write_actions: 3,
     fix_ads_access: 0
   };
   return statusRank[decision.status] * 10 + typeRank[decision.decision_type];

@@ -30,10 +30,11 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
-3. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-custom-segments"}` przed podsumowaniem metryk, opportunities lub kandydatów działań.
-4. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
-5. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
-6. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+3. Wywołaj `GET /api/ads/diagnostics` przed diagnozą custom segments, audience terms lub targetingu z search terms.
+4. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-custom-segments"}` i potwierdź, że `ads_diagnostics.custom_segments_read_contract` zgadza się z endpointem Ads diagnostics.
+5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
+6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
+7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
 
 </workflow>
 
@@ -44,6 +45,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/health`
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
+- `GET /api/ads/diagnostics`
 - `GET /api/marketing/brief`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
@@ -67,7 +69,7 @@ Wymagane powierzchnie connectorów dla tego skilla:
 - `google_ads`
 - `google_search_console`
 
-Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Jeśli `custom_segments_read_contract.status=blocked`, zwróć blocker i brakujące kontrakty zamiast wymyślać audience terms. Jeśli contract ma kandydatów, używaj wyłącznie `source_terms`, `evidence_ids`, `action_ids` i `blocked_claims` z API.
 
 </evidence_requirements>
 

@@ -62,6 +62,20 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "terms": {"Content Planner", "WordPress", "GSC", "content_diagnostics", "inventory"},
             "action_ids": {"act_prepare_content_refresh_queue"},
         },
+        "wilq-custom-segments": {
+            "surface_path": "/ads-doctor",
+            "terms": {
+                "Ads Doctor",
+                "custom segments",
+                "ads_diagnostics",
+                "custom_segments_read_contract",
+                "source_terms",
+                "blocked claims",
+                "audience size",
+                "ROAS",
+            },
+            "action_ids": {"act_prepare_custom_segments_from_search_terms"},
+        },
         "wilq-localo-operator": {
             "surface_path": "/localo",
             "terms": {
@@ -135,6 +149,21 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "blocked_handoff" in ads_skill_doc
     assert "Live Ads diagnostics must not expose OAuth blocked_handoff" in ads_smoke_script
     assert "Blocked Ads diagnostics must expose blocked_handoff" in ads_smoke_script
+
+    custom_segments_skill_doc = Path(
+        ".agents/skills/wilq-custom-segments/SKILL.md"
+    ).read_text(encoding="utf-8")
+    custom_segments_smoke_script = Path(
+        ".agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    assert "GET /api/ads/diagnostics" in custom_segments_skill_doc
+    assert (
+        'request_json(args.api_base, "GET", "/api/ads/diagnostics")'
+        in custom_segments_smoke_script
+    )
+    assert '"ads_diagnostics": {' in custom_segments_smoke_script
+    assert "custom_segments_read_contract" in custom_segments_smoke_script
+    assert "act_prepare_custom_segments_from_search_terms" in custom_segments_smoke_script
 
     merchant_skill_doc = Path(
         ".agents/skills/wilq-merchant-feed-operator/SKILL.md"

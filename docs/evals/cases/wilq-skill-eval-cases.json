@@ -114,8 +114,20 @@
   },
   {
     "skill": "wilq-custom-segments",
-    "task_pl": "Sprawdź, czy można zaproponować custom segment candidates z realnych source terms i evidence. Nie wymyślaj audience terms.",
-    "expected_connectors": ["google_ads", "google_search_console"]
+    "surface_path": "/ads-doctor",
+    "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować custom segment candidates z realnych source_terms i evidence. Nie wymyślaj audience terms, audience size, ROAS ani efektu kampanii.",
+    "expected_connectors": ["google_ads", "google_search_console"],
+    "expected_terms_pl": [
+      "Ads Doctor",
+      "custom segments",
+      "ads_diagnostics",
+      "custom_segments_read_contract",
+      "source_terms",
+      "blocked claims",
+      "audience size",
+      "ROAS"
+    ],
+    "expected_action_ids": ["act_prepare_custom_segments_from_search_terms"]
   },
   {
     "skill": "wilq-demand-gen-operator",

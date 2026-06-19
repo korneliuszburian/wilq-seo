@@ -1423,3 +1423,66 @@ Remaining product risk:
 - Next route audit: `/ads-doctor`, then `/localo`.
 - Next matching skill repair: `wilq-ga4-analyst` should consume the new
   `decision_queue` and pass strict non-interactive usefulness eval.
+
+## 2026-06-19 - Ads Custom Segments Contract And Skill Proof
+
+What changed:
+
+- `/api/ads/diagnostics` now exposes
+  `custom_segments_read_contract` and a `prepare_custom_segments` decision.
+- Dashboard `/ads-doctor` renders custom segment candidates from real Google
+  Ads search terms, with source terms, evidence IDs, blocked claims and
+  prepare-only status.
+- WILQ seeds `act_prepare_custom_segments_from_search_terms` from Google Ads
+  metric facts when enough search-term evidence exists.
+- `wilq-custom-segments` now requires `GET /api/ads/diagnostics`,
+  `ads_diagnostics.custom_segments_read_contract`, source terms, evidence IDs
+  and ActionObject validation.
+
+Focused proof passed:
+
+```bash
+uv run ruff check wilq/schemas.py wilq/actions/google_ads/custom_segments.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py apps/api/wilq_api/main.py .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py
+uv run mypy wilq/schemas.py wilq/actions/google_ads/custom_segments.py wilq/actions/payloads.py wilq/actions/service.py wilq/briefing/ads_diagnostics.py apps/api/wilq_api/main.py .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py tests/test_codex_skill_eval_cases.py -q -k 'ads_diagnostics or custom_segments or route_specific'
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Full proof passed:
+
+```bash
+scripts/verify.sh
+```
+
+Full gate result:
+
+- Backend API contracts: `100 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- Dashboard production build: passed.
+
+Codex eval artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T035937Z/wilq-custom-segments/result.json
+```
+
+Result:
+
+- `pl-PL`, Polish diacritics and `api_used=true`.
+- Evidence IDs include `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- 1 recommendation, 1 action candidate, usefulness score 5.
+- ActionObject `act_prepare_custom_segments_from_search_terms` validates.
+- Blocked claims remain `audience size`, `ROAS`, `conversion uplift`,
+  `targeting applied` and `campaign performance`.
+
+Remaining product risk:
+
+- Custom segment candidates are now useful as prepare-only review, but still
+  require Keyword Planner enrichment, forecast/audience-size contract and
+  payload preview before any apply path.
+- The current source terms are Google Ads evidence, not final audience quality.
+  The operator must reject irrelevant or low-intent terms before campaign use.

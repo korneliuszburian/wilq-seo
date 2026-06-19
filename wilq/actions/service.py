@@ -3,6 +3,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.google_ads.custom_segments import (
+    CUSTOM_SEGMENT_ACTION_ID,
+    custom_segment_payload_from_metric_facts,
+)
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -202,6 +206,7 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
 
 _STATIC_ACTIONS = seed_static_actions()
 ACTION_METRIC_CONNECTORS = (
+    "google_ads",
     "google_merchant_center",
     "google_analytics_4",
     "google_search_console",
@@ -209,6 +214,7 @@ ACTION_METRIC_CONNECTORS = (
     "ahrefs",
 )
 ACTION_METRIC_FACT_LIMIT = 120
+ACTION_METRIC_FACT_LIMITS = {"google_ads": 500}
 
 
 def list_actions() -> list[ActionObject]:
@@ -368,6 +374,40 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         )
         actions[action.id] = action
 
+    google_ads_facts = by_connector.get("google_ads", [])
+    custom_segment_payload = custom_segment_payload_from_metric_facts(google_ads_facts)
+    if custom_segment_payload is not None:
+        custom_segment_metrics = [
+            fact
+            for fact in google_ads_facts
+            if fact.name.startswith("search_term_")
+            and fact.dimensions.get("search_term") in custom_segment_payload["terms"]
+        ][:12]
+        action = ActionObject(
+            id=CUSTOM_SEGMENT_ACTION_ID,
+            title="Przygotuj kandydatów custom segments z search terms",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=custom_segment_payload["evidence_ids"],
+            metrics=custom_segment_metrics,
+            human_diagnosis=(
+                "Google Ads ma realne search-term metric facts. WILQ może przygotować "
+                "kandydatów custom segments wyłącznie z tych terminów, ale nie może "
+                "twierdzić audience size, ROAS ani performance bez dodatkowych kontraktów."
+            ),
+            recommended_reason=(
+                "Na /ads-doctor przejrzyj source terms, odrzuć brand/low-intent terms, "
+                "dodaj Keyword Planner enrichment i waliduj payload preview przed apply."
+            ),
+            payload=custom_segment_payload,
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
     social_facts = [
         *by_connector.get("google_search_console", []),
         *by_connector.get("google_merchant_center", []),
@@ -387,7 +427,7 @@ def _action_metric_facts() -> list[MetricFact]:
             fact
             for fact in metric_store().list_metric_facts(
                 connector_id=connector_id,
-                limit=ACTION_METRIC_FACT_LIMIT,
+                limit=ACTION_METRIC_FACT_LIMITS.get(connector_id, ACTION_METRIC_FACT_LIMIT),
             )
             if not _is_probe_only_fact(fact)
         )

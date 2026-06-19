@@ -2074,6 +2074,10 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     assert search_terms_contract["status"] == "blocked"
     assert "search_term_view" in search_terms_contract["missing_read_contracts"]
     assert search_terms_contract["search_term_rows"] == []
+    custom_segments_contract = payload["custom_segments_read_contract"]
+    assert custom_segments_contract["status"] == "blocked"
+    assert "search_term_view" in custom_segments_contract["missing_read_contracts"]
+    assert custom_segments_contract["candidates"] == []
     handoff = payload["blocked_handoff"]
     assert handoff["status"] == "blocked"
     assert handoff["title"] == "Google Ads: finalny handoff blockera OAuth"
@@ -2317,10 +2321,31 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert search_terms_section["status"] == "ready"
     assert search_terms_section["title"] == "Zapytania użytkowników Google Ads"
+    custom_segments_contract = payload["custom_segments_read_contract"]
+    assert custom_segments_contract["status"] == "ready"
+    assert custom_segments_contract["title"] == "Custom segments z realnych search terms"
+    assert custom_segments_contract["action_ids"] == [
+        "act_prepare_custom_segments_from_search_terms"
+    ]
+    assert "keyword_planner_enrichment" in custom_segments_contract["missing_read_contracts"]
+    assert "audience size" in custom_segments_contract["blocked_claims"]
+    assert custom_segments_contract["candidates"][0]["source_terms"] == ["bdo rejestracja"]
+    assert custom_segments_contract["candidates"][0]["confidence"] == "low"
+    assert custom_segments_contract["candidates"][0]["validation_status"] == (
+        "pending_validation"
+    )
+    assert custom_segments_contract["candidates"][0]["evidence_ids"] == [
+        refresh_response.json()["evidence_ids"][-1]
+    ]
+    custom_segments_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_custom_segments"
+    )
+    assert custom_segments_section["status"] == "ready"
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert set(decisions_by_id) == {
         "ads_review_campaign_activity",
         "ads_review_search_terms",
+        "ads_prepare_custom_segments_from_search_terms",
         "ads_block_write_actions_without_actionobject",
     }
     campaign_decision = decisions_by_id["ads_review_campaign_activity"]
@@ -2332,6 +2357,16 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
     assert "negative keyword apply" in search_terms_decision["blocked_claims"]
+    custom_segments_decision = decisions_by_id["ads_prepare_custom_segments_from_search_terms"]
+    assert custom_segments_decision["status"] == "ready"
+    assert custom_segments_decision["decision_type"] == "prepare_custom_segments"
+    assert custom_segments_decision["custom_segment_candidates"][0]["source_terms"] == [
+        "bdo rejestracja"
+    ]
+    assert custom_segments_decision["action_ids"] == [
+        "act_prepare_custom_segments_from_search_terms"
+    ]
+    assert "ROAS" in custom_segments_decision["blocked_claims"]
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert "campaign creation" in safety_decision["blocked_claims"]
@@ -2354,9 +2389,24 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
-    assert "act_configure_google_ads_env" not in {
-        action["id"] for action in actions_response.json()
-    }
+    actions_payload = actions_response.json()
+    action_ids = {action["id"] for action in actions_payload}
+    assert "act_configure_google_ads_env" not in action_ids
+    assert "act_prepare_custom_segments_from_search_terms" in action_ids
+    custom_segment_action = next(
+        action
+        for action in actions_payload
+        if action["id"] == "act_prepare_custom_segments_from_search_terms"
+    )
+    assert custom_segment_action["payload"]["terms"] == ["bdo rejestracja"]
+    assert custom_segment_action["payload"]["invented_terms"] is False
+    assert custom_segment_action["payload"]["destructive"] is False
+    validation_response = client.post(
+        "/api/actions/act_prepare_custom_segments_from_search_terms/validate",
+        json={},
+    )
+    assert validation_response.status_code == 200
+    assert validation_response.json()["valid"] is True
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200

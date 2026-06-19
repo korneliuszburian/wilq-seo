@@ -107,7 +107,10 @@ Current connector truth:
   `vendor_read` works after the 2026-06-18 OAuth + MCC/child-account fix.
   `596-895-8639 Agencja Proud Media` is the MCC/login customer. `Ekologus NOWY`
   is the child metrics customer. Do not call Ads an OAuth blocker unless a fresh
-  read proves that.
+  read proves that. Google Ads now has live campaign rows, search-term rows and
+  a prepare-only custom segment candidate contract. CPA, ROAS, wasted-budget,
+  negative keyword apply, audience size and campaign-performance claims still
+  need explicit read/safety contracts.
 - `google_merchant_center`: live product/feed facts exist and support a review
   queue. Merchant diagnostics now distinguishes report occurrences from unique
   affected products: `/merchant` labels them as `Zgłoszenia`/`kontekst`, not
@@ -174,12 +177,13 @@ Do not rebuild these from scratch:
   English diagnostic section titles such as `GA4: landing/source/campaign
   behavior`, `GA4: tracking/conversion readiness` or `Analytics Safety Gate`.
 - Ads Doctor route operator cleanup: `/api/ads/diagnostics` now exposes a typed
-  `decision_queue` with campaign review, search-term review and blocked write
-  path decisions. Dashboard `/ads-doctor` renders those decisions first, keeps
-  evidence/action traceability, translates status/blocked claims to Polish and
-  no longer shows raw `Read contract Ads`, `Search terms read-only`,
-  `Campaign activity read contract`, `Evidence`, `configured`, `READY`,
-  `payload preview` or stale OAuth blocker copy when live Ads data exists.
+  `decision_queue` with campaign review, search-term review, custom segment
+  candidate review and blocked write path decisions. Dashboard `/ads-doctor`
+  renders those decisions first, keeps evidence/action traceability, translates
+  status/blocked claims to Polish and no longer shows raw `Read contract Ads`,
+  `Search terms read-only`, `Campaign activity read contract`, `Evidence`,
+  `configured`, `READY`, `payload preview` or stale OAuth blocker copy when
+  live Ads data exists.
 - Localo route operator cleanup: `/api/localo/diagnostics` now exposes a typed
   access/readiness contract with missing Localo visibility contracts and blocked
   claims. Dashboard `/localo` renders `Status Localo / MCP access`,
@@ -224,26 +228,29 @@ These are the current reasons Goal 001 is not complete:
    diagnostics, `/api/actions` and `/api/opportunities` are supporting
    surfaces, not competing first-screen decision queues.
 
-3. **Ads Doctor is only partially useful.**
-   Campaign-level activity and search-term facts now have explicit read
-   contracts and a marketer-facing decision queue. Recommendations, quality,
-   budget pacing, impression share, derived CPA/ROAS and negative keyword
-   workflows still need explicit read/safety/ActionObject contracts before WILQ
-   can claim BDOS-class Ads value.
+3. **Ads Doctor is useful for read-only review, but not yet a full optimizer.**
+   Campaign-level activity, search-term facts and custom segment candidates now
+   have explicit read/decision contracts and a marketer-facing decision queue.
+   Recommendations, quality scoring, budget pacing, impression share, derived
+   CPA/ROAS, negative keyword workflows, Keyword Planner enrichment,
+   forecast/audience-size contracts and apply previews still need explicit
+   read/safety/ActionObject contracts before WILQ can claim BDOS-class Ads
+   optimization value.
 
 4. **Codex skill usefulness is not fully proven end-to-end.**
    Skills have contracts and smokes, and `wilq-daily-command` now has a
    strengthened usefulness guardrail plus a fresh non-interactive eval pass.
-   `wilq-content-strategist` and `wilq-ads-doctor` also have strict usefulness
-   passes after their matching API contracts. `wilq-ga4-analyst` has now been
-   repaired against `/api/ga4/diagnostics.decision_queue` and passed a fresh
-   strict non-interactive eval on 2026-06-19. `wilq-localo-operator` should
-   consume `/api/localo/diagnostics` for access/readiness and must continue
-   blocking ranking/GBP/competitor claims until actual Localo visibility facts
-   exist. Goal 001 still needs the same strict usefulness pass across the
-   remaining high-value skills and a clean plug-and-play Codex session proving
-   Polish prompts -> WILQ API calls -> same evidence IDs as dashboard -> useful
-   next actions.
+   `wilq-content-strategist`, `wilq-ads-doctor` and
+   `wilq-custom-segments` also have strict usefulness passes after their
+   matching API contracts. `wilq-ga4-analyst` has now been repaired against
+   `/api/ga4/diagnostics.decision_queue` and passed a fresh strict
+   non-interactive eval on 2026-06-19. `wilq-localo-operator` should consume
+   `/api/localo/diagnostics` for access/readiness and must continue blocking
+   ranking/GBP/competitor claims until actual Localo visibility facts exist.
+   Goal 001 still needs the same strict usefulness pass across the remaining
+   high-value skills and a clean plug-and-play Codex session proving Polish
+   prompts -> WILQ API calls -> same evidence IDs as dashboard -> useful next
+   actions.
 
 5. **Knowledge condensation is not fully proven.**
    Playbooks and knowledge cards exist, but we must prove they influence skill
@@ -493,13 +500,24 @@ Work in this order:
 
    Current local status: `/api/ads/diagnostics.decision_queue` is typed and
    dashboard `/ads-doctor` renders it as the primary marketer view:
-   `ads_review_campaign_activity`, `ads_review_search_terms` and
+   `ads_review_campaign_activity`, `ads_review_search_terms`,
+   `ads_prepare_custom_segments_from_search_terms` and
    `ads_block_write_actions_without_actionobject`. Browser proof on 2026-06-19
    found no stale visible `Read contract Ads`, `Search terms read-only`,
    `Campaign activity read contract`, `Search terms read contract`,
    `Google Ads: campaign activity rows`, `Google Ads: search terms read-only rows`,
    `Evidence`, `configured`, `READY`, `payload preview`, `write/apply` or
    `WILQ ma read-only Google Ads evidence`.
+
+   Current local status: `/api/ads/diagnostics.custom_segments_read_contract`
+   is typed and ready when Google Ads search-term evidence exists. It exposes
+   1 prepare-only candidate for campaign `Kompendium PPWR`, real
+   `source_terms`, evidence `ev_refresh_refresh_google_ads_c2f62ee2b43a`,
+   missing contracts `keyword_planner_enrichment`,
+   `forecast_or_audience_size`, `custom_segment_payload_preview`, and
+   ActionObject `act_prepare_custom_segments_from_search_terms`. Dashboard
+   `/ads-doctor` renders these candidates; the skill `wilq-custom-segments`
+   consumes the same contract.
 
    Fresh correction: Ads diagnostics now selects the latest Google Ads
    `vendor_read` as the evidence-bearing refresh. A later `status_probe` cannot
@@ -517,19 +535,34 @@ Work in this order:
    search-term waste, wasted budget and negative keywords until missing
    read/safety/ActionObject contracts exist.
 
+   Fresh skill proof: `wilq-custom-segments` passed non-interactive Codex eval
+   at
+   `.local-lab/evals/codex-skill/20260619T035937Z/wilq-custom-segments/result.json`.
+   The output is Polish, uses WILQ API, cites
+   `ev_refresh_refresh_google_ads_c2f62ee2b43a`,
+   `ev_connector_google_ads_status` and
+   `ev_connector_google_search_console_status`, returns 1 recommendation and
+   1 action candidate, validates
+   `act_prepare_custom_segments_from_search_terms`, and blocks `audience size`,
+   `ROAS`, `conversion uplift`, `targeting applied` and
+   `campaign performance`.
+
    Still missing for BDOS-class Ads value: recommendations, change history,
    budget pacing, impression share, keyword/match context, 90-day safety check,
-   explicit CPA/ROAS derived KPI contract and prepare-only negative keyword
-   ActionObjects. Full `scripts/verify.sh` passed after the Ads route decision
-   cleanup on 2026-06-19: backend API contracts 98 passed, dashboard route
-   tests 13 passed, Playwright e2e 9 passed and dashboard production build
-   passed.
+   explicit CPA/ROAS derived KPI contract, prepare-only negative keyword
+   ActionObjects, Keyword Planner enrichment, forecast/audience-size contract
+   and custom segment payload preview. Full `scripts/verify.sh` passed after
+   the custom segments slice on 2026-06-19: backend API contracts `100 passed`,
+   dashboard route tests `13 passed`, Playwright e2e `9 passed` and dashboard
+   production build passed.
 
 7. **Later P2/P3 data contracts.**
    Localo has access/readiness diagnostics, but still needs rankings, GBP
    visibility, competitors, reviews and local tasks before local SEO claims.
    Ahrefs needs competitor pages/backlink/content-gap records before gap claims.
-   Custom Segments need real source terms. Campaign Builder needs campaign
+   Custom Segments have real source terms and a prepare-only ActionObject, but
+   still need Keyword Planner enrichment, forecast/audience-size and payload
+   preview before any apply path. Campaign Builder needs campaign
    ActionObjects and payload preview contracts. Demand Gen needs
    creative/asset/landing-quality diagnostics. Social publishing stays explicit
    workflow only.
@@ -552,10 +585,14 @@ Work in this order:
    - `wilq-localo-operator` after `/api/localo/diagnostics` for
      access/readiness and again after real ranking/GBP/competitor/review facts
      exist;
-   - `wilq-ahrefs-gap-finder`, `wilq-custom-segments`,
-     `wilq-campaign-builder`, `wilq-demand-gen-operator` and
-     `wilq-social-publisher` only after their required read contracts or
-     ActionObjects exist.
+   - done for `wilq-custom-segments` after
+     `ads_diagnostics.custom_segments_read_contract` and
+     `act_prepare_custom_segments_from_search_terms`; keep rerunning when
+     Keyword Planner enrichment, forecast/audience-size or payload preview
+     contracts are added;
+   - `wilq-ahrefs-gap-finder`, `wilq-campaign-builder`,
+     `wilq-demand-gen-operator` and `wilq-social-publisher` only after their
+     required read contracts or ActionObjects exist.
 
    Repair means:
    - `SKILL.md` has clean trigger intent, allowed endpoints, evidence

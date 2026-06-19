@@ -16,7 +16,9 @@ REQUIRED_CONTEXT_KEYS = {
     "evidence_summaries",
     "top_opportunities",
     "active_action_objects",
+    "ads_diagnostics",
 }
+CUSTOM_SEGMENT_ACTION_ID = "act_prepare_custom_segments_from_search_terms"
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -50,6 +52,51 @@ def main() -> int:
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
+
+    ads_diagnostics = request_json(args.api_base, "GET", "/api/ads/diagnostics")
+    if ads_diagnostics.get("language") != "pl-PL":
+        raise SystemExit("Ads diagnostics language must be pl-PL")
+    pack_ads_diagnostics = pack.get("ads_diagnostics") or {}
+    if pack_ads_diagnostics.get("evidence_ids") != ads_diagnostics.get("evidence_ids"):
+        raise SystemExit("Context pack ads_diagnostics evidence IDs differ from endpoint")
+    if pack_ads_diagnostics.get("action_ids") != ads_diagnostics.get("action_ids"):
+        raise SystemExit("Context pack ads_diagnostics action IDs differ from endpoint")
+
+    custom_segments_read_contract = ads_diagnostics.get("custom_segments_read_contract") or {}
+    pack_custom_segments_read_contract = (
+        pack_ads_diagnostics.get("custom_segments_read_contract") or {}
+    )
+    if pack_custom_segments_read_contract.get("id") != custom_segments_read_contract.get("id"):
+        raise SystemExit("Context pack custom_segments_read_contract differs from endpoint")
+    if custom_segments_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Custom segments read contract must be ready or blocked")
+    if not custom_segments_read_contract.get("blocked_claims"):
+        raise SystemExit("Custom segments read contract must expose blocked claims")
+
+    custom_segment_candidates = custom_segments_read_contract.get("candidates") or []
+    custom_segment_action_validation: dict[str, Any] | None = None
+    if custom_segment_candidates:
+        first_candidate = custom_segment_candidates[0]
+        if not first_candidate.get("source_terms"):
+            raise SystemExit("Custom segment candidate must expose source_terms")
+        if not first_candidate.get("evidence_ids"):
+            raise SystemExit("Custom segment candidate must expose evidence_ids")
+        if CUSTOM_SEGMENT_ACTION_ID not in custom_segments_read_contract.get("action_ids", []):
+            raise SystemExit(
+                "Custom segments read contract must expose custom segment ActionObject"
+            )
+        custom_segment_action_validation = request_json(
+            args.api_base,
+            "POST",
+            f"/api/actions/{CUSTOM_SEGMENT_ACTION_ID}/validate",
+            {},
+        )
+        if custom_segment_action_validation.get("valid") is not True:
+            raise SystemExit(
+                "Custom segment ActionObject validation must pass when candidates exist"
+            )
+    elif not custom_segments_read_contract.get("missing_read_contracts"):
+        raise SystemExit("Blocked custom segments contract must list missing read contracts")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -95,6 +142,43 @@ def main() -> int:
                 "api_base": args.api_base,
                 "health": health.get("status"),
                 "required_connectors": connector_results,
+                "ads_diagnostics": {
+                    "live_data_available": ads_diagnostics.get("live_data_available"),
+                    "custom_segments_read_contract": {
+                        "status": custom_segments_read_contract.get("status"),
+                        "summary": custom_segments_read_contract.get("summary"),
+                        "candidate_count": len(custom_segment_candidates),
+                        "missing_read_contracts": custom_segments_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "blocked_claims": custom_segments_read_contract.get(
+                            "blocked_claims", []
+                        ),
+                        "action_ids": custom_segments_read_contract.get("action_ids", []),
+                    },
+                    "decision_ids": [
+                        item.get("id")
+                        for item in ads_diagnostics.get("decision_queue", [])
+                        if item.get("id")
+                    ],
+                    "section_ids": [
+                        section.get("id")
+                        for section in ads_diagnostics.get("sections", [])
+                        if section.get("id")
+                    ],
+                },
+                "custom_segment_candidates": [
+                    {
+                        "id": candidate.get("id"),
+                        "name": candidate.get("name"),
+                        "source_terms": candidate.get("source_terms", []),
+                        "confidence": candidate.get("confidence"),
+                        "validation_status": candidate.get("validation_status"),
+                        "evidence_ids": candidate.get("evidence_ids", []),
+                    }
+                    for candidate in custom_segment_candidates[:6]
+                ],
+                "custom_segment_action_validation": custom_segment_action_validation,
                 "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),

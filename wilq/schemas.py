@@ -533,11 +533,43 @@ class AdsSearchTermsReadContract(BaseModel):
     next_step: str
 
 
+class AdsCustomSegmentCandidate(BaseModel):
+    id: str
+    name: str
+    intent: str
+    source_terms: list[str] = Field(default_factory=list)
+    rejected_terms: list[str] = Field(default_factory=list)
+    rejection_reasons: list[str] = Field(default_factory=list)
+    search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    confidence: Literal["low", "medium", "high"] = "low"
+    validation_status: Literal["pending_validation", "blocked"] = "pending_validation"
+    blocked_claims: list[str] = Field(default_factory=list)
+    next_step: str
+
+
+class AdsCustomSegmentsReadContract(BaseModel):
+    id: str = "ads_custom_segments_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsDecisionItem(BaseModel):
     id: str
     decision_type: Literal[
         "review_campaign_activity",
         "review_search_terms",
+        "prepare_custom_segments",
         "block_write_actions",
         "fix_ads_access",
     ]
@@ -553,6 +585,7 @@ class AdsDecisionItem(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
+    custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
@@ -567,6 +600,7 @@ class AdsDiagnosticsResponse(BaseModel):
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
+    custom_segments_read_contract: AdsCustomSegmentsReadContract
     decision_queue: list[AdsDecisionItem] = Field(default_factory=list)
     sections: list[AdsDiagnosticSection] = Field(default_factory=list)
     blocked_handoff: AdsBlockedHandoff | None = None

@@ -1,6 +1,18 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import Any
+
+from wilq.schemas import MetricFact
+
+CUSTOM_SEGMENT_ACTION_ID = "act_prepare_custom_segments_from_search_terms"
+CUSTOM_SEGMENT_BLOCKED_CLAIMS = [
+    "audience size",
+    "conversion uplift",
+    "ROAS",
+    "targeting applied",
+    "campaign performance",
+]
 
 
 def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
@@ -12,3 +24,86 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
     if not payload.get("evidence_ids"):
         errors.append("Custom segment payload requires evidence IDs.")
     return errors
+
+
+def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[str, Any] | None:
+    terms = _source_terms_from_metric_facts(facts)
+    if not terms:
+        return None
+    eligible_facts = [
+        fact
+        for fact in facts
+        if _is_search_term_fact(fact)
+        and fact.dimensions.get("search_term") in terms
+        and _fact_has_positive_signal(fact)
+    ]
+    evidence_ids = _unique(fact.evidence_id for fact in eligible_facts)
+    if not evidence_ids:
+        return None
+    return {
+        "action_type": "custom_segment_candidate",
+        "connector": "google_ads",
+        "mode": "prepare_only",
+        "terms": terms[:20],
+        "source_terms": terms[:20],
+        "source_metric_names": _unique(fact.name for fact in eligible_facts),
+        "evidence_ids": evidence_ids,
+        "required_validation": [
+            "review_source_terms",
+            "reject_brand_or_low_intent_terms",
+            "keyword_planner_enrichment",
+            "payload_preview",
+            "human_confirm_before_apply",
+        ],
+        "blocked_claims": CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        "invented_terms": False,
+        "destructive": False,
+    }
+
+
+def _source_terms_from_metric_facts(facts: list[MetricFact]) -> list[str]:
+    terms: list[str] = []
+    for fact in facts:
+        if not _is_search_term_fact(fact):
+            continue
+        term = fact.dimensions.get("search_term")
+        if term and _eligible_source_term(term) and _fact_has_positive_signal(fact):
+            terms.append(term)
+    return _unique(terms)
+
+
+def _is_search_term_fact(fact: MetricFact) -> bool:
+    return fact.source_connector == "google_ads" and fact.name.startswith("search_term_")
+
+
+def _eligible_source_term(term: str) -> bool:
+    normalized = term.strip().lower()
+    if len(normalized) < 3:
+        return False
+    if "ekologus" in normalized:
+        return False
+    return any(character.isalpha() for character in normalized)
+
+
+def _fact_has_positive_signal(fact: MetricFact) -> bool:
+    if fact.name not in {
+        "search_term_clicks",
+        "search_term_impressions",
+        "search_term_cost_micros",
+        "search_term_conversions",
+        "search_term_conversion_value",
+    }:
+        return False
+    value = fact.value
+    return isinstance(value, int | float) and value > 0
+
+
+def _unique(values: Iterable[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result

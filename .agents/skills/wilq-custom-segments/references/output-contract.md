@@ -2,13 +2,13 @@
 
 ## Cel
 
-Custom segment candidate generation constrained to sourced terms and campaign evidence.
+Generowanie kandydatów custom segments wyłącznie z terminów i evidence dostępnych w WILQ API.
 
-Oczekiwany wynik: Segment candidates with source terms, evidence IDs, confidence and validation blockers.
+Oczekiwany wynik: kandydaci segmentów z `source_terms`, `evidence_ids`, poziomem pewności, ActionObject IDs i blockerami walidacji.
 
 ## Wymagany kontekst API
 
-Pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-custom-segments"}` przed analizą marketingową. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
+Pobierz `GET /api/ads/diagnostics` oraz `POST /api/codex/context-pack` z `{"skill":"wilq-custom-segments"}` przed analizą marketingową. `ads_diagnostics.custom_segments_read_contract` jest źródłem prawdy dla kandydatów segmentów. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
 Wymagane connectory:
 
@@ -29,6 +29,19 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
+## Kandydat segmentu
+
+Dla każdego kandydata z `custom_segments_read_contract.candidates` pokaż:
+
+- nazwę i intent z API;
+- `source_terms` bez dopisywania nowych fraz;
+- `evidence_ids` i `source_connectors`;
+- `confidence` oraz `validation_status`;
+- `action_ids`, jeśli API je wystawia;
+- `blocked_claims`, zwłaszcza `audience size`, `ROAS`, `targeting applied` i `campaign performance`.
+
+Jeśli kandydatów nie ma, pokaż `custom_segments_read_contract.missing_read_contracts` i `next_step`.
+
 ## Warunki odmowy lub downgrade do blockera
 
 Odmów albo obniż odpowiedź do blocker report, gdy:
@@ -36,6 +49,7 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
 - Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
+- `custom_segments_read_contract.status=blocked` albo nie ma `source_terms`.
 - Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
 
 ## Reguły evidence

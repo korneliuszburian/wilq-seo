@@ -478,7 +478,7 @@ def _stateful_context_actions(
 ) -> list[ActionObject]:
     ads_diagnostics = diagnostics.get("ads_diagnostics")
     if (
-        skill == "wilq-ads-doctor"
+        skill in {"wilq-ads-doctor", "wilq-custom-segments", "wilq-campaign-builder"}
         and isinstance(ads_diagnostics, dict)
         and ads_diagnostics.get("live_data_available") is True
     ):

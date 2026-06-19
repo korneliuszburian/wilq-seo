@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Literal
 
+from wilq.actions.google_ads.custom_segments import (
+    CUSTOM_SEGMENT_ACTION_ID,
+    CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+)
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -13,6 +18,8 @@ from wilq.schemas import (
     AdsBlockedHandoff,
     AdsCampaignMetricRow,
     AdsCampaignReadContract,
+    AdsCustomSegmentCandidate,
+    AdsCustomSegmentsReadContract,
     AdsDecisionItem,
     AdsDiagnosticSection,
     AdsDiagnosticsResponse,
@@ -54,6 +61,10 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         list_actions(),
         live_data_available=live_data_available,
     )
+    custom_segments_read_contract = _custom_segments_read_contract(
+        search_terms_read_contract,
+        action_ids,
+    )
     sections = [
         _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
         _campaign_overview_section(
@@ -63,6 +74,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
             campaign_read_contract,
         ),
         _search_terms_section(search_terms_read_contract, action_ids),
+        _custom_segments_section(custom_segments_read_contract),
         _safe_action_section(
             action_ids,
             latest_refresh,
@@ -73,6 +85,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
     decision_queue = _ads_decision_queue(
         campaign_read_contract,
         search_terms_read_contract,
+        custom_segments_read_contract,
         sections,
         blocked_handoff,
         action_ids,
@@ -84,6 +97,7 @@ def build_ads_diagnostics() -> AdsDiagnosticsResponse:
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
         search_terms_read_contract=search_terms_read_contract,
+        custom_segments_read_contract=custom_segments_read_contract,
         decision_queue=decision_queue,
         sections=sections,
         blocked_handoff=blocked_handoff,
@@ -529,6 +543,50 @@ def _search_term_row_sort_key(row: AdsSearchTermMetricRow) -> tuple[int, int, st
     return (-(row.cost_micros or 0), -(row.clicks or 0), row.search_term)
 
 
+def _custom_segment_rejection_reason(row: AdsSearchTermMetricRow) -> str | None:
+    term = row.search_term.strip()
+    normalized = term.lower()
+    if len(normalized) < 3:
+        return "termin jest zbyt krótki"
+    if not any(character.isalpha() for character in normalized):
+        return "termin nie ma czytelnego intentu tekstowego"
+    if "ekologus" in normalized:
+        return "termin wygląda na własny brand albo zapytanie nawigacyjne"
+    if not any((row.clicks or 0, row.impressions or 0, row.cost_micros or 0)):
+        return "termin nie ma aktywności w dostępnych metrykach"
+    return None
+
+
+def _custom_segment_group_sort_key(rows: list[AdsSearchTermMetricRow]) -> tuple[int, int, str]:
+    total_cost = sum(row.cost_micros or 0 for row in rows)
+    total_clicks = sum(row.clicks or 0 for row in rows)
+    first_campaign = next((row.campaign_name for row in rows if row.campaign_name), "")
+    return (-total_cost, -total_clicks, first_campaign)
+
+
+def _custom_segment_name(campaign_name: str | None, index: int) -> str:
+    if campaign_name:
+        return f"Search terms: {campaign_name}"
+    return f"Search terms: kandydat {index}"
+
+
+def _custom_segment_confidence(
+    rows: list[AdsSearchTermMetricRow],
+) -> Literal["low", "medium", "high"]:
+    total_clicks = sum(row.clicks or 0 for row in rows)
+    source_term_count = len({row.search_term for row in rows})
+    if source_term_count >= 8 and total_clicks >= 10:
+        return "high"
+    if source_term_count >= 3 and total_clicks >= 3:
+        return "medium"
+    return "low"
+
+
+def _slug(value: str) -> str:
+    normalized = "".join(character.lower() if character.isalnum() else "_" for character in value)
+    return "_".join(part for part in normalized.split("_") if part)[:80] or "unknown"
+
+
 def _search_terms_section(
     search_terms_read_contract: AdsSearchTermsReadContract,
     action_ids: list[str],
@@ -571,6 +629,166 @@ def _search_terms_section(
         evidence_ids=search_terms_read_contract.evidence_ids,
         action_ids=action_ids,
         blocked_claims=search_terms_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def _custom_segments_read_contract(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    action_ids: list[str],
+) -> AdsCustomSegmentsReadContract:
+    if not search_terms_read_contract.search_term_rows:
+        return AdsCustomSegmentsReadContract(
+            status="blocked",
+            title="Custom segments z search terms",
+            summary="Brak search-term rows do zbudowania kandydatów custom segments.",
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=search_terms_read_contract.evidence_ids,
+            missing_read_contracts=[
+                "search_term_view",
+                "keyword_planner_enrichment",
+                "custom_segment_payload_preview",
+            ],
+            blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+            action_ids=[],
+            next_step=(
+                "Najpierw zbierz Google Ads search_term_view metric facts. Nie wymyślaj "
+                "audience terms bez source terms i evidence IDs."
+            ),
+        )
+
+    candidates = _custom_segment_candidates(search_terms_read_contract.search_term_rows)
+    custom_segment_action_ids = [
+        action_id for action_id in action_ids if action_id == CUSTOM_SEGMENT_ACTION_ID
+    ]
+    if not candidates:
+        return AdsCustomSegmentsReadContract(
+            status="blocked",
+            title="Custom segments z search terms",
+            summary=(
+                "Search-term rows istnieją, ale wszystkie terminy zostały odrzucone "
+                "jako brand, zbyt krótkie albo bez wystarczającego sygnału."
+            ),
+            source_connectors=search_terms_read_contract.source_connectors,
+            evidence_ids=search_terms_read_contract.evidence_ids,
+            missing_read_contracts=[
+                "eligible_source_terms",
+                "keyword_planner_enrichment",
+                "custom_segment_payload_preview",
+            ],
+            blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+            action_ids=[],
+            next_step=(
+                "Zbierz więcej realnych source terms albo użyj Keyword Planner evidence; "
+                "nie twórz segmentu z pustych lub brandowych terminów."
+            ),
+        )
+
+    source_terms_count = sum(len(candidate.source_terms) for candidate in candidates)
+    return AdsCustomSegmentsReadContract(
+        status="ready",
+        title="Custom segments z realnych search terms",
+        summary=(
+            f"WILQ ma {len(candidates)} kandydatów custom segments i "
+            f"{source_terms_count} source terms z Google Ads evidence."
+        ),
+        candidates=candidates,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_unique(
+            evidence_id
+            for candidate in candidates
+            for evidence_id in candidate.evidence_ids
+        ),
+        missing_read_contracts=[
+            "keyword_planner_enrichment",
+            "forecast_or_audience_size",
+            "custom_segment_payload_preview",
+        ],
+        blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        action_ids=custom_segment_action_ids,
+        next_step=(
+            "Przejrzyj source terms, odrzuć nietrafione frazy, dodaj Keyword Planner "
+            "enrichment i waliduj ActionObject przed jakimkolwiek apply."
+        ),
+    )
+
+
+def _custom_segment_candidates(
+    rows: list[AdsSearchTermMetricRow],
+) -> list[AdsCustomSegmentCandidate]:
+    grouped: dict[tuple[str | None, str | None], list[AdsSearchTermMetricRow]] = {}
+    rejected_terms: list[str] = []
+    rejection_reasons: list[str] = []
+    for row in rows:
+        rejection_reason = _custom_segment_rejection_reason(row)
+        if rejection_reason is not None:
+            rejected_terms.append(row.search_term)
+            rejection_reasons.append(f"{row.search_term}: {rejection_reason}")
+            continue
+        grouped.setdefault((row.campaign_id, row.campaign_name), []).append(row)
+
+    candidates: list[AdsCustomSegmentCandidate] = []
+    for index, ((campaign_id, campaign_name), group_rows) in enumerate(
+        sorted(grouped.items(), key=lambda item: _custom_segment_group_sort_key(item[1])),
+        start=1,
+    ):
+        sorted_rows = sorted(group_rows, key=_search_term_row_sort_key)[:12]
+        source_terms = _unique(row.search_term for row in sorted_rows)[:10]
+        if not source_terms:
+            continue
+        name = _custom_segment_name(campaign_name, index)
+        evidence_ids = _unique(
+            evidence_id for row in sorted_rows for evidence_id in row.evidence_ids
+        )
+        metric_facts = [fact for row in sorted_rows for fact in row.metric_facts][:20]
+        candidates.append(
+            AdsCustomSegmentCandidate(
+                id=f"ads_custom_segment_{_slug(campaign_id or campaign_name or str(index))}",
+                name=name,
+                intent="search_term_interest",
+                source_terms=source_terms,
+                rejected_terms=_unique(rejected_terms)[:12],
+                rejection_reasons=_unique(rejection_reasons)[:12],
+                search_term_rows=sorted_rows,
+                source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+                evidence_ids=evidence_ids,
+                metric_facts=metric_facts,
+                confidence=_custom_segment_confidence(sorted_rows),
+                validation_status="pending_validation",
+                blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+                next_step=(
+                    "Użyj tych terminów jako prepare-only candidate. Przed apply wymagaj "
+                    "Keyword Planner enrichment, payload preview i walidacji ActionObject."
+                ),
+            )
+        )
+    return candidates[:4]
+
+
+def _custom_segments_section(
+    custom_segments_read_contract: AdsCustomSegmentsReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for candidate in custom_segments_read_contract.candidates
+        for fact in candidate.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_custom_segments",
+        title="Custom segments z search terms",
+        status=custom_segments_read_contract.status,
+        summary=custom_segments_read_contract.summary,
+        diagnosis=(
+            "WILQ może przygotować kandydatów custom segments tylko z realnych "
+            "source terms. Keyword Planner enrichment, audience size i performance "
+            "pozostają brakującymi kontraktami."
+        ),
+        next_step=custom_segments_read_contract.next_step,
+        source_connectors=custom_segments_read_contract.source_connectors,
+        evidence_ids=custom_segments_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=custom_segments_read_contract.action_ids,
+        blocked_claims=custom_segments_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
 
@@ -625,6 +843,7 @@ def _safe_action_section(
 def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
+    custom_segments_read_contract: AdsCustomSegmentsReadContract,
     sections: list[AdsDiagnosticSection],
     blocked_handoff: AdsBlockedHandoff | None,
     action_ids: list[str],
@@ -709,6 +928,50 @@ def _ads_decision_queue(
                 search_term_rows=search_terms_read_contract.search_term_rows,
                 action_ids=action_ids,
                 blocked_claims=search_terms_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
+    if custom_segments_read_contract.candidates:
+        metric_facts = [
+            fact
+            for candidate in custom_segments_read_contract.candidates
+            for fact in candidate.metric_facts
+        ]
+        search_term_rows = [
+            row
+            for candidate in custom_segments_read_contract.candidates
+            for row in candidate.search_term_rows
+        ]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_prepare_custom_segments_from_search_terms",
+                decision_type="prepare_custom_segments",
+                status="ready",
+                title="Przygotuj custom segments z realnych search terms",
+                summary=custom_segments_read_contract.summary,
+                rationale=(
+                    "WILQ ma source terms z Google Ads evidence, więc może przygotować "
+                    "kandydatów segmentów. To nie jest apply ani obietnica skuteczności: "
+                    "brakuje Keyword Planner enrichment, audience size i payload preview."
+                ),
+                next_step=custom_segments_read_contract.next_step,
+                allowed_metrics=[
+                    "search_term",
+                    "search_term_clicks",
+                    "search_term_impressions",
+                    "search_term_cost_micros",
+                    "search_term_conversions",
+                    "search_term_conversion_value",
+                ],
+                missing_read_contracts=custom_segments_read_contract.missing_read_contracts,
+                source_connectors=custom_segments_read_contract.source_connectors,
+                evidence_ids=custom_segments_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                search_term_rows=search_term_rows[:12],
+                custom_segment_candidates=custom_segments_read_contract.candidates,
+                action_ids=custom_segments_read_contract.action_ids,
+                blocked_claims=custom_segments_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
         )

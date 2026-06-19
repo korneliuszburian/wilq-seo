@@ -357,6 +357,70 @@ const adsDiagnostics = {
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
   },
+  custom_segments_read_contract: {
+    id: "ads_custom_segments_read_contract",
+    status: "ready",
+    title: "Custom segments z realnych search terms",
+    summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence.",
+    candidates: [
+      {
+        id: "ads_custom_segment_123",
+        name: "Search terms: Ekologus Search",
+        intent: "search_term_interest",
+        source_terms: ["bdo rejestracja"],
+        rejected_terms: [],
+        rejection_reasons: [],
+        search_term_rows: [
+          {
+            search_term: "bdo rejestracja",
+            campaign_id: "123",
+            campaign_name: "Ekologus Search",
+            ad_group_id: "456",
+            ad_group_name: "BDO",
+            search_term_status: "ADDED",
+            clicks: 12,
+            impressions: 140,
+            cost_micros: 9000000,
+            conversions: 1,
+            conversion_value: 120,
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+            metric_facts: [],
+            missing_metrics: [],
+            blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+          }
+        ],
+        source_connectors: ["google_ads"],
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        confidence: "medium",
+        validation_status: "pending_validation",
+        blocked_claims: [
+          "audience size",
+          "conversion uplift",
+          "ROAS",
+          "targeting applied",
+          "campaign performance"
+        ],
+        next_step: "Użyj tych terminów jako prepare-only candidate."
+      }
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    missing_read_contracts: [
+      "keyword_planner_enrichment",
+      "forecast_or_audience_size",
+      "custom_segment_payload_preview"
+    ],
+    blocked_claims: [
+      "audience size",
+      "conversion uplift",
+      "ROAS",
+      "targeting applied",
+      "campaign performance"
+    ],
+    action_ids: ["act_prepare_custom_segments_from_search_terms"],
+    next_step: "Przejrzyj source terms i waliduj ActionObject przed apply."
+  },
   decision_queue: [
     {
       id: "ads_review_campaign_activity",
@@ -389,6 +453,7 @@ const adsDiagnostics = {
         }
       ],
       search_term_rows: [],
+      custom_segment_candidates: [],
       action_ids: [],
       blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
       risk: "low"
@@ -428,8 +493,74 @@ const adsDiagnostics = {
           blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
         }
       ],
+      custom_segment_candidates: [],
       action_ids: [],
       blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
+      risk: "medium"
+    },
+    {
+      id: "ads_prepare_custom_segments_from_search_terms",
+      decision_type: "prepare_custom_segments",
+      status: "ready",
+      title: "Przygotuj custom segments z realnych search terms",
+      summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence.",
+      rationale: "WILQ ma source terms z Google Ads evidence, więc może przygotować kandydatów segmentów.",
+      next_step: "Przejrzyj source terms i waliduj ActionObject przed apply.",
+      allowed_metrics: ["search_term", "search_term_clicks", "search_term_impressions"],
+      missing_read_contracts: [
+        "keyword_planner_enrichment",
+        "forecast_or_audience_size",
+        "custom_segment_payload_preview"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      search_term_rows: [
+        {
+          search_term: "bdo rejestracja",
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          ad_group_id: "456",
+          ad_group_name: "BDO",
+          search_term_status: "ADDED",
+          clicks: 12,
+          impressions: 140,
+          cost_micros: 9000000,
+          conversions: 1,
+          conversion_value: 120,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+        }
+      ],
+      custom_segment_candidates: [
+        {
+          id: "ads_custom_segment_123",
+          name: "Search terms: Ekologus Search",
+          intent: "search_term_interest",
+          source_terms: ["bdo rejestracja"],
+          rejected_terms: [],
+          rejection_reasons: [],
+          search_term_rows: [],
+          source_connectors: ["google_ads"],
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          confidence: "medium",
+          validation_status: "pending_validation",
+          blocked_claims: [
+            "audience size",
+            "conversion uplift",
+            "ROAS",
+            "targeting applied",
+            "campaign performance"
+          ],
+          next_step: "Użyj tych terminów jako prepare-only candidate."
+        }
+      ],
+      action_ids: ["act_prepare_custom_segments_from_search_terms"],
+      blocked_claims: ["audience size", "conversion uplift", "ROAS", "targeting applied"],
       risk: "medium"
     },
     {
@@ -447,6 +578,7 @@ const adsDiagnostics = {
       metric_facts: [],
       campaign_rows: [],
       search_term_rows: [],
+      custom_segment_candidates: [],
       action_ids: [],
       blocked_claims: ["budget apply", "campaign creation", "negative keyword apply"],
       risk: "medium"

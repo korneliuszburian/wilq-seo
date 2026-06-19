@@ -1322,3 +1322,50 @@ Product correction recorded:
 - The Ads smoke script must expose row counts and read-contract summaries, not
   only section IDs, otherwise non-interactive evals can pass while staying too
   vague for a marketer.
+
+## 2026-06-19 - wilq-custom-segments Source-Term Eval
+
+Artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260619T035937Z/wilq-custom-segments/result.json
+```
+
+Why rerun:
+
+- Google Ads search-term rows now exist, so custom segments can move from a
+  generic safety guardrail to a concrete prepare-only ActionObject.
+- The skill must consume `/api/ads/diagnostics.custom_segments_read_contract`
+  rather than inventing audience terms.
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- Evidence IDs:
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`,
+  `ev_connector_google_ads_status`,
+  `ev_connector_google_search_console_status`.
+- `operator_usefulness_score=5`.
+- `recommendations_count=1`, `actions_count=1`.
+- No safety findings.
+
+Useful output:
+
+- `ads_diagnostics.custom_segments_read_contract` is `ready`.
+- WILQ exposes 1 candidate for campaign `Kompendium PPWR` from real
+  `source_terms`.
+- `act_prepare_custom_segments_from_search_terms` validates successfully as a
+  prepare-only ActionObject.
+- The skill blocks `audience size`, `ROAS`, `conversion uplift`,
+  `targeting applied` and `campaign performance`.
+
+Product correction recorded:
+
+- Custom segment candidates are now typed API state in Ads diagnostics and
+  dashboard `/ads-doctor`, not prompt-only logic.
+- The action seeder reads enough Google Ads metric facts to see the same
+  search-term evidence as Ads diagnostics.
+- Custom segment payloads keep `invented_terms=false`, `destructive=false` and
+  require source terms plus evidence IDs.
