@@ -4207,6 +4207,32 @@ def test_codex_context_pack_scopes_content_strategist_payload() -> None:
     assert data["content_diagnostics"]["evidence_ids"]
 
 
+def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
+    ads_response = client.get("/api/ads/diagnostics")
+    assert ads_response.status_code == 200
+    ads_diagnostics = ads_response.json()
+
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-ads-doctor"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    ads_context = data["ads_diagnostics"]
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-ads-doctor"
+    assert "ads_diagnostics" in data
+    assert "content_diagnostics" not in data
+    assert "command_center" not in data
+    assert ads_context["evidence_ids"] == ads_diagnostics["evidence_ids"]
+    assert ads_context["action_ids"] == ads_diagnostics["action_ids"]
+    assert ads_context["context_pack_compaction"]["metric_facts_removed"] is True
+    assert ads_context["context_pack_compaction"]["full_endpoint"] == "/api/ads/diagnostics"
+    assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 20
+    assert '"metric_facts":' not in json.dumps(ads_context)
+
+
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:
     response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert response.status_code == 200

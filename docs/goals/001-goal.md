@@ -1281,6 +1281,22 @@ Active 2026-06-19 follow-up:
   full performance budget. Remaining future work: smaller dashboard JS chunk,
   lower cold DailyRuntime cost and richer value contracts rather than hidden
   frontend-only memoization.
+- Active Ads skill performance follow-up:
+  - scoped `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now
+    removes nested `metric_facts` from the skill packet, preserves totals in
+    `context_pack_compaction`, and points to `/api/ads/diagnostics` for full
+    detail;
+  - the API uses a short 5s skill context cache only as a compute shortcut for
+    repeated identical skill calls. It is disabled in pytest and cleared after
+    connector refresh, ActionObject validation and apply;
+  - local proof on `:8000`: Ads context-pack `131889 bytes`, cold/after-TTL
+    `1.322-1.914s`, warm `0.172-0.351s`, `search_term_rows_total=50`,
+    `search_term_rows_included=20`, no `"metric_facts"` key in scoped Ads
+    diagnostics payload;
+  - this satisfies the immediate non-daily Ads context-pack size target, but
+    does not complete full performance work. Remaining: Command Center cold
+    path, content/GA4 context packs, dashboard JS chunk and richer value
+    contracts.
 
 Current hook-runtime fix:
 
@@ -1386,6 +1402,32 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-19 Ads scoped context-pack compaction:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack_scopes_ads_doctor_payload or codex_context_pack_scopes_content_strategist_payload or codex_context_pack_full_context_keeps_diagnostic_surfaces or list_evidence_by_ids_returns_metric_fact_evidence_without_full_scan'
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Scoped `wilq-ads-doctor` context-pack keeps Ads evidence/action traceability
+  but removes nested metric-fact dumps from the Codex runtime packet.
+- Runtime measurement on local `:8000`: `131889 bytes`, cold/after-TTL
+  `1.322-1.914s`, warm `0.172-0.351s`.
+- The full Ads detail endpoint remains `/api/ads/diagnostics`; the cache must
+  not be treated as source truth.
+- Full `scripts/verify.sh` passed after this slice:
+  - backend API contracts: `107 passed`;
+  - dashboard route tests: `13 passed`;
+  - Playwright e2e: `9 passed`;
+  - API smoke, skill structure smoke, skill API smoke and dashboard production
+    build passed;
+  - non-blocking warning: Vite main chunk is `525.96 kB`, above the 500 KB
+    warning threshold.
 
 Passed after the 2026-06-19 GA4 blocked-copy correction and manual
 `wilq-ads-doctor` usefulness proof:

@@ -1974,3 +1974,84 @@ Result:
 - API smoke, skill structure smoke and skill API smoke passed.
 - Dashboard production build passed.
 - Non-blocking warning: Vite reports the main JS chunk is above 500 KB.
+
+## 2026-06-19 - Ads Skill Context-Pack Compaction
+
+Current stage:
+
+- Active Goal 001 performance follow-up after daily context-pack slimming.
+- Goal: make `wilq-ads-doctor` usable as a Codex runtime packet without hiding
+  evidence IDs, ActionObjects, blocked claims or the full Ads diagnostics
+  endpoint.
+
+What changed:
+
+- Scoped `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now embeds
+  a compact Ads diagnostics payload:
+  - nested `metric_facts` are removed from the skill packet;
+  - full detail remains available at `/api/ads/diagnostics`;
+  - embedded search-term rows are limited for runtime context while total row
+    counts are preserved in `context_pack_compaction`;
+  - decision-level row arrays are capped so Codex gets the decision surface,
+    not a raw data dump.
+- Skill-scoped context packs use targeted evidence lookup via
+  `list_evidence_by_ids()` instead of scanning unrelated evidence.
+- A short API-side skill context cache is enabled by default for 5 seconds.
+  This is only a compute shortcut for repeated identical skill context-pack
+  requests. It is disabled during pytest and is cleared after connector
+  refresh, ActionObject validation and action apply.
+
+Focused proof:
+
+```bash
+uv run ruff check apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy apps/api/wilq_api/main.py
+uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack_scopes_ads_doctor_payload or codex_context_pack_scopes_content_strategist_payload or codex_context_pack_full_context_keeps_diagnostic_surfaces or list_evidence_by_ids_returns_metric_fact_evidence_without_full_scan'
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- ruff passed.
+- mypy passed.
+- selected API tests: `4 passed`.
+- `wilq-ads-doctor` smoke passed against live local API with 18 campaign rows,
+  50 search-term rows, 2 Ads ActionObjects and evidence IDs intact.
+
+Measured runtime on local `:8000` after API restart:
+
+- Before this slice: `wilq-ads-doctor` context-pack was about `805332 bytes`
+  and `1.764s`.
+- After this slice:
+  - first cold-ish scoped Ads context-pack: `1.914s`, `131889 bytes`;
+  - after real TTL expiry: `1.322s`, `131889 bytes`;
+  - warm repeated context-pack: `0.172-0.351s`, `131889 bytes`.
+- Compaction proof:
+  - `metric_facts_removed=true`;
+  - full endpoint remains `/api/ads/diagnostics`;
+  - `search_term_rows_total=50`;
+  - `search_term_rows_included=20`;
+  - scoped Ads diagnostics payload does not contain a `"metric_facts"` key.
+
+Remaining performance gap:
+
+- This closes the immediate Ads skill context-size problem, not the whole
+  performance goal. Command Center cold path, `wilq-content-strategist`,
+  `wilq-ga4-analyst` and the dashboard JS chunk still need focused work.
+  Do not use this cache as a substitute for better view-model contracts.
+
+Full proof:
+
+```bash
+scripts/verify.sh
+```
+
+Result:
+
+- Backend API contracts: `107 passed`.
+- Dashboard route tests: `13 passed`.
+- Playwright e2e: `9 passed`.
+- API smoke, skill structure smoke, skill API smoke and dashboard production
+  build passed.
+- Non-blocking warning: Vite reports the main JS chunk at `525.96 kB`, above
+  its 500 KB warning threshold.

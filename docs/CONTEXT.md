@@ -87,6 +87,17 @@ Current performance slice truth:
   after TTL `2.548s`, warm `0.273-0.324s`, size `171000 bytes`; Command Center
   after TTL `2.009s`, warm `0.008s`, size `26629 bytes`. This improves the
   context-pack TTL spike, but full performance is not done.
+- Active 2026-06-19 Ads skill follow-up: scoped `wilq-ads-doctor`
+  context-pack now removes nested `metric_facts`, keeps full detail available
+  at `/api/ads/diagnostics`, limits embedded Ads rows for skill runtime, and
+  uses a short 5s API-side context cache. The cache is only a compute shortcut;
+  it is cleared after connector refresh, ActionObject validation and apply.
+  Local `:8000` proof: Ads context-pack `131889 bytes`, cold/after-TTL
+  `1.322-1.914s`, warm `0.172-0.351s`, search terms total `50`, embedded
+  `20`, no `"metric_facts"` key in the scoped Ads diagnostics payload.
+  Remaining performance gaps: Command Center cold path can still take
+  `~3-5s` in some runs; content/GA4 context-packs still need the same kind of
+  focused slimming; dashboard JS chunk is still above Vite's 500 KB warning.
 
 Current hook-runtime truth:
 

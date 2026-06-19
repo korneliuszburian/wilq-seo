@@ -1633,3 +1633,35 @@ Verdict:
 Useful. To jest aktualny dobry wzorzec Ads skilla: live facts -> polska
 diagnoza -> validowane prepare-only Actions -> blocked claims -> lista
 konkretnych missing read contracts.
+
+## 2026-06-19 - wilq-ads-doctor scoped context-pack compaction smoke
+
+Purpose:
+
+- Verify that Ads skill runtime receives a useful context packet instead of a
+  large raw metric-fact dump.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Smoke passed against live local WILQ API.
+- Ads diagnostics remained live with campaign/search-term read contracts:
+  18 campaign rows and 50 search-term rows.
+- Evidence IDs remained present:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_c2f62ee2b43a`.
+- ActionObjects remained prepare-only:
+  `act_prepare_custom_segments_from_search_terms`,
+  `act_prepare_negative_keyword_review_queue`.
+
+Important finding:
+
+- The scoped context-pack optimization is performance-only. Full Ads detail
+  must remain available through `/api/ads/diagnostics`, and skills must still
+  block CPA/ROAS/waste/apply claims unless the matching contracts and
+  validations exist.

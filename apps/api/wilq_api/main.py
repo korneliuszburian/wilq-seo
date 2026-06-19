@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
+from time import monotonic
 from typing import Any
 from uuid import uuid4
 
@@ -109,6 +111,16 @@ app.add_middleware(
 )
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
+ADS_CONTEXT_ROW_LIMIT = 20
+ADS_CONTEXT_DECISION_ROW_LIMIT = 8
+DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
+_cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
+
+
+@dataclass(frozen=True)
+class SkillContextCacheEntry:
+    created_at: float
+    payload: dict[str, Any]
 
 
 @app.middleware("http")
@@ -375,6 +387,9 @@ def _skill_scoped_context_pack(
     connectors: list[ConnectorStatus],
     opportunities: list[Opportunity],
 ) -> dict[str, Any]:
+    cached_pack = _read_skill_context_cache(request)
+    if cached_pack is not None:
+        return cached_pack
     skill = request.skill or "unknown"
     scoped_connectors = SKILL_CONNECTOR_SCOPES.get(skill, set())
     if not scoped_connectors:
@@ -401,6 +416,7 @@ def _skill_scoped_context_pack(
         for opportunity in scoped_opportunities
         for evidence_id in opportunity.evidence_ids
     )
+    scoped_evidence = list_evidence_by_ids(sorted(evidence_ids))
 
     pack = {
         "context_scope": {
@@ -436,8 +452,7 @@ def _skill_scoped_context_pack(
         ][:10],
         "evidence_summaries": [
             evidence.model_dump(mode="json")
-            for evidence in list_evidence()
-            if evidence.id in evidence_ids or evidence.source_connector in scoped_connectors
+            for evidence in scoped_evidence
         ][:80],
         "knowledge_card_summaries": [
             card.model_dump(mode="json")
@@ -463,7 +478,56 @@ def _skill_scoped_context_pack(
         "strict_instruction": "Codex must not invent metrics; fetch WILQ API evidence first.",
         **diagnostics,
     }
-    return redact_mapping(pack)
+    redacted_pack = redact_mapping(pack)
+    _write_skill_context_cache(request, redacted_pack)
+    return redacted_pack
+
+
+def clear_skill_context_cache() -> None:
+    _cached_skill_context_packs.clear()
+
+
+def _read_skill_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
+    cache_seconds = _skill_context_cache_seconds()
+    if cache_seconds <= 0:
+        return None
+    cached = _cached_skill_context_packs.get(_skill_context_cache_key(request))
+    if cached is None:
+        return None
+    if monotonic() - cached.created_at > cache_seconds:
+        return None
+    return cached.payload
+
+
+def _write_skill_context_cache(request: ContextPackRequest, payload: dict[str, Any]) -> None:
+    if _skill_context_cache_seconds() <= 0:
+        return
+    _cached_skill_context_packs[_skill_context_cache_key(request)] = SkillContextCacheEntry(
+        created_at=monotonic(),
+        payload=payload,
+    )
+
+
+def _skill_context_cache_key(request: ContextPackRequest) -> str:
+    return "|".join(
+        [
+            request.skill or "",
+            request.focus or "",
+            str(request.max_opportunities),
+        ]
+    )
+
+
+def _skill_context_cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_SKILL_CONTEXT_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_SKILL_CONTEXT_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_SKILL_CONTEXT_CACHE_SECONDS
 
 
 def _stateful_context_actions(
@@ -485,7 +549,11 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
     if skill in {"wilq-content-strategist", "wilq-gsc-content-doctor"}:
         return {"content_diagnostics": build_content_diagnostics().model_dump(mode="json")}
     if skill == "wilq-ads-doctor":
-        return {"ads_diagnostics": build_ads_diagnostics().model_dump(mode="json")}
+        return {
+            "ads_diagnostics": _compact_ads_diagnostics_for_context(
+                build_ads_diagnostics().model_dump(mode="json")
+            )
+        }
     if skill == "wilq-merchant-feed-operator":
         return {"merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json")}
     if skill == "wilq-ga4-analyst":
@@ -494,13 +562,17 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         return {"localo_diagnostics": build_localo_diagnostics().model_dump(mode="json")}
     if skill == "wilq-demand-gen-operator":
         return {
-            "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
+            "ads_diagnostics": _compact_ads_diagnostics_for_context(
+                build_ads_diagnostics().model_dump(mode="json")
+            ),
             "ga4_diagnostics": build_ga4_diagnostics().model_dump(mode="json"),
             "merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json"),
         }
     if skill in {"wilq-campaign-builder", "wilq-custom-segments"}:
         return {
-            "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
+            "ads_diagnostics": _compact_ads_diagnostics_for_context(
+                build_ads_diagnostics().model_dump(mode="json")
+            ),
             "content_diagnostics": build_content_diagnostics().model_dump(mode="json"),
         }
     if skill == "wilq-social-publisher":
@@ -509,6 +581,99 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
             "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         }
     return {"marketing_brief": build_marketing_brief().model_dump(mode="json")}
+
+
+def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict[str, Any]:
+    compact = dict(_without_metric_facts(ads_diagnostics))
+    campaign_rows = _list_at(compact, "campaign_read_contract", "campaign_rows")
+    kpi_rows = _list_at(compact, "derived_kpi_read_contract", "kpi_rows")
+    search_term_rows = _list_at(
+        compact,
+        "search_terms_read_contract",
+        "search_term_rows",
+    )
+    _limit_contract_rows(
+        compact,
+        ("search_terms_read_contract", "search_term_rows"),
+        ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_candidate_rows(
+        compact,
+        ("custom_segments_read_contract", "candidates"),
+        "search_term_rows",
+        ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_decision_rows(compact)
+    compact["context_pack_compaction"] = {
+        "metric_facts_removed": True,
+        "full_endpoint": "/api/ads/diagnostics",
+        "campaign_rows_total": len(campaign_rows),
+        "derived_kpi_rows_total": len(kpi_rows),
+        "search_term_rows_total": len(search_term_rows),
+        "search_term_rows_included": len(
+            _list_at(compact, "search_terms_read_contract", "search_term_rows")
+        ),
+    }
+    return compact
+
+
+def _without_metric_facts(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _without_metric_facts(item)
+            for key, item in value.items()
+            if key != "metric_facts"
+        }
+    if isinstance(value, list):
+        return [_without_metric_facts(item) for item in value]
+    return value
+
+
+def _list_at(data: dict[str, Any], *path: str) -> list[Any]:
+    current: Any = data
+    for key in path:
+        if not isinstance(current, dict):
+            return []
+        current = current.get(key)
+    return current if isinstance(current, list) else []
+
+
+def _limit_contract_rows(
+    data: dict[str, Any],
+    path: tuple[str, str],
+    limit: int,
+) -> None:
+    contract = data.get(path[0])
+    if isinstance(contract, dict) and isinstance(contract.get(path[1]), list):
+        contract[path[1]] = contract[path[1]][:limit]
+
+
+def _limit_candidate_rows(
+    data: dict[str, Any],
+    candidates_path: tuple[str, str],
+    rows_key: str,
+    limit: int,
+) -> None:
+    candidates = _list_at(data, *candidates_path)
+    for candidate in candidates:
+        if isinstance(candidate, dict) and isinstance(candidate.get(rows_key), list):
+            candidate[rows_key] = candidate[rows_key][:limit]
+
+
+def _limit_decision_rows(data: dict[str, Any]) -> None:
+    for decision in _list_at(data, "decision_queue"):
+        if not isinstance(decision, dict):
+            continue
+        for rows_key in (
+            "campaign_rows",
+            "derived_kpi_rows",
+            "search_term_rows",
+            "custom_segment_candidates",
+            "negative_keyword_candidates",
+        ):
+            rows = decision.get(rows_key)
+            if isinstance(rows, list):
+                decision[rows_key] = rows[:ADS_CONTEXT_DECISION_ROW_LIMIT]
 
 
 def _evidence_ids_from_context(
@@ -666,6 +831,7 @@ def connector_refresh(
     if run is None:
         raise HTTPException(status_code=404, detail=f"Unknown connector: {connector}")
     clear_daily_runtime_cache()
+    clear_skill_context_cache()
     return run
 
 
@@ -809,6 +975,7 @@ def validate_action_endpoint(action_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = validate_action(action).model_dump(mode="json")
     clear_daily_runtime_cache()
+    clear_skill_context_cache()
     return result
 
 
@@ -823,6 +990,7 @@ def apply_action_endpoint(
     result = apply_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
     clear_daily_runtime_cache()
+    clear_skill_context_cache()
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
     return result.model_dump(mode="json")
