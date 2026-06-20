@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 21:28 CEST.
+Last updated: 2026-06-20 21:58 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,24 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest ActionObject mutation audit truth, runtime proof 2026-06-20 21:58 CEST:
+WILQ now has typed `ActionMutationAuditRecord`, SQLite persistence for
+`action_mutation_audits`, `GET /api/action-mutation-audits`,
+`GET /api/actions/{action_id}/mutation-audits` and `ActionApplyResult` carries
+`mutation_audit`. `POST /api/actions/{action_id}/apply` now persists both the
+local audit event and mutation audit record before returning/raising. The apply
+service requires prior dry-run preview, recorded confirmation, completed impact
+sanity check, valid ActionObject, configured connector, non-destructive payload,
+non-high/critical risk and a supported vendor mutation adapter. Current Goal
+001 truth: no vendor mutation adapter is implemented, so even an otherwise
+synthetic apply-ready ActionObject returns `applied=false`, `status=blocked`,
+`mutation_attempted=false`, `mutation_adapter=null` and blocker
+`Vendor mutation adapter is not implemented for this ActionObject.` Redaction
+now preserves `audit_event_id`/`audit_event_ids` as traceability identifiers,
+not secrets. Full `scripts/verify.sh` after this slice passed: backend
+`136 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+dashboard build OK.
 
 Latest ActionObject impact sanity truth, runtime proof 2026-06-20 21:28 CEST:
 WILQ now has `POST /api/actions/{action_id}/impact-check`, typed

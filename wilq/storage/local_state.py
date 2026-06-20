@@ -9,7 +9,12 @@ from typing import Any, cast
 from pydantic import BaseModel
 
 from wilq.jobs.models import JobRun
-from wilq.schemas import AuditEvent, CodexRun, ConnectorRefreshRun
+from wilq.schemas import (
+    ActionMutationAuditRecord,
+    AuditEvent,
+    CodexRun,
+    ConnectorRefreshRun,
+)
 from wilq.security.redaction import redact_mapping
 from wilq.workflows.models import WorkflowRun
 
@@ -43,6 +48,9 @@ class LocalStateStore:
             ),
             "audit_events": self._count_with_query(
                 "SELECT COUNT(*) AS count FROM audit_events"
+            ),
+            "action_mutation_audits": self._count_with_query(
+                "SELECT COUNT(*) AS count FROM action_mutation_audits"
             ),
             "connector_refresh_runs": self._count_with_query(
                 "SELECT COUNT(*) AS count FROM connector_refresh_runs"
@@ -254,6 +262,63 @@ class LocalStateStore:
                 ).fetchall()
         return [_model_from_json(AuditEvent, cast(str, row["payload_json"])) for row in rows]
 
+    def save_action_mutation_audit(
+        self,
+        record: ActionMutationAuditRecord,
+    ) -> ActionMutationAuditRecord:
+        redacted = ActionMutationAuditRecord.model_validate(
+            redact_mapping(record.model_dump(mode="json"))
+        )
+        payload_json = _model_json(redacted)
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO action_mutation_audits (
+                  id, action_id, status, created_at, payload_json
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  action_id = excluded.action_id,
+                  status = excluded.status,
+                  created_at = excluded.created_at,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    redacted.id,
+                    redacted.action_id,
+                    redacted.status,
+                    redacted.created_at.isoformat(),
+                    payload_json,
+                ),
+            )
+        return redacted
+
+    def list_action_mutation_audits(
+        self,
+        action_id: str | None = None,
+    ) -> list[ActionMutationAuditRecord]:
+        with self._connect() as connection:
+            if action_id is None:
+                rows = connection.execute(
+                    """
+                    SELECT payload_json FROM action_mutation_audits
+                    ORDER BY created_at DESC, id DESC
+                    """
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT payload_json FROM action_mutation_audits
+                    WHERE action_id = ?
+                    ORDER BY created_at DESC, id DESC
+                    """,
+                    (action_id,),
+                ).fetchall()
+        return [
+            _model_from_json(ActionMutationAuditRecord, cast(str, row["payload_json"]))
+            for row in rows
+        ]
+
     def _count_with_query(self, query: str) -> int:
         with self._connect() as connection:
             row = connection.execute(query).fetchone()
@@ -286,6 +351,14 @@ class LocalStateStore:
             CREATE TABLE IF NOT EXISTS audit_events (
               id TEXT PRIMARY KEY,
               action_id TEXT,
+              created_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS action_mutation_audits (
+              id TEXT PRIMARY KEY,
+              action_id TEXT NOT NULL,
+              status TEXT NOT NULL,
               created_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
             );

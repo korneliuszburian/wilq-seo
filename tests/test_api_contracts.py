@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
+from wilq.actions.service import apply_action
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
@@ -27,10 +28,12 @@ from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
 from wilq.schemas import (
+    ActionApplyRequest,
     ActionMode,
     ActionObject,
     ActionRisk,
     ActionStatus,
+    AuditEvent,
     CommandCenterBriefItem,
     CommandCenterResponse,
     ConnectorCapability,
@@ -43,6 +46,7 @@ from wilq.schemas import (
     ConnectorSummary,
     FreshnessState,
     MarketingBrief,
+    MetricFact,
     Opportunity,
     OpportunityDomain,
     TacticalQueueResponse,
@@ -535,6 +539,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     redacted = redact_mapping(
         {
             "api": "ahrefs_site_explorer_domain_rating",
+            "audit_event_id": "audit_action_preview_generated_1234567890abcdef",
             "summary": (
                 "Vendor read blocked by missing credential names: "
                 "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
@@ -589,6 +594,7 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     )
 
     assert redacted["api"] == "ahrefs_site_explorer_domain_rating"
+    assert redacted["audit_event_id"] == "audit_action_preview_generated_1234567890abcdef"
     assert redacted["summary"] == (
         "Vendor read blocked by missing credential names: "
         "GOOGLE_MERCHANT_CENTER_ACCOUNT_ID."
@@ -773,7 +779,11 @@ def test_action_apply_requires_validation(
     monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "audit_state.sqlite3"))
     response = client.post("/api/actions/act_configure_google_ads_env/apply")
     assert response.status_code == 409
-    serialized = json.dumps(response.json())
+    body = response.json()["detail"]
+    serialized = json.dumps(body)
+    assert body["mutation_audit"]["status"] == "blocked"
+    assert body["mutation_audit"]["mutation_attempted"] is False
+    assert body["mutation_audit"]["mutation_adapter"] is None
     assert "Explicit apply confirmation is required" in serialized
     assert "validated before apply" in serialized
     audit_response = client.get(
@@ -781,6 +791,15 @@ def test_action_apply_requires_validation(
     )
     assert audit_response.status_code == 200
     assert audit_response.json()[0]["event_type"] == "apply_confirmation_missing"
+    mutation_audit_response = client.get(
+        "/api/action-mutation-audits?action_id=act_configure_google_ads_env"
+    )
+    assert mutation_audit_response.status_code == 200
+    mutation_audits = mutation_audit_response.json()
+    assert len(mutation_audits) == 1
+    assert mutation_audits[0]["status"] == "blocked"
+    assert mutation_audits[0]["mutation_attempted"] is False
+    assert mutation_audits[0]["audit_event_id"] == body["audit_event"]["id"]
 
 
 def test_action_apply_requires_explicit_confirmation_actor(
@@ -799,6 +818,8 @@ def test_action_apply_requires_explicit_confirmation_actor(
     assert body["status"] == "blocked"
     assert "confirmed_by is required" in json.dumps(body)
     assert body["audit_event"]["event_type"] == "apply_confirmation_missing"
+    assert body["mutation_audit"]["status"] == "blocked"
+    assert body["mutation_audit"]["actor"] == "wilq_api"
 
 
 def test_action_apply_confirmed_prepare_action_still_blocks_with_audit(
@@ -819,7 +840,92 @@ def test_action_apply_confirmed_prepare_action_still_blocks_with_audit(
     assert body["status"] == "blocked"
     assert body["audit_event"]["event_type"] == "apply_blocked"
     assert body["audit_event"]["actor"] == "operator_test"
+    assert body["mutation_audit"]["actor"] == "operator_test"
+    assert body["mutation_audit"]["mutation_attempted"] is False
     assert "Action mode must be apply" in json.dumps(body)
+
+
+def test_apply_ready_action_blocks_without_mutation_adapter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.setenv(key, "configured")
+    action = ActionObject(
+        id="act_synthetic_apply_ready",
+        title="Synthetic apply-ready action",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.apply,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_synthetic_apply_ready"],
+        metrics=[
+            MetricFact(
+                name="cost_micros",
+                value=1000,
+                period="last_7_days",
+                source_connector="google_ads",
+                evidence_id="ev_synthetic_apply_ready",
+            )
+        ],
+        human_diagnosis="Synthetic action that should never apply without adapter.",
+        recommended_reason="Regression guard for mutation audit boundary.",
+        payload={
+            "action_type": "synthetic_google_ads_mutation",
+            "apply_allowed": True,
+            "destructive": False,
+            "payload_preview": [
+                {
+                    "operation_type": "SyntheticOperation",
+                    "apply_allowed": True,
+                    "required_validation": ["human_confirm_before_apply"],
+                }
+            ],
+        },
+        validation_status="valid",
+        created_by="test",
+        audit_events=[
+            AuditEvent(
+                id="audit_preview",
+                action_id="act_synthetic_apply_ready",
+                event_type="action_preview_generated",
+                actor="operator_test",
+                summary="Preview generated.",
+                evidence_ids=["ev_synthetic_apply_ready"],
+            ),
+            AuditEvent(
+                id="audit_confirm",
+                action_id="act_synthetic_apply_ready",
+                event_type="action_apply_confirmed",
+                actor="operator_test",
+                summary="Preview confirmed.",
+                evidence_ids=["ev_synthetic_apply_ready"],
+            ),
+            AuditEvent(
+                id="audit_impact",
+                action_id="act_synthetic_apply_ready",
+                event_type="action_impact_check_completed",
+                actor="operator_test",
+                summary="Impact checked.",
+                evidence_ids=["ev_synthetic_apply_ready"],
+            ),
+        ],
+    )
+
+    result = apply_action(
+        action,
+        ActionApplyRequest(confirm=True, confirmed_by="operator_test"),
+    )
+
+    assert result.applied is False
+    assert result.status == "blocked"
+    assert result.audit_event.event_type == "apply_blocked"
+    assert result.mutation_audit.status == "blocked"
+    assert result.mutation_audit.mutation_attempted is False
+    assert result.mutation_audit.mutation_adapter is None
+    assert "Vendor mutation adapter is not implemented" in json.dumps(
+        result.model_dump(mode="json")
+    )
 
 
 def test_action_review_records_human_outcome_without_apply(

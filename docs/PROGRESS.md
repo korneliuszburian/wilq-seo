@@ -34,6 +34,22 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- ActionObject mutation audit boundary, 2026-06-20 21:58 CEST.
+  WILQ ma teraz typed `ActionMutationAuditRecord`, lokalną tabelę
+  `action_mutation_audits`, endpointy `GET /api/action-mutation-audits` i
+  `GET /api/actions/{action_id}/mutation-audits`, a `ActionApplyResult`
+  zawiera `mutation_audit`. `/api/actions/{action_id}/apply` zapisuje mutation
+  audit przy każdym wyniku, także 409. `apply_action` wymaga teraz wcześniejszego
+  dry-run preview, zapisanego confirmation, completed impact sanity check,
+  valid ActionObject, skonfigurowanego connectora, bezpiecznego ryzyka/payloadu
+  i realnego vendor mutation adaptera. Ponieważ Goal 001 nie ma jeszcze
+  zaimplementowanego adaptera mutującego, nawet syntetyczne apply-ready
+  ActionObject kończy jako `applied=false`, `status=blocked`,
+  `mutation_attempted=false`, `mutation_adapter=null`, z blockerem
+  `Vendor mutation adapter is not implemented for this ActionObject.` Redaction
+  preserve'uje `audit_event_id`, żeby nie gubić traceability. Full
+  `scripts/verify.sh` po slice przeszedł: backend `136 passed`, dashboard unit
+  `17 passed`, Playwright e2e `14 passed`, dashboard build OK.
 - ActionObject impact sanity gate, 2026-06-20 21:28 CEST.
   WILQ ma teraz `POST /api/actions/{action_id}/impact-check`, typed
   `ActionImpactCheckRequest/ActionImpactCheckResult`, lokalne audit eventy

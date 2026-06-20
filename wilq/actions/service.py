@@ -38,6 +38,7 @@ from wilq.schemas import (
     ActionImpactCheckRequest,
     ActionImpactCheckResult,
     ActionMode,
+    ActionMutationAuditRecord,
     ActionObject,
     ActionPreviewRequest,
     ActionPreviewResult,
@@ -1066,10 +1067,20 @@ def apply_action(
 ) -> ActionApplyResult:
     errors: list[str] = []
     connector = get_connector_status(action.connector)
+    latest_preview = _latest_preview_event(action.audit_events)
+    latest_confirmation = _latest_action_confirmation_event(action.audit_events)
+    latest_impact_check = _latest_action_impact_check_event(action.audit_events)
+    mutation_adapter = _supported_mutation_adapter(action)
     if request is None or request.confirm is not True:
         errors.append("Explicit apply confirmation is required.")
     if request is not None and request.confirm is True and not request.confirmed_by:
         errors.append("confirmed_by is required for explicit apply confirmation.")
+    if latest_preview is None:
+        errors.append("Dry-run preview is required before apply.")
+    if latest_confirmation is None:
+        errors.append("Recorded apply confirmation audit is required before apply.")
+    if _impact_status_from_event(latest_impact_check) != "checked":
+        errors.append("Completed impact sanity check is required before apply.")
     if action.validation_status != "valid":
         errors.append("Action must be validated before apply.")
     if action.mode != ActionMode.apply:
@@ -1082,14 +1093,24 @@ def apply_action(
         errors.append("High and critical risk applies are blocked in Goal 001.")
     if action.payload.get("destructive") is True:
         errors.append("Destructive write actions are not implemented in Goal 001.")
+    if mutation_adapter is None:
+        errors.append("Vendor mutation adapter is not implemented for this ActionObject.")
 
+    actor = request.confirmed_by if request and request.confirmed_by else "wilq_api"
     audit = AuditEvent(
         id=f"audit_{action.id}_{len(action.audit_events) + 1}",
         action_id=action.id,
         event_type=_apply_audit_event_type(errors),
-        actor=request.confirmed_by if request and request.confirmed_by else "wilq_api",
+        actor=actor,
         summary="; ".join(errors) if errors else "Action applied through validated API path.",
         evidence_ids=action.evidence_ids,
+    )
+    mutation_audit = _action_mutation_audit_record(
+        action=action,
+        audit_event=audit,
+        actor=actor,
+        errors=errors,
+        mutation_adapter=mutation_adapter,
     )
     action.audit_events.append(audit)
     if errors:
@@ -1100,19 +1121,70 @@ def apply_action(
             applied=False,
             status="blocked",
             audit_event=audit,
+            mutation_audit=mutation_audit,
             errors=errors,
         )
     action.status = ActionStatus.applied
     action.review_gate = _action_review_gate(action)
-    return ActionApplyResult(action_id=action.id, applied=True, status="applied", audit_event=audit)
+    return ActionApplyResult(
+        action_id=action.id,
+        applied=True,
+        status="applied",
+        audit_event=audit,
+        mutation_audit=mutation_audit,
+    )
 
 
 def _apply_audit_event_type(errors: list[str]) -> str:
     if not errors:
         return "apply_succeeded"
-    if any("confirmation" in error for error in errors):
+    confirmation_errors = {
+        "Explicit apply confirmation is required.",
+        "confirmed_by is required for explicit apply confirmation.",
+    }
+    if any(error in confirmation_errors for error in errors):
         return "apply_confirmation_missing"
     return "apply_blocked"
+
+
+def _action_mutation_audit_record(
+    *,
+    action: ActionObject,
+    audit_event: AuditEvent,
+    actor: str,
+    errors: list[str],
+    mutation_adapter: str | None,
+) -> ActionMutationAuditRecord:
+    status: Literal["blocked", "applied"] = "blocked" if errors else "applied"
+    action_type = action.payload.get("action_type")
+    return ActionMutationAuditRecord(
+        id=f"mutation_{action.id}_{uuid4().hex[:12]}",
+        action_id=action.id,
+        connector=action.connector,
+        action_type=action_type if isinstance(action_type, str) else None,
+        status=status,
+        mutation_attempted=status == "applied",
+        mutation_adapter=mutation_adapter,
+        actor=actor,
+        audit_event_id=audit_event.id,
+        evidence_ids=action.evidence_ids,
+        blockers=errors,
+        summary=_mutation_audit_summary(errors, mutation_adapter),
+    )
+
+
+def _mutation_audit_summary(errors: list[str], mutation_adapter: str | None) -> str:
+    if errors:
+        return (
+            "Mutation blocked before any vendor API call. "
+            f"Blockers: {', '.join(errors)}"
+        )
+    adapter = mutation_adapter or "unknown"
+    return f"Mutation executed through adapter {adapter}; vendor payload remains redacted."
+
+
+def _supported_mutation_adapter(action: ActionObject) -> str | None:
+    return None
 
 
 def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[ActionObject]:

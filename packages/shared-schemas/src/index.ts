@@ -166,11 +166,29 @@ export const ActionValidationResultSchema = z.object({
   checked_at: z.string()
 });
 
+export const ActionMutationAuditRecordSchema = z.object({
+  id: z.string(),
+  action_id: z.string(),
+  connector: z.string(),
+  action_type: z.string().nullable().optional(),
+  status: z.enum(["blocked", "applied", "failed"]),
+  mutation_attempted: z.boolean(),
+  mutation_adapter: z.string().nullable().optional(),
+  actor: z.string(),
+  created_at: z.string(),
+  audit_event_id: z.string(),
+  evidence_ids: z.array(z.string()),
+  blockers: z.array(z.string()),
+  summary: z.string(),
+  redacted: z.boolean()
+});
+
 export const ActionApplyResultSchema = z.object({
   action_id: z.string(),
   applied: z.boolean(),
   status: z.enum(["applied", "blocked", "failed"]),
   audit_event: AuditEventSchema,
+  mutation_audit: ActionMutationAuditRecordSchema,
   errors: z.array(z.string())
 });
 
@@ -1612,6 +1630,7 @@ export type ConnectorRefreshRun = z.infer<typeof ConnectorRefreshRunSchema>;
 export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
+export type ActionMutationAuditRecord = z.infer<typeof ActionMutationAuditRecordSchema>;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
 export type ActionPreviewRequest = z.infer<typeof ActionPreviewRequestSchema>;
 export type ActionPreviewResult = z.infer<typeof ActionPreviewResultSchema>;

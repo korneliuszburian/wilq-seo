@@ -193,6 +193,23 @@ class AuditEvent(BaseModel):
     redacted: bool = True
 
 
+class ActionMutationAuditRecord(BaseModel):
+    id: str
+    action_id: str
+    connector: str
+    action_type: str | None = None
+    status: Literal["blocked", "applied", "failed"]
+    mutation_attempted: bool = False
+    mutation_adapter: str | None = None
+    actor: str
+    created_at: datetime = Field(default_factory=utc_now)
+    audit_event_id: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
+    summary: str
+    redacted: bool = True
+
+
 ActionReviewOutcome = Literal[
     "approved_for_prepare",
     "needs_changes",
@@ -286,6 +303,7 @@ class ActionApplyResult(BaseModel):
     applied: bool
     status: Literal["applied", "blocked", "failed"]
     audit_event: AuditEvent
+    mutation_audit: ActionMutationAuditRecord
     errors: list[str] = Field(default_factory=list)
 
 

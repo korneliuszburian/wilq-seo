@@ -67,6 +67,7 @@ from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
     ActionImpactCheckRequest,
+    ActionMutationAuditRecord,
     ActionObject,
     ActionPreviewRequest,
     ActionReviewRequest,
@@ -2017,6 +2018,7 @@ def apply_action_endpoint(
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = apply_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
+    local_state_store().save_action_mutation_audit(result.mutation_audit)
     clear_daily_runtime_cache()
     clear_skill_context_cache()
     if not result.applied:
@@ -2027,6 +2029,24 @@ def apply_action_endpoint(
 @app.get("/api/audit/events", response_model=list[AuditEvent])
 def audit_events(action_id: str | None = None) -> list[AuditEvent]:
     return local_state_store().list_audit_events(action_id=action_id)
+
+
+@app.get("/api/action-mutation-audits", response_model=list[ActionMutationAuditRecord])
+def action_mutation_audits(
+    action_id: str | None = None,
+) -> list[ActionMutationAuditRecord]:
+    return local_state_store().list_action_mutation_audits(action_id=action_id)
+
+
+@app.get(
+    "/api/actions/{action_id}/mutation-audits",
+    response_model=list[ActionMutationAuditRecord],
+)
+def action_mutation_audits_for_action(action_id: str) -> list[ActionMutationAuditRecord]:
+    action = get_action(action_id)
+    if action is None:
+        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+    return local_state_store().list_action_mutation_audits(action_id=action_id)
 
 
 @app.get("/api/knowledge/cards", response_model=list[KnowledgeCard])

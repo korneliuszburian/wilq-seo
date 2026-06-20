@@ -29,6 +29,22 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. ActionObject mutation audit boundary, 2026-06-20 21:58 CEST:
+   `POST /api/actions/{action_id}/apply` must not report `applied=true`
+   without a real vendor mutation adapter and persisted mutation audit. Current
+   WILQ state includes typed `ActionMutationAuditRecord`,
+   `action_mutation_audits` SQLite persistence, `GET /api/action-mutation-audits`,
+   `GET /api/actions/{action_id}/mutation-audits` and
+   `ActionApplyResult.mutation_audit`. Apply now requires prior dry-run preview,
+   recorded confirmation, completed impact sanity check, valid ActionObject,
+   configured connector, non-destructive payload, safe risk and supported vendor
+   mutation adapter. No vendor mutation adapter is implemented in Goal 001, so
+   all current apply attempts must return `applied=false`, `status=blocked`,
+   `mutation_attempted=false`, `mutation_adapter=null`. Redaction preserves
+   `audit_event_id`/`audit_event_ids`. Full `scripts/verify.sh` passed after
+   this slice: backend `136 passed`, dashboard unit `17 passed`, Playwright e2e
+   `14 passed`, dashboard build OK.
+
 0. ActionObject review gate truth, 2026-06-20 20:04 CEST:
    `ActionObject.review_gate` is now typed backend/frontend product state, not
    skill prose. It must preserve `required_checks`, `operator_checklist`,

@@ -15,6 +15,8 @@ SAFE_IDENTIFIER_KEYS = {
     "id",
     "action_id",
     "action_ids",
+    "audit_event_id",
+    "audit_event_ids",
     "available_credential_sources",
     "available_read_contracts",
     "blocked_claims",
