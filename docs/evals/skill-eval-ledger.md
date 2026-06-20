@@ -25,6 +25,48 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-20 - wilq-ads-doctor recommendation triage eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case `wilq-ads-doctor`.
+
+Why this eval matters:
+
+Ads recommendations already had live rows and review-only apply previews, but
+the row contract did not yet tell a marketer which recommendations deserve
+review first. The eval now requires typed recommendation review triage fields:
+`review_priority`, `review_score`, `review_reason` and the phrase
+`kolejność review rekomendacji`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260620T164726Z/wilq-ads-doctor/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- Source connector: `google_ads`.
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_631f03912b4c`.
+- `operator_usefulness_score=5`.
+- Required marker terms included `recommendations_read_contract`,
+  `ads_review_recommendations`, `review_priority`, `review_score`,
+  `review_reason`, `kolejność review rekomendacji`,
+  `recommendation apply`, `negative_keyword_payload_preview` and
+  `90_day_safety_check`.
+
 ## 2026-06-20 - wilq-ahrefs-gap-finder strict blocker eval
 
 Prompt source:

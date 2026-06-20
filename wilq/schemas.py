@@ -694,6 +694,12 @@ class AdsRecommendationRow(BaseModel):
     recommendation_id: str | None = None
     recommendation_resource_name: str | None = None
     recommendation_type: str
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
+        "normalne"
+    )
+    review_score: int = Field(default=0, ge=0, le=100)
+    review_reason: str
+    human_review_gates: list[str] = Field(default_factory=list)
     dismissed: bool = False
     campaign_id: str | None = None
     campaign_budget_id: str | None = None

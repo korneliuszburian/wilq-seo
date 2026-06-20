@@ -1710,48 +1710,84 @@ def _recommendation_row(
     potential_conversion_value = _float_metric_value(
         facts_by_name.get("recommendation_impact_potential_conversion_value")
     )
+    delta_clicks = _int_metric_delta(base_clicks, potential_clicks)
+    delta_impressions = _int_metric_delta(base_impressions, potential_impressions)
+    delta_cost_micros = _int_metric_delta(base_cost_micros, potential_cost_micros)
+    delta_conversions = _float_metric_delta(base_conversions, potential_conversions)
+    delta_conversion_value = _float_metric_delta(
+        base_conversion_value,
+        potential_conversion_value,
+    )
     missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
     if not impact_available:
         missing_metrics.append("recommendation_impact")
     recommendation_resource_name = first_dimensions.get("recommendation_resource_name")
+    campaign_id = first_dimensions.get("campaign_id")
+    campaign_budget_id = first_dimensions.get("campaign_budget_id")
     row_evidence_ids = _unique(fact.evidence_id for fact in facts)
     source_metric_names = _unique(fact.name for fact in facts)
     payload_preview = _recommendation_apply_preview(
         recommendation_id=recommendation_id,
         recommendation_resource_name=recommendation_resource_name,
         recommendation_type=recommendation_type,
-        campaign_id=first_dimensions.get("campaign_id"),
-        campaign_budget_id=first_dimensions.get("campaign_budget_id"),
+        campaign_id=campaign_id,
+        campaign_budget_id=campaign_budget_id,
         evidence_ids=row_evidence_ids,
         source_metric_names=source_metric_names,
+    )
+    review_score = _recommendation_review_score(
+        recommendation_type=recommendation_type,
+        campaign_id=campaign_id,
+        campaign_count=_int_metric_value(facts_by_name.get("recommendation_campaign_count")),
+        impact_available=impact_available,
+        delta_clicks=delta_clicks,
+        delta_cost_micros=delta_cost_micros,
+        delta_conversions=delta_conversions,
+        payload_preview=payload_preview,
+        missing_metrics=missing_metrics,
     )
     return AdsRecommendationRow(
         recommendation_id=recommendation_id,
         recommendation_resource_name=recommendation_resource_name,
         recommendation_type=recommendation_type,
+        review_priority=_recommendation_review_priority(review_score),
+        review_score=review_score,
+        review_reason=_recommendation_review_reason(
+            recommendation_type=recommendation_type,
+            impact_available=impact_available,
+            delta_clicks=delta_clicks,
+            delta_cost_micros=delta_cost_micros,
+            delta_conversions=delta_conversions,
+            missing_metrics=missing_metrics,
+        ),
+        human_review_gates=[
+            "sprawdź typ rekomendacji",
+            "sprawdź metryki wpływu",
+            "porównaj z historią zmian",
+            "porównaj z celem biznesowym",
+            "zweryfikuj RMF/compliance",
+            "potwierdź człowiekiem przed apply",
+        ],
         dismissed=first_dimensions.get("dismissed") == "true",
-        campaign_id=first_dimensions.get("campaign_id"),
-        campaign_budget_id=first_dimensions.get("campaign_budget_id"),
+        campaign_id=campaign_id,
+        campaign_budget_id=campaign_budget_id,
         campaign_count=_int_metric_value(facts_by_name.get("recommendation_campaign_count")),
         impact_available=impact_available,
         base_clicks=base_clicks,
         potential_clicks=potential_clicks,
-        delta_clicks=_int_metric_delta(base_clicks, potential_clicks),
+        delta_clicks=delta_clicks,
         base_impressions=base_impressions,
         potential_impressions=potential_impressions,
-        delta_impressions=_int_metric_delta(base_impressions, potential_impressions),
+        delta_impressions=delta_impressions,
         base_cost_micros=base_cost_micros,
         potential_cost_micros=potential_cost_micros,
-        delta_cost_micros=_int_metric_delta(base_cost_micros, potential_cost_micros),
+        delta_cost_micros=delta_cost_micros,
         base_conversions=base_conversions,
         potential_conversions=potential_conversions,
-        delta_conversions=_float_metric_delta(base_conversions, potential_conversions),
+        delta_conversions=delta_conversions,
         base_conversion_value=base_conversion_value,
         potential_conversion_value=potential_conversion_value,
-        delta_conversion_value=_float_metric_delta(
-            base_conversion_value,
-            potential_conversion_value,
-        ),
+        delta_conversion_value=delta_conversion_value,
         evidence_ids=row_evidence_ids,
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         payload_preview=payload_preview,
@@ -1762,6 +1798,80 @@ def _recommendation_row(
             "budget apply",
             "campaign mutation",
         ],
+    )
+
+
+def _recommendation_review_score(
+    *,
+    recommendation_type: str,
+    campaign_id: str | None,
+    campaign_count: int | None,
+    impact_available: bool,
+    delta_clicks: int | None,
+    delta_cost_micros: int | None,
+    delta_conversions: float | None,
+    payload_preview: AdsRecommendationApplyPreview | None,
+    missing_metrics: list[str],
+) -> int:
+    score = 0.0
+    if payload_preview is not None:
+        score += 10
+    if campaign_id:
+        score += 10
+    if campaign_count:
+        score += min(campaign_count * 3, 10)
+    if impact_available:
+        score += 20
+    score += min(abs(delta_cost_micros or 0) / 1_000_000, 20)
+    score += min(abs(delta_clicks or 0) * 3, 15)
+    score += min(abs(delta_conversions or 0) * 10, 15)
+    if recommendation_type in {
+        "CAMPAIGN_BUDGET",
+        "IMPROVE_PERFORMANCE_MAX_AD_STRENGTH",
+        "SEARCH_PARTNERS_OPT_IN",
+    }:
+        score += 10
+    if "recommendation_impact" in missing_metrics:
+        score = min(score, 35)
+    return min(100, int(round(score)))
+
+
+def _recommendation_review_priority(
+    review_score: int,
+) -> Literal["pilne", "wysokie", "normalne", "niski sygnał"]:
+    if review_score >= 70:
+        return "pilne"
+    if review_score >= 45:
+        return "wysokie"
+    if review_score >= 15:
+        return "normalne"
+    return "niski sygnał"
+
+
+def _recommendation_review_reason(
+    *,
+    recommendation_type: str,
+    impact_available: bool,
+    delta_clicks: int | None,
+    delta_cost_micros: int | None,
+    delta_conversions: float | None,
+    missing_metrics: list[str],
+) -> str:
+    if impact_available:
+        impact_part = (
+            f"impact preview: kliknięcia delta={_format_signed_number(delta_clicks)}, "
+            f"koszt delta={_format_micros(delta_cost_micros) or '0'}, "
+            f"konwersje delta={_format_signed_number(delta_conversions)}"
+        )
+    else:
+        impact_part = (
+            "brak impact metrics; wymagany ręczny review typu rekomendacji "
+            f"i brakujących metryk: {', '.join(missing_metrics) or 'brak'}"
+        )
+    return (
+        f"Rekomendacja {recommendation_type}: {impact_part}. "
+        "To jest kolejność review rekomendacji, nie zgoda na apply ani obietnica "
+        "performance uplift."
     )
 
 
@@ -2257,6 +2367,16 @@ def _format_float(value: float) -> str:
     if value.is_integer():
         return str(int(value))
     return f"{value:.4f}".rstrip("0").rstrip(".")
+
+
+def _format_signed_number(value: int | float | None) -> str:
+    if value is None:
+        return "brak"
+    numeric_value = float(value)
+    if numeric_value == 0:
+        return "0"
+    prefix = "+" if numeric_value > 0 else ""
+    return f"{prefix}{_format_float(numeric_value)}"
 
 
 def _search_terms_read_contract(
@@ -4294,9 +4414,17 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
         )
     if decision.decision_type == "review_recommendations":
         rows_with_impact = sum(1 for row in decision.recommendation_rows if row.impact_available)
+        urgent_rows = sum(
+            1 for row in decision.recommendation_rows if row.review_priority == "pilne"
+        )
+        high_rows = sum(
+            1 for row in decision.recommendation_rows if row.review_priority == "wysokie"
+        )
         return _clean_metric_tiles(
             {
                 "rekomendacje": len(decision.recommendation_rows),
+                "pilne": urgent_rows,
+                "wysokie": high_rows,
                 "podgląd wpływu": rows_with_impact,
                 "podgląd akcji": len(decision.recommendation_apply_preview),
             }

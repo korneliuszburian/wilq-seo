@@ -214,6 +214,28 @@ def main() -> int:
             recommendations_read_contract.get("action_ids") or []
         ):
             raise SystemExit("Ready recommendation payload preview must expose ActionObject")
+        if recommendation_rows:
+            missing_triage = [
+                row.get("recommendation_id")
+                or row.get("recommendation_type")
+                or "unknown_recommendation"
+                for row in recommendation_rows
+                if row.get("review_priority") not in {
+                    "pilne",
+                    "wysokie",
+                    "normalne",
+                    "niski sygnał",
+                }
+                or not isinstance(row.get("review_score"), int)
+                or not (0 <= row.get("review_score", -1) <= 100)
+                or "kolejność review rekomendacji" not in row.get("review_reason", "")
+                or not row.get("human_review_gates")
+            ]
+            if missing_triage:
+                raise SystemExit(
+                    "Ready recommendation rows must expose review triage: "
+                    + ", ".join(missing_triage)
+                )
         for item in payload_preview:
             if item.get("operation_type") != "ApplyRecommendationOperation":
                 raise SystemExit("Recommendation preview must use ApplyRecommendationOperation")
@@ -230,6 +252,11 @@ def main() -> int:
         )
         if pack_impact_row_count != impact_row_count:
             raise SystemExit("Context pack recommendation impact row count differs")
+        if recommendation_rows and not all(
+            row.get("review_reason") and row.get("human_review_gates")
+            for row in pack_recommendation_rows
+        ):
+            raise SystemExit("Context pack recommendation rows must preserve review triage")
         if len(pack_payload_preview) != min(len(payload_preview), 8):
             raise SystemExit("Context pack recommendation payload preview count differs")
     elif "recommendations" not in recommendations_read_contract.get(
@@ -500,6 +527,22 @@ def main() -> int:
                             )
                             or []
                             if row.get("impact_available")
+                        ),
+                        "urgent_review_count": sum(
+                            1
+                            for row in recommendations_read_contract.get(
+                                "recommendation_rows",
+                            )
+                            or []
+                            if row.get("review_priority") == "pilne"
+                        ),
+                        "high_review_count": sum(
+                            1
+                            for row in recommendations_read_contract.get(
+                                "recommendation_rows",
+                            )
+                            or []
+                            if row.get("review_priority") == "wysokie"
                         ),
                         "blocked_claims": recommendations_read_contract.get(
                             "blocked_claims",

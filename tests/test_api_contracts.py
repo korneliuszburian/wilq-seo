@@ -4100,6 +4100,19 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "recommendation_id": "rec-1",
             "recommendation_resource_name": "customers/test/recommendations/rec-1",
             "recommendation_type": "CAMPAIGN_BUDGET",
+            "review_priority": "pilne",
+            "review_score": 70,
+            "review_reason": recommendations_contract["recommendation_rows"][0][
+                "review_reason"
+            ],
+            "human_review_gates": [
+                "sprawdź typ rekomendacji",
+                "sprawdź metryki wpływu",
+                "porównaj z historią zmian",
+                "porównaj z celem biznesowym",
+                "zweryfikuj RMF/compliance",
+                "potwierdź człowiekiem przed apply",
+            ],
             "dismissed": False,
             "campaign_id": "101",
             "campaign_budget_id": "701",
@@ -4133,6 +4146,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "campaign mutation",
             ],
         }
+    ]
+    assert "kolejność review rekomendacji" in recommendations_contract[
+        "recommendation_rows"
+    ][0]["review_reason"]
+    assert "nie zgoda na apply" in recommendations_contract["recommendation_rows"][0][
+        "review_reason"
     ]
     assert recommendations_contract["payload_preview"] == [
         {
@@ -4611,6 +4630,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert recommendations_decision["priority"] == 35
     assert recommendations_decision["metric_tiles"] == {
         "rekomendacje": 1,
+        "pilne": 1,
+        "wysokie": 0,
         "podgląd wpływu": 1,
         "podgląd akcji": 1,
     }
@@ -4618,6 +4639,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert recommendations_decision["recommendation_rows"][0]["recommendation_type"] == (
         "CAMPAIGN_BUDGET"
     )
+    assert recommendations_decision["recommendation_rows"][0]["review_priority"] == "pilne"
+    assert recommendations_decision["recommendation_rows"][0]["review_score"] == 70
+    assert recommendations_decision["metric_tiles"] == {
+        "rekomendacje": 1,
+        "pilne": 1,
+        "wysokie": 0,
+        "podgląd wpływu": 1,
+        "podgląd akcji": 1,
+    }
     assert recommendations_decision["recommendation_apply_preview"][0][
         "operation_type"
     ] == "ApplyRecommendationOperation"

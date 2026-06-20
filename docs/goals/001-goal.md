@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 18:24 CEST.
+Last updated: 2026-06-20 18:48 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -134,6 +134,25 @@ has `api_used=true`, `language=pl-PL`,
 and campaign performance remain blocked. Full `scripts/verify.sh` passed after
 this slice: backend `126 passed`, dashboard unit `17 passed`, Playwright e2e
 `14 passed`, dashboard production build OK.
+
+Latest Ads recommendation triage follow-up, 2026-06-20 18:48 CEST:
+`/api/ads/diagnostics.recommendations_read_contract.recommendation_rows` now
+carries typed `review_priority`, bounded `review_score`, Polish
+`review_reason` and `human_review_gates`. Live proof after
+`scripts/local_stack.sh restart`: 4 recommendation rows, `missing_read_contracts=[]`,
+`act_prepare_google_ads_recommendation_review_queue` present, and decision
+`ads_review_recommendations.metric_tiles` shows `rekomendacje=4`, `pilne=0`,
+`wysokie=2`, `podgląd wpływu=2`, `podgląd akcji=4`. Row priorities:
+`DISPLAY_EXPANSION_OPT_IN=normalne/23`,
+`DYNAMIC_IMAGE_EXTENSION_OPT_IN=niski sygnał/10`,
+`IMPROVE_PERFORMANCE_MAX_AD_STRENGTH=wysokie/57`,
+`SEARCH_PARTNERS_OPT_IN=wysokie/53`. `/ads-doctor` renders the same priority,
+score, reason and human review gates. Smoke script and strict Codex eval now
+require these fields; latest eval artifact:
+`.local-lab/evals/codex-skill/20260620T164726Z/wilq-ads-doctor/result.json`
+with `api_used=true`, `language=pl-PL`, `operator_usefulness_score=5`. This is
+still review-only; recommendation apply, automatic accepts, budget apply,
+campaign mutation and performance uplift remain blocked.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

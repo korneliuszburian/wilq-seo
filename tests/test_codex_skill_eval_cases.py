@@ -26,6 +26,10 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ads_recommendations_v1",
                 "recommendations_read_contract",
                 "ads_review_recommendations",
+                "review_priority",
+                "review_score",
+                "review_reason",
+                "kolejność review rekomendacji",
                 "impression_share_read_contract",
                 "ads_review_impression_share",
                 "change_history_read_contract",
@@ -44,6 +48,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             },
             "action_ids": {
                 "act_prepare_ads_campaign_review_queue",
+                "act_prepare_google_ads_recommendation_review_queue",
                 "act_prepare_negative_keyword_review_queue",
             },
         },

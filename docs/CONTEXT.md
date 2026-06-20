@@ -120,6 +120,17 @@ Audit `docs/audits/001-output.md` is now folded into
    Daily Codex still must not claim profitability, margin verdict, wasted
    budget or budget scaling without the remaining optimizer contracts.
 
+0. Ads recommendation triage truth, live proof 2026-06-20 18:48 CEST:
+   `/api/ads/diagnostics.recommendations_read_contract.recommendation_rows`
+   now carries `review_priority`, `review_score`, Polish `review_reason` and
+   `human_review_gates`. Live rows after `scripts/local_stack.sh restart`:
+   4 recommendations, 0 pilne, 2 wysokie, 4 apply previews, 2 impact previews,
+   `missing_read_contracts=[]`, action
+   `act_prepare_google_ads_recommendation_review_queue`. This is review triage
+   only; recommendation apply, automatic accepts, budget apply, campaign
+   mutation and performance uplift remain blocked. Latest eval:
+   `.local-lab/evals/codex-skill/20260620T164726Z/wilq-ads-doctor/result.json`.
+
 0. Custom segments scoped context truth, live proof 2026-06-20 17:34 CEST:
    `POST /api/codex/context-pack {"skill":"wilq-custom-segments"}` is scoped to
    the custom-segments workflow only: about 50 KB, `active_action_ids` and

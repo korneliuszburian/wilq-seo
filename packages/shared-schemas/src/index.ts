@@ -436,6 +436,12 @@ export const AdsRecommendationRowSchema = z.object({
   recommendation_id: z.string().nullable().optional(),
   recommendation_resource_name: z.string().nullable().optional(),
   recommendation_type: z.string(),
+  review_priority: z
+    .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
+    .default("normalne"),
+  review_score: z.number().min(0).max(100).default(0),
+  review_reason: z.string(),
+  human_review_gates: z.array(z.string()).default([]),
   dismissed: z.boolean(),
   campaign_id: z.string().nullable().optional(),
   campaign_budget_id: z.string().nullable().optional(),

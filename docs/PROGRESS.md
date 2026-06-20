@@ -34,6 +34,24 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads recommendation review triage, 2026-06-20 18:48 CEST.
+  Recommendation rows mają teraz typed `review_priority`, `review_score`,
+  polski `review_reason` i `human_review_gates`, tak jak negative keywords i
+  custom segments. Live proof po `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics.recommendations_read_contract` ma `status=ready`,
+  4 rows, `missing_read_contracts=[]`, action
+  `act_prepare_google_ads_recommendation_review_queue`; decyzja
+  `ads_review_recommendations.metric_tiles` pokazuje `rekomendacje=4`,
+  `pilne=0`, `wysokie=2`, `podgląd wpływu=2`, `podgląd akcji=4`. Rowki:
+  `DISPLAY_EXPANSION_OPT_IN=normalne/23`,
+  `DYNAMIC_IMAGE_EXTENSION_OPT_IN=niski sygnał/10`,
+  `IMPROVE_PERFORMANCE_MAX_AD_STRENGTH=wysokie/57`,
+  `SEARCH_PARTNERS_OPT_IN=wysokie/53`. Smoke `wilq-ads-doctor` przeszedł i
+  scoped Ads context-pack ma ~198 KB. `codex exec` eval przeszedł:
+  `.local-lab/evals/codex-skill/20260620T164726Z/wilq-ads-doctor/result.json`,
+  `api_used=true`, `language=pl-PL`, `operator_usefulness_score=5`, marker
+  terms obejmują `review_priority`, `review_score`, `review_reason`,
+  `kolejność review rekomendacji`.
 - Ads preliminary business context + custom-segments scoped context, 2026-06-20
   17:34 CEST. Puste `WILQ_ADS_TARGET_ROAS` i
   `WILQ_ADS_TARGET_CPA_MICROS` nie robią już fałszywego blockera, jeśli core

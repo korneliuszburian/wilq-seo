@@ -2357,11 +2357,23 @@ function AdsRecommendationRowsPanel({
             key={`${row.recommendation_id ?? row.recommendation_type}-${row.campaign_id ?? "account"}`}
             className="rounded-md border border-line bg-white p-3"
           >
-            <div className="text-sm font-semibold text-ink">{row.recommendation_type}</div>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <div className="text-sm font-semibold text-ink">
+                  {row.recommendation_type}
+                </div>
+                <div className="mt-1 text-xs leading-5 text-slate-600">
+                  Kampania: {row.campaign_id ?? "brak"} / budżet:{" "}
+                  {row.campaign_budget_id ?? "brak"} / zakres kampanii:{" "}
+                  {row.campaign_count ?? 0}
+                </div>
+              </div>
+              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                {row.review_priority} / {row.review_score}
+              </span>
+            </div>
             <div className="mt-1 text-xs leading-5 text-slate-600">
-              Kampania: {row.campaign_id ?? "brak"} / budżet:{" "}
-              {row.campaign_budget_id ?? "brak"} / zakres kampanii:{" "}
-              {row.campaign_count ?? 0}
+              {row.review_reason}
             </div>
             {row.impact_available ? (
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
@@ -2392,6 +2404,11 @@ function AdsRecommendationRowsPanel({
                 Google Ads nie zwrócił impact metrics dla tego typu rekomendacji.
               </div>
             )}
+            <TraceLine
+              label="Review człowieka"
+              values={row.human_review_gates}
+              empty="brak"
+            />
             <TraceLine
               label="Nie wolno twierdzić"
               values={row.blocked_claims.map(adsBlockedClaimLabel)}

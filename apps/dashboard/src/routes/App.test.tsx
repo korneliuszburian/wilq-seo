@@ -728,6 +728,18 @@ const adsDiagnostics = {
         recommendation_id: "rec-1",
         recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
         recommendation_type: "CAMPAIGN_BUDGET",
+        review_priority: "pilne",
+        review_score: 70,
+        review_reason:
+          "Rekomendacja CAMPAIGN_BUDGET: impact preview: kliknięcia delta=+5, koszt delta=2.00, konwersje delta=brak. To jest kolejność review rekomendacji, nie zgoda na apply ani obietnica performance uplift.",
+        human_review_gates: [
+          "sprawdź typ rekomendacji",
+          "sprawdź metryki wpływu",
+          "porównaj z historią zmian",
+          "porównaj z celem biznesowym",
+          "zweryfikuj RMF/compliance",
+          "potwierdź człowiekiem przed apply"
+        ],
         dismissed: false,
         campaign_id: "123",
         campaign_budget_id: "777",
@@ -1502,6 +1514,8 @@ const adsDiagnostics = {
       priority: 35,
       metric_tiles: {
         rekomendacje: 1,
+        pilne: 1,
+        wysokie: 0,
         "podgląd wpływu": 1,
         "podgląd akcji": 1
       },
@@ -1535,6 +1549,18 @@ const adsDiagnostics = {
           recommendation_id: "rec-1",
           recommendation_resource_name: "customers/1234567890/recommendations/rec-1",
           recommendation_type: "CAMPAIGN_BUDGET",
+          review_priority: "pilne",
+          review_score: 70,
+          review_reason:
+            "Rekomendacja CAMPAIGN_BUDGET: impact preview: kliknięcia delta=+5, koszt delta=2.00, konwersje delta=brak. To jest kolejność review rekomendacji, nie zgoda na apply ani obietnica performance uplift.",
+          human_review_gates: [
+            "sprawdź typ rekomendacji",
+            "sprawdź metryki wpływu",
+            "porównaj z historią zmian",
+            "porównaj z celem biznesowym",
+            "zweryfikuj RMF/compliance",
+            "potwierdź człowiekiem przed apply"
+          ],
           dismissed: false,
           campaign_id: "123",
           campaign_budget_id: "777",
