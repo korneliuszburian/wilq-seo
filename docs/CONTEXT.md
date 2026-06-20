@@ -52,6 +52,17 @@ Audit `docs/audits/001-output.md` is now folded into
    `124 passed`, dashboard unit `15 passed`, Playwright e2e `12 passed`,
    production build OK.
 
+0. Localo metric fact selection truth, live proof 2026-06-20 16:35 CEST:
+   Localo diagnostics and Command Center must read aggregate facts by evidence
+   ID of the last successful Localo MCP read, not from a small newest-facts
+   limit that can be filled by later probe failures. Current live state after
+   `scripts/local_stack.sh restart`: `/api/localo/diagnostics` uses
+   `refresh_localo_9e9ff67eadad`, has `visibility_fact_count=17`,
+   `metric_tiles.frazy=23`, `miejsca=4`, `średnia widoczność=52.8261`,
+   `recenzje=793`; Command Center daily decision
+   `decision_review_localo_visibility_facts` has `frazy=23`, and
+   `daily_localo_readiness` count is `0` while visibility facts exist.
+
 0. Content decision metadata truth, 2026-06-20 14:06 Europe/Warsaw:
    `/api/content/diagnostics.decision_queue` now owns marketer-facing
    `status`, `priority` and `metric_tiles`. Do not recreate these fields in

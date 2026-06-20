@@ -1766,6 +1766,27 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
             ),
         ],
     )
+    for index in range(30):
+        later_probe_run = ConnectorRefreshRun(
+            id=f"refresh_localo_later_probe_{index}",
+            connector_id="localo",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.blocked,
+            evidence_ids=[f"ev_refresh_refresh_localo_later_probe_{index}"],
+            external_call_attempted=True,
+            vendor_data_collected=False,
+            metric_summary={
+                "api": "localo_mcp_oauth_probe",
+                "mcp_initialize_status": 401,
+                "authorization_code_supported": 1,
+                "pkce_s256_supported": 1,
+                "access_token_present": 1,
+            },
+            errors=["Localo MCP OAuth authorization is incomplete."],
+            summary="Later Localo MCP probe failed after a successful aggregate read.",
+        )
+        local_state_store().save_connector_refresh_run(later_probe_run)
+        metric_store().save_connector_refresh_metrics(later_probe_run)
 
     response = client.get("/api/localo/diagnostics")
 

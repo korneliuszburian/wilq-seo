@@ -34,6 +34,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo metric fact evidence selection, 2026-06-20 16:35 CEST.
+  Naprawiono regresję, w której późniejsze probe'y Localo `401` wypełniały
+  limit `list_metric_facts` i Command Center pokazywało `frazy=0` mimo
+  udanego aggregate read. `/api/localo/diagnostics` i Command Center czytają
+  teraz facts po evidence ID ostatniego udanego Localo MCP read. Live proof po
+  `scripts/local_stack.sh restart`: `/api/localo/diagnostics` ma
+  `visibility_fact_count=17`, `latest_refresh=refresh_localo_9e9ff67eadad`,
+  `metric_tiles.frazy=23`, `miejsca=4`, `średnia widoczność=52.8261`,
+  `recenzje=793`; Command Center `decision_review_localo_visibility_facts`
+  ma `frazy=23` i `daily_localo_readiness` nie wraca jako ready karta.
 - Ads custom segment review gates, 2026-06-20 16:15 CEST.
   Custom segments rozdzielają teraz prawdziwe braki danych od gate'ów
   operatora. Live proof po `scripts/local_stack.sh restart`:

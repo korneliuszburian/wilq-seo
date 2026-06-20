@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 16:15 CEST.
+Last updated: 2026-06-20 16:35 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -314,6 +314,15 @@ item. Current live Localo tiles: `miejsca=4`, `frazy=23`,
 this change. Full `scripts/verify.sh` passed after this slice: backend
 `124 passed`, dashboard unit `15 passed`, Playwright e2e `12 passed`,
 dashboard production build OK.
+Localo diagnostics and Command Center must select these facts by evidence ID
+from the last successful Localo MCP aggregate read, not by a small newest-facts
+limit, because later access probes can otherwise hide `localo_tracked_keyword_count`
+and regress `frazy` to `0`. Live proof after `scripts/local_stack.sh restart`
+on 2026-06-20 16:35 CEST: `/api/localo/diagnostics` uses
+`refresh_localo_9e9ff67eadad`, reports `visibility_fact_count=17`,
+`metric_tiles.frazy=23`, and Command Center
+`decision_review_localo_visibility_facts.metric_tiles.frazy=23` with
+`daily_localo_readiness` absent from the primary brief.
 
 Opportunities must be decision-backed, not connector-registry-backed, when
 daily decisions exist. `/api/opportunities`, `/opportunities` and full Codex

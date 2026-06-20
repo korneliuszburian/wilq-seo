@@ -82,10 +82,7 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
 
     refresh_runs = list_connector_refresh_runs(connector_id=LOCALO_CONNECTOR_ID)
     latest_refresh = _latest_relevant_localo_refresh(refresh_runs)
-    metric_facts = metric_store().list_metric_facts(
-        connector_id=LOCALO_CONNECTOR_ID,
-        limit=LOCALO_METRIC_FACT_LIMIT,
-    )
+    metric_facts = _metric_facts_for_refresh(latest_refresh)
     visibility_facts = _visibility_facts(metric_facts)
     access_probe = _access_probe(
         connector_missing=connector.missing_credentials,
@@ -138,6 +135,17 @@ def _visibility_facts(metric_facts: list[MetricFact]) -> list[MetricFact]:
         if existing is None or (not existing.dimensions and fact.dimensions):
             facts_by_name[fact.name] = fact
     return list(facts_by_name.values())
+
+
+def _metric_facts_for_refresh(run: ConnectorRefreshRun | None) -> list[MetricFact]:
+    if run and run.evidence_ids:
+        facts = metric_store().list_metric_facts_by_evidence_ids(run.evidence_ids)
+        if facts:
+            return facts
+    return metric_store().list_metric_facts(
+        connector_id=LOCALO_CONNECTOR_ID,
+        limit=LOCALO_METRIC_FACT_LIMIT,
+    )
 
 
 def _access_probe(

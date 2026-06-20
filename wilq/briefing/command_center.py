@@ -150,7 +150,7 @@ def build_command_center_brief(
         items.append(ads_business_item)
     if localo is not None:
         localo_item = _localo_item(localo, localo_runs, localo_facts)
-        if localo_item.status == "blocked" or _localo_value_facts(localo_facts):
+        if localo_item.status == "blocked" or localo_item.id == "daily_localo_visibility_facts":
             items.append(localo_item)
     sorted_items = sorted(items, key=lambda item: item.priority)
     blocker_count = sum(1 for item in sorted_items if item.status == "blocked")
@@ -743,6 +743,7 @@ def _localo_item(
     successful_mcp_run = _latest_successful_localo_mcp_run(runs)
     latest_run = runs[0] if runs else None
     oauth_access_ready = successful_mcp_run is not None
+    metric_facts = _localo_metric_facts_for_run(successful_mcp_run, metric_facts)
     value_facts = _localo_value_facts(metric_facts)
     has_value_facts = bool(value_facts)
     missing = (
@@ -830,6 +831,17 @@ def _localo_value_facts(metric_facts: list[MetricFact]) -> list[MetricFact]:
             and fact.value == "localo_mcp_oauth_probe"
         )
     ]
+
+
+def _localo_metric_facts_for_run(
+    run: ConnectorRefreshRun | None,
+    fallback_facts: list[MetricFact],
+) -> list[MetricFact]:
+    if run and run.evidence_ids:
+        facts = metric_store().list_metric_facts_by_evidence_ids(run.evidence_ids)
+        if facts:
+            return facts
+    return fallback_facts
 
 
 def _localo_metric_tiles(
