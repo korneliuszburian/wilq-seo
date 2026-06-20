@@ -17,7 +17,7 @@ Pełne archiwum sprzed kompaktowania:
 
 ## Current Snapshot
 
-Data: 2026-06-20
+Data: 2026-06-21
 
 Stan produktu:
 
@@ -34,6 +34,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads target-aware campaign review, 2026-06-21 00:31 CEST.
+  Campaign rows, derived KPI rows, Ads campaign review ActionObject and scoped
+  `wilq-ads-doctor` context-pack now carry target-aware state:
+  `target_status`, `target_status_label` and ActionObject `target_context`.
+  Current live truth remains honest: repo-local business context is ready, but
+  no human-confirmed target ROAS/CPA is set, so live API returns
+  `missing_read_contracts=["target_roas_or_cpa"]`, top campaign
+  `(2026) Ekologus Ogólna` has `target_status=no_target` /
+  `target_status_label=brak targetu`, and the campaign decision does not show a
+  noisy `targety=0` metric tile. Campaign decision `operator_review_gates` now
+  carries the union of row gates instead of an empty list. Process-env proof
+  with `WILQ_ADS_TARGET_ROAS=5.0` marks the same top campaign
+  `outside_target` / `ROAS poniżej targetu`, adds
+  `review_target_context` and `review_target_gap_before_budget_decision`, and
+  shows `targety=18`. Scoped context-pack proof: `189752` bytes and first Ads
+  campaign candidate includes `target_context`. Narrow checks passed:
+  ruff/mypy, two Ads API contract tests, shared schema build, dashboard
+  lint/typecheck and `App.test.tsx`. This still does not unlock budget apply,
+  pause, wasted-budget claims, CPA/ROAS verdicts or profitability claims.
 - Ads campaign review ActionObject/context alignment, 2026-06-21 00:13 CEST.
   `/api/ads/diagnostics` i
   `/api/actions/act_prepare_ads_campaign_review_queue` używają teraz tego

@@ -1,8 +1,26 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, TypedDict
 
 CampaignReviewPriority = Literal["pilne", "wysokie", "normalne", "niski sygnał"]
+CampaignTargetStatus = Literal[
+    "within_target",
+    "outside_target",
+    "spend_without_conversions",
+    "insufficient_data",
+    "no_target",
+]
+
+
+class CampaignTargetContext(TypedDict):
+    target_status: CampaignTargetStatus
+    target_status_label: str
+    target_roas: float | None
+    roas: float | None
+    roas_vs_target: float | None
+    target_cpa_micros: int | None
+    cost_per_conversion_micros: float | None
+    cpa_vs_target_micros: float | None
 
 CAMPAIGN_REVIEW_HUMAN_GATES = [
     "review_campaign_goal",
@@ -22,6 +40,7 @@ def campaign_review_score(
     cost_micros: int | None,
     conversions: float | None,
     missing_metrics: list[str],
+    target_status: CampaignTargetStatus = "no_target",
 ) -> int:
     if missing_metrics:
         return 10
@@ -44,6 +63,12 @@ def campaign_review_score(
         (cost_micros or 0) > 0 or (clicks or 0) > 0 or (impressions or 0) > 0
     ):
         score += 15
+    if target_status == "outside_target":
+        score += 15
+    elif target_status == "spend_without_conversions":
+        score += 10
+    elif target_status == "insufficient_data":
+        score += 5
     return min(100, score)
 
 
@@ -66,6 +91,8 @@ def campaign_review_reason(
     cost_micros: int | None,
     conversions: float | None,
     missing_metrics: list[str],
+    target_status: CampaignTargetStatus = "no_target",
+    target_status_label: str | None = None,
 ) -> str:
     if missing_metrics:
         return (
@@ -86,6 +113,8 @@ def campaign_review_reason(
         signals.append("koszt bez konwersji w bieżącym evidence")
     if advertising_channel_type:
         signals.append(f"typ={advertising_channel_type}")
+    if target_status != "no_target" and target_status_label:
+        signals.append(f"target={target_status_label}")
     if is_draft_campaign_name(campaign_name):
         signals.append("nazwa wygląda jak draft/NIE URUCHAMIAĆ")
     signal_text = ", ".join(signals) or "brak aktywności w bieżącym evidence"
@@ -102,20 +131,100 @@ def campaign_review_gates(
     advertising_channel_type: str | None,
     cost_micros: int | None,
     conversions: float | None,
+    target_status: CampaignTargetStatus = "no_target",
 ) -> list[str]:
     gates = list(CAMPAIGN_REVIEW_HUMAN_GATES)
     if (cost_micros or 0) > 0 and not conversions:
         gates.append("review_conversion_tracking")
     if advertising_channel_type == "PERFORMANCE_MAX":
         gates.append("review_pmax_asset_feed_context")
+    if target_status != "no_target":
+        gates.append("review_target_context")
+    if target_status in {"outside_target", "spend_without_conversions"}:
+        gates.append("review_target_gap_before_budget_decision")
     if is_draft_campaign_name(campaign_name):
         gates.append("review_draft_campaign_status")
     return _unique(gates)
 
 
+def campaign_target_context(
+    *,
+    cost_micros: int | None,
+    conversions: float | None,
+    conversion_value: float | None,
+    target_roas: float | None,
+    target_cpa_micros: int | None,
+) -> CampaignTargetContext:
+    cost_per_conversion_micros = _ratio(cost_micros, conversions)
+    roas = _ratio(conversion_value, _micros_to_account_units(cost_micros))
+    cpa_vs_target_micros = _difference(cost_per_conversion_micros, target_cpa_micros)
+    roas_vs_target = _difference(roas, target_roas)
+
+    if target_cpa_micros is not None:
+        if cost_per_conversion_micros is not None:
+            if cost_per_conversion_micros <= target_cpa_micros:
+                status: CampaignTargetStatus = "within_target"
+                label = "CPA w targetcie"
+            else:
+                status = "outside_target"
+                label = "CPA powyżej targetu"
+        elif (cost_micros or 0) > 0 and not conversions:
+            status = "spend_without_conversions"
+            label = "koszt bez konwersji"
+        else:
+            status = "insufficient_data"
+            label = "brak CPA do porównania"
+    elif target_roas is not None:
+        if roas is not None:
+            if roas >= target_roas:
+                status = "within_target"
+                label = "ROAS w targetcie"
+            else:
+                status = "outside_target"
+                label = "ROAS poniżej targetu"
+        elif (cost_micros or 0) > 0 and not conversion_value:
+            status = "spend_without_conversions"
+            label = "koszt bez wartości konwersji"
+        else:
+            status = "insufficient_data"
+            label = "brak ROAS do porównania"
+    else:
+        status = "no_target"
+        label = "brak targetu"
+
+    return {
+        "target_status": status,
+        "target_status_label": label,
+        "target_roas": target_roas,
+        "roas": roas,
+        "roas_vs_target": roas_vs_target,
+        "target_cpa_micros": target_cpa_micros,
+        "cost_per_conversion_micros": cost_per_conversion_micros,
+        "cpa_vs_target_micros": cpa_vs_target_micros,
+    }
+
+
 def is_draft_campaign_name(campaign_name: str) -> bool:
     normalized_name = campaign_name.upper()
     return "DRAFT" in normalized_name or "NIE URUCHAMIAC" in normalized_name
+
+
+def _ratio(numerator: float | int | None, denominator: float | int | None) -> float | None:
+    if numerator is None or denominator is None or denominator == 0:
+        return None
+    return round(float(numerator) / float(denominator), 6)
+
+
+def _difference(left: float | int | None, right: float | int | None) -> float | None:
+    if left is None or right is None:
+        return None
+    return round(float(left) - float(right), 6)
+
+
+def _micros_to_account_units(value: int | None) -> float | None:
+    if value is None:
+        return None
+    return value / 1_000_000
 
 
 def _format_micros(value: int | None) -> str:

@@ -659,6 +659,14 @@ class AdsCampaignMetricRow(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    target_status: Literal[
+        "within_target",
+        "outside_target",
+        "spend_without_conversions",
+        "insufficient_data",
+        "no_target",
+    ] = "no_target"
+    target_status_label: str = "brak targetu"
     review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
         "niski sygnał"
     )

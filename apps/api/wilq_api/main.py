@@ -1545,6 +1545,7 @@ def _compact_campaign_candidates_for_context(
                 "review_score": candidate.get("review_score"),
                 "review_reason": candidate.get("review_reason"),
                 "human_review_gates": human_review_gates,
+                "target_context": candidate.get("target_context"),
                 "clicks": candidate.get("clicks"),
                 "impressions": candidate.get("impressions"),
                 "cost_micros": candidate.get("cost_micros"),

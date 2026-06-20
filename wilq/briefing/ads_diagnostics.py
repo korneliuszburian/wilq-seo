@@ -21,6 +21,7 @@ from wilq.actions.google_ads.campaign_triage import (
     campaign_review_priority,
     campaign_review_reason,
     campaign_review_score,
+    campaign_target_context,
 )
 from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
@@ -274,12 +275,16 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     )
     trusted_metric_facts = metric_facts if latest_refresh_collected_data else []
     live_data_available = bool(trusted_metric_facts)
-    campaign_read_contract = _campaign_read_contract(trusted_metric_facts, latest_refresh)
     account_currency_read_contract = _account_currency_read_contract(
         trusted_metric_facts,
         latest_refresh,
     )
     business_context_read_contract = _business_context_read_contract(latest_refresh)
+    campaign_read_contract = _campaign_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+        business_context_read_contract,
+    )
     derived_kpi_read_contract = _derived_kpi_read_contract(
         campaign_read_contract,
         account_currency_read_contract,
@@ -758,8 +763,9 @@ def _business_context_section(
 def _campaign_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
+    business_context_read_contract: AdsBusinessContextReadContract,
 ) -> AdsCampaignReadContract:
-    rows = _campaign_metric_rows(metric_facts)
+    rows = _campaign_metric_rows(metric_facts, business_context_read_contract)
     missing_read_contracts = [
         "recommendations",
         "change_history",
@@ -1017,7 +1023,10 @@ def _int_env(name: str) -> tuple[int | None, str | None]:
     return ads_int_env(name)
 
 
-def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMetricRow]:
+def _campaign_metric_rows(
+    metric_facts: list[MetricFact],
+    business_context_read_contract: AdsBusinessContextReadContract,
+) -> list[AdsCampaignMetricRow]:
     grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
     row_metadata: dict[tuple[str | None, str], dict[str, str]] = {}
     seen_metric_keys: set[tuple[str | None, str, str]] = set()
@@ -1052,6 +1061,7 @@ def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMet
             campaign_name,
             facts,
             row_metadata.get((campaign_id, campaign_name), {}),
+            business_context_read_contract,
         )
         for (campaign_id, campaign_name), facts in grouped_facts.items()
     ]
@@ -1063,6 +1073,7 @@ def _campaign_metric_row(
     campaign_name: str,
     facts: list[MetricFact],
     metadata: dict[str, str] | None = None,
+    business_context_read_contract: AdsBusinessContextReadContract | None = None,
 ) -> AdsCampaignMetricRow:
     facts_by_name = {fact.name: fact for fact in facts}
     metadata_dimensions = metadata or {}
@@ -1090,6 +1101,17 @@ def _campaign_metric_row(
     advertising_channel_type = first_dimensions.get("advertising_channel_type")
     campaign_status = first_dimensions.get("campaign_status")
     missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
+    target_context = campaign_target_context(
+        cost_micros=cost_micros,
+        conversions=conversions,
+        conversion_value=conversion_value,
+        target_roas=business_context_read_contract.target_roas
+        if business_context_read_contract is not None
+        else None,
+        target_cpa_micros=business_context_read_contract.target_cpa_micros
+        if business_context_read_contract is not None
+        else None,
+    )
     review_score = campaign_review_score(
         campaign_name=campaign_name,
         advertising_channel_type=advertising_channel_type,
@@ -1098,6 +1120,7 @@ def _campaign_metric_row(
         cost_micros=cost_micros,
         conversions=conversions,
         missing_metrics=missing_metrics,
+        target_status=target_context["target_status"],
     )
     return AdsCampaignMetricRow(
         campaign_id=campaign_id,
@@ -1113,6 +1136,8 @@ def _campaign_metric_row(
         metric_facts=sorted(facts, key=lambda fact: fact.name),
         missing_metrics=missing_metrics,
         blocked_claims=["CPA", "ROAS", "search-term waste", "wasted budget"],
+        target_status=target_context["target_status"],
+        target_status_label=target_context["target_status_label"],
         review_priority=campaign_review_priority(review_score),
         review_score=review_score,
         review_reason=campaign_review_reason(
@@ -1123,12 +1148,15 @@ def _campaign_metric_row(
             cost_micros=cost_micros,
             conversions=conversions,
             missing_metrics=missing_metrics,
+            target_status=target_context["target_status"],
+            target_status_label=target_context["target_status_label"],
         ),
         human_review_gates=campaign_review_gates(
             campaign_name=campaign_name,
             advertising_channel_type=advertising_channel_type,
             cost_micros=cost_micros,
             conversions=conversions,
+            target_status=target_context["target_status"],
         ),
     )
 
@@ -4308,6 +4336,11 @@ def _ads_decision_queue(
                 evidence_ids=campaign_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 campaign_rows=campaign_read_contract.campaign_rows,
+                operator_review_gates=_unique(
+                    gate
+                    for row in campaign_read_contract.campaign_rows
+                    for gate in row.human_review_gates
+                ),
                 action_ids=campaign_review_action_ids,
                 blocked_claims=campaign_read_contract.blocked_claims,
                 risk=ActionRisk.low,
@@ -4936,17 +4969,21 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
     if decision.decision_type == "review_campaign_activity":
         urgent_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "pilne")
         high_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "wysokie")
-        return _clean_metric_tiles(
-            {
-                "kampanie": len(decision.campaign_rows),
-                "pilne": urgent_rows,
-                "wysokie": high_rows,
-                "kliknięcia": _sum_attr(decision.campaign_rows, "clicks"),
-                "wyświetlenia": _sum_attr(decision.campaign_rows, "impressions"),
-                "koszt": _format_micros(_sum_attr(decision.campaign_rows, "cost_micros")),
-                "konwersje": _round_metric(_sum_attr(decision.campaign_rows, "conversions")),
-            }
+        target_context_rows = sum(
+            1 for row in decision.campaign_rows if row.target_status != "no_target"
         )
+        campaign_tiles: dict[str, int | float | str | None] = {
+            "kampanie": len(decision.campaign_rows),
+            "pilne": urgent_rows,
+            "wysokie": high_rows,
+            "kliknięcia": _sum_attr(decision.campaign_rows, "clicks"),
+            "wyświetlenia": _sum_attr(decision.campaign_rows, "impressions"),
+            "koszt": _format_micros(_sum_attr(decision.campaign_rows, "cost_micros")),
+            "konwersje": _round_metric(_sum_attr(decision.campaign_rows, "conversions")),
+        }
+        if target_context_rows:
+            campaign_tiles["targety"] = target_context_rows
+        return _clean_metric_tiles(campaign_tiles)
     if decision.decision_type == "review_business_context":
         return _clean_metric_tiles(
             {

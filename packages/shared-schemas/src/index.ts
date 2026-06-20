@@ -388,6 +388,16 @@ export const AdsCampaignMetricRowSchema = z.object({
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  target_status: z
+    .enum([
+      "within_target",
+      "outside_target",
+      "spend_without_conversions",
+      "insufficient_data",
+      "no_target"
+    ])
+    .default("no_target"),
+  target_status_label: z.string().default("brak targetu"),
   review_priority: z
     .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
     .default("niski sygnał"),

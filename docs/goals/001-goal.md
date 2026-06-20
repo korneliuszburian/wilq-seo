@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 00:13 CEST.
+Last updated: 2026-06-21 00:31 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -81,12 +81,34 @@ targeting/apply support. Campaign budgets now have review-only
 `CampaignBudgetOperation` payload previews from budget facts, but no budget
 apply support.
 Full BDOS-class parity still requires optimizer contracts such as
-configured business targets used in decision scoring, recorded human strategy
-review outcome, pre/post change-impact windows, approved Keyword Planner
-access/idea rows in live data, forecast or audience-size checks, custom segment
-targeting/apply previews, budget apply safety, apply confirmation and mutation
-audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
+human-confirmed business target values for live decisions, recorded human
+strategy review outcome, pre/post change-impact windows, approved Keyword
+Planner access/idea rows in live data, forecast or audience-size checks, custom
+segment targeting/apply previews, budget apply safety, apply confirmation and
+mutation audit paths, plus real Localo ranking/GBP/competitor/review read
+contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads target-aware campaign review truth, live proof 2026-06-21 00:31
+CEST: campaign rows, derived KPI rows, Ads campaign review ActionObject and
+scoped `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now carry
+target-aware state: `target_status`, `target_status_label` and ActionObject
+`target_context`. Current live truth remains honest: business context is ready,
+but no human-confirmed target ROAS/CPA is set, so
+`/api/ads/diagnostics.business_context_read_contract.missing_read_contracts`
+contains `target_roas_or_cpa`, top campaign `(2026) Ekologus Ogólna` is
+`target_status=no_target` / `target_status_label=brak targetu`, and campaign
+decision metric tiles do not show a noisy `targety=0`. Campaign decision
+`operator_review_gates` now carries the union of row gates instead of an empty
+list. Process-env proof with `WILQ_ADS_TARGET_ROAS=5.0` marks the same top
+campaign `outside_target` / `ROAS poniżej targetu`, adds
+`review_target_context` and `review_target_gap_before_budget_decision`, and
+shows `targety=18`. Scoped context-pack proof: `189752` bytes and first Ads
+campaign candidate includes `target_context`. Narrow checks passed: ruff/mypy,
+two Ads API contract tests, shared schema build, dashboard lint/typecheck and
+`App.test.tsx`. This is still review-only: budget apply, campaign pause,
+wasted-budget claims, CPA/ROAS verdicts and profitability claims remain
+blocked.
 
 Latest Ads campaign review ActionObject/context truth, live proof 2026-06-21
 00:13 CEST: `/api/ads/diagnostics`,

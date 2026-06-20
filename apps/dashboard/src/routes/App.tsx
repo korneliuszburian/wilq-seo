@@ -2574,6 +2574,9 @@ function AdsCampaignRowsTable({
                 <div className="mt-1 text-slate-500">
                   {row.human_review_gates.slice(0, 2).map(adsOperatorReviewGateLabel).join(", ")}
                 </div>
+                {row.target_status !== "no_target" ? (
+                  <div className="mt-1 text-slate-500">{row.target_status_label}</div>
+                ) : null}
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>

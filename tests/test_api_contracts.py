@@ -4412,6 +4412,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": ["CPA", "ROAS", "search-term waste", "wasted budget"],
+            "target_status": "no_target",
+            "target_status_label": "brak targetu",
             "review_priority": "wysokie",
             "review_score": 50,
             "review_reason": read_contract["campaign_rows"][0]["review_reason"],
@@ -5237,6 +5239,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_decision["campaign_rows"][0]["review_score"] == 50
     assert campaign_decision["search_term_rows"] == []
     assert campaign_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
+    assert campaign_decision["operator_review_gates"] == [
+        "review_campaign_goal",
+        "review_conversion_quality",
+        "review_budget_context",
+        "review_search_terms_before_budget_decision",
+        "human_strategy_review",
+    ]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
     assert derived_kpi_decision["priority"] == 25
@@ -5555,6 +5564,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "review_search_terms_before_budget_decision",
         "human_strategy_review",
     ]
+    assert campaign_review_action["payload"]["campaign_candidates"][0][
+        "target_context"
+    ]["target_status"] == "no_target"
     assert campaign_review_action["payload"]["campaign_candidates"][0]["derived_kpis"][
         "roas"
     ] == 37.5625
@@ -5697,6 +5709,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "target_roas",
     ]
     derived_ready_contract = business_ready_payload["derived_kpi_read_contract"]
+    campaign_ready_row = business_ready_payload["campaign_read_contract"][
+        "campaign_rows"
+    ][0]
+    assert campaign_ready_row["target_status"] == "within_target"
+    assert campaign_ready_row["target_status_label"] == "ROAS w targetcie"
+    assert "target=ROAS w targetcie" in campaign_ready_row["review_reason"]
+    assert "review_target_context" in campaign_ready_row["human_review_gates"]
     assert "profit_margin" not in derived_ready_contract["missing_read_contracts"]
     assert "target_roas" in derived_ready_contract["allowed_metrics"]
     assert "roas_vs_target" in derived_ready_contract["allowed_metrics"]
@@ -5726,6 +5745,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "blokady": 6,
         "ustawione pola": 4,
     }
+    business_ready_campaign_decision = next(
+        decision
+        for decision in business_ready_payload["decision_queue"]
+        if decision["id"] == "ads_review_campaign_activity"
+    )
+    assert business_ready_campaign_decision["metric_tiles"]["targety"] == 1
     derived_ready_decision = next(
         decision
         for decision in business_ready_payload["decision_queue"]
@@ -7741,6 +7766,9 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     ]
     assert campaign_candidate["human_review_gates"] == full_campaign_candidate[
         "human_review_gates"
+    ]
+    assert campaign_candidate["target_context"] == full_campaign_candidate[
+        "target_context"
     ]
     assert "review_campaign_goal" in campaign_candidate["human_review_gates"]
     assert campaign_candidate["apply_allowed"] is False

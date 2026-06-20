@@ -3,11 +3,18 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.google_ads.business_context import (
+    ADS_TARGET_CPA_MICROS_ENV,
+    ADS_TARGET_ROAS_ENV,
+    ads_float_env,
+    ads_int_env,
+)
 from wilq.actions.google_ads.campaign_triage import (
     campaign_review_gates,
     campaign_review_priority,
     campaign_review_reason,
     campaign_review_score,
+    campaign_target_context,
 )
 from wilq.schemas import MetricFact
 
@@ -53,11 +60,19 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
         if not isinstance(candidate, dict):
             errors.append(f"Campaign candidate {index} must be object.")
             continue
-        for key in ("review_priority", "review_score", "review_reason", "human_review_gates"):
+        for key in (
+            "review_priority",
+            "review_score",
+            "review_reason",
+            "human_review_gates",
+            "target_context",
+        ):
             if key not in candidate:
                 errors.append(f"Campaign candidate {index} requires {key}.")
         if not isinstance(candidate.get("human_review_gates"), list):
             errors.append(f"Campaign candidate {index} requires human_review_gates list.")
+        if not isinstance(candidate.get("target_context"), dict):
+            errors.append(f"Campaign candidate {index} requires target_context object.")
     if not payload.get("evidence_ids"):
         errors.append("Campaign review payload requires evidence IDs.")
     if payload.get("apply_allowed") is not False:
@@ -221,6 +236,15 @@ def _campaign_candidate(
         "conversion_value",
     ]
     missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
+    target_roas, _target_roas_source = ads_float_env(ADS_TARGET_ROAS_ENV)
+    target_cpa_micros, _target_cpa_source = ads_int_env(ADS_TARGET_CPA_MICROS_ENV)
+    target_context = campaign_target_context(
+        cost_micros=cost_micros,
+        conversions=conversions,
+        conversion_value=conversion_value,
+        target_roas=target_roas,
+        target_cpa_micros=target_cpa_micros,
+    )
     review_score = campaign_review_score(
         campaign_name=campaign_name,
         advertising_channel_type=advertising_channel_type,
@@ -229,6 +253,7 @@ def _campaign_candidate(
         cost_micros=cost_micros,
         conversions=conversions,
         missing_metrics=missing_metrics,
+        target_status=target_context["target_status"],
     )
     budget_dimensions = _budget_dimensions(facts)
     budget_payload_preview = _budget_payload_preview(
@@ -257,13 +282,17 @@ def _campaign_candidate(
             cost_micros=cost_micros,
             conversions=conversions,
             missing_metrics=missing_metrics,
+            target_status=target_context["target_status"],
+            target_status_label=target_context["target_status_label"],
         ),
         "human_review_gates": campaign_review_gates(
             campaign_name=campaign_name,
             advertising_channel_type=advertising_channel_type,
             cost_micros=cost_micros,
             conversions=conversions,
+            target_status=target_context["target_status"],
         ),
+        "target_context": target_context,
         "clicks": clicks,
         "impressions": impressions,
         "cost_micros": cost_micros,
