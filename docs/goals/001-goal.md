@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 23:39 CEST.
+Last updated: 2026-06-21 00:13 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -88,24 +88,26 @@ targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
 
-Latest Ads campaign review triage truth, live proof 2026-06-20 23:39 CEST:
-`/api/ads/diagnostics.campaign_read_contract.campaign_rows` now exposes typed
-`review_priority`, `review_score`, Polish `review_reason` and
-`human_review_gates` for campaign review. This turns campaign facts into a
-review order without claiming wasted budget, CPA, ROAS or profitability. Live
-proof after `scripts/local_stack.sh restart`: 18 campaign rows; top row
-`(2026) Ekologus Ogólna` is `pilne/90` because current evidence shows
-`clicks=94`, `impressions=2763`, `cost_micros=61051723`,
-`conversions=0.0`, channel `PERFORMANCE_MAX`; decision
-`ads_review_campaign_activity.metric_tiles` has `kampanie=18`, `pilne=1`,
-`wysokie=1`, `kliknięcia=118`, `koszt=162`, `konwersje=2`. Scoped
-`wilq-ads-doctor` context-pack includes the same campaign triage fields and is
-`184412` bytes with 4 of 18 campaign rows included, below the 200 KB budget.
-This is still read-only review:
-budget scaling, wasted budget, CPA/ROAS verdicts and apply remain blocked.
-Full `scripts/verify.sh` passed after this slice: backend `136 passed`,
-dashboard unit `17 passed`, Playwright e2e `14 passed`, API/skill smokes and
-dashboard production build OK.
+Latest Ads campaign review ActionObject/context truth, live proof 2026-06-21
+00:13 CEST: `/api/ads/diagnostics`,
+`/api/actions/act_prepare_ads_campaign_review_queue` and scoped
+`POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now expose the same
+campaign triage vocabulary: typed `review_priority`, `review_score`, Polish
+`review_reason` and `human_review_gates`. The scoped context-pack keeps a
+compact top 3 of 8 `campaign_candidates` instead of an empty list; full payload
+remains in `/api/actions/{id}`. Live proof after `scripts/local_stack.sh
+restart`: top candidate `(2026) Ekologus Ogólna` is `pilne/90`,
+`clicks=94`, `impressions=2763`, `cost_micros=61051723`, `conversions=0.0`,
+`candidate_included=3`, `metrics_total=12`,
+`budget_payload_preview_included=0`, `apply_allowed=false`, scoped context-pack
+`187638` bytes. Redaction preserves `human_review_gates` such as
+`review_search_terms_before_budget_decision`, because those are audit/check
+identifiers, not secrets. Action validation returns `valid=true`. This is still
+read-only campaign review order: budget apply, campaign pause, wasted-budget
+claims, CPA/ROAS verdicts and profitability claims remain blocked. Full
+`scripts/verify.sh` passed after this slice: backend `136 passed`, dashboard
+unit `17 passed`, Playwright e2e `14 passed`, API/skill smokes and dashboard
+production build OK.
 
 Latest Ads n-gram truth, live proof 2026-06-20 23:12 CEST:
 `/api/ads/diagnostics.search_term_ngram_read_contract` is now typed backend and

@@ -45,6 +45,7 @@ SAFE_IDENTIFIER_KEYS = {
     "landing_page",
     "metric_name",
     "metric_names",
+    "human_review_gates",
     "name",
     "normalized_page_path",
     "omitted_contracts",

@@ -140,6 +140,7 @@ DEMAND_GEN_CHANNEL_TYPES = {"DEMAND_GEN", "DISCOVERY"}
 DEMAND_GEN_CAMPAIGN_ROW_LIMIT = 8
 ADS_CONTEXT_DECISION_ROW_LIMIT = 4
 ADS_LITE_DECISION_LIMIT = 5
+ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT = 3
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
 _cached_skill_context_packs: dict[str, SkillContextCacheEntry] = {}
 
@@ -1492,8 +1493,16 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return compact
     compact_payload = dict(payload)
+    campaign_candidates = compact_payload.get("campaign_candidates")
+    if isinstance(campaign_candidates, list):
+        compact_payload["campaign_candidates_total"] = len(campaign_candidates)
+        compact_payload["campaign_candidates"] = _compact_campaign_candidates_for_context(
+            campaign_candidates
+        )
+        compact_payload["campaign_candidates_included"] = len(
+            compact_payload["campaign_candidates"]
+        )
     for key in (
-        "campaign_candidates",
         "budget_payload_preview",
         "recommendations",
         "terms",
@@ -1508,6 +1517,49 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload[f"{key}_included"] = len(compact_payload[key])
     compact["payload"] = compact_payload
     return compact
+
+
+def _compact_campaign_candidates_for_context(
+    campaign_candidates: list[Any],
+) -> list[dict[str, Any]]:
+    compact_candidates: list[dict[str, Any]] = []
+    for candidate in campaign_candidates:
+        if not isinstance(candidate, dict):
+            continue
+        evidence_ids = candidate.get("evidence_ids")
+        if not isinstance(evidence_ids, list):
+            evidence_ids = []
+        human_review_gates = candidate.get("human_review_gates")
+        if not isinstance(human_review_gates, list):
+            human_review_gates = []
+        missing_metrics = candidate.get("missing_metrics")
+        if not isinstance(missing_metrics, list):
+            missing_metrics = []
+        compact_candidates.append(
+            {
+                "campaign_id": candidate.get("campaign_id"),
+                "campaign_name": candidate.get("campaign_name"),
+                "campaign_status": candidate.get("campaign_status"),
+                "advertising_channel_type": candidate.get("advertising_channel_type"),
+                "review_priority": candidate.get("review_priority"),
+                "review_score": candidate.get("review_score"),
+                "review_reason": candidate.get("review_reason"),
+                "human_review_gates": human_review_gates,
+                "clicks": candidate.get("clicks"),
+                "impressions": candidate.get("impressions"),
+                "cost_micros": candidate.get("cost_micros"),
+                "conversions": candidate.get("conversions"),
+                "conversion_value": candidate.get("conversion_value"),
+                "derived_kpis": candidate.get("derived_kpis"),
+                "missing_metrics": missing_metrics,
+                "evidence_ids": evidence_ids[:4],
+                "evidence_ids_total": len(evidence_ids),
+                "apply_allowed": candidate.get("apply_allowed"),
+            }
+        )
+        if len(compact_candidates) >= ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT:
+            break
+    return compact_candidates
 
 
 def _without_metric_facts(value: Any) -> Any:

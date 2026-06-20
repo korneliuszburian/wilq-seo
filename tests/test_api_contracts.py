@@ -550,6 +550,9 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
             "operator_review_gates": ["google_ads_rmf_compliance_review"],
+            "human_review_gates": [
+                "review_search_terms_before_budget_decision",
+            ],
             "review_gate": {
                 "required_checks": [
                     "google_ads_rmf_compliance_review",
@@ -605,6 +608,9 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
     assert redacted["operator_review_gates"] == ["google_ads_rmf_compliance_review"]
+    assert redacted["human_review_gates"] == [
+        "review_search_terms_before_budget_decision"
+    ]
     assert redacted["review_gate"]["required_checks"] == [
         "google_ads_rmf_compliance_review",
         "reject_brand_or_low_intent_terms",
@@ -5532,6 +5538,23 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_review_action["payload"]["campaign_candidates"][0]["campaign_name"] == (
         "Brand Search"
     )
+    assert campaign_review_action["payload"]["campaign_candidates"][0][
+        "review_priority"
+    ] == "wysokie"
+    assert campaign_review_action["payload"]["campaign_candidates"][0]["review_score"] == 50
+    assert (
+        "Kolejność review kampanii"
+        in campaign_review_action["payload"]["campaign_candidates"][0]["review_reason"]
+    )
+    assert campaign_review_action["payload"]["campaign_candidates"][0][
+        "human_review_gates"
+    ] == [
+        "review_campaign_goal",
+        "review_conversion_quality",
+        "review_budget_context",
+        "review_search_terms_before_budget_decision",
+        "human_strategy_review",
+    ]
     assert campaign_review_action["payload"]["campaign_candidates"][0]["derived_kpis"][
         "roas"
     ] == 37.5625
@@ -7690,9 +7713,37 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
         ):
             rows = payload.get(rows_key)
             if isinstance(rows, list):
-                assert rows == []
-                assert payload[f"{rows_key}_included"] == 0
+                if rows_key == "campaign_candidates" and action["id"] == (
+                    "act_prepare_ads_campaign_review_queue"
+                ):
+                    assert 0 < len(rows) <= 3
+                    assert payload[f"{rows_key}_included"] == len(rows)
+                else:
+                    assert rows == []
+                    assert payload[f"{rows_key}_included"] == 0
                 assert payload[f"{rows_key}_total"] >= 0
+    actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
+    campaign_review_action = actions_by_id["act_prepare_ads_campaign_review_queue"]
+    campaign_candidate = campaign_review_action["payload"]["campaign_candidates"][0]
+    full_action_response = client.get("/api/actions/act_prepare_ads_campaign_review_queue")
+    assert full_action_response.status_code == 200
+    full_campaign_candidate = full_action_response.json()["payload"][
+        "campaign_candidates"
+    ][0]
+    assert campaign_candidate["campaign_name"] == full_campaign_candidate["campaign_name"]
+    assert campaign_candidate["review_priority"] == full_campaign_candidate[
+        "review_priority"
+    ]
+    assert campaign_candidate["review_score"] == full_campaign_candidate["review_score"]
+    assert "Kolejność review kampanii" in campaign_candidate["review_reason"]
+    assert campaign_candidate["review_reason"] == full_campaign_candidate[
+        "review_reason"
+    ]
+    assert campaign_candidate["human_review_gates"] == full_campaign_candidate[
+        "human_review_gates"
+    ]
+    assert "review_campaign_goal" in campaign_candidate["human_review_gates"]
+    assert campaign_candidate["apply_allowed"] is False
     assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8
     assert len(ads_context["search_term_safety_read_contract"]["safety_rows"]) <= 8
     assert len(ads_context["keyword_match_context_read_contract"]["context_rows"]) <= 8

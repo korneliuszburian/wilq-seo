@@ -3,6 +3,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.google_ads.campaign_triage import (
+    campaign_review_gates,
+    campaign_review_priority,
+    campaign_review_reason,
+    campaign_review_score,
+)
 from wilq.schemas import MetricFact
 
 CAMPAIGN_REVIEW_ACTION_ID = "act_prepare_ads_campaign_review_queue"
@@ -43,6 +49,15 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if not payload.get("campaign_candidates"):
         errors.append("Campaign review payload requires evidence-backed campaign candidates.")
+    for index, candidate in enumerate(payload.get("campaign_candidates", [])):
+        if not isinstance(candidate, dict):
+            errors.append(f"Campaign candidate {index} must be object.")
+            continue
+        for key in ("review_priority", "review_score", "review_reason", "human_review_gates"):
+            if key not in candidate:
+                errors.append(f"Campaign candidate {index} requires {key}.")
+        if not isinstance(candidate.get("human_review_gates"), list):
+            errors.append(f"Campaign candidate {index} requires human_review_gates list.")
     if not payload.get("evidence_ids"):
         errors.append("Campaign review payload requires evidence IDs.")
     if payload.get("apply_allowed") is not False:
@@ -103,6 +118,7 @@ def campaign_review_payload_from_metric_facts(
     candidates = sorted(
         candidates,
         key=lambda candidate: (
+            -int(candidate.get("review_score") or 0),
             -int(candidate.get("cost_micros") or 0),
             -int(candidate.get("clicks") or 0),
             str(candidate["campaign_name"]),
@@ -185,6 +201,9 @@ def _campaign_candidate(
     cost_micros = _int_metric_value(facts_by_name.get("cost_micros"))
     conversions = _float_metric_value(facts_by_name.get("conversions"))
     conversion_value = _float_metric_value(facts_by_name.get("conversion_value"))
+    dimensions = _campaign_dimensions(facts)
+    advertising_channel_type = dimensions.get("advertising_channel_type")
+    campaign_status = dimensions.get("campaign_status")
     budget_amount_micros = _int_metric_value(facts_by_name.get("budget_amount_micros"))
     has_recommended_budget = _bool_metric_value(
         facts_by_name.get("budget_has_recommended_budget")
@@ -194,6 +213,23 @@ def _campaign_candidate(
     )
     source_metric_names = _unique(fact.name for fact in facts)
     evidence_ids = _unique(fact.evidence_id for fact in facts)
+    expected_metrics = [
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+    ]
+    missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
+    review_score = campaign_review_score(
+        campaign_name=campaign_name,
+        advertising_channel_type=advertising_channel_type,
+        clicks=clicks,
+        impressions=impressions,
+        cost_micros=cost_micros,
+        conversions=conversions,
+        missing_metrics=missing_metrics,
+    )
     budget_dimensions = _budget_dimensions(facts)
     budget_payload_preview = _budget_payload_preview(
         campaign_id=campaign_id,
@@ -209,6 +245,25 @@ def _campaign_candidate(
     return {
         "campaign_id": campaign_id,
         "campaign_name": campaign_name,
+        "campaign_status": campaign_status,
+        "advertising_channel_type": advertising_channel_type,
+        "review_priority": campaign_review_priority(review_score),
+        "review_score": review_score,
+        "review_reason": campaign_review_reason(
+            campaign_name=campaign_name,
+            advertising_channel_type=advertising_channel_type,
+            clicks=clicks,
+            impressions=impressions,
+            cost_micros=cost_micros,
+            conversions=conversions,
+            missing_metrics=missing_metrics,
+        ),
+        "human_review_gates": campaign_review_gates(
+            campaign_name=campaign_name,
+            advertising_channel_type=advertising_channel_type,
+            cost_micros=cost_micros,
+            conversions=conversions,
+        ),
         "clicks": clicks,
         "impressions": impressions,
         "cost_micros": cost_micros,
@@ -238,6 +293,7 @@ def _campaign_candidate(
         "budget_payload_preview": budget_payload_preview,
         "source_metric_names": source_metric_names,
         "evidence_ids": evidence_ids,
+        "missing_metrics": missing_metrics,
         "required_checks": CAMPAIGN_REVIEW_REQUIRED_VALIDATION,
         "blocked_claims": CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
         "apply_allowed": False,
@@ -304,6 +360,18 @@ def _budget_payload_preview(
 def _budget_dimensions(facts: list[MetricFact]) -> dict[str, str]:
     return next(
         (fact.dimensions for fact in facts if fact.dimensions.get("budget_id")),
+        facts[0].dimensions if facts else {},
+    )
+
+
+def _campaign_dimensions(facts: list[MetricFact]) -> dict[str, str]:
+    return next(
+        (
+            fact.dimensions
+            for fact in facts
+            if fact.dimensions.get("advertising_channel_type")
+            or fact.dimensions.get("campaign_status")
+        ),
         facts[0].dimensions if facts else {},
     )
 
