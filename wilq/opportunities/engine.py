@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from wilq.briefing.daily_runtime import build_daily_runtime
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshStatus,
+    DailyDecision,
     MetricFact,
     Opportunity,
     OpportunityDomain,
@@ -169,6 +171,118 @@ BLUEPRINTS: tuple[OpportunityBlueprint, ...] = (
 
 
 def list_opportunities() -> list[Opportunity]:
+    daily_opportunities = _daily_decision_opportunities()
+    if daily_opportunities:
+        return daily_opportunities
+    return _connector_registry_opportunities()
+
+
+def _daily_decision_opportunities() -> list[Opportunity]:
+    runtime = build_daily_runtime()
+    opportunities = [
+        _opportunity_from_daily_decision(decision)
+        for decision in runtime.command_center.daily_decisions
+        if decision.evidence_ids and decision.source_connectors
+    ]
+    return sorted(opportunities, key=lambda item: (_opportunity_sort_priority(item), item.id))
+
+
+def _opportunity_from_daily_decision(decision: DailyDecision) -> Opportunity:
+    return Opportunity(
+        id=f"opp_{decision.id}",
+        type=_daily_decision_type(decision),
+        title=decision.title,
+        domain=_daily_decision_domain(decision),
+        source_connectors=decision.source_connectors,
+        evidence_ids=decision.evidence_ids,
+        metric_tiles=decision.metric_tiles,
+        metrics=_metric_tiles_to_facts(decision),
+        human_diagnosis=(
+            f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"
+        ),
+        recommended_action=decision.bezpieczny_next_step,
+        risk=decision.risk,
+        action_ids=decision.action_ids,
+        expert_rule_ids=[],
+        playbook_ids=[decision.skill_id] if decision.skill_id else [],
+        is_fixture=False,
+    )
+
+
+def _daily_decision_type(decision: DailyDecision) -> str:
+    if decision.route.startswith("/ads-doctor"):
+        return "google_ads_review_queue"
+    if decision.route.startswith("/merchant"):
+        return "merchant_feed_issue"
+    if decision.route.startswith("/content-planner"):
+        return "content_brief_candidate"
+    if decision.route.startswith("/ga4"):
+        return "ga4_tracking_gap"
+    if decision.route.startswith("/localo"):
+        return "localo_visibility_drop"
+    return "daily_marketer_decision"
+
+
+def _daily_decision_domain(decision: DailyDecision) -> OpportunityDomain:
+    if decision.route.startswith("/ads-doctor"):
+        return OpportunityDomain.google_ads
+    if decision.route.startswith("/merchant"):
+        return OpportunityDomain.merchant
+    if decision.route.startswith("/content-planner"):
+        return OpportunityDomain.gsc_seo
+    if decision.route.startswith("/ga4"):
+        return OpportunityDomain.ga4
+    if decision.route.startswith("/localo"):
+        return OpportunityDomain.localo
+    return OpportunityDomain.codex
+
+
+def _metric_tiles_to_facts(decision: DailyDecision) -> list[MetricFact]:
+    source_connector = decision.source_connectors[0]
+    evidence_id = decision.evidence_ids[0]
+    return [
+        MetricFact(
+            name=_metric_tile_name(label),
+            value=value,
+            period="daily_decision",
+            source_connector=source_connector,
+            evidence_id=evidence_id,
+            dimensions={"decision_id": decision.id, "label": label},
+        )
+        for label, value in decision.metric_tiles.items()
+    ]
+
+
+def _metric_tile_name(label: str) -> str:
+    return (
+        label.lower()
+        .replace(" ", "_")
+        .replace("/", "_")
+        .replace("ą", "a")
+        .replace("ć", "c")
+        .replace("ę", "e")
+        .replace("ł", "l")
+        .replace("ń", "n")
+        .replace("ó", "o")
+        .replace("ś", "s")
+        .replace("ź", "z")
+        .replace("ż", "z")
+    )
+
+
+def _opportunity_sort_priority(opportunity: Opportunity) -> int:
+    if opportunity.id.startswith("opp_decision_review_merchant"):
+        return 10
+    if opportunity.id.startswith("opp_decision_prepare_content"):
+        return 12
+    if opportunity.id.startswith("opp_decision_review_ga4"):
+        return 14
+    if opportunity.id.startswith("opp_decision_review_ads"):
+        return 16
+    return 90
+
+
+def _connector_registry_opportunities() -> list[Opportunity]:
     statuses = {connector.id: connector for connector in list_connector_statuses()}
     opportunities: list[Opportunity] = []
     for blueprint in BLUEPRINTS:

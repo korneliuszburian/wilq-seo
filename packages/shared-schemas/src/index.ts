@@ -79,6 +79,7 @@ export const OpportunitySchema = z.object({
   domain: z.string(),
   source_connectors: z.array(z.string()).min(1),
   evidence_ids: z.array(z.string()).min(1),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   metrics: z.array(MetricFactSchema),
   human_diagnosis: z.string().min(1),
   recommended_action: z.string(),

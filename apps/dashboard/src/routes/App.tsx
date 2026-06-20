@@ -184,6 +184,14 @@ function OpportunityList({ opportunities }: { opportunities: Opportunity[] }) {
             <StatusBadge value={opportunity.risk} />
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
+          {Object.keys(opportunity.metric_tiles).length > 0 ? (
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 sm:grid-cols-3">
+              {Object.entries(opportunity.metric_tiles).map(([label, value]) => (
+                <MetricTile key={`${opportunity.id}-${label}`} label={label} value={value} />
+              ))}
+            </div>
+          ) : null}
+          <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dowody: {opportunity.evidence_ids.join(", ")}</div>
             <div>Źródła: {opportunity.source_connectors.join(", ")}</div>
@@ -1293,16 +1301,15 @@ function OpportunitiesSurface() {
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Opportunities</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">Szanse i decyzje</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Rejestr opportunities z WILQ API. Każda karta musi mieć dowody, źródła i reguły;
-            sama gotowość connectora albo dane testowe nie są rekomendacją marketingową.
-            To jest pomocniczy rejestr; konkretna praca marketera ma trafiać do widoków Ads, GA4,
-            Merchant, Content i Localo.
+            Kolejka szans z WILQ API oparta o te same decyzje, które widzi Command Center.
+            Każda karta musi mieć dowody, źródła, liczby i bezpieczny następny krok.
+            Sama gotowość connectora albo dane testowe nie są rekomendacją marketingową.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Karty" value={items.length} />
+          <MetricTile label="Decyzje" value={items.length} />
           <MetricTile label="Aktywne" value={liveItems.length} />
           <MetricTile label="Dowody" value={evidenceIds.size} />
         </div>
@@ -1310,7 +1317,7 @@ function OpportunitiesSurface() {
 
       <div className="grid gap-8">
         <section>
-          <SectionHeading title="Rejestr kart opportunities" />
+          <SectionHeading title="Kolejka decyzji z WILQ API" />
           <OpportunityList opportunities={items} />
         </section>
         <section>

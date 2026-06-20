@@ -4,7 +4,7 @@ import { Activity, AlertTriangle, Boxes, ClipboardList, Database, Settings } fro
 export const primaryRoutes = [
   { to: "/command-center", label: "Command Center", icon: Activity },
   { to: "/workflows", label: "Workflows", icon: Boxes },
-  { to: "/opportunities", label: "Opportunities", icon: AlertTriangle },
+  { to: "/opportunities", label: "Szanse", icon: AlertTriangle },
   { to: "/actions", label: "Actions", icon: ClipboardList },
   { to: "/knowledge", label: "Knowledge", icon: Database },
   { to: "/settings", label: "Settings", icon: Settings }
@@ -54,4 +54,3 @@ export function Shell() {
     </div>
   );
 }
-

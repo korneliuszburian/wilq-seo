@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 06:55 CEST.
+Last updated: 2026-06-20 07:13 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -160,6 +160,23 @@ paths. Stale strings such as `feed/product issues`, `active_products=12`,
 passed after this slice: backend `117 passed`, dashboard unit `14 passed`,
 Playwright e2e `9 passed`, security, skill/API smokes and dashboard production
 build passed.
+
+Opportunities must be decision-backed, not connector-registry-backed, when
+daily decisions exist. `/api/opportunities`, `/opportunities` and full Codex
+context-pack `top_opportunities` must show the same marketer decisions as
+Command Center: Merchant feed review, Content refresh queue, GA4
+measurement/traffic review and Ads review queue. Current live proof after
+`scripts/local_stack.sh restart`: `/api/opportunities` returns 4 IDs:
+`opp_decision_review_merchant_feed_issues`,
+`opp_decision_prepare_content_refresh_queue`,
+`opp_decision_review_ga4_landing_quality` and
+`opp_decision_review_ads_campaign_metrics`; each carries `metric_tiles`,
+evidence IDs, source connectors, ActionObject IDs and a Polish safe next step.
+No `opp_connector_*` cards or `opportunities` redaction paths are present in
+the live context-pack proof. Connector registry cards may remain as fallback
+only when there are no daily decisions. Full `scripts/verify.sh` passed after
+this slice: backend `117 passed`, dashboard unit `14 passed`, Playwright e2e
+`9 passed`, security, skill/API smokes and dashboard production build passed.
 
 ## Research And Knowledge Contract
 
@@ -701,11 +718,18 @@ Work in this order:
    `ActionObjecty do przeglądu` and related evidence instead of generic
    registry dumps. `/api/actions` no longer resurrects
    `act_configure_google_ads_env` after a later Ads `status_probe` when a live
-   Ads `vendor_read` exists. `/opportunities` is explicitly a supporting
-   registry with Polish labels and no old readiness/inventory copy. Browser
-   proof with `agent-browser` found no stale Ads OAuth action, no generic
-   registry dump on `/actions`, and no old readiness phrases on
-   `/opportunities`. Focused Playwright e2e passed: `9 passed`.
+   Ads `vendor_read` exists. Browser proof with `agent-browser` found no stale
+   Ads OAuth action and no generic registry dump on `/actions`. Focused
+   Playwright e2e passed: `9 passed`.
+
+   Follow-up completed on 2026-06-20: `/api/opportunities`, `/opportunities`
+   and full Codex context-pack `top_opportunities` now consume daily marketer
+   decisions instead of old connector-registry cards. Live proof after
+   `scripts/local_stack.sh restart`: 4 decision-backed cards, all with
+   `opp_decision_*` IDs, `metric_tiles`, evidence IDs, source connectors,
+   ActionObject IDs and Polish next steps. The live proof contains no
+   `opp_connector_*` opportunities and no redaction paths under
+   `opportunities`. Full `scripts/verify.sh` passed after this slice.
 
    Follow-up completed on 2026-06-19: `/ga4` now consumes a typed
    `Ga4DecisionItem` queue from `/api/ga4/diagnostics.decision_queue` and shows

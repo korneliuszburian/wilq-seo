@@ -1826,14 +1826,31 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
     response = client.get("/api/opportunities")
     assert response.status_code == 200
     opportunities = response.json()
-    google_ads = next(item for item in opportunities if item["id"] == "opp_connector_google_ads")
-    assert google_ads["evidence_ids"] == ["ev_connector_google_ads_status"]
-    assert "google_ads_search_playbook" in google_ads["playbook_ids"]
-    assert "ads_search_terms_v1" in google_ads["expert_rule_ids"]
+    opportunity_ids = {item["id"] for item in opportunities}
+    assert opportunity_ids == {
+        "opp_decision_review_merchant_feed_issues",
+        "opp_decision_prepare_content_refresh_queue",
+        "opp_decision_review_ga4_landing_quality",
+        "opp_decision_review_ads_campaign_metrics",
+    }
+    google_ads = next(
+        item for item in opportunities if item["id"] == "opp_decision_review_ads_campaign_metrics"
+    )
+    assert google_ads["type"] == "google_ads_review_queue"
+    assert google_ads["domain"] == "google_ads"
+    assert google_ads["metric_tiles"]["kampanie"] >= 1
+    assert google_ads["action_ids"] == [
+        "act_prepare_ads_campaign_review_queue",
+        "act_prepare_google_ads_recommendation_review_queue",
+        "act_prepare_custom_segments_from_search_terms",
+        "act_prepare_negative_keyword_review_queue",
+    ]
     assert google_ads["is_fixture"] is False
-    assert "No performance metrics" not in google_ads["title"]
-    assert "connector_configured" not in json.dumps(google_ads)
-    assert "Run a read-only" not in json.dumps(google_ads)
+    serialized = json.dumps(opportunities, ensure_ascii=False)
+    assert "opp_connector_" not in serialized
+    assert "rejestr reguł i playbooków" not in serialized
+    assert "connector_configured" not in serialized
+    assert "Run a read-only" not in serialized
 
 
 def test_actions_reference_registered_evidence_ids() -> None:

@@ -164,6 +164,7 @@ class Opportunity(BaseModel):
     domain: OpportunityDomain
     source_connectors: list[str] = Field(min_length=1)
     evidence_ids: list[str] = Field(min_length=1)
+    metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     metrics: list[MetricFact] = Field(default_factory=list)
     human_diagnosis: str = Field(min_length=1)
     recommended_action: str

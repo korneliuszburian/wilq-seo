@@ -19,20 +19,31 @@ const connectors = [
 
 const opportunities = [
   {
-    id: "opp_1",
-    type: "google_ads_waste",
-    title: "Google Ads diagnostics blocked until credentials are configured",
+    id: "opp_decision_review_ads_campaign_metrics",
+    type: "google_ads_review_queue",
+    title: "Przejrzyj kolejki Ads do oceny bez apply",
     domain: "google_ads",
     source_connectors: ["google_ads"],
-    evidence_ids: ["ev_1"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    metric_tiles: {
+      kampanie: 18,
+      zapytania: 50,
+      "podgląd budżetu": 18,
+      rekomendacje: 4
+    },
     metrics: [],
-    human_diagnosis: "Connector state is missing.",
-    recommended_action: "Configure connector.",
-    risk: "low",
-    action_ids: ["act_1"],
-    expert_rule_ids: ["ads_search_terms_v1"],
-    playbook_ids: ["google_ads_search_playbook"],
-    is_fixture: true
+    human_diagnosis:
+      "Google Ads ma liczniki do oceny i ActionObjecty review-only. Apply pozostaje zablokowany.",
+    recommended_action:
+      "Otwórz /ads-doctor i przejrzyj kolejno: podgląd budżetów, podgląd rekomendacji, przegląd wykluczeń i podgląd segmentów.",
+    risk: "medium",
+    action_ids: [
+      "act_prepare_ads_campaign_review_queue",
+      "act_prepare_google_ads_recommendation_review_queue"
+    ],
+    expert_rule_ids: [],
+    playbook_ids: ["wilq-ads-doctor"],
+    is_fixture: false
   }
 ];
 
@@ -3479,11 +3490,14 @@ describe("WILQ dashboard", () => {
   it("opportunities route renders", async () => {
     renderApp("/opportunities");
     await waitFor(() =>
-      expect(screen.getByText("Google Ads diagnostics blocked until credentials are configured")).toBeInTheDocument()
+      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez apply")).toBeInTheDocument()
     );
-    expect(screen.getByText("Rejestr kart opportunities")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
+    expect(screen.getByText("Kolejka decyzji z WILQ API")).toBeInTheDocument();
+    expect(screen.getAllByText("kampanie").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("podgląd budżetu").length).toBeGreaterThan(0);
     expect(screen.getByText("Aktywne")).toBeInTheDocument();
-    expect(screen.queryByText("Kolejka decyzji")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
     expect(screen.queryByText("Evidence użyte przez opportunities")).not.toBeInTheDocument();
   });
