@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 02:38 CEST.
+Last updated: 2026-06-20 03:00 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -91,6 +91,17 @@ Center must use the same `Ga4DiagnosticsResponse.decision_queue` semantics as
 `/ga4`, showing concrete review counts for `grupy ruchu`, `decyzje`, `pomiar`
 and `jakość ruchu` while still blocking ROAS/revenue/conversion/tracking-fixed
 claims until explicit contracts exist.
+
+Content on Command Center must use the same
+`ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and
+`wilq-content-strategist`. Do not rebuild content first-screen copy from raw
+tactical items. Current live first-screen proof after
+`scripts/local_stack.sh restart`: `/api/dashboard/command-center` and scoped
+`wilq-daily-command` context-pack both show `Przejrzyj kolejkę SEO z GSC i
+WordPress`, `4429 wyświetleń`, `4 kliknięcia`, CTR `0.09%`, `decyzje=4`,
+`wyświetlenia=7852`, `kliknięcia=138`, and no `[REDACTED]` in content decision
+prose. Evidence IDs and ActionObject IDs must stay in structured fields, not
+inside prose where redaction can mask useful marketer context.
 
 ## Research And Knowledge Contract
 
@@ -352,6 +363,13 @@ Do not rebuild these from scratch:
   `2902 wyświetlenia`, `123 kliknięcia`, CTR `4.24%`; scoped
   `wilq-content-strategist` context-pack preserves the same decision fields,
   evidence IDs and `act_prepare_content_refresh_queue`.
+- Command Center content bridge: `daily_content_queue`,
+  `decision_prepare_content_refresh_queue` and scoped `wilq-daily-command`
+  context-pack now consume `ContentDiagnosticsResponse.decision_queue` instead
+  of raw tactical item summaries. The visible first-screen content decision is
+  `Przejrzyj kolejkę SEO z GSC i WordPress`, with GSC aggregate counts and
+  Polish no-claim summary. Action/evidence IDs stay available as structured
+  fields.
 - GA4 route operator cleanup: `/api/ga4/diagnostics` now exposes a typed
   `decision_queue` with `fix_measurement`, `review_landing_mapping` and
   `review_traffic_quality` decisions. Dashboard `/ga4` renders this as the
@@ -591,7 +609,13 @@ Work in this order:
    labels such as `Query/page`, `WP match`, `exact_url`, `payload preview` and
    false `impressions=0` / `ctr=0` for missing evidence. Follow-up on
    2026-06-20 added human-readable content decision summaries and GSC aggregates
-   to the typed API/shared schema/dashboard/context-pack contract.
+   to the typed API/shared schema/dashboard/context-pack contract. Later the
+   same day, Command Center and `wilq-daily-command` were bridged to this
+   content diagnostics contract, so the first-screen Content card no longer
+   uses the old raw `query/page + WP match` prose as the main insight. Full
+   `scripts/verify.sh` passed for this bridge slice on 2026-06-20: backend
+   `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
+   security, skill/API smokes and dashboard production build passed.
 
 2. **Active local slice: Command Center as canonical `DailyDecision`.**
    Introduce one first-screen decision model instead of competing

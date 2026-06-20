@@ -6,6 +6,7 @@ from typing import Any, Literal
 
 from wilq.actions.service import list_actions
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
+from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
@@ -23,6 +24,8 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     ConnectorStatus,
     ConnectorSummary,
+    ContentDecisionItem,
+    ContentDiagnosticsResponse,
     DailyDecision,
     Ga4DecisionItem,
     Ga4DiagnosticsResponse,
@@ -86,8 +89,13 @@ def build_command_center_brief(
 ) -> tuple[list[CommandCenterBriefItem], str, int]:
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         ads_future = executor.submit(build_ads_diagnostics, actions=actions)
+        content_future = executor.submit(
+            build_content_diagnostics,
+            tactical_items=tactical_queue.items,
+            actions=actions,
+        )
         merchant_facts_future = executor.submit(
             metric_store().list_metric_facts,
             "google_merchant_center",
@@ -99,6 +107,7 @@ def build_command_center_brief(
             GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
         )
         ads = ads_future.result()
+        content = content_future.result()
         merchant_facts = merchant_facts_future.result()
         ga4_facts = ga4_facts_future.result()
     ga4_diagnostics = build_ga4_diagnostics(
@@ -111,7 +120,7 @@ def build_command_center_brief(
     items = [
         _ads_item(ads),
         _merchant_item_from_facts(tactical_queue.items, merchant_facts, actions),
-        _content_item_from_tactical(tactical_queue.items, actions),
+        _content_item_from_diagnostics(content),
         _ga4_item_from_diagnostics(ga4_diagnostics),
     ]
     if localo is not None:
@@ -360,49 +369,96 @@ def _merchant_item_from_facts(
     )
 
 
-def _content_item_from_tactical(
-    tactical_items: list[TacticalQueueItem],
-    actions: list[ActionObject],
-) -> CommandCenterBriefItem:
-    gsc_items = [item for item in tactical_items if item.domain == OpportunityDomain.gsc_seo]
-    matched_items = [
-        item for item in gsc_items if item.dimensions.get("wordpress_match") == "found"
-    ]
-    action_ids = _action_ids_for(
-        actions,
-        connector="wordpress_ekologus",
-        domain=OpportunityDomain.content,
+def _content_item_from_diagnostics(data: ContentDiagnosticsResponse) -> CommandCenterBriefItem:
+    top_decision = _top_content_decision(data.decision_queue)
+    live_data_available = data.live_data_available and bool(data.decision_queue)
+    action_ids = data.action_ids or _unique(
+        action_id for decision in data.decision_queue for action_id in decision.action_ids
     )
-    live_data_available = bool(gsc_items)
+    evidence_ids = (
+        data.evidence_ids
+        or _unique(
+            evidence_id
+            for decision in data.decision_queue
+            for evidence_id in decision.evidence_ids
+        )
+        or [connector_evidence_id("google_search_console")]
+    )
+    total_clicks = sum(decision.total_clicks or 0 for decision in data.decision_queue)
+    total_impressions = sum(decision.total_impressions or 0 for decision in data.decision_queue)
+    summary = (
+        _content_command_summary(top_decision)
+        if top_decision is not None
+        else (
+            "Brak gotowej kolejki contentowej. WILQ potrzebuje GSC query/page "
+            "i WordPress inventory."
+        )
+    )
+    next_step = (
+        _content_command_next_step(top_decision)
+        if top_decision is not None
+        else "Otwórz /content-planner i odśwież GSC oraz WordPress inventory."
+    )
     return CommandCenterBriefItem(
         id="daily_content_queue",
-        title="Content: GSC query/page + WordPress inventory",
+        title=(
+            "Content: kolejka SEO z GSC i WordPress"
+            if live_data_available
+            else "Content: brak kolejki SEO"
+        ),
         route="/content-planner",
         status="ready" if live_data_available else "blocked",
         priority=12 if live_data_available else 40,
-        summary=(
-            f"Query/page={len(gsc_items)}, WordPress match={len(matched_items)}. "
-            "WILQ może przygotować refresh queue."
-        ),
-        next_step="Otwórz /content-planner i przygotuj queue refresh/create/merge/block.",
+        summary=summary,
+        next_step=next_step,
         source_connectors=[
             "google_search_console",
             "wordpress_ekologus",
             "wordpress_sklep",
         ],
-        evidence_ids=_limited_ids(
-            _unique(evidence_id for item in gsc_items for evidence_id in item.evidence_ids)
-            or [connector_evidence_id("google_search_console")]
-        ),
+        evidence_ids=_limited_ids(evidence_ids),
         action_ids=action_ids,
         metric_tiles={
-            "query/page": len(gsc_items),
-            "WP match": len(matched_items),
+            "query/page": data.query_page_count,
+            "WP match": data.matched_inventory_count,
+            "decyzje": len(data.decision_queue),
+            "wyświetlenia": total_impressions,
+            "kliknięcia": total_clicks,
             "blockery": 0 if live_data_available else 1,
         },
-        blocked_claims=["lead uplift", "revenue impact", "ranking guarantee"],
+        blocked_claims=_unique(
+            claim for decision in data.decision_queue for claim in decision.blocked_claims
+        )
+        or ["lead uplift", "revenue impact", "ranking guarantee"],
         risk=ActionRisk.low if live_data_available else ActionRisk.medium,
     )
+
+
+def _top_content_decision(
+    decisions: list[ContentDecisionItem],
+) -> ContentDecisionItem | None:
+    return next(
+        (
+            decision
+            for decision in decisions
+            if decision.decision_type != "block_as_tracking_not_content"
+        ),
+        decisions[0] if decisions else None,
+    )
+
+
+def _content_command_summary(decision: ContentDecisionItem) -> str:
+    if decision.summary:
+        return decision.summary
+    if decision.primary_query:
+        return f'Najważniejsze zapytanie contentowe: "{decision.primary_query}".'
+    return decision.rationale
+
+
+def _content_command_next_step(decision: ContentDecisionItem) -> str:
+    if decision.page:
+        return f"Otwórz /content-planner i zacznij od: {decision.title}."
+    return decision.next_step
 
 
 def _ga4_item_from_diagnostics(data: Ga4DiagnosticsResponse) -> CommandCenterBriefItem:
@@ -753,20 +809,17 @@ def _action_plan_item(
             risk=item.risk,
         )
     if item.id == "daily_content_queue":
-        tactic_summary = _content_tactic_summary(related_tactics)
         return CommandCenterActionPlanItem(
             id="plan_prepare_content_refresh_queue",
-            title="Ułóż kolejkę refresh/merge/create dla treści SEO",
+            title="Przejrzyj kolejkę SEO z GSC i WordPress",
             route=item.route,
             status=_action_plan_status(item),
             priority=12,
             category="Content + SEO",
             why_it_matters=(
-                f"WILQ ma {item.metric_tiles.get('query/page', 0)} query/page kandydatów i "
-                f"{item.metric_tiles.get('WP match', 0)} dopasowań WordPress. "
-                f"{tactic_summary}"
+                f"{item.summary} Pełny drilldown query/page i URL jest w /content-planner."
             ),
-            operator_action="Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+            operator_action=item.next_step,
             skill_id="wilq-content-strategist",
             codex_prompt=(
                 "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh, "
@@ -987,22 +1040,6 @@ def _related_tactical_items(item: CommandCenterBriefItem, tactical_items: list[A
     ]
 
 
-def _content_tactic_summary(tactical_items: list[Any]) -> str:
-    pages: dict[str, int] = {}
-    for tactic in tactical_items:
-        page = getattr(tactic, "dimensions", {}).get("page")
-        if not page:
-            continue
-        pages[page] = pages.get(page, 0) + 1
-    if not pages:
-        return "Brak skondensowanej kolejki contentowej."
-    summary_parts = [
-        f"{_short_page_label(page)} ({query_count} {_polish_query_label(query_count)})"
-        for page, query_count in list(pages.items())[:3]
-    ]
-    return "Skondensowane tematy: " + ", ".join(summary_parts) + "."
-
-
 def _ga4_tactic_summary(tactical_items: list[Any]) -> str:
     landings: dict[str, int] = {}
     for tactic in tactical_items:
@@ -1019,12 +1056,6 @@ def _ga4_tactic_summary(tactical_items: list[Any]) -> str:
     return "Skondensowane obszary jakości ruchu: " + ", ".join(summary_parts) + "."
 
 
-def _short_page_label(page: str) -> str:
-    if "://" not in page:
-        return page
-    return page.split("://", maxsplit=1)[1].removeprefix("www.").rstrip("/") or page
-
-
 def _short_landing_label(landing: str) -> str:
     if landing == "/":
         return "strona główna"
@@ -1039,14 +1070,6 @@ def _polish_group_label(count: int) -> str:
     return "grup"
 
 
-def _polish_query_label(query_count: int) -> str:
-    if query_count == 1:
-        return "zapytanie"
-    if 2 <= query_count <= 4:
-        return "zapytania"
-    return "zapytań"
-
-
 def _action_plan_status(item: CommandCenterBriefItem) -> Literal["ready", "blocked"]:
     return "ready" if item.status == "ready" else "blocked"
 
@@ -1059,7 +1082,7 @@ def _decision_observation(
     evidence_label = f"{len(item.evidence_ids)} evidence ID"
     if len(item.evidence_ids) != 1:
         evidence_label += "s"
-    action_label = ", ".join(item.action_ids) if item.action_ids else "brak ActionObject"
+    action_label = _action_count_label(item.action_ids)
     if item.id == "plan_review_ga4_landing_quality" and brief_item is not None:
         return (
             f"{brief_item.summary} Źródła={connector_labels}, "
@@ -1076,6 +1099,14 @@ def _decision_observation(
 
 def _metric_tiles_sentence(metric_tiles: dict[str, float | int | str]) -> str:
     return ", ".join(f"{label}={value}" for label, value in metric_tiles.items())
+
+
+def _action_count_label(action_ids: list[str]) -> str:
+    if not action_ids:
+        return "brak ActionObject"
+    if len(action_ids) == 1:
+        return "1 ActionObject"
+    return f"{len(action_ids)} ActionObjects"
 
 
 def _merge_ids(base_ids: list[str], tactical_items: list[Any], limit: int = 12) -> list[str]:

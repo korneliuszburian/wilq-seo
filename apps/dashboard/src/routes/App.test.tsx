@@ -2994,7 +2994,7 @@ function mockFetch() {
                 priority: 10,
                 metric_tiles: { produkty: 10900, issues: 23, blockery: 0 },
                 co_widzimy:
-                  "Merchant Center: produkty=10900, issues=23, blockery=0. Źródła=google_merchant_center, dowody=1 evidence ID, akcje=act_review_merchant_feed_issues.",
+                  "Merchant Center: produkty=10900, issues=23, blockery=0. Źródła=google_merchant_center, dowody=1 evidence ID, akcje=1 ActionObject.",
                 dlaczego_to_ma_znaczenie:
                   "WILQ widzi 10900 produktów i 23 feed/product issues. To wymaga review.",
                 bezpieczny_next_step:
@@ -3012,17 +3012,17 @@ function mockFetch() {
               },
               {
                 id: "decision_prepare_content_refresh_queue",
-                title: "Ułóż kolejkę refresh/merge/create dla treści SEO",
+                title: "Przejrzyj kolejkę SEO z GSC i WordPress",
                 route: "/content-planner",
                 status: "ready",
                 priority: 12,
-                metric_tiles: { "query/page": 1, "WP match": 1 },
+                metric_tiles: { "query/page": 1, "WP match": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 co_widzimy:
-                  "Content + SEO: query/page=1, WP match=1. Źródła=google_search_console, wordpress_ekologus, dowody=2 evidence IDs, akcje=act_prepare_content_refresh_queue.",
+                  "Content + SEO: query/page=1, WP match=1, decyzje=1, wyświetlenia=120, kliknięcia=12. Źródła=google_search_console, wordpress_ekologus, dowody=2 evidence IDs, akcje=1 ActionObject.",
                 dlaczego_to_ma_znaczenie:
-                  "WILQ ma query/page kandydatów i dopasowania WordPress.",
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
                 bezpieczny_next_step:
-                  "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
                 codex_prompt:
                   "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
@@ -3087,16 +3087,18 @@ function mockFetch() {
               },
               {
                 id: "daily_content_queue",
-                title: "Content: GSC query/page + WordPress inventory",
+                title: "Content: kolejka SEO z GSC i WordPress",
                 route: "/content-planner",
                 status: "ready",
                 priority: 12,
-                summary: "Query/page=1, WordPress match=1.",
-                next_step: "Otwórz /content-planner i przygotuj queue refresh/create/merge/block.",
+                summary:
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł.',
+                next_step:
+                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 source_connectors: ["google_search_console", "wordpress_ekologus"],
                 evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
                 action_ids: ["act_prepare_content_refresh_queue"],
-                metric_tiles: { "query/page": 1, "WP match": 1 },
+                metric_tiles: { "query/page": 1, "WP match": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 blocked_claims: ["lead uplift", "ranking guarantee"],
                 risk: "low"
               },
@@ -3174,13 +3176,15 @@ function mockFetch() {
               },
               {
                 id: "plan_prepare_content_refresh_queue",
-                title: "Ułóż kolejkę refresh/merge/create dla treści SEO",
+                title: "Przejrzyj kolejkę SEO z GSC i WordPress",
                 route: "/content-planner",
                 status: "ready",
                 priority: 12,
                 category: "Content + SEO",
-                why_it_matters: "WILQ ma query/page kandydatów i dopasowania WordPress.",
-                operator_action: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+                why_it_matters:
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
+                operator_action:
+                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
                 codex_prompt:
                   "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
@@ -3365,7 +3369,8 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Oczekiwany wynik: Polski brief feed issue review z evidence IDs.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Ułóż kolejkę refresh/merge/create dla treści SEO")).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj kolejkę SEO z GSC i WordPress")).toBeInTheDocument();
+    expect(screen.getAllByText(/120 wyświetleń/).length).toBeGreaterThan(0);
     expect(screen.getByText("Przejrzyj kampanie Google Ads z live metryk")).toBeInTheDocument();
     expect(screen.getByText("Źródła i ograniczenia")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Otwórz ustawienia" })).toBeInTheDocument();

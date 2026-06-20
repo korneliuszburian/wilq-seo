@@ -52,37 +52,57 @@ class ContentDecisionMetrics:
     best_average_position: float | None
 
 
-def build_content_diagnostics() -> ContentDiagnosticsResponse:
+def build_content_diagnostics(
+    tactical_items: list[TacticalQueueItem] | None = None,
+    actions: list[ActionObject] | None = None,
+    metric_facts: list[MetricFact] | None = None,
+) -> ContentDiagnosticsResponse:
     connectors = [
         connector
         for connector_id in CONTENT_CONNECTOR_IDS
         if (connector := get_connector_status(connector_id)) is not None
     ]
     latest_refreshes = _latest_refreshes(CONTENT_CONNECTOR_IDS)
-    metric_facts = _content_metric_facts(CONTENT_CONNECTOR_IDS)
+    metric_facts = (
+        metric_facts
+        if metric_facts is not None
+        else _content_metric_facts(CONTENT_CONNECTOR_IDS)
+    )
     live_data_available = _primary_content_data_available(metric_facts, latest_refreshes)
     trusted_facts = metric_facts if live_data_available else []
-    all_tactical_items = build_tactical_queue().items
-    tactical_items = [
+    all_tactical_items = (
+        tactical_items if tactical_items is not None else build_tactical_queue().items
+    )
+    content_tactical_items = [
         item
         for item in all_tactical_items
         if item.domain == OpportunityDomain.gsc_seo
         or item.source_connectors.count("wordpress_ekologus") > 0
     ]
     decision_queue = _content_decision_queue(all_tactical_items)
-    action_ids = _content_action_ids(list_actions())
+    action_ids = _content_action_ids(actions if actions is not None else list_actions())
     sections = [
-        _query_page_section(latest_refreshes, trusted_facts, tactical_items, action_ids),
-        _inventory_match_section(latest_refreshes, trusted_facts, tactical_items, action_ids),
-        _content_action_safety_section(latest_refreshes, trusted_facts, tactical_items, action_ids),
+        _query_page_section(latest_refreshes, trusted_facts, content_tactical_items, action_ids),
+        _inventory_match_section(
+            latest_refreshes,
+            trusted_facts,
+            content_tactical_items,
+            action_ids,
+        ),
+        _content_action_safety_section(
+            latest_refreshes,
+            trusted_facts,
+            content_tactical_items,
+            action_ids,
+        ),
     ]
     return ContentDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connectors=connectors,
         latest_refreshes=latest_refreshes,
         live_data_available=live_data_available,
-        query_page_count=_query_page_count(tactical_items),
-        matched_inventory_count=_matched_inventory_count(tactical_items),
+        query_page_count=_query_page_count(content_tactical_items),
+        matched_inventory_count=_matched_inventory_count(content_tactical_items),
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(

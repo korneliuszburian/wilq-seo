@@ -1169,7 +1169,15 @@ def test_command_center_exposes_polish_operator_brief(
     assert "act_configure_google_ads_env" in brief_by_id["daily_ads_status"]["action_ids"]
     assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["issues"] == 3
     assert "act_review_merchant_feed_issues" in brief_by_id["daily_merchant_feed"]["action_ids"]
+    assert brief_by_id["daily_content_queue"]["title"] == (
+        "Content: kolejka SEO z GSC i WordPress"
+    )
+    assert "WordPress potwierdza istniejącą stronę" in brief_by_id[
+        "daily_content_queue"
+    ]["summary"]
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["query/page"] >= 1
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["decyzje"] >= 1
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["wyświetlenia"] >= 1
     assert "act_prepare_content_refresh_queue" in brief_by_id["daily_content_queue"]["action_ids"]
     assert brief_by_id["daily_ga4_landing_quality"]["status"] == "blocked"
     assert "pomiar i jakość ruchu" in brief_by_id["daily_ga4_landing_quality"]["title"]
@@ -5778,10 +5786,23 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
             next_step="Otwórz /merchant.",
         ),
     )
+    content_diagnostics = object()
+
+    def content_builder(
+        tactical_items: list[object] | None = None,
+        actions: list[ActionObject] | None = None,
+        metric_facts: list[object] | None = None,
+    ) -> object:
+        seen["content_tactical_items"] = tactical_items
+        seen["content_actions"] = actions
+        seen["content_metric_facts"] = metric_facts
+        return content_diagnostics
+
+    monkeypatch.setattr(command_center, "build_content_diagnostics", content_builder)
     monkeypatch.setattr(
         command_center,
-        "_content_item_from_tactical",
-        lambda _tactical_items, _actions: CommandCenterBriefItem(
+        "_content_item_from_diagnostics",
+        lambda _content_diagnostics: CommandCenterBriefItem(
             id="daily_content_queue",
             title="Content",
             route="/content-planner",
@@ -5817,6 +5838,9 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
     )
 
     assert seen["actions"] == [action]
+    assert seen["content_tactical_items"] == tactical_queue.items
+    assert seen["content_actions"] == [action]
+    assert seen["content_metric_facts"] is None
 
 
 def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(

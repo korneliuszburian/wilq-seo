@@ -29,7 +29,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
       page.getByRole("heading", { name: "Przejrzyj produkty z problemami w Merchant Center" })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Ułóż kolejkę refresh/merge/create dla treści SEO" })
+      page.getByRole("heading", { name: "Przejrzyj kolejkę SEO z GSC i WordPress" })
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "GA4: pomiar i jakość ruchu do kontroli" })

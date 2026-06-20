@@ -36,7 +36,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
     await expect(page.getByText("Przykładowe evidence")).toHaveCount(0);
     await expect(page.getByText("ponowne zatwierdzenie produktu").first()).toBeVisible();
-    await expect(page.getByText("wzrost leadów").first()).toBeVisible();
+    await expect(page.getByText("jakość leadów").first()).toBeVisible();
     await expect(page.getByText("opłacalność").first()).toBeVisible();
     await expect(page.getByText("zmarnowany budżet").first()).toBeVisible();
     await expect(page.getByText("approval restored")).toHaveCount(0);
@@ -61,7 +61,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/Oczekiwany wynik:/).first()).toBeVisible();
     await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { name: "Ułóż kolejkę refresh/merge/create dla treści SEO" })
+      page.getByRole("heading", { name: "Przejrzyj kolejkę SEO z GSC i WordPress" })
     ).toBeVisible();
     await expect(page.getByText("Skill: wilq-content-strategist")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toHaveCount(0);
