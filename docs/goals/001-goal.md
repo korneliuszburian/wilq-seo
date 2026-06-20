@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 14:30 CEST.
+Last updated: 2026-06-20 14:51 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,31 +86,26 @@ ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
 Latest Ads business context proof after `scripts/local_stack.sh restart`:
-`/api/ads/diagnostics.business_context_read_contract.status=blocked` because
-the repo-local runtime has no non-secret business targets configured yet.
-Missing contracts are `profit_margin`, `business_goal`, `human_budget_goal` and
-`target_roas_or_cpa`; decision `ads_review_business_context` has `priority=22`,
-metric tiles `braki=4`, `blokady=6`, `ustawione pola=0`, and Ads
-`blocker_count=2`. `wilq-ads-doctor` smoke confirms the same contract is in the
-scoped context-pack with `context_pack_bytes=186844`, still below the 200 KB
-budget. The next Ads optimizer step is to set or model those business targets,
-then use them in conservative review-only scoring without unlocking apply.
-This blocker is now also propagated into the daily cockpit, not only
-`/ads-doctor`: `/api/dashboard/command-center.blocker_count=2`, Ads review
-stays `ready`, and separate blocked
-`daily_ads_business_context` / `decision_ads_business_context_before_budget_decisions`
-shows `braki=4`, `marża=brak`, `cel biznesowy=brak`, `cel budżetu=brak`.
-The same blocker appears in `/api/marketing/brief.what_blocks_us` and scoped
-`wilq-daily-command` context-pack. It is now actionable through review-only
-ActionObject `act_configure_ads_business_context`, whose payload is
-`configure_ads_business_context`, `mode=prepare_only`,
-`apply_allowed=false`, `destructive=false`, and lists only non-secret business
-env names. `/api/opportunities` intentionally stays at 4 marketing
-opportunities and does not include this setup blocker. Daily Codex must not
-claim profitability, margin verdict, wasted budget or budget scaling while
-these business targets are missing. Full `scripts/verify.sh` passed after this
-slice: backend `120 passed`, dashboard unit `14 passed`, Playwright e2e
-`11 passed`, dashboard build OK.
+repo-local `.env` now contains preliminary non-secret Ads review targets:
+`WILQ_ADS_PROFIT_MARGIN=0.30`, a Polish business goal, a Polish budget goal
+and `WILQ_ADS_TARGET_CPA_MICROS=150000000` (150 PLN). These are initial review
+values, not final business truth. Current
+`/api/ads/diagnostics.business_context_read_contract.status=ready`,
+`missing_read_contracts=[]`, and allowed metrics include `profit_margin`,
+`business_goal`, `human_budget_goal` and `target_cpa_micros`. Derived KPI rows
+now expose `target_cpa_micros` and `cpa_vs_target_micros`; current live example:
+`Kompendium PPWR` has CPA `50.65 PLN`, target CPA `150 PLN`, delta
+`-99.35 PLN`. Decision `ads_review_business_context` has title
+`Użyj kontekstu biznesowego w review Ads`, and
+`/api/dashboard/command-center` no longer shows the old Ads business-context
+blocker while these local values are present. If the non-secret values are
+removed, Command Center, Marketing Brief and scoped `wilq-daily-command` must
+again show the blocked `daily_ads_business_context` /
+`decision_ads_business_context_before_budget_decisions` repair path with
+review-only ActionObject `act_configure_ads_business_context`. This still does
+not unlock budget apply, recommendation apply, wasted-budget verdicts,
+profitability verdicts or scaling recommendations; those require the remaining
+optimizer contracts, human review and audit paths.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

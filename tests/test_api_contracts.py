@@ -1419,6 +1419,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    clear_google_ads_env(monkeypatch)
     seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
 
     response = client.get("/api/dashboard/command-center")
@@ -3813,6 +3814,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "cost_per_conversion_micros": 4800000,
             "roas": 37.5625,
             "value_per_conversion": 180.3,
+            "target_roas": None,
+            "roas_vs_target": None,
+            "target_cpa_micros": None,
+            "cpa_vs_target_micros": None,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "source_metric_names": [
                 "clicks",
@@ -4830,9 +4835,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "human_budget_goal",
         "target_roas",
     ]
-    assert "profit_margin" not in business_ready_payload[
-        "derived_kpi_read_contract"
-    ]["missing_read_contracts"]
+    derived_ready_contract = business_ready_payload["derived_kpi_read_contract"]
+    assert "profit_margin" not in derived_ready_contract["missing_read_contracts"]
+    assert "target_roas" in derived_ready_contract["allowed_metrics"]
+    assert "roas_vs_target" in derived_ready_contract["allowed_metrics"]
+    assert derived_ready_contract["kpi_rows"][0]["target_roas"] == 5.0
+    assert derived_ready_contract["kpi_rows"][0]["roas_vs_target"] == 32.5625
+    assert derived_ready_contract["kpi_rows"][0]["target_cpa_micros"] is None
+    assert derived_ready_contract["kpi_rows"][0]["cpa_vs_target_micros"] is None
     assert "human_budget_goal" not in business_ready_payload[
         "budget_pacing_read_contract"
     ]["missing_read_contracts"]
@@ -4853,6 +4863,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "blokady": 6,
         "ustawione pola": 4,
     }
+    derived_ready_decision = next(
+        decision
+        for decision in business_ready_payload["decision_queue"]
+        if decision["id"] == "ads_review_derived_kpis"
+    )
+    assert derived_ready_decision["metric_tiles"]["targety"] == 1
+    assert derived_ready_decision["derived_kpi_rows"][0]["roas_vs_target"] == 32.5625
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200

@@ -580,6 +580,10 @@ class AdsDerivedKpiRow(BaseModel):
     cost_per_conversion_micros: float | None = None
     roas: float | None = None
     value_per_conversion: float | None = None
+    target_roas: float | None = None
+    roas_vs_target: float | None = None
+    target_cpa_micros: int | None = None
+    cpa_vs_target_micros: float | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     source_metric_names: list[str] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)

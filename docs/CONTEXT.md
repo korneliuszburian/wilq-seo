@@ -65,27 +65,32 @@ Audit `docs/audits/001-output.md` is now folded into
    `query/page=10`, `WP match=10`, `decyzje=4`, `wyświetlenia=7852`,
    `kliknięcia=138`.
 
-0. Ads business context truth, 2026-06-20 10:12 Europe/Warsaw:
+0. Ads business context truth, 2026-06-20 14:51 Europe/Warsaw:
    `/api/ads/diagnostics` now exposes `business_context_read_contract` and
-   decision `ads_review_business_context`. Live state is intentionally blocked
-   until repo-local non-secret targets exist:
-   `WILQ_ADS_PROFIT_MARGIN`, `WILQ_ADS_BUSINESS_GOAL`,
-   `WILQ_ADS_BUDGET_GOAL` and `WILQ_ADS_TARGET_ROAS` or
-   `WILQ_ADS_TARGET_CPA_MICROS`. This is API product state, not skill prompt
-   logic. Current proof after stack restart: blocker_count=2,
-   `ads_review_business_context.priority=22`, context-pack bytes for
-   `wilq-ads-doctor` = 186844.
+   decision `ads_review_business_context`. Current local runtime has
+   preliminary non-secret Ads business values in repo-local `.env`:
+   `WILQ_ADS_PROFIT_MARGIN=0.30`, a Polish business goal, a Polish budget
+   goal and `WILQ_ADS_TARGET_CPA_MICROS=150000000`. This is API product state,
+   not skill prompt logic, and these values are only initial review targets.
+   Current proof after stack restart:
+   `/api/ads/diagnostics.business_context_read_contract.status=ready`,
+   `missing_read_contracts=[]`, allowed metrics include `profit_margin`,
+   `business_goal`, `human_budget_goal` and `target_cpa_micros`.
+   `ads_review_business_context.title` is
+   `Użyj kontekstu biznesowego w review Ads`.
 
-0. Ads business context cockpit truth, 2026-06-20 10:28 Europe/Warsaw:
-   the Ads business blocker is now propagated beyond `/ads-doctor`.
-   `/api/dashboard/command-center` has `blocker_count=2`, keeps the Ads review
-   queue as `ready`, and adds blocked
-   `daily_ads_business_context` / `decision_ads_business_context_before_budget_decisions`
-   with `braki=4`, `marża=brak`, `cel biznesowy=brak` and `cel budżetu=brak`.
-   `/api/marketing/brief.what_blocks_us` and scoped `wilq-daily-command`
-   context-pack carry the same blocker. Daily Codex must not claim
-   profitability, margin verdict, wasted budget or budget scaling while these
-   business targets are missing.
+0. Ads business context cockpit truth, 2026-06-20 14:51 Europe/Warsaw:
+   with the preliminary local values present, Command Center must not show the
+   old `daily_ads_business_context` blocker. Current proof:
+   `/api/dashboard/command-center` shows only
+   `decision_review_ads_campaign_metrics` for Ads daily review, while
+   `/api/ads/diagnostics.derived_kpi_read_contract.kpi_rows` includes
+   `target_cpa_micros` and `cpa_vs_target_micros`. Example current row:
+   `Kompendium PPWR` CPA `50.65 PLN`, target CPA `150 PLN`, delta
+   `-99.35 PLN`. If these local values are removed, the daily cockpit must
+   again expose the blocked Ads business-context item. Daily Codex still must
+   not claim profitability, margin verdict, wasted budget or budget scaling
+   without the remaining optimizer contracts.
 
 0. Ads business context ActionObject truth, 2026-06-20 11:05 Europe/Warsaw:
    the same blocker is now actionable through review-only

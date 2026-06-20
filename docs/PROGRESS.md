@@ -118,21 +118,29 @@ Aktualny proof produktowy:
   `kampanie=18`, `zapytania=50`, `podgląd budżetu=18`, `rekomendacje=4`,
   `wykluczenia=6`, `segmenty=1`. Ten sam prompt i ActionObjecty trafiają do
   scoped `/api/codex/context-pack` dla `wilq-daily-command`.
-- Ads business context nie jest już ukryty tylko w `/ads-doctor`.
-  Live proof po `scripts/local_stack.sh restart`:
-  `/api/dashboard/command-center.blocker_count=2`, a `operator_brief` i
-  `daily_decisions` mają osobny blocked item
-  `daily_ads_business_context` / `decision_ads_business_context_before_budget_decisions`
-  z `braki=4`, `marża=brak`, `cel biznesowy=brak`, `cel budżetu=brak` oraz
-  blocked claims `profitability`, `margin verdict`, `budget scaling`,
-  `budget apply`, `recommendation apply`, `wasted budget`. Ten sam blocker
-  jest w `/api/marketing/brief.what_blocks_us` i scoped
-  `wilq-daily-command` context-pack, bez dołączania pełnego
-  `ads_diagnostics`. Downstream registry surfaces pozostają decyzjami
-  operacyjnymi: `/api/opportunities` nadal ma 4 action-backed opportunities
-  bez czystego Ads business blockera, a `/api/workflows` i
-  `/api/knowledge/operating-map` wybierają `ads_daily_check` jako `ready`
-  Ads review queue z 4 ActionObjectami.
+- Ads business context ma teraz wstępne, lokalne i nie-sekretne wartości w
+  repo-local `.env`: marża 30%, cel review jakości leadów/kosztu pozyskania,
+  cel ochrony obecnego budżetu i target CPA 150 PLN. Po
+  `scripts/local_stack.sh restart` live
+  `/api/ads/diagnostics.business_context_read_contract.status=ready`,
+  `missing=[]`, `allowed_metrics=[profit_margin, business_goal,
+  human_budget_goal, target_cpa_micros]`. Derived KPI rows expose
+  `target_cpa_micros` and `cpa_vs_target_micros`; current live proof shows
+  `Kompendium PPWR` CPA `50.65 PLN`, target CPA `150 PLN`, delta
+  `-99.35 PLN`. Decision `ads_review_business_context` is now ready with title
+  `Użyj kontekstu biznesowego w review Ads`, and Command Center no longer
+  shows the old Ads business blocker. This is review context only: no budget
+  apply, recommendation apply, wasted-budget verdict or profitability verdict
+  is unlocked.
+- Ads business context nie jest już ukryty tylko w `/ads-doctor`, ale aktualnie
+  nie jest blockerem, bo lokalne wartości wstępne są ustawione. Jeśli te
+  nie-sekretne wartości znikną z `.env`, Command Center, Marketing Brief i
+  scoped `wilq-daily-command` mają ponownie pokazać osobny blocked item
+  `daily_ads_business_context` /
+  `decision_ads_business_context_before_budget_decisions` z ActionObject
+  `act_configure_ads_business_context`. `/api/opportunities` ma nadal pomijać
+  czysty setup blocker, bo opportunities są marketingowymi ruchami, nie
+  naprawą konfiguracji.
 - Ads business context blocker ma teraz konkretną review-only ścieżkę akcji:
   `/api/actions` zwraca `act_configure_ads_business_context` z payloadem
   `configure_ads_business_context`, `missing_read_contracts=[
@@ -359,14 +367,14 @@ Aktualny maintenance:
 4. Ads business context contract, 2026-06-20 10:12 CEST.
    `AdsDiagnosticsResponse` exposes typed
    `business_context_read_contract`, shared Zod schema and Ads Doctor UI
-   labels. Live proof after `scripts/local_stack.sh restart`:
-   `/api/ads/diagnostics.business_context_read_contract.status=blocked`,
-   missing contracts are `profit_margin`, `business_goal`,
-   `human_budget_goal`, `target_roas_or_cpa`; decision
-   `ads_review_business_context` has `priority=22`,
-   metric tiles `braki=4`, `blokady=6`, `ustawione pola=0`, and Ads
-   `blocker_count=2`. `wilq-ads-doctor` smoke passed with the same contract
-   in scoped context-pack (`context_pack_bytes=186844`, still under 200 KB).
+   labels. Current live proof after `scripts/local_stack.sh restart`:
+   `/api/ads/diagnostics.business_context_read_contract.status=ready`,
+   missing contracts are empty, and preliminary local non-secret values are in
+   `.env`: profit margin 30%, business goal, budget goal and target CPA
+   `150000000` micros. Derived KPI rows now expose target comparison fields
+   `target_cpa_micros` and `cpa_vs_target_micros`; this is review-only context
+   and still does not unlock apply, profitability verdicts or wasted-budget
+   claims.
 
 5. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
    `wilq-ads-doctor` context-pack no longer ships duplicated Ads sections or

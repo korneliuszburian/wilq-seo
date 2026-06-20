@@ -2190,7 +2190,11 @@ function AdsDerivedKpiRowsTable({
             <th className="py-2 pr-4 font-semibold">Śr. CPC</th>
             <th className="py-2 pr-4 font-semibold">Conv. rate</th>
             <th className="py-2 pr-4 font-semibold">CPA</th>
+            <th className="py-2 pr-4 font-semibold">Target CPA</th>
+            <th className="py-2 pr-4 font-semibold">Różnica CPA</th>
             <th className="py-2 pr-4 font-semibold">ROAS</th>
+            <th className="py-2 pr-4 font-semibold">Target ROAS</th>
+            <th className="py-2 pr-4 font-semibold">Różnica ROAS</th>
             <th className="py-2 pr-3 font-semibold">Blokady</th>
           </tr>
         </thead>
@@ -2206,7 +2210,15 @@ function AdsDerivedKpiRowsTable({
               <td className="py-2 pr-4 text-slate-700">
                 {adsCost(row.cost_per_conversion_micros, currencyCode)}
               </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.target_cpa_micros, currencyCode)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsSignedCost(row.cpa_vs_target_micros, currencyCode)}
+              </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.roas)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.target_roas)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsSignedNumber(row.roas_vs_target)}</td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
               </td>

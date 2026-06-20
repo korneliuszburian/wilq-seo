@@ -228,6 +228,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     derived_kpi_read_contract = _derived_kpi_read_contract(
         campaign_read_contract,
         account_currency_read_contract,
+        business_context_read_contract,
     )
     budget_pacing_read_contract = _budget_pacing_read_contract(
         trusted_metric_facts,
@@ -1010,6 +1011,7 @@ def _campaign_metric_row(
 def _derived_kpi_read_contract(
     campaign_read_contract: AdsCampaignReadContract,
     account_currency_read_contract: AdsAccountCurrencyReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
 ) -> AdsDerivedKpiReadContract:
     missing_read_contracts = ["profit_margin", "change_history", "recommendations"]
     if account_currency_read_contract.status != "ready":
@@ -1021,10 +1023,35 @@ def _derived_kpi_read_contract(
         "recommendation apply",
         "incrementality",
     ]
-    kpi_rows = [_derived_kpi_row(row) for row in campaign_read_contract.campaign_rows]
+    kpi_rows = [
+        _derived_kpi_row(row, business_context_read_contract)
+        for row in campaign_read_contract.campaign_rows
+    ]
     if kpi_rows:
         rows_with_cpa = sum(1 for row in kpi_rows if row.cost_per_conversion_micros is not None)
         rows_with_roas = sum(1 for row in kpi_rows if row.roas is not None)
+        rows_with_target_context = sum(
+            1
+            for row in kpi_rows
+            if row.roas_vs_target is not None or row.cpa_vs_target_micros is not None
+        )
+        target_summary = (
+            f" Porównanie z targetem dostępne dla {rows_with_target_context} kampanii."
+            if rows_with_target_context
+            else ""
+        )
+        allowed_metrics = [
+            "ctr",
+            "average_cpc_micros",
+            "conversion_rate",
+            "cost_per_conversion_micros",
+            "roas",
+            "value_per_conversion",
+        ]
+        if business_context_read_contract.target_roas is not None:
+            allowed_metrics.extend(["target_roas", "roas_vs_target"])
+        if business_context_read_contract.target_cpa_micros is not None:
+            allowed_metrics.extend(["target_cpa_micros", "cpa_vs_target_micros"])
         return AdsDerivedKpiReadContract(
             status="ready",
             title="Google Ads: wyliczone KPI kampanii",
@@ -1032,15 +1059,9 @@ def _derived_kpi_read_contract(
                 f"WILQ może policzyć KPI dla {len(kpi_rows)} kampanii: "
                 f"CPA dostępne dla {rows_with_cpa}, ROAS dostępny dla {rows_with_roas}. "
                 "To są obliczenia z bieżących metric facts, nie werdykt opłacalności."
+                f"{target_summary}"
             ),
-            allowed_metrics=[
-                "ctr",
-                "average_cpc_micros",
-                "conversion_rate",
-                "cost_per_conversion_micros",
-                "roas",
-                "value_per_conversion",
-            ],
+            allowed_metrics=allowed_metrics,
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -1049,8 +1070,9 @@ def _derived_kpi_read_contract(
             ),
             kpi_rows=kpi_rows,
             next_step=(
-                "Użyj KPI do triage kampanii. Przed decyzją budżetową sprawdź "
-                "marżę, pacing budżetu, historię zmian i rekomendacje."
+                "Użyj KPI i ewentualnego porównania z targetem do triage kampanii. "
+                "Przed decyzją budżetową sprawdź marżę, pacing budżetu, historię "
+                "zmian i rekomendacje."
             ),
         )
     return AdsDerivedKpiReadContract(
@@ -1067,7 +1089,10 @@ def _derived_kpi_read_contract(
     )
 
 
-def _derived_kpi_row(row: AdsCampaignMetricRow) -> AdsDerivedKpiRow:
+def _derived_kpi_row(
+    row: AdsCampaignMetricRow,
+    business_context_read_contract: AdsBusinessContextReadContract,
+) -> AdsDerivedKpiRow:
     source_metric_names = [fact.name for fact in row.metric_facts]
     missing_metrics = list(row.missing_metrics)
     if not row.impressions:
@@ -1080,15 +1105,23 @@ def _derived_kpi_row(row: AdsCampaignMetricRow) -> AdsDerivedKpiRow:
         )
     if not row.cost_micros:
         missing_metrics.append("nonzero_cost_for_roas")
+    cost_per_conversion_micros = _ratio(row.cost_micros, row.conversions)
+    roas = _ratio(row.conversion_value, _micros_to_account_units(row.cost_micros))
+    target_roas = business_context_read_contract.target_roas
+    target_cpa_micros = business_context_read_contract.target_cpa_micros
     return AdsDerivedKpiRow(
         campaign_id=row.campaign_id,
         campaign_name=row.campaign_name,
         ctr=_ratio(row.clicks, row.impressions),
         average_cpc_micros=_ratio(row.cost_micros, row.clicks),
         conversion_rate=_ratio(row.conversions, row.clicks),
-        cost_per_conversion_micros=_ratio(row.cost_micros, row.conversions),
-        roas=_ratio(row.conversion_value, _micros_to_account_units(row.cost_micros)),
+        cost_per_conversion_micros=cost_per_conversion_micros,
+        roas=roas,
         value_per_conversion=_ratio(row.conversion_value, row.conversions),
+        target_roas=target_roas,
+        roas_vs_target=_difference(roas, target_roas),
+        target_cpa_micros=target_cpa_micros,
+        cpa_vs_target_micros=_difference(cost_per_conversion_micros, target_cpa_micros),
         evidence_ids=row.evidence_ids,
         source_metric_names=_unique(source_metric_names),
         missing_metrics=_unique(missing_metrics),
@@ -2076,6 +2109,15 @@ def _ratio(
     if numerator is None or denominator is None or denominator == 0:
         return None
     return round(float(numerator) / float(denominator), 6)
+
+
+def _difference(
+    left: float | int | None,
+    right: float | int | None,
+) -> float | None:
+    if left is None or right is None:
+        return None
+    return round(float(left) - float(right), 6)
 
 
 def _micros_to_account_units(value: float | int | None) -> float | None:
@@ -3394,13 +3436,25 @@ def _ads_decision_queue(
             id="ads_review_business_context",
             decision_type="review_business_context",
             status=business_context_read_contract.status,
-            title="Uzupełnij kontekst biznesowy przed decyzjami Ads",
+            title=(
+                "Użyj kontekstu biznesowego w review Ads"
+                if business_context_read_contract.status == "ready"
+                else "Uzupełnij kontekst biznesowy przed decyzjami Ads"
+            ),
             summary=business_context_read_contract.summary,
             rationale=(
-                "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI, ale "
-                "nie zna marży, celu sprzedażowego ani intencji budżetu Ekologus. "
-                "WILQ musi mieć ten kontekst jako typed contract, zanim nazwie coś "
-                "rentowne, nierentowne albo gotowe do skalowania."
+                "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI. "
+                "WILQ używa lokalnego typed contractu z marżą, celem biznesowym, "
+                "celem budżetu oraz targetem ROAS/CPA jako kontekstu review, ale "
+                "nadal blokuje apply i twarde werdykty bez pełnych kontraktów "
+                "pacingu, historii zmian, rekomendacji i audytu."
+                if business_context_read_contract.status == "ready"
+                else (
+                    "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI, ale "
+                    "nie zna marży, celu sprzedażowego ani intencji budżetu Ekologus. "
+                    "WILQ musi mieć ten kontekst jako typed contract, zanim nazwie coś "
+                    "rentowne, nierentowne albo gotowe do skalowania."
+                )
             ),
             next_step=business_context_read_contract.next_step,
             allowed_metrics=business_context_read_contract.allowed_metrics,
@@ -3962,13 +4016,19 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
             1 for row in decision.derived_kpi_rows if row.cost_per_conversion_micros is not None
         )
         rows_with_roas = sum(1 for row in decision.derived_kpi_rows if row.roas is not None)
-        return _clean_metric_tiles(
-            {
-                "kampanie": len(decision.derived_kpi_rows),
-                "wiersze CPA": rows_with_cpa,
-                "wiersze ROAS": rows_with_roas,
-            }
+        rows_with_target_context = sum(
+            1
+            for row in decision.derived_kpi_rows
+            if row.roas_vs_target is not None or row.cpa_vs_target_micros is not None
         )
+        tiles: dict[str, int | float | str | None] = {
+            "kampanie": len(decision.derived_kpi_rows),
+            "wiersze CPA": rows_with_cpa,
+            "wiersze ROAS": rows_with_roas,
+        }
+        if rows_with_target_context:
+            tiles["targety"] = rows_with_target_context
+        return _clean_metric_tiles(tiles)
     if decision.decision_type == "review_budget_context":
         return _clean_metric_tiles(
             {
