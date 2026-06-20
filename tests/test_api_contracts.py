@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
+from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
@@ -791,6 +792,57 @@ def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
     assert "client-secret-test" not in serialized
 
 
+def test_google_ads_business_context_action_is_review_only(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_google_ads_env(monkeypatch)
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    actions = {action["id"]: action for action in actions_response.json()}
+    assert ADS_BUSINESS_CONTEXT_ACTION_ID in actions
+    assert "act_configure_google_ads_env" not in actions
+
+    action_response = client.get(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    serialized = json.dumps(action)
+    assert action["title"] == "Uzupełnij kontekst biznesowy Google Ads"
+    assert action["mode"] == "prepare"
+    assert action["risk"] == "low"
+    assert action["payload"]["action_type"] == "configure_ads_business_context"
+    assert action["payload"]["mode"] == "prepare_only"
+    assert action["payload"]["apply_allowed"] is False
+    assert action["payload"]["destructive"] is False
+    assert action["payload"]["missing_read_contracts"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+    ]
+    assert "WILQ_ADS_PROFIT_MARGIN" in action["payload"]["required_env"]
+    assert "WILQ_ADS_TARGET_ROAS" in action["payload"]["alternative_env"][
+        "target_roas_or_cpa"
+    ]
+    assert "WILQ_ADS_TARGET_CPA_MICROS" in action["payload"]["alternative_env"][
+        "target_roas_or_cpa"
+    ]
+    assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
+    assert "client_secret" not in serialized
+
+    validate_response = client.post(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}/validate")
+    assert validate_response.status_code == 200
+    validation = validate_response.json()
+    assert validation["valid"] is True
+    assert validation["errors"] == []
+
+    apply_response = client.post(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}/apply")
+    assert apply_response.status_code == 409
+    assert "Action mode must be apply" in json.dumps(apply_response.json())
+
+
 def test_metric_backed_prepare_actions_are_evidence_grounded(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1385,6 +1437,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_business_item["metric_tiles"]["cel biznesowy"] == "brak"
     assert "profitability" in ads_business_item["blocked_claims"]
     assert "wasted budget" in ads_business_item["blocked_claims"]
+    assert ads_business_item["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
 
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
     ads_plan = plan_by_id["plan_review_ads_campaign_metrics"]
@@ -1405,6 +1458,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "WILQ_ADS_PROFIT_MARGIN" in ads_business_plan["operator_action"]
     assert "rentowności" in ads_business_plan["codex_prompt"]
     assert ads_business_plan["blocked_claims"] == ads_business_item["blocked_claims"]
+    assert ads_business_plan["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
 
     decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
     ads_decision = decisions_by_id["decision_review_ads_campaign_metrics"]
@@ -1419,6 +1473,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_business_decision["metric_tiles"]["braki"] == 4
     assert "Bez tego KPI są tylko triage" in ads_business_decision["co_widzimy"]
     assert ads_business_decision["blocked_claims"] == ads_business_item["blocked_claims"]
+    assert ads_business_decision["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
@@ -1426,6 +1481,10 @@ def test_command_center_ads_plan_uses_live_review_queues(
     blockers = sections_by_id["what_blocks_us"]
     blocker_titles = {item["title"] for item in blockers["items"]}
     assert "Uzupełnij kontekst biznesowy Ads przed decyzjami budżetowymi" in blocker_titles
+    blocker_action_ids = {
+        action_id for item in blockers["items"] for action_id in item["action_ids"]
+    }
+    assert ADS_BUSINESS_CONTEXT_ACTION_ID in blocker_action_ids
 
 
 def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
@@ -3500,6 +3559,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
     )
     assert business_context_section["status"] == "blocked"
+    assert business_context_section["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
     business_context_decision = next(
         decision
         for decision in payload["decision_queue"]
@@ -3518,6 +3578,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "blokady": 6,
         "ustawione pola": 0,
     }
+    assert business_context_decision["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
     derived_kpi_contract = payload["derived_kpi_read_contract"]
     assert derived_kpi_contract["status"] == "ready"
     assert derived_kpi_contract["allowed_metrics"] == [
@@ -4351,7 +4412,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert safety_decision["priority"] == 10
-    assert safety_decision["metric_tiles"] == {"ActionObjecty": 4, "blokady": 3}
+    assert safety_decision["metric_tiles"] == {"ActionObjecty": 5, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
     assert payload["blocker_count"] == 2
 

@@ -51,6 +51,15 @@ Audit `docs/audits/001-output.md` is now folded into
    profitability, margin verdict, wasted budget or budget scaling while these
    business targets are missing.
 
+0. Ads business context ActionObject truth, 2026-06-20 11:05 Europe/Warsaw:
+   the same blocker is now actionable through review-only
+   `act_configure_ads_business_context`. Its payload action is
+   `configure_ads_business_context`, `mode=prepare_only`,
+   `apply_allowed=false`, `destructive=false`, and it lists only non-secret
+   business env names. It belongs in `/api/actions`, `/api/ads/diagnostics`,
+   Command Center and marketing brief, but not in `/api/opportunities`;
+   opportunities remain marketing moves, not setup repair tasks.
+
 0. Ads recommendation apply-preview truth, 2026-06-20 00:20 Europe/Warsaw:
    Google Ads recommendation review now has a typed review-only apply payload
    preview in `/api/ads/diagnostics`, `/api/actions`,

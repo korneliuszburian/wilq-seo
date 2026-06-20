@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Iterable
 from typing import Literal
 
+from wilq.actions.google_ads.business_context import (
+    ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ads_float_env,
+    ads_int_env,
+    ads_profit_margin_env,
+    ads_text_env,
+)
 from wilq.actions.google_ads.campaign_review import (
     CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION,
     CAMPAIGN_REVIEW_ACTION_ID,
@@ -435,7 +441,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
             action_ids,
             campaign_read_contract,
         ),
-        _business_context_section(business_context_read_contract),
+        _business_context_section(business_context_read_contract, action_ids),
         _derived_kpi_section(derived_kpi_read_contract),
         _budget_pacing_section(budget_pacing_read_contract),
         _recommendations_section(recommendations_read_contract),
@@ -657,6 +663,7 @@ def _derived_kpi_section(
 
 def _business_context_section(
     business_context_read_contract: AdsBusinessContextReadContract,
+    action_ids: list[str],
 ) -> AdsDiagnosticSection:
     return AdsDiagnosticSection(
         id="ads_business_context",
@@ -671,7 +678,7 @@ def _business_context_section(
         next_step=business_context_read_contract.next_step,
         source_connectors=business_context_read_contract.source_connectors,
         evidence_ids=business_context_read_contract.evidence_ids,
-        action_ids=[],
+        action_ids=_business_context_action_ids(action_ids),
         blocked_claims=business_context_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
@@ -903,43 +910,19 @@ def _business_context_read_contract(
 
 
 def _profit_margin_env() -> tuple[float | None, str | None]:
-    value, source = _float_env("WILQ_ADS_PROFIT_MARGIN")
-    if value is None:
-        value, source = _float_env("WILQ_ADS_PROFIT_MARGIN_PCT")
-    if value is None or source is None:
-        return None, None
-    if value > 1:
-        value = value / 100
-    if value <= 0 or value >= 1:
-        return None, None
-    return round(value, 6), source
+    return ads_profit_margin_env()
 
 
 def _text_env(name: str) -> tuple[str | None, str | None]:
-    value = os.getenv(name, "").strip()
-    if not value:
-        return None, None
-    return value, name
+    return ads_text_env(name)
 
 
 def _float_env(name: str) -> tuple[float | None, str | None]:
-    value = os.getenv(name, "").strip()
-    if not value:
-        return None, None
-    try:
-        return float(value.replace(",", ".")), name
-    except ValueError:
-        return None, None
+    return ads_float_env(name)
 
 
 def _int_env(name: str) -> tuple[int | None, str | None]:
-    value = os.getenv(name, "").strip()
-    if not value:
-        return None, None
-    try:
-        return int(value), name
-    except ValueError:
-        return None, None
+    return ads_int_env(name)
 
 
 def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMetricRow]:
@@ -3400,7 +3383,7 @@ def _ads_decision_queue(
             missing_read_contracts=business_context_read_contract.missing_read_contracts,
             source_connectors=business_context_read_contract.source_connectors,
             evidence_ids=business_context_read_contract.evidence_ids,
-            action_ids=[],
+            action_ids=_business_context_action_ids(action_ids),
             blocked_claims=business_context_read_contract.blocked_claims,
             risk=ActionRisk.medium,
         )
@@ -3779,6 +3762,12 @@ def _ads_decision_queue(
 
 def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
     return [action_id for action_id in action_ids if action_id == CAMPAIGN_REVIEW_ACTION_ID]
+
+
+def _business_context_action_ids(action_ids: list[str]) -> list[str]:
+    return [
+        action_id for action_id in action_ids if action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
+    ]
 
 
 def _recommendation_action_ids(action_ids: list[str]) -> list[str]:

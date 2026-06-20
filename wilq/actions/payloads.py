@@ -2,13 +2,21 @@ from __future__ import annotations
 
 from typing import Any
 
+from wilq.actions.google_ads.business_context import (
+    ADS_BUSINESS_CONTEXT_ACTION_TYPE,
+    validate_ads_business_context_payload,
+)
 from wilq.actions.google_ads.campaign_review import validate_campaign_review_payload
 from wilq.actions.google_ads.custom_segments import validate_custom_segment_payload
 from wilq.actions.google_ads.negative_keywords import validate_negative_keyword_payload
 from wilq.actions.google_ads.recommendations import validate_recommendation_review_payload
 from wilq.connectors.registry import get_connector_status
 
-INTERNAL_ACTION_TYPES = {"configure_connector", "repair_google_ads_oauth"}
+INTERNAL_ACTION_TYPES = {
+    "configure_connector",
+    "repair_google_ads_oauth",
+    ADS_BUSINESS_CONTEXT_ACTION_TYPE,
+}
 
 
 def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[str]:
@@ -37,6 +45,10 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
                 errors.append("repair_google_ads_oauth requires oauth_client_json_path.")
             if not isinstance(payload.get("helper_commands"), list):
                 errors.append("repair_google_ads_oauth requires helper_commands list.")
+        if action_type == ADS_BUSINESS_CONTEXT_ACTION_TYPE:
+            if connector_id != "google_ads":
+                errors.append("configure_ads_business_context is only valid for google_ads.")
+            errors.extend(validate_ads_business_context_payload(payload))
         return errors
 
     if connector is None:

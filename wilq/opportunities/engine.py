@@ -27,6 +27,10 @@ CONNECTOR_LABELS = {
     "facebook": "Facebook",
 }
 
+EXCLUDED_DAILY_OPPORTUNITY_DECISION_IDS = {
+    "decision_ads_business_context_before_budget_decisions",
+}
+
 OPPORTUNITY_TYPES = (
     "google_ads_waste",
     "google_ads_negative_keywords",
@@ -183,6 +187,7 @@ def _daily_decision_opportunities() -> list[Opportunity]:
         _opportunity_from_daily_decision(decision)
         for decision in runtime.command_center.daily_decisions
         if decision.evidence_ids and decision.source_connectors and decision.action_ids
+        and decision.id not in EXCLUDED_DAILY_OPPORTUNITY_DECISION_IDS
     ]
     return sorted(opportunities, key=lambda item: (_opportunity_sort_priority(item), item.id))
 

@@ -148,9 +148,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(
       page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" })
     ).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Evidence And Diagnosis" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Payload Preview" })).toBeVisible();
-    await expect(page.getByText(/Evidence: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i diagnoza" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Podgląd payloadu" })).toBeVisible();
+    await expect(page.getByText(/Dowody: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
+    await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
     await expect(page.getByText("Jawne potwierdzenie apply")).toBeVisible();
     await page.getByRole("button", { name: "Potwierdź apply" }).click();
     await expect(page.getByText("Apply: blocked")).toBeVisible();
@@ -246,7 +247,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(
       page.getByRole("heading", { name: /ev_refresh_refresh_google_merchant_center/ })
     ).toBeVisible();
-    await expect(page.getByText("Source connector: google_merchant_center")).toBeVisible();
+    await expect(page.getByText("Źródło: google_merchant_center")).toBeVisible();
   });
 
   test("localo route exposes access readiness without invented local metrics", async ({ page }) => {

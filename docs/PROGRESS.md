@@ -83,6 +83,18 @@ Aktualny proof produktowy:
   bez czystego Ads business blockera, a `/api/workflows` i
   `/api/knowledge/operating-map` wybierają `ads_daily_check` jako `ready`
   Ads review queue z 4 ActionObjectami.
+- Ads business context blocker ma teraz konkretną review-only ścieżkę akcji:
+  `/api/actions` zwraca `act_configure_ads_business_context` z payloadem
+  `configure_ads_business_context`, `missing_read_contracts=[
+  profit_margin, business_goal, human_budget_goal, target_roas_or_cpa]`,
+  `apply_allowed=false` i `destructive=false`. `/api/ads/diagnostics`
+  podpina ten action ID do `ads_review_business_context`, Command Center
+  podpina go do `decision_ads_business_context_before_budget_decisions`, a
+  Ads ready opportunity nadal ma tylko 4 właściwe review ActionObjecty.
+  Wąski proof: ruff/mypy OK, 3 targeted backend tests OK, dashboard unit
+  `14 passed`, Playwright action-detail smoke `1 passed`. Full
+  `scripts/verify.sh` passed after this slice: backend `120 passed`,
+  dashboard unit `14 passed`, Playwright e2e `11 passed`, dashboard build OK.
 - Command Center tłumaczy teraz marketer-facing blocked claims w ogólnych
   kartach decyzyjnych/tactical/brief: API nadal niesie stabilne raw
   `blocked_claims`, ale UI pokazuje np. `ponowne zatwierdzenie produktu`,

@@ -4006,6 +4006,6 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Merchant Center feed diagnostics collected sanitized product issue counters.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Source connector: google_merchant_center")).toBeInTheDocument();
+    expect(screen.getByText("Źródło: google_merchant_center")).toBeInTheDocument();
   });
 });

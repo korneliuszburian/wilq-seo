@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
+from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
@@ -263,7 +264,11 @@ def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
         next_step=next_step,
         source_connectors=["google_ads"],
         evidence_ids=_limited_ids(data.evidence_ids),
-        action_ids=data.action_ids,
+        action_ids=[
+            action_id
+            for action_id in data.action_ids
+            if action_id != ADS_BUSINESS_CONTEXT_ACTION_ID
+        ],
         metric_tiles=metric_tiles if data.live_data_available else {"blockery": data.blocker_count},
         blocked_claims=(
             _ads_ready_blocked_claims(data)
@@ -303,7 +308,11 @@ def _ads_business_context_item(
         next_step=contract.next_step,
         source_connectors=contract.source_connectors,
         evidence_ids=_limited_ids(contract.evidence_ids),
-        action_ids=[],
+        action_ids=[
+            action_id
+            for action_id in data.action_ids
+            if action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
+        ],
         metric_tiles={
             "braki": len(contract.missing_read_contracts),
             **contract.metric_tiles,

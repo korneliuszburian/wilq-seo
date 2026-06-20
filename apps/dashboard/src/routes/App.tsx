@@ -5019,23 +5019,23 @@ function ActionDetail({ action }: { action: ActionObject }) {
         <StatusBadge value={action.risk} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Evidence And Diagnosis" />
+        <SectionHeading title="Dowody i diagnoza" />
         <p className="text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
         <div className="mt-4 text-xs text-slate-600">
-          <LinkedTraceLine label="Evidence" values={action.evidence_ids} kind="evidence" />
+          <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
         </div>
         <ActionValidationControls action={action} />
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Payload Preview" />
+        <SectionHeading title="Podgląd payloadu" />
         <pre className="max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
           {JSON.stringify(action.payload, null, 2)}
         </pre>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Audit Timeline" />
+        <SectionHeading title="Historia audytu" />
         {action.audit_events.length === 0 ? (
-          <p className="text-sm text-slate-600">No audit events recorded yet.</p>
+          <p className="text-sm text-slate-600">Brak zapisanych zdarzeń audytu.</p>
         ) : (
           <div className="grid gap-3">
             {action.audit_events.map((event) => (
@@ -5061,15 +5061,15 @@ function EvidenceDetail({ evidence }: { evidence: Evidence }) {
         <StatusBadge value={evidence.freshness.state} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Evidence Summary" />
+        <SectionHeading title="Podsumowanie dowodu" />
         <p className="text-sm leading-6 text-slate-700">{evidence.summary}</p>
         <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-          <div>Source connector: {evidence.source_connector}</div>
-          <div>Source type: {evidence.source_type}</div>
-          <div>Source ID: {evidence.source_id}</div>
-          <div>Collected at: {evidence.collected_at}</div>
-          <div>Freshness: {evidence.freshness.state}</div>
-          <div>Raw ref: {evidence.raw_ref ?? "brak"}</div>
+          <div>Źródło: {evidence.source_connector}</div>
+          <div>Typ źródła: {evidence.source_type}</div>
+          <div>ID źródła: {evidence.source_id}</div>
+          <div>Zebrano: {evidence.collected_at}</div>
+          <div>Świeżość: {evidence.freshness.state}</div>
+          <div>Referencja raw: {evidence.raw_ref ?? "brak"}</div>
         </div>
       </section>
     </main>
@@ -5085,17 +5085,17 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
         <StatusBadge value={opportunity.risk} />
       </div>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Diagnosis" />
+        <SectionHeading title="Diagnoza" />
         <p className="text-sm leading-6 text-slate-700">{opportunity.human_diagnosis}</p>
         <div className="mt-4 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-          <div>Evidence: {opportunity.evidence_ids.join(", ")}</div>
-          <div>Sources: {opportunity.source_connectors.join(", ")}</div>
+          <div>Dowody: {opportunity.evidence_ids.join(", ")}</div>
+          <div>Źródła: {opportunity.source_connectors.join(", ")}</div>
         </div>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Raw Metrics" />
+        <SectionHeading title="Surowe metryki" />
         {opportunity.metrics.length === 0 ? (
-          <p className="text-sm text-slate-600">No real metric facts are available yet.</p>
+          <p className="text-sm text-slate-600">Brak realnych metric facts.</p>
         ) : (
           <pre className="max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
             {JSON.stringify(opportunity.metrics, null, 2)}

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 10:28 CEST.
+Last updated: 2026-06-20 11:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -101,9 +101,16 @@ stays `ready`, and separate blocked
 `daily_ads_business_context` / `decision_ads_business_context_before_budget_decisions`
 shows `braki=4`, `marża=brak`, `cel biznesowy=brak`, `cel budżetu=brak`.
 The same blocker appears in `/api/marketing/brief.what_blocks_us` and scoped
-`wilq-daily-command` context-pack. Daily Codex must not claim profitability,
-margin verdict, wasted budget or budget scaling while these business targets
-are missing.
+`wilq-daily-command` context-pack. It is now actionable through review-only
+ActionObject `act_configure_ads_business_context`, whose payload is
+`configure_ads_business_context`, `mode=prepare_only`,
+`apply_allowed=false`, `destructive=false`, and lists only non-secret business
+env names. `/api/opportunities` intentionally stays at 4 marketing
+opportunities and does not include this setup blocker. Daily Codex must not
+claim profitability, margin verdict, wasted budget or budget scaling while
+these business targets are missing. Full `scripts/verify.sh` passed after this
+slice: backend `120 passed`, dashboard unit `14 passed`, Playwright e2e
+`11 passed`, dashboard build OK.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

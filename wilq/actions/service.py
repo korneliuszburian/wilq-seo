@@ -3,6 +3,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.google_ads.business_context import (
+    ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ads_business_context_configured,
+    ads_business_context_missing_read_contracts,
+    ads_business_context_payload,
+)
 from wilq.actions.google_ads.campaign_review import (
     CAMPAIGN_REVIEW_ACTION_ID,
     campaign_review_payload_from_metric_facts,
@@ -33,6 +39,7 @@ from wilq.schemas import (
     ActionValidationResult,
     AuditEvent,
     ConnectorRefreshMode,
+    ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
     OpportunityDomain,
@@ -233,24 +240,76 @@ def list_actions() -> list[ActionObject]:
     actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
     if _google_ads_live_data_available():
         actions.pop("act_configure_google_ads_env", None)
+        business_context_action = _google_ads_business_context_action()
+        if business_context_action is not None:
+            actions[business_context_action.id] = business_context_action
     return list(actions.values())
 
 
 def get_action(action_id: str) -> ActionObject | None:
-    return {**_STATIC_ACTIONS, **seed_metric_action_candidates()}.get(action_id)
+    actions = {**_STATIC_ACTIONS, **seed_metric_action_candidates()}
+    business_context_action = _google_ads_business_context_action()
+    if business_context_action is not None:
+        actions[business_context_action.id] = business_context_action
+    return actions.get(action_id)
 
 
 def _google_ads_live_data_available() -> bool:
+    latest_run = _latest_google_ads_vendor_read()
+    if latest_run is None:
+        return False
+    return (
+        latest_run.status == ConnectorRefreshStatus.completed
+        and latest_run.vendor_data_collected is True
+    )
+
+
+def _latest_google_ads_vendor_read() -> ConnectorRefreshRun | None:
     latest_run = None
     for run in list_connector_refresh_runs(connector_id="google_ads"):
         if run.mode == ConnectorRefreshMode.vendor_read:
             latest_run = run
             break
-    if latest_run is None:
-        return False
-    return (
-        latest_run.status == ConnectorRefreshStatus.completed
-        and latest_run.vendor_data_collected
+    return latest_run
+
+
+def _google_ads_business_context_action() -> ActionObject | None:
+    latest_run = _latest_google_ads_vendor_read()
+    if (
+        latest_run is None
+        or latest_run.status != ConnectorRefreshStatus.completed
+        or not latest_run.vendor_data_collected
+        or ads_business_context_configured()
+    ):
+        return None
+    missing_read_contracts = ads_business_context_missing_read_contracts()
+    return ActionObject(
+        id=ADS_BUSINESS_CONTEXT_ACTION_ID,
+        title="Uzupełnij kontekst biznesowy Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=_unique(
+            [
+                connector_evidence_id("google_ads"),
+                *latest_run.evidence_ids,
+            ]
+        ),
+        human_diagnosis=(
+            "Google Ads ma live metryki, ale WILQ nie ma nie-sekretnych celów "
+            "biznesowych Ekologus: marży, celu biznesowego, celu budżetu oraz "
+            "targetu ROAS albo CPA."
+        ),
+        recommended_reason=(
+            "Uzupełnij repo-local .env wartościami biznesowymi, potem sprawdź "
+            "business_context_read_contract. Do tego czasu WILQ blokuje claimy "
+            "o rentowności, zmarnowanym budżecie i skalowaniu."
+        ),
+        payload=ads_business_context_payload(missing_read_contracts),
+        validation_status="not_validated",
+        created_by="system_business_context_seed",
     )
 
 
