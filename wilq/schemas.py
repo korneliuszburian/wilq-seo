@@ -1101,10 +1101,16 @@ class ContentDecisionItem(BaseModel):
         "block_as_tracking_not_content",
     ]
     title: str
+    summary: str | None = None
     page: str | None = None
     normalized_page_path: str | None = None
     queries: list[str] = Field(default_factory=list)
     query_count: int = 0
+    primary_query: str | None = None
+    total_clicks: int | None = None
+    total_impressions: int | None = None
+    aggregate_ctr: float | None = None
+    best_average_position: float | None = None
     wordpress_match: str | None = None
     wordpress_match_confidence: str | None = None
     wordpress_content_url: str | None = None

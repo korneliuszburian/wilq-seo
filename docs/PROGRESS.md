@@ -82,6 +82,15 @@ Aktualny proof produktowy:
   pokazują liczby `grupy ruchu`, `decyzje`, `pomiar`, `jakość ruchu` i
   `braki kontraktu` zamiast angielskich `landing groups` i ogólnego
   "brak pełnego kontraktu" jako głównego przekazu.
+- Content diagnostics i scoped `wilq-content-strategist` context-pack pokazują
+  teraz typed decyzje z marketer-facing tytułem, summary, `primary_query`,
+  `total_clicks`, `total_impressions`, `aggregate_ctr` i
+  `best_average_position`. Live proof po `scripts/local_stack.sh restart`:
+  top decyzje to `SEO: odśwież lub scal "bdo co to" (1 zapytanie)` z
+  `4429 wyświetleń`, `4 kliknięcia`, CTR `0.09%` oraz
+  `SEO: odśwież lub scal "zielony ład co to" (7 zapytań)` z
+  `2902 wyświetlenia`, `123 kliknięcia`, CTR `4.24%`. Context-pack zachowuje
+  evidence IDs i `act_prepare_content_refresh_queue`.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
 - Pełny `scripts/verify.sh` przeszedł po Command Center Ads review queues slice:
@@ -97,7 +106,25 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
+1. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
+   `/api/content/diagnostics.decision_queue` ma teraz skondensowane, polskie
+   decyzje contentowe zamiast URL-i jako głównych tytułów. API dodaje
+   `summary`, `primary_query`, `total_clicks`, `total_impressions`,
+   `aggregate_ctr` i `best_average_position`; kolejka sortuje GSC/WordPress
+   decyzje po realnym popycie z GSC, a dashboard `/content-planner` renderuje
+   te pola jako pierwszorzędne liczby. Live proof po
+   `scripts/local_stack.sh restart`: główne decyzje contentowe to BDO
+   (`4429 wyświetleń`, `4 kliknięcia`, CTR `0.09%`), Zielony Ład
+   (`2902 wyświetlenia`, `123 kliknięcia`, CTR `4.24%`), Remediacja i brand.
+   Scoped `wilq-content-strategist` context-pack niesie te same pola,
+   `google_search_console` + `wordpress_ekologus` evidence IDs i
+   `act_prepare_content_refresh_queue`. Focused ruff, mypy, backend
+   `content_diagnostics` tests, dashboard lint/typecheck and `App.test.tsx`
+   passed. Full `scripts/verify.sh` also passed: backend `117 passed`,
+   dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
+   skill/API smokes and dashboard production build passed.
+
+2. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
    Command Center GA4 daily decision now consumes the same
    `Ga4DiagnosticsResponse.decision_queue` contract as `/ga4` and the
    `wilq-ga4-analyst` context-pack path. Live proof after
@@ -109,7 +136,7 @@ Aktualny maintenance:
    unit `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-2. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
+3. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
    Dashboard Command Center, tactical cards, daily decision cards and
    brief/action surfaces keep the stable `evidence_ids` API contract, but render
    marketer-facing labels as `Dowody`, `Dowody: N ID(s)` and
@@ -119,7 +146,7 @@ Aktualny maintenance:
    `brama bezpieczeństwa` language. Focused dashboard lint, typecheck, unit
    `App.test.tsx` and real-browser Command Center smoke passed.
 
-3. Command Center blocked-claim label cleanup, 2026-06-20 01:43 Europe/Warsaw.
+4. Command Center blocked-claim label cleanup, 2026-06-20 01:43 Europe/Warsaw.
    Dashboard Command Center, tactical cards and brief/action cards now translate
    raw blocked-claim contract values into Polish marketer-facing labels without
    changing API IDs. Live proof after `scripts/local_stack.sh restart`: Ads
@@ -131,7 +158,7 @@ Aktualny maintenance:
    mypy, command-center API tests, dashboard lint/typecheck/unit and Playwright
    Command Center smoke passed.
 
-4. Command Center Ads review queues, 2026-06-20.
+5. Command Center Ads review queues, 2026-06-20.
    Command Center i `wilq-daily-command` context-pack konsumują teraz istniejące
    Ads diagnostics zamiast pokazywać generyczne "live metrics" albo
    connector/readiness prose. Live proof po `scripts/local_stack.sh restart`:
@@ -145,26 +172,6 @@ Aktualny maintenance:
    niesie ten sam prompt do `wilq-ads-doctor`. Focused ruff, mypy i
    `uv run pytest tests/test_api_contracts.py -q -k 'command_center'` passed.
    Full `scripts/verify.sh` passed: backend `117 passed`, dashboard unit
-   `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
-   dashboard production build passed.
-
-5. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
-   Google Ads budget context ma teraz review-only
-   `CampaignBudgetOperation` payload preview w typed API, shared schemas,
-   dashboardzie `/ads-doctor` i ActionObject
-   `act_prepare_ads_campaign_review_queue`. Preview pokazuje bieżący budżet,
-   ewentualną rekomendowaną kwotę/deltę z Google, evidence IDs, required
-   validation i blocked claims. Każdy preview ma `api_mutation_ready=false`,
-   `apply_allowed=false`, `destructive=false`; WILQ nadal blokuje budget apply
-   bez `human_budget_goal`, apply safety i mutation audit. Live proof po
-   `scripts/local_stack.sh restart`: `/api/ads/diagnostics` zwraca 18 budget
-   preview rows i decision `ads_review_budget_context` z
-   `action_ids=["act_prepare_ads_campaign_review_queue"]`;
-   `/api/actions/act_prepare_ads_campaign_review_queue` zwraca 8 preview rows,
-   `preview_contract=budget_apply_preview_v1`, a walidacja ActionObject daje
-   `valid=true`. Focused ruff, mypy, backend Ads tests, shared schema
-   typecheck, dashboard typecheck i `App.test.tsx` passed. Full
-   `scripts/verify.sh` passed: backend `116 passed`, dashboard unit
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 

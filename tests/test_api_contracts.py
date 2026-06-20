@@ -4508,6 +4508,16 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert payload["decision_queue"]
     first_decision = payload["decision_queue"][0]
     assert first_decision["decision_type"] == "refresh_or_merge"
+    assert first_decision["title"] == 'SEO: odśwież lub scal "zielony ład" (1 zapytanie)'
+    assert first_decision["summary"] == (
+        'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: '
+        '"zielony ład". WordPress potwierdza istniejącą stronę, więc to jest '
+        "decyzja refresh/merge, nie nowy artykuł."
+    )
+    assert first_decision["primary_query"] == "zielony ład"
+    assert first_decision["total_clicks"] == 12
+    assert first_decision["total_impressions"] == 120
+    assert first_decision["aggregate_ctr"] == 0.1
     assert first_decision["wordpress_match"] == "found"
     assert first_decision["wordpress_match_confidence"] == "exact_url"
     assert first_decision["wordpress_content_url"] == (
@@ -4529,6 +4539,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_payload["content_diagnostics"]["action_ids"] == payload["action_ids"]
     context_decision = context_payload["content_diagnostics"]["decision_queue"][0]
     assert context_decision["decision_type"] == first_decision["decision_type"]
+    assert context_decision["summary"] == first_decision["summary"]
+    assert context_decision["primary_query"] == first_decision["primary_query"]
+    assert context_decision["total_impressions"] == first_decision["total_impressions"]
     assert context_decision["wordpress_match_confidence"] == first_decision[
         "wordpress_match_confidence"
     ]

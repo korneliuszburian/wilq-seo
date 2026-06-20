@@ -2586,11 +2586,18 @@ const contentDiagnostics = {
     {
       id: "content_decision_https_www_ekologus_pl_bdo",
       decision_type: "refresh_or_merge",
-      title: "Odśwież lub scal istniejącą treść: https://www.ekologus.pl/bdo/",
+      title: 'SEO: odśwież lub scal "bdo" (1 zapytanie)',
+      summary:
+        'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł.',
       page: "https://www.ekologus.pl/bdo/",
       normalized_page_path: "/bdo",
       queries: ["bdo"],
       query_count: 1,
+      primary_query: "bdo",
+      total_clicks: 12,
+      total_impressions: 120,
+      aggregate_ctr: 0.1,
+      best_average_position: 4.5,
       wordpress_match: "found",
       wordpress_match_confidence: "exact_url",
       wordpress_content_url: "https://www.ekologus.pl/bdo/",
@@ -2599,8 +2606,10 @@ const contentDiagnostics = {
       metric_facts: [metricFacts[5]],
       action_ids: ["act_prepare_content_refresh_queue"],
       blocked_claims: ["lead uplift", "conversion uplift"],
-      rationale: "WordPress inventory potwierdza istniejącą stronę dla query z GSC.",
-      next_step: "Przygotuj refresh/merge brief na podstawie GSC i WordPress inventory.",
+      rationale:
+        "WordPress inventory potwierdza istniejący URL, więc WILQ kieruje to do odświeżenia albo scalenia zamiast tworzenia nowej treści.",
+      next_step:
+        "Przygotuj brief refresh/merge: title, H1/H2, sekcje brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji.",
       risk: "low"
     }
   ],
@@ -3583,7 +3592,9 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/WILQ łączy zapytania i URL-e z GSC z inventory WordPress/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/Odśwież lub scal: \/bdo\//)).toBeInTheDocument();
+    expect(screen.getByText(/SEO: odśwież lub scal "bdo"/)).toBeInTheDocument();
+    expect(screen.getByText(/120 wyświetleń/)).toBeInTheDocument();
+    expect(screen.getByText(/12 kliknięć/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress: potwierdzony/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
       "href",

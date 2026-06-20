@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Literal
 
 from wilq.actions.service import list_actions
@@ -40,6 +41,15 @@ ContentDecisionType = Literal[
     "inventory_check_before_create",
     "block_as_tracking_not_content",
 ]
+
+
+@dataclass(frozen=True)
+class ContentDecisionMetrics:
+    primary_query: str | None
+    total_clicks: int | None
+    total_impressions: int | None
+    aggregate_ctr: float | None
+    best_average_position: float | None
 
 
 def build_content_diagnostics() -> ContentDiagnosticsResponse:
@@ -361,7 +371,7 @@ def _content_decision_queue(items: list[TacticalQueueItem]) -> list[ContentDecis
         *_gsc_content_decisions(items),
         *_ga4_tracking_gap_decisions(items),
     ]
-    return sorted(decisions, key=lambda decision: (decision.risk.value, decision.id))[:5]
+    return sorted(decisions, key=_content_decision_sort_key)[:5]
 
 
 def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
@@ -386,39 +396,59 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
         metric_facts = _unique_metric_facts(
             fact for item in page_items for fact in item.metric_facts
         )
+        metrics = _content_decision_metrics(metric_facts, queries)
         decision_type: ContentDecisionType
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
-            title = f"Odśwież lub scal istniejącą treść: {page}"
+            title = _content_decision_title(decision_type, page, query_count, metrics)
+            summary = _content_decision_summary(decision_type, metrics, wordpress_match)
             next_step = (
-                "Przygotuj brief odświeżenia albo scalenia na podstawie GSC "
-                "i inventory WordPress."
-            )
-            rationale = "Inventory WordPress potwierdza istniejącą stronę dla zapytania z GSC."
-        elif query_count > 1:
-            decision_type = "merge_create_after_inventory_check"
-            title = f"Zweryfikuj klaster zapytań przed tworzeniem treści: {page}"
-            next_step = (
-                "Sprawdź mapowanie URL i duplikaty w WordPress przed utworzeniem "
-                "albo odtworzeniem strony."
+                "Przygotuj brief refresh/merge: title, H1/H2, sekcje brakujące wobec "
+                "zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji."
             )
             rationale = (
-                "Wiele zapytań prowadzi do jednego URL, ale inventory nie potwierdza strony."
+                "WordPress inventory potwierdza istniejący URL, więc WILQ kieruje "
+                "to do odświeżenia albo scalenia zamiast tworzenia nowej treści."
+            )
+        elif query_count > 1:
+            decision_type = "merge_create_after_inventory_check"
+            title = _content_decision_title(decision_type, page, query_count, metrics)
+            summary = _content_decision_summary(decision_type, metrics, wordpress_match)
+            next_step = (
+                "Sprawdź mapowanie URL, sitemap i duplikaty w WordPress. Dopiero potem "
+                "wybierz merge, create albo restore."
+            )
+            rationale = (
+                "Wiele zapytań prowadzi do jednego URL, ale inventory nie potwierdza "
+                "strony, więc nowy brief bez kontroli grozi duplikacją."
             )
         else:
             decision_type = "inventory_check_before_create"
-            title = f"Sprawdź inventory przed briefem treści: {page}"
-            next_step = "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap."
-            rationale = "GSC pokazuje popyt, ale WordPress inventory nie potwierdza URL."
+            title = _content_decision_title(decision_type, page, query_count, metrics)
+            summary = _content_decision_summary(decision_type, metrics, wordpress_match)
+            next_step = (
+                "Najpierw potwierdź, czy URL istnieje w WordPress lub sitemap. "
+                "Jeśli nie istnieje, przygotuj brief dopiero po kontroli duplikatów."
+            )
+            rationale = (
+                "GSC pokazuje popyt, ale WordPress inventory nie potwierdza URL, "
+                "więc WILQ blokuje automatyczne create."
+            )
         decisions.append(
             ContentDecisionItem(
                 id=f"content_decision_{_slug(page)}",
                 decision_type=decision_type,
                 title=title,
+                summary=summary,
                 page=page,
                 normalized_page_path=first.dimensions.get("wordpress_requested_path"),
                 queries=queries,
                 query_count=query_count,
+                primary_query=metrics.primary_query,
+                total_clicks=metrics.total_clicks,
+                total_impressions=metrics.total_impressions,
+                aggregate_ctr=metrics.aggregate_ctr,
+                best_average_position=metrics.best_average_position,
                 wordpress_match=wordpress_match,
                 wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
                 wordpress_content_url=first.dimensions.get("wordpress_content_url"),
@@ -503,6 +533,180 @@ def _unique_metric_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
         )
         unique_facts.setdefault(key, fact)
     return list(unique_facts.values())
+
+
+def _content_decision_metrics(
+    metric_facts: list[MetricFact],
+    queries: list[str],
+) -> ContentDecisionMetrics:
+    click_values = [
+        numeric_value
+        for fact in metric_facts
+        if fact.source_connector == "google_search_console"
+        and fact.name == "clicks"
+        and (numeric_value := _numeric_metric_value(fact)) is not None
+    ]
+    impression_values = [
+        numeric_value
+        for fact in metric_facts
+        if fact.source_connector == "google_search_console"
+        and fact.name == "impressions"
+        and (numeric_value := _numeric_metric_value(fact)) is not None
+    ]
+    position_values = [
+        numeric_value
+        for fact in metric_facts
+        if fact.source_connector == "google_search_console"
+        and fact.name == "average_position"
+        and (numeric_value := _numeric_metric_value(fact)) is not None
+    ]
+    total_clicks = int(sum(click_values)) if click_values else None
+    total_impressions = int(sum(impression_values)) if impression_values else None
+    return ContentDecisionMetrics(
+        primary_query=_primary_query(metric_facts, queries),
+        total_clicks=total_clicks,
+        total_impressions=total_impressions,
+        aggregate_ctr=(
+            total_clicks / total_impressions
+            if total_clicks is not None and total_impressions
+            else None
+        ),
+        best_average_position=min(position_values) if position_values else None,
+    )
+
+
+def _primary_query(metric_facts: list[MetricFact], queries: list[str]) -> str | None:
+    query_scores: dict[str, tuple[float, float]] = {}
+    for fact in metric_facts:
+        if fact.source_connector != "google_search_console":
+            continue
+        query = fact.dimensions.get("query")
+        value = _numeric_metric_value(fact)
+        if not query or value is None:
+            continue
+        impressions, clicks = query_scores.get(query, (0.0, 0.0))
+        if fact.name == "impressions":
+            impressions += value
+        elif fact.name == "clicks":
+            clicks += value
+        query_scores[query] = (impressions, clicks)
+    if query_scores:
+        return max(query_scores.items(), key=lambda item: (item[1][0], item[1][1]))[0]
+    return queries[0] if queries else None
+
+
+def _numeric_metric_value(fact: MetricFact) -> float | None:
+    if isinstance(fact.value, int | float):
+        return float(fact.value)
+    return None
+
+
+def _content_decision_title(
+    decision_type: ContentDecisionType,
+    page: str,
+    query_count: int,
+    metrics: ContentDecisionMetrics,
+) -> str:
+    topic = _content_topic_label(page, metrics.primary_query)
+    query_label = _query_count_label(query_count)
+    if decision_type == "refresh_or_merge":
+        return f"SEO: odśwież lub scal {topic} ({query_label})"
+    if decision_type == "merge_create_after_inventory_check":
+        return f"SEO: sprawdź klaster {topic} przed tworzeniem ({query_label})"
+    return f"SEO: sprawdź inventory dla {topic} ({query_label})"
+
+
+def _content_topic_label(page: str, primary_query: str | None) -> str:
+    if primary_query:
+        return f'"{primary_query}"'
+    if page.rstrip("/") == "https://www.ekologus.pl":
+        return "stronę główną"
+    return page.rstrip("/").rsplit("/", maxsplit=1)[-1].replace("-", " ")
+
+
+def _content_decision_summary(
+    decision_type: ContentDecisionType,
+    metrics: ContentDecisionMetrics,
+    wordpress_match: str,
+) -> str:
+    metric_sentence = _content_metric_sentence(metrics)
+    if decision_type == "refresh_or_merge":
+        return (
+            f"{metric_sentence} WordPress potwierdza istniejącą stronę, więc "
+            "to jest decyzja refresh/merge, nie nowy artykuł."
+        )
+    if decision_type == "merge_create_after_inventory_check":
+        return (
+            f"{metric_sentence} WordPress nie potwierdza strony dla tego klastra, "
+            "więc najpierw trzeba sprawdzić mapowanie i duplikaty."
+        )
+    match_label = "nie potwierdza" if wordpress_match == "missing" else "nie daje pewności"
+    return (
+        f"{metric_sentence} WordPress {match_label} URL, więc WILQ blokuje "
+        "brief create do czasu kontroli inventory."
+    )
+
+
+def _content_metric_sentence(metrics: ContentDecisionMetrics) -> str:
+    parts: list[str] = []
+    if metrics.total_impressions is not None:
+        impression_word = _polish_count_word(
+            metrics.total_impressions,
+            "wyświetlenie",
+            "wyświetlenia",
+            "wyświetleń",
+        )
+        parts.append(f"{metrics.total_impressions} {impression_word}")
+    if metrics.total_clicks is not None:
+        click_word = _polish_count_word(
+            metrics.total_clicks,
+            "kliknięcie",
+            "kliknięcia",
+            "kliknięć",
+        )
+        parts.append(f"{metrics.total_clicks} {click_word}")
+    if metrics.aggregate_ctr is not None:
+        parts.append(f"CTR {_format_percent(metrics.aggregate_ctr)}")
+    if metrics.best_average_position is not None:
+        parts.append(f"najlepsza średnia pozycja {_format_decimal(metrics.best_average_position)}")
+    prefix = "GSC: " + ", ".join(parts) if parts else "GSC ma evidence dla tej strony."
+    if metrics.primary_query:
+        return f'{prefix}; główne zapytanie: "{metrics.primary_query}".'
+    return prefix
+
+
+def _content_decision_sort_key(decision: ContentDecisionItem) -> tuple[int, int, int, int, str]:
+    block_rank = 1 if decision.decision_type == "block_as_tracking_not_content" else 0
+    return (
+        block_rank,
+        -(decision.total_impressions or 0),
+        -decision.query_count,
+        -(decision.total_clicks or 0),
+        decision.id,
+    )
+
+
+def _query_count_label(query_count: int) -> str:
+    if query_count == 1:
+        return "1 zapytanie"
+    return f"{query_count} zapytań"
+
+
+def _format_percent(value: float) -> str:
+    return f"{value * 100:.2f}%"
+
+
+def _format_decimal(value: float) -> str:
+    return f"{value:.2f}"
+
+
+def _polish_count_word(value: int, one: str, few: str, many: str) -> str:
+    absolute = abs(value)
+    if absolute == 1:
+        return one
+    if 2 <= absolute % 10 <= 4 and not 12 <= absolute % 100 <= 14:
+        return few
+    return many
 
 
 def _int_dimension(item: TacticalQueueItem, key: str, fallback: int) -> int:

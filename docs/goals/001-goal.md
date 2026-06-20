@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 02:14 CEST.
+Last updated: 2026-06-20 02:38 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -287,7 +287,11 @@ Current connector truth:
   but still useful query/page facts outside a generic 300-row read window. The
   tactical/content selectors now preserve a larger GSC window for query/page
   evidence, and `wilq-gsc-content-doctor` smoke fails if query/page metric
-  facts exist but `content_diagnostics.decision_queue` is empty.
+  facts exist but `content_diagnostics.decision_queue` is empty. Latest content
+  follow-up on 2026-06-20 makes `content_diagnostics.decision_queue` carry
+  marketer-facing `summary`, `primary_query`, `total_clicks`,
+  `total_impressions`, `aggregate_ctr` and `best_average_position`, sorted by
+  real GSC demand instead of URL/id.
 - `google_analytics_4`: landing/source/campaign facts exist and
   `/api/ga4/diagnostics.decision_queue` now feeds both dashboard `/ga4` and
   `wilq-ga4-analyst`. Current live decisions are traffic-quality review; ROAS,
@@ -340,7 +344,14 @@ Do not rebuild these from scratch:
 - Content Planner route operator cleanup: `/content-planner` now renders
   typed content decisions from `content_diagnostics.decision_queue`, blocks GA4
   tracking gaps as non-content tasks, groups GSC/WordPress decisions per URL
-  and avoids false zero metrics when evidence is missing.
+  and avoids false zero metrics when evidence is missing. Latest proof after
+  `scripts/local_stack.sh restart`: top decisions are
+  `SEO: odśwież lub scal "bdo co to" (1 zapytanie)` z
+  `4429 wyświetleń`, `4 kliknięcia`, CTR `0.09%`, oraz
+  `SEO: odśwież lub scal "zielony ład co to" (7 zapytań)` z
+  `2902 wyświetlenia`, `123 kliknięcia`, CTR `4.24%`; scoped
+  `wilq-content-strategist` context-pack preserves the same decision fields,
+  evidence IDs and `act_prepare_content_refresh_queue`.
 - GA4 route operator cleanup: `/api/ga4/diagnostics` now exposes a typed
   `decision_queue` with `fix_measurement`, `review_landing_mapping` and
   `review_traffic_quality` decisions. Dashboard `/ga4` renders this as the
@@ -578,7 +589,9 @@ Work in this order:
    decision queue as the primary marketer view, grouped duplicated GSC queries
    per URL, blocked GA4 tracking gaps as non-content work and removed stale
    labels such as `Query/page`, `WP match`, `exact_url`, `payload preview` and
-   false `impressions=0` / `ctr=0` for missing evidence.
+   false `impressions=0` / `ctr=0` for missing evidence. Follow-up on
+   2026-06-20 added human-readable content decision summaries and GSC aggregates
+   to the typed API/shared schema/dashboard/context-pack contract.
 
 2. **Active local slice: Command Center as canonical `DailyDecision`.**
    Introduce one first-screen decision model instead of competing

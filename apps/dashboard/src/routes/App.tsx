@@ -3931,9 +3931,35 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
         </div>
         <StatusBadge value={decision.risk} />
       </div>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-700">
+        {decision.summary ?? decision.rationale}
+      </p>
+      {decision.summary ? (
+        <p className="mt-1 text-xs leading-5 text-slate-500">{decision.rationale}</p>
+      ) : null}
       <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+        {decision.total_impressions !== null && decision.total_impressions !== undefined ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Wyświetlenia: {decision.total_impressions}
+          </span>
+        ) : null}
+        {decision.total_clicks !== null && decision.total_clicks !== undefined ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Kliknięcia: {decision.total_clicks}
+          </span>
+        ) : null}
+        {decision.aggregate_ctr !== null && decision.aggregate_ctr !== undefined ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            CTR: {(decision.aggregate_ctr * 100).toFixed(2)}%
+          </span>
+        ) : null}
+        {decision.best_average_position !== null &&
+        decision.best_average_position !== undefined ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Pozycja: {decision.best_average_position.toFixed(2)}
+          </span>
+        ) : null}
         {decision.page ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Strona: {shortPath(decision.page)}
@@ -4011,17 +4037,7 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
 }
 
 function contentDecisionTitle(decision: ContentDecisionItem) {
-  if (decision.page) {
-    return `${contentDecisionVerb(decision.decision_type)}: ${shortPath(decision.page)}`;
-  }
   return decision.title;
-}
-
-function contentDecisionVerb(decisionType: ContentDecisionItem["decision_type"]) {
-  if (decisionType === "refresh_or_merge") return "Odśwież lub scal";
-  if (decisionType === "merge_create_after_inventory_check") return "Zweryfikuj klaster";
-  if (decisionType === "inventory_check_before_create") return "Sprawdź inventory";
-  return "Zablokuj jako problem pomiaru";
 }
 
 function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_type"]) {
