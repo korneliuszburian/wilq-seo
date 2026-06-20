@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 14:06 CEST.
+Last updated: 2026-06-20 14:30 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -287,6 +287,29 @@ paths. Stale strings such as `feed/product issues`, `active_products=12`,
 passed after this slice: backend `117 passed`, dashboard unit `14 passed`,
 Playwright e2e `9 passed`, security, skill/API smokes and dashboard production
 build passed.
+
+Latest daily context-pack follow-up, 2026-06-20 14:30 CEST:
+`active_action_objects` in scoped `wilq-daily-command` context now inherit
+`decision_id`, `decision_status`, `metric_tiles`, evidence IDs, blocked claims
+and safe next step from `CommandCenterResponse.daily_decisions`. Redaction
+preserves `decision_id`. Live proof after `scripts/local_stack.sh restart`:
+Merchant action points to `decision_review_merchant_feed_issues` with
+`produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`; GA4 action points to
+`decision_review_ga4_landing_quality` with status `blocked`, `grupy ruchu=10`,
+`pomiar=2`, `jakość ruchu=4`. Stale strings
+`active_products=12`, `disapproved_products=3`, `active_users=20`,
+`sessions=30`, `Connector .* ready`, `No performance metrics` and
+`Run a read-only refresh` are absent from the live daily context-pack.
+
+Latest Localo routing follow-up, 2026-06-20 14:30 CEST: Localo with real
+aggregate facts is now `daily_localo_visibility_facts` and maps to
+`plan_review_localo_visibility_facts`. Readiness/access-only Localo remains
+`daily_localo_readiness` and must not be promoted as a ready primary operator
+item. Current live Localo tiles: `miejsca=4`, `frazy=23`,
+`widoczność=52.8261`, `recenzje=793`. `wilq-daily-command` smoke passed after
+this change. Full `scripts/verify.sh` passed after this slice: backend
+`124 passed`, dashboard unit `15 passed`, Playwright e2e `12 passed`,
+dashboard production build OK.
 
 Opportunities must be decision-backed, not connector-registry-backed, when
 daily decisions exist. `/api/opportunities`, `/opportunities` and full Codex

@@ -25,6 +25,8 @@ SAFE_IDENTIFIER_KEYS = {
     "country",
     "credential_runtime",
     "credential_sources",
+    "decision_id",
+    "decision_ids",
     "decision_type",
     "decision_types",
     "evidence_id",

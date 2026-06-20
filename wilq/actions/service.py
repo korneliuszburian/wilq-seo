@@ -233,7 +233,11 @@ ACTION_METRIC_CONNECTORS = (
     "ahrefs",
 )
 ACTION_METRIC_FACT_LIMIT = 120
-ACTION_METRIC_FACT_LIMITS = {"google_ads": 2000}
+ACTION_METRIC_FACT_LIMITS = {
+    "google_ads": 2000,
+    "google_analytics_4": 2000,
+    "google_merchant_center": 2000,
+}
 
 
 def list_actions() -> list[ActionObject]:
@@ -319,9 +323,10 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
     actions: dict[str, ActionObject] = {}
 
     merchant_facts = by_connector.get("google_merchant_center", [])
-    if merchant_facts:
-        merchant_action_metrics = merchant_facts[:8]
-        merchant_issue_clusters = _merchant_issue_clusters_payload(merchant_facts)
+    merchant_issue_facts = _merchant_issue_metric_facts(merchant_facts)
+    if merchant_issue_facts:
+        merchant_action_metrics = merchant_issue_facts[:8]
+        merchant_issue_clusters = _merchant_issue_clusters_payload(merchant_issue_facts)
         action = ActionObject(
             id="act_review_merchant_feed_issues",
             title="Przygotuj kolejkę przeglądu feedu Merchant Center",
@@ -333,20 +338,21 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in merchant_action_metrics),
             metrics=merchant_action_metrics,
             human_diagnosis=(
-                "Merchant Center ma realne metryki produktu/feedu w WILQ API. "
-                f"{_metric_sentence(merchant_facts)}. To uzasadnia kolejkę review, "
-                "ale nie automatyczną zmianę danych produktu."
+                "Merchant Center ma wymiarowe issue facts z WILQ API. "
+                f"{_metric_sentence(merchant_action_metrics)}. To uzasadnia "
+                "kolejkę review problemów feedu, ale nie automatyczną zmianę "
+                "danych produktu."
             ),
             recommended_reason=(
-                "Na /merchant pokaż produkty/feed jako prepare-only queue: sprawdź "
-                "disapproved_products, przygotuj payload preview i walidację przed "
-                "jakąkolwiek zmianą feedu."
+                "Na /merchant pokaż issue clusters jako prepare-only queue: "
+                "sprawdź typ problemu, atrybut, kraj, payload preview i walidację "
+                "przed jakąkolwiek zmianą feedu."
             ),
             payload={
                 "action_type": "merchant_feed_issue",
                 "connector": "google_merchant_center",
                 "mode": "prepare_only",
-                "source_metric_names": _unique(fact.name for fact in merchant_facts),
+                "source_metric_names": _unique(fact.name for fact in merchant_action_metrics),
                 "issue_clusters": merchant_issue_clusters,
                 "review_steps": [
                     "identify_disapproved_products",
@@ -362,8 +368,9 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         actions[action.id] = action
 
     ga4_facts = by_connector.get("google_analytics_4", [])
-    if ga4_facts:
-        ga4_action_metrics = ga4_facts[:8]
+    ga4_dimensioned_facts = _ga4_dimensioned_metric_facts(ga4_facts)
+    if ga4_dimensioned_facts:
+        ga4_action_metrics = ga4_dimensioned_facts[:8]
         action = ActionObject(
             id="act_review_ga4_tracking_quality",
             title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
@@ -375,19 +382,20 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=_unique(fact.evidence_id for fact in ga4_action_metrics),
             metrics=ga4_action_metrics,
             human_diagnosis=(
-                "GA4 zwraca realne metryki ruchu, ale bieżący brief nie ma jeszcze "
-                f"dowodu konwersji ani ścieżki landing page. {_metric_sentence(ga4_facts)}."
+                "GA4 zwraca wymiarowe landing/source/campaign facts, ale WILQ "
+                "nadal nie ma kontraktu na ROAS, revenue ani werdykt konwersji. "
+                f"{_metric_sentence(ga4_action_metrics)}."
             ),
             recommended_reason=(
-                "Na /ga4 przygotuj tracking-gap review: pokaż sessions/active_users, "
-                "oznacz brak konwersji jako blocker i nie oceniaj jakości kampanii bez "
-                "landing/source/campaign breakdown."
+                "Na /ga4 przygotuj review pomiaru i jakości ruchu: pokaż "
+                "landing/source/campaign breakdown, waliduj ActionObject i nie "
+                "oceniaj kampanii bez kontraktu konwersji."
             ),
             payload={
                 "action_type": "ga4_tracking_gap",
                 "connector": "google_analytics_4",
                 "mode": "prepare_only",
-                "source_metric_names": _unique(fact.name for fact in ga4_facts),
+                "source_metric_names": _unique(fact.name for fact in ga4_action_metrics),
                 "required_breakdowns": ["landing_page", "source_medium", "campaign"],
                 "blocked_claims": ["conversion_rate", "revenue", "roas"],
                 "destructive": False,
@@ -680,6 +688,24 @@ def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, 
             str(cluster["issue_type"]),
         ),
     )[:10]
+
+
+def _merchant_issue_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
+    return [
+        fact
+        for fact in facts
+        if fact.name == "issue_product_count" and fact.dimensions.get("issue_type")
+    ]
+
+
+def _ga4_dimensioned_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
+    return [
+        fact
+        for fact in facts
+        if fact.dimensions.get("landing_page")
+        or fact.dimensions.get("source_medium")
+        or fact.dimensions.get("campaign_name")
+    ]
 
 
 def _merchant_severity_rank(severity: str) -> int:

@@ -171,6 +171,7 @@ def build_command_center_action_plan(
         "daily_ga4_landing_quality",
         "daily_ads_status",
         "daily_ads_business_context",
+        "daily_localo_visibility_facts",
         "daily_localo_readiness",
     ):
         item = items_by_id.get(item_id)
@@ -226,6 +227,7 @@ def _brief_items_by_plan_id(
         "plan_review_ads_campaign_metrics": "daily_ads_status",
         "plan_fix_ads_oauth_before_spend_analysis": "daily_ads_status",
         "plan_ads_business_context_before_budget_decisions": "daily_ads_business_context",
+        "plan_review_localo_visibility_facts": "daily_localo_visibility_facts",
         "plan_localo_access_ready_wait_for_visibility_facts": "daily_localo_readiness",
         "plan_finish_localo_access_before_local_visibility": "daily_localo_readiness",
     }
@@ -754,6 +756,7 @@ def _localo_item(
     elif latest_run is not None:
         evidence_ids = latest_run.evidence_ids
     if has_value_facts:
+        item_id = "daily_localo_visibility_facts"
         title = "Localo: agregaty widoczności i recenzji są gotowe"
         summary = (
             "Localo dostarczył read-only agregaty miejsc, monitorowanych fraz "
@@ -767,6 +770,7 @@ def _localo_item(
         priority = 18
         blocked_claims = ["GBP performance", "competitor visibility", "local visibility uplift"]
     elif oauth_access_ready:
+        item_id = "daily_localo_readiness"
         title = "Localo: MCP access działa, brak jeszcze ranking/GBP facts"
         summary = (
             "Localo MCP initialize zwrócił 200. To potwierdza access, ale WILQ "
@@ -779,13 +783,14 @@ def _localo_item(
         priority = 60
         blocked_claims = ["local ranking", "GBP performance", "local visibility uplift"]
     else:
+        item_id = "daily_localo_readiness"
         title = "Localo: brak dostępu przed lokalnymi rekomendacjami"
         summary = f"Localo nie ma pełnego dostępu: {missing}."
         next_step = "Otwórz /localo i dokończ OAuth access token przez Localo MCP."
         priority = 20
         blocked_claims = ["local ranking", "GBP performance", "local visibility uplift"]
     return CommandCenterBriefItem(
-        id="daily_localo_readiness",
+        id=item_id,
         title=title,
         route="/localo",
         status="ready" if oauth_access_ready or has_value_facts else "blocked",
@@ -1106,6 +1111,40 @@ def _action_plan_item(
             action_ids=item.action_ids,
             blocked_claims=item.blocked_claims,
             risk=ActionRisk.medium,
+        )
+    if item.id == "daily_localo_visibility_facts":
+        return CommandCenterActionPlanItem(
+            id="plan_review_localo_visibility_facts",
+            title="Przejrzyj agregaty widoczności lokalnej z Localo",
+            route=item.route,
+            status="ready",
+            priority=20,
+            category="Localo",
+            why_it_matters=(
+                "Localo ma read-only agregaty miejsc, fraz i recenzji. To pozwala "
+                "zrobić review lokalnej widoczności, ale WILQ nadal blokuje claimy "
+                "o GBP, konkurencji i wzroście widoczności bez osobnych kontraktów."
+            ),
+            operator_action=(
+                "Otwórz /localo i przejrzyj tylko agregaty widoczne w evidence. "
+                "Nie twierdź nic o GBP performance, konkurencji ani wzroście widoczności."
+            ),
+            skill_id="wilq-localo-operator",
+            codex_prompt=(
+                "Użyj skilla wilq-localo-operator. Przejrzyj agregaty Localo dla "
+                "Ekologus na podstawie WILQ API evidence i wskaż bezpieczne następne "
+                "kroki. Nie twierdź nic o GBP, konkurencji ani wzroście widoczności "
+                "bez osobnych kontraktów."
+            ),
+            codex_context_endpoint="/api/codex/context-pack",
+            expected_codex_output=(
+                "Polski Localo review z evidence IDs, agregatami i zablokowanymi claimami."
+            ),
+            source_connectors=item.source_connectors,
+            evidence_ids=item.evidence_ids,
+            action_ids=item.action_ids,
+            blocked_claims=item.blocked_claims,
+            risk=ActionRisk.low,
         )
     if item.id == "daily_localo_readiness":
         if item.status == "ready":

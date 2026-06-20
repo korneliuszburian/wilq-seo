@@ -864,7 +864,7 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         "act_review_merchant_feed_issues": {
             "connector": "google_merchant_center",
             "action_type": "merchant_feed_issue",
-            "metric_names": {"active_products", "disapproved_products"},
+            "metric_names": {"issue_product_count"},
         },
         "act_review_ga4_tracking_quality": {
             "connector": "google_analytics_4",
@@ -909,6 +909,11 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         metric_names = {str(metric["name"]) for metric in action["metrics"]}
         assert metric_names.issuperset(expected["metric_names"])
         assert "prepare" in json.dumps(action["payload"])
+    serialized = json.dumps(response.json(), ensure_ascii=False)
+    assert "active_products=12" not in serialized
+    assert "disapproved_products=3" not in serialized
+    assert "active_users=20" not in serialized
+    assert "sessions=30" not in serialized
 
 
 def test_metric_backed_prepare_actions_validate_without_apply(
@@ -1793,6 +1798,22 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "localo-access-test" not in serialized
     assert "localo-token-test" not in serialized
+
+    command_response = client.get("/api/dashboard/command-center")
+
+    assert command_response.status_code == 200
+    command_payload = command_response.json()
+    brief_by_id = {item["id"]: item for item in command_payload["operator_brief"]}
+    assert "daily_localo_readiness" not in brief_by_id
+    localo_brief = brief_by_id["daily_localo_visibility_facts"]
+    assert localo_brief["status"] == "ready"
+    assert localo_brief["metric_tiles"]["miejsca"] == 4
+    assert localo_brief["metric_tiles"]["frazy"] == 23
+    plan_by_id = {item["id"]: item for item in command_payload["action_plan"]}
+    assert "plan_localo_access_ready_wait_for_visibility_facts" not in plan_by_id
+    localo_plan = plan_by_id["plan_review_localo_visibility_facts"]
+    assert localo_plan["status"] == "ready"
+    assert "GBP performance" in localo_plan["blocked_claims"]
 
 
 def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
@@ -6333,6 +6354,34 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
         for item in section["items"]:
             assert item["metric_fact_count"] >= len(item["metric_facts"])
             assert len(item["metric_facts"]) <= 3
+
+
+def test_daily_context_pack_uses_daily_decisions_for_action_summaries(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
+    merchant_action = actions_by_id["act_review_merchant_feed_issues"]
+    ga4_action = actions_by_id["act_review_ga4_tracking_quality"]
+    assert merchant_action["decision_id"]
+    assert merchant_action["decision_id"] != "[REDACTED]"
+    assert merchant_action["decision_id"].startswith("decision_")
+    assert merchant_action["metric_tiles"]
+    assert ga4_action["decision_id"]
+    assert ga4_action["decision_id"] != "[REDACTED]"
+    assert ga4_action["decision_id"].startswith("decision_")
+    assert ga4_action["metric_tiles"]
+    serialized = json.dumps(payload, ensure_ascii=False)
+    assert "active_products=12" not in serialized
+    assert "disapproved_products=3" not in serialized
+    assert "active_users=20" not in serialized
+    assert "sessions=30" not in serialized
 
 
 def test_list_evidence_by_ids_returns_metric_fact_evidence_without_full_scan(

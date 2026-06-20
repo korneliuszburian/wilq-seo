@@ -29,6 +29,29 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Daily context-pack action summary truth, 2026-06-20 14:30 Europe/Warsaw:
+   `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` must use
+   `CommandCenterResponse.daily_decisions` for active ActionObject summaries.
+   Do not rebuild daily action prose from stale raw ActionObject summaries.
+   Current live proof after `scripts/local_stack.sh restart`: Merchant action
+   carries `decision_id=decision_review_merchant_feed_issues` with tiles
+   `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`; GA4 carries
+   `decision_id=decision_review_ga4_landing_quality`, `decision_status=blocked`
+   and tiles `grupy ruchu=10`, `pomiar=2`, `jakość ruchu=4`. Stale strings
+   `active_products=12`, `disapproved_products=3`, `active_users=20`,
+   `sessions=30`, readiness-only connector copy and `Run a read-only refresh`
+   must stay absent. Redaction preserves `decision_id`.
+
+0. Localo Command Center routing truth, 2026-06-20 14:30 Europe/Warsaw:
+   Localo with real aggregate facts uses `daily_localo_visibility_facts`, not
+   readiness-only `daily_localo_readiness`. Current live tiles:
+   `miejsca=4`, `frazy=23`, `widoczność=52.8261`, `recenzje=793`.
+   `daily_localo_readiness` remains a readiness/access/blocker ID and the
+   daily-command smoke must fail if it returns as a ready primary operator
+   item. Full `scripts/verify.sh` passed after this slice: backend
+   `124 passed`, dashboard unit `15 passed`, Playwright e2e `12 passed`,
+   production build OK.
+
 0. Content decision metadata truth, 2026-06-20 14:06 Europe/Warsaw:
    `/api/content/diagnostics.decision_queue` now owns marketer-facing
    `status`, `priority` and `metric_tiles`. Do not recreate these fields in

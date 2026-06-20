@@ -68,6 +68,7 @@ from wilq.schemas import (
     ConnectorStatus,
     ConnectorSummary,
     ContentDiagnosticsResponse,
+    DailyDecision,
     DemandGenReadinessContract,
     Evidence,
     ExpertCapability,
@@ -232,6 +233,7 @@ def _daily_command_context_pack(
     brief = daily_runtime.marketing_brief
     active_actions = daily_runtime.core_actions
     connectors = daily_runtime.connectors
+    decisions_by_action_id = _daily_decisions_by_action_id(command.daily_decisions)
     evidence_ids = _daily_context_evidence_ids(command, brief, active_actions)
     source_connectors = _daily_context_connectors(command, brief, active_actions)
     scoped_opportunities = _daily_context_opportunities(
@@ -273,7 +275,11 @@ def _daily_command_context_pack(
             opportunity.model_dump(mode="json") for opportunity in scoped_opportunities
         ],
         "active_action_objects": [
-            _compact_daily_action_for_context(action) for action in active_actions
+            _compact_daily_action_for_context(
+                action,
+                decisions_by_action_id.get(action.id),
+            )
+            for action in active_actions
         ],
         "connector_refresh_runs": [
             run.model_dump(mode="json")
@@ -314,11 +320,14 @@ def _daily_command_context_pack(
     return redact_mapping(pack)
 
 
-def _compact_daily_action_for_context(action: ActionObject) -> dict[str, Any]:
+def _compact_daily_action_for_context(
+    action: ActionObject,
+    decision: DailyDecision | None = None,
+) -> dict[str, Any]:
     dumped = action.model_dump(mode="json")
     payload = dumped.get("payload")
     payload_keys = sorted(payload) if isinstance(payload, dict) else []
-    return {
+    compact = {
         "id": dumped["id"],
         "title": dumped["title"],
         "domain": dumped["domain"],
@@ -334,6 +343,31 @@ def _compact_daily_action_for_context(action: ActionObject) -> dict[str, Any]:
         "payload_keys": payload_keys,
         "api_endpoint_template": "/api/actions/{action_id}",
     }
+    if decision is not None:
+        compact.update(
+            {
+                "decision_id": decision.id,
+                "decision_status": decision.status,
+                "decision_title": decision.title,
+                "human_diagnosis": (
+                    f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"
+                ),
+                "recommended_reason": decision.bezpieczny_next_step,
+                "source_connectors": decision.source_connectors,
+                "evidence_ids": decision.evidence_ids,
+                "metric_tiles": decision.metric_tiles,
+                "blocked_claims": decision.blocked_claims,
+            }
+        )
+    return compact
+
+
+def _daily_decisions_by_action_id(decisions: list[DailyDecision]) -> dict[str, DailyDecision]:
+    result: dict[str, DailyDecision] = {}
+    for decision in sorted(decisions, key=lambda item: item.priority):
+        for action_id in decision.action_ids:
+            result.setdefault(action_id, decision)
+    return result
 
 
 def _compact_command_center_for_daily_context(command: CommandCenterResponse) -> dict[str, Any]:

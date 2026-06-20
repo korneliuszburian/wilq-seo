@@ -34,6 +34,28 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Daily context-pack/action summary cleanup, 2026-06-20 14:30 CEST.
+  `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` używa teraz
+  `CommandCenterResponse.daily_decisions` jako źródła streszczeń
+  `active_action_objects`, zamiast wracać do starych action summaries. Live
+  proof po `scripts/local_stack.sh restart`: stale string check zwraca `[]`
+  dla `active_products=12`, `disapproved_products=3`, `active_users=20`,
+  `sessions=30`, `Connector .* ready`, `No performance metrics` i
+  `Run a read-only refresh`. `act_review_merchant_feed_issues` ma
+  `decision_id=decision_review_merchant_feed_issues` oraz tiles
+  `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`; GA4 ma
+  `decision_id=decision_review_ga4_landing_quality` i status `blocked` z
+  tiles `grupy ruchu=10`, `pomiar=2`, `jakość ruchu=4`. Redaction allowlist
+  zachowuje `decision_id`.
+- Localo Command Center routing, 2026-06-20 14:30 CEST. Realne Localo
+  aggregate facts nie używają już readiness-only ID. Command Center pokazuje
+  `daily_localo_visibility_facts` z tiles `miejsca=4`, `frazy=23`,
+  `widoczność=52.8261`, `recenzje=793`, a `daily_localo_readiness` zostaje
+  wyłącznie access/blocker statusem i nie może być główną kartą ready. Smoke
+  `wilq-daily-command/scripts/smoke_context_pack.py` przeszedł po tej zmianie.
+  Full `scripts/verify.sh` passed after this slice: backend `124 passed`,
+  dashboard unit `15 passed`, Playwright e2e `12 passed`, dashboard production
+  build OK.
 - Content decision queue ma teraz typed metadata zamiast frontendowego
   zgadywania. Live proof po `scripts/local_stack.sh restart`:
   `/api/content/diagnostics.decision_queue` ma 4 decyzje, `null_status=[]`,
