@@ -119,27 +119,19 @@ Aktualny proof produktowy:
   `wykluczenia=6`, `segmenty=1`. Ten sam prompt i ActionObjecty trafiają do
   scoped `/api/codex/context-pack` dla `wilq-daily-command`.
 - Ads business context ma teraz wstępne, lokalne i nie-sekretne wartości w
-  repo-local `.env`: marża 30%, cel review jakości leadów/kosztu pozyskania,
-  cel ochrony obecnego budżetu i target CPA 150 PLN. Po
-  `scripts/local_stack.sh restart` live
-  `/api/ads/diagnostics.business_context_read_contract.status=ready`,
-  `missing=[]`, `allowed_metrics=[profit_margin, business_goal,
-  human_budget_goal, target_cpa_micros]`. Derived KPI rows expose
+  repo-local `.env` dla marży, celu biznesowego i celu budżetu, ale target
+  ROAS/CPA jest celowo pusty do czasu ludzkiego potwierdzenia. Live proof
+  2026-06-20 15:39 CEST po `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics.business_context_read_contract.status=blocked`,
+  `missing=[target_roas_or_cpa]`, `target_roas=null`,
+  `target_cpa_micros=null`. Derived KPI rows nadal expose
   `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
-  `target_status_label` and `target_review_priority`; current live proof sorts
-  `(2026) Ekologus Ogólna` first as `koszt bez konwersji`, then
-  `Kompendium PPWR` as `CPA w targetcie` with CPA `50.65 PLN`, target CPA
-  `150 PLN`, delta `-99.35 PLN`. Decision `ads_review_derived_kpis` has tiles
-  `targety=1`, `w targetcie=1`, `koszt bez konw.=1`. Decision
-  `ads_review_business_context` is ready with title
-  `Użyj kontekstu biznesowego w review Ads`, and Command Center no longer shows
-  the old Ads business blocker. This is review context only: no budget apply,
-  recommendation apply, wasted-budget verdict or profitability verdict is
-  unlocked.
-- Ads business context nie jest już ukryty tylko w `/ads-doctor`, ale aktualnie
-  nie jest blockerem, bo lokalne wartości wstępne są ustawione. Jeśli te
-  nie-sekretne wartości znikną z `.env`, Command Center, Marketing Brief i
-  scoped `wilq-daily-command` mają ponownie pokazać osobny blocked item
+  `target_status_label` and `target_review_priority`, ale bez targetu pokazują
+  `target_status=no_target` / `target_status_label=brak targetu` i pozostają
+  triage/read-only, nie werdyktem.
+- Ads business context nie jest już ukryty tylko w `/ads-doctor`; przy pustych
+  targetach Command Center, Marketing Brief i scoped `wilq-daily-command` mają
+  pokazać osobny blocked item
   `daily_ads_business_context` /
   `decision_ads_business_context_before_budget_decisions` z ActionObject
   `act_configure_ads_business_context`. `/api/opportunities` ma nadal pomijać
@@ -371,11 +363,12 @@ Aktualny maintenance:
 4. Ads business context contract, 2026-06-20 10:12 CEST.
    `AdsDiagnosticsResponse` exposes typed
    `business_context_read_contract`, shared Zod schema and Ads Doctor UI
-   labels. Current live proof after `scripts/local_stack.sh restart`:
-   `/api/ads/diagnostics.business_context_read_contract.status=ready`,
-   missing contracts are empty, and preliminary local non-secret values are in
-   `.env`: profit margin 30%, business goal, budget goal and target CPA
-   `150000000` micros. Derived KPI rows now expose target comparison fields
+   labels. Current local target truth, live proof 2026-06-20 15:39 CEST:
+   profit margin, business goal and budget goal can remain as non-secret review
+   context, but `WILQ_ADS_TARGET_ROAS` and `WILQ_ADS_TARGET_CPA_MICROS` are
+   empty until a human confirms them. With empty targets, the contract is
+   blocked on `target_roas_or_cpa`.
+   Derived KPI rows still expose target comparison fields
    `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
    `target_status_label` and `target_review_priority`; this is review-only
    context and still does not unlock apply, profitability verdicts or

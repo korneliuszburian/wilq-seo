@@ -85,30 +85,22 @@ safety, apply confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
-Latest Ads business context proof after `scripts/local_stack.sh restart`:
-repo-local `.env` now contains preliminary non-secret Ads review targets:
-`WILQ_ADS_PROFIT_MARGIN=0.30`, a Polish business goal, a Polish budget goal
-and `WILQ_ADS_TARGET_CPA_MICROS=150000000` (150 PLN). These are initial review
-values, not final business truth. Current
-`/api/ads/diagnostics.business_context_read_contract.status=ready`,
-`missing_read_contracts=[]`, and allowed metrics include `profit_margin`,
-`business_goal`, `human_budget_goal` and `target_cpa_micros`. Derived KPI rows
-now expose `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
-`target_status_label` and `target_review_priority`; current live order puts
-`(2026) Ekologus Ogólna` first as `koszt bez konwersji`, then
-`Kompendium PPWR` as `CPA w targetcie` with CPA `50.65 PLN`, target CPA
-`150 PLN`, delta `-99.35 PLN`. Decision `ads_review_derived_kpis` has tiles
-`targety=1`, `w targetcie=1`, `koszt bez konw.=1`. Decision
-`ads_review_business_context` has title `Użyj kontekstu biznesowego w review Ads`, and
-`/api/dashboard/command-center` no longer shows the old Ads business-context
-blocker while these local values are present. If the non-secret values are
-removed, Command Center, Marketing Brief and scoped `wilq-daily-command` must
-again show the blocked `daily_ads_business_context` /
-`decision_ads_business_context_before_budget_decisions` repair path with
-review-only ActionObject `act_configure_ads_business_context`. This still does
-not unlock budget apply, recommendation apply, wasted-budget verdicts,
-profitability verdicts or scaling recommendations; those require the remaining
-optimizer contracts, human review and audit paths.
+Latest Ads business context truth, live proof 2026-06-20 15:39 CEST:
+repo-local `.env` may contain non-secret Ads context such as profit margin,
+Polish business goal and Polish budget goal, but `WILQ_ADS_TARGET_ROAS` and
+`WILQ_ADS_TARGET_CPA_MICROS` are intentionally empty until a human confirms the
+target. Do not preserve guessed CPA/ROAS targets as product truth. With empty
+target values, current `/api/ads/diagnostics.business_context_read_contract`
+shows `status=blocked`, `missing_read_contracts=[target_roas_or_cpa]`,
+`target_roas=null` and `target_cpa_micros=null`, while derived KPI rows still
+expose `target_status=no_target` / `target_status_label=brak targetu` for
+future use. Current Command Center and Marketing Brief show the blocked
+business-context repair path through review-only ActionObject
+`act_configure_ads_business_context` while still showing read-only Ads review
+queues. This still does not unlock budget apply, recommendation apply,
+wasted-budget verdicts, profitability verdicts or scaling recommendations;
+those require confirmed targets plus the remaining optimizer contracts, human
+review and audit paths.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

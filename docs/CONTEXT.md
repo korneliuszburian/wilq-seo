@@ -65,36 +65,33 @@ Audit `docs/audits/001-output.md` is now folded into
    `query/page=10`, `WP match=10`, `decyzje=4`, `wyświetlenia=7852`,
    `kliknięcia=138`.
 
-0. Ads business context truth, 2026-06-20 14:51 Europe/Warsaw:
+0. Ads business context truth, live proof 2026-06-20 15:39 CEST, after target
+   reset:
    `/api/ads/diagnostics` now exposes `business_context_read_contract` and
-   decision `ads_review_business_context`. Current local runtime has
-   preliminary non-secret Ads business values in repo-local `.env`:
-   `WILQ_ADS_PROFIT_MARGIN=0.30`, a Polish business goal, a Polish budget
-   goal and `WILQ_ADS_TARGET_CPA_MICROS=150000000`. This is API product state,
-   not skill prompt logic, and these values are only initial review targets.
-   Current proof after stack restart:
-   `/api/ads/diagnostics.business_context_read_contract.status=ready`,
-   `missing_read_contracts=[]`, allowed metrics include `profit_margin`,
-   `business_goal`, `human_budget_goal` and `target_cpa_micros`.
-   `ads_review_business_context.title` is
-   `Użyj kontekstu biznesowego w review Ads`.
+   decision `ads_review_business_context`. Current local runtime may keep
+   preliminary non-secret Ads business values for profit margin, Polish
+   business goal and Polish budget goal, but `WILQ_ADS_TARGET_ROAS` and
+   `WILQ_ADS_TARGET_CPA_MICROS` are intentionally empty until a human confirms
+   them. This is API product state, not skill prompt logic. After
+   `scripts/local_stack.sh restart`,
+   `/api/ads/diagnostics.business_context_read_contract.status=blocked`,
+   `missing_read_contracts=[target_roas_or_cpa]`, `target_roas=null` and
+   `target_cpa_micros=null`.
 
-0. Ads business context cockpit truth, 2026-06-20 14:51 Europe/Warsaw:
-   with the preliminary local values present, Command Center must not show the
-   old `daily_ads_business_context` blocker. Current proof:
-   `/api/dashboard/command-center` shows only
-   `decision_review_ads_campaign_metrics` for Ads daily review, while
-   `/api/ads/diagnostics.derived_kpi_read_contract.kpi_rows` includes
+0. Ads business context cockpit truth, live proof 2026-06-20 15:39 CEST, after
+   target reset:
+   with empty target values, Command Center must expose the blocked Ads
+   business-context item instead of implying a configured CPA/ROAS goal.
+   `/api/ads/diagnostics.derived_kpi_read_contract.kpi_rows` can still include
    `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
-   `target_status_label` and `target_review_priority`. Current live order:
-   `(2026) Ekologus Ogólna` first as `koszt bez konwersji`, then
-   `Kompendium PPWR` as `CPA w targetcie` with CPA `50.65 PLN`, target CPA
-   `150 PLN`, delta `-99.35 PLN`. Decision `ads_review_derived_kpis` has tiles
-   `targety=1`, `w targetcie=1`, `koszt bez konw.=1`. If these local values are
-   removed, the daily cockpit must again expose the blocked Ads
-   business-context item. Daily Codex still must not claim profitability,
-   margin verdict, wasted budget or budget scaling without the remaining
-   optimizer contracts.
+   `target_status_label` and `target_review_priority`, but rows without human
+   target confirmation now remain `no_target` / `brak targetu` style triage.
+   Current Command Center shows both read-only Ads review
+   `decision_review_ads_campaign_metrics` and blocked
+   `decision_ads_business_context_before_budget_decisions` with
+   `act_configure_ads_business_context`.
+   Daily Codex still must not claim profitability, margin verdict, wasted
+   budget or budget scaling without the remaining optimizer contracts.
 
 0. Ads business context ActionObject truth, 2026-06-20 11:05 Europe/Warsaw:
    the same blocker is now actionable through review-only
