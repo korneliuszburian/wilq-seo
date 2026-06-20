@@ -522,7 +522,16 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ahrefs strict skill usefulness eval, 2026-06-20 13:05 CEST.
+1. ActionObject mutation audit boundary, 2026-06-20 21:58 CEST.
+   Apply no longer has a path that can truthfully return `applied=true`
+   without persisted mutation audit and a real vendor mutation adapter. Current
+   Goal 001 state has no vendor mutation adapters, so all apply attempts remain
+   blocked with `mutation_attempted=false`; this is intentional safety, not a
+   missing `.env` issue. Full `scripts/verify.sh` passed: backend
+   `136 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+   dashboard build OK.
+
+2. Ahrefs strict skill usefulness eval, 2026-06-20 13:05 CEST.
    `wilq-ahrefs-gap-finder` eval case now targets `/ahrefs`, requires
    `ahrefs_diagnostics`, `decision_queue`,
    `ahrefs_review_authority_context`,
@@ -535,7 +544,7 @@ Aktualny maintenance:
    with `api_used=true`, `blocked=true`, evidence from Ahrefs,
    `action_id=null` and `operator_usefulness_score=4`.
 
-2. Ahrefs diagnostics contract, 2026-06-20 12:41 CEST.
+3. Ahrefs diagnostics contract, 2026-06-20 12:41 CEST.
    `/api/ahrefs/diagnostics`, dashboard `/ahrefs`, shared schemas and scoped
    `wilq-ahrefs-gap-finder` context-pack now expose Ahrefs as authority
    context only. Current live proof: DR=90, Ahrefs Rank=1450,
@@ -551,7 +560,7 @@ Aktualny maintenance:
    passed: backend `123 passed`, dashboard unit `15 passed`, Playwright e2e
    `12 passed`, skill/API smokes and dashboard production build passed.
 
-3. Localo aggregate value facts, 2026-06-20 11:42 CEST.
+4. Localo aggregate value facts, 2026-06-20 11:42 CEST.
    Localo MCP vendor_read now performs read-only GraphQL `query` calls after
    MCP initialize and stores only aggregate facts, not raw place names,
    addresses, keywords or Localo IDs. Live proof:
@@ -577,7 +586,7 @@ Aktualny maintenance:
    tests `14 passed`, Playwright e2e `11 passed`, skill/API smokes and
    production build passed.
 
-4. Ads business context contract, 2026-06-20 10:12 CEST.
+5. Ads business context contract, 2026-06-20 10:12 CEST.
    `AdsDiagnosticsResponse` exposes typed
    `business_context_read_contract`, shared Zod schema and Ads Doctor UI
    labels. Current local target truth, live proof 2026-06-20 17:34 CEST:
@@ -592,7 +601,7 @@ Aktualny maintenance:
    context and still does not unlock apply, profitability verdicts or
    wasted-budget claims.
 
-5. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
+6. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
    `wilq-ads-doctor` context-pack no longer ships duplicated Ads sections or
    row payloads inside `decision_queue`. Live proof: 174292 bytes over the wire
    and smoke-reported `context_pack_bytes=183152`; `sections_omitted=true`,
@@ -616,8 +625,9 @@ Aktualny maintenance:
   `WILQ_ADS_BUSINESS_GOAL`, `WILQ_ADS_BUDGET_GOAL`,
   `WILQ_ADS_TARGET_ROAS` or `WILQ_ADS_TARGET_CPA_MICROS`), approved Keyword
   Planner access/idea rows, forecast/audience size, strategy-specific review
-  policies beyond the generic human review outcome, budget apply safety,
-  final confirmation, impact sanity checks and real mutation audit.
+  policies beyond the generic human review outcome, budget apply safety and
+  actual vendor mutation adapters. Local review/preview/confirm/impact-check
+  and mutation-audit gates exist, but no vendor apply path is enabled.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety
   requirements are all verified.

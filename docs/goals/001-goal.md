@@ -2510,12 +2510,16 @@ Live `:8000` proof after API restart:
 Remaining Ads optimizer blockers:
 
 - budget apply preview exists as review-only `CampaignBudgetOperation`, but
-  human budget-goal, apply safety and mutation audit contracts are still
-  missing,
-- no recommendation apply support, human strategy-review or mutation audit path,
-- no pre/post change-impact window contract,
+  human budget-goal interpretation and actual vendor budget-apply adapter are
+  still missing,
+- no recommendation apply support or vendor recommendation-apply adapter,
 - no profit-margin/business-goal interpretation contract,
-- no campaign pause/budget apply audit path.
+- no campaign pause/budget apply vendor adapter.
+
+Superseded safety note, 2026-06-20 21:58 CEST: local
+review/preview/confirm/impact-check and mutation-audit gates now exist. Current
+blocker is actual vendor mutation adapter support, not missing local audit
+state.
 
 Passed after the 2026-06-19 Command Center GA4 metric-fact fallback:
 
