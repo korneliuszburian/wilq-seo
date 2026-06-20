@@ -1296,6 +1296,14 @@ const adsDiagnostics = {
       rationale:
         "To jest uczciwy pierwszy przegląd kampanii: WILQ widzi kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji po kampaniach.",
       next_step: "Sprawdź kampanie z największym kosztem i ruchem w tabeli dowodów.",
+      priority: 20,
+      metric_tiles: {
+        kampanie: 1,
+        kliknięcia: 107,
+        wyświetlenia: 2783,
+        koszt: "164.6",
+        konwersje: 2.5
+      },
       allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions", "conversion_value"],
       missing_read_contracts: [],
       source_connectors: ["google_ads"],
@@ -1350,6 +1358,12 @@ const adsDiagnostics = {
         "Google Ads recommendations są sygnałem do kontroli, nie automatyczną strategią.",
       next_step:
         "Potraktuj rekomendacje Google jako input do review, nie jako gotową strategię.",
+      priority: 35,
+      metric_tiles: {
+        rekomendacje: 1,
+        "podgląd wpływu": 1,
+        "podgląd akcji": 1
+      },
       allowed_metrics: [
         "recommendation_available",
         "recommendation_campaign_count",
@@ -3517,6 +3531,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("Konwersje").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Wartość konw.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("450,75").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("kliknięcia").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("wyświetlenia").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("koszt").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("164.6").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("podgląd wpływu").length).toBeGreaterThan(0);
     expect(screen.getByText("Koszt 7 dni")).toBeInTheDocument();
     expect(screen.getByText("7-dniowy budżet")).toBeInTheDocument();
     expect(screen.getByText("78,38%")).toBeInTheDocument();

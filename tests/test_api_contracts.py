@@ -3986,12 +3986,26 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     }
     campaign_decision = decisions_by_id["ads_review_campaign_activity"]
     assert campaign_decision["status"] == "ready"
+    assert campaign_decision["priority"] == 20
+    assert campaign_decision["metric_tiles"] == {
+        "kampanie": 1,
+        "kliknięcia": 9,
+        "wyświetlenia": 90,
+        "koszt": "12.0",
+        "konwersje": 2.5,
+    }
     assert campaign_decision["title"] == "Przejrzyj aktywność kampanii Google Ads"
     assert campaign_decision["campaign_rows"][0]["campaign_name"] == "Brand Search"
     assert campaign_decision["search_term_rows"] == []
     assert campaign_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
+    assert derived_kpi_decision["priority"] == 25
+    assert derived_kpi_decision["metric_tiles"] == {
+        "kampanie": 1,
+        "wiersze CPA": 1,
+        "wiersze ROAS": 1,
+    }
     assert derived_kpi_decision["decision_type"] == "review_derived_kpi"
     assert derived_kpi_decision["derived_kpi_rows"][0]["campaign_name"] == "Brand Search"
     assert derived_kpi_decision["derived_kpi_rows"][0]["roas"] == 37.5625
@@ -4000,6 +4014,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "budget_pacing" not in derived_kpi_decision["missing_read_contracts"]
     budget_decision = decisions_by_id["ads_review_budget_context"]
     assert budget_decision["status"] == "ready"
+    assert budget_decision["priority"] == 30
+    assert budget_decision["metric_tiles"] == {
+        "budżety": 1,
+        "podgląd budżetu": 1,
+        "koszt 7 dni": "12.0",
+    }
     assert budget_decision["decision_type"] == "review_budget_context"
     assert budget_decision["budget_rows"][0]["campaign_name"] == "Brand Search"
     assert budget_decision["budget_rows"][0]["spend_to_budget_ratio_7d"] == 0.057143
@@ -4020,6 +4040,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "budget apply" in budget_decision["blocked_claims"]
     recommendations_decision = decisions_by_id["ads_review_recommendations"]
     assert recommendations_decision["status"] == "ready"
+    assert recommendations_decision["priority"] == 35
+    assert recommendations_decision["metric_tiles"] == {
+        "rekomendacje": 1,
+        "podgląd wpływu": 1,
+        "podgląd akcji": 1,
+    }
     assert recommendations_decision["decision_type"] == "review_recommendations"
     assert recommendations_decision["recommendation_rows"][0]["recommendation_type"] == (
         "CAMPAIGN_BUDGET"
@@ -4043,6 +4069,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "recommendation apply" in recommendations_decision["blocked_claims"]
     impression_share_decision = decisions_by_id["ads_review_impression_share"]
     assert impression_share_decision["status"] == "ready"
+    assert impression_share_decision["priority"] == 60
+    assert impression_share_decision["metric_tiles"] == {
+        "kampanie": 1,
+        "utrata przez budżet": 1,
+    }
     assert impression_share_decision["decision_type"] == "review_impression_share"
     assert impression_share_decision["impression_share_rows"][0]["campaign_name"] == (
         "Brand Search"
@@ -4058,6 +4089,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "budget apply" in impression_share_decision["blocked_claims"]
     change_history_decision = decisions_by_id["ads_review_change_history"]
     assert change_history_decision["status"] == "ready"
+    assert change_history_decision["priority"] == 65
+    assert change_history_decision["metric_tiles"] == {"zmiany": 1, "kampanie": 1}
     assert change_history_decision["decision_type"] == "review_change_history"
     assert change_history_decision["change_history_rows"][0]["change_resource_type"] == (
         "CAMPAIGN"
@@ -4073,10 +4106,22 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "change impact" in change_history_decision["blocked_claims"]
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
+    assert search_terms_decision["priority"] == 40
+    assert search_terms_decision["metric_tiles"] == {
+        "zapytania": 2,
+        "kliknięcia": 10,
+        "koszt": "12.0",
+    }
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
     assert "negative keyword apply" in search_terms_decision["blocked_claims"]
     search_term_safety_decision = decisions_by_id["ads_review_search_term_safety"]
     assert search_term_safety_decision["status"] == "ready"
+    assert search_term_safety_decision["priority"] == 50
+    assert search_term_safety_decision["metric_tiles"] == {
+        "90 dni": 1,
+        "kliknięcia": 10,
+        "koszt": "8.00",
+    }
     assert search_term_safety_decision["decision_type"] == "review_search_term_safety"
     assert search_term_safety_decision["search_term_safety_rows"][0]["search_term"] == (
         "odpady cena"
@@ -4088,6 +4133,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     negative_keyword_decision = decisions_by_id["ads_review_negative_keyword_safety"]
     assert negative_keyword_decision["status"] == "ready"
+    assert negative_keyword_decision["priority"] == 45
+    assert negative_keyword_decision["metric_tiles"] == {
+        "kandydaci": 1,
+        "podgląd akcji": 1,
+        "kontekst słów": 1,
+    }
     assert negative_keyword_decision["decision_type"] == "review_negative_keyword_safety"
     assert negative_keyword_decision["negative_keyword_candidates"][0]["search_term"] == (
         "odpady cena"
@@ -4106,6 +4157,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "search-term waste" in negative_keyword_decision["blocked_claims"]
     custom_segments_decision = decisions_by_id["ads_prepare_custom_segments_from_search_terms"]
     assert custom_segments_decision["status"] == "ready"
+    assert custom_segments_decision["priority"] == 55
+    assert custom_segments_decision["metric_tiles"] == {
+        "segmenty": 1,
+        "podgląd akcji": 1,
+        "źródłowe zapytania": 2,
+    }
     assert custom_segments_decision["decision_type"] == "prepare_custom_segments"
     assert custom_segments_decision["custom_segment_candidates"][0]["source_terms"] == [
         "bdo rejestracja",
@@ -4123,6 +4180,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "ROAS" in custom_segments_decision["blocked_claims"]
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
+    assert safety_decision["priority"] == 10
+    assert safety_decision["metric_tiles"] == {"ActionObjecty": 4, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
     assert payload["blocker_count"] == 1
 
@@ -4157,6 +4216,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         for decision in context_payload["ads_diagnostics"]["decision_queue"]
     }
     context_budget_decision = context_decisions["ads_review_budget_context"]
+    assert context_budget_decision["priority"] == budget_decision["priority"]
+    assert context_budget_decision["metric_tiles"] == budget_decision["metric_tiles"]
     assert context_budget_decision["knowledge_card_ids"] == budget_decision[
         "knowledge_card_ids"
     ]

@@ -962,6 +962,8 @@ class AdsDecisionItem(BaseModel):
     summary: str
     rationale: str
     next_step: str
+    priority: int = Field(default=50, ge=1, le=100)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)

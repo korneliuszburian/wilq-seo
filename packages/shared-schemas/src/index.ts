@@ -729,6 +729,8 @@ export const AdsDecisionItemSchema = z.object({
   summary: z.string(),
   rationale: z.string(),
   next_step: z.string(),
+  priority: z.number().default(50),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   source_connectors: z.array(z.string()),

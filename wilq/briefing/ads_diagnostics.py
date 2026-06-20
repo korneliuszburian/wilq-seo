@@ -3640,10 +3640,180 @@ def _with_ads_decision_lineage(decision: AdsDecisionItem) -> AdsDecisionItem:
     knowledge_card_ids, expert_rule_ids = ADS_DECISION_LINEAGE.get(decision.id, ([], []))
     return decision.model_copy(
         update={
+            "priority": _ads_decision_priority(decision),
+            "metric_tiles": _ads_decision_metric_tiles(decision),
             "knowledge_card_ids": _unique([*decision.knowledge_card_ids, *knowledge_card_ids]),
             "expert_rule_ids": _unique([*decision.expert_rule_ids, *expert_rule_ids]),
         }
     )
+
+
+def _ads_decision_priority(decision: AdsDecisionItem) -> int:
+    type_priority: dict[str, int] = {
+        "fix_ads_access": 5,
+        "block_write_actions": 10,
+        "review_campaign_activity": 20,
+        "review_derived_kpi": 25,
+        "review_budget_context": 30,
+        "review_recommendations": 35,
+        "review_search_terms": 40,
+        "review_negative_keyword_safety": 45,
+        "review_search_term_safety": 50,
+        "prepare_custom_segments": 55,
+        "review_impression_share": 60,
+        "review_change_history": 65,
+    }
+    return type_priority.get(decision.decision_type, 90)
+
+
+def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | float | str]:
+    if decision.decision_type == "review_campaign_activity":
+        return _clean_metric_tiles(
+            {
+                "kampanie": len(decision.campaign_rows),
+                "kliknięcia": _sum_attr(decision.campaign_rows, "clicks"),
+                "wyświetlenia": _sum_attr(decision.campaign_rows, "impressions"),
+                "koszt": _format_micros(_sum_attr(decision.campaign_rows, "cost_micros")),
+                "konwersje": _round_metric(_sum_attr(decision.campaign_rows, "conversions")),
+            }
+        )
+    if decision.decision_type == "review_derived_kpi":
+        rows_with_cpa = sum(
+            1 for row in decision.derived_kpi_rows if row.cost_per_conversion_micros is not None
+        )
+        rows_with_roas = sum(1 for row in decision.derived_kpi_rows if row.roas is not None)
+        return _clean_metric_tiles(
+            {
+                "kampanie": len(decision.derived_kpi_rows),
+                "wiersze CPA": rows_with_cpa,
+                "wiersze ROAS": rows_with_roas,
+            }
+        )
+    if decision.decision_type == "review_budget_context":
+        return _clean_metric_tiles(
+            {
+                "budżety": len(decision.budget_rows),
+                "podgląd budżetu": len(decision.budget_apply_preview),
+                "koszt 7 dni": _format_micros(
+                    _sum_attr(decision.budget_rows, "cost_micros_7d")
+                ),
+            }
+        )
+    if decision.decision_type == "review_recommendations":
+        rows_with_impact = sum(1 for row in decision.recommendation_rows if row.impact_available)
+        return _clean_metric_tiles(
+            {
+                "rekomendacje": len(decision.recommendation_rows),
+                "podgląd wpływu": rows_with_impact,
+                "podgląd akcji": len(decision.recommendation_apply_preview),
+            }
+        )
+    if decision.decision_type == "review_impression_share":
+        return _clean_metric_tiles(
+            {
+                "kampanie": len(decision.impression_share_rows),
+                "utrata przez budżet": sum(
+                    1
+                    for row in decision.impression_share_rows
+                    if row.search_budget_lost_impression_share is not None
+                ),
+            }
+        )
+    if decision.decision_type == "review_change_history":
+        return _clean_metric_tiles(
+            {
+                "zmiany": len(decision.change_history_rows),
+                "kampanie": sum(
+                    1 for row in decision.change_history_rows if row.campaign_id is not None
+                ),
+            }
+        )
+    if decision.decision_type == "review_search_terms":
+        return _clean_metric_tiles(
+            {
+                "zapytania": len(decision.search_term_rows),
+                "kliknięcia": _sum_attr(decision.search_term_rows, "clicks"),
+                "koszt": _format_micros(_sum_attr(decision.search_term_rows, "cost_micros")),
+            }
+        )
+    if decision.decision_type == "review_search_term_safety":
+        return _clean_metric_tiles(
+            {
+                "90 dni": len(decision.search_term_safety_rows),
+                "kliknięcia": _sum_attr(decision.search_term_safety_rows, "clicks_90d"),
+                "koszt": _format_micros(
+                    _sum_attr(decision.search_term_safety_rows, "cost_micros_90d")
+                ),
+            }
+        )
+    if decision.decision_type == "review_negative_keyword_safety":
+        return _clean_metric_tiles(
+            {
+                "kandydaci": len(decision.negative_keyword_candidates),
+                "podgląd akcji": len(decision.negative_keyword_payload_preview),
+                "kontekst słów": len(decision.keyword_match_context_rows),
+            }
+        )
+    if decision.decision_type == "prepare_custom_segments":
+        return _clean_metric_tiles(
+            {
+                "segmenty": len(decision.custom_segment_candidates),
+                "podgląd akcji": len(decision.custom_segment_payload_preview),
+                "źródłowe zapytania": len(decision.search_term_rows),
+            }
+        )
+    if decision.decision_type in {"block_write_actions", "fix_ads_access"}:
+        return _clean_metric_tiles(
+            {
+                "ActionObjecty": len(decision.action_ids),
+                "blokady": len(decision.blocked_claims),
+            }
+        )
+    return {}
+
+
+def _sum_attr(rows: Iterable[object], attr: str) -> float | None:
+    total: float | None = None
+    for row in rows:
+        value = getattr(row, attr, None)
+        if isinstance(value, int | float):
+            total = (total or 0.0) + float(value)
+    return total
+
+
+def _round_metric(value: float | None) -> int | float | None:
+    if value is None:
+        return None
+    if value.is_integer():
+        return int(value)
+    return round(value, 3)
+
+
+def _format_micros(value: float | None) -> str | None:
+    if value is None:
+        return None
+    account_units = value / 1_000_000
+    if account_units >= 100:
+        return f"{account_units:.0f}"
+    if account_units >= 10:
+        return f"{account_units:.1f}"
+    return f"{account_units:.2f}"
+
+
+def _clean_metric_tiles(
+    tiles: dict[str, int | float | str | None],
+) -> dict[str, int | float | str]:
+    clean_tiles: dict[str, int | float | str] = {}
+    for label, value in tiles.items():
+        if value is None:
+            continue
+        if isinstance(value, float):
+            rounded_value = _round_metric(value)
+            if rounded_value is not None:
+                clean_tiles[label] = rounded_value
+        else:
+            clean_tiles[label] = value
+    return clean_tiles
 
 
 def _metric_sentence(facts: list[MetricFact]) -> str:

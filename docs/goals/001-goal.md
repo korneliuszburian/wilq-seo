@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 06:34 CEST.
+Last updated: 2026-06-20 06:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -104,6 +104,18 @@ the same fields with no GA4 redaction paths and no null
 `status`/`priority`/`metric_tiles`. Full `scripts/verify.sh` passed after this
 slice: backend `117 passed`, dashboard unit `14 passed`, Playwright e2e
 `9 passed`, security, skill/API smokes and dashboard production build passed.
+
+Ads dedicated route and `wilq-ads-doctor` context-pack must expose decision
+metadata directly, not rely on frontend inference. Current live proof after
+`scripts/local_stack.sh restart`: `/api/ads/diagnostics.decision_queue` has
+11 decisions with explicit `priority` and `metric_tiles`; `null_priority_count`
+is `0` and `empty_tiles=[]`. Campaign review shows `kampanie=18`,
+`kliknięcia=117`, `wyświetlenia=3075`, `koszt=161`, `konwersje=2`;
+recommendations show `rekomendacje=4`, `podgląd wpływu=2`,
+`podgląd akcji=4`; search terms show only supported evidence-backed tiles
+`zapytania=50` and `kliknięcia=7`, because current search-term evidence does
+not contain `cost_micros`. Scoped `wilq-ads-doctor` context-pack carries the
+same fields with no Ads redaction paths.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and

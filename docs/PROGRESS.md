@@ -90,6 +90,16 @@ Aktualny proof produktowy:
   i `engagement`, np. `(not set)/(not set)` ma `aktywni=179`, `sesje=179`,
   `engagement=0%`. Scoped `wilq-ga4-analyst` context-pack niesie te same
   pola bez redakcji GA4.
+- `/api/ads/diagnostics.decision_queue` ma teraz operator-facing `priority` i
+  `metric_tiles`, a `/ads-doctor` renderuje kafelki z typed API zamiast
+  frontendowo zgadywać liczby z głębokich tablic. Live proof po
+  `scripts/local_stack.sh restart`: 11 decyzji Ads, `null_priority_count=0`,
+  `empty_tiles=[]`; top campaign decision pokazuje `kampanie=18`,
+  `kliknięcia=117`, `wyświetlenia=3075`, `koszt=161`, `konwersje=2`.
+  Search terms pokazują tylko istniejące evidence-backed kafelki
+  `zapytania=50`, `kliknięcia=7`; `koszt` jest pomijany, gdy bieżący
+  search-term evidence nie ma `cost_micros`. Scoped `wilq-ads-doctor`
+  context-pack niesie te same `priority` i `metric_tiles` bez redakcji Ads.
 - Content diagnostics i scoped `wilq-content-strategist` context-pack pokazują
   teraz typed decyzje z marketer-facing tytułem, summary, `primary_query`,
   `total_clicks`, `total_impressions`, `aggregate_ctr` i
@@ -135,7 +145,19 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
+1. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
+   `/api/ads/diagnostics.decision_queue` now exposes explicit `priority` and
+   `metric_tiles` for every Ads decision, and `/ads-doctor` renders those tiles
+   directly from typed API state. Shared schemas and `wilq-ads-doctor`
+   context-pack carry the same fields. Live proof after
+   `scripts/local_stack.sh restart`: 11 Ads decisions, `null_priority_count=0`,
+   `empty_tiles=[]`; campaign review has `kampanie=18`, `kliknięcia=117`,
+   `wyświetlenia=3075`, `koszt=161`, `konwersje=2`; recommendations have
+   `rekomendacje=4`, `podgląd wpływu=2`, `podgląd akcji=4`; search terms omit
+   cost when `cost_micros` is absent from evidence instead of showing a false
+   `0.00`.
+
+2. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
    `/api/ga4/diagnostics.decision_queue` now exposes explicit `status`,
    `priority` and `metric_tiles` for each GA4 decision, and `/ga4` renders the
    tiles on decision cards. Live proof after `scripts/local_stack.sh restart`:
@@ -148,7 +170,7 @@ Aktualny maintenance:
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-2. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
+3. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
    `/api/marketing/brief` and full/scoped Codex context-packs now consume the
    same `CommandCenterResponse.daily_decisions` state as Command Center instead
    of rebuilding the daily brief from older raw metric/action summaries. Live
@@ -166,7 +188,7 @@ Aktualny maintenance:
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
 
-3. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
+4. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
    Merchant Center now has typed `MerchantDiagnosticsResponse.decision_queue`
    and the same decision state feeds `/merchant`, Command Center and scoped
    `wilq-merchant-feed-operator` context-pack. Command Center no longer builds
@@ -184,7 +206,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-4. Command Center content decision bridge, 2026-06-20 03:00 CEST.
+5. Command Center content decision bridge, 2026-06-20 03:00 CEST.
    Command Center no longer builds the content first-screen card directly from
    raw tactical items. It calls `build_content_diagnostics(...)` with preloaded
    tactical/actions, uses `ContentDiagnosticsResponse.decision_queue`, and
@@ -200,23 +222,6 @@ Aktualny maintenance:
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
 
-5. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
-   `/api/content/diagnostics.decision_queue` ma teraz skondensowane, polskie
-   decyzje contentowe zamiast URL-i jako głównych tytułów. API dodaje
-   `summary`, `primary_query`, `total_clicks`, `total_impressions`,
-   `aggregate_ctr` i `best_average_position`; kolejka sortuje GSC/WordPress
-   decyzje po realnym popycie z GSC, a dashboard `/content-planner` renderuje
-   te pola jako pierwszorzędne liczby. Live proof po
-   `scripts/local_stack.sh restart`: główne decyzje contentowe to BDO
-   (`4429 wyświetleń`, `4 kliknięcia`, CTR `0.09%`), Zielony Ład
-   (`2902 wyświetlenia`, `123 kliknięcia`, CTR `4.24%`), Remediacja i brand.
-   Scoped `wilq-content-strategist` context-pack niesie te same pola,
-   `google_search_console` + `wordpress_ekologus` evidence IDs i
-   `act_prepare_content_refresh_queue`. Focused ruff, mypy, backend
-   `content_diagnostics` tests, dashboard lint/typecheck and `App.test.tsx`
-   passed. Full `scripts/verify.sh` also passed: backend `117 passed`,
-   dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
-   skill/API smokes and dashboard production build passed.
 
 ## Active Gaps
 

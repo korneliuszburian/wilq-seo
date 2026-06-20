@@ -1839,78 +1839,13 @@ function AdsDecisionCard({
       <p className="mt-2 text-sm leading-6 text-slate-700">{decision.summary}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">{decision.rationale}</p>
       <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
-      <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
-        {decision.campaign_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Kampanie: {decision.campaign_rows.length}
-          </span>
-        ) : null}
-        {decision.search_term_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Zapytania: {decision.search_term_rows.length}
-          </span>
-        ) : null}
-        {decision.search_term_safety_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Safety 90 dni: {decision.search_term_safety_rows.length}
-          </span>
-        ) : null}
-        {decision.keyword_match_context_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Keyword context: {decision.keyword_match_context_rows.length}
-          </span>
-        ) : null}
-        {decision.derived_kpi_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            KPI: {decision.derived_kpi_rows.length}
-          </span>
-        ) : null}
-        {decision.budget_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Budżety: {decision.budget_rows.length}
-          </span>
-        ) : null}
-        {decision.budget_apply_preview.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Budżet preview: {decision.budget_apply_preview.length}
-          </span>
-        ) : null}
-        {decision.recommendation_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Rekomendacje: {decision.recommendation_rows.length}
-          </span>
-        ) : null}
-        {decision.impression_share_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Udział w wyśw.: {decision.impression_share_rows.length}
-          </span>
-        ) : null}
-        {decision.change_history_rows.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Zmiany: {decision.change_history_rows.length}
-          </span>
-        ) : null}
-        {decision.recommendation_apply_preview.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Apply preview: {decision.recommendation_apply_preview.length}
-          </span>
-        ) : null}
-        {decision.allowed_metrics.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Metryki: {decision.allowed_metrics.slice(0, 4).map(adsAllowedMetricLabel).join(", ")}
-          </span>
-        ) : null}
-        {decision.custom_segment_candidates.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Segmenty: {decision.custom_segment_candidates.length}
-          </span>
-        ) : null}
-        {decision.negative_keyword_candidates.length > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Review wykluczeń: {decision.negative_keyword_candidates.length}
-          </span>
-        ) : null}
-      </div>
+      {Object.keys(decision.metric_tiles).length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 sm:grid-cols-3">
+          {Object.entries(decision.metric_tiles).map(([label, value]) => (
+            <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
+          ))}
+        </div>
+      ) : null}
       {decision.negative_keyword_candidates.length > 0 ? (
         <AdsNegativeKeywordCandidatesPanel
           candidates={decision.negative_keyword_candidates}
@@ -2845,21 +2780,7 @@ function adsDecisionSortValue(decision: AdsDecisionItem) {
     ready: 0,
     blocked: 1
   };
-  const typeRank: Record<AdsDecisionItem["decision_type"], number> = {
-    review_campaign_activity: 0,
-    review_derived_kpi: 1,
-    review_budget_context: 2,
-    review_recommendations: 3,
-    review_impression_share: 4,
-    review_change_history: 5,
-    review_search_terms: 6,
-    review_search_term_safety: 7,
-    review_negative_keyword_safety: 8,
-    prepare_custom_segments: 9,
-    block_write_actions: 10,
-    fix_ads_access: 0
-  };
-  return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
+  return statusRank[decision.status] * 100 + decision.priority;
 }
 
 function adsConnectorStatusLabel(status: string) {
