@@ -13,7 +13,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from wilq.actions.service import apply_action, get_action, list_actions, validate_action
+from wilq.actions.service import (
+    apply_action,
+    get_action,
+    list_actions,
+    record_action_review,
+    validate_action,
+)
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
@@ -57,6 +63,7 @@ from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_o
 from wilq.schemas import (
     ActionApplyRequest,
     ActionObject,
+    ActionReviewRequest,
     AdsCampaignMetricRow,
     AdsDiagnosticsResponse,
     AhrefsDiagnosticsResponse,
@@ -1927,6 +1934,21 @@ def validate_action_endpoint(action_id: str) -> dict[str, Any]:
     clear_daily_runtime_cache()
     clear_skill_context_cache()
     return result
+
+
+@app.post("/api/actions/{action_id}/review")
+def review_action_endpoint(
+    action_id: str,
+    request: ActionReviewRequest,
+) -> dict[str, Any]:
+    action = get_action(action_id)
+    if action is None:
+        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+    result = record_action_review(action, request)
+    local_state_store().save_audit_event(result.audit_event)
+    clear_daily_runtime_cache()
+    clear_skill_context_cache()
+    return result.model_dump(mode="json")
 
 
 @app.post("/api/actions/{action_id}/apply")

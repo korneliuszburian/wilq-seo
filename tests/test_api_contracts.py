@@ -822,6 +822,85 @@ def test_action_apply_confirmed_prepare_action_still_blocks_with_audit(
     assert "Action mode must be apply" in json.dumps(body)
 
 
+def test_action_review_records_human_outcome_without_apply(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "human_review_state.sqlite3"))
+
+    review_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/review",
+        json={
+            "outcome": "approved_for_prepare",
+            "reviewed_by": "operator_test",
+            "notes": "Sprawdzono kolejkę feedu; można kontynuować przygotowanie.",
+            "checked_items": ["group_issue_reasons", "prepare_feed_fix_preview"],
+            "blockers": ["payload_apply_allowed_false"],
+        },
+    )
+
+    assert review_response.status_code == 200
+    review_payload = review_response.json()
+    assert review_payload["status"] == "recorded"
+    assert review_payload["audit_event"]["event_type"] == "human_review_approved_for_prepare"
+    assert review_payload["audit_event"]["actor"] == "operator_test"
+    assert review_payload["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+    assert review_payload["review_gate"]["apply_allowed"] is False
+    assert "mutacji vendorów" in review_payload["audit_event"]["summary"]
+
+    audit_response = client.get(
+        "/api/audit/events?action_id=act_review_merchant_feed_issues"
+    )
+    assert audit_response.status_code == 200
+    audit_events = audit_response.json()
+    assert audit_events[0]["event_type"] == "human_review_approved_for_prepare"
+
+    action_response = client.get("/api/actions/act_review_merchant_feed_issues")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    assert action["audit_events"][0]["event_type"] == "human_review_approved_for_prepare"
+    assert action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+    assert action["review_gate"]["last_reviewed_by"] == "operator_test"
+    assert action["review_gate"]["apply_allowed"] is False
+
+
+def test_daily_context_pack_preserves_human_review_outcome(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "human_review_context_state.sqlite3"),
+    )
+    review_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/review",
+        json={
+            "outcome": "needs_changes",
+            "reviewed_by": "operator_test",
+            "notes": "Brakuje payload preview do realnego apply.",
+            "checked_items": ["prepare_feed_fix_preview"],
+            "blockers": ["payload_apply_allowed_false"],
+        },
+    )
+    assert review_response.status_code == 200
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-daily-command"},
+    )
+
+    assert context_response.status_code == 200
+    payload = context_response.json()
+    actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
+    merchant_action = actions_by_id["act_review_merchant_feed_issues"]
+    assert merchant_action["review_gate"]["last_review_outcome"] == "needs_changes"
+    assert merchant_action["review_gate"]["last_reviewed_by"] == "operator_test"
+    assert merchant_action["review_gate"]["apply_allowed"] is False
+    serialized = json.dumps(merchant_action, ensure_ascii=False)
+    assert "[REDACTED]" not in serialized
+    assert "Brakuje payload preview" in serialized
+
+
 def test_google_ads_oauth_repair_action_is_explicit_and_redacted() -> None:
     response = client.get("/api/actions/act_configure_google_ads_env")
     assert response.status_code == 200

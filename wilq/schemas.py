@@ -193,6 +193,29 @@ class AuditEvent(BaseModel):
     redacted: bool = True
 
 
+ActionReviewOutcome = Literal[
+    "approved_for_prepare",
+    "needs_changes",
+    "rejected",
+    "deferred",
+]
+
+
+class ActionReviewRequest(BaseModel):
+    outcome: ActionReviewOutcome
+    reviewed_by: str = Field(min_length=1)
+    notes: str = Field(min_length=1, max_length=2000)
+    checked_items: list[str] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
+
+    @field_validator("checked_items", "blockers")
+    @classmethod
+    def no_blank_review_items(cls, value: list[str]) -> list[str]:
+        if any(not item.strip() for item in value):
+            raise ValueError("review items must not be blank")
+        return value
+
+
 class ActionReviewGate(BaseModel):
     status: Literal[
         "pending_validation",
@@ -206,6 +229,10 @@ class ActionReviewGate(BaseModel):
     apply_blockers: list[str] = Field(default_factory=list)
     confirmation_required: bool = True
     apply_allowed: bool = False
+    last_review_outcome: ActionReviewOutcome | None = None
+    last_reviewed_by: str | None = None
+    last_reviewed_at: datetime | None = None
+    last_review_summary: str | None = None
 
 
 class ActionObject(BaseModel):
@@ -253,6 +280,13 @@ class ActionApplyResult(BaseModel):
     status: Literal["applied", "blocked", "failed"]
     audit_event: AuditEvent
     errors: list[str] = Field(default_factory=list)
+
+
+class ActionReviewResult(BaseModel):
+    action_id: str
+    status: Literal["recorded"]
+    audit_event: AuditEvent
+    review_gate: ActionReviewGate
 
 
 class ActionApplyRequest(BaseModel):

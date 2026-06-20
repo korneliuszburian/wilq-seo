@@ -15,6 +15,7 @@ import {
   RouterProvider,
   useParams
 } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -29,6 +30,7 @@ import {
 import {
   ActionObject,
   ActionApplyResult,
+  ActionReviewRequest,
   ActionValidationResult,
   AdsDiagnosticsResponse,
   AhrefsDiagnosticsResponse,
@@ -58,6 +60,7 @@ import {
   getOpportunities,
   getTacticalQueue,
   applyAction,
+  reviewAction,
   validateAction,
   getWorkflowRuns,
   getWorkflows,
@@ -509,6 +512,7 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
               </div>
             ) : null}
             <ActionReviewGatePanel action={action} />
+            <ActionHumanReviewControls action={action} />
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
               <LinkedTraceLine label="ActionObject" values={[action.id]} kind="actions" />
               <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
@@ -527,6 +531,110 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
         ))}
       </div>
     </section>
+  );
+}
+
+type ActionReviewOutcome = ActionReviewRequest["outcome"];
+
+const ACTION_REVIEW_OPTIONS: Array<{ value: ActionReviewOutcome; label: string }> = [
+  { value: "approved_for_prepare", label: "zatwierdzone do przygotowania" },
+  { value: "needs_changes", label: "wymaga poprawek" },
+  { value: "rejected", label: "odrzucone" },
+  { value: "deferred", label: "odłożone" }
+];
+
+function ActionHumanReviewControls({ action }: { action: ActionObject }) {
+  const queryClient = useQueryClient();
+  const [outcome, setOutcome] = useState<ActionReviewOutcome>("approved_for_prepare");
+  const [notes, setNotes] = useState(
+    "Review operatora: zapisuję decyzję bez uruchamiania apply."
+  );
+  const reviewMutation = useMutation({
+    mutationFn: () =>
+      reviewAction(action.id, {
+        outcome,
+        reviewed_by: "operator_local_dashboard",
+        notes: notes.trim(),
+        checked_items: action.review_gate.operator_checklist.slice(0, 8),
+        blockers: action.review_gate.apply_blockers.slice(0, 8)
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+  const lastOutcome = action.review_gate.last_review_outcome;
+  const lastReviewLabel = lastOutcome
+    ? ACTION_REVIEW_OPTIONS.find((option) => option.value === lastOutcome)?.label ?? lastOutcome
+    : null;
+  const canSave = notes.trim().length > 0 && !reviewMutation.isPending;
+
+  return (
+    <div className="mt-3 rounded-md border border-line bg-white p-3 text-xs">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="font-semibold uppercase tracking-normal text-slate-600">
+            Wynik review człowieka
+          </div>
+          <p className="mt-1 leading-5 text-slate-600">
+            Zapisuje lokalny audit event. Nie wykonuje apply ani mutacji vendorów.
+          </p>
+        </div>
+        <StatusBadge value={lastReviewLabel ?? "brak review"} />
+      </div>
+      {action.review_gate.last_review_summary ? (
+        <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">
+          {action.review_gate.last_review_summary}
+        </p>
+      ) : null}
+      <div className="mt-3 grid gap-3 md:grid-cols-[220px_1fr_auto]">
+        <label className="grid gap-1">
+          <span className="font-medium text-slate-600">Decyzja</span>
+          <select
+            value={outcome}
+            onChange={(event) => setOutcome(event.target.value as ActionReviewOutcome)}
+            className="min-h-9 rounded-md border border-line bg-white px-2 text-xs text-ink"
+          >
+            {ACTION_REVIEW_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1">
+          <span className="font-medium text-slate-600">Notatka review</span>
+          <textarea
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            className="min-h-20 rounded-md border border-line bg-white px-2 py-2 text-xs leading-5 text-ink"
+          />
+        </label>
+        <div className="flex items-end">
+          <button
+            type="button"
+            onClick={() => reviewMutation.mutate()}
+            disabled={!canSave}
+            className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {reviewMutation.isPending ? (
+              <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
+            ) : (
+              <ClipboardCheck aria-hidden="true" size={15} />
+            )}
+            {reviewMutation.isPending ? "Zapisuję" : "Zapisz review"}
+          </button>
+        </div>
+      </div>
+      {reviewMutation.data ? (
+        <div className="mt-2 text-slate-600">
+          Zapisano audit event: {reviewMutation.data.audit_event.event_type}
+        </div>
+      ) : null}
+      {reviewMutation.error instanceof Error ? (
+        <div className="mt-2 text-risk">Błąd review: {reviewMutation.error.message}</div>
+      ) : null}
+    </div>
   );
 }
 
@@ -5792,6 +5900,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
           <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
         </div>
         <ActionReviewGatePanel action={action} />
+        <ActionHumanReviewControls action={action} />
         <ActionValidationControls action={action} />
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">

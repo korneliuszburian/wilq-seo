@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any, Literal
+from typing import Any, Literal, cast
+from uuid import uuid4
 
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
@@ -35,6 +36,9 @@ from wilq.schemas import (
     ActionMode,
     ActionObject,
     ActionReviewGate,
+    ActionReviewOutcome,
+    ActionReviewRequest,
+    ActionReviewResult,
     ActionRisk,
     ActionStatus,
     ActionValidationResult,
@@ -45,6 +49,7 @@ from wilq.schemas import (
     MetricFact,
     OpportunityDomain,
 )
+from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
 
@@ -248,7 +253,7 @@ def list_actions() -> list[ActionObject]:
         business_context_action = _google_ads_business_context_action()
         if business_context_action is not None:
             actions[business_context_action.id] = business_context_action
-    return [_with_review_gate(action) for action in actions.values()]
+    return _with_persisted_review_gates(actions.values())
 
 
 def get_action(action_id: str) -> ActionObject | None:
@@ -259,7 +264,7 @@ def get_action(action_id: str) -> ActionObject | None:
     action = actions.get(action_id)
     if action is None:
         return None
-    return _with_review_gate(action)
+    return _with_review_gate(action, _persisted_audit_events_for_action(action.id))
 
 
 def _google_ads_live_data_available() -> bool:
@@ -915,6 +920,28 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
     )
 
 
+def record_action_review(
+    action: ActionObject,
+    request: ActionReviewRequest,
+) -> ActionReviewResult:
+    audit = AuditEvent(
+        id=f"audit_{action.id}_human_review_{uuid4().hex[:12]}",
+        action_id=action.id,
+        event_type=f"human_review_{request.outcome}",
+        actor=request.reviewed_by,
+        summary=_action_review_summary(request),
+        evidence_ids=action.evidence_ids,
+    )
+    action.audit_events = [audit, *action.audit_events]
+    action.review_gate = _action_review_gate(action)
+    return ActionReviewResult(
+        action_id=action.id,
+        status="recorded",
+        audit_event=audit,
+        review_gate=action.review_gate,
+    )
+
+
 def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
@@ -970,7 +997,23 @@ def _apply_audit_event_type(errors: list[str]) -> str:
     return "apply_blocked"
 
 
-def _with_review_gate(action: ActionObject) -> ActionObject:
+def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[ActionObject]:
+    action_list = list(actions)
+    audit_events_by_action_id = _persisted_audit_events_by_action_id(
+        {action.id for action in action_list}
+    )
+    return [
+        _with_review_gate(action, audit_events_by_action_id.get(action.id, []))
+        for action in action_list
+    ]
+
+
+def _with_review_gate(
+    action: ActionObject,
+    audit_events: list[AuditEvent] | None = None,
+) -> ActionObject:
+    if audit_events is not None:
+        action.audit_events = audit_events[:10]
     action.review_gate = _action_review_gate(action)
     return action
 
@@ -985,6 +1028,7 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
     required_checks = _action_required_checks(action.payload)
     operator_checklist = _action_operator_checklist(action.payload)
     apply_allowed = _action_payload_apply_allowed(action.payload)
+    last_review = _latest_human_review_event(action.audit_events)
     apply_blockers = _action_apply_blockers(
         action=action,
         required_checks=required_checks,
@@ -1016,7 +1060,67 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
         apply_blockers=apply_blockers,
         confirmation_required=_action_confirmation_required(required_checks, action.mode),
         apply_allowed=apply_allowed and action.mode == ActionMode.apply,
+        last_review_outcome=_review_outcome_from_event(last_review),
+        last_reviewed_by=last_review.actor if last_review is not None else None,
+        last_reviewed_at=last_review.created_at if last_review is not None else None,
+        last_review_summary=last_review.summary if last_review is not None else None,
     )
+
+
+def _persisted_audit_events_by_action_id(action_ids: set[str]) -> dict[str, list[AuditEvent]]:
+    if not action_ids:
+        return {}
+    events_by_action_id: dict[str, list[AuditEvent]] = {action_id: [] for action_id in action_ids}
+    for event in local_state_store().list_audit_events():
+        if event.action_id not in action_ids:
+            continue
+        action_events = events_by_action_id.setdefault(event.action_id, [])
+        if len(action_events) < 10:
+            action_events.append(event)
+    return events_by_action_id
+
+
+def _persisted_audit_events_for_action(action_id: str) -> list[AuditEvent]:
+    return local_state_store().list_audit_events(action_id=action_id)[:10]
+
+
+def _action_review_summary(request: ActionReviewRequest) -> str:
+    parts = [
+        f"Wynik review: {_review_outcome_label(request.outcome)}.",
+        f"Notatka: {request.notes}",
+    ]
+    if request.checked_items:
+        parts.append(f"Sprawdzone: {', '.join(request.checked_items[:8])}.")
+    if request.blockers:
+        parts.append(f"Blockery: {', '.join(request.blockers[:8])}.")
+    parts.append("Ten zapis nie wykonuje apply ani mutacji vendorów.")
+    return " ".join(parts)
+
+
+def _review_outcome_label(outcome: str) -> str:
+    labels = {
+        "approved_for_prepare": "zatwierdzone do dalszego przygotowania",
+        "needs_changes": "wymaga poprawek",
+        "rejected": "odrzucone",
+        "deferred": "odłożone",
+    }
+    return labels.get(outcome, outcome)
+
+
+def _latest_human_review_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type.startswith("human_review_"):
+            return event
+    return None
+
+
+def _review_outcome_from_event(event: AuditEvent | None) -> ActionReviewOutcome | None:
+    if event is None:
+        return None
+    outcome = event.event_type.removeprefix("human_review_")
+    if outcome in {"approved_for_prepare", "needs_changes", "rejected", "deferred"}:
+        return cast(ActionReviewOutcome, outcome)
+    return None
 
 
 def _action_required_checks(payload: dict[str, Any]) -> list[str]:

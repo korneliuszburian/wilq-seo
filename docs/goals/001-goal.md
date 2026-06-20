@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 20:04 CEST.
+Last updated: 2026-06-20 20:28 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,22 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest human review outcome truth, runtime proof 2026-06-20 20:28 CEST:
+WILQ now has `POST /api/actions/{action_id}/review`, typed
+`ActionReviewRequest/ActionReviewResult`, local audit events
+`human_review_<outcome>` and `ActionObject.review_gate` fields
+`last_review_outcome`, `last_reviewed_by`, `last_reviewed_at`,
+`last_review_summary`. Dashboard cards and action detail show `Wynik review
+człowieka`; daily context-pack preserves the same state for Codex skills.
+Runtime proof on a temporary state DB: event type `human_review_needs_changes`,
+ActionObject and `wilq-daily-command` context-pack both carried
+`last_review_outcome=needs_changes`, `apply_allowed=false`, with no
+`[REDACTED]`. This is local audit/review state only. It does not execute apply,
+does not mutate vendors and does not satisfy remaining apply confirmation,
+mutation audit or impact-sanity requirements. Full `scripts/verify.sh` after
+this slice passed: backend `129 passed`, dashboard unit `17 passed`,
+Playwright e2e `14 passed`, dashboard build OK.
 
 Latest ActionObject review gate truth, live proof 2026-06-20 20:04 CEST:
 `ActionObject.review_gate` is now a typed API/shared-schema/dashboard/Codex

@@ -101,6 +101,21 @@ export const AuditEventSchema = z.object({
   redacted: z.boolean()
 });
 
+export const ActionReviewOutcomeSchema = z.enum([
+  "approved_for_prepare",
+  "needs_changes",
+  "rejected",
+  "deferred"
+]);
+
+export const ActionReviewRequestSchema = z.object({
+  outcome: ActionReviewOutcomeSchema,
+  reviewed_by: z.string().min(1),
+  notes: z.string().min(1).max(2000),
+  checked_items: z.array(z.string()).default([]),
+  blockers: z.array(z.string()).default([])
+});
+
 export const ActionReviewGateSchema = z.object({
   status: z
     .enum(["pending_validation", "validated_prepare_only", "ready_to_apply", "blocked_apply"])
@@ -110,7 +125,11 @@ export const ActionReviewGateSchema = z.object({
   operator_checklist: z.array(z.string()).default([]),
   apply_blockers: z.array(z.string()).default([]),
   confirmation_required: z.boolean().default(true),
-  apply_allowed: z.boolean().default(false)
+  apply_allowed: z.boolean().default(false),
+  last_review_outcome: ActionReviewOutcomeSchema.nullable().optional(),
+  last_reviewed_by: z.string().nullable().optional(),
+  last_reviewed_at: z.string().nullable().optional(),
+  last_review_summary: z.string().nullable().optional()
 });
 
 export const ActionObjectSchema = z.object({
@@ -146,6 +165,13 @@ export const ActionApplyResultSchema = z.object({
   status: z.enum(["applied", "blocked", "failed"]),
   audit_event: AuditEventSchema,
   errors: z.array(z.string())
+});
+
+export const ActionReviewResultSchema = z.object({
+  action_id: z.string(),
+  status: z.enum(["recorded"]),
+  audit_event: AuditEventSchema,
+  review_gate: ActionReviewGateSchema
 });
 
 export const ActionApplyRequestSchema = z.object({
@@ -1526,6 +1552,8 @@ export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
+export type ActionReviewRequest = z.infer<typeof ActionReviewRequestSchema>;
+export type ActionReviewResult = z.infer<typeof ActionReviewResultSchema>;
 export type ActionApplyRequest = z.infer<typeof ActionApplyRequestSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type CommandCenterBriefItem = z.infer<typeof CommandCenterBriefItemSchema>;

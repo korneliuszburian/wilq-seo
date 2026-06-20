@@ -46,6 +46,19 @@ Audit `docs/audits/001-output.md` is now folded into
    `wilq-ads-doctor` pack must stay below 200 KB. This closes review-gate
    visibility only; it does not enable apply/write mutations.
 
+0. Human review outcome truth, 2026-06-20 20:28 CEST:
+   `POST /api/actions/{action_id}/review` records a local audit event
+   `human_review_<outcome>` with typed `ActionReviewRequest` and returns
+   `ActionReviewResult`. `ActionObject.review_gate` now carries
+   `last_review_outcome`, `last_reviewed_by`, `last_reviewed_at` and
+   `last_review_summary`; dashboard shows `Wynik review człowieka`; daily
+   context-pack preserves the same fields. Runtime proof on a temp state DB:
+   review endpoint returned `200`, event type `human_review_needs_changes`,
+   ActionObject and `wilq-daily-command` context-pack both carried
+   `last_review_outcome=needs_changes`, `apply_allowed=false`, and no
+   `[REDACTED]` marker. This is only local review/audit state and must not be
+   interpreted as vendor mutation permission.
+
 0. Daily context-pack action summary truth, 2026-06-20 14:30 Europe/Warsaw:
    `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` must use
    `CommandCenterResponse.daily_decisions` for active ActionObject summaries.

@@ -1,6 +1,7 @@
 import {
   ActionObjectSchema,
   ActionApplyResultSchema,
+  ActionReviewResultSchema,
   ActionValidationResultSchema,
   AdsDiagnosticsResponseSchema,
   AhrefsDiagnosticsResponseSchema,
@@ -27,6 +28,8 @@ import {
   type ActionObject,
   type ActionApplyRequest,
   type ActionApplyResult,
+  type ActionReviewRequest,
+  type ActionReviewResult,
   type ActionValidationResult,
   type AdsDiagnosticsResponse,
   type AhrefsDiagnosticsResponse,
@@ -148,6 +151,13 @@ export function validateAction(actionId: string): Promise<ActionValidationResult
   return apiPost(`/api/actions/${actionId}/validate`, ActionValidationResultSchema);
 }
 
+export function reviewAction(
+  actionId: string,
+  request: ActionReviewRequest
+): Promise<ActionReviewResult> {
+  return apiPost(`/api/actions/${actionId}/review`, ActionReviewResultSchema, request);
+}
+
 export function applyAction(
   actionId: string,
   request: ActionApplyRequest
@@ -205,6 +215,8 @@ export function getKnowledgeOperatingMap(): Promise<KnowledgeOperatingMapRespons
 export type {
   ActionObject,
   ActionApplyResult,
+  ActionReviewRequest,
+  ActionReviewResult,
   ActionValidationResult,
   AdsDiagnosticsResponse,
   AhrefsDiagnosticsResponse,

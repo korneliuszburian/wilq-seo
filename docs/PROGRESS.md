@@ -34,6 +34,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Human review outcome contract, 2026-06-20 20:28 CEST.
+  WILQ ma teraz `POST /api/actions/{action_id}/review`, typed
+  `ActionReviewRequest/ActionReviewResult`, lokalny audit event
+  `human_review_<outcome>` i propagację `last_review_outcome`,
+  `last_reviewed_by`, `last_reviewed_at`, `last_review_summary` przez
+  `ActionObject.review_gate`. Dashboard pokazuje panel `Wynik review człowieka`
+  i zapisuje review bez apply. Runtime proof na tymczasowej bazie:
+  `event_type=human_review_needs_changes`, ActionObject i daily context-pack
+  mają `last_review_outcome=needs_changes`, `apply_allowed=false`, bez
+  `[REDACTED]`. To zamyka widoczny zapis wyniku review; nadal nie odblokowuje
+  apply, budżetów, negative keywords ani mutacji vendorów. Pełne
+  `scripts/verify.sh` po slice: backend `129 passed`, dashboard unit
+  `17 passed`, Playwright e2e `14 passed`, dashboard build OK.
 - ActionObject review gate contract, 2026-06-20 20:04 CEST.
   `ActionObject` ma teraz typed `review_gate` z `status`,
   `required_checks`, `operator_checklist`, `apply_blockers`,
@@ -536,9 +549,9 @@ Aktualny maintenance:
   and using business targets (`WILQ_ADS_PROFIT_MARGIN`,
   `WILQ_ADS_BUSINESS_GOAL`, `WILQ_ADS_BUDGET_GOAL`,
   `WILQ_ADS_TARGET_ROAS` or `WILQ_ADS_TARGET_CPA_MICROS`), approved Keyword
-  Planner access/idea rows, forecast/audience size, recorded human strategy
-  review outcome, budget apply safety/confirmation, impact sanity checks and
-  mutation audit.
+  Planner access/idea rows, forecast/audience size, strategy-specific review
+  policies beyond the generic human review outcome, budget apply safety/
+  confirmation, impact sanity checks and mutation audit.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety
   requirements are all verified.

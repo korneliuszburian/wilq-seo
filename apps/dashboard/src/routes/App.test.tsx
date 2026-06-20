@@ -3963,6 +3963,38 @@ function mockFetch() {
           })
         );
       }
+      if (url.includes("/api/actions/") && url.endsWith("/review")) {
+        const actionId = url.split("/api/actions/")[1]?.replace("/review", "") ?? "unknown";
+        return Promise.resolve(
+          Response.json({
+            action_id: actionId,
+            status: "recorded",
+            audit_event: {
+              id: `audit_${actionId}_human_review_test`,
+              action_id: actionId,
+              event_type: "human_review_approved_for_prepare",
+              actor: "operator_local_dashboard",
+              created_at: "2026-06-17T10:00:00Z",
+              summary: "Wynik review: zatwierdzone do dalszego przygotowania.",
+              evidence_ids: ["ev_refresh_merchant_feed"],
+              redacted: true
+            },
+            review_gate: {
+              status: "pending_validation",
+              summary: "Wymaga walidacji ActionObject przed kolejnym krokiem.",
+              required_checks: [],
+              operator_checklist: [],
+              apply_blockers: ["action_validation_required"],
+              confirmation_required: true,
+              apply_allowed: false,
+              last_review_outcome: "approved_for_prepare",
+              last_reviewed_by: "operator_local_dashboard",
+              last_reviewed_at: "2026-06-17T10:00:00Z",
+              last_review_summary: "Wynik review: zatwierdzone do dalszego przygotowania."
+            }
+          })
+        );
+      }
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
       if (url.endsWith("/api/connectors/refresh-runs")) {
         return Promise.resolve(Response.json(connectorRefreshRuns));
@@ -4344,6 +4376,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("czeka na walidację")).toBeInTheDocument();
     expect(screen.getByText(/wymagana walidacja ActionObject/)).toBeInTheDocument();
     expect(screen.getByText(/payload nie pozwala na apply/)).toBeInTheDocument();
+    expect(screen.getByText("Wynik review człowieka")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz review" }));
+    await waitFor(() =>
+      expect(screen.getByText("Zapisano audit event: human_review_approved_for_prepare")).toBeInTheDocument()
+    );
     fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("valid")).toBeInTheDocument();
