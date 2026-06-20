@@ -1001,6 +1001,91 @@ def test_action_confirm_records_preview_confirmation_without_apply(
     assert merchant_action["review_gate"]["apply_allowed"] is False
 
 
+def test_action_impact_check_requires_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "impact_without_confirm.sqlite3"))
+
+    response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/impact-check",
+        json={
+            "checked_by": "operator_test",
+            "notes": "Impact check before confirmation should block.",
+            "pre_window_days": 7,
+            "post_window_days": 7,
+        },
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "blocked"
+    assert "action_confirmation_required" in result["blockers"]
+    assert result["audit_event"]["event_type"] == "action_impact_check_blocked"
+    assert result["review_gate"]["last_impact_check_status"] == "blocked"
+    assert result["review_gate"]["apply_allowed"] is False
+    assert "impact_sanity_check_required" in result["review_gate"]["apply_blockers"]
+
+
+def test_action_impact_check_records_pre_apply_sanity_without_apply(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "impact_after_confirm.sqlite3"))
+    action_id = "act_review_merchant_feed_issues"
+    preview_response = client.post(
+        f"/api/actions/{action_id}/preview",
+        json={"requested_by": "operator_test", "max_items": 2},
+    )
+    assert preview_response.status_code == 200
+    confirm_response = client.post(
+        f"/api/actions/{action_id}/confirm",
+        json={
+            "confirmed_by": "operator_test",
+            "notes": "Operator confirms the generated preview.",
+            "preview_acknowledged": True,
+        },
+    )
+    assert confirm_response.status_code == 200
+
+    response = client.post(
+        f"/api/actions/{action_id}/impact-check",
+        json={
+            "checked_by": "operator_test",
+            "notes": "Operator checks pre/post sanity before apply.",
+            "pre_window_days": 7,
+            "post_window_days": 14,
+        },
+    )
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "checked"
+    assert result["pre_window_days"] == 7
+    assert result["post_window_days"] == 14
+    assert result["metric_fact_count"] > 0
+    assert "google_merchant_center" in result["source_connectors"]
+    assert result["audit_event"]["event_type"] == "action_impact_check_completed"
+    assert result["review_gate"]["last_impact_check_status"] == "checked"
+    assert result["review_gate"]["last_impact_checked_by"] == "operator_test"
+    assert result["review_gate"]["apply_allowed"] is False
+    assert "impact_sanity_check_required" not in result["review_gate"]["apply_blockers"]
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-daily-command"},
+    )
+    assert context_response.status_code == 200
+    payload = context_response.json()
+    actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
+    merchant_action = actions_by_id[action_id]
+    assert merchant_action["latest_audit_event"]["event_type"] == "action_impact_check_completed"
+    assert merchant_action["review_gate"]["last_impact_check_status"] == "checked"
+    assert merchant_action["review_gate"]["apply_allowed"] is False
+
+
 def test_daily_context_pack_preserves_human_review_outcome(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

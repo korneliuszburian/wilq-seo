@@ -30,6 +30,7 @@ import {
 import {
   ActionObject,
   ActionConfirmResult,
+  ActionImpactCheckResult,
   ActionPreviewResult,
   ActionReviewRequest,
   ActionValidationResult,
@@ -61,6 +62,7 @@ import {
   getOpportunities,
   getTacticalQueue,
   confirmAction,
+  impactCheckAction,
   previewAction,
   reviewAction,
   validateAction,
@@ -774,6 +776,10 @@ function actionGateLabel(value: string) {
     destructive_actions_blocked: "destructive actions zablokowane",
     preview_acknowledgement_required: "wymagane potwierdzenie preview",
     dry_run_preview_required: "wymagany wcześniejszy dry-run preview",
+    action_confirmation_required: "wymagane potwierdzenie preview",
+    metric_facts_required: "wymagane metric facts",
+    evidence_ids_required: "wymagane evidence IDs",
+    impact_sanity_check_required: "wymagany impact sanity check",
     validate_action_object: "walidacja ActionObject",
     human_review_before_apply: "review człowieka przed apply",
     human_confirm_before_apply: "potwierdzenie człowieka przed apply"
@@ -860,6 +866,7 @@ function ActionValidationControls({ action }: { action: ActionObject }) {
           error={confirmMutation.error instanceof Error ? confirmMutation.error.message : null}
         />
       </div>
+      <ActionImpactCheckControls action={action} />
     </div>
   );
 }
@@ -911,6 +918,93 @@ function ActionConfirmResultPanel({
         Potwierdzenie: <span className="font-semibold">{result.status}</span>
       </div>
       <TraceLine label="Blokady potwierdzenia" values={result.blockers.map(actionGateLabel)} empty="brak" />
+      <div>Audit event: {result.audit_event.event_type}</div>
+      <div>
+        Apply nadal: {result.review_gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
+      </div>
+    </div>
+  );
+}
+
+function ActionImpactCheckControls({ action }: { action: ActionObject }) {
+  const queryClient = useQueryClient();
+  const impactMutation = useMutation({
+    mutationFn: () =>
+      impactCheckAction(action.id, {
+        checked_by: "operator_local_dashboard",
+        notes: "Operator sprawdza sanity impact window przed jakimkolwiek apply.",
+        pre_window_days: 7,
+        post_window_days: 7
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+
+  return (
+    <div className="mt-3 rounded-md border border-line bg-white p-3 text-xs">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="font-semibold uppercase tracking-normal text-slate-600">
+            Impact sanity check
+          </div>
+          <p className="mt-1 leading-5 text-slate-600">
+            Zapisuje pre/post window check na podstawie metryk ActionObjecta. Nie ocenia
+            wzrostu i nie wykonuje apply.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => impactMutation.mutate()}
+          disabled={impactMutation.isPending}
+          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {impactMutation.isPending ? (
+            <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
+          ) : (
+            <ShieldAlert aria-hidden="true" size={15} />
+          )}
+          {impactMutation.isPending ? "Sprawdzam" : "Sprawdź impact"}
+        </button>
+      </div>
+      {action.review_gate.last_impact_check_summary ? (
+        <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">
+          Ostatni impact check: {action.review_gate.last_impact_check_summary}
+        </p>
+      ) : null}
+      <ActionImpactCheckResultPanel
+        result={impactMutation.data}
+        error={impactMutation.error instanceof Error ? impactMutation.error.message : null}
+      />
+    </div>
+  );
+}
+
+function ActionImpactCheckResultPanel({
+  result,
+  error
+}: {
+  result?: ActionImpactCheckResult;
+  error: string | null;
+}) {
+  if (error) {
+    return <div className="mt-3 text-xs leading-5 text-risk">Impact check zablokowany: {error}</div>;
+  }
+  if (!result) {
+    return null;
+  }
+  return (
+    <div className="mt-3 grid gap-2 text-xs text-slate-700">
+      <div>
+        Impact check: <span className="font-semibold">{result.status}</span>
+      </div>
+      <div>
+        Okna: {result.pre_window_days} dni przed / {result.post_window_days} dni po.
+      </div>
+      <div>Metric facts: {result.metric_fact_count}</div>
+      <TraceLine label="Źródła" values={result.source_connectors} empty="brak" />
+      <TraceLine label="Blokady impact" values={result.blockers.map(actionGateLabel)} empty="brak" />
       <div>Audit event: {result.audit_event.event_type}</div>
       <div>
         Apply nadal: {result.review_gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.

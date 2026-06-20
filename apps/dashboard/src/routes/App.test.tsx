@@ -4063,6 +4063,44 @@ function mockFetch() {
           })
         );
       }
+      if (url.includes("/api/actions/") && url.endsWith("/impact-check")) {
+        const actionId = url.split("/api/actions/")[1]?.replace("/impact-check", "") ?? "unknown";
+        return Promise.resolve(
+          Response.json({
+            action_id: actionId,
+            status: "checked",
+            pre_window_days: 7,
+            post_window_days: 7,
+            metric_fact_count: 2,
+            source_connectors: ["google_merchant_center"],
+            evidence_ids: ["ev_refresh_merchant_feed"],
+            blockers: [],
+            audit_event: {
+              id: `audit_${actionId}_impact_test`,
+              action_id: actionId,
+              event_type: "action_impact_check_completed",
+              actor: "operator_local_dashboard",
+              created_at: "2026-06-17T10:02:00Z",
+              summary: "Impact sanity check completed without vendor mutations.",
+              evidence_ids: ["ev_refresh_merchant_feed"],
+              redacted: true
+            },
+            review_gate: {
+              status: "pending_validation",
+              summary: "Wymaga walidacji ActionObject przed kolejnym krokiem.",
+              required_checks: [],
+              operator_checklist: [],
+              apply_blockers: ["action_validation_required"],
+              confirmation_required: true,
+              apply_allowed: false,
+              last_impact_check_status: "checked",
+              last_impact_checked_by: "operator_local_dashboard",
+              last_impact_checked_at: "2026-06-17T10:02:00Z",
+              last_impact_check_summary: "Impact sanity check completed without vendor mutations."
+            }
+          })
+        );
+      }
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
       if (url.endsWith("/api/connectors/refresh-runs")) {
         return Promise.resolve(Response.json(connectorRefreshRuns));
@@ -4460,6 +4498,14 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Potwierdzenie:")).toBeInTheDocument();
     expect(screen.getByText("confirmed")).toBeInTheDocument();
     expect(screen.getByText(/Apply nadal: zablokowany/)).toBeInTheDocument();
+    expect(screen.getByText("Impact sanity check")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź impact" }));
+    await waitFor(() =>
+      expect(screen.getByText("Audit event: action_impact_check_completed")).toBeInTheDocument()
+    );
+    expect(screen.getByText("Impact check:")).toBeInTheDocument();
+    expect(screen.getByText("checked")).toBeInTheDocument();
+    expect(screen.getByText("Metric facts: 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("valid")).toBeInTheDocument();

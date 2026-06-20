@@ -132,7 +132,11 @@ export const ActionReviewGateSchema = z.object({
   last_review_summary: z.string().nullable().optional(),
   last_confirmation_by: z.string().nullable().optional(),
   last_confirmation_at: z.string().nullable().optional(),
-  last_confirmation_summary: z.string().nullable().optional()
+  last_confirmation_summary: z.string().nullable().optional(),
+  last_impact_check_status: z.enum(["checked", "blocked"]).nullable().optional(),
+  last_impact_checked_by: z.string().nullable().optional(),
+  last_impact_checked_at: z.string().nullable().optional(),
+  last_impact_check_summary: z.string().nullable().optional()
 });
 
 export const ActionObjectSchema = z.object({
@@ -206,6 +210,26 @@ export const ActionConfirmResultSchema = z.object({
   action_id: z.string(),
   confirmed: z.boolean(),
   status: z.enum(["confirmed", "blocked"]),
+  blockers: z.array(z.string()),
+  audit_event: AuditEventSchema,
+  review_gate: ActionReviewGateSchema
+});
+
+export const ActionImpactCheckRequestSchema = z.object({
+  checked_by: z.string().min(1),
+  notes: z.string().min(1).max(2000),
+  pre_window_days: z.number().int().min(1).max(90).optional(),
+  post_window_days: z.number().int().min(1).max(90).optional()
+});
+
+export const ActionImpactCheckResultSchema = z.object({
+  action_id: z.string(),
+  status: z.enum(["checked", "blocked"]),
+  pre_window_days: z.number(),
+  post_window_days: z.number(),
+  metric_fact_count: z.number(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
   blockers: z.array(z.string()),
   audit_event: AuditEventSchema,
   review_gate: ActionReviewGateSchema
@@ -1595,6 +1619,8 @@ export type ActionReviewRequest = z.infer<typeof ActionReviewRequestSchema>;
 export type ActionReviewResult = z.infer<typeof ActionReviewResultSchema>;
 export type ActionConfirmRequest = z.infer<typeof ActionConfirmRequestSchema>;
 export type ActionConfirmResult = z.infer<typeof ActionConfirmResultSchema>;
+export type ActionImpactCheckRequest = z.infer<typeof ActionImpactCheckRequestSchema>;
+export type ActionImpactCheckResult = z.infer<typeof ActionImpactCheckResultSchema>;
 export type ActionApplyRequest = z.infer<typeof ActionApplyRequestSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type CommandCenterBriefItem = z.infer<typeof CommandCenterBriefItemSchema>;

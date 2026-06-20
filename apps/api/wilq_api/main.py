@@ -17,6 +17,7 @@ from wilq.actions.service import (
     apply_action,
     confirm_action,
     get_action,
+    impact_check_action,
     list_actions,
     preview_action,
     record_action_review,
@@ -65,6 +66,7 @@ from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_o
 from wilq.schemas import (
     ActionApplyRequest,
     ActionConfirmRequest,
+    ActionImpactCheckRequest,
     ActionObject,
     ActionPreviewRequest,
     ActionReviewRequest,
@@ -1984,6 +1986,21 @@ def confirm_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = confirm_action(action, request)
+    local_state_store().save_audit_event(result.audit_event)
+    clear_daily_runtime_cache()
+    clear_skill_context_cache()
+    return result.model_dump(mode="json")
+
+
+@app.post("/api/actions/{action_id}/impact-check")
+def impact_check_action_endpoint(
+    action_id: str,
+    request: ActionImpactCheckRequest,
+) -> dict[str, Any]:
+    action = get_action(action_id)
+    if action is None:
+        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+    result = impact_check_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
     clear_daily_runtime_cache()
     clear_skill_context_cache()

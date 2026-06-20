@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 21:03 CEST.
+Last updated: 2026-06-20 21:28 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,26 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest ActionObject impact sanity truth, runtime proof 2026-06-20 21:28 CEST:
+WILQ now has `POST /api/actions/{action_id}/impact-check`, typed
+`ActionImpactCheckRequest/ActionImpactCheckResult`, local audit events
+`action_impact_check_blocked` and `action_impact_check_completed`, dashboard
+panel `Impact sanity check` and Codex context-pack propagation through
+`ActionObject.review_gate.last_impact_check_status/by/at/summary`. Impact check
+before confirmation is blocked with `action_confirmation_required`; impact check
+after `preview -> confirm` records `action_impact_check_completed`, removes
+only `impact_sanity_check_required` and keeps real apply blockers. Runtime
+proof on a temporary state DB: impact-before-confirm ->
+`action_impact_check_blocked`, preview -> `action_preview_generated`, confirm
+-> `action_apply_confirmed`, impact-after-confirm ->
+`action_impact_check_completed`, context-pack latest audit event ->
+`action_impact_check_completed`, `last_impact_check_status=checked`,
+`apply_allowed=false`. This satisfies the local impact-sanity visibility/audit
+step only. It does not execute vendor apply and does not prove real mutation
+audit paths. Full `scripts/verify.sh` after this slice passed: backend
+`135 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+dashboard build OK.
 
 Latest ActionObject confirmation truth, runtime proof 2026-06-20 21:03 CEST:
 WILQ now has a separate `POST /api/actions/{action_id}/confirm`, typed

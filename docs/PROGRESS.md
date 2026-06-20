@@ -34,6 +34,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- ActionObject impact sanity gate, 2026-06-20 21:28 CEST.
+  WILQ ma teraz `POST /api/actions/{action_id}/impact-check`, typed
+  `ActionImpactCheckRequest/ActionImpactCheckResult`, lokalne audit eventy
+  `action_impact_check_blocked` i `action_impact_check_completed` oraz
+  dashboardowy panel `Impact sanity check`. Impact check wymaga wcześniejszego
+  confirmation, metric facts i evidence IDs. Bez confirmation zwraca blocker
+  `action_confirmation_required`; po `preview -> confirm` zapisuje
+  `action_impact_check_completed`, propaguje
+  `last_impact_check_status/by/at/summary` przez `ActionObject.review_gate` i
+  usuwa tylko blocker `impact_sanity_check_required`. Runtime proof na
+  tymczasowej bazie: impact-before-confirm -> `action_impact_check_blocked`,
+  preview -> `action_preview_generated`, confirm -> `action_apply_confirmed`,
+  impact-after-confirm -> `action_impact_check_completed`, context-pack ma
+  `latest_audit_event=action_impact_check_completed`,
+  `last_impact_check_status=checked`, `apply_allowed=false`. To domyka lokalny
+  etap impact sanity bez vendor mutation; nadal nie odblokowuje realnego
+  `apply` ani mutation audit. Pełne `scripts/verify.sh` po slice: backend
+  `135 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+  dashboard build OK.
 - ActionObject confirmation gate, 2026-06-20 21:03 CEST.
   WILQ ma teraz osobny `POST /api/actions/{action_id}/confirm`, typed
   `ActionConfirmRequest/ActionConfirmResult`, lokalne audit eventy

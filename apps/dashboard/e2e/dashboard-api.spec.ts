@@ -196,7 +196,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.getByRole("button", { name: "Potwierdź preview" }).click();
     await expect(page.getByText("Potwierdzenie: confirmed")).toBeVisible();
     await expect(page.getByText("Audit event: action_apply_confirmed")).toBeVisible();
-    await expect(page.getByText(/Apply nadal: zablokowany/)).toBeVisible();
+    await expect(page.getByText(/Apply nadal: zablokowany/)).toHaveCount(1);
+    await expect(page.getByText("Impact sanity check", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Sprawdź impact" }).click();
+    await expect(page.getByText("Impact check: checked")).toBeVisible();
+    await expect(page.getByText("Audit event: action_impact_check_completed")).toBeVisible();
+    await expect(page.getByText(/Apply nadal: zablokowany/)).toHaveCount(2);
   });
 
   test("actions route starts with ActionObjects instead of registry dumps", async ({ page }) => {

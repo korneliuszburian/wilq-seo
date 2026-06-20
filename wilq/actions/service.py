@@ -35,6 +35,8 @@ from wilq.schemas import (
     ActionApplyResult,
     ActionConfirmRequest,
     ActionConfirmResult,
+    ActionImpactCheckRequest,
+    ActionImpactCheckResult,
     ActionMode,
     ActionObject,
     ActionPreviewRequest,
@@ -1012,6 +1014,52 @@ def confirm_action(
     )
 
 
+def impact_check_action(
+    action: ActionObject,
+    request: ActionImpactCheckRequest,
+) -> ActionImpactCheckResult:
+    action.review_gate = _action_review_gate(action)
+    latest_confirmation = _latest_action_confirmation_event(action.audit_events)
+    blockers = _action_impact_check_blockers(action, latest_confirmation)
+    status: Literal["checked", "blocked"] = "blocked" if blockers else "checked"
+    evidence_ids = _unique([*action.evidence_ids, *(fact.evidence_id for fact in action.metrics)])
+    source_connectors = _unique(
+        [fact.source_connector for fact in action.metrics if fact.source_connector]
+    )
+    if not source_connectors:
+        source_connectors = [action.connector]
+    audit = AuditEvent(
+        id=f"audit_{action.id}_impact_{uuid4().hex[:12]}",
+        action_id=action.id,
+        event_type="action_impact_check_completed"
+        if status == "checked"
+        else "action_impact_check_blocked",
+        actor=request.checked_by,
+        summary=_action_impact_check_summary(
+            request=request,
+            status=status,
+            metric_fact_count=len(action.metrics),
+            source_connectors=source_connectors,
+            blockers=blockers,
+        ),
+        evidence_ids=evidence_ids,
+    )
+    action.audit_events = [audit, *action.audit_events]
+    action.review_gate = _action_review_gate(action)
+    return ActionImpactCheckResult(
+        action_id=action.id,
+        status=status,
+        pre_window_days=request.pre_window_days,
+        post_window_days=request.post_window_days,
+        metric_fact_count=len(action.metrics),
+        source_connectors=source_connectors,
+        evidence_ids=evidence_ids,
+        blockers=blockers,
+        audit_event=audit,
+        review_gate=action.review_gate,
+    )
+
+
 def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
@@ -1100,11 +1148,13 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
     apply_allowed = _action_payload_apply_allowed(action.payload)
     last_review = _latest_human_review_event(action.audit_events)
     last_confirmation = _latest_action_confirmation_event(action.audit_events)
+    last_impact_check = _latest_action_impact_check_event(action.audit_events)
     apply_blockers = _action_apply_blockers(
         action=action,
         required_checks=required_checks,
         apply_allowed=apply_allowed,
         confirmation_satisfied=last_confirmation is not None,
+        impact_sanity_satisfied=_impact_status_from_event(last_impact_check) == "checked",
     )
     if action.validation_status == "invalid":
         status = "blocked_apply"
@@ -1142,6 +1192,16 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
         else None,
         last_confirmation_summary=last_confirmation.summary
         if last_confirmation is not None
+        else None,
+        last_impact_check_status=_impact_status_from_event(last_impact_check),
+        last_impact_checked_by=last_impact_check.actor
+        if last_impact_check is not None
+        else None,
+        last_impact_checked_at=last_impact_check.created_at
+        if last_impact_check is not None
+        else None,
+        last_impact_check_summary=last_impact_check.summary
+        if last_impact_check is not None
         else None,
     )
 
@@ -1250,6 +1310,44 @@ def _action_confirmation_summary(
     )
 
 
+def _action_impact_check_blockers(
+    action: ActionObject,
+    latest_confirmation: AuditEvent | None,
+) -> list[str]:
+    blockers: list[str] = []
+    if latest_confirmation is None:
+        blockers.append("action_confirmation_required")
+    if not action.metrics:
+        blockers.append("metric_facts_required")
+    if not action.evidence_ids:
+        blockers.append("evidence_ids_required")
+    if action.payload.get("destructive") is True:
+        blockers.append("destructive_actions_blocked")
+    return _unique(blockers)
+
+
+def _action_impact_check_summary(
+    *,
+    request: ActionImpactCheckRequest,
+    status: Literal["checked", "blocked"],
+    metric_fact_count: int,
+    source_connectors: list[str],
+    blockers: list[str],
+) -> str:
+    parts = [
+        f"Impact sanity check: status={status}.",
+        f"Okno przed zmianą: {request.pre_window_days} dni.",
+        f"Okno po zmianie: {request.post_window_days} dni.",
+        f"Metric facts: {metric_fact_count}.",
+        f"Źródła: {', '.join(source_connectors) if source_connectors else 'brak'}.",
+    ]
+    if blockers:
+        parts.append(f"Blockery: {', '.join(blockers)}.")
+    parts.append(f"Notatka: {request.notes}.")
+    parts.append("Ten zapis nie wykonuje apply ani mutacji vendorów.")
+    return " ".join(parts)
+
+
 def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:
     if isinstance(payload.get("preview_contract"), str):
         return str(payload["preview_contract"])
@@ -1293,6 +1391,7 @@ def _action_apply_blockers(
     required_checks: list[str],
     apply_allowed: bool,
     confirmation_satisfied: bool,
+    impact_sanity_satisfied: bool,
 ) -> list[str]:
     blockers: list[str] = []
     if action.mode != ActionMode.apply:
@@ -1305,6 +1404,8 @@ def _action_apply_blockers(
         blockers.append("destructive_actions_blocked")
     if _requires_human_confirmation(required_checks) and not confirmation_satisfied:
         blockers.append("human_confirm_before_apply")
+    if not impact_sanity_satisfied:
+        blockers.append("impact_sanity_check_required")
     blocked_claims = _string_list(action.payload.get("blocked_claims"))
     blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
     return _unique(blockers)
@@ -1357,6 +1458,23 @@ def _latest_action_confirmation_event(events: list[AuditEvent]) -> AuditEvent | 
     for event in sorted(events, key=lambda item: item.created_at, reverse=True):
         if event.event_type == "action_apply_confirmed":
             return event
+    return None
+
+
+def _latest_action_impact_check_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type in {"action_impact_check_completed", "action_impact_check_blocked"}:
+            return event
+    return None
+
+
+def _impact_status_from_event(event: AuditEvent | None) -> Literal["checked", "blocked"] | None:
+    if event is None:
+        return None
+    if event.event_type == "action_impact_check_completed":
+        return "checked"
+    if event.event_type == "action_impact_check_blocked":
+        return "blocked"
     return None
 
 

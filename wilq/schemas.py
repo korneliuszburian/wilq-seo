@@ -236,6 +236,10 @@ class ActionReviewGate(BaseModel):
     last_confirmation_by: str | None = None
     last_confirmation_at: datetime | None = None
     last_confirmation_summary: str | None = None
+    last_impact_check_status: Literal["checked", "blocked"] | None = None
+    last_impact_checked_by: str | None = None
+    last_impact_checked_at: datetime | None = None
+    last_impact_check_summary: str | None = None
 
 
 class ActionObject(BaseModel):
@@ -321,6 +325,26 @@ class ActionConfirmResult(BaseModel):
     action_id: str
     confirmed: bool
     status: Literal["confirmed", "blocked"]
+    blockers: list[str] = Field(default_factory=list)
+    audit_event: AuditEvent
+    review_gate: ActionReviewGate
+
+
+class ActionImpactCheckRequest(BaseModel):
+    checked_by: str = Field(min_length=1)
+    notes: str = Field(min_length=1, max_length=2000)
+    pre_window_days: int = Field(default=7, ge=1, le=90)
+    post_window_days: int = Field(default=7, ge=1, le=90)
+
+
+class ActionImpactCheckResult(BaseModel):
+    action_id: str
+    status: Literal["checked", "blocked"]
+    pre_window_days: int
+    post_window_days: int
+    metric_fact_count: int = 0
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
     blockers: list[str] = Field(default_factory=list)
     audit_event: AuditEvent
     review_gate: ActionReviewGate

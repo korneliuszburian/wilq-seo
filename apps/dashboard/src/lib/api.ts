@@ -2,6 +2,7 @@ import {
   ActionObjectSchema,
   ActionApplyResultSchema,
   ActionConfirmResultSchema,
+  ActionImpactCheckResultSchema,
   ActionPreviewResultSchema,
   ActionReviewResultSchema,
   ActionValidationResultSchema,
@@ -32,6 +33,8 @@ import {
   type ActionApplyResult,
   type ActionConfirmRequest,
   type ActionConfirmResult,
+  type ActionImpactCheckRequest,
+  type ActionImpactCheckResult,
   type ActionPreviewResult,
   type ActionReviewRequest,
   type ActionReviewResult,
@@ -177,6 +180,13 @@ export function confirmAction(
   return apiPost(`/api/actions/${actionId}/confirm`, ActionConfirmResultSchema, request);
 }
 
+export function impactCheckAction(
+  actionId: string,
+  request: ActionImpactCheckRequest
+): Promise<ActionImpactCheckResult> {
+  return apiPost(`/api/actions/${actionId}/impact-check`, ActionImpactCheckResultSchema, request);
+}
+
 export function applyAction(
   actionId: string,
   request: ActionApplyRequest
@@ -235,6 +245,7 @@ export type {
   ActionObject,
   ActionApplyResult,
   ActionConfirmResult,
+  ActionImpactCheckResult,
   ActionPreviewResult,
   ActionReviewRequest,
   ActionReviewResult,

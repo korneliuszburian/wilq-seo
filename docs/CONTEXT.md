@@ -59,6 +59,24 @@ Audit `docs/audits/001-output.md` is now folded into
    `[REDACTED]` marker. This is only local review/audit state and must not be
    interpreted as vendor mutation permission.
 
+0. ActionObject impact sanity truth, 2026-06-20 21:28 CEST:
+   `POST /api/actions/{action_id}/impact-check` is now the local impact sanity
+   step after preview and confirmation. It returns typed
+   `ActionImpactCheckResult`, writes `action_impact_check_blocked` or
+   `action_impact_check_completed`, and never executes vendor apply. It blocks
+   without prior confirmation (`action_confirmation_required`) or without
+   metric facts/evidence. After successful check it updates
+   `ActionObject.review_gate.last_impact_check_status/by/at/summary` and
+   removes only `impact_sanity_check_required`; other apply blockers remain.
+   Dashboard shows `Impact sanity check`. Daily context-pack carries
+   `latest_audit_event=action_impact_check_completed` and the `last_impact_*`
+   review-gate fields. Runtime proof on a temp state DB: impact-before-confirm
+   -> blocked, preview -> `action_preview_generated`, confirm ->
+   `action_apply_confirmed`, impact-after-confirm ->
+   `action_impact_check_completed`, context-pack `apply_allowed=false`. Full
+   `scripts/verify.sh` passed after this slice: backend `135 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, dashboard build OK.
+
 0. ActionObject confirmation truth, 2026-06-20 21:03 CEST:
    `POST /api/actions/{action_id}/confirm` is now a separate local confirmation
    step after dry-run preview. It returns typed `ActionConfirmResult` and never
