@@ -72,6 +72,10 @@ Aktualny proof produktowy:
   Prompt Ads w `daily_decisions` i scoped `wilq-daily-command` context-pack
   też używa polskiego brzmienia: `Nie twierdź opłacalności, zmarnowanego
   budżetu ani wdrożenia zmian...`.
+- Command Center nie pokazuje już marketerowi angielskich etykiet
+  `Evidence` / `Przykładowe evidence` na kartach decyzji, taktyk i briefów.
+  Widoczne etykiety to teraz `Dowody`, `Dowody: N ID(s)` i
+  `Przykładowe dowody`; API nadal używa stabilnych pól `evidence_ids`.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
 - Pełny `scripts/verify.sh` przeszedł po Command Center Ads review queues slice:
@@ -87,7 +91,17 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Command Center blocked-claim label cleanup, 2026-06-20 01:43 Europe/Warsaw.
+1. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
+   Dashboard Command Center, tactical cards, daily decision cards and
+   brief/action surfaces keep the stable `evidence_ids` API contract, but render
+   marketer-facing labels as `Dowody`, `Dowody: N ID(s)` and
+   `Przykładowe dowody` instead of English `Evidence` / `Przykładowe evidence`.
+   Legacy route config copy for Ads, GA4, GSC, Localo, Social, Content and
+   Merchant now uses Polish `dowody`, `odczyt`, `podgląd akcji` and
+   `brama bezpieczeństwa` language. Focused dashboard lint, typecheck, unit
+   `App.test.tsx` and real-browser Command Center smoke passed.
+
+2. Command Center blocked-claim label cleanup, 2026-06-20 01:43 Europe/Warsaw.
    Dashboard Command Center, tactical cards and brief/action cards now translate
    raw blocked-claim contract values into Polish marketer-facing labels without
    changing API IDs. Live proof after `scripts/local_stack.sh restart`: Ads
@@ -99,7 +113,7 @@ Aktualny maintenance:
    mypy, command-center API tests, dashboard lint/typecheck/unit and Playwright
    Command Center smoke passed.
 
-2. Command Center Ads review queues, 2026-06-20.
+3. Command Center Ads review queues, 2026-06-20.
    Command Center i `wilq-daily-command` context-pack konsumują teraz istniejące
    Ads diagnostics zamiast pokazywać generyczne "live metrics" albo
    connector/readiness prose. Live proof po `scripts/local_stack.sh restart`:
@@ -116,7 +130,7 @@ Aktualny maintenance:
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-3. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
+4. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
    Google Ads budget context ma teraz review-only
    `CampaignBudgetOperation` payload preview w typed API, shared schemas,
    dashboardzie `/ads-doctor` i ActionObject
@@ -136,7 +150,7 @@ Aktualny maintenance:
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-4. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
+5. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
    Daily runtime cache TTL wzrósł z 2s do 30s
    (`WILQ_DAILY_RUNTIME_CACHE_SECONDS` nadal może to nadpisać), a dashboardowy
    TanStack Query client używa `staleTime=30000` i
@@ -146,27 +160,6 @@ Aktualny maintenance:
    `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, potem
    `0.007s`, `0.009s`, `0.010s`, `0.007s` w oknie cache. Focused ruff, mypy,
    backend cache tests, dashboard `App.test.tsx`, dashboard typecheck passed.
-
-5. Ads recommendation apply payload preview, 2026-06-20 00:20 Europe/Warsaw.
-   Google Ads recommendations mają teraz review-only apply payload preview w
-   typed API, dashboardzie, ActionObject i scoped `wilq-ads-doctor`
-   context-packu. To nie jest apply support: payload używa
-   `operation_type=ApplyRecommendationOperation`, ale wymaga
-   `review_recommendation_type`, `review_impact_metrics`,
-   `review_change_history`, `review_business_goal`,
-   `recommendation_apply_preview`, `google_ads_rmf_compliance_review` i
-   `human_confirm_before_apply`, a każdy preview ma
-   `api_mutation_ready=false`, `apply_allowed=false`, `destructive=false`.
-   Live proof: `refresh_google_ads_60956db2c42f` /
-   `ev_refresh_refresh_google_ads_60956db2c42f`; 4 aktywne rekomendacje,
-   2 z impact preview, 4 z apply payload preview. `/api/actions` wystawia
-   `act_prepare_google_ads_recommendation_review_queue` jako prepare-only
-   ActionObject. Focused ruff, mypy, backend tests, shared/dashboard
-   typecheck, `App.test.tsx` i `wilq-ads-doctor` smoke passed. Full
-   `scripts/verify.sh` passed: backend `115 passed`, dashboard unit
-   `13 passed`, Playwright e2e `9 passed`, security, skill smokes and
-   dashboard production build passed. `uv.lock` zaktualizowany przy okazji
-   security gate: `msgpack 1.2.0 -> 1.2.1`.
 
 ## Active Gaps
 

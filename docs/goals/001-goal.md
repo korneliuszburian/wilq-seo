@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 01:43 Europe/Warsaw.
+Last updated: 2026-06-20 01:57 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -82,6 +82,11 @@ audience-size checks, custom segment targeting/apply previews, budget apply
 safety, apply confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
+
+Command Center is being held to the Polish marketer cockpit bar: stable API
+fields such as `evidence_ids` remain unchanged, but marketer-facing labels must
+say `Dowody`, `Przykładowe dowody`, `podgląd akcji`, `odczyt` and similar
+Polish terms instead of raw English implementation wording.
 
 ## Research And Knowledge Contract
 

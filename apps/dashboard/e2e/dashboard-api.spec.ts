@@ -31,6 +31,10 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("zapytania").first()).toBeVisible();
     await expect(page.getByText("50").first()).toBeVisible();
     await expect(page.getByText("podgląd budżetu").first()).toBeVisible();
+    await expect(page.getByText("Dowody").first()).toBeVisible();
+    await expect(page.getByText("Przykładowe dowody").first()).toBeVisible();
+    await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
+    await expect(page.getByText("Przykładowe evidence")).toHaveCount(0);
     await expect(page.getByText("ponowne zatwierdzenie produktu").first()).toBeVisible();
     await expect(page.getByText("wzrost leadów").first()).toBeVisible();
     await expect(page.getByText("opłacalność").first()).toBeVisible();

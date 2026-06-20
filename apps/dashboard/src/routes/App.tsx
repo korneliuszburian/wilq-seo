@@ -764,11 +764,11 @@ function MarketingBriefCard({ item }: { item: MarketingBriefItem }) {
       <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>
       {item.blocker_reason ? (
         <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
-          Blocker: {item.blocker_reason}
+          Blokada: {item.blocker_reason}
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
+        <LinkedTraceLine label="Dowody" values={item.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={item.source_connectors} />
         <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
       </div>
@@ -865,7 +865,7 @@ function TacticalQueuePanel({
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {compact
               ? "Skondensowana kolejka decyzji z WILQ API. Duplikaty zapytań i URL-i są zgrupowane; pełny drilldown jest w dedykowanych widokach."
-              : "Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródło, evidence IDs, ActionObject i claimy, których WILQ nie wolno dopowiadać."}
+              : "Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródła, dowody, ActionObjecty i claimy, których WILQ nie wolno dopowiadać."}
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
         </div>
@@ -874,7 +874,7 @@ function TacticalQueuePanel({
             label={compact ? "Decyzje" : "Taktyki"}
             value={compact ? compactGroups.length : filteredItems.length}
           />
-          <MetricTile label="Evidence" value={uniqueValues(filteredItems.flatMap((item) => item.evidence_ids)).length} />
+          <MetricTile label="Dowody" value={uniqueValues(filteredItems.flatMap((item) => item.evidence_ids)).length} />
           <MetricTile label="Akcje" value={uniqueValues(filteredItems.flatMap((item) => item.action_ids)).length} />
         </div>
       </div>
@@ -923,7 +923,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">{group.diagnosis}</p>
       <p className="mt-3 text-sm font-medium text-ink">{group.nextStep}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Evidence" values={group.evidenceIds.slice(0, 4)} kind="evidence" />
+        <LinkedTraceLine label="Dowody" values={group.evidenceIds.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={group.sourceConnectors} />
         <LinkedTraceLine label="Akcje" values={group.actionIds} kind="actions" empty="brak" />
         <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(group.blockedClaims)} />
@@ -1060,7 +1060,7 @@ function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">{item.diagnosis}</p>
       <p className="mt-3 text-sm font-medium text-ink">{item.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Evidence" values={item.evidence_ids} kind="evidence" />
+        <LinkedTraceLine label="Dowody" values={item.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={item.source_connectors} />
         <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
         <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(item.blocked_claims)} />
@@ -1175,11 +1175,11 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
               <TraceLine label="Źródła" values={item.source_connectors} />
               <div>
-                Evidence: {item.evidence_ids.length} ID
+                Dowody: {item.evidence_ids.length} ID
                 {item.evidence_ids.length === 1 ? "" : "s"}
               </div>
               <LinkedTraceLine
-                label="Przykładowe evidence"
+                label="Przykładowe dowody"
                 values={item.evidence_ids.slice(0, 2)}
                 kind="evidence"
                 empty="brak"
@@ -1487,20 +1487,20 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
       "Widok Google Ads oparty o WILQ API. Pokazuje dowody, decyzje i blokady claimów; jeśli Ads jest zablokowany, pokazuje blocker zamiast diagnozy spendu.",
     focusTitle: "Decyzje Ads",
     emptyMessage:
-      "Brak Google Ads evidence w /api/marketing/brief. WILQ nie pokaże spend/campaign rekomendacji bez odczytu Ads API.",
+      "Brak dowodów Google Ads w /api/marketing/brief. WILQ nie pokaże rekomendacji o spendzie ani kampaniach bez odczytu Ads API.",
     safetyTitle: "Brama bezpieczeństwa Ads",
     safetyText:
-      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, walidacji ActionObject i audytu. Brak zapytań, CPA albo ROAS evidence oznacza zakres blokad, nie powód do zgadywania.",
+      "Zmiany kampanii, budżetu, wykluczeń i segmentów wymagają podglądu akcji, walidacji ActionObject i audytu. Brak dowodów na zapytania, CPA albo ROAS oznacza zakres blokad, nie powód do zgadywania.",
     connectorIds: ["google_ads"],
     textNeedles: []
   },
   "/ga4": {
     title: "GA4",
     description:
-      "Widok analityki zachowania i konwersji oparty o WILQ MarketingBrief. Pokazuje tylko metryki GA4 z evidence IDs.",
+      "Widok analityki zachowania i konwersji oparty o WILQ MarketingBrief. Pokazuje tylko metryki GA4 z dowodami.",
     focusTitle: "Jakość ruchu GA4",
     emptyMessage:
-      "Brak GA4 evidence w /api/marketing/brief. Uruchom odczyt GA4, zanim WILQ oceni landing pages albo jakość ruchu.",
+      "Brak dowodów GA4 w /api/marketing/brief. Uruchom odczyt GA4, zanim WILQ oceni landing pages albo jakość ruchu.",
     safetyTitle: "Brama bezpieczeństwa GA4",
     safetyText:
       "GA4 służy do diagnozy jakości ruchu i problemów pomiaru. WILQ nie traktuje braku danych jako spadku marketingowego bez evidence.",
@@ -1510,11 +1510,11 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/seo-gsc": {
     title: "SEO / GSC",
     description:
-      "Widok SEO oparty o GSC evidence z WILQ MarketingBrief. Ma prowadzić do kolejki treści, nie do zgadywania tematów.",
+      "Widok SEO oparty o dowody GSC z WILQ MarketingBrief. Ma prowadzić do kolejki treści, nie do zgadywania tematów.",
     focusTitle: "Search Console Content Focus",
     emptyMessage:
-      "Brak GSC evidence w /api/marketing/brief. Uruchom read-only refresh Search Console przed rekomendacją treści.",
-    safetyTitle: "SEO Evidence Gate",
+      "Brak dowodów GSC w /api/marketing/brief. Uruchom odczyt Search Console przed rekomendacją treści.",
+    safetyTitle: "Brama dowodów SEO",
     safetyText:
       "Rekomendacje contentowe wymagają metryk zapytań i URL-i, źródła i jasnego następnego kroku. Bez CTR/impressions/clicks WILQ pokazuje blocker.",
     connectorIds: ["google_search_console"],
@@ -1523,13 +1523,13 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/localo": {
     title: "Localo",
     description:
-      "Widok lokalnej widoczności oparty o WILQ readiness i Localo MCP evidence. OAuth access może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych ranking/GBP facts.",
+      "Widok lokalnej widoczności oparty o gotowość WILQ i dowody Localo MCP. Dostęp OAuth może działać, ale lokalne rekomendacje wymagają jeszcze konkretnych faktów o rankingach i GBP.",
     focusTitle: "Local Visibility Focus",
     emptyMessage:
-      "Brak konkretnych Localo ranking/GBP facts w /api/marketing/brief. WILQ może pokazać status access, ale nie dopowiada lokalnych wyników bez evidence.",
+      "Brak konkretnych faktów Localo o rankingach i GBP w /api/marketing/brief. WILQ może pokazać status dostępu, ale nie dopowiada lokalnych wyników bez dowodów.",
     safetyTitle: "Local Visibility Safety Gate",
     safetyText:
-      "GBP posty i lokalne działania wymagają evidence, payload preview, walidacji ActionObject i audytu. MCP initialize=200 potwierdza access, ale nie zastępuje rankingów, GBP performance ani competitor facts.",
+      "Posty GBP i lokalne działania wymagają dowodów, podglądu akcji, walidacji ActionObject i audytu. MCP initialize=200 potwierdza dostęp, ale nie zastępuje rankingów, wyniku GBP ani danych konkurencji.",
     connectorIds: ["localo"],
     textNeedles: [],
     showTacticalQueue: false
@@ -1537,26 +1537,26 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/social-publisher": {
     title: "Social Publisher",
     description:
-      "Widok publikacji social oparty o WILQ evidence i permission state. Przy brakach LinkedIn/Facebook pokazuje blockery, nie gotowe posty.",
+      "Widok publikacji social oparty o dowody WILQ i stan uprawnień. Przy brakach LinkedIn/Facebook pokazuje blockery, nie gotowe posty.",
     focusTitle: "Social Publishing Focus",
     emptyMessage:
-      "Brak social evidence w /api/marketing/brief. Skonfiguruj LinkedIn/Facebook credentials przed przygotowaniem post candidates.",
+      "Brak dowodów social w /api/marketing/brief. Skonfiguruj credentials LinkedIn/Facebook przed przygotowaniem kandydatów postów.",
     safetyTitle: "Publishing Safety Gate",
     safetyText:
-      "Posty LinkedIn/Facebook muszą bazować na evidence-backed claims i pozostać prepare-only, dopóki permission state, payload preview i audit nie są gotowe.",
+      "Posty LinkedIn/Facebook muszą bazować na claimach z dowodami i pozostać tylko do przygotowania, dopóki stan uprawnień, podgląd akcji i audyt nie są gotowe.",
     connectorIds: ["linkedin", "facebook"],
     textNeedles: []
   },
   "/content-planner": {
     title: "Content Planner",
     description:
-      "Widok planowania treści łączy GSC, GA4, Ahrefs, WordPress i Merchant evidence w jedną kolejkę działań dla polskiego marketera.",
+      "Widok planowania treści łączy dowody GSC, GA4, Ahrefs, WordPress i Merchant w jedną kolejkę działań dla polskiego marketera.",
     focusTitle: "Content Growth Focus",
     emptyMessage:
-      "Brak content evidence w /api/marketing/brief. WILQ potrzebuje GSC/GA4/Ahrefs/WordPress inventory przed planem treści.",
+      "Brak dowodów contentowych w /api/marketing/brief. WILQ potrzebuje GSC/GA4/Ahrefs/WordPress inventory przed planem treści.",
     safetyTitle: "Content Safety Gate",
     safetyText:
-      "Briefy, rewrites i drafty wymagają źródeł, evidence IDs i zgodności z realną ofertą. WILQ nie generuje claimów bez pokrycia w danych.",
+      "Briefy, rewrites i drafty wymagają źródeł, dowodów i zgodności z realną ofertą. WILQ nie generuje claimów bez pokrycia w danych.",
     connectorIds: [
       "google_search_console",
       "google_analytics_4",
@@ -1570,13 +1570,13 @@ const briefSurfaceConfigs: Record<string, BriefSurfaceConfig> = {
   "/merchant": {
     title: "Merchant Center",
     description:
-      "Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli brakuje evidence z Merchant Center albo zweryfikowanego ActionObject.",
+      "Widok feed/product oparty o WILQ MarketingBrief. Nie pokazuje rekomendacji, jeżeli brakuje dowodów z Merchant Center albo zweryfikowanego ActionObject.",
     focusTitle: "Feed/Product Focus",
     emptyMessage:
-      "Brak Merchant evidence w /api/marketing/brief. Uruchom read-only refresh Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",
+      "Brak dowodów Merchant w /api/marketing/brief. Uruchom odczyt Merchant Center, zanim WILQ zaproponuje zmiany feedu albo produktu.",
     safetyTitle: "Feed Safety Gate",
     safetyText:
-      "Zmiana feedu wymaga payload preview, walidacji ActionObject i audit eventu. Ten ekran jest read-only, dopóki WILQ API nie wystawi poprawnego action candidate.",
+      "Zmiana feedu wymaga podglądu akcji, walidacji ActionObject i audit eventu. Ten ekran jest tylko do odczytu, dopóki WILQ API nie wystawi poprawnego kandydata akcji.",
     connectorIds: ["google_merchant_center", "merchant_center"],
     textNeedles: []
   }
@@ -4566,7 +4566,7 @@ function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig }) {
           </div>
           <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <LinkedTraceLine
-              label="Evidence"
+              label="Dowody"
               values={uniqueValues(routeItems.flatMap((item) => item.evidence_ids))}
               kind="evidence"
             />
