@@ -2500,6 +2500,17 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert payload["authority_fact_count"] == 2
     assert payload["gap_fact_count"] == 0
     assert payload["blocker_count"] == 1
+    gap_contract = payload["gap_read_contract"]
+    assert gap_contract["status"] == "blocked"
+    assert gap_contract["gap_records"] == []
+    assert gap_contract["available_read_contracts"] == ["ahrefs_authority_summary"]
+    assert "ahrefs_content_gap_records" in gap_contract["missing_read_contracts"]
+    assert "content gap" in gap_contract["blocked_claims"]
+    assert gap_contract["operator_review_gates"] == [
+        "ahrefs_gap_records_required",
+        "content_planner_review_required",
+        "human_strategy_review",
+    ]
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     authority_decision = decision_by_id["ahrefs_review_authority_context"]
     assert authority_decision["status"] == "ready"
@@ -2523,6 +2534,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert context_response.status_code == 200
     context_payload = context_response.json()
     assert context_payload["ahrefs_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
+    assert context_payload["ahrefs_diagnostics"]["gap_read_contract"] == gap_contract
     assert context_payload["ahrefs_diagnostics"]["decision_queue"][0]["id"] in decision_by_id
     assert context_payload["active_action_objects"] == []
     assert "marketing_brief" not in context_payload

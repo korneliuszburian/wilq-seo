@@ -11,6 +11,8 @@ from wilq.schemas import (
     AhrefsDecisionItem,
     AhrefsDiagnosticSection,
     AhrefsDiagnosticsResponse,
+    AhrefsGapReadContract,
+    AhrefsGapRecord,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
@@ -78,6 +80,11 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         live_data_available=live_data_available,
         authority_fact_count=len(authority_facts),
         gap_fact_count=len(gap_facts),
+        gap_read_contract=_ahrefs_gap_read_contract(
+            latest_refresh=latest_refresh,
+            authority_facts=authority_facts,
+            gap_facts=gap_facts,
+        ),
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
@@ -92,6 +99,54 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         ),
         action_ids=[],
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
+    )
+
+
+def _ahrefs_gap_read_contract(
+    *,
+    latest_refresh: ConnectorRefreshRun | None,
+    authority_facts: list[MetricFact],
+    gap_facts: list[MetricFact],
+) -> AhrefsGapReadContract:
+    missing_contracts = _missing_gap_contracts(gap_facts)
+    gap_records: list[AhrefsGapRecord] = []
+    blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
+    evidence_ids = _evidence_ids_for_facts_or_refresh(
+        [*gap_facts, *authority_facts],
+        latest_refresh,
+    )
+    available_contracts = []
+    if authority_facts:
+        available_contracts.append("ahrefs_authority_summary")
+    if gap_facts:
+        available_contracts.append("ahrefs_gap_metric_facts")
+    return AhrefsGapReadContract(
+        status="ready" if gap_records and not missing_contracts else "blocked",
+        title="Ahrefs gap records",
+        summary=(
+            f"WILQ ma {len(gap_records)} typed Ahrefs gap records. "
+            f"Brakujące kontrakty: {', '.join(missing_contracts) or 'brak'}."
+        ),
+        available_read_contracts=available_contracts,
+        missing_read_contracts=missing_contracts,
+        allowed_evidence=["domain_rating", "ahrefs_rank"] if authority_facts else [],
+        blocked_claims=blocked_claims,
+        operator_review_gates=[
+            "ahrefs_gap_records_required",
+            "content_planner_review_required",
+            "human_strategy_review",
+        ],
+        source_connectors=[AHREFS_CONNECTOR_ID],
+        evidence_ids=evidence_ids,
+        gap_records=gap_records,
+        next_step=(
+            "Dodaj read-only records dla konkurencyjnych stron, luk treści, luk backlinków, "
+            "organicznych słów per URL i top pages konkurencji. Do tego czasu używaj Ahrefs "
+            "tylko jako kontekstu autorytetu."
+            if missing_contracts
+            else "Połącz gap records z GSC/WordPress i przygotuj kolejkę review."
+        ),
+        risk=ActionRisk.medium,
     )
 
 

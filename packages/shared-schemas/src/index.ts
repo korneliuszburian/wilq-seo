@@ -1388,6 +1388,45 @@ export const AhrefsDecisionItemSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const AhrefsGapRecordSchema = z.object({
+  id: z.string(),
+  gap_type: z.enum([
+    "competitor_page",
+    "content_gap",
+    "backlink_gap",
+    "organic_keyword_gap",
+    "top_page_gap"
+  ]),
+  title: z.string(),
+  summary: z.string(),
+  source_url: z.string().nullable().optional(),
+  target_url: z.string().nullable().optional(),
+  competitor_domain: z.string().nullable().optional(),
+  keyword: z.string().nullable().optional(),
+  metric_facts: z.array(MetricFactSchema),
+  evidence_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  next_step: z.string(),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
+export const AhrefsGapReadContractSchema = z.object({
+  id: z.literal("ahrefs_gap_read_contract"),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  available_read_contracts: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  allowed_evidence: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  operator_review_gates: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  gap_records: z.array(AhrefsGapRecordSchema),
+  next_step: z.string(),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
 export const AhrefsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1397,6 +1436,7 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   authority_fact_count: z.number(),
   gap_fact_count: z.number(),
+  gap_read_contract: AhrefsGapReadContractSchema,
   decision_queue: z.array(AhrefsDecisionItemSchema),
   sections: z.array(AhrefsDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),

@@ -1659,6 +1659,45 @@ class AhrefsDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class AhrefsGapRecord(BaseModel):
+    id: str
+    gap_type: Literal[
+        "competitor_page",
+        "content_gap",
+        "backlink_gap",
+        "organic_keyword_gap",
+        "top_page_gap",
+    ]
+    title: str
+    summary: str
+    source_url: str | None = None
+    target_url: str | None = None
+    competitor_domain: str | None = None
+    keyword: str | None = None
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    next_step: str
+    risk: ActionRisk = ActionRisk.medium
+
+
+class AhrefsGapReadContract(BaseModel):
+    id: Literal["ahrefs_gap_read_contract"] = "ahrefs_gap_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    available_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    allowed_evidence: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    gap_records: list[AhrefsGapRecord] = Field(default_factory=list)
+    next_step: str
+    risk: ActionRisk = ActionRisk.medium
+
+
 class AhrefsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -1668,6 +1707,7 @@ class AhrefsDiagnosticsResponse(BaseModel):
     live_data_available: bool
     authority_fact_count: int = 0
     gap_fact_count: int = 0
+    gap_read_contract: AhrefsGapReadContract
     decision_queue: list[AhrefsDecisionItem] = Field(default_factory=list)
     sections: list[AhrefsDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

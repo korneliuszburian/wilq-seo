@@ -34,6 +34,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs typed gap read contract, 2026-06-21 01:21 CEST.
+  `/api/ahrefs/diagnostics` exposes `gap_read_contract` as typed API state,
+  not only prose in sections. Live proof after `scripts/local_stack.sh restart`:
+  DR=90, Ahrefs Rank=1450, `gap_fact_count=0`,
+  `gap_read_contract.status=blocked`, `gap_records=[]`,
+  `available_read_contracts=["ahrefs_authority_summary"]`, 5 missing contracts
+  (`ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
+  `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
+  `ahrefs_top_pages_by_competitor`) and blocked claims for competitor/content/
+  backlink gaps, ranking opportunity, traffic uplift and authority improvement.
+  Review gates: `ahrefs_gap_records_required`,
+  `content_planner_review_required`, `human_strategy_review`. Scoped
+  `wilq-ahrefs-gap-finder` context-pack is about `22181` bytes, includes the
+  same `gap_read_contract`, and still has `active_action_objects=[]`.
+  Dashboard `/ahrefs` renders `Kontrakt luk Ahrefs`. This still does not mean
+  Ahrefs gap analysis is ready; actual competitor/content/backlink gap records
+  are the next value contract.
 - Ads business policy gates, 2026-06-21 01:01 CEST.
   `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
   `operator_review_gates` so profit margin/business goal/budget goal become

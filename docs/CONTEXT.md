@@ -29,6 +29,21 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ahrefs typed gap read contract, 2026-06-21 01:21 CEST:
+   `/api/ahrefs/diagnostics` now includes `gap_read_contract`. Live state after
+   restart: DR=90, Ahrefs Rank=1450, `gap_records=[]`,
+   `gap_read_contract.status=blocked`, available contract
+   `ahrefs_authority_summary`, and missing contracts
+   `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
+   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
+   `ahrefs_top_pages_by_competitor`. Review gates are
+   `ahrefs_gap_records_required`, `content_planner_review_required`,
+   `human_strategy_review`. Scoped `wilq-ahrefs-gap-finder` context-pack is
+   about `22181` bytes and carries the same gap contract with
+   `active_action_objects=[]`. Dashboard `/ahrefs` renders
+   `Kontrakt luk Ahrefs`. This is still a blocker, not gap analysis; next
+   Ahrefs value work is actual competitor/content/backlink gap records.
+
 0. Ads business policy gates, 2026-06-21 01:01 CEST:
    `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
    `operator_review_gates`. Current live policy IDs:

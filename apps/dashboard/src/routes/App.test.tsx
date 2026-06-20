@@ -3423,6 +3423,41 @@ const ahrefsDiagnostics = {
   live_data_available: true,
   authority_fact_count: 2,
   gap_fact_count: 0,
+  gap_read_contract: {
+    id: "ahrefs_gap_read_contract",
+    status: "blocked",
+    title: "Ahrefs gap records",
+    summary:
+      "WILQ ma 0 typed Ahrefs gap records. Brakujące kontrakty: ahrefs_competitor_pages, ahrefs_content_gap_records, ahrefs_backlink_gap_records, ahrefs_organic_keywords_by_url, ahrefs_top_pages_by_competitor.",
+    available_read_contracts: ["ahrefs_authority_summary"],
+    missing_read_contracts: [
+      "ahrefs_competitor_pages",
+      "ahrefs_content_gap_records",
+      "ahrefs_backlink_gap_records",
+      "ahrefs_organic_keywords_by_url",
+      "ahrefs_top_pages_by_competitor"
+    ],
+    allowed_evidence: ["domain_rating", "ahrefs_rank"],
+    blocked_claims: [
+      "competitor gap",
+      "content gap",
+      "backlink gap",
+      "ranking opportunity",
+      "traffic uplift",
+      "authority improvement"
+    ],
+    operator_review_gates: [
+      "ahrefs_gap_records_required",
+      "content_planner_review_required",
+      "human_strategy_review"
+    ],
+    source_connectors: ["ahrefs"],
+    evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+    gap_records: [],
+    next_step:
+      "Dodaj read-only records dla konkurencyjnych stron, luk treści, luk backlinków, organicznych słów per URL i top pages konkurencji. Do tego czasu używaj Ahrefs tylko jako kontekstu autorytetu.",
+    risk: "medium"
+  },
   decision_queue: [
     {
       id: "ahrefs_review_authority_context",
@@ -4713,6 +4748,7 @@ describe("WILQ dashboard", () => {
 
     expect(screen.getByText("Status Ahrefs / dowody SEO")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("Kontrakt luk Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Ahrefs")).toBeInTheDocument();
     expect(
       screen.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")
@@ -4722,6 +4758,8 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("DR")).toBeInTheDocument();
     expect(screen.getByText("Ahrefs Rank")).toBeInTheDocument();
+    expect(screen.getByText("Gap records")).toBeInTheDocument();
+    expect(screen.getByText(/wymagane rekordy luk Ahrefs/)).toBeInTheDocument();
     expect(screen.getAllByText("braki kontraktu").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/rekordy luk treści/).length).toBeGreaterThan(0);
     expect(

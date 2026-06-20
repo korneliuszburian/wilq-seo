@@ -4853,6 +4853,7 @@ function AhrefsDiagnosticSurface() {
       </section>
 
       <AhrefsOperatorSummary data={data} />
+      <AhrefsGapContractPanel data={data} />
       <AhrefsDiagnosticProof data={data} />
     </main>
   );
@@ -4936,6 +4937,64 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
   );
 }
 
+function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
+  const contract = data.gap_read_contract;
+  return (
+    <section className="mt-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Kontrakt luk Ahrefs
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{contract.summary}</p>
+        </div>
+        <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
+          {ahrefsDecisionStatusLabel(contract.status)}
+        </span>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <MetricTile label="Gap records" value={contract.gap_records.length} />
+        <MetricTile label="Braki kontraktu" value={contract.missing_read_contracts.length} />
+        <MetricTile label="Blokady claimów" value={contract.blocked_claims.length} />
+      </div>
+      <p className="mt-3 text-sm font-semibold leading-6 text-ink">{contract.next_step}</p>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+        <TraceLine
+          label="Brakujące kontrakty"
+          values={contract.missing_read_contracts.map(ahrefsMissingContractLabel)}
+        />
+        <TraceLine
+          label="Review gates"
+          values={contract.operator_review_gates.map(ahrefsReviewGateLabel)}
+        />
+        <TraceLine
+          label="Blokady claimów"
+          values={contract.blocked_claims.map(ahrefsBlockedClaimLabel)}
+        />
+        <LinkedTraceLine label="Dowody" values={contract.evidence_ids} kind="evidence" />
+      </div>
+      {contract.gap_records.length === 0 ? (
+        <BlockerNotice message="Brak typed gap records. Ahrefs może wspierać content review tylko jako kontekst autorytetu, nie jako lista luk konkurencji." />
+      ) : (
+        <div className="mt-3 grid gap-3 xl:grid-cols-2">
+          {contract.gap_records.map((record) => (
+            <article key={record.id} className="rounded-md border border-line p-3">
+              <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                {record.gap_type}
+              </p>
+              <h3 className="mt-1 text-sm font-semibold">{record.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{record.summary}</p>
+              <p className="mt-2 text-xs font-semibold leading-5 text-ink">
+                {record.next_step}
+              </p>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   return (
@@ -5006,6 +5065,15 @@ function ahrefsDecisionTypeLabel(value: string) {
     block_gap_claims: "blokada luk",
     review_authority_context: "kontekst autorytetu",
     run_authority_read: "odczyt autorytetu"
+  };
+  return labels[value] ?? value;
+}
+
+function ahrefsReviewGateLabel(value: string) {
+  const labels: Record<string, string> = {
+    ahrefs_gap_records_required: "wymagane rekordy luk Ahrefs",
+    content_planner_review_required: "review w Content Planner",
+    human_strategy_review: "review strategii przez człowieka"
   };
   return labels[value] ?? value;
 }
