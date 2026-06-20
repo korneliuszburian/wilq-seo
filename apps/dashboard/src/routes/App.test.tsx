@@ -2720,6 +2720,9 @@ const ga4Diagnostics = {
       id: "ga4_decision_tq_ga4_landing",
       decision_type: "review_landing_mapping",
       title: "Sprawdź mapowanie landing page: /oferta/",
+      status: "blocked",
+      priority: 31,
+      metric_tiles: { aktywni: 20, sesje: 30, engagement: "12.5%" },
       landing_page: "/oferta/",
       source_medium: "google / cpc",
       campaign_name: "Ekologus Ogólna",
@@ -3624,6 +3627,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
     expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();
     expect(screen.getByText("Sprawdź mapowanie landing page: /oferta/")).toBeInTheDocument();
+    expect(screen.getByText("aktywni")).toBeInTheDocument();
+    expect(screen.getByText("sesje")).toBeInTheDocument();
+    expect(screen.getByText("engagement")).toBeInTheDocument();
     expect(screen.getAllByText(/Landing: \/oferta\//).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Źródło: google \/ cpc/).length).toBeGreaterThan(0);
     expect(screen.getByText(/WordPress: brak potwierdzenia/)).toBeInTheDocument();

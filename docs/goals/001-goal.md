@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 04:18 CEST.
+Last updated: 2026-06-20 06:34 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -91,6 +91,19 @@ Center must use the same `Ga4DiagnosticsResponse.decision_queue` semantics as
 `/ga4`, showing concrete review counts for `grupy ruchu`, `decyzje`, `pomiar`
 and `jakość ruchu` while still blocking ROAS/revenue/conversion/tracking-fixed
 claims until explicit contracts exist.
+
+GA4 dedicated route and `wilq-ga4-analyst` context-pack must expose decision
+metadata directly, not rely on frontend inference. Current live proof after
+`scripts/local_stack.sh restart`: `/api/ga4/diagnostics.decision_queue` has
+6 decisions with explicit `status`, `priority` and `metric_tiles`; 2 decisions
+are `blocked` measurement issues for `(not set)` rows and 4 are `ready`
+traffic-quality reviews. Metric tiles include `aktywni`, `sesje`, `zdarzenia`,
+`odsłony` and `engagement`, e.g. `(not set)/(not set)` has `aktywni=179`,
+`sesje=179`, `engagement=0%`; scoped `wilq-ga4-analyst` context-pack carries
+the same fields with no GA4 redaction paths and no null
+`status`/`priority`/`metric_tiles`. Full `scripts/verify.sh` passed after this
+slice: backend `117 passed`, dashboard unit `14 passed`, Playwright e2e
+`9 passed`, security, skill/API smokes and dashboard production build passed.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and

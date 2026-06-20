@@ -1194,6 +1194,9 @@ class Ga4DecisionItem(BaseModel):
         "review_landing_mapping",
     ]
     title: str
+    status: Literal["ready", "blocked"] = "ready"
+    priority: int = Field(default=50, ge=1, le=100)
+    metric_tiles: dict[str, float | int | str] = Field(default_factory=dict)
     landing_page: str | None = None
     source_medium: str | None = None
     campaign_name: str | None = None

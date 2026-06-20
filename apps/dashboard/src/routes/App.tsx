@@ -3266,10 +3266,20 @@ function Ga4DecisionCard({ decision }: { decision: Ga4DecisionItem }) {
             {ga4DecisionTypeLabel(decision.decision_type)}
           </p>
         </div>
-        <StatusBadge value={decision.risk} />
+        <div className="flex flex-wrap gap-1.5">
+          <StatusBadge value={ga4DecisionStatusLabel(decision.status)} />
+          <StatusBadge value={decision.risk} />
+        </div>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
       <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      {Object.keys(decision.metric_tiles).length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Object.entries(decision.metric_tiles).map(([label, value]) => (
+            <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
+          ))}
+        </div>
+      ) : null}
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
         {decision.landing_page ? (
           <span className="rounded border border-line bg-white px-2 py-1">
@@ -3353,19 +3363,13 @@ function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {
   return "kontrola jakości ruchu";
 }
 
+function ga4DecisionStatusLabel(status: Ga4DecisionItem["status"]) {
+  if (status === "blocked") return "zablokowane";
+  return "gotowe";
+}
+
 function ga4DecisionSortValue(decision: Ga4DecisionItem) {
-  const riskRank: Record<Ga4DecisionItem["risk"], number> = {
-    critical: 0,
-    high: 1,
-    medium: 2,
-    low: 3
-  };
-  const typeRank: Record<Ga4DecisionItem["decision_type"], number> = {
-    fix_measurement: 0,
-    review_landing_mapping: 1,
-    review_traffic_quality: 2
-  };
-  return riskRank[decision.risk] * 10 + typeRank[decision.decision_type];
+  return decision.priority;
 }
 
 function ga4SectionLabel(sectionId: string) {

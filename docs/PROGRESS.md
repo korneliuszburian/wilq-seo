@@ -82,6 +82,14 @@ Aktualny proof produktowy:
   pokazują liczby `grupy ruchu`, `decyzje`, `pomiar`, `jakość ruchu` i
   `braki kontraktu` zamiast angielskich `landing groups` i ogólnego
   "brak pełnego kontraktu" jako głównego przekazu.
+- `/api/ga4/diagnostics.decision_queue` ma teraz operator-facing `status`,
+  `priority` i `metric_tiles`, a `/ga4` renderuje te kafelki per decyzja.
+  Live proof po `scripts/local_stack.sh restart`: 6 decyzji GA4, 2 z
+  `status=blocked` dla `(not set)` pomiaru i 4 z `status=ready` dla review
+  jakości ruchu; kafelki pokazują `aktywni`, `sesje`, `zdarzenia`, `odsłony`
+  i `engagement`, np. `(not set)/(not set)` ma `aktywni=179`, `sesje=179`,
+  `engagement=0%`. Scoped `wilq-ga4-analyst` context-pack niesie te same
+  pola bez redakcji GA4.
 - Content diagnostics i scoped `wilq-content-strategist` context-pack pokazują
   teraz typed decyzje z marketer-facing tytułem, summary, `primary_query`,
   `total_clicks`, `total_impressions`, `aggregate_ctr` i
@@ -127,7 +135,20 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
+1. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
+   `/api/ga4/diagnostics.decision_queue` now exposes explicit `status`,
+   `priority` and `metric_tiles` for each GA4 decision, and `/ga4` renders the
+   tiles on decision cards. Live proof after `scripts/local_stack.sh restart`:
+   6 GA4 decisions, 2 `blocked` measurement decisions for `(not set)` rows and
+   4 `ready` traffic-quality review decisions; tiles include `aktywni`,
+   `sesje`, `zdarzenia`, `odsłony` and `engagement`. Scoped
+   `wilq-ga4-analyst` context-pack carries the same fields with no GA4
+   redaction paths, and no `status`/`priority`/`metric_tiles` nulls are present.
+   Full `scripts/verify.sh` passed: backend `117 passed`, dashboard unit
+   `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
+   dashboard production build passed.
+
+2. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
    `/api/marketing/brief` and full/scoped Codex context-packs now consume the
    same `CommandCenterResponse.daily_decisions` state as Command Center instead
    of rebuilding the daily brief from older raw metric/action summaries. Live
@@ -145,7 +166,7 @@ Aktualny maintenance:
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
 
-2. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
+3. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
    Merchant Center now has typed `MerchantDiagnosticsResponse.decision_queue`
    and the same decision state feeds `/merchant`, Command Center and scoped
    `wilq-merchant-feed-operator` context-pack. Command Center no longer builds
@@ -163,7 +184,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-3. Command Center content decision bridge, 2026-06-20 03:00 CEST.
+4. Command Center content decision bridge, 2026-06-20 03:00 CEST.
    Command Center no longer builds the content first-screen card directly from
    raw tactical items. It calls `build_content_diagnostics(...)` with preloaded
    tactical/actions, uses `ContentDiagnosticsResponse.decision_queue`, and
@@ -179,7 +200,7 @@ Aktualny maintenance:
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
 
-4. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
+5. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
    `/api/content/diagnostics.decision_queue` ma teraz skondensowane, polskie
    decyzje contentowe zamiast URL-i jako głównych tytułów. API dodaje
    `summary`, `primary_query`, `total_clicks`, `total_impressions`,
@@ -196,18 +217,6 @@ Aktualny maintenance:
    passed. Full `scripts/verify.sh` also passed: backend `117 passed`,
    dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
    skill/API smokes and dashboard production build passed.
-
-5. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
-   Command Center GA4 daily decision now consumes the same
-   `Ga4DiagnosticsResponse.decision_queue` contract as `/ga4` and the
-   `wilq-ga4-analyst` context-pack path. Live proof after
-   `scripts/local_stack.sh restart`: `decision_review_ga4_landing_quality`
-   shows title `GA4: pomiar i jakość ruchu do kontroli`, metric tiles
-   `grupy ruchu=10`, `decyzje=6`, `pomiar=2`, `jakość ruchu=4`,
-   `braki kontraktu=1`, and still blocks ROAS/revenue/conversion/tracking-fixed
-   claims. Full `scripts/verify.sh` passed: backend `117 passed`, dashboard
-   unit `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
-   dashboard production build passed.
 
 ## Active Gaps
 

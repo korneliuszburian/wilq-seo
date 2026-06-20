@@ -959,6 +959,9 @@ export const Ga4DecisionItemSchema = z.object({
     "review_landing_mapping"
   ]),
   title: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  priority: z.number(),
+  metric_tiles: z.record(z.union([z.string(), z.number()])),
   landing_page: z.string().nullable().optional(),
   source_medium: z.string().nullable().optional(),
   campaign_name: z.string().nullable().optional(),

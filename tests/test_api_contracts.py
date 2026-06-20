@@ -120,6 +120,9 @@ def ga4_decision_trace(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         {
             "id": decision["id"],
             "decision_type": decision["decision_type"],
+            "status": decision["status"],
+            "priority": decision["priority"],
+            "metric_tiles": decision["metric_tiles"],
             "source_connectors": decision["source_connectors"],
             "evidence_ids": decision["evidence_ids"],
             "action_ids": decision["action_ids"],
@@ -1145,6 +1148,10 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         for decision in decision_by_id.values()
     )
     assert all(decision["next_step"] for decision in decision_by_id.values())
+    assert all(decision["status"] in {"ready", "blocked"} for decision in decision_by_id.values())
+    assert all(isinstance(decision["priority"], int) for decision in decision_by_id.values())
+    assert all(decision["metric_tiles"] for decision in decision_by_id.values())
+    assert any("engagement" in decision["metric_tiles"] for decision in decision_by_id.values())
     sections = {section["id"]: section for section in payload["sections"]}
     assert sections["ga4_landing_behavior"]["status"] == "ready"
     assert sections["ga4_landing_behavior"]["tactical_items"]

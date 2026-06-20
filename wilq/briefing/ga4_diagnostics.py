@@ -272,7 +272,7 @@ def _ga4_decision_queue(
     dimensioned_facts: list[MetricFact],
 ) -> list[Ga4DecisionItem]:
     decisions: list[Ga4DecisionItem] = []
-    for item in _unique_tactical_items(tactical_items):
+    for index, item in enumerate(_unique_tactical_items(tactical_items), start=1):
         landing_page = item.dimensions.get("landing_page")
         source_medium = item.dimensions.get("source_medium")
         campaign_name = item.dimensions.get("campaign_name")
@@ -321,6 +321,9 @@ def _ga4_decision_queue(
                 id=f"ga4_decision_{_slug(item.id)}",
                 decision_type=decision_type,
                 title=title,
+                status=_ga4_decision_status(decision_type),
+                priority=_ga4_decision_priority(decision_type, index),
+                metric_tiles=_ga4_metric_tiles(item.metric_facts),
                 landing_page=landing_page,
                 source_medium=source_medium,
                 campaign_name=campaign_name,
@@ -347,7 +350,7 @@ def _ga4_decision_queue(
         )
     if not decisions:
         decisions.extend(_ga4_decisions_from_dimensioned_facts(dimensioned_facts, action_ids))
-    return sorted(decisions, key=lambda decision: (_risk_rank(decision.risk), decision.id))[:6]
+    return sorted(decisions, key=lambda decision: (decision.priority, decision.id))[:6]
 
 
 def _ga4_decisions_from_dimensioned_facts(
@@ -364,7 +367,10 @@ def _ga4_decisions_from_dimensioned_facts(
         grouped.setdefault(key, []).append(fact)
 
     decisions: list[Ga4DecisionItem] = []
-    for (landing_page, source_medium, campaign_name), group_facts in grouped.items():
+    for index, ((landing_page, source_medium, campaign_name), group_facts) in enumerate(
+        grouped.items(),
+        start=1,
+    ):
         has_missing_reporting_dimension = any(
             value == "(not set)" for value in (landing_page, source_medium, campaign_name)
         )
@@ -401,6 +407,9 @@ def _ga4_decisions_from_dimensioned_facts(
                 ),
                 decision_type=decision_type,
                 title=title,
+                status=_ga4_decision_status(decision_type),
+                priority=_ga4_decision_priority(decision_type, index),
+                metric_tiles=_ga4_metric_tiles(group_facts),
                 landing_page=landing_page,
                 source_medium=source_medium,
                 campaign_name=campaign_name,
@@ -422,6 +431,61 @@ def _ga4_decisions_from_dimensioned_facts(
     return decisions
 
 
+def _ga4_decision_status(decision_type: Ga4DecisionType) -> Literal["ready", "blocked"]:
+    if decision_type in {"fix_measurement", "review_landing_mapping"}:
+        return "blocked"
+    return "ready"
+
+
+def _ga4_decision_priority(decision_type: Ga4DecisionType, index: int) -> int:
+    base_priority = {
+        "fix_measurement": 10,
+        "review_landing_mapping": 30,
+        "review_traffic_quality": 50,
+    }[decision_type]
+    return min(base_priority + index, 100)
+
+
+def _ga4_metric_tiles(facts: Iterable[MetricFact]) -> dict[str, float | int | str]:
+    latest_by_name: dict[str, MetricFact] = {}
+    for fact in facts:
+        latest_by_name.setdefault(fact.name, fact)
+
+    tiles: dict[str, float | int | str] = {}
+    for metric_name, label in (
+        ("active_users", "aktywni"),
+        ("sessions", "sesje"),
+        ("event_count", "zdarzenia"),
+        ("screen_page_views", "odsłony"),
+    ):
+        metric_fact = latest_by_name.get(metric_name)
+        if metric_fact is None:
+            continue
+        value = _numeric_value(metric_fact.value)
+        tiles[label] = int(value) if value.is_integer() else round(value, 2)
+
+    engagement_fact = latest_by_name.get("engagement_rate")
+    if engagement_fact is not None:
+        engagement_value = _numeric_value(engagement_fact.value)
+        tiles["engagement"] = _format_percent(engagement_value)
+    return tiles
+
+
+def _numeric_value(value: str | int | float) -> float:
+    if isinstance(value, int | float):
+        return float(value)
+    try:
+        return float(value)
+    except ValueError:
+        return 0.0
+
+
+def _format_percent(value: float) -> str:
+    percent_value = value * 100 if value <= 1 else value
+    formatted = f"{percent_value:.2f}".rstrip("0").rstrip(".")
+    return f"{formatted}%"
+
+
 def _dimensioned_ga4_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
     return [
         fact
@@ -429,15 +493,6 @@ def _dimensioned_ga4_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
         if fact.source_connector == GA4_CONNECTOR_ID
         and {"landing_page", "source_medium", "campaign_name"}.issubset(fact.dimensions)
     ]
-
-
-def _risk_rank(risk: ActionRisk) -> int:
-    return {
-        ActionRisk.critical: 0,
-        ActionRisk.high: 1,
-        ActionRisk.medium: 2,
-        ActionRisk.low: 3,
-    }[risk]
 
 
 def _landing_group_count(facts: Iterable[MetricFact]) -> int:
