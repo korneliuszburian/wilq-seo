@@ -849,6 +849,8 @@ export const MerchantDecisionItemSchema = z.object({
   reporting_context: z.string().nullable().optional(),
   product_count: z.number().nullable().optional(),
   issue_count: z.number().nullable().optional(),
+  priority: z.number(),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),

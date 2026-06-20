@@ -2542,6 +2542,10 @@ const merchantDiagnostics = {
       reporting_context: "SHOPPING_ADS",
       product_count: 23,
       issue_count: 23,
+      priority: 23,
+      metric_tiles: {
+        zgłoszenia: 23
+      },
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       metric_facts: [metricFacts[3]],
@@ -3722,12 +3726,12 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
     ).toBeInTheDocument();
-    expect(screen.getByText("przegląd problemu feedu")).toBeInTheDocument();
+    expect(screen.getByText(/przegląd problemu feedu/)).toBeInTheDocument();
     expect(
       screen.getByText(/23 zgłoszeń problemu NOT_IMPACTED\/MERCHANT_ACTION dla PL \/ SHOPPING_ADS/)
     ).toBeInTheDocument();
     expect(screen.getByText("Zgłoszenia")).toBeInTheDocument();
-    expect(screen.getByText("zgłoszenia: 23")).toBeInTheDocument();
+    expect(screen.queryByText("zgłoszenia: 23")).not.toBeInTheDocument();
     expect(screen.getByText("problem: availability_updated")).toBeInTheDocument();
     expect(screen.getByText("atrybut: n:availability")).toBeInTheDocument();
     expect(screen.getByText("kontekst: SHOPPING_ADS")).toBeInTheDocument();

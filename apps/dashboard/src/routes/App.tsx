@@ -4492,7 +4492,8 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         <div>
           <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-            {merchantDecisionTypeLabel(decision.decision_type)}
+            {merchantDecisionTypeLabel(decision.decision_type)} /{" "}
+            {priorityLabel(decision.priority)}
           </p>
         </div>
         <StatusBadge value={decision.risk} />
@@ -4502,17 +4503,14 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
       ) : null}
       <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
       <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      {Object.keys(decision.metric_tiles ?? {}).length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Object.entries(decision.metric_tiles).map(([label, value]) => (
+            <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
+          ))}
+        </div>
+      ) : null}
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
-        {decision.issue_count !== null && decision.issue_count !== undefined ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            zgłoszenia: {decision.issue_count}
-          </span>
-        ) : null}
-        {decision.product_count !== null && decision.product_count !== undefined ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            produkty: {decision.product_count}
-          </span>
-        ) : null}
         {decision.issue_type ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             problem: {decision.issue_type}
@@ -4555,22 +4553,12 @@ function merchantDecisionTypeLabel(decisionType: MerchantDecisionItem["decision_
 }
 
 function merchantDecisionSortValue(decision: MerchantDecisionItem) {
-  const riskRank: Record<MerchantDecisionItem["risk"], number> = {
-    critical: 0,
-    high: 1,
-    medium: 2,
-    low: 3
+  const statusRank: Record<MerchantDecisionItem["status"], number> = {
+    ready: 0,
+    blocked: 1,
+    missing: 2
   };
-  const typeRank: Record<MerchantDecisionItem["decision_type"], number> = {
-    review_issue_cluster: 0,
-    review_feed_status: 1,
-    block_until_vendor_read: 2
-  };
-  return (
-    typeRank[decision.decision_type] * 100000 +
-    riskRank[decision.risk] * 10000 -
-    (decision.product_count ?? 0)
-  );
+  return statusRank[decision.status] * 1000 + decision.priority;
 }
 
 function merchantReportingContextLabel(value: string | null | undefined) {

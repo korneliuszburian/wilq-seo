@@ -396,6 +396,8 @@ def _merchant_decision_queue(
                 status="blocked",
                 title="Merchant: odczyt feedu wymagany przed decyzją",
                 summary=_merchant_blocker_reason(latest_refresh),
+                priority=5,
+                metric_tiles={"blockery": 1},
                 source_connectors=[MERCHANT_CONNECTOR_ID],
                 evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
                 action_ids=action_ids,
@@ -461,6 +463,12 @@ def _merchant_decision_from_cluster(
         reporting_context=cluster.reporting_context,
         product_count=cluster.product_count,
         issue_count=cluster.product_count,
+        priority=_merchant_issue_priority(
+            cluster.severity,
+            cluster.resolution,
+            cluster.product_count,
+        ),
+        metric_tiles={"zgłoszenia": cluster.product_count},
         source_connectors=cluster.source_connectors,
         evidence_ids=cluster.evidence_ids,
         metric_facts=cluster_facts[:6],
@@ -502,6 +510,8 @@ def _merchant_decision_from_tactical_item(
         reporting_context=item.dimensions.get("reporting_context"),
         product_count=product_count,
         issue_count=product_count,
+        priority=max(1, min(100, item.priority)),
+        metric_tiles=_clean_merchant_metric_tiles({"zgłoszenia": product_count}),
         source_connectors=item.source_connectors,
         evidence_ids=item.evidence_ids,
         metric_facts=item.metric_facts[:6],
@@ -561,6 +571,13 @@ def _merchant_aggregate_feed_status_decision(
         ),
         product_count=product_count,
         issue_count=issue_count,
+        priority=45,
+        metric_tiles=_clean_merchant_metric_tiles(
+            {
+                "produkty": product_count,
+                "zgłoszenia": issue_count,
+            }
+        ),
         source_connectors=[MERCHANT_CONNECTOR_ID],
         evidence_ids=_unique(
             [
@@ -621,6 +638,36 @@ def _merchant_cluster_risk(severity: str, resolution: str | None) -> ActionRisk:
 
 def _merchant_severity_rank(severity: str) -> int:
     return {"DISAPPROVED": 0, "DEMOTED": 1, "NOT_IMPACTED": 2}.get(severity, 3)
+
+
+def _merchant_issue_priority(
+    severity: str,
+    resolution: str | None,
+    product_count: int,
+) -> int:
+    base_priority = {"DISAPPROVED": 10, "DEMOTED": 16, "NOT_IMPACTED": 28}.get(
+        severity,
+        40,
+    )
+    if resolution == "MERCHANT_ACTION":
+        base_priority -= 4
+    if product_count >= 1000:
+        base_priority -= 6
+    elif product_count >= 100:
+        base_priority -= 3
+    elif product_count >= 10:
+        base_priority -= 1
+    return max(5, min(100, base_priority))
+
+
+def _clean_merchant_metric_tiles(
+    values: dict[str, int | float | str | None],
+) -> dict[str, int | float | str]:
+    return {
+        key: value
+        for key, value in values.items()
+        if value is not None and value != ""
+    }
 
 
 def _stable_slug(value: str) -> str:

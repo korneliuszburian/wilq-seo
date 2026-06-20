@@ -184,12 +184,15 @@ Aktualny proof produktowy:
   `act_review_merchant_feed_issues`. Scoped context-pack niesie tę samą
   decyzję bez redakcji w `merchant_diagnostics.decision_queue`, a Command
   Center pokazuje `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`,
-  `decyzje=8`, `blockery=0`.
+  `decyzje=8`, `blockery=0`. Latest Merchant follow-up:
+  `MerchantDecisionItem` ma teraz typed `priority` i numeric `metric_tiles`;
+  live proof: 8 decyzji, `null_priority=[]`, `empty_tiles=[]`, top decyzja
+  ma `priority=21` i `metric_tiles.zgłoszenia=892`.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
-- Pełny `scripts/verify.sh` przeszedł po Merchant decision queue bridge slice:
-  backend API contracts `117 passed`, dashboard route tests `14 passed`,
-  Playwright e2e `9 passed`, security, skill/API smokes i dashboard production
+- Pełny `scripts/verify.sh` przeszedł po Merchant priority/metric tiles slice:
+  backend API contracts `119 passed`, dashboard route tests `14 passed`,
+  Playwright e2e `11 passed`, security, skill/API smokes i dashboard production
   build passed.
 
 Aktualny maintenance:
@@ -200,13 +203,21 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
+1. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
+   `MerchantDecisionItem` now exposes typed `priority` and numeric
+   `metric_tiles`, with the Zod schema, `/merchant` UI and API tests updated.
+   Live proof after stack restart: 8 decisions, no null priorities, no empty
+   metric tiles, top issue decision `priority=21` and `zgłoszenia=892`.
+   Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
+   `14 passed`, Playwright `11 passed`, production build passed.
+
+2. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
    Scoped `wilq-demand-gen-operator` context-pack no longer exposes adjacent
    GA4/negative/custom-segment ActionObjects as Demand Gen actions. It now has
    `demand_gen_readiness.status=blocked`, explicit missing Demand Gen read
    contracts, no active actions and payload about `160734 bytes`.
 
-2. Ads recommendation review gates and campaign-builder context scope,
+3. Ads recommendation review gates and campaign-builder context scope,
    2026-06-20 08:16 CEST.
    `/api/ads/diagnostics`, `/ads-doctor` and scoped `wilq-ads-doctor`
    context-pack now separate missing read contracts from operator review gates
@@ -218,7 +229,7 @@ Aktualny maintenance:
    `wilq-campaign-builder` active actions are narrowed to campaign and
    recommendation review. Apply remains blocked.
 
-3. Knowledge operating map, 2026-06-20 07:55 CEST.
+4. Knowledge operating map, 2026-06-20 07:55 CEST.
    `/api/knowledge/operating-map` and `/knowledge` now connect knowledge cards,
    machine-readable playbooks and expert rules to operator decisions, routes,
    skills, evidence IDs, ActionObject IDs, blocked claims and missing
@@ -229,7 +240,7 @@ Aktualny maintenance:
    review-only ActionObjects; Localo remains blocked on explicit read
    contracts.
 
-4. Workflows decision contract, 2026-06-20 07:33 CEST.
+5. Workflows decision contract, 2026-06-20 07:33 CEST.
    `/api/workflows` and `/workflows` now expose operator workflows as typed
    WILQ API contracts, not generic automation placeholders. Core workflows are
    derived from daily decisions and carry `status`, `route`, `skill_id`,
@@ -242,22 +253,6 @@ Aktualny maintenance:
    ActionObjects. Full `scripts/verify.sh` passed: backend `118 passed`,
    dashboard unit `14 passed`, Playwright e2e `10 passed`, security,
    skill/API smokes and dashboard production build passed.
-
-5. Opportunities decision bridge, 2026-06-20 07:13 CEST.
-   `/api/opportunities`, `/opportunities` and full Codex context-pack
-   `top_opportunities` now consume the same daily decisions as Command Center
-   instead of the old connector registry cards. Live proof after
-   `scripts/local_stack.sh restart`: 4 opportunities with IDs
-   `opp_decision_review_merchant_feed_issues`,
-   `opp_decision_prepare_content_refresh_queue`,
-   `opp_decision_review_ga4_landing_quality` and
-   `opp_decision_review_ads_campaign_metrics`; each carries `metric_tiles`,
-   evidence IDs, source connectors and safe ActionObject IDs. No
-   `opp_connector_*` opportunities or `opportunities` redaction paths are
-   present in the live proof. Full `scripts/verify.sh` passed after this
-   slice: backend `117 passed`, dashboard unit `14 passed`, Playwright e2e
-   `9 passed`, security, skill/API smokes and dashboard production build
-   passed.
 
 ## Active Gaps
 

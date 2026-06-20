@@ -1115,6 +1115,8 @@ class MerchantDecisionItem(BaseModel):
     reporting_context: str | None = None
     product_count: int | None = None
     issue_count: int | None = None
+    priority: int = Field(ge=1, le=100)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 08:42 CEST.
+Last updated: 2026-06-20 09:07 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -174,7 +174,12 @@ jednostkowej", `issue_count=892`,
 context-pack carries the same decision with no redaction under
 `merchant_diagnostics.decision_queue`. Command Center shows
 `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`, `decyzje=8`,
-`blockery=0` and Polish marketer-facing labels.
+`blockery=0` and Polish marketer-facing labels. Latest follow-up: every
+Merchant decision now exposes typed `priority` and numeric `metric_tiles`, so
+`/merchant`, Command Center and `wilq-merchant-feed-operator` can rank the same
+issue-level queue without frontend inference. Live proof after restart:
+8 Merchant decisions, `null_priority=[]`, `empty_tiles=[]`, top decision
+`priority=21`, `metric_tiles.zgłoszenia=892`.
 
 Marketing Brief and Codex context-packs must use the same daily decision state
 as Command Center. Do not rebuild `/api/marketing/brief` from stale raw metric

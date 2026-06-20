@@ -4524,6 +4524,8 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["affected_attribute"] == "n:availability"
     assert decision["product_count"] == 23
     assert decision["issue_count"] == 23
+    assert decision["priority"] == 23
+    assert decision["metric_tiles"] == {"zgłoszenia": 23}
     assert decision["cluster_id"] == cluster["id"]
     assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
     assert "zgłoszeń problemu" in decision["summary"]
