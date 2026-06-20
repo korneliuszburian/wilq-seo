@@ -536,6 +536,12 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
             "operator_review_gates": ["google_ads_rmf_compliance_review"],
             "required_validation": ["google_ads_rmf_compliance_review"],
+            "available_read_contracts": ["ga4_landing_source_campaign_quality"],
+            "missing_read_contracts": [
+                "demand_gen_landing_quality_by_campaign",
+                "demand_gen_migration_constraints",
+            ],
+            "blocked_claims": ["Demand Gen launch recommendation"],
             "cluster_id": (
                 "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
             ),
@@ -564,6 +570,14 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
     assert redacted["operator_review_gates"] == ["google_ads_rmf_compliance_review"]
     assert redacted["required_validation"] == ["google_ads_rmf_compliance_review"]
+    assert redacted["available_read_contracts"] == [
+        "ga4_landing_source_campaign_quality"
+    ]
+    assert redacted["missing_read_contracts"] == [
+        "demand_gen_landing_quality_by_campaign",
+        "demand_gen_migration_constraints",
+    ]
+    assert redacted["blocked_claims"] == ["Demand Gen launch recommendation"]
     assert redacted["cluster_id"] == (
         "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
     )
@@ -6301,12 +6315,22 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert data["context_scope"]["skill"] == "wilq-demand-gen-operator"
     assert "ads_diagnostics" in data
     assert "ga4_diagnostics" in data
+    assert "demand_gen_readiness" in data
     assert "merchant_diagnostics" not in data
     assert "command_center" not in data
     assert set(data["context_scope"]["source_connectors"]) == {
         "google_ads",
         "google_analytics_4",
     }
+    assert data["active_action_objects"] == []
+    assert data["ads_diagnostics"]["action_ids"] == []
+    readiness = data["demand_gen_readiness"]
+    assert readiness["status"] == "blocked"
+    assert readiness["action_ids"] == []
+    assert readiness["source_connectors"] == ["google_ads", "google_analytics_4"]
+    assert "demand_gen_asset_group_rows" in readiness["missing_read_contracts"]
+    assert "demand_gen_action_object" in readiness["missing_read_contracts"]
+    assert "Demand Gen launch recommendation" in readiness["blocked_claims"]
     assert "sections" not in data["ga4_diagnostics"]
     assert '"metric_facts":' not in json.dumps(data["ga4_diagnostics"])
     assert data["ga4_diagnostics"]["context_pack_compaction"][

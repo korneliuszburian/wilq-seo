@@ -64,6 +64,7 @@ from wilq.schemas import (
     ConnectorStatus,
     ConnectorSummary,
     ContentDiagnosticsResponse,
+    DemandGenReadinessContract,
     Evidence,
     ExpertCapability,
     ExpertRule,
@@ -517,6 +518,7 @@ SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
     },
+    "wilq-demand-gen-operator": set(),
 }
 
 SKILL_EXPERT_RULE_IDS: dict[str, list[str]] = {
@@ -700,9 +702,9 @@ def _stateful_context_actions(
 
 
 def _actions_for_skill_scope(skill: str, actions: list[ActionObject]) -> list[ActionObject]:
-    allowed_action_ids = SKILL_ACTION_ID_SCOPES.get(skill)
-    if not allowed_action_ids:
+    if skill not in SKILL_ACTION_ID_SCOPES:
         return actions
+    allowed_action_ids = SKILL_ACTION_ID_SCOPES[skill]
     return [action for action in actions if action.id in allowed_action_ids]
 
 
@@ -750,6 +752,7 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
                     "ads_review_budget_context",
                     "ads_block_write_actions_without_actionobject",
                 },
+                allowed_action_ids=SKILL_ACTION_ID_SCOPES["wilq-campaign-builder"],
             ),
             "content_landing_context": _content_landing_context_for_campaign_builder(),
         }
@@ -774,11 +777,71 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
                 "ads_review_campaign_activity",
                 "ads_review_budget_context",
                 "ads_review_impression_share",
-                "ads_block_write_actions_without_actionobject",
             },
+            allowed_action_ids=SKILL_ACTION_ID_SCOPES["wilq-demand-gen-operator"],
         ),
         "ga4_diagnostics": _compact_ga4_diagnostics_for_context(ga4_diagnostics),
+        "demand_gen_readiness": _demand_gen_readiness_contract(
+            ads_diagnostics,
+            ga4_diagnostics,
+        ).model_dump(mode="json"),
     }
+
+
+def _demand_gen_readiness_contract(
+    ads_diagnostics: dict[str, Any],
+    ga4_diagnostics: dict[str, Any],
+) -> DemandGenReadinessContract:
+    evidence_ids = sorted(
+        {
+            *_collect_values_by_key(ads_diagnostics, "evidence_ids"),
+            *_collect_values_by_key(ga4_diagnostics, "evidence_ids"),
+        }
+    )[:12]
+    return DemandGenReadinessContract(
+        status="blocked",
+        summary=(
+            "WILQ ma Ads i GA4 evidence do oceny ruchu, ale nie ma jeszcze "
+            "Demand Gen-specific read contractów dla assetów, kreacji, typów "
+            "kampanii ani migracji. To jest blocker użytecznej rekomendacji, "
+            "nie brak promptu."
+        ),
+        available_read_contracts=[
+            "google_ads_campaign_activity",
+            "google_ads_budget_context",
+            "google_ads_impression_share_context",
+            "ga4_landing_source_campaign_quality",
+        ],
+        missing_read_contracts=[
+            "demand_gen_campaign_rows",
+            "demand_gen_asset_group_rows",
+            "demand_gen_creative_asset_rows",
+            "demand_gen_landing_quality_by_campaign",
+            "demand_gen_migration_constraints",
+            "demand_gen_action_object",
+        ],
+        blocked_claims=[
+            "Demand Gen launch recommendation",
+            "Demand Gen migration ready",
+            "creative quality verdict",
+            "asset performance verdict",
+            "campaign apply",
+            "performance uplift",
+        ],
+        source_connectors=["google_ads", "google_analytics_4"],
+        evidence_ids=evidence_ids,
+        action_ids=[],
+        operator_review_gates=[
+            "demand_gen_specific_evidence_required",
+            "human_strategy_review",
+            "human_confirm_before_apply",
+        ],
+        next_step=(
+            "Zbuduj osobny Demand Gen read contract zanim skill pokaże "
+            "kandydatów kampanii lub migracji. Do tego czasu używaj GA4/Ads "
+            "tylko jako kontekstu jakości ruchu."
+        ),
+    )
 
 
 def _compact_content_diagnostics_for_context(
@@ -1067,6 +1130,7 @@ def _compact_ads_diagnostics_for_lite_context(
     ads_diagnostics: dict[str, Any],
     *,
     allowed_decision_ids: set[str],
+    allowed_action_ids: set[str] | None = None,
 ) -> dict[str, Any]:
     compact = _compact_ads_diagnostics_for_context(ads_diagnostics)
     decision_queue = compact.get("decision_queue")
@@ -1077,6 +1141,26 @@ def _compact_ads_diagnostics_for_lite_context(
             if isinstance(decision, dict)
             and str(decision.get("id")) in allowed_decision_ids
         ][:ADS_LITE_DECISION_LIMIT]
+    if allowed_action_ids is not None:
+        action_ids = compact.get("action_ids")
+        if isinstance(action_ids, list):
+            compact["action_ids"] = [
+                action_id
+                for action_id in action_ids
+                if isinstance(action_id, str) and action_id in allowed_action_ids
+            ]
+        decision_queue = compact.get("decision_queue")
+        if isinstance(decision_queue, list):
+            for decision in decision_queue:
+                if not isinstance(decision, dict):
+                    continue
+                decision_action_ids = decision.get("action_ids")
+                if isinstance(decision_action_ids, list):
+                    decision["action_ids"] = [
+                        action_id
+                        for action_id in decision_action_ids
+                        if isinstance(action_id, str) and action_id in allowed_action_ids
+                    ]
     keep_contracts = {
         "generated_at",
         "language",

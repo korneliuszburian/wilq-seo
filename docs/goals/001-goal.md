@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 08:16 CEST.
+Last updated: 2026-06-20 08:42 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -136,6 +136,19 @@ and `active_action_objects` contains only `act_prepare_ads_campaign_review_queue
 and `act_prepare_google_ads_recommendation_review_queue`. This keeps the
 non-daily skill payload under the 200 KB budget and prevents Codex from mixing
 campaign-building with separate negative/custom-segment workflows.
+
+Demand Gen must stay honest until WILQ has Demand Gen-specific evidence and
+ActionObjects. It must not present GA4 tracking review, negative keyword review
+or custom segment review as Demand Gen actions. Current focused proof:
+`wilq-demand-gen-operator` context-pack is `160734 bytes` in a fresh API
+process, `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`, and it
+contains `demand_gen_readiness.status=blocked` with missing read contracts:
+`demand_gen_campaign_rows`, `demand_gen_asset_group_rows`,
+`demand_gen_creative_asset_rows`, `demand_gen_landing_quality_by_campaign`,
+`demand_gen_migration_constraints` and `demand_gen_action_object`. These IDs
+must not be redacted; they are product contracts, not secrets. The
+`wilq-demand-gen-operator` smoke script must fail if adjacent ActionObjects are
+again exposed as active Demand Gen actions.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and
@@ -864,7 +877,11 @@ Work in this order:
    - `wilq-demand-gen-operator`: `100349 bytes`, cold `2.574s`, warm `0.156s`,
      sources `google_ads`, `google_analytics_4`; Ads and GA4 diagnostics build
      in parallel and Merchant stays omitted until a concrete Demand Gen/Merchant
-     read contract exists.
+     read contract exists. Latest fresh API-process proof after Demand Gen
+     scope cleanup: `160734 bytes`, `active_action_objects=[]`,
+     `ads_diagnostics.action_ids=[]`, and explicit
+     `demand_gen_readiness.status=blocked` with missing Demand Gen read
+     contracts.
    - `wilq-content-strategist`: `91731 bytes`, cold `2.044s`, warm `0.166s`.
    - `wilq-ga4-analyst`: `28578 bytes`, cold `1.927s`, warm `0.147s`.
    - `wilq-merchant-feed-operator`: `24007 bytes`, cold `1.819s`, warm

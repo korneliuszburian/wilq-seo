@@ -119,6 +119,15 @@ Aktualny proof produktowy:
   custom segments zostają w swoich skillach, żeby campaign-builder nie mieszał
   intencji i trzymał payload poniżej limitu 200 KB. Fresh API-process proof:
   `191737 bytes`.
+- Scoped `wilq-demand-gen-operator` context-pack jest teraz honest-blocked:
+  `160734 bytes`, `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`
+  i `demand_gen_readiness.status=blocked`. Missing read contracts są jawne i
+  nieredaktowane: `demand_gen_campaign_rows`,
+  `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
+  `demand_gen_landing_quality_by_campaign`,
+  `demand_gen_migration_constraints`, `demand_gen_action_object`.
+  Skill smoke `wilq-demand-gen-operator` egzekwuje teraz ten kontrakt i failuje,
+  jeśli adjacent ActionObject wróci jako aktywna akcja Demand Gen.
 - `/api/opportunities` nie jest już rejestrem connectorów. Live proof po
   `scripts/local_stack.sh restart`: zwraca 4 decision-backed opportunities:
   Merchant feed review, Content refresh queue, GA4 measurement/traffic review
@@ -191,7 +200,13 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ads recommendation review gates and campaign-builder context scope,
+1. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
+   Scoped `wilq-demand-gen-operator` context-pack no longer exposes adjacent
+   GA4/negative/custom-segment ActionObjects as Demand Gen actions. It now has
+   `demand_gen_readiness.status=blocked`, explicit missing Demand Gen read
+   contracts, no active actions and payload about `160734 bytes`.
+
+2. Ads recommendation review gates and campaign-builder context scope,
    2026-06-20 08:16 CEST.
    `/api/ads/diagnostics`, `/ads-doctor` and scoped `wilq-ads-doctor`
    context-pack now separate missing read contracts from operator review gates
@@ -203,7 +218,7 @@ Aktualny maintenance:
    `wilq-campaign-builder` active actions are narrowed to campaign and
    recommendation review. Apply remains blocked.
 
-2. Knowledge operating map, 2026-06-20 07:55 CEST.
+3. Knowledge operating map, 2026-06-20 07:55 CEST.
    `/api/knowledge/operating-map` and `/knowledge` now connect knowledge cards,
    machine-readable playbooks and expert rules to operator decisions, routes,
    skills, evidence IDs, ActionObject IDs, blocked claims and missing
@@ -214,7 +229,7 @@ Aktualny maintenance:
    review-only ActionObjects; Localo remains blocked on explicit read
    contracts.
 
-3. Workflows decision contract, 2026-06-20 07:33 CEST.
+4. Workflows decision contract, 2026-06-20 07:33 CEST.
    `/api/workflows` and `/workflows` now expose operator workflows as typed
    WILQ API contracts, not generic automation placeholders. Core workflows are
    derived from daily decisions and carry `status`, `route`, `skill_id`,
@@ -228,7 +243,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `10 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-4. Opportunities decision bridge, 2026-06-20 07:13 CEST.
+5. Opportunities decision bridge, 2026-06-20 07:13 CEST.
    `/api/opportunities`, `/opportunities` and full Codex context-pack
    `top_opportunities` now consume the same daily decisions as Command Center
    instead of the old connector registry cards. Live proof after
@@ -244,23 +259,12 @@ Aktualny maintenance:
    `9 passed`, security, skill/API smokes and dashboard production build
    passed.
 
-5. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
-   `/api/ads/diagnostics.decision_queue` now exposes explicit `priority` and
-   `metric_tiles` for every Ads decision, and `/ads-doctor` renders those tiles
-   directly from typed API state. Shared schemas and `wilq-ads-doctor`
-   context-pack carry the same fields. Live proof after
-   `scripts/local_stack.sh restart`: 11 Ads decisions, `null_priority_count=0`,
-   `empty_tiles=[]`; campaign review has `kampanie=18`, `kliknięcia=117`,
-   `wyświetlenia=3075`, `koszt=161`, `konwersje=2`; recommendations have
-   `rekomendacje=4`, `podgląd wpływu=2`, `podgląd akcji=4`; search terms omit
-   cost when `cost_micros` is absent from evidence instead of showing a false
-   `0.00`.
-
 ## Active Gaps
 
-- Demand Gen cold context-pack is still about `2.6s`; payload and warm runtime
-  are inside budget, but cold path should be improved if it stays visible in
-  browser/Codex proof.
+- Demand Gen is honest-blocked, not useful yet. It still needs real
+  Demand Gen read contracts: campaign rows, asset groups, creative assets,
+  landing quality by campaign, migration constraints and a Demand Gen
+  ActionObject.
 - Full BDOS-class Ads optimizer is not done. Remaining areas include Keyword
   Planner enrichment, forecast/audience size, profit-margin/business-goal
   interpretation, recorded human strategy review outcome, budget apply

@@ -16,6 +16,7 @@ REQUIRED_CONTEXT_KEYS = {
     "evidence_summaries",
     "top_opportunities",
     "active_action_objects",
+    "demand_gen_readiness",
 }
 
 
@@ -88,12 +89,34 @@ def main() -> int:
     if "must not invent metrics" not in instruction or "evidence" not in instruction:
         raise SystemExit("Context pack strict instruction does not include evidence guardrails")
 
+    readiness = pack.get("demand_gen_readiness")
+    if not isinstance(readiness, dict):
+        raise SystemExit("Context pack demand_gen_readiness must be an object")
+    if readiness.get("status") != "blocked":
+        raise SystemExit("Demand Gen must stay blocked until specific evidence exists")
+    missing_read_contracts = readiness.get("missing_read_contracts")
+    if not isinstance(missing_read_contracts, list) or not missing_read_contracts:
+        raise SystemExit("Demand Gen readiness must expose missing read contracts")
+    if "[REDACTED]" in json.dumps(readiness):
+        raise SystemExit("Demand Gen readiness contract IDs must not be redacted")
+    active_actions = pack.get("active_action_objects") or []
+    if active_actions:
+        raise SystemExit("Demand Gen context must not expose adjacent ActionObjects as active")
+    ads_diagnostics = pack.get("ads_diagnostics") or {}
+    if ads_diagnostics.get("action_ids"):
+        raise SystemExit("Demand Gen Ads diagnostics must not expose adjacent Ads action IDs")
+
     print(
         json.dumps(
             {
                 "skill": SKILL_NAME,
                 "api_base": args.api_base,
                 "health": health.get("status"),
+                "demand_gen_readiness": {
+                    "status": readiness.get("status"),
+                    "missing_read_contracts": missing_read_contracts,
+                    "blocked_claims": readiness.get("blocked_claims", []),
+                },
                 "required_connectors": connector_results,
                 "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
