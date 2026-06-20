@@ -89,6 +89,9 @@ def main() -> int:
     account_currency_read_contract = (
         ads_diagnostics.get("account_currency_read_contract") or {}
     )
+    business_context_read_contract = (
+        ads_diagnostics.get("business_context_read_contract") or {}
+    )
     budget_pacing_read_contract = ads_diagnostics.get("budget_pacing_read_contract") or {}
     recommendations_read_contract = (
         ads_diagnostics.get("recommendations_read_contract") or {}
@@ -136,6 +139,19 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Blocked account currency contract must list missing account_currency")
+    if business_context_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose business_context_read_contract")
+    pack_business_context_contract = (
+        pack.get("ads_diagnostics", {}).get("business_context_read_contract") or {}
+    )
+    if pack_business_context_contract.get("summary") != business_context_read_contract.get(
+        "summary"
+    ):
+        raise SystemExit("Context pack business context contract differs")
+    if business_context_read_contract.get("status") == "blocked" and not (
+        business_context_read_contract.get("missing_read_contracts") or []
+    ):
+        raise SystemExit("Blocked business context contract must list missing contracts")
     if budget_pacing_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose budget_pacing_read_contract")
     if budget_pacing_read_contract.get("status") == "ready":
@@ -422,6 +438,18 @@ def main() -> int:
                             "missing_read_contracts", []
                         ),
                         "blocked_claims": account_currency_read_contract.get(
+                            "blocked_claims", []
+                        ),
+                    },
+                    "business_context_read_contract": {
+                        "status": business_context_read_contract.get("status"),
+                        "configured_sources": business_context_read_contract.get(
+                            "configured_sources", []
+                        ),
+                        "missing_read_contracts": business_context_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "blocked_claims": business_context_read_contract.get(
                             "blocked_claims", []
                         ),
                     },

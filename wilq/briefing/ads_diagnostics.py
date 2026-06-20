@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable
 from typing import Literal
 
@@ -34,6 +35,7 @@ from wilq.schemas import (
     AdsBudgetApplyPreview,
     AdsBudgetPacingReadContract,
     AdsBudgetPacingRow,
+    AdsBusinessContextReadContract,
     AdsCampaignMetricRow,
     AdsCampaignReadContract,
     AdsChangeHistoryReadContract,
@@ -89,6 +91,10 @@ ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
         [CARD_ADS_SEARCH, CARD_ADS_BUDGET_REVIEW],
         ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
     ),
+    "ads_business_context": (
+        [CARD_ADS_BUDGET_REVIEW, CARD_GOAL_001_RULES],
+        ["ads_scaling_candidates_v1", "ads_principles_v1"],
+    ),
     "ads_derived_kpi": (
         [CARD_ADS_BUDGET_REVIEW],
         ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
@@ -143,6 +149,10 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_review_campaign_activity": (
         [CARD_ADS_SEARCH, CARD_ADS_BUDGET_REVIEW],
         ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
+    ),
+    "ads_review_business_context": (
+        [CARD_ADS_BUDGET_REVIEW, CARD_GOAL_001_RULES],
+        ["ads_scaling_candidates_v1", "ads_principles_v1"],
     ),
     "ads_review_derived_kpis": (
         [CARD_ADS_BUDGET_REVIEW],
@@ -208,6 +218,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         trusted_metric_facts,
         latest_refresh,
     )
+    business_context_read_contract = _business_context_read_contract(latest_refresh)
     derived_kpi_read_contract = _derived_kpi_read_contract(
         campaign_read_contract,
         account_currency_read_contract,
@@ -337,6 +348,33 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
                 )
             }
         )
+    if business_context_read_contract.profit_margin is not None:
+        derived_kpi_read_contract = derived_kpi_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    derived_kpi_read_contract.missing_read_contracts,
+                    "profit_margin",
+                )
+            }
+        )
+    if business_context_read_contract.budget_goal:
+        budget_pacing_read_contract = budget_pacing_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    budget_pacing_read_contract.missing_read_contracts,
+                    "human_budget_goal",
+                    "budget_target_or_seasonality",
+                )
+            }
+        )
+        impression_share_read_contract = impression_share_read_contract.model_copy(
+            update={
+                "missing_read_contracts": _remove_missing_contract_names(
+                    impression_share_read_contract.missing_read_contracts,
+                    "human_budget_goal",
+                )
+            }
+        )
     search_terms_read_contract = _search_terms_read_contract(
         trusted_metric_facts,
         latest_refresh,
@@ -397,6 +435,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
             action_ids,
             campaign_read_contract,
         ),
+        _business_context_section(business_context_read_contract),
         _derived_kpi_section(derived_kpi_read_contract),
         _budget_pacing_section(budget_pacing_read_contract),
         _recommendations_section(recommendations_read_contract),
@@ -417,6 +456,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     blocked_handoff = _blocked_handoff(live_data_available, latest_refresh, sections, action_ids)
     decision_queue = _ads_decision_queue(
         campaign_read_contract,
+        business_context_read_contract,
         derived_kpi_read_contract,
         budget_pacing_read_contract,
         recommendations_read_contract,
@@ -438,6 +478,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         live_data_available=live_data_available,
         campaign_read_contract=campaign_read_contract,
         account_currency_read_contract=account_currency_read_contract,
+        business_context_read_contract=business_context_read_contract,
         derived_kpi_read_contract=derived_kpi_read_contract,
         budget_pacing_read_contract=budget_pacing_read_contract,
         recommendations_read_contract=recommendations_read_contract,
@@ -614,6 +655,28 @@ def _derived_kpi_section(
     )
 
 
+def _business_context_section(
+    business_context_read_contract: AdsBusinessContextReadContract,
+) -> AdsDiagnosticSection:
+    return AdsDiagnosticSection(
+        id="ads_business_context",
+        title="Kontekst biznesowy Google Ads",
+        status=business_context_read_contract.status,
+        summary=business_context_read_contract.summary,
+        diagnosis=(
+            "WILQ oddziela wyliczone KPI od decyzji biznesowej. Marża, cel biznesowy, "
+            "cel budżetu i target ROAS/CPA są kontraktem operatora, nie danymi z "
+            "Google Ads."
+        ),
+        next_step=business_context_read_contract.next_step,
+        source_connectors=business_context_read_contract.source_connectors,
+        evidence_ids=business_context_read_contract.evidence_ids,
+        action_ids=[],
+        blocked_claims=business_context_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
 def _campaign_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
@@ -735,6 +798,148 @@ def _account_currency_read_contract(
             "Uruchom read-only Google Ads vendor_read z polem `customer.currency_code`."
         ),
     )
+
+
+def _business_context_read_contract(
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsBusinessContextReadContract:
+    profit_margin, profit_margin_source = _profit_margin_env()
+    business_goal, business_goal_source = _text_env("WILQ_ADS_BUSINESS_GOAL")
+    budget_goal, budget_goal_source = _text_env("WILQ_ADS_BUDGET_GOAL")
+    target_roas, target_roas_source = _float_env("WILQ_ADS_TARGET_ROAS")
+    target_cpa_micros, target_cpa_source = _int_env("WILQ_ADS_TARGET_CPA_MICROS")
+    configured_sources = _unique(
+        source
+        for source in [
+            profit_margin_source,
+            business_goal_source,
+            budget_goal_source,
+            target_roas_source,
+            target_cpa_source,
+        ]
+        if source
+    )
+    missing_read_contracts: list[str] = []
+    if profit_margin is None:
+        missing_read_contracts.append("profit_margin")
+    if not business_goal:
+        missing_read_contracts.append("business_goal")
+    if not budget_goal:
+        missing_read_contracts.append("human_budget_goal")
+    if target_roas is None and target_cpa_micros is None:
+        missing_read_contracts.append("target_roas_or_cpa")
+
+    allowed_metrics = [
+        name
+        for name, value in [
+            ("profit_margin", profit_margin),
+            ("business_goal", business_goal),
+            ("human_budget_goal", budget_goal),
+            ("target_roas", target_roas),
+            ("target_cpa_micros", target_cpa_micros),
+        ]
+        if value is not None and value != ""
+    ]
+    status: Literal["ready", "blocked"] = "ready" if not missing_read_contracts else "blocked"
+    metric_tiles = _clean_metric_tiles(
+        {
+            "marża": _format_ratio_percent(profit_margin)
+            if profit_margin is not None
+            else "brak",
+            "cel biznesowy": business_goal or "brak",
+            "cel budżetu": budget_goal or "brak",
+            "target ROAS": target_roas,
+            "target CPA": _format_micros(target_cpa_micros),
+        }
+    )
+    blocked_claims = [
+        "profitability",
+        "margin verdict",
+        "budget scaling",
+        "budget apply",
+        "recommendation apply",
+        "wasted budget",
+    ]
+    if status == "ready":
+        summary = (
+            "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel budżetu "
+            "oraz target ROAS albo CPA. To pozwala interpretować KPI ostrożniej, ale "
+            "nadal nie odblokowuje automatycznych zmian."
+        )
+        next_step = (
+            "Użyj tych celów jako kontekstu review kampanii i budżetu. Apply nadal "
+            "wymaga ActionObject, payload preview, potwierdzenia i audytu."
+        )
+    else:
+        summary = (
+            "WILQ ma live metryki Google Ads, ale nie ma kompletnego lokalnego "
+            "kontekstu biznesowego: marży, celu biznesowego, celu budżetu albo "
+            "targetu ROAS/CPA. Bez tego KPI są tylko triage, nie werdyktem."
+        )
+        next_step = (
+            "Uzupełnij nie-sekretne wartości w repo-local .env: "
+            "WILQ_ADS_PROFIT_MARGIN, WILQ_ADS_BUSINESS_GOAL, "
+            "WILQ_ADS_BUDGET_GOAL oraz WILQ_ADS_TARGET_ROAS albo "
+            "WILQ_ADS_TARGET_CPA_MICROS."
+        )
+    return AdsBusinessContextReadContract(
+        status=status,
+        title="Google Ads: kontekst biznesowy decyzji",
+        summary=summary,
+        profit_margin=profit_margin,
+        business_goal=business_goal,
+        budget_goal=budget_goal,
+        target_roas=target_roas,
+        target_cpa_micros=target_cpa_micros,
+        configured_sources=configured_sources,
+        allowed_metrics=allowed_metrics,
+        missing_read_contracts=missing_read_contracts,
+        blocked_claims=blocked_claims,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        metric_tiles=metric_tiles,
+        next_step=next_step,
+    )
+
+
+def _profit_margin_env() -> tuple[float | None, str | None]:
+    value, source = _float_env("WILQ_ADS_PROFIT_MARGIN")
+    if value is None:
+        value, source = _float_env("WILQ_ADS_PROFIT_MARGIN_PCT")
+    if value is None or source is None:
+        return None, None
+    if value > 1:
+        value = value / 100
+    if value <= 0 or value >= 1:
+        return None, None
+    return round(value, 6), source
+
+
+def _text_env(name: str) -> tuple[str | None, str | None]:
+    value = os.getenv(name, "").strip()
+    if not value:
+        return None, None
+    return value, name
+
+
+def _float_env(name: str) -> tuple[float | None, str | None]:
+    value = os.getenv(name, "").strip()
+    if not value:
+        return None, None
+    try:
+        return float(value.replace(",", ".")), name
+    except ValueError:
+        return None, None
+
+
+def _int_env(name: str) -> tuple[int | None, str | None]:
+    value = os.getenv(name, "").strip()
+    if not value:
+        return None, None
+    try:
+        return int(value), name
+    except ValueError:
+        return None, None
 
 
 def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMetricRow]:
@@ -3103,6 +3308,7 @@ def _safe_action_section(
 
 def _ads_decision_queue(
     campaign_read_contract: AdsCampaignReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
     derived_kpi_read_contract: AdsDerivedKpiReadContract,
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
     recommendations_read_contract: AdsRecommendationsReadContract,
@@ -3175,6 +3381,30 @@ def _ads_decision_queue(
                 risk=ActionRisk.low,
             )
         )
+
+    decisions.append(
+        AdsDecisionItem(
+            id="ads_review_business_context",
+            decision_type="review_business_context",
+            status=business_context_read_contract.status,
+            title="Uzupełnij kontekst biznesowy przed decyzjami Ads",
+            summary=business_context_read_contract.summary,
+            rationale=(
+                "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI, ale "
+                "nie zna marży, celu sprzedażowego ani intencji budżetu Ekologus. "
+                "WILQ musi mieć ten kontekst jako typed contract, zanim nazwie coś "
+                "rentowne, nierentowne albo gotowe do skalowania."
+            ),
+            next_step=business_context_read_contract.next_step,
+            allowed_metrics=business_context_read_contract.allowed_metrics,
+            missing_read_contracts=business_context_read_contract.missing_read_contracts,
+            source_connectors=business_context_read_contract.source_connectors,
+            evidence_ids=business_context_read_contract.evidence_ids,
+            action_ids=[],
+            blocked_claims=business_context_read_contract.blocked_claims,
+            risk=ActionRisk.medium,
+        )
+    )
 
     if derived_kpi_read_contract.kpi_rows:
         campaign_review_action_ids = _campaign_review_action_ids(action_ids)
@@ -3681,6 +3911,7 @@ def _ads_decision_priority(decision: AdsDecisionItem) -> int:
         "fix_ads_access": 5,
         "block_write_actions": 10,
         "review_campaign_activity": 20,
+        "review_business_context": 22,
         "review_derived_kpi": 25,
         "review_budget_context": 30,
         "review_recommendations": 35,
@@ -3703,6 +3934,14 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
                 "wyświetlenia": _sum_attr(decision.campaign_rows, "impressions"),
                 "koszt": _format_micros(_sum_attr(decision.campaign_rows, "cost_micros")),
                 "konwersje": _round_metric(_sum_attr(decision.campaign_rows, "conversions")),
+            }
+        )
+    if decision.decision_type == "review_business_context":
+        return _clean_metric_tiles(
+            {
+                "braki": len(decision.missing_read_contracts),
+                "blokady": len(decision.blocked_claims),
+                "ustawione pola": len(decision.allowed_metrics),
             }
         )
     if decision.decision_type == "review_derived_kpi":
@@ -3826,6 +4065,12 @@ def _format_micros(value: float | None) -> str | None:
     if account_units >= 10:
         return f"{account_units:.1f}"
     return f"{account_units:.2f}"
+
+
+def _format_ratio_percent(value: float | None) -> str | None:
+    if value is None:
+        return None
+    return f"{_round_metric(value * 100)}%"
 
 
 def _clean_metric_tiles(

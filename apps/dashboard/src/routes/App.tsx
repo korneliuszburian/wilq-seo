@@ -1889,6 +1889,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             value={data.account_currency_read_contract.currency_code ?? "brak"}
           />
           <MetricTile
+            label="Biznes"
+            value={data.business_context_read_contract.status === "ready" ? "gotowe" : "blokada"}
+          />
+          <MetricTile
             label="90 dni"
             value={data.search_term_safety_read_contract.safety_rows.length}
           />
@@ -2018,6 +2022,7 @@ function AdsMetricEvidencePanel({
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
   const missingReadContracts = uniqueValues([
     ...data.account_currency_read_contract.missing_read_contracts,
+    ...data.business_context_read_contract.missing_read_contracts,
     ...data.campaign_read_contract.missing_read_contracts,
     ...data.derived_kpi_read_contract.missing_read_contracts,
     ...data.budget_pacing_read_contract.missing_read_contracts,
@@ -2032,6 +2037,7 @@ function AdsMetricEvidencePanel({
   ]).map(adsMissingReadContractLabel);
   const blockedClaims = uniqueValues([
     ...data.account_currency_read_contract.blocked_claims,
+    ...data.business_context_read_contract.blocked_claims,
     ...data.campaign_read_contract.blocked_claims,
     ...data.derived_kpi_read_contract.blocked_claims,
     ...data.budget_pacing_read_contract.blocked_claims,
@@ -2071,6 +2077,10 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
           <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
+          <MetricTile
+            label="Biznes"
+            value={data.business_context_read_contract.status === "ready" ? "gotowe" : "blokada"}
+          />
         </div>
       </div>
 
@@ -2869,6 +2879,7 @@ function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
 
 function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_campaign_activity") return "przegląd kampanii";
+  if (decisionType === "review_business_context") return "kontekst biznesowy";
   if (decisionType === "review_derived_kpi") return "wyliczone KPI";
   if (decisionType === "review_budget_context") return "kontekst budżetu";
   if (decisionType === "review_recommendations") return "rekomendacje do review";
@@ -2927,6 +2938,7 @@ function adsRefreshStatusLabel(status: string) {
 function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_live_data_status") return "Status odczytu Google Ads";
   if (sectionId === "ads_campaign_overview") return "Aktywność kampanii";
+  if (sectionId === "ads_business_context") return "Kontekst biznesowy";
   if (sectionId === "ads_derived_kpi") return "Wyliczone KPI";
   if (sectionId === "ads_budget_pacing") return "Kontekst budżetu";
   if (sectionId === "ads_recommendations") return "Rekomendacje Google Ads";
@@ -2950,6 +2962,11 @@ function adsAllowedMetricLabel(value: string) {
     conversions: "konwersje",
     conversion_value: "wartość konwersji",
     account_currency_code: "waluta konta",
+    profit_margin: "marża",
+    business_goal: "cel biznesowy",
+    human_budget_goal: "cel budżetu",
+    target_roas: "target ROAS",
+    target_cpa_micros: "target CPA",
     budget_amount_micros: "budżet",
     cost_micros_7d: "koszt 7 dni",
     seven_day_budget_micros: "budżet 7 dni",
@@ -3005,6 +3022,9 @@ function adsMissingReadContractLabel(value: string) {
     campaign_budget: "budżet kampanii",
     shared_budget_distribution: "podział shared budget",
     budget_target_or_seasonality: "cel budżetowy lub sezonowość",
+    business_goal: "cel biznesowy",
+    target_roas_or_cpa: "target ROAS albo CPA",
+    profit_margin: "marża albo model rentowności",
     human_budget_goal: "cel budżetu od człowieka",
     account_currency: "waluta konta",
     pre_change_performance_window: "okno wyników przed zmianą",

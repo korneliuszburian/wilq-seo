@@ -289,6 +289,26 @@ export const AdsAccountCurrencyReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsBusinessContextReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  profit_margin: z.number().nullable().optional(),
+  business_goal: z.string().nullable().optional(),
+  budget_goal: z.string().nullable().optional(),
+  target_roas: z.number().nullable().optional(),
+  target_cpa_micros: z.number().nullable().optional(),
+  configured_sources: z.array(z.string()),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  next_step: z.string()
+});
+
 export const AdsDerivedKpiRowSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
@@ -716,6 +736,7 @@ export const AdsDecisionItemSchema = z.object({
   id: z.string(),
   decision_type: z.enum([
     "review_campaign_activity",
+    "review_business_context",
     "review_derived_kpi",
     "review_budget_context",
     "review_recommendations",
@@ -778,6 +799,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   campaign_read_contract: AdsCampaignReadContractSchema,
   account_currency_read_contract: AdsAccountCurrencyReadContractSchema,
+  business_context_read_contract: AdsBusinessContextReadContractSchema,
   derived_kpi_read_contract: AdsDerivedKpiReadContractSchema,
   budget_pacing_read_contract: AdsBudgetPacingReadContractSchema,
   recommendations_read_contract: AdsRecommendationsReadContractSchema,

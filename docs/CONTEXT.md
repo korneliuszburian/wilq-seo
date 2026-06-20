@@ -29,6 +29,17 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads business context truth, 2026-06-20 10:12 Europe/Warsaw:
+   `/api/ads/diagnostics` now exposes `business_context_read_contract` and
+   decision `ads_review_business_context`. Live state is intentionally blocked
+   until repo-local non-secret targets exist:
+   `WILQ_ADS_PROFIT_MARGIN`, `WILQ_ADS_BUSINESS_GOAL`,
+   `WILQ_ADS_BUDGET_GOAL` and `WILQ_ADS_TARGET_ROAS` or
+   `WILQ_ADS_TARGET_CPA_MICROS`. This is API product state, not skill prompt
+   logic. Current proof after stack restart: blocker_count=2,
+   `ads_review_business_context.priority=22`, context-pack bytes for
+   `wilq-ads-doctor` = 186844.
+
 0. Ads recommendation apply-preview truth, 2026-06-20 00:20 Europe/Warsaw:
    Google Ads recommendation review now has a typed review-only apply payload
    preview in `/api/ads/diagnostics`, `/api/actions`,

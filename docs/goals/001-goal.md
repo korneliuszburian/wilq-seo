@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 09:46 CEST.
+Last updated: 2026-06-20 10:12 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -67,7 +67,9 @@ contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
 facts, a read-only account currency contract, a read-only budget context
 contract for campaign daily budgets versus 7-day cost, a read-only Google Ads
 recommendations contract, a read-only Google Ads impression-share contract, a
-read-only Google Ads change-history contract, a read-only recommendation impact
+read-only Google Ads change-history contract, a typed Ads business context
+contract for profit margin, business goal, budget goal and target ROAS/CPA
+inputs, a read-only recommendation impact
 preview for recommendation types that expose impact metrics, a review-only
 recommendation apply payload preview, a read-only 90-day search-term safety
 contract and a review-only negative keyword payload preview plus read-only
@@ -76,12 +78,23 @@ review-only payload preview from real search terms, but no targeting/apply
 support. Campaign budgets now have review-only `CampaignBudgetOperation`
 payload previews from budget facts, but no budget apply support.
 Full BDOS-class parity still requires optimizer contracts such as
-profit-margin/business-goal interpretation, recorded human strategy review outcome,
-pre/post change-impact windows, Keyword Planner enrichment, forecast or
+configured business targets used in decision scoring, recorded human strategy
+review outcome, pre/post change-impact windows, Keyword Planner enrichment, forecast or
 audience-size checks, custom segment targeting/apply previews, budget apply
 safety, apply confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
+
+Latest Ads business context proof after `scripts/local_stack.sh restart`:
+`/api/ads/diagnostics.business_context_read_contract.status=blocked` because
+the repo-local runtime has no non-secret business targets configured yet.
+Missing contracts are `profit_margin`, `business_goal`, `human_budget_goal` and
+`target_roas_or_cpa`; decision `ads_review_business_context` has `priority=22`,
+metric tiles `braki=4`, `blokady=6`, `ustawione pola=0`, and Ads
+`blocker_count=2`. `wilq-ads-doctor` smoke confirms the same contract is in the
+scoped context-pack with `context_pack_bytes=186844`, still below the 200 KB
+budget. The next Ads optimizer step is to set or model those business targets,
+then use them in conservative review-only scoring without unlocking apply.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

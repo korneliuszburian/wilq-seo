@@ -549,6 +549,26 @@ class AdsAccountCurrencyReadContract(BaseModel):
     next_step: str
 
 
+class AdsBusinessContextReadContract(BaseModel):
+    id: str = "ads_business_context_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    profit_margin: float | None = None
+    business_goal: str | None = None
+    budget_goal: str | None = None
+    target_roas: float | None = None
+    target_cpa_micros: int | None = None
+    configured_sources: list[str] = Field(default_factory=list)
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
+    next_step: str
+
+
 class AdsDerivedKpiRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
@@ -980,6 +1000,7 @@ class AdsDecisionItem(BaseModel):
     id: str
     decision_type: Literal[
         "review_campaign_activity",
+        "review_business_context",
         "review_derived_kpi",
         "review_budget_context",
         "review_recommendations",
@@ -1044,6 +1065,7 @@ class AdsDiagnosticsResponse(BaseModel):
     live_data_available: bool
     campaign_read_contract: AdsCampaignReadContract
     account_currency_read_contract: AdsAccountCurrencyReadContract
+    business_context_read_contract: AdsBusinessContextReadContract
     derived_kpi_read_contract: AdsDerivedKpiReadContract
     budget_pacing_read_contract: AdsBudgetPacingReadContract
     recommendations_read_contract: AdsRecommendationsReadContract

@@ -453,6 +453,43 @@ const adsDiagnostics = {
     next_step:
       "Pokazuj koszt, CPC i CPA w walucie konta. Nadal nie oceniaj rentowności bez marży, celu biznesowego i walidowanego preview."
   },
+  business_context_read_contract: {
+    id: "ads_business_context_read_contract",
+    status: "blocked",
+    title: "Google Ads: kontekst biznesowy decyzji",
+    summary:
+      "WILQ ma live metryki Google Ads, ale nie ma kompletnego lokalnego kontekstu biznesowego.",
+    profit_margin: null,
+    business_goal: null,
+    budget_goal: null,
+    target_roas: null,
+    target_cpa_micros: null,
+    configured_sources: [],
+    allowed_metrics: [],
+    missing_read_contracts: [
+      "profit_margin",
+      "business_goal",
+      "human_budget_goal",
+      "target_roas_or_cpa"
+    ],
+    blocked_claims: [
+      "profitability",
+      "margin verdict",
+      "budget scaling",
+      "budget apply",
+      "recommendation apply",
+      "wasted budget"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    metric_tiles: {
+      marża: "brak",
+      "cel biznesowy": "brak",
+      "cel budżetu": "brak"
+    },
+    next_step:
+      "Uzupełnij nie-sekretne wartości w repo-local .env: WILQ_ADS_PROFIT_MARGIN, WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL oraz WILQ_ADS_TARGET_ROAS albo WILQ_ADS_TARGET_CPA_MICROS."
+  },
   derived_kpi_read_contract: {
     id: "ads_derived_kpi_read_contract",
     status: "ready",
@@ -1368,6 +1405,64 @@ const adsDiagnostics = {
       ],
       blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
       risk: "low"
+    },
+    {
+      id: "ads_review_business_context",
+      decision_type: "review_business_context",
+      status: "blocked",
+      title: "Uzupełnij kontekst biznesowy przed decyzjami Ads",
+      summary:
+        "WILQ ma live metryki Google Ads, ale nie ma kompletnego lokalnego kontekstu biznesowego.",
+      rationale:
+        "Google Ads pokazuje koszt, kliknięcia, konwersje i część KPI, ale nie zna marży, celu sprzedażowego ani intencji budżetu Ekologus.",
+      next_step:
+        "Uzupełnij nie-sekretne wartości w repo-local .env: WILQ_ADS_PROFIT_MARGIN, WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL oraz WILQ_ADS_TARGET_ROAS albo WILQ_ADS_TARGET_CPA_MICROS.",
+      priority: 22,
+      metric_tiles: {
+        braki: 4,
+        blokady: 6,
+        "ustawione pola": 0
+      },
+      allowed_metrics: [],
+      missing_read_contracts: [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      derived_kpi_rows: [],
+      budget_rows: [],
+      budget_apply_preview: [],
+      recommendation_rows: [],
+      recommendation_apply_preview: [],
+      impression_share_rows: [],
+      change_history_rows: [],
+      search_term_rows: [],
+      search_term_safety_rows: [],
+      keyword_match_context_rows: [],
+      custom_segment_candidates: [],
+      custom_segment_payload_preview: [],
+      negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
+      action_ids: [],
+      knowledge_card_ids: [
+        "card_google_ads_budget_review_playbook",
+        "card_goal_001_rules"
+      ],
+      expert_rule_ids: ["ads_scaling_candidates_v1", "ads_principles_v1"],
+      blocked_claims: [
+        "profitability",
+        "margin verdict",
+        "budget scaling",
+        "budget apply",
+        "recommendation apply",
+        "wasted budget"
+      ],
+      risk: "medium"
     },
     {
       id: "ads_review_recommendations",

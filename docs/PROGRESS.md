@@ -219,7 +219,19 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
+1. Ads business context contract, 2026-06-20 10:12 CEST.
+   `AdsDiagnosticsResponse` exposes typed
+   `business_context_read_contract`, shared Zod schema and Ads Doctor UI
+   labels. Live proof after `scripts/local_stack.sh restart`:
+   `/api/ads/diagnostics.business_context_read_contract.status=blocked`,
+   missing contracts are `profit_margin`, `business_goal`,
+   `human_budget_goal`, `target_roas_or_cpa`; decision
+   `ads_review_business_context` has `priority=22`,
+   metric tiles `braki=4`, `blokady=6`, `ustawione pola=0`, and Ads
+   `blocker_count=2`. `wilq-ads-doctor` smoke passed with the same contract
+   in scoped context-pack (`context_pack_bytes=186844`, still under 200 KB).
+
+2. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
    `wilq-ads-doctor` context-pack no longer ships duplicated Ads sections or
    row payloads inside `decision_queue`. Live proof: 174292 bytes over the wire
    and smoke-reported `context_pack_bytes=183152`; `sections_omitted=true`,
@@ -227,7 +239,7 @@ Aktualny maintenance:
    capped at 4, full endpoint pointer preserved. The smoke script now fails if
    `wilq-ads-doctor` exceeds 200 KB.
 
-2. Ads intent review gates, 2026-06-20 09:35 CEST.
+3. Ads intent review gates, 2026-06-20 09:35 CEST.
    Search-term safety, keyword match context and negative keyword review now
    expose `human_intent_review` as `operator_review_gates` instead of a missing
    read contract when supporting Ads evidence exists. Live proof:
@@ -239,7 +251,7 @@ Aktualny maintenance:
    `14 passed`, Playwright `11 passed`, skill/API smokes and production build
    passed.
 
-3. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
+4. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
    `LocaloDecisionItem` now exposes typed `priority` and `metric_tiles`, with
    the Zod schema, `/localo` UI and API tests updated. Live proof after stack
    restart: 2 decisions, no null priorities, no empty metric tiles;
@@ -248,7 +260,7 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-4. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
+5. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
    `MerchantDecisionItem` now exposes typed `priority` and numeric
    `metric_tiles`, with the Zod schema, `/merchant` UI and API tests updated.
    Live proof after stack restart: 8 decisions, no null priorities, no empty
@@ -256,22 +268,18 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-5. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
-   Scoped `wilq-demand-gen-operator` context-pack no longer exposes adjacent
-   GA4/negative/custom-segment ActionObjects as Demand Gen actions. It now has
-   `demand_gen_readiness.status=blocked`, explicit missing Demand Gen read
-   contracts, no active actions and payload about `160734 bytes`.
-
 ## Active Gaps
 
 - Demand Gen is honest-blocked, not useful yet. It still needs real
   Demand Gen read contracts: campaign rows, asset groups, creative assets,
   landing quality by campaign, migration constraints and a Demand Gen
   ActionObject.
-- Full BDOS-class Ads optimizer is not done. Remaining areas include Keyword
-  Planner enrichment, forecast/audience size, profit-margin/business-goal
-  interpretation, recorded human strategy review outcome, budget apply
-  safety/confirmation, impact sanity checks and mutation audit.
+- Full BDOS-class Ads optimizer is not done. Remaining areas include setting
+  and using business targets (`WILQ_ADS_PROFIT_MARGIN`,
+  `WILQ_ADS_BUSINESS_GOAL`, `WILQ_ADS_BUDGET_GOAL`,
+  `WILQ_ADS_TARGET_ROAS` or `WILQ_ADS_TARGET_CPA_MICROS`), Keyword Planner
+  enrichment, forecast/audience size, recorded human strategy review outcome,
+  budget apply safety/confirmation, impact sanity checks and mutation audit.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety
   requirements are all verified.

@@ -1188,6 +1188,7 @@ def _compact_ads_diagnostics_for_lite_context(
         "live_data_available",
         "blocked_handoff",
         "campaign_read_contract",
+        "business_context_read_contract",
         "derived_kpi_read_contract",
         "budget_pacing_read_contract",
         "impression_share_read_contract",

@@ -59,10 +59,18 @@ GOOGLE_ADS_TEST_ENV = (
     "GOOGLE_ADS_CUSTOMER_ID",
     "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
 )
+GOOGLE_ADS_BUSINESS_CONTEXT_ENV = (
+    "WILQ_ADS_PROFIT_MARGIN",
+    "WILQ_ADS_PROFIT_MARGIN_PCT",
+    "WILQ_ADS_BUSINESS_GOAL",
+    "WILQ_ADS_BUDGET_GOAL",
+    "WILQ_ADS_TARGET_ROAS",
+    "WILQ_ADS_TARGET_CPA_MICROS",
+)
 
 
 def clear_google_ads_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key in GOOGLE_ADS_TEST_ENV:
+    for key in (*GOOGLE_ADS_TEST_ENV, *GOOGLE_ADS_BUSINESS_CONTEXT_ENV):
         monkeypatch.delenv(key, raising=False)
 
 
@@ -3439,6 +3447,45 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert currency_contract["allowed_metrics"] == ["account_currency_code"]
     assert currency_contract["missing_read_contracts"] == []
     assert "budget apply" in currency_contract["blocked_claims"]
+    business_context_contract = payload["business_context_read_contract"]
+    assert business_context_contract["status"] == "blocked"
+    assert business_context_contract["profit_margin"] is None
+    assert business_context_contract["business_goal"] is None
+    assert business_context_contract["budget_goal"] is None
+    assert business_context_contract["target_roas"] is None
+    assert business_context_contract["target_cpa_micros"] is None
+    assert business_context_contract["configured_sources"] == []
+    assert business_context_contract["allowed_metrics"] == []
+    assert business_context_contract["missing_read_contracts"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+    ]
+    assert "budget scaling" in business_context_contract["blocked_claims"]
+    assert business_context_contract["metric_tiles"]["marża"] == "brak"
+    business_context_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_business_context"
+    )
+    assert business_context_section["status"] == "blocked"
+    business_context_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_business_context"
+    )
+    assert business_context_decision["status"] == "blocked"
+    assert business_context_decision["decision_type"] == "review_business_context"
+    assert business_context_decision["missing_read_contracts"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+    ]
+    assert business_context_decision["metric_tiles"] == {
+        "braki": 4,
+        "blokady": 6,
+        "ustawione pola": 0,
+    }
     derived_kpi_contract = payload["derived_kpi_read_contract"]
     assert derived_kpi_contract["status"] == "ready"
     assert derived_kpi_contract["allowed_metrics"] == [
@@ -4045,6 +4092,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert set(decisions_by_id) == {
         "ads_review_campaign_activity",
+        "ads_review_business_context",
         "ads_review_derived_kpis",
         "ads_review_budget_context",
         "ads_review_recommendations",
@@ -4273,7 +4321,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert safety_decision["priority"] == 10
     assert safety_decision["metric_tiles"] == {"ActionObjecty": 4, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
-    assert payload["blocker_count"] == 1
+    assert payload["blocker_count"] == 2
 
     status_probe_response = client.post(
         "/api/connectors/google_ads/refresh",
@@ -4460,6 +4508,50 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert negative_keyword_validation_response.status_code == 200
     assert negative_keyword_validation_response.json()["valid"] is True
+
+    monkeypatch.setenv("WILQ_ADS_PROFIT_MARGIN", "0.35")
+    monkeypatch.setenv("WILQ_ADS_BUSINESS_GOAL", "lead quality review")
+    monkeypatch.setenv("WILQ_ADS_BUDGET_GOAL", "protect current monthly budget")
+    monkeypatch.setenv("WILQ_ADS_TARGET_ROAS", "5.0")
+    business_ready_response = client.get("/api/ads/diagnostics")
+    assert business_ready_response.status_code == 200
+    business_ready_payload = business_ready_response.json()
+    business_ready_contract = business_ready_payload["business_context_read_contract"]
+    assert business_ready_contract["status"] == "ready"
+    assert business_ready_contract["profit_margin"] == 0.35
+    assert business_ready_contract["business_goal"] == "lead quality review"
+    assert business_ready_contract["budget_goal"] == "protect current monthly budget"
+    assert business_ready_contract["target_roas"] == 5.0
+    assert business_ready_contract["missing_read_contracts"] == []
+    assert business_ready_contract["allowed_metrics"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas",
+    ]
+    assert "profit_margin" not in business_ready_payload[
+        "derived_kpi_read_contract"
+    ]["missing_read_contracts"]
+    assert "human_budget_goal" not in business_ready_payload[
+        "budget_pacing_read_contract"
+    ]["missing_read_contracts"]
+    assert "budget_target_or_seasonality" not in business_ready_payload[
+        "budget_pacing_read_contract"
+    ]["missing_read_contracts"]
+    assert "human_budget_goal" not in business_ready_payload[
+        "impression_share_read_contract"
+    ]["missing_read_contracts"]
+    business_ready_decision = next(
+        decision
+        for decision in business_ready_payload["decision_queue"]
+        if decision["id"] == "ads_review_business_context"
+    )
+    assert business_ready_decision["status"] == "ready"
+    assert business_ready_decision["metric_tiles"] == {
+        "braki": 0,
+        "blokady": 6,
+        "ustawione pola": 4,
+    }
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
