@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 07:13 CEST.
+Last updated: 2026-06-20 07:33 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -177,6 +177,23 @@ the live context-pack proof. Connector registry cards may remain as fallback
 only when there are no daily decisions. Full `scripts/verify.sh` passed after
 this slice: backend `117 passed`, dashboard unit `14 passed`, Playwright e2e
 `9 passed`, security, skill/API smokes and dashboard production build passed.
+
+Workflows must be operator contracts, not placeholder automation names. When
+daily decisions exist, `/api/workflows` and `/workflows` must show core
+workflow cards with `status`, `route`, `skill_id`, `metric_tiles`, source
+connectors, evidence IDs, ActionObject IDs, blocked claims and a safe next
+step. Planned workflows must explicitly list missing contracts and must not
+imply automation or apply support. Current live proof after
+`scripts/local_stack.sh restart`: `/api/workflows` returns 15 workflows:
+4 `ready`, 4 `blocked`, 7 `planned`. Core workflows include `daily_command`,
+`merchant_feed_review`, `gsc_content_doctor`, `ga4_data_analyst` and
+`ads_daily_check`; `daily_command` has `decyzje=4`, `blockery=1`, `źródła=6`,
+`akcje=7`; `ads_daily_check` has Ads review tiles and four review-only
+ActionObjects. Old placeholder strings `Workflow definition runs against WILQ
+API` and `Fetch WILQ API context` are absent. Full `scripts/verify.sh` passed
+after this slice: backend `118 passed`, dashboard unit `14 passed`,
+Playwright e2e `10 passed`, security, skill/API smokes and dashboard
+production build passed.
 
 ## Research And Knowledge Contract
 
@@ -730,6 +747,16 @@ Work in this order:
    ActionObject IDs and Polish next steps. The live proof contains no
    `opp_connector_*` opportunities and no redaction paths under
    `opportunities`. Full `scripts/verify.sh` passed after this slice.
+
+   Follow-up completed on 2026-06-20: `/api/workflows` and `/workflows` now
+   expose workflow contracts derived from daily decisions instead of 15 generic
+   placeholders. Core workflows carry route, skill, metric tiles, source
+   connectors, evidence IDs and ActionObject IDs; planned workflows show
+   missing contracts such as `pre_post_change_impact`,
+   `creative_asset_readiness`, `local_ranking_rows` and
+   `social_publish_permission`. Full `scripts/verify.sh` passed after this
+   slice with backend `118 passed`, dashboard unit `14 passed` and Playwright
+   e2e `10 passed`.
 
    Follow-up completed on 2026-06-19: `/ga4` now consumes a typed
    `Ga4DecisionItem` queue from `/api/ga4/diagnostics.decision_queue` and shows

@@ -108,6 +108,14 @@ Aktualny proof produktowy:
   connectors, ActionObject IDs i polski safe next step. Full Codex
   context-pack `top_opportunities` niesie ten sam zestaw bez redakcji
   `opportunities`.
+- `/api/workflows` nie jest już listą 15 identycznych placeholderów. Live proof
+  po `scripts/local_stack.sh restart`: 15 workflowów, w tym 4 `ready`,
+  4 `blocked` i 7 `planned`; core workflowy (`daily_command`,
+  `merchant_feed_review`, `gsc_content_doctor`, `ga4_data_analyst`,
+  `ads_daily_check`) mają route, skill, metric tiles, source connectors,
+  evidence IDs i ActionObject IDs. Stare stringi `Workflow definition runs
+  against WILQ API` i `Fetch WILQ API context` są nieobecne. Ciepły
+  `/api/workflows` zwraca około 23 KB w `0.008-0.012s`.
 - Content diagnostics i scoped `wilq-content-strategist` context-pack pokazują
   teraz typed decyzje z marketer-facing tytułem, summary, `primary_query`,
   `total_clicks`, `total_impressions`, `aggregate_ctr` i
@@ -153,7 +161,21 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Opportunities decision bridge, 2026-06-20 07:13 CEST.
+1. Workflows decision contract, 2026-06-20 07:33 CEST.
+   `/api/workflows` and `/workflows` now expose operator workflows as typed
+   WILQ API contracts, not generic automation placeholders. Core workflows are
+   derived from daily decisions and carry `status`, `route`, `skill_id`,
+   `metric_tiles`, source connectors, evidence IDs, ActionObject IDs, blocked
+   claims and safe next steps. Planned workflows explicitly list missing
+   contracts instead of implying automation exists. Live proof after
+   `scripts/local_stack.sh restart`: 15 workflows, 4 `ready`, 4 `blocked`,
+   7 `planned`; `daily_command` has `decyzje=4`, `blockery=1`, `źródła=6`,
+   `akcje=7`; `ads_daily_check` has Ads review tiles and 4 review-only
+   ActionObjects. Full `scripts/verify.sh` passed: backend `118 passed`,
+   dashboard unit `14 passed`, Playwright e2e `10 passed`, security,
+   skill/API smokes and dashboard production build passed.
+
+2. Opportunities decision bridge, 2026-06-20 07:13 CEST.
    `/api/opportunities`, `/opportunities` and full Codex context-pack
    `top_opportunities` now consume the same daily decisions as Command Center
    instead of the old connector registry cards. Live proof after
@@ -169,7 +191,7 @@ Aktualny maintenance:
    `9 passed`, security, skill/API smokes and dashboard production build
    passed.
 
-2. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
+3. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
    `/api/ads/diagnostics.decision_queue` now exposes explicit `priority` and
    `metric_tiles` for every Ads decision, and `/ads-doctor` renders those tiles
    directly from typed API state. Shared schemas and `wilq-ads-doctor`
@@ -181,7 +203,7 @@ Aktualny maintenance:
    cost when `cost_micros` is absent from evidence instead of showing a false
    `0.00`.
 
-3. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
+4. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
    `/api/ga4/diagnostics.decision_queue` now exposes explicit `status`,
    `priority` and `metric_tiles` for each GA4 decision, and `/ga4` renders the
    tiles on decision cards. Live proof after `scripts/local_stack.sh restart`:
@@ -194,7 +216,7 @@ Aktualny maintenance:
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-4. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
+5. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
    `/api/marketing/brief` and full/scoped Codex context-packs now consume the
    same `CommandCenterResponse.daily_decisions` state as Command Center instead
    of rebuilding the daily brief from older raw metric/action summaries. Live
@@ -211,24 +233,6 @@ Aktualny maintenance:
    live brief. Full `scripts/verify.sh` passed after this slice: backend
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
-
-5. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
-   Merchant Center now has typed `MerchantDiagnosticsResponse.decision_queue`
-   and the same decision state feeds `/merchant`, Command Center and scoped
-   `wilq-merchant-feed-operator` context-pack. Command Center no longer builds
-   the Merchant first-screen card from raw metric facts and no longer shows
-   `issues` / `feed-product` style copy. Live proof after
-   `scripts/local_stack.sh restart`: `/api/merchant/diagnostics` shows
-   `product_count=10900`, `issue_count=15`, `issue_clusters=11`,
-   `decision_count=8`; top decision is "Merchant: sprawdź brak potencjalnie
-   wymaganego atrybutu / miara ceny jednostkowej", `issue_count=892`,
-   evidence `ev_refresh_refresh_google_merchant_center_a3ef2f66703f`, action
-   `act_review_merchant_feed_issues`; scoped context-pack has no redacted paths
-   under `merchant_diagnostics.decision_queue`; Command Center shows
-   `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`, `decyzje=8`,
-   `blockery=0`. Full `scripts/verify.sh` passed: backend `117 passed`,
-   dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
-   skill/API smokes and dashboard production build passed.
 
 
 ## Active Gaps

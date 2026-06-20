@@ -6354,6 +6354,36 @@ def test_codex_context_pack_includes_compiled_knowledge_cards() -> None:
     assert "ev_connector_google_ads_status" in evidence_ids
 
 
+def test_workflows_are_decision_backed_operator_contracts() -> None:
+    response = client.get("/api/workflows")
+    assert response.status_code == 200
+    workflows = response.json()
+    workflow_by_id = {workflow["id"]: workflow for workflow in workflows}
+
+    daily_command = workflow_by_id["daily_command"]
+    assert daily_command["label"] == "Plan dnia WILQ"
+    assert daily_command["route"] == "/command-center"
+    assert daily_command["skill_id"] == "wilq-daily-command"
+    assert daily_command["metric_tiles"]["decyzje"] >= 1
+    assert daily_command["source_connectors"]
+    assert daily_command["evidence_ids"]
+
+    ads_daily = workflow_by_id["ads_daily_check"]
+    assert ads_daily["route"] == "/ads-doctor"
+    assert ads_daily["skill_id"] == "wilq-ads-doctor"
+    assert ads_daily["metric_tiles"]["kampanie"] >= 1
+    assert "act_prepare_ads_campaign_review_queue" in ads_daily["action_ids"]
+
+    localo = workflow_by_id["localo_visibility_review"]
+    assert localo["status"] == "blocked"
+    assert localo["route"] == "/localo"
+    assert "local_ranking_rows" in localo["missing_contracts"]
+
+    serialized = json.dumps(workflows, ensure_ascii=False)
+    assert "Workflow definition runs against WILQ API" not in serialized
+    assert "Fetch WILQ API context" not in serialized
+
+
 def test_workflow_run_persists_to_local_state_with_redaction(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

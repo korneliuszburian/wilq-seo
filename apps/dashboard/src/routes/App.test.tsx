@@ -3356,7 +3356,49 @@ function mockFetch() {
       if (url.endsWith("/api/expert/rules")) return Promise.resolve(Response.json(expertRules));
       if (url.endsWith("/api/workflows")) {
         return Promise.resolve(
-          Response.json([{ id: "daily_command", label: "Daily Command", description: "Runs." }])
+          Response.json([
+            {
+              id: "daily_command",
+              label: "Plan dnia WILQ",
+              description: "Główny workflow operatora oparty o WILQ API.",
+              steps: [
+                {
+                  id: "daily_command_context",
+                  label: "Pobierz kontekst z WILQ API",
+                  required_connectors: ["google_ads"],
+                  output_contract: "Daily decisions and ActionObject IDs."
+                }
+              ],
+              status: "ready",
+              route: "/command-center",
+              skill_id: "wilq-daily-command",
+              safe_next_step: "Otwórz Command Center i przejdź decyzje według priorytetu.",
+              source_connectors: ["google_ads"],
+              evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+              action_ids: ["act_prepare_ads_campaign_review_queue"],
+              blocked_claims: ["ROAS verdict"],
+              metric_tiles: { decyzje: 4, blockery: 0, źródła: 1, akcje: 1 },
+              missing_contracts: [],
+              risk: "low"
+            },
+            {
+              id: "localo_visibility_review",
+              label: "Localo visibility review",
+              description: "Planowany workflow lokalnej widoczności.",
+              steps: [],
+              status: "blocked",
+              route: "/localo",
+              skill_id: "wilq-localo-operator",
+              safe_next_step: "Otwórz /localo i potraktuj workflow jako blocker.",
+              source_connectors: ["localo"],
+              evidence_ids: [],
+              action_ids: [],
+              blocked_claims: ["local ranking uplift"],
+              metric_tiles: {},
+              missing_contracts: ["local_ranking_rows"],
+              risk: "medium"
+            }
+          ])
         );
       }
       if (url.endsWith("/api/workflow-runs")) return Promise.resolve(Response.json(workflowRuns));
@@ -3581,9 +3623,16 @@ describe("WILQ dashboard", () => {
   it("workflow route renders persisted workflow runs", async () => {
     renderApp("/workflows");
     await waitFor(() => expect(screen.getByText("Ostatnie uruchomienia")).toBeInTheDocument());
-    expect(screen.getByText("Rejestr workflowów")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Workflowy WILQ" })).toBeInTheDocument();
+    expect(screen.getByText("Workflowy decyzyjne")).toBeInTheDocument();
+    expect(screen.getByText("Plan dnia WILQ")).toBeInTheDocument();
+    expect(screen.getByText("Localo visibility review")).toBeInTheDocument();
+    expect(screen.getByText(/wilq-daily-command/)).toBeInTheDocument();
+    expect(screen.getByText("Gotowe workflowy")).toBeInTheDocument();
+    expect(screen.getByText(/local_ranking_rows/)).toBeInTheDocument();
     expect(screen.getByText("Wyniki workflowów")).toBeInTheDocument();
     expect(screen.getByText("run_daily_command_test")).toBeInTheDocument();
+    expect(screen.queryByText("Rejestr workflowów")).not.toBeInTheDocument();
   });
 
   it("knowledge route renders compiled cards and playbooks", async () => {

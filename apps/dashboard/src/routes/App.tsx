@@ -336,7 +336,7 @@ function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {
 
 function WorkflowRunList({ runs }: { runs: WorkflowRun[] }) {
   if (runs.length === 0) {
-    return <p className="text-sm text-slate-600">No persisted workflow runs yet.</p>;
+    return <p className="text-sm text-slate-600">Brak zapisanych uruchomień workflow.</p>;
   }
 
   return (
@@ -351,9 +351,9 @@ function WorkflowRunList({ runs }: { runs: WorkflowRun[] }) {
             <StatusBadge value={run.status} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <div>Evidence: {run.output.evidence_ids.length}</div>
-            <div>Actions: {run.output.action_ids.length}</div>
-            <div>Errors: {run.output.errors.length}</div>
+            <div>Dowody: {run.output.evidence_ids.length}</div>
+            <div>Akcje: {run.output.action_ids.length}</div>
+            <div>Błędy: {run.output.errors.length}</div>
           </div>
         </article>
       ))}
@@ -1403,31 +1403,39 @@ function WorkflowsSurface() {
   }
 
   const runs = workflowRuns.data ?? [];
-  const completedRuns = runs.filter((run) => run.status === "completed");
-  const workflowEvidenceIds = new Set(runs.flatMap((run) => run.output.evidence_ids));
-  const workflowActionIds = new Set(runs.flatMap((run) => run.output.action_ids));
+  const workflowItems = workflows.data ?? [];
+  const readyWorkflows = workflowItems.filter((workflow) => workflow.status === "ready");
+  const workflowEvidenceIds = new Set([
+    ...runs.flatMap((run) => run.output.evidence_ids),
+    ...workflowItems.flatMap((workflow) => workflow.evidence_ids)
+  ]);
+  const workflowActionIds = new Set([
+    ...runs.flatMap((run) => run.output.action_ids),
+    ...workflowItems.flatMap((workflow) => workflow.action_ids)
+  ]);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">Workflows</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">Workflowy WILQ</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Rejestr automatyzacji WILQ. Workflows uruchamiają API-backed operacje,
-            zapisują run state i oddają evidence/action IDs do dashboardu oraz skillsów.
+            Mapa workflowów operatora oparta o WILQ API. Gotowe workflowy prowadzą do
+            decyzji, dowodów i ActionObjectów; planowane pokazują brakujące kontrakty
+            zamiast udawać automatyzację.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Workflowy" value={(workflows.data ?? []).length} />
+          <MetricTile label="Workflowy" value={workflowItems.length} />
+          <MetricTile label="Gotowe workflowy" value={readyWorkflows.length} />
           <MetricTile label="Runy" value={runs.length} />
-          <MetricTile label="Gotowe" value={completedRuns.length} />
         </div>
       </div>
 
       <div className="grid gap-8">
         <section>
-          <SectionHeading title="Rejestr workflowów" />
-          <WorkflowRegistryList workflows={workflows.data ?? []} />
+          <SectionHeading title="Workflowy decyzyjne" />
+          <WorkflowRegistryList workflows={workflowItems} />
         </section>
         <section>
           <SectionHeading title="Ostatnie uruchomienia" />
@@ -1437,9 +1445,9 @@ function WorkflowsSurface() {
           <SectionHeading title="Wyniki workflowów" />
           <div className="grid gap-3 xl:grid-cols-2">
             <article className="rounded-md border border-line bg-white p-4 text-sm text-slate-700">
-              <h3 className="font-semibold text-ink">Evidence z workflowów</h3>
+              <h3 className="font-semibold text-ink">Dowody z workflowów</h3>
               <LinkedTraceLine
-                label="Evidence"
+                label="Dowody"
                 values={[...workflowEvidenceIds].slice(0, 12)}
                 kind="evidence"
                 empty="brak"
@@ -1475,12 +1483,52 @@ function WorkflowRegistryList({ workflows }: { workflows: Workflow[] }) {
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-3 xl:grid-cols-2">
       {workflows.map((workflow) => (
         <article key={workflow.id} className="rounded-md border border-line bg-white p-4">
-          <h3 className="text-sm font-semibold">{workflow.label}</h3>
-          <p className="mt-1 break-words text-xs text-slate-500">{workflow.id}</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{workflow.label}</h3>
+              <p className="mt-1 break-words text-xs text-slate-500">{workflow.id}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge value={workflow.status} />
+              <StatusBadge value={workflow.risk} />
+            </div>
+          </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{workflow.description}</p>
+          {Object.keys(workflow.metric_tiles).length > 0 ? (
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 sm:grid-cols-3">
+              {Object.entries(workflow.metric_tiles).map(([label, value]) => (
+                <MetricTile key={`${workflow.id}-${label}`} label={label} value={value} />
+              ))}
+            </div>
+          ) : null}
+          {workflow.safe_next_step ? (
+            <p className="mt-3 text-sm font-medium text-ink">{workflow.safe_next_step}</p>
+          ) : null}
+          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+            <div>Skill: {workflow.skill_id ?? "brak"}</div>
+            <div>
+              Widok:{" "}
+              {workflow.route ? (
+                <Link className="font-medium text-brand" to={workflow.route}>
+                  {workflow.route}
+                </Link>
+              ) : (
+                "brak"
+              )}
+            </div>
+            <div>Źródła: {workflow.source_connectors.join(", ") || "brak"}</div>
+            <div>Akcje: {workflow.action_ids.length || "brak"}</div>
+            <div>Dowody: {workflow.evidence_ids.length || "brak"}</div>
+            <div>Brakujące kontrakty: {workflow.missing_contracts.join(", ") || "brak"}</div>
+          </div>
+          {workflow.blocked_claims.length > 0 ? (
+            <p className="mt-3 text-xs text-slate-600">
+              Zablokowane claimy: {workflow.blocked_claims.join(", ")}
+            </p>
+          ) : null}
         </article>
       ))}
     </div>

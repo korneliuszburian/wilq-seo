@@ -1228,7 +1228,28 @@ export const CommandCenterResponseSchema = z.object({
 export const WorkflowSchema = z.object({
   id: z.string(),
   label: z.string(),
-  description: z.string()
+  description: z.string(),
+  steps: z
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        required_connectors: z.array(z.string()),
+        output_contract: z.string()
+      })
+    )
+    .default([]),
+  status: z.enum(["ready", "blocked", "planned"]).default("planned"),
+  route: z.string().nullable().optional(),
+  skill_id: z.string().nullable().optional(),
+  safe_next_step: z.string().nullable().optional(),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  action_ids: z.array(z.string()).default([]),
+  blocked_claims: z.array(z.string()).default([]),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  missing_contracts: z.array(z.string()).default([]),
+  risk: z.enum(["low", "medium", "high"]).default("low")
 });
 
 export const WorkflowInputSchema = z.object({

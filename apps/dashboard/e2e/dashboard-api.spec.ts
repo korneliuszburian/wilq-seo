@@ -172,6 +172,26 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Connector Refresh Runs" })).toHaveCount(0);
   });
 
+  test("workflows route exposes decision-backed operator workflows", async ({ page }) => {
+    await page.goto("/workflows");
+
+    await expect(page.getByRole("heading", { name: "Workflowy WILQ" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Workflowy decyzyjne" })).toBeVisible();
+    await expect(page.getByText("Plan dnia WILQ")).toBeVisible();
+    await expect(page.getByText("Merchant feed review")).toBeVisible();
+    await expect(page.getByText("GSC content doctor")).toBeVisible();
+    await expect(page.getByText("Ads daily check")).toBeVisible();
+    await expect(page.getByText("Localo visibility review")).toBeVisible();
+    await expect(page.getByText("decyzje").first()).toBeVisible();
+    await expect(page.getByText("blockery").first()).toBeVisible();
+    await expect(page.getByText("podgląd budżetu").first()).toBeVisible();
+    await expect(page.getByText("local_ranking_rows")).toBeVisible();
+    await expect(page.getByText("wilq-daily-command").first()).toBeVisible();
+    await expect(page.getByText("Workflow definition runs against WILQ API")).toHaveCount(0);
+    await expect(page.getByText("Fetch WILQ API context")).toHaveCount(0);
+    await expect(page.getByText("Rejestr workflowów")).toHaveCount(0);
+  });
+
   test("merchant route renders live Merchant Diagnostics evidence links", async ({ page }) => {
     await page.goto("/merchant");
 

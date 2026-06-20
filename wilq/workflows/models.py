@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from wilq.schemas import utc_now
+from wilq.schemas import ActionRisk, utc_now
 
 
 class WorkflowInput(BaseModel):
@@ -31,6 +31,17 @@ class Workflow(BaseModel):
     label: str
     description: str
     steps: list[WorkflowStep]
+    status: Literal["ready", "blocked", "planned"] = "planned"
+    route: str | None = None
+    skill_id: str | None = None
+    safe_next_step: str | None = None
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
+    missing_contracts: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
 
 
 class WorkflowRun(BaseModel):
