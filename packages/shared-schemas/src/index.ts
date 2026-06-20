@@ -704,6 +704,37 @@ export const AdsSearchTermsReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsSearchTermNgramRowSchema = z.object({
+  ngram: z.string(),
+  ngram_size: z.number().min(1).max(3),
+  source_search_term_count: z.number(),
+  sample_search_terms: z.array(z.string()),
+  clicks: z.number().nullable().optional(),
+  impressions: z.number().nullable().optional(),
+  cost_micros: z.number().nullable().optional(),
+  conversions: z.number().nullable().optional(),
+  conversion_value: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsSearchTermNgramReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  operator_review_gates: z.array(z.string()).optional().default([]),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  ngram_rows: z.array(AdsSearchTermNgramRowSchema),
+  next_step: z.string()
+});
+
 export const AdsSearchTermSafetyRowSchema = z.object({
   search_term: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -938,6 +969,7 @@ export const AdsDecisionItemSchema = z.object({
     "review_change_history",
     "review_search_term_safety",
     "review_search_terms",
+    "review_search_term_ngrams",
     "review_negative_keyword_safety",
     "prepare_custom_segments",
     "block_write_actions",
@@ -967,6 +999,9 @@ export const AdsDecisionItemSchema = z.object({
   impression_share_rows: z.array(AdsImpressionShareRowSchema),
   change_history_rows: z.array(AdsChangeHistoryRowSchema),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
+  search_term_ngram_rows: z.array(AdsSearchTermNgramRowSchema)
+    .optional()
+    .default([]),
   search_term_safety_rows: z.array(AdsSearchTermSafetyRowSchema),
   keyword_match_context_rows: z.array(AdsKeywordMatchContextRowSchema)
     .optional()
@@ -1003,6 +1038,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   impression_share_read_contract: AdsImpressionShareReadContractSchema,
   change_history_read_contract: AdsChangeHistoryReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
+  search_term_ngram_read_contract: AdsSearchTermNgramReadContractSchema,
   search_term_safety_read_contract: AdsSearchTermSafetyReadContractSchema,
   keyword_match_context_read_contract: AdsKeywordMatchContextReadContractSchema,
   keyword_planner_read_contract: AdsKeywordPlannerReadContractSchema,

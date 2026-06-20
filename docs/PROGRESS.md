@@ -34,6 +34,28 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads search-term n-gram read contract, 2026-06-20 23:12 CEST.
+  WILQ ma teraz typed `search_term_ngram_read_contract` w
+  `/api/ads/diagnostics`, shared Zod schema, decyzję
+  `ads_review_search_term_ngrams` i dashboardową tabelę n-gramów w Ads Doctor.
+  Kontrakt grupuje istniejące Google Ads `search_term_rows` w 1/2/3-gramy,
+  pokazuje liczbę źródłowych zapytań, przykłady, kliknięcia, koszt,
+  konwersje, evidence IDs i blocked claims. To jest read-only review surface:
+  blokuje `search-term waste`, `negative keyword apply`, CPA, ROAS i conversion
+  loss. Nie tworzy negative keyword apply ani nie odblokowuje automatycznego
+  działania. Live proof po `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics.search_term_ngram_read_contract.status=ready`,
+  `ngram_rows=30`, top n-gram `bdo` z 12 źródłowych search terms,
+  sekcja `ads_search_term_ngrams` ma knowledge cards
+  `card_google_ads_search_playbook`, `card_google_ads_negative_keywords_playbook`
+  i expert rules `ads_search_terms_v1`, `ads_negative_keywords_v1`. Wąskie
+  checks przeszły: ruff/mypy dla Ads diagnostics i schematów,
+  `pytest -k ads_diagnostics`, shared schema build, dashboard lint/typecheck i
+  `App.test.tsx`. Full `scripts/verify.sh` przeszedł po końcowej kompaktacji
+  context-packa: backend `136 passed`, dashboard unit `17 passed`, Playwright
+  e2e `14 passed`, API/skill smokes i produkcyjny build dashboardu OK. Ads
+  doctor context-pack zostaje pod limitem 200 KB, a pełne dane zostają w
+  `/api/ads/diagnostics`.
 - Command Center DailyDecision usefulness, 2026-06-20 22:40 CEST.
   `DailyDecision.co_widzimy` nie pokazuje już technicznego debug tekstu
   `Źródła=`, `dowody=` ani `akcje=`. Te identyfikatory zostają w typed fields i

@@ -29,6 +29,26 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads search-term n-gram read contract, 2026-06-20 23:12 CEST:
+   `/api/ads/diagnostics` exposes `search_term_ngram_read_contract` and
+   decision `ads_review_search_term_ngrams`. It groups existing Google Ads
+   `search_term_rows` into 1/2/3-grams with source search-term count, examples,
+   clicks, impressions, cost, conversions, evidence IDs and blocked claims.
+   Dashboard Ads Doctor renders a n-gram table. This is read-only review state,
+   not a negative-keyword recommendation or apply path. It must keep blocking
+   `search-term waste`, `negative keyword apply`, CPA, ROAS and conversion
+   loss until human intent review, 90-day safety and payload preview gates are
+   satisfied. Live proof after `scripts/local_stack.sh restart`:
+   `search_term_ngram_read_contract.status=ready`, `ngram_rows=30`, top n-gram
+   `bdo`, section `ads_search_term_ngrams` carries
+   `card_google_ads_search_playbook`,
+   `card_google_ads_negative_keywords_playbook`,
+   `ads_search_terms_v1` and `ads_negative_keywords_v1`. Full
+   `scripts/verify.sh` passed after final context-pack compaction: backend
+   `136 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+   API/skill smokes and dashboard production build OK. Ads doctor context-pack
+   stays under the 200 KB test limit; full rows remain in `/api/ads/diagnostics`.
+
 0. Command Center DailyDecision usefulness, 2026-06-20 22:40 CEST:
    `DailyDecision.co_widzimy` is now marketer-facing copy, not a trace/debug
    sentence. It must not contain `Źródła=`, `dowody=` or `akcje=`; those remain

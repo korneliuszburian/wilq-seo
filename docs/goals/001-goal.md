@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 22:40 CEST.
+Last updated: 2026-06-20 23:30 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -73,7 +73,8 @@ inputs, a read-only recommendation impact
 preview for recommendation types that expose impact metrics, a review-only
 recommendation apply payload preview, a read-only 90-day search-term safety
 contract and a review-only negative keyword payload preview plus read-only
-keyword match context for negative keyword review, plus a read-only Keyword
+keyword match context for negative keyword review, a read-only search-term
+n-gram contract for grouping repeated query themes, plus a read-only Keyword
 Planner enrichment contract for custom segment review. Custom segments now
 have a review-only payload preview from real search terms, but no
 targeting/apply support. Campaign budgets now have review-only
@@ -86,6 +87,27 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads n-gram truth, live proof 2026-06-20 23:12 CEST:
+`/api/ads/diagnostics.search_term_ngram_read_contract` is now typed backend and
+shared Zod state. It builds 1/2/3-gram rows from existing Google Ads
+`search_term_rows`, exposes source query count, samples, clicks, impressions,
+cost, conversions, evidence IDs and blocked claims, and adds decision
+`ads_review_search_term_ngrams` plus dashboard Ads Doctor n-gram table. This is
+read-only review, not a negative-keyword recommendation. It must continue to
+block `search-term waste`, `negative keyword apply`, CPA, ROAS and conversion
+loss until human intent review, 90-day safety and payload preview gates are
+satisfied. Live proof after `scripts/local_stack.sh restart`: status `ready`,
+`ngram_rows=30`, top n-gram `bdo`, section `ads_search_term_ngrams` linked to
+`card_google_ads_search_playbook`,
+`card_google_ads_negative_keywords_playbook`, `ads_search_terms_v1` and
+`ads_negative_keywords_v1`. Narrow checks passed: ruff/mypy,
+`pytest -k ads_diagnostics`, shared-schema build, dashboard lint/typecheck and
+`App.test.tsx`. Full `scripts/verify.sh` passed after the final context-pack
+compaction: backend `136 passed`, dashboard unit `17 passed`, Playwright e2e
+`14 passed`, API/skill smokes and dashboard production build OK. Ads doctor
+context-pack remains scoped under the 200 KB test limit with full diagnostics
+available from `/api/ads/diagnostics`.
 
 Latest Command Center DailyDecision usefulness truth, live proof 2026-06-20
 22:40 CEST: `DailyDecision.co_widzimy` no longer carries technical trace

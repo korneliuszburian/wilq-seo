@@ -1049,6 +1049,61 @@ const adsDiagnostics = {
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
   },
+  search_term_ngram_read_contract: {
+    id: "ads_search_term_ngram_read_contract",
+    status: "ready",
+    title: "Google Ads: n-gramy zapytań",
+    summary:
+      "WILQ zgrupował 1 n-gramów z 1 wystąpień search terms: kliknięcia=12, koszt_micros=9000000.",
+    allowed_metrics: [
+      "ngram",
+      "ngram_size",
+      "source_search_term_count",
+      "sample_search_terms",
+      "clicks",
+      "impressions",
+      "cost_micros",
+      "conversions",
+      "conversion_value"
+    ],
+    missing_read_contracts: [
+      "human_intent_review",
+      "negative_keyword_payload_preview"
+    ],
+    operator_review_gates: [
+      "human_intent_review",
+      "negative_keyword_action_validation"
+    ],
+    blocked_claims: [
+      "search-term waste",
+      "negative keyword candidates",
+      "negative keyword apply",
+      "CPA",
+      "ROAS",
+      "conversion loss"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    ngram_rows: [
+      {
+        ngram: "bdo rejestracja",
+        ngram_size: 2,
+        source_search_term_count: 1,
+        sample_search_terms: ["bdo rejestracja"],
+        clicks: 12,
+        impressions: 140,
+        cost_micros: 9000000,
+        conversions: 1,
+        conversion_value: 120,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        missing_metrics: [],
+        blocked_claims: ["CPA", "ROAS", "negative keyword apply", "search-term waste"]
+      }
+    ],
+    next_step:
+      "Użyj n-gramów do znalezienia powtarzających się tematów w zapytaniach."
+  },
   search_term_safety_read_contract: {
     id: "ads_search_term_safety_read_contract",
     status: "ready",

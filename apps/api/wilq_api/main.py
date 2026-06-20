@@ -134,7 +134,8 @@ app.add_middleware(
 )
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
-ADS_CONTEXT_ROW_LIMIT = 8
+ADS_CONTEXT_ROW_LIMIT = 6
+ADS_CONTEXT_NGRAM_ROW_LIMIT = 3
 DEMAND_GEN_CHANNEL_TYPES = {"DEMAND_GEN", "DISCOVERY"}
 DEMAND_GEN_CAMPAIGN_ROW_LIMIT = 8
 ADS_CONTEXT_DECISION_ROW_LIMIT = 4
@@ -342,9 +343,7 @@ def _compact_daily_action_for_context(
     payload = dumped.get("payload")
     payload_keys = sorted(payload) if isinstance(payload, dict) else []
     audit_events = dumped.get("audit_events")
-    latest_audit_event = (
-        audit_events[0] if isinstance(audit_events, list) and audit_events else None
-    )
+    latest_audit_event = _latest_audit_event_for_context(audit_events)
     compact = {
         "id": dumped["id"],
         "title": dumped["title"],
@@ -380,6 +379,18 @@ def _compact_daily_action_for_context(
             }
         )
     return compact
+
+
+def _latest_audit_event_for_context(audit_events: Any) -> dict[str, Any] | None:
+    if not isinstance(audit_events, list):
+        return None
+    dict_events = [event for event in audit_events if isinstance(event, dict)]
+    if not dict_events:
+        return None
+    return max(
+        dict_events,
+        key=lambda event: (str(event.get("created_at") or ""), str(event.get("id") or "")),
+    )
 
 
 def _daily_decisions_by_action_id(decisions: list[DailyDecision]) -> dict[str, DailyDecision]:
@@ -1138,6 +1149,11 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "search_terms_read_contract",
         "search_term_rows",
     )
+    search_term_ngram_rows = _list_at(
+        compact,
+        "search_term_ngram_read_contract",
+        "ngram_rows",
+    )
     safety_rows = _list_at(
         compact,
         "search_term_safety_read_contract",
@@ -1182,6 +1198,11 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         compact,
         ("search_terms_read_contract", "search_term_rows"),
         ADS_CONTEXT_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
+        ("search_term_ngram_read_contract", "ngram_rows"),
+        ADS_CONTEXT_NGRAM_ROW_LIMIT,
     )
     _limit_contract_rows(
         compact,
@@ -1260,6 +1281,10 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "search_term_rows_total": len(search_term_rows),
         "search_term_rows_included": len(
             _list_at(compact, "search_terms_read_contract", "search_term_rows")
+        ),
+        "search_term_ngram_rows_total": len(search_term_ngram_rows),
+        "search_term_ngram_rows_included": len(
+            _list_at(compact, "search_term_ngram_read_contract", "ngram_rows")
         ),
         "search_term_safety_rows_total": len(safety_rows),
         "search_term_safety_rows_included": len(
@@ -1543,6 +1568,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
             "impression_share_rows",
             "change_history_rows",
             "search_term_rows",
+            "search_term_ngram_rows",
             "search_term_safety_rows",
             "keyword_match_context_rows",
             "keyword_planner_idea_rows",
@@ -1590,6 +1616,7 @@ def _omit_decision_row_payloads(data: dict[str, Any]) -> None:
             "impression_share_rows",
             "change_history_rows",
             "search_term_rows",
+            "search_term_ngram_rows",
             "search_term_safety_rows",
             "keyword_match_context_rows",
             "custom_segment_candidates",

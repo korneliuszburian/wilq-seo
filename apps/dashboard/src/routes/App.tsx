@@ -2107,6 +2107,8 @@ type AdsChangeHistoryRow =
   AdsDiagnosticsResponse["change_history_read_contract"]["change_history_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
+type AdsSearchTermNgramRow =
+  AdsDiagnosticsResponse["search_term_ngram_read_contract"]["ngram_rows"][number];
 type AdsSearchTermSafetyRow =
   AdsDiagnosticsResponse["search_term_safety_read_contract"]["safety_rows"][number];
 type AdsKeywordMatchContextRow =
@@ -2268,6 +2270,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             value={data.search_terms_read_contract.search_term_rows.length}
           />
           <MetricTile
+            label="N-gramy"
+            value={data.search_term_ngram_read_contract.ngram_rows.length}
+          />
+          <MetricTile
             label="Waluta"
             value={data.account_currency_read_contract.currency_code ?? "brak"}
           />
@@ -2363,6 +2369,15 @@ function AdsDecisionCard({
       {decision.custom_segment_candidates.length > 0 ? (
         <AdsCustomSegmentCandidatesPanel candidates={decision.custom_segment_candidates} compact />
       ) : null}
+      {decision.search_term_ngram_rows.length > 0 ? (
+        <div className="mt-3">
+          <AdsSearchTermNgramRowsTable
+            rows={decision.search_term_ngram_rows}
+            currencyCode={currencyCode}
+            compact
+          />
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={decision.source_connectors} />
@@ -2399,6 +2414,7 @@ function AdsMetricEvidencePanel({
   const impressionShareRows = data.impression_share_read_contract.impression_share_rows;
   const changeHistoryRows = data.change_history_read_contract.change_history_rows;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
+  const searchTermNgramRows = data.search_term_ngram_read_contract.ngram_rows;
   const searchTermSafetyRows = data.search_term_safety_read_contract.safety_rows;
   const keywordContextRows = data.keyword_match_context_read_contract.context_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
@@ -2413,6 +2429,7 @@ function AdsMetricEvidencePanel({
     ...data.impression_share_read_contract.missing_read_contracts,
     ...data.change_history_read_contract.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
+    ...data.search_term_ngram_read_contract.missing_read_contracts,
     ...data.search_term_safety_read_contract.missing_read_contracts,
     ...data.keyword_match_context_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
@@ -2420,6 +2437,7 @@ function AdsMetricEvidencePanel({
   ]).map(adsMissingReadContractLabel);
   const operatorReviewGates = uniqueValues([
     ...(data.search_terms_read_contract.operator_review_gates ?? []),
+    ...data.search_term_ngram_read_contract.operator_review_gates,
     ...data.search_term_safety_read_contract.operator_review_gates,
     ...data.keyword_match_context_read_contract.operator_review_gates,
     ...data.custom_segments_read_contract.operator_review_gates,
@@ -2435,6 +2453,7 @@ function AdsMetricEvidencePanel({
     ...data.impression_share_read_contract.blocked_claims,
     ...data.change_history_read_contract.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
+    ...data.search_term_ngram_read_contract.blocked_claims,
     ...data.search_term_safety_read_contract.blocked_claims,
     ...data.keyword_match_context_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
@@ -2462,6 +2481,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Udział" value={impressionShareRows.length} />
           <MetricTile label="Zmiany" value={changeHistoryRows.length} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
+          <MetricTile label="N-gramy" value={searchTermNgramRows.length} />
           <MetricTile label="Safety 90d" value={searchTermSafetyRows.length} />
           <MetricTile label="Keywords" value={keywordContextRows.length} />
           <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
@@ -2485,6 +2505,10 @@ function AdsMetricEvidencePanel({
         <AdsImpressionShareRowsTable rows={impressionShareRows} />
         <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
         <AdsSearchTermRowsTable rows={searchTermRows} currencyCode={currencyCode} />
+        <AdsSearchTermNgramRowsTable
+          rows={searchTermNgramRows}
+          currencyCode={currencyCode}
+        />
         <AdsSearchTermSafetyRowsTable
           rows={searchTermSafetyRows}
           currencyCode={currencyCode}
@@ -2963,6 +2987,66 @@ function AdsSearchTermRowsTable({
   );
 }
 
+function AdsSearchTermNgramRowsTable({
+  rows,
+  currencyCode,
+  compact = false
+}: {
+  rows: AdsSearchTermNgramRow[];
+  currencyCode?: string;
+  compact?: boolean;
+}) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak n-gramów zapytań. WILQ musi najpierw mieć search-term rows z Google Ads." />
+    );
+  }
+  const visibleRows = rows.slice(0, compact ? 5 : 12);
+  return (
+    <div className="overflow-x-auto rounded-md border border-line">
+      <table className="min-w-full text-left text-sm">
+        <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
+          <tr>
+            <th className="py-2 pl-3 pr-4 font-semibold">Temat z zapytań</th>
+            <th className="py-2 pr-4 font-semibold">Źródłowe query</th>
+            <th className="py-2 pr-4 font-semibold">Przykłady</th>
+            <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
+            <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
+            <th className="py-2 pr-4 font-semibold">Koszt</th>
+            <th className="py-2 pr-4 font-semibold">Konwersje</th>
+            <th className="py-2 pr-3 font-semibold">Dowody</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-line">
+          {visibleRows.map((row) => (
+            <tr key={`${row.ngram_size}-${row.ngram}`}>
+              <td className="py-2 pl-3 pr-4 font-medium text-ink">
+                {row.ngram}
+                <span className="ml-2 text-xs font-normal text-slate-500">
+                  {row.ngram_size}-gram
+                </span>
+              </td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsNumber(row.source_search_term_count)}
+              </td>
+              <td className="max-w-sm py-2 pr-4 text-xs leading-5 text-slate-600">
+                {row.sample_search_terms.join(", ")}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
+              <td className="py-2 pr-4 text-slate-700">
+                {adsCost(row.cost_micros, currencyCode)}
+              </td>
+              <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
+              <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function AdsSearchTermSafetyRowsTable({
   rows,
   currencyCode
@@ -3355,6 +3439,7 @@ function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_change_history") return "historia zmian";
   if (decisionType === "review_search_term_safety") return "safety 90 dni";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
+  if (decisionType === "review_search_term_ngrams") return "tematy zapytań";
   if (decisionType === "review_negative_keyword_safety") return "review wykluczeń";
   if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
   if (decisionType === "block_write_actions") return "blokada zmian";
@@ -3413,6 +3498,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_impression_share") return "Udział w wyświetleniach";
   if (sectionId === "ads_change_history") return "Historia zmian";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
+  if (sectionId === "ads_search_term_ngrams") return "N-gramy zapytań";
   if (sectionId === "ads_search_term_safety") return "Safety 90 dni";
   if (sectionId === "ads_keyword_match_context") return "Kontekst keywords";
   if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
@@ -3471,6 +3557,10 @@ function adsAllowedMetricLabel(value: string) {
     change_event_available: "historia zmian dostępna",
     change_event_changed_field_count: "liczba zmienionych pól",
     search_term: "zapytanie",
+    ngram: "temat zapytania",
+    ngram_size: "długość tematu",
+    source_search_term_count: "liczba źródłowych zapytań",
+    sample_search_terms: "przykłady zapytań",
     search_term_90d_clicks: "kliknięcia 90 dni",
     search_term_90d_impressions: "wyświetlenia 90 dni",
     search_term_90d_cost_micros: "koszt 90 dni",
@@ -3513,10 +3603,10 @@ function adsMissingReadContractLabel(value: string) {
     "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
     search_term_90d_read: "90-dniowy odczyt zapytań",
     human_intent_review: "ręczny review intencji",
+    negative_keyword_payload_preview: "podgląd payloadu wykluczeń",
     review_search_term_context: "sprawdzenie intencji zapytania",
     check_existing_keywords_and_match_types: "sprawdzenie słów i typów dopasowania",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
-    negative_keyword_payload_preview: "podgląd payloadu wykluczeń",
     keyword_planner_enrichment: "enrichment Keyword Planner",
     forecast_or_audience_size: "forecast albo audience size",
     "campaign activity": "aktywność kampanii",
@@ -3537,6 +3627,7 @@ function adsOperatorReviewGateLabel(value: string) {
     google_ads_rmf_compliance_review: "review Google Ads RMF/compliance",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
     negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń",
+    human_intent_review: "ręczny review intencji",
     review_source_terms: "sprawdzenie source terms",
     reject_brand_or_low_intent_terms: "odrzucenie brand/low intent terms"
   };

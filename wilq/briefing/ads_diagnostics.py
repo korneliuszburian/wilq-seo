@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from typing import Literal
 
@@ -67,6 +68,8 @@ from wilq.schemas import (
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
     AdsSearchTermMetricRow,
+    AdsSearchTermNgramReadContract,
+    AdsSearchTermNgramRow,
     AdsSearchTermSafetyReadContract,
     AdsSearchTermSafetyRow,
     AdsSearchTermsReadContract,
@@ -97,6 +100,26 @@ CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES = [
     "reject_brand_or_low_intent_terms",
     "human_confirm_before_apply",
 ]
+ADS_NGRAM_STOPWORDS = {
+    "a",
+    "albo",
+    "bez",
+    "dla",
+    "do",
+    "i",
+    "lub",
+    "na",
+    "od",
+    "oraz",
+    "po",
+    "s",
+    "sa",
+    "sp",
+    "w",
+    "we",
+    "z",
+    "za",
+}
 
 ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_live_data_status": (
@@ -138,6 +161,10 @@ ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
         ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
+    ),
+    "ads_search_term_ngrams": (
+        [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS],
+        ["ads_search_terms_v1", "ads_negative_keywords_v1"],
     ),
     "ads_search_term_safety": (
         [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
@@ -201,6 +228,10 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_review_search_terms": (
         [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_CUSTOM_SEGMENTS],
         ["ads_search_terms_v1", "ads_negative_keywords_v1", "ads_custom_segments_v1"],
+    ),
+    "ads_review_search_term_ngrams": (
+        [CARD_ADS_SEARCH, CARD_ADS_NEGATIVE_KEYWORDS],
+        ["ads_search_terms_v1", "ads_negative_keywords_v1"],
     ),
     "ads_review_search_term_safety": (
         [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
@@ -442,6 +473,10 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
                 )
             }
         )
+    search_term_ngram_read_contract = _search_term_ngram_read_contract(
+        search_terms_read_contract,
+        latest_refresh,
+    )
     action_ids = _google_ads_action_ids(
         actions if actions is not None else list_actions(),
         live_data_available=live_data_available,
@@ -472,6 +507,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         _impression_share_section(impression_share_read_contract),
         _change_history_section(change_history_read_contract),
         _search_terms_section(search_terms_read_contract, action_ids),
+        _search_term_ngram_section(search_term_ngram_read_contract),
         _search_term_safety_section(search_term_safety_read_contract),
         _keyword_match_context_section(keyword_match_context_read_contract),
         _keyword_planner_section(keyword_planner_read_contract),
@@ -494,6 +530,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         impression_share_read_contract,
         change_history_read_contract,
         search_terms_read_contract,
+        search_term_ngram_read_contract,
         search_term_safety_read_contract,
         keyword_match_context_read_contract,
         keyword_planner_read_contract,
@@ -517,6 +554,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         impression_share_read_contract=impression_share_read_contract,
         change_history_read_contract=change_history_read_contract,
         search_terms_read_contract=search_terms_read_contract,
+        search_term_ngram_read_contract=search_term_ngram_read_contract,
         search_term_safety_read_contract=search_term_safety_read_contract,
         keyword_match_context_read_contract=keyword_match_context_read_contract,
         keyword_planner_read_contract=keyword_planner_read_contract,
@@ -2538,6 +2576,159 @@ def _search_term_row_sort_key(row: AdsSearchTermMetricRow) -> tuple[int, int, st
     return (-(row.cost_micros or 0), -(row.clicks or 0), row.search_term)
 
 
+def _search_term_ngram_read_contract(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsSearchTermNgramReadContract:
+    rows = _search_term_ngram_rows(search_terms_read_contract.search_term_rows)
+    blocked_claims = [
+        "search-term waste",
+        "negative keyword candidates",
+        "negative keyword apply",
+        "CPA",
+        "ROAS",
+        "conversion loss",
+    ]
+    if rows:
+        total_terms = sum(row.source_search_term_count for row in rows)
+        total_clicks = sum(row.clicks or 0 for row in rows)
+        total_cost_micros = sum(row.cost_micros or 0 for row in rows)
+        return AdsSearchTermNgramReadContract(
+            status="ready",
+            title="Google Ads: n-gramy zapytań",
+            summary=(
+                f"WILQ zgrupował {len(rows)} n-gramów z {total_terms} wystąpień "
+                f"search terms: kliknięcia={total_clicks}, "
+                f"koszt_micros={total_cost_micros}."
+            ),
+            allowed_metrics=[
+                "ngram",
+                "ngram_size",
+                "source_search_term_count",
+                "sample_search_terms",
+                "clicks",
+                "impressions",
+                "cost_micros",
+                "conversions",
+                "conversion_value",
+            ],
+            missing_read_contracts=[
+                "human_intent_review",
+                "negative_keyword_payload_preview",
+            ],
+            operator_review_gates=[
+                "human_intent_review",
+                "negative_keyword_action_validation",
+            ],
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            ngram_rows=rows,
+            next_step=(
+                "Użyj n-gramów do znalezienia powtarzających się tematów w "
+                "zapytaniach. Nie traktuj ich jako gotowej listy wykluczeń bez "
+                "review intencji, 90-dniowego safety read i payload preview."
+            ),
+        )
+
+    return AdsSearchTermNgramReadContract(
+        status="blocked",
+        title="Google Ads: brak n-gramów zapytań",
+        summary="WILQ nie ma search-term rows, więc nie może zbudować n-gramów.",
+        allowed_metrics=[],
+        missing_read_contracts=["search_term_view"],
+        operator_review_gates=[],
+        blocked_claims=["search terms", *blocked_claims],
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        ngram_rows=[],
+        next_step="Uruchom read-only Google Ads vendor_read z search_term_view.",
+    )
+
+
+def _search_term_ngram_rows(
+    rows: list[AdsSearchTermMetricRow],
+) -> list[AdsSearchTermNgramRow]:
+    grouped_rows: dict[tuple[str, int], list[AdsSearchTermMetricRow]] = {}
+    for row in rows:
+        tokens = _search_term_tokens(row.search_term)
+        for ngram_size in (1, 2, 3):
+            if len(tokens) < ngram_size:
+                continue
+            seen_for_row: set[tuple[str, int]] = set()
+            for index in range(0, len(tokens) - ngram_size + 1):
+                ngram = " ".join(tokens[index : index + ngram_size])
+                key = (ngram, ngram_size)
+                if key in seen_for_row:
+                    continue
+                seen_for_row.add(key)
+                grouped_rows.setdefault(key, []).append(row)
+
+    ngram_rows = [
+        _search_term_ngram_row(ngram, ngram_size, source_rows)
+        for (ngram, ngram_size), source_rows in grouped_rows.items()
+    ]
+    return sorted(ngram_rows, key=_search_term_ngram_sort_key)[:30]
+
+
+def _search_term_tokens(search_term: str) -> list[str]:
+    tokens = re.findall(r"[\wąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+", search_term.lower())
+    return [
+        token
+        for token in tokens
+        if len(token) > 1 and token not in ADS_NGRAM_STOPWORDS
+    ]
+
+
+def _search_term_ngram_row(
+    ngram: str,
+    ngram_size: int,
+    rows: list[AdsSearchTermMetricRow],
+) -> AdsSearchTermNgramRow:
+    metric_facts = _dedupe_metric_facts(fact for row in rows for fact in row.metric_facts)
+    missing_metrics = _unique(metric for row in rows for metric in row.missing_metrics)
+    sample_search_terms = _unique(row.search_term for row in rows)[:3]
+    return AdsSearchTermNgramRow(
+        ngram=ngram,
+        ngram_size=ngram_size,
+        source_search_term_count=len({row.search_term for row in rows}),
+        sample_search_terms=sample_search_terms,
+        clicks=sum(row.clicks or 0 for row in rows),
+        impressions=sum(row.impressions or 0 for row in rows),
+        cost_micros=sum(row.cost_micros or 0 for row in rows),
+        conversions=round(sum(row.conversions or 0 for row in rows), 6),
+        conversion_value=round(sum(row.conversion_value or 0 for row in rows), 6),
+        evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+        metric_facts=metric_facts[:12],
+        missing_metrics=missing_metrics,
+        blocked_claims=["CPA", "ROAS", "negative keyword apply", "search-term waste"],
+    )
+
+
+def _dedupe_metric_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
+    deduped: list[MetricFact] = []
+    seen: set[tuple[str, str, tuple[tuple[str, str], ...]]] = set()
+    for fact in facts:
+        key = (fact.name, fact.evidence_id, tuple(sorted(fact.dimensions.items())))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(fact)
+    return sorted(deduped, key=lambda fact: (fact.name, fact.evidence_id))
+
+
+def _search_term_ngram_sort_key(
+    row: AdsSearchTermNgramRow,
+) -> tuple[int, int, int, int, str]:
+    return (
+        -(row.cost_micros or 0),
+        -(row.clicks or 0),
+        -row.source_search_term_count,
+        row.ngram_size,
+        row.ngram,
+    )
+
+
 def _search_term_safety_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
@@ -2945,6 +3136,34 @@ def _search_terms_section(
         evidence_ids=search_terms_read_contract.evidence_ids,
         action_ids=action_ids,
         blocked_claims=search_terms_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
+def _search_term_ngram_section(
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in search_term_ngram_read_contract.ngram_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_search_term_ngrams",
+        title="N-gramy zapytań Google Ads",
+        status=search_term_ngram_read_contract.status,
+        summary=search_term_ngram_read_contract.summary,
+        diagnosis=(
+            "N-gramy kondensują powtarzające się tematy w search terms. To pomaga "
+            "szybciej znaleźć obszary do ręcznego review, ale nie jest werdyktem "
+            "o waste ani gotowym negative keyword payloadem."
+        ),
+        next_step=search_term_ngram_read_contract.next_step,
+        source_connectors=search_term_ngram_read_contract.source_connectors,
+        evidence_ids=search_term_ngram_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=[],
+        blocked_claims=search_term_ngram_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
 
@@ -3981,6 +4200,7 @@ def _ads_decision_queue(
     impression_share_read_contract: AdsImpressionShareReadContract,
     change_history_read_contract: AdsChangeHistoryReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
     keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
     keyword_planner_read_contract: AdsKeywordPlannerReadContract,
@@ -4278,6 +4498,50 @@ def _ads_decision_queue(
                 search_term_rows=search_terms_read_contract.search_term_rows,
                 action_ids=search_term_action_ids,
                 blocked_claims=search_terms_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
+            )
+        )
+
+    if search_term_ngram_read_contract.ngram_rows:
+        metric_facts = [
+            fact
+            for row in search_term_ngram_read_contract.ngram_rows
+            for fact in row.metric_facts
+        ]
+        top_rows = search_term_ngram_read_contract.ngram_rows[:8]
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_search_term_ngrams",
+                decision_type="review_search_term_ngrams",
+                status="ready",
+                title="Sprawdź powtarzające się tematy w zapytaniach",
+                summary=search_term_ngram_read_contract.summary,
+                rationale=(
+                    "N-gramy pokazują, które słowa i frazy powtarzają się w search "
+                    "terms oraz jaki mają koszt, kliknięcia i konwersje w evidence. "
+                    "To skraca review, ale nadal wymaga ręcznego sprawdzenia intencji "
+                    "i nie odblokowuje wykluczeń."
+                ),
+                next_step=search_term_ngram_read_contract.next_step,
+                priority=42,
+                metric_tiles={
+                    "n-gramy": len(search_term_ngram_read_contract.ngram_rows),
+                    "top koszt": sum(row.cost_micros or 0 for row in top_rows),
+                    "top kliknięcia": sum(row.clicks or 0 for row in top_rows),
+                },
+                allowed_metrics=search_term_ngram_read_contract.allowed_metrics,
+                missing_read_contracts=(
+                    search_term_ngram_read_contract.missing_read_contracts
+                ),
+                operator_review_gates=(
+                    search_term_ngram_read_contract.operator_review_gates
+                ),
+                source_connectors=search_term_ngram_read_contract.source_connectors,
+                evidence_ids=search_term_ngram_read_contract.evidence_ids,
+                metric_facts=metric_facts[:12],
+                search_term_ngram_rows=top_rows,
+                action_ids=[],
+                blocked_claims=search_term_ngram_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
         )

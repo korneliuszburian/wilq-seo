@@ -3744,6 +3744,10 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     assert search_terms_contract["status"] == "blocked"
     assert "search_term_view" in search_terms_contract["missing_read_contracts"]
     assert search_terms_contract["search_term_rows"] == []
+    ngram_contract = payload["search_term_ngram_read_contract"]
+    assert ngram_contract["status"] == "blocked"
+    assert "search_term_view" in ngram_contract["missing_read_contracts"]
+    assert ngram_contract["ngram_rows"] == []
     custom_segments_contract = payload["custom_segments_read_contract"]
     assert custom_segments_contract["status"] == "blocked"
     assert "search_term_view" in custom_segments_contract["missing_read_contracts"]
@@ -4923,6 +4927,51 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert search_terms_section["status"] == "ready"
     assert search_terms_section["title"] == "Zapytania użytkowników Google Ads"
+    ngram_contract = payload["search_term_ngram_read_contract"]
+    assert ngram_contract["status"] == "ready"
+    assert ngram_contract["allowed_metrics"] == [
+        "ngram",
+        "ngram_size",
+        "source_search_term_count",
+        "sample_search_terms",
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+    ]
+    assert ngram_contract["missing_read_contracts"] == [
+        "human_intent_review",
+        "negative_keyword_payload_preview",
+    ]
+    assert ngram_contract["operator_review_gates"] == [
+        "human_intent_review",
+        "negative_keyword_action_validation",
+    ]
+    assert "search-term waste" in ngram_contract["blocked_claims"]
+    assert "negative keyword apply" in ngram_contract["blocked_claims"]
+    assert ngram_contract["ngram_rows"]
+    ngrams_by_name = {row["ngram"]: row for row in ngram_contract["ngram_rows"]}
+    assert ngrams_by_name["bdo"]["source_search_term_count"] == 1
+    assert ngrams_by_name["bdo"]["clicks"] == 4
+    assert ngrams_by_name["bdo rejestracja"]["ngram_size"] == 2
+    assert ngrams_by_name["odpady cena"]["cost_micros"] == 5000000
+    assert all(row["evidence_ids"] for row in ngram_contract["ngram_rows"])
+    assert all("search-term waste" in row["blocked_claims"] for row in ngram_contract["ngram_rows"])
+    ngram_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_search_term_ngrams"
+    )
+    assert ngram_section["status"] == "ready"
+    assert ngram_section["title"] == "N-gramy zapytań Google Ads"
+    ngram_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_search_term_ngrams"
+    )
+    assert ngram_decision["decision_type"] == "review_search_term_ngrams"
+    assert ngram_decision["search_term_ngram_rows"]
+    assert "negative_keyword_payload_preview" in ngram_decision["missing_read_contracts"]
+    assert "card_google_ads_search_playbook" in ngram_decision["knowledge_card_ids"]
     search_term_safety_contract = payload["search_term_safety_read_contract"]
     assert search_term_safety_contract["status"] == "ready"
     assert search_term_safety_contract["allowed_metrics"] == [
@@ -5147,6 +5196,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_review_impression_share",
         "ads_review_change_history",
         "ads_review_search_terms",
+        "ads_review_search_term_ngrams",
         "ads_review_search_term_safety",
         "ads_review_negative_keyword_safety",
         "ads_prepare_custom_segments_from_search_terms",
