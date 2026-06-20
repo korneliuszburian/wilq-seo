@@ -34,6 +34,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads business policy gates, 2026-06-21 01:01 CEST.
+  `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
+  `operator_review_gates` so profit margin/business goal/budget goal become
+  review policy, not just "configured fields". Current live policy IDs:
+  `use_margin_as_context_not_profitability_verdict`,
+  `align_campaign_review_to_business_goal`,
+  `honor_human_budget_goal_before_budget_changes`,
+  `block_target_verdict_until_roas_or_cpa_confirmed`. Current review gates:
+  `human_strategy_review`, `review_profit_margin_model`,
+  `review_business_goal`, `review_human_budget_goal`,
+  `confirm_target_roas_or_cpa`. Business-context decision now shows
+  `review gates=5` and `polityki=4`. Redaction allowlist preserves
+  `business_policy_ids`; scoped `wilq-ads-doctor` context-pack proof after
+  restart: `189432` bytes with unredacted policy IDs and review gates. Narrow
+  checks passed: ruff/mypy, three API contract tests, shared schema build,
+  dashboard lint/typecheck and `App.test.tsx`. Still blocked: profitability,
+  margin verdict, budget scaling/apply, recommendation apply and wasted budget.
 - Ads n-gram decision usefulness, 2026-06-21 00:45 CEST.
   `ads_review_search_term_ngrams` no longer falls back to empty metric tiles
   and priority `90` after decision lineage normalization. It is now priority

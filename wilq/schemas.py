@@ -714,6 +714,8 @@ class AdsBusinessContextReadContract(BaseModel):
     target_roas: float | None = None
     target_cpa_micros: int | None = None
     configured_sources: list[str] = Field(default_factory=list)
+    business_policy_ids: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)

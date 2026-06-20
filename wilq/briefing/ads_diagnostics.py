@@ -933,6 +933,19 @@ def _business_context_read_contract(
     status: Literal["ready", "blocked"] = (
         "ready" if not blocking_missing_contracts else "blocked"
     )
+    business_policy_ids = _business_policy_ids(
+        profit_margin=profit_margin,
+        business_goal=business_goal,
+        budget_goal=budget_goal,
+        target_missing=target_missing,
+        status=status,
+    )
+    operator_review_gates = _business_context_review_gates(
+        profit_margin=profit_margin,
+        business_goal=business_goal,
+        budget_goal=budget_goal,
+        target_missing=target_missing,
+    )
     metric_tiles = _clean_metric_tiles(
         {
             "marża": _format_ratio_percent(profit_margin)
@@ -997,6 +1010,8 @@ def _business_context_read_contract(
         target_roas=target_roas,
         target_cpa_micros=target_cpa_micros,
         configured_sources=configured_sources,
+        business_policy_ids=business_policy_ids,
+        operator_review_gates=operator_review_gates,
         allowed_metrics=allowed_metrics,
         missing_read_contracts=missing_read_contracts,
         blocked_claims=blocked_claims,
@@ -1005,6 +1020,51 @@ def _business_context_read_contract(
         metric_tiles=metric_tiles,
         next_step=next_step,
     )
+
+
+def _business_policy_ids(
+    *,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_missing: bool,
+    status: Literal["ready", "blocked"],
+) -> list[str]:
+    policy_ids: list[str] = []
+    if status == "blocked":
+        policy_ids.append("complete_business_context_before_ads_verdicts")
+    if profit_margin is not None:
+        policy_ids.append("use_margin_as_context_not_profitability_verdict")
+    if business_goal:
+        policy_ids.append("align_campaign_review_to_business_goal")
+    if budget_goal:
+        policy_ids.append("honor_human_budget_goal_before_budget_changes")
+    if target_missing:
+        policy_ids.append("block_target_verdict_until_roas_or_cpa_confirmed")
+    else:
+        policy_ids.append("compare_kpis_to_confirmed_target_in_review")
+    return _unique(policy_ids)
+
+
+def _business_context_review_gates(
+    *,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_missing: bool,
+) -> list[str]:
+    gates = ["human_strategy_review"]
+    gates.append(
+        "review_profit_margin_model"
+        if profit_margin is not None
+        else "configure_profit_margin_or_value_model"
+    )
+    gates.append("review_business_goal" if business_goal else "configure_business_goal")
+    gates.append(
+        "review_human_budget_goal" if budget_goal else "configure_human_budget_goal"
+    )
+    gates.append("confirm_target_roas_or_cpa" if target_missing else "review_target_fit")
+    return _unique(gates)
 
 
 def _profit_margin_env() -> tuple[float | None, str | None]:
@@ -4373,8 +4433,10 @@ def _ads_decision_queue(
                 )
             ),
             next_step=business_context_read_contract.next_step,
+            metric_tiles={"polityki": len(business_context_read_contract.business_policy_ids)},
             allowed_metrics=business_context_read_contract.allowed_metrics,
             missing_read_contracts=business_context_read_contract.missing_read_contracts,
+            operator_review_gates=business_context_read_contract.operator_review_gates,
             source_connectors=business_context_read_contract.source_connectors,
             evidence_ids=business_context_read_contract.evidence_ids,
             action_ids=_business_context_action_ids(action_ids),
@@ -4991,6 +5053,8 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
                 "braki": len(decision.missing_read_contracts),
                 "blokady": len(decision.blocked_claims),
                 "ustawione pola": len(decision.allowed_metrics),
+                "review gates": len(decision.operator_review_gates),
+                "polityki": decision.metric_tiles.get("polityki", 0),
             }
         )
     if decision.decision_type == "review_derived_kpi":

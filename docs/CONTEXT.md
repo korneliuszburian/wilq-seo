@@ -29,6 +29,22 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads business policy gates, 2026-06-21 01:01 CEST:
+   `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
+   `operator_review_gates`. Current live policy IDs:
+   `use_margin_as_context_not_profitability_verdict`,
+   `align_campaign_review_to_business_goal`,
+   `honor_human_budget_goal_before_budget_changes`,
+   `block_target_verdict_until_roas_or_cpa_confirmed`. Current gates:
+   `human_strategy_review`, `review_profit_margin_model`,
+   `review_business_goal`, `review_human_budget_goal`,
+   `confirm_target_roas_or_cpa`. Business-context decision shows
+   `review gates=5` and `polityki=4`. Redaction allowlist preserves
+   `business_policy_ids`; scoped `wilq-ads-doctor` context-pack after restart
+   was `189432` bytes and carried unredacted policy IDs. This is review policy,
+   not profitability, margin verdict, budget scaling/apply, recommendation
+   apply or wasted-budget permission.
+
 0. Ads n-gram decision usefulness, 2026-06-21 00:45 CEST:
    `ads_review_search_term_ngrams` now keeps useful decision metric tiles after
    lineage normalization instead of falling back to `{}` and priority `90`.

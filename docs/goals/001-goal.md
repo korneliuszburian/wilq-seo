@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 00:45 CEST.
+Last updated: 2026-06-21 01:01 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -88,6 +88,25 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
+`AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
+`operator_review_gates`, so local profit margin/business goal/budget goal become
+review policy, not only "configured fields". Current live policy IDs are
+`use_margin_as_context_not_profitability_verdict`,
+`align_campaign_review_to_business_goal`,
+`honor_human_budget_goal_before_budget_changes` and
+`block_target_verdict_until_roas_or_cpa_confirmed`. Current gates are
+`human_strategy_review`, `review_profit_margin_model`, `review_business_goal`,
+`review_human_budget_goal` and `confirm_target_roas_or_cpa`. The
+`ads_review_business_context` decision now exposes `review gates=5` and
+`polityki=4` in metric tiles. Redaction allowlist preserves
+`business_policy_ids`; scoped `wilq-ads-doctor` context-pack after
+`scripts/local_stack.sh restart` was `189432` bytes and carried unredacted
+policy IDs. Narrow checks passed: ruff/mypy, three API contract tests, shared
+schema build, dashboard lint/typecheck and `App.test.tsx`. This still does not
+unlock profitability, margin verdict, budget scaling/apply, recommendation
+apply or wasted-budget claims.
 
 Latest Ads n-gram decision usefulness truth, live proof 2026-06-21 00:45
 CEST: `ads_review_search_term_ngrams` no longer loses its metric tiles during

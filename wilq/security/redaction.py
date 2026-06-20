@@ -20,6 +20,7 @@ SAFE_IDENTIFIER_KEYS = {
     "available_credential_sources",
     "available_read_contracts",
     "blocked_claims",
+    "business_policy_ids",
     "connector",
     "connector_ids",
     "connector_refresh_run_ids",

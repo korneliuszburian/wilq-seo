@@ -549,6 +549,9 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "decision_type": "merge_create_after_inventory_check",
             "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
+            "business_policy_ids": [
+                "use_margin_as_context_not_profitability_verdict",
+            ],
             "operator_review_gates": ["google_ads_rmf_compliance_review"],
             "human_review_gates": [
                 "review_search_terms_before_budget_decision",
@@ -607,6 +610,9 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["decision_type"] == "merge_create_after_inventory_check"
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
+    assert redacted["business_policy_ids"] == [
+        "use_margin_as_context_not_profitability_verdict"
+    ]
     assert redacted["operator_review_gates"] == ["google_ads_rmf_compliance_review"]
     assert redacted["human_review_gates"] == [
         "review_search_terms_before_budget_decision"
@@ -1344,6 +1350,19 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "business_goal",
         "human_budget_goal",
     ]
+    assert business_context_contract["business_policy_ids"] == [
+        "use_margin_as_context_not_profitability_verdict",
+        "align_campaign_review_to_business_goal",
+        "honor_human_budget_goal_before_budget_changes",
+        "block_target_verdict_until_roas_or_cpa_confirmed",
+    ]
+    assert business_context_contract["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+    ]
     assert business_context_contract["missing_read_contracts"] == [
         "target_roas_or_cpa"
     ]
@@ -1367,7 +1386,12 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "braki": 1,
         "blokady": 6,
         "ustawione pola": 3,
+        "review gates": 5,
+        "polityki": 4,
     }
+    assert business_context_decision["operator_review_gates"] == (
+        business_context_contract["operator_review_gates"]
+    )
     assert business_context_decision["action_ids"] == []
 
     actions_response = client.get("/api/actions")
@@ -4441,6 +4465,17 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_context_contract["target_roas"] is None
     assert business_context_contract["target_cpa_micros"] is None
     assert business_context_contract["configured_sources"] == []
+    assert business_context_contract["business_policy_ids"] == [
+        "complete_business_context_before_ads_verdicts",
+        "block_target_verdict_until_roas_or_cpa_confirmed",
+    ]
+    assert business_context_contract["operator_review_gates"] == [
+        "human_strategy_review",
+        "configure_profit_margin_or_value_model",
+        "configure_business_goal",
+        "configure_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+    ]
     assert business_context_contract["allowed_metrics"] == []
     assert business_context_contract["missing_read_contracts"] == [
         "profit_margin",
@@ -4472,7 +4507,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "braki": 4,
         "blokady": 6,
         "ustawione pola": 0,
+        "review gates": 5,
+        "polityki": 2,
     }
+    assert business_context_decision["operator_review_gates"] == (
+        business_context_contract["operator_review_gates"]
+    )
     assert business_context_decision["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
     derived_kpi_contract = payload["derived_kpi_read_contract"]
     assert derived_kpi_contract["status"] == "ready"
@@ -5716,6 +5756,19 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "human_budget_goal",
         "target_roas",
     ]
+    assert business_ready_contract["business_policy_ids"] == [
+        "use_margin_as_context_not_profitability_verdict",
+        "align_campaign_review_to_business_goal",
+        "honor_human_budget_goal_before_budget_changes",
+        "compare_kpis_to_confirmed_target_in_review",
+    ]
+    assert business_ready_contract["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "review_target_fit",
+    ]
     derived_ready_contract = business_ready_payload["derived_kpi_read_contract"]
     campaign_ready_row = business_ready_payload["campaign_read_contract"][
         "campaign_rows"
@@ -5752,7 +5805,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "braki": 0,
         "blokady": 6,
         "ustawione pola": 4,
+        "review gates": 5,
+        "polityki": 4,
     }
+    assert business_ready_decision["operator_review_gates"] == (
+        business_ready_contract["operator_review_gates"]
+    )
     business_ready_campaign_decision = next(
         decision
         for decision in business_ready_payload["decision_queue"]
