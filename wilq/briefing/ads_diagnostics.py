@@ -2241,8 +2241,8 @@ def _search_terms_read_contract(
     missing_read_contracts = [
         "keyword match context",
         "90_day_safety_check",
-        "negative_keyword_action_validation",
     ]
+    operator_review_gates = ["negative_keyword_action_validation"]
     blocked_claims = [
         "search-term waste",
         "negative keyword candidates",
@@ -2278,6 +2278,7 @@ def _search_terms_read_contract(
                 "conversion_value",
             ],
             missing_read_contracts=missing_read_contracts,
+            operator_review_gates=operator_review_gates,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
@@ -3708,6 +3709,7 @@ def _ads_decision_queue(
                 ),
                 allowed_metrics=search_terms_read_contract.allowed_metrics,
                 missing_read_contracts=search_terms_read_contract.missing_read_contracts,
+                operator_review_gates=search_terms_read_contract.operator_review_gates,
                 source_connectors=search_terms_read_contract.source_connectors,
                 evidence_ids=search_terms_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],

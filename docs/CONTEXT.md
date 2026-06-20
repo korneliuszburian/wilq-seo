@@ -300,6 +300,17 @@ Audit `docs/audits/001-output.md` is now folded into
    `campaign mutation` blocked until pre/post performance windows, human review
    and apply preview exist. Non-interactive `wilq-ads-doctor` eval passed at
    `.local-lab/evals/codex-skill/20260619T162014Z/wilq-ads-doctor/result.json`.
+0. Ads search-term review gate truth, live proof 2026-06-20 15:52 CEST:
+   `negative_keyword_action_validation` is an operator review gate, not a
+   missing read contract. `/api/ads/diagnostics.search_terms_read_contract` is
+   `ready` with 50 rows, `missing_read_contracts=[]` and
+   `operator_review_gates=[negative_keyword_action_validation]`.
+   Decision `ads_review_search_terms` shows `zapytania=50`, `kliknięcia=7`,
+   `koszt=41.8`, no missing read contracts, and ActionObjects
+   `act_prepare_custom_segments_from_search_terms` plus
+   `act_prepare_negative_keyword_review_queue`. Dashboard `/ads-doctor` must
+   show this as `Wymaga review`, not as `Brakujące kontrakty`.
+
 0. Ads 90-day search-term safety truth, 2026-06-19 18:57 Europe/Warsaw:
    Google Ads negative keyword review now has a typed 90-day safety read.
    Live proof `refresh_google_ads_5a0c672b5000` /
@@ -322,8 +333,8 @@ Audit `docs/audits/001-output.md` is now folded into
    `refresh_google_ads_eb8c239bc32b` /
    `ev_refresh_refresh_google_ads_eb8c239bc32b` returned 211
    `keyword_match_context` rows from `ad_group_criterion`. `/api/ads/diagnostics`
-   exposes `keyword_match_context_read_contract.status=ready` with only
-   `human_intent_review` missing. `negative_keywords_read_contract` now has 7
+   exposes `keyword_match_context_read_contract.status=ready` with
+   `operator_review_gates=[human_intent_review]`. `negative_keywords_read_contract` now has 7
    candidates, 7 payload preview rows and `missing_read_contracts=[]`. This is
    still not apply-ready: negative keyword apply, search-term waste,
    conversion loss, CPA and ROAS stay blocked until human review/confirmation

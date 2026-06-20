@@ -181,10 +181,10 @@ Aktualny proof produktowy:
   `scripts/local_stack.sh restart`: 11 decyzji Ads, `null_priority_count=0`,
   `empty_tiles=[]`; top campaign decision pokazuje `kampanie=18`,
   `kliknięcia=117`, `wyświetlenia=3075`, `koszt=161`, `konwersje=2`.
-  Search terms pokazują tylko istniejące evidence-backed kafelki
-  `zapytania=50`, `kliknięcia=7`; `koszt` jest pomijany, gdy bieżący
-  search-term evidence nie ma `cost_micros`. Scoped `wilq-ads-doctor`
-  context-pack niesie te same `priority` i `metric_tiles` bez redakcji Ads.
+  Search terms pokazują istniejące evidence-backed kafelki `zapytania=50`,
+  `kliknięcia=7`, `koszt=41.8`, gdy bieżący search-term evidence ma
+  `cost_micros`. Scoped `wilq-ads-doctor` context-pack niesie te same
+  `priority` i `metric_tiles` bez redakcji Ads.
 - Ads recommendations nie mieszają już human review z brakującymi read
   contracts. Live proof po `scripts/local_stack.sh restart`: rekomendacje i
   decision `ads_review_recommendations` mają `missing_read_contracts=[]` oraz
@@ -194,6 +194,15 @@ Aktualny proof produktowy:
   `recommendation_apply_preview`, `google_ads_rmf_compliance_review` i
   `human_confirm_before_apply`. Scoped `wilq-ads-doctor` context-pack zachowuje
   te gates bez `[REDACTED]`.
+- Ads search terms nie mieszają już walidacji ActionObject z brakującym read
+  contract. Live proof 2026-06-20 15:52 CEST:
+  `/api/ads/diagnostics.search_terms_read_contract.missing_read_contracts=[]`,
+  `operator_review_gates=[negative_keyword_action_validation]`; decyzja
+  `ads_review_search_terms` pokazuje `metric_tiles={zapytania=50,
+  kliknięcia=7, koszt=41.8}`, `missing_read_contracts=[]`,
+  `operator_review_gates=[negative_keyword_action_validation]` i ActionObjecty
+  `act_prepare_custom_segments_from_search_terms`,
+  `act_prepare_negative_keyword_review_queue`.
 - `/api/ads/diagnostics.search_term_safety_read_contract` i
   `keyword_match_context_read_contract` nie traktują już
   `human_intent_review` jako brakującego kontraktu danych, kiedy 90-dniowe

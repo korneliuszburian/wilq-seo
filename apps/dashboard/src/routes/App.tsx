@@ -2037,6 +2037,12 @@ function AdsMetricEvidencePanel({
     ...data.custom_segments_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
   ]).map(adsMissingReadContractLabel);
+  const operatorReviewGates = uniqueValues([
+    ...(data.search_terms_read_contract.operator_review_gates ?? []),
+    ...data.search_term_safety_read_contract.operator_review_gates,
+    ...data.keyword_match_context_read_contract.operator_review_gates,
+    ...data.decision_queue.flatMap((decision) => decision.operator_review_gates)
+  ]).map(adsOperatorReviewGateLabel);
   const blockedClaims = uniqueValues([
     ...data.account_currency_read_contract.blocked_claims,
     ...data.business_context_read_contract.blocked_claims,
@@ -2111,6 +2117,7 @@ function AdsMetricEvidencePanel({
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Brakujące kontrakty" values={missingReadContracts} />
+        <TraceLine label="Wymaga review" values={operatorReviewGates} empty="brak" />
         <TraceLine label="Nie wolno twierdzić" values={blockedClaims} />
         <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
         <TraceLine
@@ -3061,7 +3068,6 @@ function adsMissingReadContractLabel(value: string) {
     check_existing_keywords_and_match_types: "sprawdzenie słów i typów dopasowania",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
     negative_keyword_payload_preview: "podgląd payloadu wykluczeń",
-    negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń",
     "campaign activity": "aktywność kampanii",
     search_term_view: "widok zapytań użytkowników",
     zero_conversion_search_terms: "terminy z zerową konwersją"
@@ -3078,7 +3084,8 @@ function adsOperatorReviewGateLabel(value: string) {
     review_business_goal: "sprawdzenie celu biznesowego",
     recommendation_apply_preview: "podgląd apply rekomendacji",
     google_ads_rmf_compliance_review: "review Google Ads RMF/compliance",
-    human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem"
+    human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
+    negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń"
   };
   return labels[value] ?? value;
 }

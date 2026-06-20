@@ -940,10 +940,8 @@ const adsDiagnostics = {
       "conversions",
       "conversion_value"
     ],
-    missing_read_contracts: [
-      "90_day_safety_check",
-      "negative_keyword_action_validation"
-    ],
+    missing_read_contracts: ["90_day_safety_check"],
+    operator_review_gates: ["negative_keyword_action_validation"],
     blocked_claims: [
       "search-term waste",
       "negative keyword candidates",

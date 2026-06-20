@@ -4193,6 +4193,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "conversions" not in search_terms_contract["missing_read_contracts"]
     assert "conversion_value" not in search_terms_contract["missing_read_contracts"]
     assert "90_day_safety_check" not in search_terms_contract["missing_read_contracts"]
+    assert "negative_keyword_action_validation" not in search_terms_contract[
+        "missing_read_contracts"
+    ]
+    assert search_terms_contract["operator_review_gates"] == [
+        "negative_keyword_action_validation"
+    ]
     assert "negative keyword apply" in search_terms_contract["blocked_claims"]
     assert search_terms_contract["search_term_rows"] == [
         {
@@ -4553,6 +4559,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "koszt": "12.0",
     }
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
+    assert search_terms_decision["missing_read_contracts"] == []
+    assert search_terms_decision["operator_review_gates"] == [
+        "negative_keyword_action_validation"
+    ]
     assert "negative keyword apply" in search_terms_decision["blocked_claims"]
     search_term_safety_decision = decisions_by_id["ads_review_search_term_safety"]
     assert search_term_safety_decision["status"] == "ready"

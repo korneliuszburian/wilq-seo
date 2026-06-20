@@ -156,10 +156,10 @@ metadata directly, not rely on frontend inference. Current live proof after
 is `0` and `empty_tiles=[]`. Campaign review shows `kampanie=18`,
 `kliknięcia=117`, `wyświetlenia=3075`, `koszt=161`, `konwersje=2`;
 recommendations show `rekomendacje=4`, `podgląd wpływu=2`,
-`podgląd akcji=4`; search terms show only supported evidence-backed tiles
-`zapytania=50` and `kliknięcia=7`, because current search-term evidence does
-not contain `cost_micros`. Scoped `wilq-ads-doctor` context-pack carries the
-same fields with no Ads redaction paths.
+`podgląd akcji=4`; search terms show supported evidence-backed tiles
+`zapytania=50`, `kliknięcia=7` and `koszt=41.8` when current evidence contains
+`cost_micros`. Scoped `wilq-ads-doctor` context-pack carries the same fields
+with no Ads redaction paths.
 
 Ads recommendation review must separate missing read contracts from operator
 review gates. Current live proof after `scripts/local_stack.sh restart`:
@@ -173,16 +173,17 @@ This does not unlock apply; it makes the human review gate explicit and
 traceable.
 
 Ads search-term and negative keyword review must apply the same rule:
-`human_intent_review` is an operator review gate, not a missing read contract.
-Current live proof after `scripts/local_stack.sh restart`:
-`/api/ads/diagnostics.search_term_safety_read_contract.missing_read_contracts=[]`,
-`keyword_match_context_read_contract.missing_read_contracts=[]`, and both carry
-`operator_review_gates=["human_intent_review"]`. Decisions
-`ads_review_search_term_safety` and `ads_review_negative_keyword_safety` carry
-the same gate while keeping missing read contracts empty when the 90-day safety
-rows and keyword match context are present. This still does not unlock negative
-keyword apply; it only prevents the dashboard and skills from mislabeling human
-review as missing data. Full `scripts/verify.sh` passed after this slice:
+human/operator validation gates are not missing read contracts. Current live
+proof after `scripts/local_stack.sh restart` on 2026-06-20 15:52 CEST:
+`/api/ads/diagnostics.search_terms_read_contract.missing_read_contracts=[]`
+and `operator_review_gates=["negative_keyword_action_validation"]`; decision
+`ads_review_search_terms` has the same gate and no missing read contracts.
+`search_term_safety_read_contract.missing_read_contracts=[]`,
+`keyword_match_context_read_contract.missing_read_contracts=[]`, and the safety
+decisions carry `operator_review_gates=["human_intent_review"]`. This still
+does not unlock negative keyword apply; it only prevents the dashboard and
+skills from mislabeling validation/human review as missing data. Full
+`scripts/verify.sh` passed after the earlier safety slice:
 backend `119 passed`, dashboard unit `14 passed`, Playwright e2e `11 passed`,
 skill/API smokes, security checks and dashboard production build passed.
 
