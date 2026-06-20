@@ -127,7 +127,25 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
+1. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
+   `/api/marketing/brief` and full/scoped Codex context-packs now consume the
+   same `CommandCenterResponse.daily_decisions` state as Command Center instead
+   of rebuilding the daily brief from older raw metric/action summaries. Live
+   proof after `scripts/local_stack.sh restart`: `what_we_know` titles are
+   `Przejrzyj kolejkę problemów Merchant Center`, `Przejrzyj kolejkę SEO z GSC
+   i WordPress`, `GA4: pomiar i jakość ruchu do kontroli`,
+   `Przejrzyj kolejki Ads do oceny bez apply` and `Ahrefs: domain_rating = 90`;
+   `what_blocks_us` contains the GA4 contract blocker; `recommended_focus`
+   mirrors ready daily decisions; scoped `wilq-daily-command` context-pack has
+   the same brief titles and Command Center decision titles with no
+   `marketing_brief` redaction paths. Stale strings such as
+   `feed/product issues`, `active_products=12`, `disapproved_products=3`,
+   `active_users=20`, `sessions=30` and `feed issue queue` are absent from the
+   live brief. Full `scripts/verify.sh` passed after this slice: backend
+   `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
+   security, skill/API smokes and dashboard production build passed.
+
+2. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
    Merchant Center now has typed `MerchantDiagnosticsResponse.decision_queue`
    and the same decision state feeds `/merchant`, Command Center and scoped
    `wilq-merchant-feed-operator` context-pack. Command Center no longer builds
@@ -145,7 +163,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-2. Command Center content decision bridge, 2026-06-20 03:00 CEST.
+3. Command Center content decision bridge, 2026-06-20 03:00 CEST.
    Command Center no longer builds the content first-screen card directly from
    raw tactical items. It calls `build_content_diagnostics(...)` with preloaded
    tactical/actions, uses `ContentDiagnosticsResponse.decision_queue`, and
@@ -161,7 +179,7 @@ Aktualny maintenance:
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
 
-3. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
+4. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
    `/api/content/diagnostics.decision_queue` ma teraz skondensowane, polskie
    decyzje contentowe zamiast URL-i jako głównych tytułów. API dodaje
    `summary`, `primary_query`, `total_clicks`, `total_impressions`,
@@ -179,7 +197,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-4. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
+5. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
    Command Center GA4 daily decision now consumes the same
    `Ga4DiagnosticsResponse.decision_queue` contract as `/ga4` and the
    `wilq-ga4-analyst` context-pack path. Live proof after
@@ -190,16 +208,6 @@ Aktualny maintenance:
    claims. Full `scripts/verify.sh` passed: backend `117 passed`, dashboard
    unit `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
-
-5. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
-   Dashboard Command Center, tactical cards, daily decision cards and
-   brief/action surfaces keep the stable `evidence_ids` API contract, but render
-   marketer-facing labels as `Dowody`, `Dowody: N ID(s)` and
-   `Przykładowe dowody` instead of English `Evidence` / `Przykładowe evidence`.
-   Legacy route config copy for Ads, GA4, GSC, Localo, Social, Content and
-   Merchant now uses Polish `dowody`, `odczyt`, `podgląd akcji` and
-   `brama bezpieczeństwa` language. Focused dashboard lint, typecheck, unit
-   `App.test.tsx` and real-browser Command Center smoke passed.
 
 ## Active Gaps
 

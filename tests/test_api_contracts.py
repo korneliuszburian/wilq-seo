@@ -1034,7 +1034,8 @@ def test_marketing_brief_exposes_metric_backed_prepare_actions(
         "google_search_console",
     ):
         item = metric_items[connector_id]
-        assert item["metric_facts"][0]["dimensions"]
+        assert item["evidence_ids"]
+        assert item["summary"]
     action_items = {
         item["action_ids"][0]: item
         for section in brief["sections"]
@@ -1051,12 +1052,15 @@ def test_marketing_brief_exposes_metric_backed_prepare_actions(
         assert action_id in brief["action_ids"]
         item = action_items[action_id]
         assert item["evidence_ids"]
-        assert item["metric_facts"]
         assert item["risk"] in {"low", "medium"}
+        assert item["summary"]
+        assert item["next_step"]
     assert "act_prepare_linkedin_social_drafts" not in brief["action_ids"]
     assert "act_prepare_facebook_social_drafts" not in brief["action_ids"]
     assert "act_prepare_linkedin_social_drafts" not in action_items
     assert "act_prepare_facebook_social_drafts" not in action_items
+    serialized = json.dumps(brief)
+    assert "feed/product issues" not in serialized
 
 
 def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
@@ -5739,10 +5743,12 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
         connectors: list[ConnectorStatus] | None = None,
         refresh_runs: list[ConnectorRefreshRun] | None = None,
         actions: list[ActionObject] | None = None,
+        command_center: CommandCenterResponse | None = None,
     ) -> MarketingBrief:
         seen["brief_connectors"] = connectors
         seen["brief_refresh_runs"] = refresh_runs
         seen["brief_actions"] = actions
+        seen["brief_command_center"] = command_center
         return brief
 
     monkeypatch.setattr(daily_runtime, "build_command_center_response", command_builder)
@@ -5762,6 +5768,7 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     assert seen["brief_connectors"] == [connector]
     assert seen["brief_refresh_runs"] == [refresh_run]
     assert seen["brief_actions"] == [action]
+    assert seen["brief_command_center"] == command
 
 
 def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(

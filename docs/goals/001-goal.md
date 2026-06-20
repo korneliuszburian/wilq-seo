@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 03:59 CEST.
+Last updated: 2026-06-20 04:18 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -117,6 +117,24 @@ context-pack carries the same decision with no redaction under
 `merchant_diagnostics.decision_queue`. Command Center shows
 `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`, `decyzje=8`,
 `blockery=0` and Polish marketer-facing labels.
+
+Marketing Brief and Codex context-packs must use the same daily decision state
+as Command Center. Do not rebuild `/api/marketing/brief` from stale raw metric
+summaries when `CommandCenterResponse.daily_decisions` already contains typed
+Merchant, Content, GA4 and Ads decisions. Current live proof after
+`scripts/local_stack.sh restart`: `/api/marketing/brief.what_we_know` shows
+`Przejrzyj kolejkę problemów Merchant Center`, `Przejrzyj kolejkę SEO z GSC i
+WordPress`, `GA4: pomiar i jakość ruchu do kontroli`,
+`Przejrzyj kolejki Ads do oceny bez apply` and `Ahrefs: domain_rating = 90`;
+`what_blocks_us` contains the GA4 contract blocker; `recommended_focus` mirrors
+ready daily decisions; scoped `wilq-daily-command` context-pack has the same
+brief and Command Center decision titles with no `marketing_brief` redaction
+paths. Stale strings such as `feed/product issues`, `active_products=12`,
+`disapproved_products=3`, `active_users=20`, `sessions=30` and
+`feed issue queue` must not return to the daily brief. Full `scripts/verify.sh`
+passed after this slice: backend `117 passed`, dashboard unit `14 passed`,
+Playwright e2e `9 passed`, security, skill/API smokes and dashboard production
+build passed.
 
 ## Research And Knowledge Contract
 

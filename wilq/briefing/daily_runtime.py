@@ -54,13 +54,6 @@ def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
         connectors = connectors_future.result()
         actions = actions_future.result()
         refresh_runs = refresh_runs_future.result()
-        brief_future = executor.submit(
-            build_marketing_brief,
-            connectors=connectors,
-            refresh_runs=refresh_runs,
-            actions=actions,
-        )
-
         tactical_queue = tactical_queue_future.result()
         command_future = executor.submit(
             build_command_center_response,
@@ -70,7 +63,12 @@ def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
         )
 
         command = command_future.result()
-        brief = brief_future.result()
+        brief = build_marketing_brief(
+            connectors=connectors,
+            refresh_runs=refresh_runs,
+            actions=actions,
+            command_center=command,
+        )
     runtime = DailyRuntime(
         connectors=connectors,
         actions=actions,

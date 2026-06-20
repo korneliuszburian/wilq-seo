@@ -10,11 +10,13 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
+    CommandCenterResponse,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ConnectorStatus,
     ConnectorStatusValue,
     ConnectorSummary,
+    DailyDecision,
     MarketingBrief,
     MarketingBriefItem,
     MarketingBriefSection,
@@ -78,6 +80,7 @@ def build_marketing_brief(
     connectors: list[ConnectorStatus] | None = None,
     refresh_runs: list[ConnectorRefreshRun] | None = None,
     actions: list[ActionObject] | None = None,
+    command_center: CommandCenterResponse | None = None,
 ) -> MarketingBrief:
     connectors = connectors if connectors is not None else list_connector_statuses()
     refresh_runs = refresh_runs if refresh_runs is not None else list_connector_refresh_runs()
@@ -94,11 +97,32 @@ def build_marketing_brief(
     ]
     business_metric_facts = _latest_metric_facts_by_identity(business_metric_facts)
     metric_items = _metric_items(business_metric_facts)
+    if command_center is not None:
+        metric_items = _decision_metric_items(command_center.daily_decisions) + [
+            item
+            for item in metric_items
+            if not _connectors_intersect(
+                item.source_connectors,
+                _daily_decision_connector_ids(command_center.daily_decisions),
+            )
+        ]
     blocker_items = _blocker_items(connectors, latest_runs)
+    if command_center is not None:
+        blocker_items = _merge_items(
+            blocker_items,
+            _decision_blocker_items(command_center.daily_decisions),
+        )
     core_actions = core_brief_actions(actions)
     stateful_actions = _stateful_brief_actions(core_actions, blocker_items)
-    action_items = _action_items(stateful_actions)
-    recommendation_items = _recommendation_items(business_metric_facts, blocker_items)
+    action_items = _action_items(
+        stateful_actions,
+        command_center.daily_decisions if command_center is not None else None,
+    )
+    recommendation_items = (
+        _decision_recommendation_items(command_center.daily_decisions)
+        if command_center is not None
+        else _recommendation_items(business_metric_facts, blocker_items)
+    )
     sections = [
         MarketingBriefSection(
             id="what_we_know",
@@ -234,6 +258,100 @@ def _metric_items(metric_facts: list[MetricFact]) -> list[MarketingBriefItem]:
             )
         )
     return sorted(items, key=lambda item: item.priority)
+
+
+def _decision_metric_items(decisions: list[DailyDecision]) -> list[MarketingBriefItem]:
+    return [
+        MarketingBriefItem(
+            id=f"brief_decision_{decision.id}",
+            title=decision.title,
+            kind="metric",
+            priority=min(20 + index, 39),
+            source_connectors=decision.source_connectors,
+            evidence_ids=decision.evidence_ids,
+            action_ids=decision.action_ids,
+            summary=_decision_summary(decision),
+            next_step=decision.bezpieczny_next_step,
+            risk=decision.risk,
+        )
+        for index, decision in enumerate(
+            sorted(decisions, key=lambda item: item.priority),
+            start=1,
+        )
+    ]
+
+
+def _decision_blocker_items(decisions: list[DailyDecision]) -> list[MarketingBriefItem]:
+    return [
+        MarketingBriefItem(
+            id=f"brief_blocker_{decision.id}",
+            title=decision.title,
+            kind="blocker",
+            priority=min(5 + index, 19),
+            source_connectors=decision.source_connectors,
+            evidence_ids=decision.evidence_ids,
+            action_ids=decision.action_ids,
+            summary=_decision_summary(decision),
+            next_step=decision.bezpieczny_next_step,
+            risk=decision.risk,
+            blocker_reason=", ".join(decision.blocked_claims[:4]) or "brak kontraktu",
+        )
+        for index, decision in enumerate(
+            sorted(
+                (decision for decision in decisions if decision.status == "blocked"),
+                key=lambda item: item.priority,
+            ),
+            start=1,
+        )
+    ]
+
+
+def _decision_recommendation_items(
+    decisions: list[DailyDecision],
+) -> list[MarketingBriefItem]:
+    return [
+        MarketingBriefItem(
+            id=f"brief_focus_{decision.id}",
+            title=decision.title,
+            kind="recommendation",
+            priority=min(60 + index, 79),
+            source_connectors=decision.source_connectors,
+            evidence_ids=decision.evidence_ids,
+            action_ids=decision.action_ids,
+            summary=decision.dlaczego_to_ma_znaczenie,
+            next_step=decision.bezpieczny_next_step,
+            risk=decision.risk,
+        )
+        for index, decision in enumerate(
+            sorted(
+                (decision for decision in decisions if decision.status == "ready"),
+                key=lambda item: item.priority,
+            ),
+            start=1,
+        )
+    ]
+
+
+def _daily_decision_connector_ids(decisions: list[DailyDecision]) -> set[str]:
+    return {
+        connector_id
+        for decision in decisions
+        for connector_id in decision.source_connectors
+    }
+
+
+def _decision_summary(decision: DailyDecision) -> str:
+    return f"{decision.co_widzimy} {decision.dlaczego_to_ma_znaczenie}"
+
+
+def _merge_items(
+    primary: list[MarketingBriefItem],
+    secondary: list[MarketingBriefItem],
+) -> list[MarketingBriefItem]:
+    items_by_id = {item.id: item for item in primary}
+    for item in secondary:
+        items_by_id.setdefault(item.id, item)
+    return sorted(items_by_id.values(), key=lambda item: item.priority)
 
 
 def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
@@ -383,9 +501,17 @@ def _stateful_brief_actions(
     ]
 
 
-def _action_items(actions: list[ActionObject]) -> list[MarketingBriefItem]:
+def _action_items(
+    actions: list[ActionObject],
+    decisions: list[DailyDecision] | None = None,
+) -> list[MarketingBriefItem]:
+    decisions_by_action_id = _decisions_by_action_id(decisions or [])
     items: list[MarketingBriefItem] = []
     for index, action in enumerate(actions, start=1):
+        decision = decisions_by_action_id.get(action.id)
+        if decision is not None:
+            items.append(_action_item_from_decision(action, decision, index))
+            continue
         items.append(
             MarketingBriefItem(
                 id=f"brief_action_{action.id}",
@@ -402,6 +528,43 @@ def _action_items(actions: list[ActionObject]) -> list[MarketingBriefItem]:
             )
         )
     return items
+
+
+def _decisions_by_action_id(decisions: list[DailyDecision]) -> dict[str, DailyDecision]:
+    result: dict[str, DailyDecision] = {}
+    for decision in sorted(decisions, key=lambda item: item.priority):
+        for action_id in decision.action_ids:
+            result.setdefault(action_id, decision)
+    return result
+
+
+def _action_item_from_decision(
+    action: ActionObject,
+    decision: DailyDecision,
+    index: int,
+) -> MarketingBriefItem:
+    return MarketingBriefItem(
+        id=f"brief_action_{action.id}",
+        title=action.title,
+        kind="action",
+        priority=min(40 + index, 59),
+        source_connectors=decision.source_connectors or [action.connector],
+        evidence_ids=decision.evidence_ids,
+        action_ids=[action.id],
+        metric_facts=[],
+        summary=_decision_summary(decision),
+        next_step=decision.bezpieczny_next_step,
+        risk=max(action.risk, decision.risk, key=_risk_rank),
+    )
+
+
+def _risk_rank(risk: ActionRisk) -> int:
+    return {
+        ActionRisk.low: 0,
+        ActionRisk.medium: 1,
+        ActionRisk.high: 2,
+        ActionRisk.critical: 3,
+    }.get(risk, 0)
 
 
 def _recommendation_items(
@@ -611,3 +774,7 @@ def _unique(items: Iterable[str]) -> list[str]:
         if item and item not in unique_items:
             unique_items.append(item)
     return unique_items
+
+
+def _connectors_intersect(left: Iterable[str], right: Iterable[str]) -> bool:
+    return bool(set(left) & set(right))

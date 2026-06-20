@@ -18,7 +18,7 @@ from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.daily_runtime import build_daily_runtime, clear_daily_runtime_cache
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.localo_diagnostics import build_localo_diagnostics
-from wilq.briefing.marketing_brief import build_marketing_brief, core_brief_actions
+from wilq.briefing.marketing_brief import core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.codex.runtime_status import codex_runtime_status
@@ -165,6 +165,7 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
     if request and skill and skill != "wilq-daily-command" and not request.full_context:
         return _skill_scoped_context_pack(request, connectors, opportunities)
     active_actions = _full_context_actions_for_skill(skill)
+    daily_runtime = build_daily_runtime()
     pack = {
         "current_product_rules": [
             "No evidence ID -> no recommendation.",
@@ -194,8 +195,8 @@ def context_pack(request: ContextPackRequest | None = None) -> dict[str, Any]:
         "expert_capabilities": [
             capability.model_dump(mode="json") for capability in list_expert_capabilities()
         ],
-        "command_center": command_center().model_dump(mode="json"),
-        "marketing_brief": build_marketing_brief().model_dump(mode="json"),
+        "command_center": daily_runtime.command_center.model_dump(mode="json"),
+        "marketing_brief": daily_runtime.marketing_brief.model_dump(mode="json"),
         "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         "ads_diagnostics": build_ads_diagnostics().model_dump(mode="json"),
         "merchant_diagnostics": build_merchant_diagnostics().model_dump(mode="json"),
@@ -737,10 +738,10 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         }
     if skill == "wilq-social-publisher":
         return {
-            "marketing_brief": build_marketing_brief().model_dump(mode="json"),
+            "marketing_brief": build_daily_runtime().marketing_brief.model_dump(mode="json"),
             "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         }
-    return {"marketing_brief": build_marketing_brief().model_dump(mode="json")}
+    return {"marketing_brief": build_daily_runtime().marketing_brief.model_dump(mode="json")}
 
 
 def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
