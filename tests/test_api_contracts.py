@@ -4332,6 +4332,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "keyword_planner_enrichment" in custom_segments_contract["missing_read_contracts"]
     assert "forecast_or_audience_size" in custom_segments_contract["missing_read_contracts"]
+    assert custom_segments_contract["operator_review_gates"] == [
+        "review_source_terms",
+        "reject_brand_or_low_intent_terms",
+        "human_confirm_before_apply",
+    ]
     assert "custom_segment_payload_preview" not in custom_segments_contract[
         "missing_read_contracts"
     ]
@@ -4621,6 +4626,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "źródłowe zapytania": 2,
     }
     assert custom_segments_decision["decision_type"] == "prepare_custom_segments"
+    assert custom_segments_decision["missing_read_contracts"] == [
+        "keyword_planner_enrichment",
+        "forecast_or_audience_size",
+    ]
+    assert custom_segments_decision["operator_review_gates"] == [
+        "review_source_terms",
+        "reject_brand_or_low_intent_terms",
+        "human_confirm_before_apply",
+    ]
     assert custom_segments_decision["custom_segment_candidates"][0]["source_terms"] == [
         "bdo rejestracja",
         "odpady cena",

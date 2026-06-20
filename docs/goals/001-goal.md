@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 14:51 CEST.
+Last updated: 2026-06-20 16:15 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -178,6 +178,19 @@ proof after `scripts/local_stack.sh restart` on 2026-06-20 15:52 CEST:
 `/api/ads/diagnostics.search_terms_read_contract.missing_read_contracts=[]`
 and `operator_review_gates=["negative_keyword_action_validation"]`; decision
 `ads_review_search_terms` has the same gate and no missing read contracts.
+
+Ads custom segment review must follow the same separation. Current live proof
+after `scripts/local_stack.sh restart` on 2026-06-20 16:15 CEST:
+`/api/ads/diagnostics.custom_segments_read_contract.status=ready`,
+`missing_read_contracts=["keyword_planner_enrichment",
+"forecast_or_audience_size"]` and
+`operator_review_gates=["review_source_terms",
+"reject_brand_or_low_intent_terms", "human_confirm_before_apply"]`; decision
+`ads_prepare_custom_segments_from_search_terms` has the same separation with
+`metric_tiles.segmenty=1`, `metric_tiles.źródłowe zapytania=6` and
+`action_ids=["act_prepare_custom_segments_from_search_terms"]`. This remains
+review-only source-term preparation; it does not unlock audience size,
+conversion uplift, ROAS, targeting apply or campaign performance claims.
 `search_term_safety_read_contract.missing_read_contracts=[]`,
 `keyword_match_context_read_contract.missing_read_contracts=[]`, and the safety
 decisions carry `operator_review_gates=["human_intent_review"]`. This still

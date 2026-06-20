@@ -1211,6 +1211,11 @@ const adsDiagnostics = {
       "keyword_planner_enrichment",
       "forecast_or_audience_size"
     ],
+    operator_review_gates: [
+      "review_source_terms",
+      "reject_brand_or_low_intent_terms",
+      "human_confirm_before_apply"
+    ],
     blocked_claims: [
       "audience size",
       "conversion uplift",
@@ -2021,6 +2026,11 @@ const adsDiagnostics = {
       missing_read_contracts: [
         "keyword_planner_enrichment",
         "forecast_or_audience_size"
+      ],
+      operator_review_gates: [
+        "review_source_terms",
+        "reject_brand_or_low_intent_terms",
+        "human_confirm_before_apply"
       ],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],

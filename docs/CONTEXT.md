@@ -93,6 +93,19 @@ Audit `docs/audits/001-output.md` is now folded into
    Daily Codex still must not claim profitability, margin verdict, wasted
    budget or budget scaling without the remaining optimizer contracts.
 
+0. Ads custom segment gate truth, live proof 2026-06-20 16:15 CEST:
+   custom segments keep true missing read contracts separate from operator
+   review gates. `/api/ads/diagnostics.custom_segments_read_contract` is
+   `ready` with `missing_read_contracts=["keyword_planner_enrichment",
+   "forecast_or_audience_size"]` and
+   `operator_review_gates=["review_source_terms",
+   "reject_brand_or_low_intent_terms", "human_confirm_before_apply"]`.
+   Decision `ads_prepare_custom_segments_from_search_terms` carries the same
+   fields plus `metric_tiles.segmenty=1`, `metric_tiles.źródłowe zapytania=6`
+   and `action_ids=["act_prepare_custom_segments_from_search_terms"]`.
+   Do not claim audience size, conversion uplift, ROAS, targeting applied or
+   campaign performance from this contract.
+
 0. Ads business context ActionObject truth, 2026-06-20 11:05 Europe/Warsaw:
    the same blocker is now actionable through review-only
    `act_configure_ads_business_context`. Its payload action is

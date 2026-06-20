@@ -34,6 +34,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads custom segment review gates, 2026-06-20 16:15 CEST.
+  Custom segments rozdzielają teraz prawdziwe braki danych od gate'ów
+  operatora. Live proof po `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics.custom_segments_read_contract.status=ready`,
+  `missing_read_contracts=["keyword_planner_enrichment",
+  "forecast_or_audience_size"]` oraz
+  `operator_review_gates=["review_source_terms",
+  "reject_brand_or_low_intent_terms", "human_confirm_before_apply"]`.
+  Decyzja `ads_prepare_custom_segments_from_search_terms` ma te same pola,
+  `metric_tiles.segmenty=1`, `metric_tiles.źródłowe zapytania=6` i
+  `action_ids=["act_prepare_custom_segments_from_search_terms"]`. To nadal
+  nie jest targeting/apply support ani audience-size proof.
 - Daily context-pack/action summary cleanup, 2026-06-20 14:30 CEST.
   `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` używa teraz
   `CommandCenterResponse.daily_decisions` jako źródła streszczeń

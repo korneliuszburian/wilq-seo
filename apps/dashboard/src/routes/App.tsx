@@ -2041,6 +2041,7 @@ function AdsMetricEvidencePanel({
     ...(data.search_terms_read_contract.operator_review_gates ?? []),
     ...data.search_term_safety_read_contract.operator_review_gates,
     ...data.keyword_match_context_read_contract.operator_review_gates,
+    ...data.custom_segments_read_contract.operator_review_gates,
     ...data.decision_queue.flatMap((decision) => decision.operator_review_gates)
   ]).map(adsOperatorReviewGateLabel);
   const blockedClaims = uniqueValues([
@@ -3085,7 +3086,9 @@ function adsOperatorReviewGateLabel(value: string) {
     recommendation_apply_preview: "podgląd apply rekomendacji",
     google_ads_rmf_compliance_review: "review Google Ads RMF/compliance",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
-    negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń"
+    negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń",
+    review_source_terms: "sprawdzenie source terms",
+    reject_brand_or_low_intent_terms: "odrzucenie brand/low intent terms"
   };
   return labels[value] ?? value;
 }

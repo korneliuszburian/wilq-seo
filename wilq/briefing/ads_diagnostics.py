@@ -90,6 +90,11 @@ CARD_ADS_BUDGET_REVIEW = "card_google_ads_budget_review_playbook"
 CARD_ADS_NEGATIVE_KEYWORDS = "card_google_ads_negative_keywords_playbook"
 CARD_ADS_CUSTOM_SEGMENTS = "card_google_ads_custom_segments_playbook"
 ADS_RECOMMENDATION_HUMAN_REVIEW_GATE = "human_strategy_review"
+CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES = [
+    "review_source_terms",
+    "reject_brand_or_low_intent_terms",
+    "human_confirm_before_apply",
+]
 
 ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_live_data_status": (
@@ -2922,6 +2927,7 @@ def _custom_segments_read_contract(
             "keyword_planner_enrichment",
             "forecast_or_audience_size",
         ],
+        operator_review_gates=CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES,
         blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
         action_ids=custom_segment_action_ids,
         next_step=(
@@ -3858,6 +3864,9 @@ def _ads_decision_queue(
                     "search_term_conversion_value",
                 ],
                 missing_read_contracts=custom_segments_read_contract.missing_read_contracts,
+                operator_review_gates=(
+                    custom_segments_read_contract.operator_review_gates
+                ),
                 source_connectors=custom_segments_read_contract.source_connectors,
                 evidence_ids=custom_segments_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],

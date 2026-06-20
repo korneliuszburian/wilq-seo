@@ -679,6 +679,7 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
+  operator_review_gates: z.array(z.string()).optional().default([]),
   blocked_claims: z.array(z.string()),
   action_ids: z.array(z.string()),
   next_step: z.string()
