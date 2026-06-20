@@ -510,6 +510,8 @@ class AdsBlockedHandoff(BaseModel):
 class AdsCampaignMetricRow(BaseModel):
     campaign_id: str | None = None
     campaign_name: str
+    campaign_status: str | None = None
+    advertising_channel_type: str | None = None
     clicks: int | None = None
     impressions: int | None = None
     cost_micros: int | None = None
@@ -1511,5 +1513,8 @@ class DemandGenReadinessContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    campaign_rows_evaluated: int = 0
+    campaign_channel_counts: dict[str, int] = Field(default_factory=dict)
+    demand_gen_campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     next_step: str
     risk: ActionRisk = ActionRisk.medium

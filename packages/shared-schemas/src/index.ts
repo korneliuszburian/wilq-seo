@@ -250,6 +250,8 @@ export const AdsBlockedHandoffSchema = z.object({
 export const AdsCampaignMetricRowSchema = z.object({
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string(),
+  campaign_status: z.string().nullable().optional(),
+  advertising_channel_type: z.string().nullable().optional(),
   clicks: z.number().nullable().optional(),
   impressions: z.number().nullable().optional(),
   cost_micros: z.number().nullable().optional(),
@@ -1368,6 +1370,23 @@ export const WorkflowSchema = z.object({
   risk: z.enum(["low", "medium", "high"]).default("low")
 });
 
+export const DemandGenReadinessContractSchema = z.object({
+  status: z.enum(["ready", "blocked"]),
+  summary: z.string(),
+  available_read_contracts: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  operator_review_gates: z.array(z.string()),
+  campaign_rows_evaluated: z.number(),
+  campaign_channel_counts: z.record(z.number()),
+  demand_gen_campaign_rows: z.array(AdsCampaignMetricRowSchema),
+  next_step: z.string(),
+  risk: z.enum(["low", "medium", "high"])
+});
+
 export const WorkflowInputSchema = z.object({
   connector_ids: z.array(z.string()),
   parameters: z.record(z.unknown())
@@ -1409,6 +1428,7 @@ export const ContextPackResponseSchema = z.object({
   ga4_diagnostics: Ga4DiagnosticsResponseSchema,
   localo_diagnostics: LocaloDiagnosticsResponseSchema.optional(),
   ahrefs_diagnostics: AhrefsDiagnosticsResponseSchema.optional(),
+  demand_gen_readiness: DemandGenReadinessContractSchema.optional(),
   strict_instruction: z.string()
 });
 
@@ -1477,6 +1497,7 @@ export type TacticalQueueItem = z.infer<typeof TacticalQueueItemSchema>;
 export type TacticalQueueResponse = z.infer<typeof TacticalQueueResponseSchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
 export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
+export type DemandGenReadinessContract = z.infer<typeof DemandGenReadinessContractSchema>;
 export type ContextPackResponse = z.infer<typeof ContextPackResponseSchema>;
 export type ExpertRule = z.infer<typeof ExpertRuleSchema>;
 export type ExpertRuleSummary = z.infer<typeof ExpertRuleSummarySchema>;

@@ -3703,12 +3703,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "ROAS" in read_contract["blocked_claims"]
     assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
-        {
-            "campaign_id": "101",
-            "campaign_name": "Brand Search",
-            "clicks": 9,
-            "impressions": 90,
-            "cost_micros": 12000000,
+            {
+                "campaign_id": "101",
+                "campaign_name": "Brand Search",
+                "campaign_status": "ENABLED",
+                "advertising_channel_type": "SEARCH",
+                "clicks": 9,
+                "impressions": 90,
+                "cost_micros": 12000000,
             "conversions": 2.5,
             "conversion_value": 450.75,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
@@ -6911,6 +6913,16 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert readiness["status"] == "blocked"
     assert readiness["action_ids"] == []
     assert readiness["source_connectors"] == ["google_ads", "google_analytics_4"]
+    assert isinstance(readiness["campaign_rows_evaluated"], int)
+    assert isinstance(readiness["campaign_channel_counts"], dict)
+    assert isinstance(readiness["demand_gen_campaign_rows"], list)
+    campaign_rows = data["ads_diagnostics"]["campaign_read_contract"]["campaign_rows"]
+    if campaign_rows:
+        assert any(row.get("advertising_channel_type") for row in campaign_rows)
+        assert readiness["campaign_rows_evaluated"] >= len(campaign_rows)
+        assert readiness["campaign_channel_counts"]
+        assert "demand_gen_campaign_rows" in readiness["available_read_contracts"]
+        assert "demand_gen_campaign_rows" not in readiness["missing_read_contracts"]
     assert "demand_gen_asset_group_rows" in readiness["missing_read_contracts"]
     assert "demand_gen_action_object" in readiness["missing_read_contracts"]
     assert "Demand Gen launch recommendation" in readiness["blocked_claims"]

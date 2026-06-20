@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from time import monotonic
@@ -56,6 +57,7 @@ from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_o
 from wilq.schemas import (
     ActionApplyRequest,
     ActionObject,
+    AdsCampaignMetricRow,
     AdsDiagnosticsResponse,
     AhrefsDiagnosticsResponse,
     AuditEvent,
@@ -118,6 +120,8 @@ app.add_middleware(
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "testclient", "testserver"}
 ADS_CONTEXT_ROW_LIMIT = 8
+DEMAND_GEN_CHANNEL_TYPES = {"DEMAND_GEN", "DISCOVERY"}
+DEMAND_GEN_CAMPAIGN_ROW_LIMIT = 8
 ADS_CONTEXT_DECISION_ROW_LIMIT = 4
 ADS_LITE_DECISION_LIMIT = 5
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
@@ -797,34 +801,61 @@ def _demand_gen_readiness_contract(
     ads_diagnostics: dict[str, Any],
     ga4_diagnostics: dict[str, Any],
 ) -> DemandGenReadinessContract:
+    campaign_rows = [
+        row
+        for row in _list_at(ads_diagnostics, "campaign_read_contract", "campaign_rows")
+        if isinstance(row, dict)
+    ]
+    channel_counts = _campaign_channel_counts(campaign_rows)
+    campaign_channel_read_available = any(
+        str(row.get("advertising_channel_type") or "").strip() for row in campaign_rows
+    )
+    demand_gen_campaign_rows = [
+        _compact_campaign_row_for_demand_gen(row)
+        for row in campaign_rows
+        if _is_demand_gen_channel(row.get("advertising_channel_type"))
+    ][:DEMAND_GEN_CAMPAIGN_ROW_LIMIT]
     evidence_ids = sorted(
         {
             *_collect_values_by_key(ads_diagnostics, "evidence_ids"),
             *_collect_values_by_key(ga4_diagnostics, "evidence_ids"),
         }
     )[:12]
+    available_read_contracts = [
+        "google_ads_campaign_activity",
+        "google_ads_budget_context",
+        "google_ads_impression_share_context",
+        "ga4_landing_source_campaign_quality",
+    ]
+    missing_read_contracts = [
+        "demand_gen_asset_group_rows",
+        "demand_gen_creative_asset_rows",
+        "demand_gen_landing_quality_by_campaign",
+        "demand_gen_migration_constraints",
+        "demand_gen_action_object",
+    ]
+    if campaign_channel_read_available:
+        available_read_contracts.append("demand_gen_campaign_rows")
+        campaign_context = (
+            f"WILQ ocenił {len(campaign_rows)} kampanii Ads z typami kanałów "
+            f"({_format_channel_counts(channel_counts)}); "
+            f"Demand Gen/Discovery rows={len(demand_gen_campaign_rows)}."
+        )
+    else:
+        missing_read_contracts.insert(0, "demand_gen_campaign_rows")
+        campaign_context = (
+            "WILQ nie ma jeszcze pewnego odczytu typów kanałów kampanii Ads."
+        )
     return DemandGenReadinessContract(
         status="blocked",
         summary=(
-            "WILQ ma Ads i GA4 evidence do oceny ruchu, ale nie ma jeszcze "
-            "Demand Gen-specific read contractów dla assetów, kreacji, typów "
-            "kampanii ani migracji. To jest blocker użytecznej rekomendacji, "
-            "nie brak promptu."
+            f"{campaign_context} WILQ ma Ads i GA4 evidence do oceny ruchu, "
+            "ale nadal nie ma Demand Gen-specific read contractów dla assetów, "
+            "kreacji, landing quality per campaign, migracji i ActionObject. "
+            "To jest blocker użytecznej rekomendacji, nie brak promptu."
         ),
-        available_read_contracts=[
-            "google_ads_campaign_activity",
-            "google_ads_budget_context",
-            "google_ads_impression_share_context",
-            "ga4_landing_source_campaign_quality",
-        ],
-        missing_read_contracts=[
-            "demand_gen_campaign_rows",
-            "demand_gen_asset_group_rows",
-            "demand_gen_creative_asset_rows",
-            "demand_gen_landing_quality_by_campaign",
-            "demand_gen_migration_constraints",
-            "demand_gen_action_object",
-        ],
+        available_read_contracts=available_read_contracts,
+        missing_read_contracts=missing_read_contracts,
         blocked_claims=[
             "Demand Gen launch recommendation",
             "Demand Gen migration ready",
@@ -841,11 +872,51 @@ def _demand_gen_readiness_contract(
             "human_strategy_review",
             "human_confirm_before_apply",
         ],
+        campaign_rows_evaluated=len(campaign_rows),
+        campaign_channel_counts=channel_counts,
+        demand_gen_campaign_rows=demand_gen_campaign_rows,
         next_step=(
-            "Zbuduj osobny Demand Gen read contract zanim skill pokaże "
-            "kandydatów kampanii lub migracji. Do tego czasu używaj GA4/Ads "
-            "tylko jako kontekstu jakości ruchu."
+            "Użyj odczytu kanałów kampanii tylko jako kontekstu. Zanim skill "
+            "pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative "
+            "read contracts, landing quality by campaign, migration constraints "
+            "i prepare-only Demand Gen ActionObject."
         ),
+    )
+
+
+def _campaign_channel_counts(campaign_rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts: Counter[str] = Counter()
+    for row in campaign_rows:
+        channel = str(row.get("advertising_channel_type") or "UNKNOWN").strip()
+        counts[channel or "UNKNOWN"] += 1
+    return dict(sorted(counts.items()))
+
+
+def _is_demand_gen_channel(channel: Any) -> bool:
+    return str(channel or "").strip().upper() in DEMAND_GEN_CHANNEL_TYPES
+
+
+def _format_channel_counts(channel_counts: dict[str, int]) -> str:
+    if not channel_counts:
+        return "brak kanałów"
+    return ", ".join(f"{channel}={count}" for channel, count in channel_counts.items())
+
+
+def _compact_campaign_row_for_demand_gen(row: dict[str, Any]) -> AdsCampaignMetricRow:
+    return AdsCampaignMetricRow(
+        campaign_id=row.get("campaign_id"),
+        campaign_name=row.get("campaign_name") or "campaign",
+        campaign_status=row.get("campaign_status"),
+        advertising_channel_type=row.get("advertising_channel_type"),
+        clicks=row.get("clicks"),
+        impressions=row.get("impressions"),
+        cost_micros=row.get("cost_micros"),
+        conversions=row.get("conversions"),
+        conversion_value=row.get("conversion_value"),
+        evidence_ids=row.get("evidence_ids") or [],
+        metric_facts=[],
+        missing_metrics=row.get("missing_metrics") or [],
+        blocked_claims=row.get("blocked_claims") or [],
     )
 
 

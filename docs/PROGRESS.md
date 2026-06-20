@@ -176,15 +176,20 @@ Aktualny proof produktowy:
   zduplikowane row payloads w `decision_queue` są pominięte, budget preview w
   kontrakcie jest ograniczony do 4 rows, a full endpoint pointer zostaje
   `/api/ads/diagnostics`.
-- Scoped `wilq-demand-gen-operator` context-pack jest teraz honest-blocked:
-  `160734 bytes`, `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`
-  i `demand_gen_readiness.status=blocked`. Missing read contracts są jawne i
-  nieredaktowane: `demand_gen_campaign_rows`,
+- Scoped `wilq-demand-gen-operator` context-pack jest teraz honest-blocked, ale
+  nie kłamie już o brakującym campaign-row read contract. Live API proof po
+  restarcie portu 8000: `demand_gen_readiness.status=blocked`,
+  `campaign_rows_evaluated=18`, `campaign_channel_counts={PERFORMANCE_MAX: 8,
+  SEARCH: 10}`, `demand_gen_campaign_rows=[]`, `active_action_objects=[]` i
+  `ads_diagnostics.action_ids=[]`. `demand_gen_campaign_rows` jest teraz w
+  `available_read_contracts`; missing zostają tylko
   `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
   `demand_gen_landing_quality_by_campaign`,
-  `demand_gen_migration_constraints`, `demand_gen_action_object`.
-  Skill smoke `wilq-demand-gen-operator` egzekwuje teraz ten kontrakt i failuje,
-  jeśli adjacent ActionObject wróci jako aktywna akcja Demand Gen.
+  `demand_gen_migration_constraints`, `demand_gen_action_object`. Skill smoke
+  failuje, jeśli adjacent ActionObject wróci jako aktywna akcja Demand Gen albo
+  jeśli campaign rows z kanałami są ponownie raportowane jako missing. Full
+  `scripts/verify.sh` passed after this slice: backend `123 passed`,
+  dashboard unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
 - `/api/opportunities` nie jest już rejestrem connectorów. Live proof po
   `scripts/local_stack.sh restart`: zwraca 4 decision-backed opportunities:
   Merchant feed review, Content refresh queue, GA4 measurement/traffic review
@@ -342,10 +347,11 @@ Aktualny maintenance:
   backlink gap work is still blocked until WILQ stores typed Ahrefs gap
   records. DR/rank must stay authority context only; strict eval now enforces
   that no adjacent ActionObject can be used as an Ahrefs gap recommendation.
-- Demand Gen is honest-blocked, not useful yet. It still needs real
-  Demand Gen read contracts: campaign rows, asset groups, creative assets,
-  landing quality by campaign, migration constraints and a Demand Gen
-  ActionObject.
+- Demand Gen is honest-blocked, not useful yet. Campaign channel rows are now
+  available from Google Ads evidence, and current live state has no
+  Demand Gen/Discovery campaigns. It still needs real Demand Gen read
+  contracts for asset groups, creative assets, landing quality by campaign,
+  migration constraints and a Demand Gen ActionObject.
 - Full BDOS-class Ads optimizer is not done. Remaining areas include setting
   and using business targets (`WILQ_ADS_PROFIT_MARGIN`,
   `WILQ_ADS_BUSINESS_GOAL`, `WILQ_ADS_BUDGET_GOAL`,

@@ -193,6 +193,22 @@ Audit `docs/audits/001-output.md` is now folded into
    `scripts/verify.sh` passed after this slice with API smoke, skill smokes,
    dashboard route tests, Playwright e2e `9 passed` and dashboard production
    build.
+0. Demand Gen campaign-channel truth, 2026-06-20 13:33 Europe/Warsaw:
+   `wilq-demand-gen-operator` is still correctly blocked, but campaign rows are
+   no longer a missing read contract when Google Ads campaign channel facts are
+   present. Live API proof after restarting the 8000 API process:
+   `campaign_rows_evaluated=18`,
+   `campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}`,
+   `demand_gen_campaign_rows=[]`, `active_action_objects=[]` and
+   `ads_diagnostics.action_ids=[]`. `demand_gen_campaign_rows` is now an
+   available read contract. Remaining missing contracts are
+   `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
+   `demand_gen_landing_quality_by_campaign`,
+   `demand_gen_migration_constraints` and `demand_gen_action_object`. Do not
+   unlock launch/migration recommendations from this; it only proves there are
+   currently no Demand Gen/Discovery campaign rows in the Ads evidence. Full
+   `scripts/verify.sh` passed after this slice: backend `123 passed`,
+   dashboard unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
 0. Custom segments payload-preview truth, 2026-06-19 22:08 Europe/Warsaw:
    custom segments now have a typed review-only payload preview in
    `/api/ads/diagnostics`, `/api/actions/act_prepare_custom_segments_from_search_terms`

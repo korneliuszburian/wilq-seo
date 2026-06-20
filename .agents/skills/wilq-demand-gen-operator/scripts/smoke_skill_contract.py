@@ -97,6 +97,21 @@ def main() -> int:
     missing_read_contracts = readiness.get("missing_read_contracts")
     if not isinstance(missing_read_contracts, list) or not missing_read_contracts:
         raise SystemExit("Demand Gen readiness must expose missing read contracts")
+    campaign_rows_evaluated = readiness.get("campaign_rows_evaluated")
+    if not isinstance(campaign_rows_evaluated, int):
+        raise SystemExit("Demand Gen readiness must expose campaign_rows_evaluated")
+    campaign_channel_counts = readiness.get("campaign_channel_counts")
+    if not isinstance(campaign_channel_counts, dict):
+        raise SystemExit("Demand Gen readiness must expose campaign_channel_counts")
+    if campaign_rows_evaluated > 0 and not campaign_channel_counts:
+        raise SystemExit("Demand Gen readiness must count campaign channels when rows exist")
+    if campaign_rows_evaluated > 0 and "demand_gen_campaign_rows" in missing_read_contracts:
+        raise SystemExit(
+            "Demand Gen campaign rows must not be missing when Ads campaign channels exist"
+        )
+    demand_gen_campaign_rows = readiness.get("demand_gen_campaign_rows")
+    if not isinstance(demand_gen_campaign_rows, list):
+        raise SystemExit("Demand Gen readiness must expose demand_gen_campaign_rows list")
     if "[REDACTED]" in json.dumps(readiness):
         raise SystemExit("Demand Gen readiness contract IDs must not be redacted")
     active_actions = pack.get("active_action_objects") or []
@@ -114,6 +129,9 @@ def main() -> int:
                 "health": health.get("status"),
                 "demand_gen_readiness": {
                     "status": readiness.get("status"),
+                    "campaign_rows_evaluated": campaign_rows_evaluated,
+                    "campaign_channel_counts": campaign_channel_counts,
+                    "demand_gen_campaign_row_count": len(demand_gen_campaign_rows),
                     "missing_read_contracts": missing_read_contracts,
                     "blocked_claims": readiness.get("blocked_claims", []),
                 },

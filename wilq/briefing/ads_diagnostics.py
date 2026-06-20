@@ -927,8 +927,19 @@ def _int_env(name: str) -> tuple[int | None, str | None]:
 
 def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMetricRow]:
     grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
+    row_metadata: dict[tuple[str | None, str], dict[str, str]] = {}
     seen_metric_keys: set[tuple[str | None, str, str]] = set()
     for fact in metric_facts:
+        campaign_id = fact.dimensions.get("campaign_id")
+        campaign_name = fact.dimensions.get("campaign_name")
+        if not campaign_id and not campaign_name:
+            continue
+        row_key = (campaign_id, campaign_name or f"campaign {campaign_id}")
+        metadata = row_metadata.setdefault(row_key, {})
+        for key in ("campaign_status", "advertising_channel_type"):
+            value = fact.dimensions.get(key)
+            if value:
+                metadata[key] = value
         if fact.name not in {
             "clicks",
             "impressions",
@@ -937,11 +948,6 @@ def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMet
             "conversion_value",
         }:
             continue
-        campaign_id = fact.dimensions.get("campaign_id")
-        campaign_name = fact.dimensions.get("campaign_name")
-        if not campaign_id and not campaign_name:
-            continue
-        row_key = (campaign_id, campaign_name or f"campaign {campaign_id}")
         metric_key = (campaign_id, row_key[1], fact.name)
         if metric_key in seen_metric_keys:
             continue
@@ -949,7 +955,12 @@ def _campaign_metric_rows(metric_facts: list[MetricFact]) -> list[AdsCampaignMet
         grouped_facts.setdefault(row_key, []).append(fact)
 
     rows = [
-        _campaign_metric_row(campaign_id, campaign_name, facts)
+        _campaign_metric_row(
+            campaign_id,
+            campaign_name,
+            facts,
+            row_metadata.get((campaign_id, campaign_name), {}),
+        )
         for (campaign_id, campaign_name), facts in grouped_facts.items()
     ]
     return sorted(rows, key=_campaign_row_sort_key)
@@ -959,8 +970,19 @@ def _campaign_metric_row(
     campaign_id: str | None,
     campaign_name: str,
     facts: list[MetricFact],
+    metadata: dict[str, str] | None = None,
 ) -> AdsCampaignMetricRow:
     facts_by_name = {fact.name: fact for fact in facts}
+    metadata_dimensions = metadata or {}
+    first_dimensions = next(
+        (
+            fact.dimensions
+            for fact in facts
+            if fact.dimensions.get("advertising_channel_type")
+            or fact.dimensions.get("campaign_status")
+        ),
+        metadata_dimensions or (facts[0].dimensions if facts else {}),
+    )
     expected_metrics = [
         "clicks",
         "impressions",
@@ -971,6 +993,8 @@ def _campaign_metric_row(
     return AdsCampaignMetricRow(
         campaign_id=campaign_id,
         campaign_name=campaign_name,
+        campaign_status=first_dimensions.get("campaign_status"),
+        advertising_channel_type=first_dimensions.get("advertising_channel_type"),
         clicks=_int_metric_value(facts_by_name.get("clicks")),
         impressions=_int_metric_value(facts_by_name.get("impressions")),
         cost_micros=_int_metric_value(facts_by_name.get("cost_micros")),

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 13:05 CEST.
+Last updated: 2026-06-20 13:33 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -217,15 +217,21 @@ keeps source evidence/action IDs, and preserves the full endpoint pointer:
 Demand Gen must stay honest until WILQ has Demand Gen-specific evidence and
 ActionObjects. It must not present GA4 tracking review, negative keyword review
 or custom segment review as Demand Gen actions. Current focused proof:
-`wilq-demand-gen-operator` context-pack is `160734 bytes` in a fresh API
-process, `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`, and it
-contains `demand_gen_readiness.status=blocked` with missing read contracts:
-`demand_gen_campaign_rows`, `demand_gen_asset_group_rows`,
-`demand_gen_creative_asset_rows`, `demand_gen_landing_quality_by_campaign`,
-`demand_gen_migration_constraints` and `demand_gen_action_object`. These IDs
-must not be redacted; they are product contracts, not secrets. The
-`wilq-demand-gen-operator` smoke script must fail if adjacent ActionObjects are
-again exposed as active Demand Gen actions.
+after restarting the 8000 API process, `wilq-demand-gen-operator` context-pack
+has `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`, and
+`demand_gen_readiness.status=blocked` with `campaign_rows_evaluated=18`,
+`campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}` and
+`demand_gen_campaign_rows=[]`. `demand_gen_campaign_rows` is now an available
+read contract when campaign channel facts exist; it must not be listed as
+missing in that state. Remaining missing read contracts are
+`demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
+`demand_gen_landing_quality_by_campaign`, `demand_gen_migration_constraints`
+and `demand_gen_action_object`. These IDs must not be redacted; they are
+product contracts, not secrets. The `wilq-demand-gen-operator` smoke script
+must fail if adjacent ActionObjects are again exposed as active Demand Gen
+actions or if channel-bearing campaign rows are reported as missing. Full
+`scripts/verify.sh` passed after this slice: backend `123 passed`, dashboard
+unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and
@@ -996,10 +1002,13 @@ Work in this order:
      sources `google_ads`, `google_analytics_4`; Ads and GA4 diagnostics build
      in parallel and Merchant stays omitted until a concrete Demand Gen/Merchant
      read contract exists. Latest fresh API-process proof after Demand Gen
-     scope cleanup: `160734 bytes`, `active_action_objects=[]`,
-     `ads_diagnostics.action_ids=[]`, and explicit
-     `demand_gen_readiness.status=blocked` with missing Demand Gen read
-     contracts.
+     campaign-channel follow-up: `active_action_objects=[]`,
+     `ads_diagnostics.action_ids=[]`, `demand_gen_readiness.status=blocked`,
+     `campaign_rows_evaluated=18`,
+     `campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}`,
+     `demand_gen_campaign_rows=[]`; campaign rows are available, while asset,
+     creative, landing-quality, migration and ActionObject contracts remain
+     missing.
    - `wilq-content-strategist`: `91731 bytes`, cold `2.044s`, warm `0.166s`.
    - `wilq-ga4-analyst`: `28578 bytes`, cold `1.927s`, warm `0.147s`.
    - `wilq-merchant-feed-operator`: `24007 bytes`, cold `1.819s`, warm
