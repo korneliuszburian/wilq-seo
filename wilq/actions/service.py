@@ -33,6 +33,8 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionApplyRequest,
     ActionApplyResult,
+    ActionConfirmRequest,
+    ActionConfirmResult,
     ActionMode,
     ActionObject,
     ActionPreviewRequest,
@@ -982,6 +984,34 @@ def preview_action(
     )
 
 
+def confirm_action(
+    action: ActionObject,
+    request: ActionConfirmRequest,
+) -> ActionConfirmResult:
+    action.review_gate = _action_review_gate(action)
+    latest_preview = _latest_preview_event(action.audit_events)
+    blockers = _action_confirmation_blockers(action, request, latest_preview)
+    confirmed = not blockers
+    audit = AuditEvent(
+        id=f"audit_{action.id}_confirm_{uuid4().hex[:12]}",
+        action_id=action.id,
+        event_type="action_apply_confirmed" if confirmed else "action_confirmation_blocked",
+        actor=request.confirmed_by,
+        summary=_action_confirmation_summary(request, blockers, latest_preview),
+        evidence_ids=action.evidence_ids,
+    )
+    action.audit_events = [audit, *action.audit_events]
+    action.review_gate = _action_review_gate(action)
+    return ActionConfirmResult(
+        action_id=action.id,
+        confirmed=confirmed,
+        status="confirmed" if confirmed else "blocked",
+        blockers=blockers,
+        audit_event=audit,
+        review_gate=action.review_gate,
+    )
+
+
 def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
@@ -1069,10 +1099,12 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
     operator_checklist = _action_operator_checklist(action.payload)
     apply_allowed = _action_payload_apply_allowed(action.payload)
     last_review = _latest_human_review_event(action.audit_events)
+    last_confirmation = _latest_action_confirmation_event(action.audit_events)
     apply_blockers = _action_apply_blockers(
         action=action,
         required_checks=required_checks,
         apply_allowed=apply_allowed,
+        confirmation_satisfied=last_confirmation is not None,
     )
     if action.validation_status == "invalid":
         status = "blocked_apply"
@@ -1104,6 +1136,13 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
         last_reviewed_by=last_review.actor if last_review is not None else None,
         last_reviewed_at=last_review.created_at if last_review is not None else None,
         last_review_summary=last_review.summary if last_review is not None else None,
+        last_confirmation_by=last_confirmation.actor if last_confirmation is not None else None,
+        last_confirmation_at=last_confirmation.created_at
+        if last_confirmation is not None
+        else None,
+        last_confirmation_summary=last_confirmation.summary
+        if last_confirmation is not None
+        else None,
     )
 
 
@@ -1176,6 +1215,41 @@ def _action_preview_blockers(
     return _unique(blockers)
 
 
+def _action_confirmation_blockers(
+    action: ActionObject,
+    request: ActionConfirmRequest,
+    latest_preview: AuditEvent | None,
+) -> list[str]:
+    blockers: list[str] = []
+    if not request.preview_acknowledged:
+        blockers.append("preview_acknowledgement_required")
+    if latest_preview is None:
+        blockers.append("dry_run_preview_required")
+    if action.payload.get("destructive") is True:
+        blockers.append("destructive_actions_blocked")
+    return _unique(blockers)
+
+
+def _action_confirmation_summary(
+    request: ActionConfirmRequest,
+    blockers: list[str],
+    latest_preview: AuditEvent | None,
+) -> str:
+    if blockers:
+        return (
+            "Potwierdzenie apply zablokowane: "
+            f"{', '.join(blockers)}. "
+            f"Notatka: {request.notes}. "
+            "Ten zapis nie wykonuje apply ani mutacji vendorów."
+        )
+    preview_ref = latest_preview.id if latest_preview is not None else "missing"
+    return (
+        f"Potwierdzenie preview zapisane. Preview audit: {preview_ref}. "
+        f"Notatka: {request.notes}. "
+        "Ten zapis nie wykonuje apply ani mutacji vendorów."
+    )
+
+
 def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:
     if isinstance(payload.get("preview_contract"), str):
         return str(payload["preview_contract"])
@@ -1218,6 +1292,7 @@ def _action_apply_blockers(
     action: ActionObject,
     required_checks: list[str],
     apply_allowed: bool,
+    confirmation_satisfied: bool,
 ) -> list[str]:
     blockers: list[str] = []
     if action.mode != ActionMode.apply:
@@ -1228,7 +1303,7 @@ def _action_apply_blockers(
         blockers.append("payload_apply_allowed_false")
     if action.payload.get("destructive") is True:
         blockers.append("destructive_actions_blocked")
-    if _requires_human_confirmation(required_checks):
+    if _requires_human_confirmation(required_checks) and not confirmation_satisfied:
         blockers.append("human_confirm_before_apply")
     blocked_claims = _string_list(action.payload.get("blocked_claims"))
     blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
@@ -1269,6 +1344,20 @@ def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
                 if isinstance(item, dict) and "apply_allowed" in item
             )
     return preview_items
+
+
+def _latest_preview_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type == "action_preview_generated":
+            return event
+    return None
+
+
+def _latest_action_confirmation_event(events: list[AuditEvent]) -> AuditEvent | None:
+    for event in sorted(events, key=lambda item: item.created_at, reverse=True):
+        if event.event_type == "action_apply_confirmed":
+            return event
+    return None
 
 
 def _string_list(value: Any) -> list[str]:

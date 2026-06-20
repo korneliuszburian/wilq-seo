@@ -29,7 +29,7 @@ import {
 
 import {
   ActionObject,
-  ActionApplyResult,
+  ActionConfirmResult,
   ActionPreviewResult,
   ActionReviewRequest,
   ActionValidationResult,
@@ -60,7 +60,7 @@ import {
   getMerchantDiagnostics,
   getOpportunities,
   getTacticalQueue,
-  applyAction,
+  confirmAction,
   previewAction,
   reviewAction,
   validateAction,
@@ -744,6 +744,11 @@ function ActionReviewGatePanel({ action }: { action: ActionObject }) {
         Potwierdzenie człowieka: {gate.confirmation_required ? "wymagane" : "niewymagane"}.
         Apply: {gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
       </div>
+      {gate.last_confirmation_summary ? (
+        <p className="mt-2 rounded-md border border-line bg-white p-2 text-slate-600">
+          Ostatnie potwierdzenie: {gate.last_confirmation_summary}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -767,8 +772,11 @@ function actionGateLabel(value: string) {
     action_validation_required: "wymagana walidacja ActionObject",
     payload_apply_allowed_false: "payload nie pozwala na apply",
     destructive_actions_blocked: "destructive actions zablokowane",
+    preview_acknowledgement_required: "wymagane potwierdzenie preview",
+    dry_run_preview_required: "wymagany wcześniejszy dry-run preview",
     validate_action_object: "walidacja ActionObject",
-    human_review_before_apply: "review człowieka przed apply"
+    human_review_before_apply: "review człowieka przed apply",
+    human_confirm_before_apply: "potwierdzenie człowieka przed apply"
   };
   return labels[value] ?? adsMissingReadContractLabel(value);
 }
@@ -782,11 +790,12 @@ function ActionValidationControls({ action }: { action: ActionObject }) {
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
-  const applyMutation = useMutation({
+  const confirmMutation = useMutation({
     mutationFn: () =>
-      applyAction(action.id, {
-        confirm: true,
-        confirmed_by: "operator_local_dashboard"
+      confirmAction(action.id, {
+        confirmed_by: "operator_local_dashboard",
+        notes: "Operator potwierdza preview. Ten krok nie uruchamia apply.",
+        preview_acknowledged: true
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["actions"] });
@@ -827,29 +836,28 @@ function ActionValidationControls({ action }: { action: ActionObject }) {
       />
       <div className="mt-3 rounded-md border border-wait/30 bg-white p-3">
         <div className="text-xs font-semibold uppercase tracking-normal text-slate-600">
-          Jawne potwierdzenie apply
+          Jawne potwierdzenie preview
         </div>
         <p className="mt-1 text-xs leading-5 text-slate-600">
-          Apply wymaga requestu z <code>confirm=true</code> i <code>confirmed_by</code>.
-          Dla obecnych ActionObjectów prepare-only endpoint nadal zwróci blocker i zapisze
-          audit event.
+          Potwierdzenie wymaga wcześniejszego dry-run preview. Zapisuje lokalny audit event,
+          ale nie wykonuje apply ani mutacji vendorów.
         </p>
         <button
           type="button"
-          onClick={() => applyMutation.mutate()}
-          disabled={applyMutation.isPending}
+          onClick={() => confirmMutation.mutate()}
+          disabled={confirmMutation.isPending}
           className="mt-3 inline-flex min-h-9 items-center gap-2 rounded-md border border-wait bg-white px-3 py-2 text-xs font-medium text-wait hover:bg-wait/10 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {applyMutation.isPending ? (
+          {confirmMutation.isPending ? (
             <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
           ) : (
             <ShieldAlert aria-hidden="true" size={15} />
           )}
-          {applyMutation.isPending ? "Sprawdzam apply gate" : "Potwierdź apply"}
+          {confirmMutation.isPending ? "Zapisuję potwierdzenie" : "Potwierdź preview"}
         </button>
-        <ActionApplyResultPanel
-          result={applyMutation.data}
-          error={applyMutation.error instanceof Error ? applyMutation.error.message : null}
+        <ActionConfirmResultPanel
+          result={confirmMutation.data}
+          error={confirmMutation.error instanceof Error ? confirmMutation.error.message : null}
         />
       </div>
     </div>
@@ -880,15 +888,19 @@ function ActionValidationResultPanel({
   );
 }
 
-function ActionApplyResultPanel({
+function ActionConfirmResultPanel({
   result,
   error
 }: {
-  result?: ActionApplyResult;
+  result?: ActionConfirmResult;
   error: string | null;
 }) {
   if (error) {
-    return <div className="mt-3 text-xs leading-5 text-risk">Apply zablokowany: {error}</div>;
+    return (
+      <div className="mt-3 text-xs leading-5 text-risk">
+        Potwierdzenie zablokowane: {error}
+      </div>
+    );
   }
   if (!result) {
     return null;
@@ -896,10 +908,13 @@ function ActionApplyResultPanel({
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-700">
       <div>
-        Apply: <span className="font-semibold">{result.status}</span>
+        Potwierdzenie: <span className="font-semibold">{result.status}</span>
       </div>
-      <TraceLine label="Błędy apply" values={result.errors} empty="brak" />
+      <TraceLine label="Blokady potwierdzenia" values={result.blockers.map(actionGateLabel)} empty="brak" />
       <div>Audit event: {result.audit_event.event_type}</div>
+      <div>
+        Apply nadal: {result.review_gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
+      </div>
     </div>
   );
 }

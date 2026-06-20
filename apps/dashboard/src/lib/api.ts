@@ -1,6 +1,7 @@
 import {
   ActionObjectSchema,
   ActionApplyResultSchema,
+  ActionConfirmResultSchema,
   ActionPreviewResultSchema,
   ActionReviewResultSchema,
   ActionValidationResultSchema,
@@ -29,6 +30,8 @@ import {
   type ActionObject,
   type ActionApplyRequest,
   type ActionApplyResult,
+  type ActionConfirmRequest,
+  type ActionConfirmResult,
   type ActionPreviewResult,
   type ActionReviewRequest,
   type ActionReviewResult,
@@ -167,6 +170,13 @@ export function reviewAction(
   return apiPost(`/api/actions/${actionId}/review`, ActionReviewResultSchema, request);
 }
 
+export function confirmAction(
+  actionId: string,
+  request: ActionConfirmRequest
+): Promise<ActionConfirmResult> {
+  return apiPost(`/api/actions/${actionId}/confirm`, ActionConfirmResultSchema, request);
+}
+
 export function applyAction(
   actionId: string,
   request: ActionApplyRequest
@@ -224,6 +234,7 @@ export function getKnowledgeOperatingMap(): Promise<KnowledgeOperatingMapRespons
 export type {
   ActionObject,
   ActionApplyResult,
+  ActionConfirmResult,
   ActionPreviewResult,
   ActionReviewRequest,
   ActionReviewResult,

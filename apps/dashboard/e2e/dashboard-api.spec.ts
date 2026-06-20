@@ -189,13 +189,14 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Podgląd payloadu" })).toBeVisible();
     await expect(page.getByText(/Dowody: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
     await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
-    await expect(page.getByText("Jawne potwierdzenie apply")).toBeVisible();
-    await page.getByRole("button", { name: "Potwierdź apply" }).click();
-    await expect(page.getByText("Apply: blocked")).toBeVisible();
-    await expect(
-      page.getByText(/Błędy apply: .*Action mode must be apply before external execution/)
-    ).toBeVisible();
-    await expect(page.getByText("Audit event: apply_blocked")).toBeVisible();
+    await expect(page.getByText("Dry-run preview", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Generuj preview" }).click();
+    await expect(page.getByText("Audit event: action_preview_generated")).toBeVisible();
+    await expect(page.getByText("Jawne potwierdzenie preview")).toBeVisible();
+    await page.getByRole("button", { name: "Potwierdź preview" }).click();
+    await expect(page.getByText("Potwierdzenie: confirmed")).toBeVisible();
+    await expect(page.getByText("Audit event: action_apply_confirmed")).toBeVisible();
+    await expect(page.getByText(/Apply nadal: zablokowany/)).toBeVisible();
   });
 
   test("actions route starts with ActionObjects instead of registry dumps", async ({ page }) => {

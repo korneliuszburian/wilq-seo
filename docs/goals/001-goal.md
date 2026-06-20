@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 20:44 CEST.
+Last updated: 2026-06-20 21:03 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,26 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest ActionObject confirmation truth, runtime proof 2026-06-20 21:03 CEST:
+WILQ now has a separate `POST /api/actions/{action_id}/confirm`, typed
+`ActionConfirmRequest/ActionConfirmResult`, local audit events
+`action_confirmation_blocked` and `action_apply_confirmed`, dashboard panel
+`Jawne potwierdzenie preview` and Codex context-pack propagation through
+`ActionObject.review_gate.last_confirmation_by/at/summary`. Confirmation before
+dry-run preview is blocked with `dry_run_preview_required`; confirmation after
+preview records `action_apply_confirmed`, removes only the satisfied
+human-confirm blocker and keeps real apply blockers such as prepare-only mode or
+`payload_apply_allowed_false`. Runtime proof on a temporary state DB:
+confirm-before-preview -> `action_confirmation_blocked`, preview ->
+`action_preview_generated`, confirm-after-preview -> `action_apply_confirmed`,
+context-pack latest audit event -> `action_apply_confirmed`,
+`last_confirmation_by=operator_runtime_proof`, `apply_allowed=false`. This
+satisfies the local `preview -> confirm` visibility/audit step only. It does
+not execute vendor apply, does not satisfy impact-sanity checks and does not
+prove real mutation audit paths. Full `scripts/verify.sh` after this slice
+passed: backend `133 passed`, dashboard unit `17 passed`, Playwright e2e
+`14 passed`, dashboard build OK.
 
 Latest ActionObject dry-run preview truth, runtime proof 2026-06-20 20:44 CEST:
 WILQ now has `POST /api/actions/{action_id}/preview`, typed

@@ -925,6 +925,82 @@ def test_daily_context_pack_preserves_action_preview_audit(
     assert merchant_action["review_gate"]["apply_allowed"] is False
 
 
+def test_action_confirm_requires_prior_preview(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "confirm_without_preview.sqlite3"))
+
+    confirm_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/confirm",
+        json={
+            "confirmed_by": "operator_test",
+            "notes": "Operator tried to confirm without preview.",
+            "preview_acknowledged": True,
+        },
+    )
+
+    assert confirm_response.status_code == 200
+    confirmation = confirm_response.json()
+    assert confirmation["confirmed"] is False
+    assert confirmation["status"] == "blocked"
+    assert "dry_run_preview_required" in confirmation["blockers"]
+    assert confirmation["audit_event"]["event_type"] == "action_confirmation_blocked"
+    assert confirmation["review_gate"]["apply_allowed"] is False
+
+    audit_response = client.get(
+        "/api/audit/events?action_id=act_review_merchant_feed_issues"
+    )
+    assert audit_response.status_code == 200
+    assert audit_response.json()[0]["event_type"] == "action_confirmation_blocked"
+
+
+def test_action_confirm_records_preview_confirmation_without_apply(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "confirm_after_preview.sqlite3"))
+    preview_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/preview",
+        json={"requested_by": "operator_test", "max_items": 2},
+    )
+    assert preview_response.status_code == 200
+
+    confirm_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/confirm",
+        json={
+            "confirmed_by": "operator_test",
+            "notes": "Operator confirms the generated preview.",
+            "preview_acknowledged": True,
+        },
+    )
+
+    assert confirm_response.status_code == 200
+    confirmation = confirm_response.json()
+    assert confirmation["confirmed"] is True
+    assert confirmation["status"] == "confirmed"
+    assert confirmation["blockers"] == []
+    assert confirmation["audit_event"]["event_type"] == "action_apply_confirmed"
+    assert confirmation["audit_event"]["actor"] == "operator_test"
+    assert confirmation["review_gate"]["last_confirmation_by"] == "operator_test"
+    assert confirmation["review_gate"]["apply_allowed"] is False
+    assert "human_confirm_before_apply" not in confirmation["review_gate"]["apply_blockers"]
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-daily-command"},
+    )
+    assert context_response.status_code == 200
+    payload = context_response.json()
+    actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
+    merchant_action = actions_by_id["act_review_merchant_feed_issues"]
+    assert merchant_action["latest_audit_event"]["event_type"] == "action_apply_confirmed"
+    assert merchant_action["review_gate"]["last_confirmation_by"] == "operator_test"
+    assert merchant_action["review_gate"]["apply_allowed"] is False
+
+
 def test_daily_context_pack_preserves_human_review_outcome(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

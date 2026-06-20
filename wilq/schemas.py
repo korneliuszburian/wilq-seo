@@ -233,6 +233,9 @@ class ActionReviewGate(BaseModel):
     last_reviewed_by: str | None = None
     last_reviewed_at: datetime | None = None
     last_review_summary: str | None = None
+    last_confirmation_by: str | None = None
+    last_confirmation_at: datetime | None = None
+    last_confirmation_summary: str | None = None
 
 
 class ActionObject(BaseModel):
@@ -304,6 +307,21 @@ class ActionPreviewResult(BaseModel):
 class ActionReviewResult(BaseModel):
     action_id: str
     status: Literal["recorded"]
+    audit_event: AuditEvent
+    review_gate: ActionReviewGate
+
+
+class ActionConfirmRequest(BaseModel):
+    confirmed_by: str = Field(min_length=1)
+    notes: str = Field(min_length=1, max_length=2000)
+    preview_acknowledged: bool = False
+
+
+class ActionConfirmResult(BaseModel):
+    action_id: str
+    confirmed: bool
+    status: Literal["confirmed", "blocked"]
+    blockers: list[str] = Field(default_factory=list)
     audit_event: AuditEvent
     review_gate: ActionReviewGate
 

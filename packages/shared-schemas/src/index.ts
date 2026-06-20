@@ -129,7 +129,10 @@ export const ActionReviewGateSchema = z.object({
   last_review_outcome: ActionReviewOutcomeSchema.nullable().optional(),
   last_reviewed_by: z.string().nullable().optional(),
   last_reviewed_at: z.string().nullable().optional(),
-  last_review_summary: z.string().nullable().optional()
+  last_review_summary: z.string().nullable().optional(),
+  last_confirmation_by: z.string().nullable().optional(),
+  last_confirmation_at: z.string().nullable().optional(),
+  last_confirmation_summary: z.string().nullable().optional()
 });
 
 export const ActionObjectSchema = z.object({
@@ -189,6 +192,21 @@ export const ActionPreviewResultSchema = z.object({
 export const ActionReviewResultSchema = z.object({
   action_id: z.string(),
   status: z.enum(["recorded"]),
+  audit_event: AuditEventSchema,
+  review_gate: ActionReviewGateSchema
+});
+
+export const ActionConfirmRequestSchema = z.object({
+  confirmed_by: z.string().min(1),
+  notes: z.string().min(1).max(2000),
+  preview_acknowledged: z.boolean().default(false)
+});
+
+export const ActionConfirmResultSchema = z.object({
+  action_id: z.string(),
+  confirmed: z.boolean(),
+  status: z.enum(["confirmed", "blocked"]),
+  blockers: z.array(z.string()),
   audit_event: AuditEventSchema,
   review_gate: ActionReviewGateSchema
 });
@@ -1575,6 +1593,8 @@ export type ActionPreviewRequest = z.infer<typeof ActionPreviewRequestSchema>;
 export type ActionPreviewResult = z.infer<typeof ActionPreviewResultSchema>;
 export type ActionReviewRequest = z.infer<typeof ActionReviewRequestSchema>;
 export type ActionReviewResult = z.infer<typeof ActionReviewResultSchema>;
+export type ActionConfirmRequest = z.infer<typeof ActionConfirmRequestSchema>;
+export type ActionConfirmResult = z.infer<typeof ActionConfirmResultSchema>;
 export type ActionApplyRequest = z.infer<typeof ActionApplyRequestSchema>;
 export type CommandCenterResponse = z.infer<typeof CommandCenterResponseSchema>;
 export type CommandCenterBriefItem = z.infer<typeof CommandCenterBriefItemSchema>;

@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from wilq.actions.service import (
     apply_action,
+    confirm_action,
     get_action,
     list_actions,
     preview_action,
@@ -63,6 +64,7 @@ from wilq.knowledge.operating_map import build_knowledge_operating_map
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
     ActionApplyRequest,
+    ActionConfirmRequest,
     ActionObject,
     ActionPreviewRequest,
     ActionReviewRequest,
@@ -1967,6 +1969,21 @@ def preview_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = preview_action(action, request)
+    local_state_store().save_audit_event(result.audit_event)
+    clear_daily_runtime_cache()
+    clear_skill_context_cache()
+    return result.model_dump(mode="json")
+
+
+@app.post("/api/actions/{action_id}/confirm")
+def confirm_action_endpoint(
+    action_id: str,
+    request: ActionConfirmRequest,
+) -> dict[str, Any]:
+    action = get_action(action_id)
+    if action is None:
+        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+    result = confirm_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
     clear_daily_runtime_cache()
     clear_skill_context_cache()

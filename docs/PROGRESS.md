@@ -34,6 +34,24 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- ActionObject confirmation gate, 2026-06-20 21:03 CEST.
+  WILQ ma teraz osobny `POST /api/actions/{action_id}/confirm`, typed
+  `ActionConfirmRequest/ActionConfirmResult`, lokalne audit eventy
+  `action_confirmation_blocked` i `action_apply_confirmed` oraz dashboardowy
+  panel `Jawne potwierdzenie preview`. Confirm wymaga wcześniejszego dry-run
+  preview i `preview_acknowledged=true`; bez preview zwraca blocker
+  `dry_run_preview_required`. Confirm po preview zapisuje potwierdzenie i
+  propaguje `last_confirmation_by/at/summary` przez `ActionObject.review_gate`
+  oraz Codex context-pack. Runtime proof na tymczasowej bazie:
+  confirm-before-preview -> `action_confirmation_blocked`,
+  preview -> `action_preview_generated`, confirm-after-preview ->
+  `action_apply_confirmed`, context-pack ma
+  `latest_audit_event=action_apply_confirmed`,
+  `last_confirmation_by=operator_runtime_proof`, `apply_allowed=false`. To
+  domyka lokalny etap `preview -> confirm` bez vendor mutation; nadal nie
+  odblokowuje realnego `apply`. Pełne `scripts/verify.sh` po slice: backend
+  `133 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+  dashboard build OK.
 - ActionObject dry-run preview contract, 2026-06-20 20:44 CEST.
   WILQ ma teraz `POST /api/actions/{action_id}/preview`, typed
   `ActionPreviewRequest/ActionPreviewResult`, lokalny audit event

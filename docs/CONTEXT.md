@@ -59,6 +59,23 @@ Audit `docs/audits/001-output.md` is now folded into
    `[REDACTED]` marker. This is only local review/audit state and must not be
    interpreted as vendor mutation permission.
 
+0. ActionObject confirmation truth, 2026-06-20 21:03 CEST:
+   `POST /api/actions/{action_id}/confirm` is now a separate local confirmation
+   step after dry-run preview. It returns typed `ActionConfirmResult` and never
+   executes vendor apply. Confirmation before preview is blocked with
+   `dry_run_preview_required` and audit event `action_confirmation_blocked`.
+   Confirmation after preview writes `action_apply_confirmed`, updates
+   `ActionObject.review_gate.last_confirmation_by/at/summary`, removes only the
+   satisfied human-confirm blocker and keeps real apply blockers such as
+   `action_mode_prepare_only` or `payload_apply_allowed_false`. Dashboard shows
+   `Jawne potwierdzenie preview`. Daily context-pack carries both
+   `latest_audit_event=action_apply_confirmed` and the `last_confirmation_*`
+   review-gate fields. Runtime proof on a temp state DB: confirm-before-preview
+   -> blocked, preview -> `action_preview_generated`, confirm-after-preview ->
+   `action_apply_confirmed`, context-pack `apply_allowed=false`. Full
+   `scripts/verify.sh` passed after this slice: backend `133 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, dashboard build OK.
+
 0. ActionObject dry-run preview truth, 2026-06-20 20:44 CEST:
    `POST /api/actions/{action_id}/preview` is the standard local preview step
    in the Goal 001 `dry_run -> preview -> confirm -> audit` path. It returns
