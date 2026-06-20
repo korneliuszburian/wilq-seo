@@ -3676,7 +3676,7 @@ function mockFetch() {
                   blockery: 0
                 },
                 co_widzimy:
-                  "Merchant Center: produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blockery=0. Źródła=google_merchant_center, dowody=2 evidence IDs, akcje=1 ActionObject.",
+                  "Merchant Center ma produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blockery=0. To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że approval, przychód albo dane produktu zostały już naprawione.",
                 dlaczego_to_ma_znaczenie:
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
@@ -3703,7 +3703,7 @@ function mockFetch() {
                 priority: 12,
                 metric_tiles: { "query/page": 1, "WP match": 1, decyzje: 1, wyświetlenia: 120, kliknięcia: 12 },
                 co_widzimy:
-                  "Content + SEO: query/page=1, WP match=1, decyzje=1, wyświetlenia=120, kliknięcia=12. Źródła=google_search_console, wordpress_ekologus, dowody=2 evidence IDs, akcje=1 ActionObject.",
+                  "GSC i WordPress tworzą kolejkę SEO: query/page=1, WP match=1, decyzje=1, wyświetlenia=120, kliknięcia=12. To jest decyzja refresh/merge/create/block oparta o query/page i inventory, nie obietnica leadów ani wzrostów pozycji.",
                 dlaczego_to_ma_znaczenie:
                   'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
                 bezpieczny_next_step:
@@ -3727,7 +3727,7 @@ function mockFetch() {
                 priority: 16,
                 metric_tiles: { kampanie: 18, "search terms": 50 },
                 co_widzimy:
-                  "Google Ads: kampanie=18, search terms=50. Źródła=google_ads, dowody=1 evidence ID, akcje=brak ActionObject.",
+                  "Google Ads ma kolejki do oceny: kampanie=18, search terms=50. To są read-only kolejki budżetu, rekomendacji, wykluczeń i segmentów. Wdrożenie zmian, ocena rentowności i werdykty o przepalonym budżecie pozostają zablokowane.",
                 dlaczego_to_ma_znaczenie:
                   "Google Ads OAuth, MCC login i child customer działają.",
                 bezpieczny_next_step:

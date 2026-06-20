@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 22:24 CEST.
+Last updated: 2026-06-20 22:40 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,25 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Command Center DailyDecision usefulness truth, live proof 2026-06-20
+22:40 CEST: `DailyDecision.co_widzimy` no longer carries technical trace
+phrases such as `Źródła=`, `dowody=` or `akcje=`. Those identifiers remain in
+typed fields and dashboard trace lines, while the primary decision copy now
+describes marketer-facing facts: Merchant issue review, GSC/WordPress content
+queue, GA4 measurement blocker, Ads read-only review queues and Localo
+aggregate visibility review. Live `/api/dashboard/command-center` after
+`scripts/local_stack.sh restart` returned `false` for any `co_widzimy`
+containing `Źródła=`, `dowody=` or `akcje=`, and GA4 no longer duplicates the
+`Status blocked oznacza...` sentence. Narrow checks passed:
+`uv run ruff check wilq/briefing/command_center.py tests/test_api_contracts.py`,
+`uv run mypy wilq/briefing/command_center.py`,
+`uv run pytest tests/test_api_contracts.py -q -k 'command_center'`,
+`pnpm --filter @wilq/dashboard lint`, `pnpm --filter @wilq/dashboard typecheck`
+and `pnpm --filter @wilq/dashboard test -- --run App.test.tsx`. Full
+`scripts/verify.sh` passed: backend `136 passed`, dashboard unit `17 passed`,
+Playwright e2e `14 passed`, API/skill smokes and dashboard production build
+OK.
 
 Latest ActionObject mutation audit visibility truth, runtime proof 2026-06-20
 22:24 CEST: `ActionObject.review_gate` now carries the latest mutation audit

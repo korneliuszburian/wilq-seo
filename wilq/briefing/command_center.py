@@ -1291,40 +1291,75 @@ def _decision_observation(
     item: CommandCenterActionPlanItem,
     brief_item: CommandCenterBriefItem | None,
 ) -> str:
-    connector_labels = ", ".join(item.source_connectors) if item.source_connectors else "brak"
-    evidence_label = f"{len(item.evidence_ids)} evidence ID"
-    if len(item.evidence_ids) != 1:
-        evidence_label += "s"
-    action_label = _action_count_label(item.action_ids)
+    if item.id == "plan_review_merchant_feed_issues" and brief_item is not None:
+        return _decision_metric_observation(
+            prefix="Merchant Center ma",
+            metric_tiles=brief_item.metric_tiles,
+            suffix=(
+                "To jest kolejka ręcznego review feedu; WILQ nie twierdzi, że "
+                "approval, przychód albo dane produktu zostały już naprawione."
+            ),
+        )
+    if item.id == "plan_prepare_content_refresh_queue" and brief_item is not None:
+        return _decision_metric_observation(
+            prefix="GSC i WordPress tworzą kolejkę SEO:",
+            metric_tiles=brief_item.metric_tiles,
+            suffix=(
+                "To jest decyzja refresh/merge/create/block oparta o query/page "
+                "i inventory, nie obietnica leadów ani wzrostów pozycji."
+            ),
+        )
     if item.id == "plan_review_ga4_landing_quality" and brief_item is not None:
+        if "Status blocked oznacza" in brief_item.summary:
+            return brief_item.summary
         return (
-            f"{brief_item.summary} Źródła={connector_labels}, "
-            f"dowody={evidence_label}, akcje={action_label}."
+            f"{brief_item.summary} Status blocked oznacza brak kontraktu na "
+            "ROAS/revenue/conversion drop/tracking fixed, nie awarię connectora."
         )
     if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (
-            f"{brief_item.summary} Źródła={connector_labels}, "
-            f"dowody={evidence_label}, akcje={action_label}."
+            f"{brief_item.summary} To blocker target-aware decyzji, nie awaria "
+            "Google Ads ani brak live campaign facts."
+        )
+    if item.id == "plan_review_ads_campaign_metrics" and brief_item is not None:
+        return _decision_metric_observation(
+            prefix="Google Ads ma kolejki do oceny:",
+            metric_tiles=brief_item.metric_tiles,
+            suffix=(
+                "To są read-only kolejki budżetu, rekomendacji, wykluczeń i "
+                "segmentów. Wdrożenie zmian, ocena rentowności i werdykty o "
+                "przepalonym budżecie pozostają zablokowane."
+            ),
+        )
+    if item.id == "plan_review_localo_visibility_facts" and brief_item is not None:
+        return _decision_metric_observation(
+            prefix="Localo ma read-only agregaty:",
+            metric_tiles=brief_item.metric_tiles,
+            suffix=(
+                "To pozwala zrobić ostrożny przegląd lokalnej widoczności, ale "
+                "GBP, konkurencja i uplift nadal wymagają osobnych kontraktów."
+            ),
         )
     metric_sentence = ""
     if brief_item and brief_item.metric_tiles:
         metric_sentence = _metric_tiles_sentence(brief_item.metric_tiles) + ". "
-    return (
-        f"{item.category}: {metric_sentence}Źródła={connector_labels}, "
-        f"dowody={evidence_label}, akcje={action_label}."
-    )
+    return f"{item.category}: {metric_sentence}{item.why_it_matters}"
+
+
+def _decision_metric_observation(
+    *,
+    prefix: str,
+    metric_tiles: dict[str, float | int | str],
+    suffix: str,
+) -> str:
+    metric_sentence = _metric_tiles_sentence(metric_tiles)
+    if metric_sentence:
+        return f"{prefix} {metric_sentence}. {suffix}"
+    return suffix
 
 
 def _metric_tiles_sentence(metric_tiles: dict[str, float | int | str]) -> str:
     return ", ".join(f"{label}={value}" for label, value in metric_tiles.items())
-
-
-def _action_count_label(action_ids: list[str]) -> str:
-    if not action_ids:
-        return "brak ActionObject"
-    if len(action_ids) == 1:
-        return "1 ActionObject"
-    return f"{len(action_ids)} ActionObjects"
 
 
 def _merge_ids(base_ids: list[str], tactical_items: list[Any], limit: int = 12) -> list[str]:

@@ -34,6 +34,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center DailyDecision usefulness, 2026-06-20 22:40 CEST.
+  `DailyDecision.co_widzimy` nie pokazuje już technicznego debug tekstu
+  `Źródła=`, `dowody=` ani `akcje=`. Te identyfikatory zostają w typed fields i
+  trace lines, a główne zdanie decyzji mówi po polsku, co marketer realnie ma
+  przejrzeć: Merchant issue review, GSC/WordPress content queue, GA4 blocker
+  pomiaru, Ads read-only review queues i Localo agregaty. Live proof po
+  `scripts/local_stack.sh restart`: `/api/dashboard/command-center` zwrócił
+  `false` dla obecności `Źródła=`/`dowody=`/`akcje=` w `co_widzimy`, a GA4 nie
+  dubluje już zdania `Status blocked oznacza...`. Wąskie checks przeszły:
+  ruff/mypy dla `command_center.py`, `pytest -k command_center`, dashboard
+  lint/typecheck i `App.test.tsx`. Full `scripts/verify.sh` przeszedł:
+  backend `136 passed`, dashboard unit `17 passed`, Playwright e2e
+  `14 passed`, API/skill smokes i produkcyjny build dashboardu OK.
 - ActionObject mutation audit visibility, 2026-06-20 22:24 CEST.
   `ActionObject.review_gate` niesie teraz najnowszy mutation audit:
   `last_mutation_audit_id/status/actor/at/summary`,

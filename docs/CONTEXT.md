@@ -29,6 +29,16 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Command Center DailyDecision usefulness, 2026-06-20 22:40 CEST:
+   `DailyDecision.co_widzimy` is now marketer-facing copy, not a trace/debug
+   sentence. It must not contain `Źródła=`, `dowody=` or `akcje=`; those remain
+   in typed fields and trace lines. Live proof after `scripts/local_stack.sh
+   restart`: `/api/dashboard/command-center` returned `false` for those
+   substrings in all `co_widzimy` values, and GA4 no longer duplicates
+   `Status blocked oznacza...`. `scripts/verify.sh` passed for this follow-up:
+   backend `136 passed`, dashboard unit `17 passed`, Playwright e2e
+   `14 passed`, API/skill smokes and dashboard production build OK.
+
 0. ActionObject mutation audit visibility, 2026-06-20 22:24 CEST:
    `ActionObject.review_gate` now carries the latest mutation audit fields:
    `last_mutation_audit_id/status/actor/at/summary`,

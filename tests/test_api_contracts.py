@@ -1889,11 +1889,15 @@ def test_command_center_exposes_polish_operator_brief(
         item_id.replace("plan_", "decision_", 1) for item_id in plan_by_id
     }
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
-    assert merchant_decision["co_widzimy"].startswith("Merchant Center:")
+    assert merchant_decision["co_widzimy"].startswith("Merchant Center ma")
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
     assert merchant_decision["metric_tiles"]["zgłoszenia"] == 3
     assert merchant_decision["metric_tiles"]["decyzje"] >= 1
     assert "status=ready" not in merchant_decision["co_widzimy"]
+    for decision in decisions_by_id.values():
+        assert "Źródła=" not in decision["co_widzimy"]
+        assert "dowody=" not in decision["co_widzimy"]
+        assert "akcje=" not in decision["co_widzimy"]
     assert merchant_decision["dlaczego_to_ma_znaczenie"] == plan_by_id[
         "plan_review_merchant_feed_issues"
     ]["why_it_matters"]
@@ -1910,7 +1914,8 @@ def test_command_center_exposes_polish_operator_brief(
     assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
     assert ga4_decision["metric_tiles"]["decyzje"] >= 1
     assert "grup landing/source/campaign" in ga4_decision["co_widzimy"]
-    assert "decyzji review" in ga4_decision["co_widzimy"]
+    assert "Status blocked oznacza" in ga4_decision["co_widzimy"]
+    assert ga4_decision["co_widzimy"].count("Status blocked oznacza") == 1
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -2021,6 +2026,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_decision["metric_tiles"]["podgląd budżetu"] == 1
     assert ads_decision["metric_tiles"]["rekomendacje"] == 1
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
+    assert "read-only kolejki" in ads_decision["co_widzimy"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
     ads_business_decision = decisions_by_id[
         "decision_ads_business_context_before_budget_decisions"
