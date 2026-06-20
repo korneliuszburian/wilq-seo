@@ -74,7 +74,7 @@ const actions = [
     ],
     validation_status: "not_validated",
     human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ API.",
-    recommended_reason: "Przygotuj feed issue queue z payload preview.",
+    recommended_reason: "Przygotuj kolejkę problemów feedu z payload preview.",
     payload: {
       action_type: "merchant_feed_issue",
       connector: "google_merchant_center",
@@ -2289,15 +2289,17 @@ const marketingBrief = {
       items: [
         {
           id: "brief_focus_merchant_feed",
-          title: "Merchant Center: zacznij od feed/product issues",
+          title: "Merchant Center: zacznij od kolejki problemów feedu",
           kind: "recommendation",
           priority: 87,
           source_connectors: ["google_merchant_center"],
           evidence_ids: ["ev_refresh_merchant_feed"],
           metric_facts: [metricFacts[1]],
           action_ids: ["act_review_merchant_feed_issues"],
-          summary: "WILQ widzi Merchant metric facts i kieruje operatora do walidacji feedu.",
-          next_step: "Otwórz payload preview dla action candidate przed zmianą feedu.",
+          summary:
+            "WILQ widzi Merchant metric facts i kieruje operatora do walidacji kolejki problemów feedu.",
+          next_step:
+            "Otwórz payload preview dla ActionObject przed zmianą danych produktu.",
           risk: "medium",
           blocker_reason: null
         },
@@ -2477,6 +2479,34 @@ const merchantDiagnostics = {
       risk: "medium",
       next_step:
         "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
+    }
+  ],
+  decision_queue: [
+    {
+      id: "merchant_decision_merchant_issue_pl_not_impacted_availability_updated_n_availability",
+      decision_type: "review_issue_cluster",
+      status: "ready",
+      title: "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność",
+      summary: "23 zgłoszeń problemu NOT_IMPACTED/MERCHANT_ACTION dla PL / SHOPPING_ADS.",
+      cluster_id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
+      issue_type: "availability_updated",
+      severity: "NOT_IMPACTED",
+      resolution: "MERCHANT_ACTION",
+      affected_attribute: "n:availability",
+      country: "PL",
+      reporting_context: "SHOPPING_ADS",
+      product_count: 23,
+      issue_count: 23,
+      source_connectors: ["google_merchant_center"],
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      metric_facts: [metricFacts[3]],
+      action_ids: ["act_review_merchant_feed_issues"],
+      blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
+      rationale:
+        "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Obecny odczyt nie zwraca przykładowych ID produktów ani tytułów.",
+      next_step:
+        "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu.",
+      risk: "medium"
     }
   ],
   sections: [
@@ -2982,30 +3012,39 @@ function mockFetch() {
             generated_at: "2026-06-17T10:00:00Z",
             strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
             primary_next_step:
-              "Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.",
-            blocker_count: 2,
+              "Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu.",
+            blocker_count: 0,
             tactical_item_count: 3,
             daily_decisions: [
               {
                 id: "decision_review_merchant_feed_issues",
-                title: "Przejrzyj produkty z problemami w Merchant Center",
+                title: "Przejrzyj kolejkę problemów Merchant Center",
                 route: "/merchant",
                 status: "ready",
                 priority: 10,
-                metric_tiles: { produkty: 10900, issues: 23, blockery: 0 },
+                metric_tiles: {
+                  produkty: 10900,
+                  "typy problemów": 15,
+                  zgłoszenia: 1887,
+                  decyzje: 8,
+                  blockery: 0
+                },
                 co_widzimy:
-                  "Merchant Center: produkty=10900, issues=23, blockery=0. Źródła=google_merchant_center, dowody=1 evidence ID, akcje=1 ActionObject.",
+                  "Merchant Center: produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8, blockery=0. Źródła=google_merchant_center, dowody=2 evidence IDs, akcje=1 ActionObject.",
                 dlaczego_to_ma_znaczenie:
-                  "WILQ widzi 10900 produktów i 23 feed/product issues. To wymaga review.",
+                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
-                  "Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+                  "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject.",
                 skill_id: "wilq-merchant-feed-operator",
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
                 codex_context_endpoint: "/api/codex/context-pack",
-                expected_codex_output: "Polski brief feed issue review z evidence IDs.",
+                expected_codex_output: "Polski brief przeglądu problemów feedu z evidence IDs.",
                 source_connectors: ["google_merchant_center"],
-                evidence_ids: ["ev_refresh_merchant_feed"],
+                evidence_ids: [
+                  "ev_refresh_merchant_feed",
+                  "ev_refresh_merchant_issue_clusters"
+                ],
                 action_ids: ["act_review_merchant_feed_issues"],
                 blocked_claims: ["approval restored", "automatic feed edit"],
                 risk: "medium"
@@ -3072,16 +3111,27 @@ function mockFetch() {
               },
               {
                 id: "daily_merchant_feed",
-                title: "Merchant: feed/product issues do przeglądu",
+                title: "Merchant: kolejka problemów feedu",
                 route: "/merchant",
                 status: "ready",
                 priority: 10,
-                summary: "Produkty=10900, issues=23. To jest read-only queue.",
-                next_step: "Otwórz /merchant i waliduj `act_review_merchant_feed_issues`.",
+                summary:
+                  "Produkty=10900, typy problemów=15, zgłoszenia=1887, decyzje=8. To jest read-only queue.",
+                next_step:
+                  "Otwórz /merchant i przejrzyj decyzje feedu przed walidacją ActionObject.",
                 source_connectors: ["google_merchant_center"],
-                evidence_ids: ["ev_refresh_merchant_feed"],
+                evidence_ids: [
+                  "ev_refresh_merchant_feed",
+                  "ev_refresh_merchant_issue_clusters"
+                ],
                 action_ids: ["act_review_merchant_feed_issues"],
-                metric_tiles: { produkty: 10900, issues: 23, blockery: 0 },
+                metric_tiles: {
+                  produkty: 10900,
+                  "typy problemów": 15,
+                  zgłoszenia: 1887,
+                  decyzje: 8,
+                  blockery: 0
+                },
                 blocked_claims: ["approval restored", "automatic feed edit"],
                 risk: "medium"
               },
@@ -3146,7 +3196,7 @@ function mockFetch() {
                 status: "ready",
                 what_it_proves:
                   "Merchant Center daje realne product/feed metryki i ActionObject review.",
-                operator_prompt: "Otwórz /merchant i waliduj feed/product issues.",
+                operator_prompt: "Otwórz /merchant i przejrzyj kolejkę problemów feedu.",
                 source_item_ids: ["daily_merchant_feed"],
                 evidence_ids: ["ev_refresh_merchant_feed"],
                 action_ids: ["act_review_merchant_feed_issues"]
@@ -3155,21 +3205,25 @@ function mockFetch() {
             action_plan: [
               {
                 id: "plan_review_merchant_feed_issues",
-                title: "Przejrzyj produkty z problemami w Merchant Center",
+                title: "Przejrzyj kolejkę problemów Merchant Center",
                 route: "/merchant",
                 status: "ready",
                 priority: 10,
                 category: "Merchant Center",
                 why_it_matters:
-                  "WILQ widzi 10900 produktów i 23 feed/product issues. To wymaga review.",
-                operator_action: "Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
+                operator_action:
+                  "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject.",
                 skill_id: "wilq-merchant-feed-operator",
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
                 codex_context_endpoint: "/api/codex/context-pack",
-                expected_codex_output: "Polski brief feed issue review z evidence IDs.",
+                expected_codex_output: "Polski brief przeglądu problemów feedu z evidence IDs.",
                 source_connectors: ["google_merchant_center"],
-                evidence_ids: ["ev_refresh_merchant_feed"],
+                evidence_ids: [
+                  "ev_refresh_merchant_feed",
+                  "ev_refresh_merchant_issue_clusters"
+                ],
                 action_ids: ["act_review_merchant_feed_issues"],
                 blocked_claims: ["approval restored", "automatic feed edit"],
                 risk: "medium"
@@ -3339,11 +3393,11 @@ describe("WILQ dashboard", () => {
     );
     expect(screen.getByText("Dzisiejsze decyzje marketera")).toBeInTheDocument();
     expect(
-      screen.getByText("Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject.")
+      screen.getByText("Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu.")
     ).toBeInTheDocument();
     expect(screen.getAllByText("Decyzje")).toHaveLength(1);
     expect(screen.getAllByRole("link", { name: "act_review_merchant_feed_issues" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Przejrzyj produkty z problemami w Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj kolejkę problemów Merchant Center")).toBeInTheDocument();
     expect(screen.getAllByText("produkty").length).toBeGreaterThan(0);
     expect(screen.getAllByText("10900").length).toBeGreaterThan(0);
     expect(screen.queryByText(/status=ready/)).not.toBeInTheDocument();
@@ -3367,7 +3421,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/ranking guarantee/)).not.toBeInTheDocument();
     expect(screen.queryByText(/search-term waste/)).not.toBeInTheDocument();
     expect(
-      screen.getByText("Oczekiwany wynik: Polski brief feed issue review z evidence IDs.")
+      screen.getByText("Oczekiwany wynik: Polski brief przeglądu problemów feedu z evidence IDs.")
     ).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj kolejkę SEO z GSC i WordPress")).toBeInTheDocument();
     expect(screen.getAllByText(/120 wyświetleń/).length).toBeGreaterThan(0);
@@ -3516,12 +3570,17 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co marketer ma zrobić teraz z feedem")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb pracy")).toBeInTheDocument();
     expect(screen.getByText(/WILQ grupuje problemy Merchant po typie/)).toBeInTheDocument();
-    expect(screen.getByText("availability_updated / n:availability / SHOPPING_ADS")).toBeInTheDocument();
     expect(
-      screen.getByText(/Raport pokazuje 23 zgłoszenia tego problemu w kraju PL \/ SHOPPING_ADS/)
+      screen.getByText("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
+    ).toBeInTheDocument();
+    expect(screen.getByText("przegląd problemu feedu")).toBeInTheDocument();
+    expect(
+      screen.getByText(/23 zgłoszeń problemu NOT_IMPACTED\/MERCHANT_ACTION dla PL \/ SHOPPING_ADS/)
     ).toBeInTheDocument();
     expect(screen.getByText("Zgłoszenia")).toBeInTheDocument();
     expect(screen.getByText("zgłoszenia: 23")).toBeInTheDocument();
+    expect(screen.getByText("problem: availability_updated")).toBeInTheDocument();
+    expect(screen.getByText("atrybut: n:availability")).toBeInTheDocument();
     expect(screen.getByText("kontekst: SHOPPING_ADS")).toBeInTheDocument();
     expect(screen.queryByText("Affected")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();

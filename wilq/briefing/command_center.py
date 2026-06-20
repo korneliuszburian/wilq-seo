@@ -9,6 +9,7 @@ from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
+from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
@@ -29,6 +30,8 @@ from wilq.schemas import (
     DailyDecision,
     Ga4DecisionItem,
     Ga4DiagnosticsResponse,
+    MerchantDecisionItem,
+    MerchantDiagnosticsResponse,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -110,6 +113,11 @@ def build_command_center_brief(
         content = content_future.result()
         merchant_facts = merchant_facts_future.result()
         ga4_facts = ga4_facts_future.result()
+    merchant = build_merchant_diagnostics(
+        tactical_items=tactical_queue.items,
+        actions=actions,
+        metric_facts=merchant_facts,
+    )
     ga4_diagnostics = build_ga4_diagnostics(
         tactical_items=tactical_queue.items,
         actions=actions,
@@ -119,7 +127,7 @@ def build_command_center_brief(
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
         _ads_item(ads),
-        _merchant_item_from_facts(tactical_queue.items, merchant_facts, actions),
+        _merchant_item_from_diagnostics(merchant),
         _content_item_from_diagnostics(content),
         _ga4_item_from_diagnostics(ga4_diagnostics),
     ]
@@ -323,50 +331,98 @@ def _numeric_tile(metric_tiles: dict[str, float | int | str], name: str) -> floa
     return float(value) if isinstance(value, int | float) else 0.0
 
 
-def _merchant_item_from_facts(
-    tactical_items: list[TacticalQueueItem],
-    facts: list[MetricFact],
-    actions: list[ActionObject],
-) -> CommandCenterBriefItem:
-    merchant_items = [
-        item for item in tactical_items if item.domain == OpportunityDomain.merchant
-    ]
-    product_count = _latest_numeric_fact(facts, "total_products")
-    if product_count is None:
-        product_count = _latest_numeric_fact(facts, "active_products")
-    product_count = product_count or 0
-    issue_count = _latest_numeric_fact(facts, "item_level_issue_count")
-    if issue_count is None:
-        issue_count = _latest_numeric_fact(facts, "disapproved_products")
-    if issue_count is None:
-        issue_count = _sum_latest_dimension_facts(facts, "issue_product_count")
-    issue_count = issue_count or len(merchant_items)
-    evidence_ids = _merchant_evidence_ids(facts, merchant_items)
-    live_data_available = bool(evidence_ids)
+def _risk_rank(risk: ActionRisk) -> int:
+    return {
+        ActionRisk.critical: 0,
+        ActionRisk.high: 1,
+        ActionRisk.medium: 2,
+        ActionRisk.low: 3,
+    }.get(risk, 4)
+
+
+def _merchant_item_from_diagnostics(data: MerchantDiagnosticsResponse) -> CommandCenterBriefItem:
+    top_decision = _top_merchant_decision(data.decision_queue)
+    decision_count = len(data.decision_queue)
+    problem_type_count = data.issue_count or len(data.issue_clusters)
+    issue_occurrence_count = sum(cluster.product_count for cluster in data.issue_clusters)
+    if not issue_occurrence_count:
+        issue_occurrence_count = sum(
+            decision.issue_count
+            if decision.issue_count is not None
+            else decision.product_count or 0
+            for decision in data.decision_queue
+        )
+    product_count = data.product_count or 0
+    live_data_available = data.live_data_available and bool(data.decision_queue)
+    action_ids = data.action_ids or _unique(
+        action_id for decision in data.decision_queue for action_id in decision.action_ids
+    )
+    evidence_ids = (
+        data.evidence_ids
+        or _unique(
+            evidence_id
+            for decision in data.decision_queue
+            for evidence_id in decision.evidence_ids
+        )
+        or [connector_evidence_id("google_merchant_center")]
+    )
+    if live_data_available:
+        top_reason = (
+            f"Najważniejsza decyzja: {top_decision.title}."
+            if top_decision is not None
+            else "Najpierw przejrzyj kolejkę Merchant."
+        )
+        summary = (
+            f"Produkty={product_count}, typy problemów={problem_type_count}, "
+            f"zgłoszenia={issue_occurrence_count}, decyzje={decision_count}. {top_reason} "
+            "To jest read-only queue, nie automatyczna naprawa feedu."
+        )
+        next_step = "Otwórz /merchant i przejrzyj decyzje feedu przed walidacją ActionObject."
+    else:
+        summary = "Merchant nie ma gotowej kolejki decyzji z aktualnych metric facts."
+        next_step = "Uruchom read-only Merchant vendor_read, potem wróć do /merchant."
     return CommandCenterBriefItem(
         id="daily_merchant_feed",
-        title="Merchant: feed/product issues do przeglądu",
+        title="Merchant: kolejka problemów feedu",
         route="/merchant",
         status="ready" if live_data_available else "blocked",
-        priority=10 if live_data_available and issue_count > 0 else 35,
-        summary=(
-            f"Produkty={product_count}, issues={issue_count}. "
-            "To jest read-only queue, nie automatyczna naprawa feedu."
-        ),
-        next_step="Otwórz /merchant i waliduj `act_review_merchant_feed_issues`.",
+        priority=10 if live_data_available and issue_occurrence_count > 0 else 35,
+        summary=summary,
+        next_step=next_step,
         source_connectors=["google_merchant_center"],
-        evidence_ids=_limited_ids(
-            evidence_ids or [connector_evidence_id("google_merchant_center")]
-        ),
-        action_ids=_action_ids_for(actions, connector="google_merchant_center"),
+        evidence_ids=_limited_ids(evidence_ids),
+        action_ids=action_ids,
         metric_tiles={
             "produkty": product_count,
-            "issues": issue_count,
-            "blockery": 0 if live_data_available else 1,
+            "typy problemów": problem_type_count,
+            "zgłoszenia": issue_occurrence_count,
+            "decyzje": decision_count,
+            "blockery": data.blocker_count,
         },
-        blocked_claims=["approval restored", "revenue recovered", "automatic feed edit"],
+        blocked_claims=_unique(
+            [
+                *(claim for section in data.sections for claim in section.blocked_claims),
+                *(claim for decision in data.decision_queue for claim in decision.blocked_claims),
+            ]
+        )
+        or ["approval restored", "revenue recovered", "automatic feed edit"],
         risk=ActionRisk.medium,
     )
+
+
+def _top_merchant_decision(
+    decisions: list[MerchantDecisionItem],
+) -> MerchantDecisionItem | None:
+    if not decisions:
+        return None
+    return sorted(
+        decisions,
+        key=lambda decision: (
+            _risk_rank(decision.risk),
+            -(decision.product_count or 0),
+            decision.title,
+        ),
+    )[0]
 
 
 def _content_item_from_diagnostics(data: ContentDiagnosticsResponse) -> CommandCenterBriefItem:
@@ -719,51 +775,10 @@ def _unique(values: Iterable[object]) -> list[str]:
     return unique_values
 
 
-def _latest_numeric_fact(facts: list[MetricFact], name: str) -> int | None:
-    for fact in facts:
-        if fact.name == name and isinstance(fact.value, int | float):
-            return int(fact.value)
-    return None
-
-
-def _sum_latest_dimension_facts(facts: list[MetricFact], name: str) -> int:
-    totals_by_dimensions: dict[tuple[tuple[str, str], ...], int] = {}
-    for fact in facts:
-        if fact.name != name or not isinstance(fact.value, int | float):
-            continue
-        key = tuple(sorted(fact.dimensions.items()))
-        if key in totals_by_dimensions:
-            continue
-        totals_by_dimensions[key] = int(fact.value)
-    return sum(totals_by_dimensions.values())
-
-
-def _merchant_evidence_ids(
-    facts: list[MetricFact],
-    tactical_items: list[TacticalQueueItem],
-) -> list[str]:
-    fact_evidence = [
-        fact.evidence_id
-        for fact in facts
-        if fact.name
-        in {
-            "total_products",
-            "item_level_issue_count",
-            "issue_product_count",
-            "active_products",
-            "disapproved_products",
-        }
-    ]
-    tactic_evidence = [
-        evidence_id for item in tactical_items for evidence_id in item.evidence_ids
-    ]
-    return _unique([*fact_evidence, *tactic_evidence])
-
-
 def _primary_next_step(items: list[CommandCenterBriefItem]) -> str:
     for item in items:
         if item.id == "daily_merchant_feed" and item.status == "ready":
-            return "Najpierw otwórz /merchant i przejrzyj feed/product issues z ActionObject."
+            return "Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu."
     for item in items:
         if item.status == "ready":
             return item.next_step
@@ -778,28 +793,31 @@ def _action_plan_item(
 ) -> CommandCenterActionPlanItem:
     related_tactics = _related_tactical_items(item, tactical_items)
     if item.id == "daily_merchant_feed":
+        issue_count = item.metric_tiles.get("zgłoszenia", item.metric_tiles.get("issues", 0))
         return CommandCenterActionPlanItem(
             id="plan_review_merchant_feed_issues",
-            title="Przejrzyj produkty z problemami w Merchant Center",
+            title="Przejrzyj kolejkę problemów Merchant Center",
             route=item.route,
             status=_action_plan_status(item),
             priority=10,
             category="Merchant Center",
             why_it_matters=(
                 f"WILQ widzi {item.metric_tiles.get('produkty', 0)} produktów i "
-                f"{item.metric_tiles.get('issues', 0)} feed/product issues. To może blokować "
+                f"{issue_count} zgłoszeń problemów feedu. To może blokować "
                 "widoczność produktów, ale wymaga ręcznego review przed zmianami."
             ),
-            operator_action="Otwórz /merchant, sprawdź issue queue i waliduj ActionObject.",
+            operator_action=(
+                "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject."
+            ),
             skill_id="wilq-merchant-feed-operator",
             codex_prompt=(
                 "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center "
-                "dla Ekologus, pogrupuj feed/product issues, wskaż najbezpieczniejszą "
+                "dla Ekologus, pogrupuj problemy feedu, wskaż najbezpieczniejszą "
                 "kolejkę review i nie twierdź, że approval albo revenue zostały odzyskane."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
-                "Polski brief feed issue review z evidence IDs, ActionObject "
+                "Polski brief przeglądu problemów feedu z evidence IDs, ActionObject "
                 "i blockerami claimów."
             ),
             source_connectors=item.source_connectors,

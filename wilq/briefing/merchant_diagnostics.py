@@ -13,6 +13,7 @@ from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    MerchantDecisionItem,
     MerchantDiagnosticSection,
     MerchantDiagnosticsResponse,
     MerchantIssueCluster,
@@ -32,16 +33,36 @@ MERCHANT_HEALTH_METRIC_NAMES = {
     "item_level_issue_count",
     "merchant_action_issue_count",
 }
+MERCHANT_ISSUE_LABELS = {
+    "availability_updated": "zmiana dostępności do sprawdzenia",
+    "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
+    "problem feedu": "problem feedu",
+}
+MERCHANT_ATTRIBUTE_LABELS = {
+    "n:availability": "dostępność",
+    "n:unit_pricing_measure": "miara ceny jednostkowej",
+    "atrybut": "atrybut",
+    "atrybut nieznany": "atrybut nieznany",
+}
 
 
-def build_merchant_diagnostics() -> MerchantDiagnosticsResponse:
+def build_merchant_diagnostics(
+    *,
+    tactical_items: list[TacticalQueueItem] | None = None,
+    actions: list[ActionObject] | None = None,
+    metric_facts: list[MetricFact] | None = None,
+) -> MerchantDiagnosticsResponse:
     connector = get_connector_status(MERCHANT_CONNECTOR_ID)
     if connector is None:
         raise RuntimeError("Merchant Center connector is not registered.")
     latest_refresh = _latest_merchant_refresh()
-    metric_facts = metric_store().list_metric_facts(
-        connector_id=MERCHANT_CONNECTOR_ID,
-        limit=MERCHANT_METRIC_FACT_LIMIT,
+    metric_facts = (
+        metric_facts
+        if metric_facts is not None
+        else metric_store().list_metric_facts(
+            connector_id=MERCHANT_CONNECTOR_ID,
+            limit=MERCHANT_METRIC_FACT_LIMIT,
+        )
     )
     live_data_available = bool(metric_facts) and (
         latest_refresh is None
@@ -53,22 +74,39 @@ def build_merchant_diagnostics() -> MerchantDiagnosticsResponse:
     trusted_facts = metric_facts if live_data_available else []
     tactical_items = [
         item
-        for item in build_tactical_queue().items
+        for item in (
+            tactical_items if tactical_items is not None else build_tactical_queue().items
+        )
         if item.domain == OpportunityDomain.merchant
     ]
-    action_ids = _merchant_action_ids(list_actions())
-    issue_clusters = _merchant_issue_clusters(trusted_facts, action_ids)
+    current_issue_facts = _current_facts_for_refresh(latest_refresh, trusted_facts)
+    current_tactical_items = _current_tactical_items_for_refresh(latest_refresh, tactical_items)
+    actions = actions if actions is not None else list_actions()
+    action_ids = _merchant_action_ids(actions)
+    issue_clusters = _merchant_issue_clusters(current_issue_facts, action_ids)
     sections = [
         _feed_health_section(latest_refresh, trusted_facts, action_ids),
         _issue_queue_section(
             latest_refresh,
-            trusted_facts,
-            tactical_items,
+            current_issue_facts,
+            current_tactical_items,
             issue_clusters,
             action_ids,
         ),
-        _product_action_safety_section(latest_refresh, trusted_facts, tactical_items, action_ids),
+        _product_action_safety_section(
+            latest_refresh,
+            trusted_facts,
+            current_tactical_items,
+            action_ids,
+        ),
     ]
+    decision_queue = _merchant_decision_queue(
+        latest_refresh=latest_refresh,
+        facts=current_issue_facts,
+        tactical_items=current_tactical_items,
+        issue_clusters=issue_clusters,
+        action_ids=action_ids,
+    )
     return MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -85,11 +123,24 @@ def build_merchant_diagnostics() -> MerchantDiagnosticsResponse:
             "item_level_issue_count",
         ),
         issue_clusters=issue_clusters,
+        decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
-            evidence_id for section in sections for evidence_id in section.evidence_ids
+            [
+                *(evidence_id for section in sections for evidence_id in section.evidence_ids),
+                *(
+                    evidence_id
+                    for decision in decision_queue
+                    for evidence_id in decision.evidence_ids
+                ),
+            ]
         ),
-        action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
+        action_ids=_unique(
+            [
+                *(action_id for section in sections for action_id in section.action_ids),
+                *(action_id for decision in decision_queue for action_id in decision.action_ids),
+            ]
+        ),
         blocker_count=sum(1 for section in sections if section.status == "blocked"),
     )
 
@@ -101,6 +152,30 @@ def _latest_merchant_refresh() -> ConnectorRefreshRun | None:
 
 def _merchant_action_ids(actions: list[ActionObject]) -> list[str]:
     return [action.id for action in actions if action.connector == MERCHANT_CONNECTOR_ID]
+
+
+def _current_facts_for_refresh(
+    latest_refresh: ConnectorRefreshRun | None,
+    facts: list[MetricFact],
+) -> list[MetricFact]:
+    if latest_refresh is None or not latest_refresh.evidence_ids:
+        return facts
+    evidence_ids = set(latest_refresh.evidence_ids)
+    return [fact for fact in facts if fact.evidence_id in evidence_ids]
+
+
+def _current_tactical_items_for_refresh(
+    latest_refresh: ConnectorRefreshRun | None,
+    items: list[TacticalQueueItem],
+) -> list[TacticalQueueItem]:
+    if latest_refresh is None or not latest_refresh.evidence_ids:
+        return items
+    evidence_ids = set(latest_refresh.evidence_ids)
+    return [
+        item
+        for item in items
+        if any(evidence_id in evidence_ids for evidence_id in item.evidence_ids)
+    ]
 
 
 def _feed_health_section(
@@ -303,6 +378,237 @@ def _merchant_issue_clusters(
             cluster.issue_type,
         ),
     )
+
+
+def _merchant_decision_queue(
+    *,
+    latest_refresh: ConnectorRefreshRun | None,
+    facts: list[MetricFact],
+    tactical_items: list[TacticalQueueItem],
+    issue_clusters: list[MerchantIssueCluster],
+    action_ids: list[str],
+) -> list[MerchantDecisionItem]:
+    if not facts and not tactical_items:
+        return [
+            MerchantDecisionItem(
+                id="merchant_block_vendor_read",
+                decision_type="block_until_vendor_read",
+                status="blocked",
+                title="Merchant: odczyt feedu wymagany przed decyzją",
+                summary=_merchant_blocker_reason(latest_refresh),
+                source_connectors=[MERCHANT_CONNECTOR_ID],
+                evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+                action_ids=action_ids,
+                blocked_claims=["feed health", "product approval", "issue count"],
+                rationale=(
+                    "WILQ nie ma aktualnych Merchant metric facts, więc nie może "
+                    "uczciwie zbudować kolejki problemów feedu ani ocenić stanu produktów."
+                ),
+                next_step="Uruchom read-only Merchant vendor_read, potem wróć do /merchant.",
+                risk=ActionRisk.medium,
+            )
+        ]
+
+    decisions = [
+        _merchant_decision_from_cluster(cluster, facts, action_ids)
+        for cluster in issue_clusters[:8]
+    ]
+    if decisions:
+        return decisions
+
+    tactical_decisions = [
+        _merchant_decision_from_tactical_item(item, action_ids)
+        for item in tactical_items[:6]
+    ]
+    if tactical_decisions:
+        return tactical_decisions
+
+    aggregate_decision = _merchant_aggregate_feed_status_decision(
+        latest_refresh,
+        facts,
+        action_ids,
+    )
+    return [aggregate_decision] if aggregate_decision is not None else []
+
+
+def _merchant_decision_from_cluster(
+    cluster: MerchantIssueCluster,
+    facts: list[MetricFact],
+    action_ids: list[str],
+) -> MerchantDecisionItem:
+    context = cluster.reporting_context or "wszystkie konteksty"
+    attribute = cluster.affected_attribute or "atrybut nieznany"
+    issue_type = cluster.issue_type or "unknown_issue"
+    display_issue_type = _merchant_display_label(issue_type)
+    display_attribute = _merchant_display_label(attribute)
+    cluster_facts = _facts_for_cluster(facts, cluster)
+    return MerchantDecisionItem(
+        id=f"merchant_decision_{cluster.id}",
+        decision_type="review_issue_cluster",
+        status="ready",
+        title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
+        summary=(
+            f"{cluster.product_count} zgłoszeń problemu {cluster.severity}"
+            f"/{cluster.resolution or 'brak resolution'} dla {cluster.country or 'global'}"
+            f" / {context}."
+        ),
+        cluster_id=cluster.id,
+        issue_type=issue_type,
+        severity=cluster.severity,
+        resolution=cluster.resolution,
+        affected_attribute=cluster.affected_attribute,
+        country=cluster.country,
+        reporting_context=cluster.reporting_context,
+        product_count=cluster.product_count,
+        issue_count=cluster.product_count,
+        source_connectors=cluster.source_connectors,
+        evidence_ids=cluster.evidence_ids,
+        metric_facts=cluster_facts[:6],
+        action_ids=action_ids or ([cluster.action_id] if cluster.action_id else []),
+        blocked_claims=cluster.blocked_claims,
+        rationale=(
+            "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza "
+            "wystąpienia problemu w raportach, nie gwarantowaną liczbę unikalnych "
+            "produktów ani gotową zmianę feedu. Obecny odczyt nie zwraca przykładowych "
+            "ID produktów ani tytułów."
+        ),
+        next_step=cluster.next_step,
+        risk=cluster.risk,
+    )
+
+
+def _merchant_decision_from_tactical_item(
+    item: TacticalQueueItem,
+    action_ids: list[str],
+) -> MerchantDecisionItem:
+    issue_type = item.dimensions.get("issue_type")
+    severity = item.dimensions.get("severity")
+    product_count = _numeric_metric(item.metric_facts, "issue_product_count")
+    display_issue_type = _merchant_display_label(issue_type or "problem feedu")
+    display_attribute = _merchant_display_label(
+        item.dimensions.get("affected_attribute") or "atrybut"
+    )
+    return MerchantDecisionItem(
+        id=f"merchant_decision_{item.id}",
+        decision_type="review_feed_status",
+        status="ready",
+        title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
+        summary=item.diagnosis,
+        issue_type=issue_type,
+        severity=severity,
+        resolution=item.dimensions.get("resolution"),
+        affected_attribute=item.dimensions.get("affected_attribute"),
+        country=item.dimensions.get("country"),
+        reporting_context=item.dimensions.get("reporting_context"),
+        product_count=product_count,
+        issue_count=product_count,
+        source_connectors=item.source_connectors,
+        evidence_ids=item.evidence_ids,
+        metric_facts=item.metric_facts[:6],
+        action_ids=item.action_ids or action_ids,
+        blocked_claims=item.blocked_claims,
+        rationale=item.diagnosis,
+        next_step=item.next_step,
+        risk=item.risk,
+    )
+
+
+def _merchant_aggregate_feed_status_decision(
+    latest_refresh: ConnectorRefreshRun | None,
+    facts: list[MetricFact],
+    action_ids: list[str],
+) -> MerchantDecisionItem | None:
+    product_count = _numeric_metric_or_refresh_summary(
+        facts,
+        latest_refresh,
+        "total_products",
+    )
+    if product_count is None:
+        product_count = _numeric_metric_or_refresh_summary(
+            facts,
+            latest_refresh,
+            "active_products",
+        )
+    issue_count = _numeric_metric_or_refresh_summary(
+        facts,
+        latest_refresh,
+        "item_level_issue_count",
+    )
+    if issue_count is None:
+        issue_count = _numeric_metric_or_refresh_summary(
+            facts,
+            latest_refresh,
+            "merchant_action_issue_count",
+        )
+    if issue_count is None:
+        issue_count = _numeric_metric_or_refresh_summary(
+            facts,
+            latest_refresh,
+            "disapproved_products",
+        )
+    if product_count is None and issue_count is None:
+        return None
+    metric_facts = _merchant_health_metric_facts(latest_refresh, facts)
+    return MerchantDecisionItem(
+        id="merchant_decision_feed_status_review",
+        decision_type="review_feed_status",
+        status="ready",
+        title="Merchant: przejrzyj zgłoszenia problemów feedu",
+        summary=(
+            f"WILQ widzi {product_count or 0} produktów i {issue_count or 0} "
+            "zgłoszeń problemów feedu. Brakuje wymiarowego klastra problemów, "
+            "więc to jest kolejka agregatowego review."
+        ),
+        product_count=product_count,
+        issue_count=issue_count,
+        source_connectors=[MERCHANT_CONNECTOR_ID],
+        evidence_ids=_unique(
+            [
+                *(fact.evidence_id for fact in metric_facts),
+                *_refresh_or_connector_evidence_ids(latest_refresh),
+            ]
+        ),
+        metric_facts=metric_facts[:6],
+        action_ids=action_ids,
+        blocked_claims=["approval restored", "revenue recovered", "automatic feed edit"],
+        rationale=(
+            "Merchant ma aggregate product/feed facts, ale bieżący odczyt nie "
+            "dostarcza wymiarowych issue clusters. Marketer może rozpocząć review "
+            "ActionObject, ale nie wolno twierdzić, który konkretny atrybut lub "
+            "produkt został naprawiony."
+        ),
+        next_step=(
+            "Otwórz `act_review_merchant_feed_issues`, sprawdź payload preview i "
+            "zatrzymaj apply do czasu walidacji."
+        ),
+        risk=ActionRisk.medium,
+    )
+
+
+def _facts_for_cluster(
+    facts: list[MetricFact],
+    cluster: MerchantIssueCluster,
+) -> list[MetricFact]:
+    return [
+        fact
+        for fact in facts
+        if fact.name == "issue_product_count"
+        and fact.dimensions.get("issue_type") == cluster.issue_type
+        and fact.dimensions.get("severity") == cluster.severity
+        and (fact.dimensions.get("affected_attribute") or None)
+        == cluster.affected_attribute
+        and (fact.dimensions.get("country") or None) == cluster.country
+        and (fact.dimensions.get("reporting_context") or None)
+        == cluster.reporting_context
+    ]
+
+
+def _merchant_display_label(value: str) -> str:
+    if value in MERCHANT_ISSUE_LABELS:
+        return MERCHANT_ISSUE_LABELS[value]
+    if value in MERCHANT_ATTRIBUTE_LABELS:
+        return MERCHANT_ATTRIBUTE_LABELS[value]
+    return " ".join(value.replace("_", " ").split())
 
 
 def _merchant_cluster_risk(severity: str, resolution: str | None) -> ActionRisk:

@@ -333,12 +333,12 @@ def _merchant_feed_items(
                     **({"affected_attribute": affected_attribute} if affected_attribute else {}),
                 },
                 diagnosis=(
-                    f"Merchant Center pokazuje {product_count or 0} produktów w issue "
+                    f"Merchant Center pokazuje {product_count or 0} produktów w problemie "
                     f"{severity}/{issue_type}/{resolution} dla kraju {country}."
                 ),
                 next_step=(
-                    "Przygotuj review feed issue queue i payload preview. Nie zmieniaj "
-                    "danych produktu bez walidacji ActionObject i zgody operatora."
+                    "Przygotuj kolejkę przeglądu problemów feedu i payload preview. "
+                    "Nie zmieniaj danych produktu bez walidacji ActionObject i zgody operatora."
                 ),
                 blocked_claims=["product fix applied", "approval restored", "revenue recovered"],
                 action_ids=action_ids_by_connector.get("google_merchant_center", []),

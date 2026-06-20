@@ -26,7 +26,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await gotoAndWaitForApi(page, "/command-center", "/api/dashboard/command-center");
     await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Przejrzyj produkty z problemami w Merchant Center" })
+      page.getByRole("heading", { name: "Przejrzyj kolejkę problemów Merchant Center" })
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Przejrzyj kolejkę SEO z GSC i WordPress" })

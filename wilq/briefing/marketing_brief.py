@@ -418,17 +418,18 @@ def _recommendation_items(
         items.append(
             MarketingBriefItem(
                 id="brief_focus_merchant_feed",
-                title="Merchant Center: zacznij od feed/product issues",
+                title="Merchant Center: zacznij od kolejki problemów feedu",
                 kind="recommendation",
                 priority=60,
                 source_connectors=["google_merchant_center"],
                 evidence_ids=_unique(fact.evidence_id for fact in merchant_facts),
                 metric_facts=merchant_facts[:6],
                 summary=(
-                    "Merchant ma realne metryki produktów i issue counts. To jest "
-                    "najbardziej operacyjny obszar do kolejki fix/monitor bez Ads OAuth."
+                    "Merchant ma realne metryki produktów i liczby problemów feedu. "
+                    "To jest najbardziej operacyjny obszar do kolejki review bez "
+                    "automatycznej zmiany danych produktu."
                 ),
-                next_step="Otwórz /merchant i przygotuj feed issue queue z payload preview.",
+                next_step="Otwórz /merchant i przygotuj kolejkę problemów feedu z payload preview.",
                 risk=ActionRisk.medium,
             )
         )
@@ -512,7 +513,7 @@ def _metric_summary_parts(facts: list[MetricFact]) -> list[str]:
 
 def _metric_next_step(connector_id: str) -> str:
     if connector_id == "google_merchant_center":
-        return "Rozbij Merchant issues na produkty i przygotuj kolejkę feed fix/monitor."
+        return "Rozbij problemy Merchant na produkty i przygotuj kolejkę feed review."
     if connector_id == "google_search_console":
         return "Pobierz query/page breakdown i zbuduj kolejkę content refresh/create."
     if connector_id == "google_analytics_4":

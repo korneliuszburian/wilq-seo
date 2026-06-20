@@ -99,9 +99,22 @@ Aktualny proof produktowy:
   `WP match=10`, `decyzje=4`, `wyświetlenia=7852`, `kliknięcia=138`,
   top reason `bdo co to` i brak `[REDACTED]` w `co_widzimy` /
   `dlaczego_to_ma_znaczenie`.
+- Merchant diagnostics, `/merchant`, Command Center i scoped
+  `wilq-merchant-feed-operator` context-pack używają teraz wspólnej
+  `MerchantDiagnosticsResponse.decision_queue`, a nie osobno składanych raw
+  facts. Live proof po `scripts/local_stack.sh restart`:
+  `/api/merchant/diagnostics` pokazuje `product_count=10900`,
+  `issue_count=15`, `issue_clusters=11`, `decision_count=8`; top decyzja:
+  "Merchant: sprawdź brak potencjalnie wymaganego atrybutu / miara ceny
+  jednostkowej", `issue_count=892`,
+  `ev_refresh_refresh_google_merchant_center_a3ef2f66703f` i
+  `act_review_merchant_feed_issues`. Scoped context-pack niesie tę samą
+  decyzję bez redakcji w `merchant_diagnostics.decision_queue`, a Command
+  Center pokazuje `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`,
+  `decyzje=8`, `blockery=0`.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
-- Pełny `scripts/verify.sh` przeszedł po Command Center Ads review queues slice:
+- Pełny `scripts/verify.sh` przeszedł po Merchant decision queue bridge slice:
   backend API contracts `117 passed`, dashboard route tests `14 passed`,
   Playwright e2e `9 passed`, security, skill/API smokes i dashboard production
   build passed.
@@ -114,7 +127,25 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Command Center content decision bridge, 2026-06-20 03:00 CEST.
+1. Merchant decision queue bridge, 2026-06-20 03:43 CEST.
+   Merchant Center now has typed `MerchantDiagnosticsResponse.decision_queue`
+   and the same decision state feeds `/merchant`, Command Center and scoped
+   `wilq-merchant-feed-operator` context-pack. Command Center no longer builds
+   the Merchant first-screen card from raw metric facts and no longer shows
+   `issues` / `feed-product` style copy. Live proof after
+   `scripts/local_stack.sh restart`: `/api/merchant/diagnostics` shows
+   `product_count=10900`, `issue_count=15`, `issue_clusters=11`,
+   `decision_count=8`; top decision is "Merchant: sprawdź brak potencjalnie
+   wymaganego atrybutu / miara ceny jednostkowej", `issue_count=892`,
+   evidence `ev_refresh_refresh_google_merchant_center_a3ef2f66703f`, action
+   `act_review_merchant_feed_issues`; scoped context-pack has no redacted paths
+   under `merchant_diagnostics.decision_queue`; Command Center shows
+   `produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`, `decyzje=8`,
+   `blockery=0`. Full `scripts/verify.sh` passed: backend `117 passed`,
+   dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
+   skill/API smokes and dashboard production build passed.
+
+2. Command Center content decision bridge, 2026-06-20 03:00 CEST.
    Command Center no longer builds the content first-screen card directly from
    raw tactical items. It calls `build_content_diagnostics(...)` with preloaded
    tactical/actions, uses `ContentDiagnosticsResponse.decision_queue`, and
@@ -130,7 +161,7 @@ Aktualny maintenance:
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
 
-2. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
+3. Content decision queue marketer summary, 2026-06-20 02:38 CEST.
    `/api/content/diagnostics.decision_queue` ma teraz skondensowane, polskie
    decyzje contentowe zamiast URL-i jako głównych tytułów. API dodaje
    `summary`, `primary_query`, `total_clicks`, `total_impressions`,
@@ -148,7 +179,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `9 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-3. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
+4. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
    Command Center GA4 daily decision now consumes the same
    `Ga4DiagnosticsResponse.decision_queue` contract as `/ga4` and the
    `wilq-ga4-analyst` context-pack path. Live proof after
@@ -160,7 +191,7 @@ Aktualny maintenance:
    unit `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-4. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
+5. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
    Dashboard Command Center, tactical cards, daily decision cards and
    brief/action surfaces keep the stable `evidence_ids` API contract, but render
    marketer-facing labels as `Dowody`, `Dowody: N ID(s)` and
@@ -169,18 +200,6 @@ Aktualny maintenance:
    Merchant now uses Polish `dowody`, `odczyt`, `podgląd akcji` and
    `brama bezpieczeństwa` language. Focused dashboard lint, typecheck, unit
    `App.test.tsx` and real-browser Command Center smoke passed.
-
-5. Command Center blocked-claim label cleanup, 2026-06-20 01:43 Europe/Warsaw.
-   Dashboard Command Center, tactical cards and brief/action cards now translate
-   raw blocked-claim contract values into Polish marketer-facing labels without
-   changing API IDs. Live proof after `scripts/local_stack.sh restart`: Ads
-   Codex prompt in `/api/dashboard/command-center` and scoped
-   `/api/codex/context-pack` says `Nie twierdź opłacalności, zmarnowanego
-   budżetu ani wdrożenia zmian`, while real-browser Command Center smoke
-   verifies Polish labels and absence of raw `approval restored`, `lead uplift`,
-   `search-term waste`, `profitability` and `wasted budget`. Focused ruff,
-   mypy, command-center API tests, dashboard lint/typecheck/unit and Playwright
-   Command Center smoke passed.
 
 ## Active Gaps
 

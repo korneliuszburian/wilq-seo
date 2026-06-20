@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 03:00 CEST.
+Last updated: 2026-06-20 03:59 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -102,6 +102,21 @@ WordPress`, `4429 wyświetleń`, `4 kliknięcia`, CTR `0.09%`, `decyzje=4`,
 `wyświetlenia=7852`, `kliknięcia=138`, and no `[REDACTED]` in content decision
 prose. Evidence IDs and ActionObject IDs must stay in structured fields, not
 inside prose where redaction can mask useful marketer context.
+
+Merchant on Command Center must use the same
+`MerchantDiagnosticsResponse.decision_queue` semantics as `/merchant` and
+`wilq-merchant-feed-operator`. Do not rebuild Merchant first-screen copy from
+raw metric facts. Current live proof after `scripts/local_stack.sh restart`:
+`/api/merchant/diagnostics` shows `product_count=10900`, `issue_count=15`,
+`issue_clusters=11`, `decision_count=8`; the top decision is
+"Merchant: sprawdź brak potencjalnie wymaganego atrybutu / miara ceny
+jednostkowej", `issue_count=892`,
+`ev_refresh_refresh_google_merchant_center_a3ef2f66703f` and
+`act_review_merchant_feed_issues`. Scoped `wilq-merchant-feed-operator`
+context-pack carries the same decision with no redaction under
+`merchant_diagnostics.decision_queue`. Command Center shows
+`produkty=10900`, `typy problemów=15`, `zgłoszenia=1887`, `decyzje=8`,
+`blockery=0` and Polish marketer-facing labels.
 
 ## Research And Knowledge Contract
 
@@ -345,7 +360,7 @@ Do not rebuild these from scratch:
   surfaces.
 - Google Ads OAuth helper and successful live campaign metric read.
 - Real-browser Playwright smoke in `scripts/verify.sh`.
-- Merchant route/API clarification for feed issues: issue clusters show report
+- Merchant route/API clarification for feed problems: issue clusters show report
   occurrences and context, while product-level sample IDs/titles remain blocked
   until the Merchant read contract exposes them.
 - Merchant route operator cleanup: `/merchant` now shows the feed review task,
@@ -511,8 +526,9 @@ For every meaningful screen or skill response, WILQ should answer:
 
 Examples of real value:
 
-- Merchant: "15 product/feed issues require review; validate
-  `act_review_merchant_feed_issues`; do not promise approval recovery."
+- Merchant: "10900 produktów, 15 typów problemów i 1887 zgłoszeń problemów
+  feedu wymagają review; validate `act_review_merchant_feed_issues`; do not
+  promise approval recovery."
 - Content: "GSC + inventory WordPress suggests refresh/create/block decisions;
   do not promise ranking or lead uplift."
 - GA4: "Landing/source/campaign traffic quality looks weak; review tracking and
@@ -2292,10 +2308,14 @@ Latest Command Center metric-decision cleanup:
 - `DailyDecision` now exposes `metric_tiles` and Command Center renders them
   directly on the first-screen decision cards.
 - Runtime proof after API restart:
-  - Merchant decision: `produkty=10900`, `issues=15`, `blockery=0`;
-  - Content decision: `query/page=10`, `WP match=15`, `blockery=0`;
-  - GA4 decision: `landing groups=10`, `low engagement=0`, `WP match=5`;
-  - Ads decision: `kampanie=18`, `search terms=50`, `blockery=1`.
+  - Merchant decision: `produkty=10900`, `typy problemów=15`,
+    `zgłoszenia=1887`, `decyzje=8`, `blockery=0`;
+  - Content decision: `query/page=10`, `WP match=10`, `decyzje=4`,
+    `wyświetlenia=7852`, `kliknięcia=138`;
+  - GA4 decision: `grupy ruchu=10`, `decyzje=6`, `pomiar=2`,
+    `jakość ruchu=4`, `braki kontraktu=1`;
+  - Ads decision: `kampanie=18`, `search terms=50`, `rekomendacje=4`,
+    `podgląd budżetu=18`.
 - GA4 no longer claims `0 landing/source groups` when tactical queue already
   has landing/source/campaign groups; diagnostics falls back to tactical group
   count when section metric facts are empty.

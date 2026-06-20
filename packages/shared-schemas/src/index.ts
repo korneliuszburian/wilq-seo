@@ -825,6 +825,35 @@ export const MerchantIssueClusterSchema = z.object({
   next_step: z.string()
 });
 
+export const MerchantDecisionItemSchema = z.object({
+  id: z.string(),
+  decision_type: z.enum([
+    "review_issue_cluster",
+    "review_feed_status",
+    "block_until_vendor_read"
+  ]),
+  status: z.enum(["ready", "blocked", "missing"]),
+  title: z.string(),
+  summary: z.string().nullable().optional(),
+  cluster_id: z.string().nullable().optional(),
+  issue_type: z.string().nullable().optional(),
+  severity: z.string().nullable().optional(),
+  resolution: z.string().nullable().optional(),
+  affected_attribute: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  reporting_context: z.string().nullable().optional(),
+  product_count: z.number().nullable().optional(),
+  issue_count: z.number().nullable().optional(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  rationale: z.string(),
+  next_step: z.string(),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
 export const MerchantDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -835,6 +864,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   product_count: z.number().nullable().optional(),
   issue_count: z.number().nullable().optional(),
   issue_clusters: z.array(MerchantIssueClusterSchema),
+  decision_queue: z.array(MerchantDecisionItemSchema),
   sections: z.array(MerchantDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
@@ -1282,6 +1312,7 @@ export type AdsNegativeKeywordsReadContract = z.infer<
 >;
 export type AdsDiagnosticsResponse = z.infer<typeof AdsDiagnosticsResponseSchema>;
 export type MerchantDiagnosticSection = z.infer<typeof MerchantDiagnosticSectionSchema>;
+export type MerchantDecisionItem = z.infer<typeof MerchantDecisionItemSchema>;
 export type MerchantDiagnosticsResponse = z.infer<typeof MerchantDiagnosticsResponseSchema>;
 export type ContentDiagnosticSection = z.infer<typeof ContentDiagnosticSectionSchema>;
 export type ContentDiagnosticsResponse = z.infer<typeof ContentDiagnosticsResponseSchema>;

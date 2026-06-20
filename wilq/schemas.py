@@ -1060,6 +1060,35 @@ class MerchantIssueCluster(BaseModel):
     next_step: str
 
 
+class MerchantDecisionItem(BaseModel):
+    id: str
+    decision_type: Literal[
+        "review_issue_cluster",
+        "review_feed_status",
+        "block_until_vendor_read",
+    ]
+    status: Literal["ready", "blocked", "missing"]
+    title: str
+    summary: str | None = None
+    cluster_id: str | None = None
+    issue_type: str | None = None
+    severity: str | None = None
+    resolution: str | None = None
+    affected_attribute: str | None = None
+    country: str | None = None
+    reporting_context: str | None = None
+    product_count: int | None = None
+    issue_count: int | None = None
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    rationale: str
+    next_step: str
+    risk: ActionRisk = ActionRisk.low
+
+
 class MerchantDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -1070,6 +1099,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     product_count: int | None = None
     issue_count: int | None = None
     issue_clusters: list[MerchantIssueCluster] = Field(default_factory=list)
+    decision_queue: list[MerchantDecisionItem] = Field(default_factory=list)
     sections: list[MerchantDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

@@ -531,6 +531,15 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "decision_type": "merge_create_after_inventory_check",
             "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
+            "cluster_id": (
+                "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
+            ),
+            "issue_type": "missing_potentially_required_attribute",
+            "affected_attribute": "n:unit_pricing_measure",
+            "country": "PL",
+            "reporting_context": "SHOPPING_ADS",
+            "severity": "NOT_IMPACTED",
+            "resolution": "MERCHANT_ACTION",
             "normalized_page_path": "/europejski-zielony-lad-co-to-takiego",
             "wordpress_content_url": (
                 "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
@@ -548,6 +557,15 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["decision_type"] == "merge_create_after_inventory_check"
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
+    assert redacted["cluster_id"] == (
+        "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
+    )
+    assert redacted["issue_type"] == "missing_potentially_required_attribute"
+    assert redacted["affected_attribute"] == "n:unit_pricing_measure"
+    assert redacted["country"] == "PL"
+    assert redacted["reporting_context"] == "SHOPPING_ADS"
+    assert redacted["severity"] == "NOT_IMPACTED"
+    assert redacted["resolution"] == "MERCHANT_ACTION"
     assert redacted["normalized_page_path"] == "/europejski-zielony-lad-co-to-takiego"
     assert redacted["wordpress_content_url"] == (
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
@@ -1167,7 +1185,8 @@ def test_command_center_exposes_polish_operator_brief(
     }.issubset(brief_by_id)
     assert brief_by_id["daily_ads_status"]["status"] == "blocked"
     assert "act_configure_google_ads_env" in brief_by_id["daily_ads_status"]["action_ids"]
-    assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["issues"] == 3
+    assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["zgłoszenia"] == 3
+    assert brief_by_id["daily_merchant_feed"]["metric_tiles"]["decyzje"] >= 1
     assert "act_review_merchant_feed_issues" in brief_by_id["daily_merchant_feed"]["action_ids"]
     assert brief_by_id["daily_content_queue"]["title"] == (
         "Content: kolejka SEO z GSC i WordPress"
@@ -1228,7 +1247,8 @@ def test_command_center_exposes_polish_operator_brief(
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
     assert merchant_decision["co_widzimy"].startswith("Merchant Center:")
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
-    assert merchant_decision["metric_tiles"]["issues"] == 3
+    assert merchant_decision["metric_tiles"]["zgłoszenia"] == 3
+    assert merchant_decision["metric_tiles"]["decyzje"] >= 1
     assert "status=ready" not in merchant_decision["co_widzimy"]
     assert merchant_decision["dlaczego_to_ma_znaczenie"] == plan_by_id[
         "plan_review_merchant_feed_issues"
@@ -4362,6 +4382,21 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "nie zwraca przykładowych ID produktów" in cluster["sample_unavailable_reason"]
     assert "wystąpień problemu" in cluster["sample_unavailable_reason"]
     assert "approval restored" in cluster["blocked_claims"]
+    assert payload["decision_queue"]
+    decision = payload["decision_queue"][0]
+    assert decision["decision_type"] == "review_issue_cluster"
+    assert decision["status"] == "ready"
+    assert decision["title"] == (
+        "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność"
+    )
+    assert decision["issue_type"] == "availability_updated"
+    assert decision["affected_attribute"] == "n:availability"
+    assert decision["product_count"] == 23
+    assert decision["issue_count"] == 23
+    assert decision["cluster_id"] == cluster["id"]
+    assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
+    assert "zgłoszeń problemu" in decision["summary"]
+    assert "wystąpienia problemu" in decision["rationale"]
     feed_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_feed_health"
     )
@@ -5773,10 +5808,23 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
 
     monkeypatch.setattr(command_center, "build_ads_diagnostics", ads_builder)
     monkeypatch.setattr(command_center, "_ads_item", lambda _ads: ads_item)
+    merchant_diagnostics = object()
+
+    def merchant_builder(
+        tactical_items: list[object] | None = None,
+        actions: list[ActionObject] | None = None,
+        metric_facts: list[object] | None = None,
+    ) -> object:
+        seen["merchant_tactical_items"] = tactical_items
+        seen["merchant_actions"] = actions
+        seen["merchant_metric_facts"] = metric_facts
+        return merchant_diagnostics
+
+    monkeypatch.setattr(command_center, "build_merchant_diagnostics", merchant_builder)
     monkeypatch.setattr(
         command_center,
-        "_merchant_item_from_facts",
-        lambda _tactical_items, _merchant_facts, _actions: CommandCenterBriefItem(
+        "_merchant_item_from_diagnostics",
+        lambda _merchant_diagnostics: CommandCenterBriefItem(
             id="daily_merchant_feed",
             title="Merchant",
             route="/merchant",
@@ -5838,6 +5886,9 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
     )
 
     assert seen["actions"] == [action]
+    assert seen["merchant_tactical_items"] == tactical_queue.items
+    assert seen["merchant_actions"] == [action]
+    assert seen["merchant_metric_facts"] == []
     assert seen["content_tactical_items"] == tactical_queue.items
     assert seen["content_actions"] == [action]
     assert seen["content_metric_facts"] is None

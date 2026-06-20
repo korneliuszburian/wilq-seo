@@ -985,9 +985,21 @@ function compactTacticalTitle(item: TacticalQueueItem, groupSize: number) {
     return `GA4: sprawdź ${item.dimensions.landing_page ?? "landing"} / ${item.dimensions.source_medium ?? "źródło"}`;
   }
   if (item.domain === "merchant") {
-    return `Merchant: sprawdź ${item.dimensions.issue_type ?? "issue"} / ${item.dimensions.affected_attribute ?? "atrybut"}`;
+    return `Merchant: sprawdź ${merchantDimensionLabel(item.dimensions.issue_type ?? "problem feedu")} / ${merchantDimensionLabel(item.dimensions.affected_attribute ?? "atrybut")}`;
   }
   return item.title;
+}
+
+function merchantDimensionLabel(value: string) {
+  const labels: Record<string, string> = {
+    availability_updated: "zmiana dostępności",
+    missing_potentially_required_attribute: "brak potencjalnie wymaganego atrybutu",
+    "n:availability": "dostępność",
+    "n:unit_pricing_measure": "miara ceny jednostkowej",
+    "problem feedu": "problem feedu",
+    atrybut: "atrybut"
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
 }
 
 function compactTacticalDiagnosis(
@@ -3050,6 +3062,8 @@ type Ga4DecisionItem = Ga4DiagnosticsResponse["decision_queue"][number];
 
 type LocaloDecisionItem = LocaloDiagnosticsResponse["decision_queue"][number];
 
+type MerchantDecisionItem = MerchantDiagnosticsResponse["decision_queue"][number];
+
 function Ga4DiagnosticSurface() {
   const diagnostics = useQuery({
     queryKey: ["ga4-diagnostics"],
@@ -4238,6 +4252,11 @@ function merchantRefreshStatusLabel(status: string) {
 }
 
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
+  const decisions = data.decision_queue;
+  const topDecisions = decisions
+    .slice()
+    .sort((left, right) => merchantDecisionSortValue(left) - merchantDecisionSortValue(right))
+    .slice(0, 4);
   const issueItems = data.sections.flatMap((section) => section.tactical_items);
   const topIssueClusters = data.issue_clusters.slice(0, 4);
   const topIssueItems = issueItems
@@ -4278,14 +4297,18 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Produkty" value={data.product_count ?? 0} />
-          <MetricTile label="Klastry" value={data.issue_clusters.length || issueItems.length} />
+          <MetricTile label="Decyzje" value={decisions.length} />
           <MetricTile label="Zgłoszenia" value={reportedIssueOccurrences} />
         </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
-          {topIssueClusters.length > 0 ? (
+          {topDecisions.length > 0 ? (
+            topDecisions.map((decision) => (
+              <MerchantDecisionCard key={decision.id} decision={decision} />
+            ))
+          ) : topIssueClusters.length > 0 ? (
             topIssueClusters.map((cluster) => (
               <article key={cluster.id} className="rounded-md border border-line bg-slate-50 p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -4394,6 +4417,94 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
         </div>
       </div>
     </section>
+  );
+}
+
+function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {merchantDecisionTypeLabel(decision.decision_type)}
+          </p>
+        </div>
+        <StatusBadge value={decision.risk} />
+      </div>
+      {decision.summary ? (
+        <p className="mt-2 text-sm leading-6 text-slate-700">{decision.summary}</p>
+      ) : null}
+      <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
+      <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
+        {decision.issue_count !== null && decision.issue_count !== undefined ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            zgłoszenia: {decision.issue_count}
+          </span>
+        ) : null}
+        {decision.product_count !== null && decision.product_count !== undefined ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            produkty: {decision.product_count}
+          </span>
+        ) : null}
+        {decision.issue_type ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            problem: {decision.issue_type}
+          </span>
+        ) : null}
+        {decision.affected_attribute ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            atrybut: {decision.affected_attribute}
+          </span>
+        ) : null}
+        {decision.country ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            kraj: {decision.country}
+          </span>
+        ) : null}
+        <span className="rounded border border-line bg-white px-2 py-1">
+          kontekst: {merchantReportingContextLabel(decision.reporting_context)}
+        </span>
+      </div>
+      <div className="mt-2 grid gap-1.5 text-xs text-slate-600">
+        <LinkedTraceLine
+          label="Dowody"
+          values={decision.evidence_ids.slice(0, 4)}
+          kind="evidence"
+        />
+        <LinkedTraceLine label="ActionObject" values={decision.action_ids} kind="actions" />
+        <TraceLine
+          label="Nie wolno twierdzić"
+          values={merchantBlockedClaimLabels(decision.blocked_claims)}
+        />
+      </div>
+    </article>
+  );
+}
+
+function merchantDecisionTypeLabel(decisionType: MerchantDecisionItem["decision_type"]) {
+  if (decisionType === "review_issue_cluster") return "przegląd problemu feedu";
+  if (decisionType === "review_feed_status") return "przegląd statusu feedu";
+  return "blocker odczytu Merchant";
+}
+
+function merchantDecisionSortValue(decision: MerchantDecisionItem) {
+  const riskRank: Record<MerchantDecisionItem["risk"], number> = {
+    critical: 0,
+    high: 1,
+    medium: 2,
+    low: 3
+  };
+  const typeRank: Record<MerchantDecisionItem["decision_type"], number> = {
+    review_issue_cluster: 0,
+    review_feed_status: 1,
+    block_until_vendor_read: 2
+  };
+  return (
+    typeRank[decision.decision_type] * 100000 +
+    riskRank[decision.risk] * 10000 -
+    (decision.product_count ?? 0)
   );
 }
 
