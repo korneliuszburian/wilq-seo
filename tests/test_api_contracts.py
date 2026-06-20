@@ -3818,6 +3818,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "roas_vs_target": None,
             "target_cpa_micros": None,
             "cpa_vs_target_micros": None,
+            "target_status": "no_target",
+            "target_status_label": "brak targetu",
+            "target_review_priority": 90,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "source_metric_names": [
                 "clicks",
@@ -4843,6 +4846,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert derived_ready_contract["kpi_rows"][0]["roas_vs_target"] == 32.5625
     assert derived_ready_contract["kpi_rows"][0]["target_cpa_micros"] is None
     assert derived_ready_contract["kpi_rows"][0]["cpa_vs_target_micros"] is None
+    assert derived_ready_contract["kpi_rows"][0]["target_status"] == "within_target"
+    assert derived_ready_contract["kpi_rows"][0]["target_status_label"] == "ROAS w targetcie"
     assert "human_budget_goal" not in business_ready_payload[
         "budget_pacing_read_contract"
     ]["missing_read_contracts"]
@@ -4869,7 +4874,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         if decision["id"] == "ads_review_derived_kpis"
     )
     assert derived_ready_decision["metric_tiles"]["targety"] == 1
+    assert derived_ready_decision["metric_tiles"]["w targetcie"] == 1
     assert derived_ready_decision["derived_kpi_rows"][0]["roas_vs_target"] == 32.5625
+    assert derived_ready_decision["derived_kpi_rows"][0]["target_status"] == "within_target"
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200

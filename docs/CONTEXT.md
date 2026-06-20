@@ -85,12 +85,16 @@ Audit `docs/audits/001-output.md` is now folded into
    `/api/dashboard/command-center` shows only
    `decision_review_ads_campaign_metrics` for Ads daily review, while
    `/api/ads/diagnostics.derived_kpi_read_contract.kpi_rows` includes
-   `target_cpa_micros` and `cpa_vs_target_micros`. Example current row:
-   `Kompendium PPWR` CPA `50.65 PLN`, target CPA `150 PLN`, delta
-   `-99.35 PLN`. If these local values are removed, the daily cockpit must
-   again expose the blocked Ads business-context item. Daily Codex still must
-   not claim profitability, margin verdict, wasted budget or budget scaling
-   without the remaining optimizer contracts.
+   `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
+   `target_status_label` and `target_review_priority`. Current live order:
+   `(2026) Ekologus Ogólna` first as `koszt bez konwersji`, then
+   `Kompendium PPWR` as `CPA w targetcie` with CPA `50.65 PLN`, target CPA
+   `150 PLN`, delta `-99.35 PLN`. Decision `ads_review_derived_kpis` has tiles
+   `targety=1`, `w targetcie=1`, `koszt bez konw.=1`. If these local values are
+   removed, the daily cockpit must again expose the blocked Ads
+   business-context item. Daily Codex still must not claim profitability,
+   margin verdict, wasted budget or budget scaling without the remaining
+   optimizer contracts.
 
 0. Ads business context ActionObject truth, 2026-06-20 11:05 Europe/Warsaw:
    the same blocker is now actionable through review-only

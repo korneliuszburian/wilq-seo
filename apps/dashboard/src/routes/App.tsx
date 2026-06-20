@@ -2195,6 +2195,7 @@ function AdsDerivedKpiRowsTable({
             <th className="py-2 pr-4 font-semibold">ROAS</th>
             <th className="py-2 pr-4 font-semibold">Target ROAS</th>
             <th className="py-2 pr-4 font-semibold">Różnica ROAS</th>
+            <th className="py-2 pr-4 font-semibold">Triage</th>
             <th className="py-2 pr-3 font-semibold">Blokady</th>
           </tr>
         </thead>
@@ -2219,6 +2220,11 @@ function AdsDerivedKpiRowsTable({
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.roas)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.target_roas)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsSignedNumber(row.roas_vs_target)}</td>
+              <td className="py-2 pr-4 text-xs">
+                <span className={adsTargetStatusClass(row.target_status)}>
+                  {row.target_status_label}
+                </span>
+              </td>
               <td className="py-2 pr-3 text-xs text-slate-600">
                 {row.blocked_claims.slice(0, 2).map(adsBlockedClaimLabel).join(", ")}
               </td>
@@ -3142,6 +3148,20 @@ function adsSignedNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return "brak";
   if (value > 0) return `+${adsNumber(value)}`;
   return adsNumber(value);
+}
+
+function adsTargetStatusClass(status: string | null | undefined) {
+  const base = "inline-flex whitespace-nowrap rounded border px-2 py-1 font-semibold";
+  if (status === "spend_without_conversions") {
+    return `${base} border-amber-200 bg-amber-50 text-amber-800`;
+  }
+  if (status === "outside_target") {
+    return `${base} border-rose-200 bg-rose-50 text-rose-800`;
+  }
+  if (status === "within_target") {
+    return `${base} border-emerald-200 bg-emerald-50 text-emerald-800`;
+  }
+  return `${base} border-slate-200 bg-slate-50 text-slate-600`;
 }
 
 function adsPercent(value: number | null | undefined) {

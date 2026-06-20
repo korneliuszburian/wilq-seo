@@ -93,10 +93,13 @@ values, not final business truth. Current
 `/api/ads/diagnostics.business_context_read_contract.status=ready`,
 `missing_read_contracts=[]`, and allowed metrics include `profit_margin`,
 `business_goal`, `human_budget_goal` and `target_cpa_micros`. Derived KPI rows
-now expose `target_cpa_micros` and `cpa_vs_target_micros`; current live example:
-`Kompendium PPWR` has CPA `50.65 PLN`, target CPA `150 PLN`, delta
-`-99.35 PLN`. Decision `ads_review_business_context` has title
-`Użyj kontekstu biznesowego w review Ads`, and
+now expose `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
+`target_status_label` and `target_review_priority`; current live order puts
+`(2026) Ekologus Ogólna` first as `koszt bez konwersji`, then
+`Kompendium PPWR` as `CPA w targetcie` with CPA `50.65 PLN`, target CPA
+`150 PLN`, delta `-99.35 PLN`. Decision `ads_review_derived_kpis` has tiles
+`targety=1`, `w targetcie=1`, `koszt bez konw.=1`. Decision
+`ads_review_business_context` has title `Użyj kontekstu biznesowego w review Ads`, and
 `/api/dashboard/command-center` no longer shows the old Ads business-context
 blocker while these local values are present. If the non-secret values are
 removed, Command Center, Marketing Brief and scoped `wilq-daily-command` must
@@ -2127,9 +2130,9 @@ Commit rules:
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
    regression. Next product work should add missing value contracts:
-   profit-margin/business-goal interpretation for Ads, typed Ahrefs gap records,
-   deeper source-term/custom-segment evidence, remaining
-   campaign optimization contracts and Demand Gen diagnostics. Campaign
+   typed Ahrefs gap records, deeper search-term/custom-segment evidence,
+   remaining campaign optimization contracts and Demand Gen diagnostics. Ads
+   target-aware KPI triage is started, but remains review-only. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget
    optimization or apply support.

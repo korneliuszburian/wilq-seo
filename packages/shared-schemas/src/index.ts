@@ -324,6 +324,17 @@ export const AdsDerivedKpiRowSchema = z.object({
   roas_vs_target: z.number().nullable().optional(),
   target_cpa_micros: z.number().nullable().optional(),
   cpa_vs_target_micros: z.number().nullable().optional(),
+  target_status: z
+    .enum([
+      "within_target",
+      "outside_target",
+      "spend_without_conversions",
+      "insufficient_data",
+      "no_target"
+    ])
+    .default("no_target"),
+  target_status_label: z.string().default("brak targetu"),
+  target_review_priority: z.number().int().default(90),
   evidence_ids: z.array(z.string()),
   source_metric_names: z.array(z.string()),
   missing_metrics: z.array(z.string()),

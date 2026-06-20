@@ -125,13 +125,17 @@ Aktualny proof produktowy:
   `/api/ads/diagnostics.business_context_read_contract.status=ready`,
   `missing=[]`, `allowed_metrics=[profit_margin, business_goal,
   human_budget_goal, target_cpa_micros]`. Derived KPI rows expose
-  `target_cpa_micros` and `cpa_vs_target_micros`; current live proof shows
-  `Kompendium PPWR` CPA `50.65 PLN`, target CPA `150 PLN`, delta
-  `-99.35 PLN`. Decision `ads_review_business_context` is now ready with title
-  `Użyj kontekstu biznesowego w review Ads`, and Command Center no longer
-  shows the old Ads business blocker. This is review context only: no budget
-  apply, recommendation apply, wasted-budget verdict or profitability verdict
-  is unlocked.
+  `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
+  `target_status_label` and `target_review_priority`; current live proof sorts
+  `(2026) Ekologus Ogólna` first as `koszt bez konwersji`, then
+  `Kompendium PPWR` as `CPA w targetcie` with CPA `50.65 PLN`, target CPA
+  `150 PLN`, delta `-99.35 PLN`. Decision `ads_review_derived_kpis` has tiles
+  `targety=1`, `w targetcie=1`, `koszt bez konw.=1`. Decision
+  `ads_review_business_context` is ready with title
+  `Użyj kontekstu biznesowego w review Ads`, and Command Center no longer shows
+  the old Ads business blocker. This is review context only: no budget apply,
+  recommendation apply, wasted-budget verdict or profitability verdict is
+  unlocked.
 - Ads business context nie jest już ukryty tylko w `/ads-doctor`, ale aktualnie
   nie jest blockerem, bo lokalne wartości wstępne są ustawione. Jeśli te
   nie-sekretne wartości znikną z `.env`, Command Center, Marketing Brief i
@@ -372,9 +376,10 @@ Aktualny maintenance:
    missing contracts are empty, and preliminary local non-secret values are in
    `.env`: profit margin 30%, business goal, budget goal and target CPA
    `150000000` micros. Derived KPI rows now expose target comparison fields
-   `target_cpa_micros` and `cpa_vs_target_micros`; this is review-only context
-   and still does not unlock apply, profitability verdicts or wasted-budget
-   claims.
+   `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
+   `target_status_label` and `target_review_priority`; this is review-only
+   context and still does not unlock apply, profitability verdicts or
+   wasted-budget claims.
 
 5. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
    `wilq-ads-doctor` context-pack no longer ships duplicated Ads sections or

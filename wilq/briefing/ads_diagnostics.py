@@ -76,6 +76,13 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
+AdsTargetStatus = Literal[
+    "within_target",
+    "outside_target",
+    "spend_without_conversions",
+    "insufficient_data",
+    "no_target",
+]
 ADS_METRIC_FACT_LIMIT = 2500
 CARD_GOAL_001_RULES = "card_goal_001_rules"
 CARD_ADS_SEARCH = "card_google_ads_search_playbook"
@@ -1027,6 +1034,7 @@ def _derived_kpi_read_contract(
         _derived_kpi_row(row, business_context_read_contract)
         for row in campaign_read_contract.campaign_rows
     ]
+    kpi_rows.sort(key=lambda row: (row.target_review_priority, row.campaign_name))
     if kpi_rows:
         rows_with_cpa = sum(1 for row in kpi_rows if row.cost_per_conversion_micros is not None)
         rows_with_roas = sum(1 for row in kpi_rows if row.roas is not None)
@@ -1035,8 +1043,16 @@ def _derived_kpi_read_contract(
             for row in kpi_rows
             if row.roas_vs_target is not None or row.cpa_vs_target_micros is not None
         )
+        rows_within_target = sum(1 for row in kpi_rows if row.target_status == "within_target")
+        rows_outside_target = sum(1 for row in kpi_rows if row.target_status == "outside_target")
+        rows_with_spend_without_conversions = sum(
+            1 for row in kpi_rows if row.target_status == "spend_without_conversions"
+        )
         target_summary = (
             f" Porównanie z targetem dostępne dla {rows_with_target_context} kampanii."
+            f" Triage targetu: w targetcie {rows_within_target},"
+            f" poza targetem {rows_outside_target}, koszt bez konwersji"
+            f" {rows_with_spend_without_conversions}."
             if rows_with_target_context
             else ""
         )
@@ -1049,9 +1065,9 @@ def _derived_kpi_read_contract(
             "value_per_conversion",
         ]
         if business_context_read_contract.target_roas is not None:
-            allowed_metrics.extend(["target_roas", "roas_vs_target"])
+            allowed_metrics.extend(["target_roas", "roas_vs_target", "target_status"])
         if business_context_read_contract.target_cpa_micros is not None:
-            allowed_metrics.extend(["target_cpa_micros", "cpa_vs_target_micros"])
+            allowed_metrics.extend(["target_cpa_micros", "cpa_vs_target_micros", "target_status"])
         return AdsDerivedKpiReadContract(
             status="ready",
             title="Google Ads: wyliczone KPI kampanii",
@@ -1061,7 +1077,7 @@ def _derived_kpi_read_contract(
                 "To są obliczenia z bieżących metric facts, nie werdykt opłacalności."
                 f"{target_summary}"
             ),
-            allowed_metrics=allowed_metrics,
+            allowed_metrics=_unique(allowed_metrics),
             missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -1109,6 +1125,13 @@ def _derived_kpi_row(
     roas = _ratio(row.conversion_value, _micros_to_account_units(row.cost_micros))
     target_roas = business_context_read_contract.target_roas
     target_cpa_micros = business_context_read_contract.target_cpa_micros
+    target_status, target_status_label, target_review_priority = _target_triage(
+        row=row,
+        cost_per_conversion_micros=cost_per_conversion_micros,
+        roas=roas,
+        target_cpa_micros=target_cpa_micros,
+        target_roas=target_roas,
+    )
     return AdsDerivedKpiRow(
         campaign_id=row.campaign_id,
         campaign_name=row.campaign_name,
@@ -1122,6 +1145,9 @@ def _derived_kpi_row(
         roas_vs_target=_difference(roas, target_roas),
         target_cpa_micros=target_cpa_micros,
         cpa_vs_target_micros=_difference(cost_per_conversion_micros, target_cpa_micros),
+        target_status=target_status,
+        target_status_label=target_status_label,
+        target_review_priority=target_review_priority,
         evidence_ids=row.evidence_ids,
         source_metric_names=_unique(source_metric_names),
         missing_metrics=_unique(missing_metrics),
@@ -1132,6 +1158,35 @@ def _derived_kpi_row(
             "recommendation apply",
         ],
     )
+
+
+def _target_triage(
+    *,
+    row: AdsCampaignMetricRow,
+    cost_per_conversion_micros: float | None,
+    roas: float | None,
+    target_cpa_micros: int | None,
+    target_roas: float | None,
+) -> tuple[AdsTargetStatus, str, int]:
+    if target_cpa_micros is not None:
+        if cost_per_conversion_micros is not None:
+            if cost_per_conversion_micros <= target_cpa_micros:
+                return "within_target", "CPA w targetcie", 40
+            return "outside_target", "CPA powyżej targetu", 20
+        if (row.cost_micros or 0) > 0 and not row.conversions:
+            return "spend_without_conversions", "koszt bez konwersji", 15
+        return "insufficient_data", "brak CPA do porównania", 70
+
+    if target_roas is not None:
+        if roas is not None:
+            if roas >= target_roas:
+                return "within_target", "ROAS w targetcie", 40
+            return "outside_target", "ROAS poniżej targetu", 20
+        if (row.cost_micros or 0) > 0 and not row.conversion_value:
+            return "spend_without_conversions", "koszt bez wartości konwersji", 15
+        return "insufficient_data", "brak ROAS do porównania", 70
+
+    return "no_target", "brak targetu", 90
 
 
 def _budget_pacing_read_contract(
@@ -4028,6 +4083,23 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
         }
         if rows_with_target_context:
             tiles["targety"] = rows_with_target_context
+        rows_within_target = sum(
+            1 for row in decision.derived_kpi_rows if row.target_status == "within_target"
+        )
+        rows_outside_target = sum(
+            1 for row in decision.derived_kpi_rows if row.target_status == "outside_target"
+        )
+        rows_with_spend_without_conversions = sum(
+            1
+            for row in decision.derived_kpi_rows
+            if row.target_status == "spend_without_conversions"
+        )
+        if rows_within_target:
+            tiles["w targetcie"] = rows_within_target
+        if rows_outside_target:
+            tiles["poza targetem"] = rows_outside_target
+        if rows_with_spend_without_conversions:
+            tiles["koszt bez konw."] = rows_with_spend_without_conversions
         return _clean_metric_tiles(tiles)
     if decision.decision_type == "review_budget_context":
         return _clean_metric_tiles(
