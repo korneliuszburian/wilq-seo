@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 07:33 CEST.
+Last updated: 2026-06-20 07:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -194,6 +194,21 @@ API` and `Fetch WILQ API context` are absent. Full `scripts/verify.sh` passed
 after this slice: backend `118 passed`, dashboard unit `14 passed`,
 Playwright e2e `10 passed`, security, skill/API smokes and dashboard
 production build passed.
+
+Knowledge must connect source material to marketer decisions, not only list
+cards and YAML playbooks. `/api/knowledge/operating-map` and `/knowledge` must
+show how canonical knowledge cards, machine-readable playbooks and expert rules
+bind to routes, skills, evidence IDs, ActionObject IDs, blocked claims and
+missing contracts. Current live proof after `scripts/local_stack.sh restart`:
+`/api/knowledge/operating-map` returns 11 bindings, 15 source cards, 14
+playbooks and 31 expert rules. Core bindings include `knowledge_daily_command`,
+`knowledge_merchant_feed_review`, `knowledge_gsc_content_doctor`,
+`knowledge_ads_daily_check`, `knowledge_ga4_data_analyst` and
+`knowledge_localo_visibility_review`; Ads binds
+`card_google_ads_search_playbook`, `google_ads_search_playbook`,
+`ads_search_terms_v1` and four review-only ActionObjects to `/ads-doctor` and
+`wilq-ads-doctor`, while Localo stays blocked on `local_ranking_rows`,
+`gbp_performance_rows` and `review_rows`.
 
 ## Research And Knowledge Contract
 

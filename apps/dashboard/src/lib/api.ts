@@ -11,6 +11,7 @@ import {
   ExpertRuleSchema,
   Ga4DiagnosticsResponseSchema,
   KnowledgeCardSchema,
+  KnowledgeOperatingMapResponseSchema,
   LocaloDiagnosticsResponseSchema,
   MarketingBriefSchema,
   MarketingPlaybookSchema,
@@ -34,6 +35,7 @@ import {
   type ExpertRule,
   type Ga4DiagnosticsResponse,
   type KnowledgeCard,
+  type KnowledgeOperatingMapResponse,
   type LocaloDiagnosticsResponse,
   type MarketingBrief,
   type MarketingBriefItem,
@@ -184,6 +186,10 @@ export function getKnowledgePlaybooks(): Promise<MarketingPlaybook[]> {
   return apiGet("/api/knowledge/playbooks", z.array(MarketingPlaybookSchema));
 }
 
+export function getKnowledgeOperatingMap(): Promise<KnowledgeOperatingMapResponse> {
+  return apiGet("/api/knowledge/operating-map", KnowledgeOperatingMapResponseSchema);
+}
+
 export type {
   ActionObject,
   ActionApplyResult,
@@ -197,6 +203,7 @@ export type {
   ExpertRule,
   Ga4DiagnosticsResponse,
   KnowledgeCard,
+  KnowledgeOperatingMapResponse,
   LocaloDiagnosticsResponse,
   MarketingBrief,
   MarketingBriefItem,

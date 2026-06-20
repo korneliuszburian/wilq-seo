@@ -6354,6 +6354,37 @@ def test_codex_context_pack_includes_compiled_knowledge_cards() -> None:
     assert "ev_connector_google_ads_status" in evidence_ids
 
 
+def test_knowledge_operating_map_binds_sources_to_decisions() -> None:
+    response = client.get("/api/knowledge/operating-map")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["source_card_count"] >= 10
+    assert data["playbook_count"] >= 10
+    assert data["expert_rule_count"] >= 10
+    binding_by_id = {binding["id"]: binding for binding in data["bindings"]}
+
+    daily = binding_by_id["knowledge_daily_command"]
+    assert daily["route"] == "/command-center"
+    assert daily["skill_id"] == "wilq-daily-command"
+    assert daily["knowledge_card_ids"] == ["card_goal_001_rules"]
+    assert daily["metric_tiles"]["decyzje"] >= 1
+    assert daily["evidence_ids"]
+
+    ads = binding_by_id["knowledge_ads_daily_check"]
+    assert ads["route"] == "/ads-doctor"
+    assert ads["skill_id"] == "wilq-ads-doctor"
+    assert "card_google_ads_search_playbook" in ads["knowledge_card_ids"]
+    assert "google_ads_search_playbook" in ads["playbook_ids"]
+    assert "ads_search_terms_v1" in ads["expert_rule_ids"]
+    assert "search_terms" in ads["required_evidence"]
+    assert ads["action_ids"]
+
+    localo = binding_by_id["knowledge_localo_visibility_review"]
+    assert localo["status"] == "blocked"
+    assert "local_ranking_rows" in localo["missing_contracts"]
+    assert "card_localo_local_seo_playbook" in localo["knowledge_card_ids"]
+
+
 def test_workflows_are_decision_backed_operator_contracts() -> None:
     response = client.get("/api/workflows")
     assert response.status_code == 200

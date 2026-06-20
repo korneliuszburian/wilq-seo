@@ -50,6 +50,7 @@ from wilq.knowledge.compilers.playbook_compiler import (
     get_playbook,
     list_playbooks,
 )
+from wilq.knowledge.operating_map import build_knowledge_operating_map
 from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_opportunities
 from wilq.schemas import (
     ActionApplyRequest,
@@ -70,6 +71,7 @@ from wilq.schemas import (
     Ga4DiagnosticsResponse,
     KnowledgeCard,
     KnowledgeCompilerResult,
+    KnowledgeOperatingMapResponse,
     LocaloDiagnosticsResponse,
     MarketingBrief,
     MarketingPlaybook,
@@ -1586,6 +1588,11 @@ def knowledge_playbook_detail(playbook_id: str) -> MarketingPlaybook:
     if playbook is None:
         raise HTTPException(status_code=404, detail=f"Unknown playbook: {playbook_id}")
     return playbook
+
+
+@app.get("/api/knowledge/operating-map", response_model=KnowledgeOperatingMapResponse)
+def knowledge_operating_map() -> KnowledgeOperatingMapResponse:
+    return build_knowledge_operating_map()
 
 
 @app.post("/api/knowledge/condense", response_model=KnowledgeCompilerResult)

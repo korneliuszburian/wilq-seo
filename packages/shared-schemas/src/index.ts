@@ -1139,6 +1139,37 @@ export const KnowledgeCompilerResultSchema = z.object({
   cards: z.array(KnowledgeCardSchema)
 });
 
+export const KnowledgeDecisionBindingSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.enum(["ready", "blocked", "planned"]),
+  route: z.string(),
+  skill_id: z.string().nullable().optional(),
+  summary: z.string(),
+  next_step: z.string(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  metric_tiles: z.record(z.union([z.string(), z.number()])),
+  knowledge_card_ids: z.array(z.string()),
+  playbook_ids: z.array(z.string()),
+  expert_rule_ids: z.array(z.string()),
+  required_evidence: z.array(z.string()),
+  missing_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_lineage: z.array(z.string()),
+  risk: z.enum(["low", "medium", "high"])
+});
+
+export const KnowledgeOperatingMapResponseSchema = z.object({
+  generated_at: z.string(),
+  source_card_count: z.number(),
+  playbook_count: z.number(),
+  expert_rule_count: z.number(),
+  binding_count: z.number(),
+  bindings: z.array(KnowledgeDecisionBindingSchema)
+});
+
 export const CommandCenterBriefItemSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -1362,5 +1393,7 @@ export type ExpertRule = z.infer<typeof ExpertRuleSchema>;
 export type ExpertRuleSummary = z.infer<typeof ExpertRuleSummarySchema>;
 export type ExpertCapability = z.infer<typeof ExpertCapabilitySchema>;
 export type KnowledgeCard = z.infer<typeof KnowledgeCardSchema>;
+export type KnowledgeDecisionBinding = z.infer<typeof KnowledgeDecisionBindingSchema>;
+export type KnowledgeOperatingMapResponse = z.infer<typeof KnowledgeOperatingMapResponseSchema>;
 export type MarketingPlaybook = z.infer<typeof MarketingPlaybookSchema>;
 export type KnowledgeCompilerResult = z.infer<typeof KnowledgeCompilerResultSchema>;

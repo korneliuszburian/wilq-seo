@@ -304,6 +304,37 @@ class KnowledgeCompilerResult(BaseModel):
     cards: list[KnowledgeCard]
 
 
+class KnowledgeDecisionBinding(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "blocked", "planned"]
+    route: str
+    skill_id: str | None = None
+    summary: str
+    next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
+    playbook_ids: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
+    required_evidence: list[str] = Field(default_factory=list)
+    missing_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_lineage: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
+class KnowledgeOperatingMapResponse(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    source_card_count: int
+    playbook_count: int
+    expert_rule_count: int
+    binding_count: int
+    bindings: list[KnowledgeDecisionBinding] = Field(default_factory=list)
+
+
 class ExpertRule(BaseModel):
     id: str
     name: str

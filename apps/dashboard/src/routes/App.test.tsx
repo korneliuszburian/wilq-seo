@@ -3030,6 +3030,37 @@ const playbooks = [
   }
 ];
 
+const knowledgeOperatingMap = {
+  generated_at: "2026-06-17T10:00:00Z",
+  source_card_count: 1,
+  playbook_count: 1,
+  expert_rule_count: 1,
+  binding_count: 1,
+  bindings: [
+    {
+      id: "knowledge_ads_daily_check",
+      title: "Ads daily check",
+      status: "ready",
+      route: "/ads-doctor",
+      skill_id: "wilq-ads-doctor",
+      summary: "Google Ads search diagnostics steruje review kampanii i search terms.",
+      next_step: "Otwórz /ads-doctor i użyj wiedzy tylko z evidence.",
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      action_ids: ["act_prepare_ads_campaign_review_queue"],
+      metric_tiles: { kampanie: 18, zapytania: 50 },
+      knowledge_card_ids: ["card_google_ads_search_playbook"],
+      playbook_ids: ["google_ads_search_playbook"],
+      expert_rule_ids: ["ads_search_terms_v1"],
+      required_evidence: ["search_terms", "evidence_ids"],
+      missing_contracts: [],
+      blocked_claims: ["wasted budget verdict"],
+      source_lineage: ["wilq/knowledge/playbooks/marketing_playbooks.yaml", "ads_search_terms_v1"],
+      risk: "low"
+    }
+  ]
+};
+
 function mockFetch() {
   vi.stubGlobal(
     "fetch",
@@ -3403,6 +3434,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/workflow-runs")) return Promise.resolve(Response.json(workflowRuns));
       if (url.endsWith("/api/knowledge/cards")) return Promise.resolve(Response.json(knowledgeCards));
+      if (url.endsWith("/api/knowledge/operating-map")) {
+        return Promise.resolve(Response.json(knowledgeOperatingMap));
+      }
       if (url.endsWith("/api/knowledge/playbooks")) return Promise.resolve(Response.json(playbooks));
       return Promise.resolve(Response.json({}));
     })
@@ -3637,9 +3671,17 @@ describe("WILQ dashboard", () => {
 
   it("knowledge route renders compiled cards and playbooks", async () => {
     renderApp("/knowledge");
-    await waitFor(() => expect(screen.getByText("Knowledge Cards")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Mapa wiedzy do decyzji")).toBeInTheDocument());
+    expect(screen.getByText("Ads daily check")).toBeInTheDocument();
+    expect(screen.getByText(/card_google_ads_search_playbook/)).toBeInTheDocument();
+    expect(screen.getAllByText(/google_ads_search_playbook/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ads_search_terms_v1/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Powiązania")).toBeInTheDocument();
+    expect(screen.getByText("Karty źródłowe")).toBeInTheDocument();
     expect(screen.getAllByText("Google Ads search diagnostics").length).toBeGreaterThan(0);
-    expect(screen.getByText("Machine-Readable Playbooks")).toBeInTheDocument();
+    expect(screen.getByText("Playbooki maszynowe")).toBeInTheDocument();
+    expect(screen.queryByText("Knowledge Cards")).not.toBeInTheDocument();
+    expect(screen.queryByText("Machine-Readable Playbooks")).not.toBeInTheDocument();
   });
 
   it("merchant route renders dedicated feed diagnostics", async () => {

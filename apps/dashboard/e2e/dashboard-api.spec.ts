@@ -192,6 +192,27 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Rejestr workflowów")).toHaveCount(0);
   });
 
+  test("knowledge route maps source knowledge to decisions", async ({ page }) => {
+    await page.goto("/knowledge");
+
+    await expect(page.getByRole("heading", { name: "Baza wiedzy WILQ" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Mapa wiedzy do decyzji" })).toBeVisible();
+    await expect(page.getByText("Powiązania")).toBeVisible();
+    await expect(page.getByText("Karty wiedzy").first()).toBeVisible();
+    await expect(page.getByText("Playbooki").first()).toBeVisible();
+    await expect(page.getByText("Reguły").first()).toBeVisible();
+    await expect(page.getByText("Ads daily check")).toBeVisible();
+    await expect(page.getByText("Merchant feed review")).toBeVisible();
+    await expect(page.getByText("card_google_ads_search_playbook").first()).toBeVisible();
+    await expect(page.getByText("google_ads_search_playbook").first()).toBeVisible();
+    await expect(page.getByText("ads_search_terms_v1").first()).toBeVisible();
+    await expect(page.getByText("local_ranking_rows")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Karty źródłowe" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Playbooki maszynowe" })).toBeVisible();
+    await expect(page.getByText("Knowledge Cards")).toHaveCount(0);
+    await expect(page.getByText("Machine-Readable Playbooks")).toHaveCount(0);
+  });
+
   test("merchant route renders live Merchant Diagnostics evidence links", async ({ page }) => {
     await page.goto("/merchant");
 

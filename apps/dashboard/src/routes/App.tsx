@@ -47,6 +47,7 @@ import {
   getExpertRules,
   getGa4Diagnostics,
   getKnowledgeCards,
+  getKnowledgeOperatingMap,
   getKnowledgePlaybooks,
   getLocaloDiagnostics,
   getMarketingBrief,
@@ -58,6 +59,7 @@ import {
   getWorkflowRuns,
   getWorkflows,
   KnowledgeCard,
+  KnowledgeOperatingMapResponse,
   LocaloDiagnosticsResponse,
   CommandCenterResponse,
   MarketingBriefItem,
@@ -392,7 +394,7 @@ function KnowledgeCardList({ cards }: { cards: KnowledgeCard[] }) {
 
 function PlaybookList({ playbooks }: { playbooks: MarketingPlaybook[] }) {
   if (playbooks.length === 0) {
-    return <p className="text-sm text-slate-600">No machine-readable playbooks yet.</p>;
+    return <p className="text-sm text-slate-600">Brak maszynowych playbooków.</p>;
   }
 
   return (
@@ -402,9 +404,68 @@ function PlaybookList({ playbooks }: { playbooks: MarketingPlaybook[] }) {
           <h3 className="text-sm font-semibold">{playbook.title}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-700">{playbook.output_contract}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Evidence: {playbook.required_evidence.slice(0, 4).join(", ")}</div>
-            <div>Actions: {playbook.maps_to_action_types.slice(0, 3).join(", ")}</div>
+            <div>Wymagane dowody: {playbook.required_evidence.slice(0, 4).join(", ")}</div>
+            <div>Akcje: {playbook.maps_to_action_types.slice(0, 3).join(", ")}</div>
           </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function KnowledgeOperatingMapPanel({ map }: { map: KnowledgeOperatingMapResponse }) {
+  if (map.bindings.length === 0) {
+    return (
+      <BlockerNotice message="Brak mapy wiedzy do decyzji. WILQ nie powinien pokazywać reguł bez powiązania z evidence i workflowem." />
+    );
+  }
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-2">
+      {map.bindings.map((binding) => (
+        <article key={binding.id} className="rounded-md border border-line bg-white p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{binding.title}</h3>
+              <p className="mt-1 break-words text-xs text-slate-500">
+                {binding.id} / {binding.route}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge value={binding.status} />
+              <StatusBadge value={binding.risk} />
+            </div>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">{binding.summary}</p>
+          {Object.keys(binding.metric_tiles).length > 0 ? (
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 sm:grid-cols-3">
+              {Object.entries(binding.metric_tiles).map(([label, value]) => (
+                <MetricTile key={`${binding.id}-${label}`} label={label} value={value} />
+              ))}
+            </div>
+          ) : null}
+          <p className="mt-3 text-sm font-medium text-ink">{binding.next_step}</p>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+            <div>Skill: {binding.skill_id ?? "brak"}</div>
+            <div>Źródła: {binding.source_connectors.join(", ") || "brak"}</div>
+            <div>Dowody: {binding.evidence_ids.length || "brak"}</div>
+            <div>ActionObjecty: {binding.action_ids.length || "brak"}</div>
+            <div>Karty wiedzy: {binding.knowledge_card_ids.join(", ") || "brak"}</div>
+            <div>Playbooki: {binding.playbook_ids.join(", ") || "brak"}</div>
+            <div>Reguły: {binding.expert_rule_ids.join(", ") || "brak"}</div>
+            <div>Wymagane dowody: {binding.required_evidence.slice(0, 4).join(", ") || "brak"}</div>
+            <div>Brakujące kontrakty: {binding.missing_contracts.join(", ") || "brak"}</div>
+          </div>
+          {binding.blocked_claims.length > 0 ? (
+            <p className="mt-3 text-xs text-slate-600">
+              Zablokowane claimy: {binding.blocked_claims.slice(0, 4).join(", ")}
+            </p>
+          ) : null}
+          {binding.source_lineage.length > 0 ? (
+            <p className="mt-3 text-xs text-slate-600">
+              Lineage: {binding.source_lineage.slice(0, 5).join(", ")}
+            </p>
+          ) : null}
         </article>
       ))}
     </div>
@@ -4719,6 +4780,11 @@ function GenericSurface({ routeName }: { routeName: string }) {
   const workflowRuns = useQuery({ queryKey: ["workflow-runs"], queryFn: getWorkflowRuns });
   const expertRules = useQuery({ queryKey: ["expert-rules"], queryFn: getExpertRules });
   const isKnowledgeRoute = routeName.startsWith("/knowledge");
+  const knowledgeMap = useQuery({
+    queryKey: ["knowledge-operating-map"],
+    queryFn: getKnowledgeOperatingMap,
+    enabled: isKnowledgeRoute
+  });
   const knowledgeCards = useQuery({
     queryKey: ["knowledge-cards"],
     queryFn: getKnowledgeCards,
@@ -4732,8 +4798,10 @@ function GenericSurface({ routeName }: { routeName: string }) {
   const isWorkflowRoute = routeName.startsWith("/workflows");
   const isWorkflowLoading = isWorkflowRoute && (workflows.isLoading || workflowRuns.isLoading);
   const hasWorkflowError = isWorkflowRoute && (workflows.error || workflowRuns.error);
-  const isKnowledgeLoading = isKnowledgeRoute && (knowledgeCards.isLoading || playbooks.isLoading);
-  const hasKnowledgeError = isKnowledgeRoute && (knowledgeCards.error || playbooks.error);
+  const isKnowledgeLoading =
+    isKnowledgeRoute && (knowledgeMap.isLoading || knowledgeCards.isLoading || playbooks.isLoading);
+  const hasKnowledgeError =
+    isKnowledgeRoute && (knowledgeMap.error || knowledgeCards.error || playbooks.error);
 
   if (
     connectors.isLoading ||
@@ -4760,11 +4828,13 @@ function GenericSurface({ routeName }: { routeName: string }) {
     return <ErrorState />;
   }
 
-  const title = routeName
-    .replace(/^\//, "")
-    .replaceAll("/", " / ")
-    .replaceAll("-", " ")
-    .replace(/\b\w/g, (match) => match.toUpperCase());
+  const title = isKnowledgeRoute
+    ? "Baza wiedzy WILQ"
+    : routeName
+        .replace(/^\//, "")
+        .replaceAll("/", " / ")
+        .replaceAll("-", " ")
+        .replace(/\b\w/g, (match) => match.toUpperCase());
   const mappedRules = expertRulesForRoute(routeName, expertRules.data ?? []).slice(0, 6);
 
   return (
@@ -4773,7 +4843,9 @@ function GenericSurface({ routeName }: { routeName: string }) {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">{title || "Command Center"}</h1>
           <p className="mt-1 text-sm text-slate-600">
-            API-backed operating surface with evidence, connector and action state.
+            {isKnowledgeRoute
+              ? "Źródła, playbooki i expert rules powiązane z decyzjami, workflowami i dowodami WILQ API."
+              : "API-backed operating surface with evidence, connector and action state."}
           </p>
         </div>
         <FileJson aria-hidden="true" className="text-action" size={28} />
@@ -4801,11 +4873,32 @@ function GenericSurface({ routeName }: { routeName: string }) {
         {isKnowledgeRoute ? (
           <>
             <section>
-              <SectionHeading title="Knowledge Cards" />
+              <div className="mb-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+                <MetricTile label="Powiązania" value={knowledgeMap.data?.binding_count ?? 0} />
+                <MetricTile label="Karty wiedzy" value={knowledgeMap.data?.source_card_count ?? 0} />
+                <MetricTile label="Playbooki" value={knowledgeMap.data?.playbook_count ?? 0} />
+                <MetricTile label="Reguły" value={knowledgeMap.data?.expert_rule_count ?? 0} />
+              </div>
+              <SectionHeading title="Mapa wiedzy do decyzji" />
+              <KnowledgeOperatingMapPanel
+                map={
+                  knowledgeMap.data ?? {
+                    generated_at: "",
+                    source_card_count: 0,
+                    playbook_count: 0,
+                    expert_rule_count: 0,
+                    binding_count: 0,
+                    bindings: []
+                  }
+                }
+              />
+            </section>
+            <section>
+              <SectionHeading title="Karty źródłowe" />
               <KnowledgeCardList cards={knowledgeCards.data ?? []} />
             </section>
             <section>
-              <SectionHeading title="Machine-Readable Playbooks" />
+              <SectionHeading title="Playbooki maszynowe" />
               <PlaybookList playbooks={playbooks.data ?? []} />
             </section>
           </>

@@ -116,6 +116,17 @@ Aktualny proof produktowy:
   evidence IDs i ActionObject IDs. Stare stringi `Workflow definition runs
   against WILQ API` i `Fetch WILQ API context` są nieobecne. Ciepły
   `/api/workflows` zwraca około 23 KB w `0.008-0.012s`.
+- `/api/knowledge/operating-map` i `/knowledge` mapują teraz wiedzę źródłową na
+  decyzje, workflowy i skille zamiast pokazywać tylko katalog kart/playbooków.
+  Live proof po `scripts/local_stack.sh restart`: 11 bindingów, 15 source
+  cards, 14 playbooków i 31 expert rules. Core bindingi obejmują
+  `knowledge_daily_command`, `knowledge_merchant_feed_review`,
+  `knowledge_gsc_content_doctor`, `knowledge_ads_daily_check`,
+  `knowledge_ga4_data_analyst` i `knowledge_localo_visibility_review`; Ads
+  wiąże `card_google_ads_search_playbook`, `google_ads_search_playbook`,
+  `ads_search_terms_v1` i 4 review-only ActionObjecty z `/ads-doctor` oraz
+  `wilq-ads-doctor`, a Localo jawnie blokuje `local_ranking_rows`,
+  `gbp_performance_rows` i `review_rows`.
 - Content diagnostics i scoped `wilq-content-strategist` context-pack pokazują
   teraz typed decyzje z marketer-facing tytułem, summary, `primary_query`,
   `total_clicks`, `total_impressions`, `aggregate_ctr` i
@@ -161,7 +172,18 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Workflows decision contract, 2026-06-20 07:33 CEST.
+1. Knowledge operating map, 2026-06-20 07:55 CEST.
+   `/api/knowledge/operating-map` and `/knowledge` now connect knowledge cards,
+   machine-readable playbooks and expert rules to operator decisions, routes,
+   skills, evidence IDs, ActionObject IDs, blocked claims and missing
+   contracts. Live proof after `scripts/local_stack.sh restart`: 11 bindings,
+   15 source cards, 14 playbooks and 31 expert rules; Ads daily check links
+   `card_google_ads_search_playbook`, `google_ads_search_playbook`,
+   `ads_search_terms_v1`, `/ads-doctor`, `wilq-ads-doctor` and four
+   review-only ActionObjects; Localo remains blocked on explicit read
+   contracts.
+
+2. Workflows decision contract, 2026-06-20 07:33 CEST.
    `/api/workflows` and `/workflows` now expose operator workflows as typed
    WILQ API contracts, not generic automation placeholders. Core workflows are
    derived from daily decisions and carry `status`, `route`, `skill_id`,
@@ -175,7 +197,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `10 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-2. Opportunities decision bridge, 2026-06-20 07:13 CEST.
+3. Opportunities decision bridge, 2026-06-20 07:13 CEST.
    `/api/opportunities`, `/opportunities` and full Codex context-pack
    `top_opportunities` now consume the same daily decisions as Command Center
    instead of the old connector registry cards. Live proof after
@@ -191,7 +213,7 @@ Aktualny maintenance:
    `9 passed`, security, skill/API smokes and dashboard production build
    passed.
 
-3. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
+4. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
    `/api/ads/diagnostics.decision_queue` now exposes explicit `priority` and
    `metric_tiles` for every Ads decision, and `/ads-doctor` renders those tiles
    directly from typed API state. Shared schemas and `wilq-ads-doctor`
@@ -203,7 +225,7 @@ Aktualny maintenance:
    cost when `cost_micros` is absent from evidence instead of showing a false
    `0.00`.
 
-4. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
+5. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
    `/api/ga4/diagnostics.decision_queue` now exposes explicit `status`,
    `priority` and `metric_tiles` for each GA4 decision, and `/ga4` renders the
    tiles on decision cards. Live proof after `scripts/local_stack.sh restart`:
@@ -215,25 +237,6 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `117 passed`, dashboard unit
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
-
-5. Marketing Brief daily-decision bridge, 2026-06-20 04:18 CEST.
-   `/api/marketing/brief` and full/scoped Codex context-packs now consume the
-   same `CommandCenterResponse.daily_decisions` state as Command Center instead
-   of rebuilding the daily brief from older raw metric/action summaries. Live
-   proof after `scripts/local_stack.sh restart`: `what_we_know` titles are
-   `Przejrzyj kolejkę problemów Merchant Center`, `Przejrzyj kolejkę SEO z GSC
-   i WordPress`, `GA4: pomiar i jakość ruchu do kontroli`,
-   `Przejrzyj kolejki Ads do oceny bez apply` and `Ahrefs: domain_rating = 90`;
-   `what_blocks_us` contains the GA4 contract blocker; `recommended_focus`
-   mirrors ready daily decisions; scoped `wilq-daily-command` context-pack has
-   the same brief titles and Command Center decision titles with no
-   `marketing_brief` redaction paths. Stale strings such as
-   `feed/product issues`, `active_products=12`, `disapproved_products=3`,
-   `active_users=20`, `sessions=30` and `feed issue queue` are absent from the
-   live brief. Full `scripts/verify.sh` passed after this slice: backend
-   `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
-   security, skill/API smokes and dashboard production build passed.
-
 
 ## Active Gaps
 
