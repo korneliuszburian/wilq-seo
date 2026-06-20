@@ -3802,7 +3802,9 @@ function localoAllowedEvidenceLabel(value: string) {
     gbp_visibility: "widoczność GBP",
     local_rankings: "rankingi lokalne",
     mcp_initialize: "MCP initialize",
-    oauth_metadata: "OAuth metadata"
+    oauth_metadata: "OAuth metadata",
+    place_inventory: "lista lokalizacji",
+    reviews: "opinie"
   };
   return labels[value] ?? value;
 }
@@ -3814,6 +3816,7 @@ function localoMissingContractLabel(value: string) {
     local_rankings: "rankingi lokalne",
     local_tasks: "zadania lokalne",
     mcp_initialize: "MCP initialize",
+    place_inventory: "lista lokalizacji",
     reviews: "opinie"
   };
   return labels[value] ?? value;
@@ -3824,7 +3827,9 @@ function localoBlockedClaimLabel(value: string) {
     "competitor visibility": "widoczność konkurencji",
     "GBP performance": "wyniki GBP",
     "GBP post published": "publikacja posta GBP",
+    "GBP write": "zmiana GBP",
     "local ranking": "pozycje lokalne",
+    "local task completed": "wykonanie zadania lokalnego",
     "local visibility uplift": "wzrost widoczności lokalnej",
     "profile edit applied": "zmiana profilu",
     "review velocity": "tempo opinii",

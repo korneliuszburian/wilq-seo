@@ -250,7 +250,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Źródło: google_merchant_center")).toBeVisible();
   });
 
-  test("localo route exposes access readiness without invented local metrics", async ({ page }) => {
+  test("localo route exposes aggregate facts without unsupported local claims", async ({ page }) => {
     await page.goto("/localo");
 
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
@@ -258,7 +258,14 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Brama bezpieczeństwa Localo/GBP" })).toBeVisible();
-    await expect(page.getByText(/Localo access działa; brakuje ranking\/GBP facts/)).toBeVisible();
+    await expect(
+      page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
+    ).toBeVisible();
+    await expect(page.getByText(/lista lokalizacji/)).toBeVisible();
+    await expect(page.getByText(/rankingi lokalne/)).toBeVisible();
+    await expect(page.getByText(/opinie/)).toBeVisible();
+    await expect(page.getByText(/widoczność konkurencji/).first()).toBeVisible();
+    await expect(page.getByText(/wyniki GBP/).first()).toBeVisible();
     await expect(
       page.getByText(/Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts/)
     ).toBeVisible();

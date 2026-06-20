@@ -22,6 +22,7 @@ from wilq.connectors.google_merchant_center.client import (
 )
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
+from wilq.connectors.localo.client import refresh_localo_visibility_summary
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
@@ -587,6 +588,12 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
         "demand_gen_migration_constraints",
     ]
     assert redacted["blocked_claims"] == ["Demand Gen launch recommendation"]
+    assert redact_mapping({"name": "localo_latest_grid_position_count"})["name"] == (
+        "localo_latest_grid_position_count"
+    )
+    assert redact_mapping({"metric_name": "localo_avg_visibility_current"})["metric_name"] == (
+        "localo_avg_visibility_current"
+    )
     assert redacted["cluster_id"] == (
         "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
     )
@@ -1689,6 +1696,103 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     assert context_payload["localo_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
     assert context_payload["localo_diagnostics"]["decision_queue"][0]["id"] in decision_by_id
     assert "marketing_brief" not in context_payload
+
+
+def test_localo_diagnostics_exposes_partial_visibility_contracts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "localo_value_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "localo_value.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+    monkeypatch.setenv("LOCALO_ACCESS_TOKEN", "localo-access-test")
+    localo_run = ConnectorRefreshRun(
+        id="refresh_localo_value_diag_test",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_localo_value_diag_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "api": "localo_mcp_oauth_probe",
+            "mcp_initialize_status": 200,
+            "authorization_code_supported": 1,
+            "pkce_s256_supported": 1,
+            "access_token_present": 1,
+            "localo_active_place_count": 4,
+            "localo_tracked_keyword_count": 23,
+            "localo_avg_visibility_current": 52.8261,
+            "localo_reviews_count": 793,
+        },
+        summary="Localo MCP read completed with aggregate facts.",
+    )
+    local_state_store().save_connector_refresh_run(localo_run)
+    metric_store().save_connector_refresh_metrics(
+        localo_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "localo_active_place_count",
+                4,
+                {"contract": "place_inventory", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_tracked_keyword_count",
+                23,
+                {"contract": "local_rankings", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_avg_visibility_current",
+                52.8261,
+                {"contract": "local_rankings", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_reviews_count",
+                793,
+                {"contract": "reviews", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+        ],
+    )
+
+    response = client.get("/api/localo/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["live_data_available"] is True
+    assert payload["visibility_fact_count"] == 4
+    decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
+    review_decision = decision_by_id["localo_review_visibility_facts"]
+    assert review_decision["status"] == "ready"
+    assert review_decision["allowed_evidence"] == [
+        "place_inventory",
+        "local_rankings",
+        "reviews",
+    ]
+    assert review_decision["missing_read_contracts"] == [
+        "gbp_visibility",
+        "competitor_visibility",
+        "local_tasks",
+    ]
+    assert review_decision["metric_tiles"]["miejsca"] == 4
+    assert review_decision["metric_tiles"]["frazy"] == 23
+    assert review_decision["metric_tiles"]["średnia widoczność"] == 52.8261
+    assert review_decision["metric_tiles"]["recenzje"] == 793
+    assert "local ranking" not in review_decision["blocked_claims"]
+    assert "GBP performance" in review_decision["blocked_claims"]
+    assert "competitor visibility" in review_decision["blocked_claims"]
+    blocked_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
+    assert blocked_decision["metric_tiles"]["braki kontraktu"] == 3
+    assert all(fact["source_connector"] == "localo" for fact in review_decision["metric_facts"])
+    serialized = json.dumps(payload, ensure_ascii=False)
+    assert "localo-access-test" not in serialized
+    assert "localo-token-test" not in serialized
 
 
 def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
@@ -5643,6 +5747,173 @@ def test_localo_vendor_read_routes_through_mcp_probe(
     assert run["vendor_data_collected"] is False
     assert run["metric_summary"]["api"] == "localo_mcp_oauth_probe"
     assert run["metric_summary"]["access_token_present"] == 1
+
+
+def test_localo_vendor_read_collects_read_only_aggregate_facts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+    monkeypatch.setenv("LOCALO_ACCESS_TOKEN", "localo-access-test")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if str(request.url) == "https://api.localo.com/.well-known/oauth-protected-resource":
+            return httpx.Response(
+                200,
+                json={"authorization_servers": ["https://api.localo.com"]},
+            )
+        if str(request.url) == "https://api.localo.com/.well-known/oauth-authorization-server":
+            return httpx.Response(
+                200,
+                json={
+                    "grant_types_supported": ["authorization_code"],
+                    "code_challenge_methods_supported": ["S256"],
+                },
+            )
+        assert str(request.url) == "https://api.localo.com/api/mcp"
+        assert request.headers["authorization"] == "Bearer localo-access-test"
+        payload = json.loads(request.content.decode())
+        method = payload["method"]
+        if method == "initialize":
+            return httpx.Response(200, json={"jsonrpc": "2.0", "id": payload["id"], "result": {}})
+        if method == "notifications/initialized":
+            return httpx.Response(204)
+        assert method == "tools/call"
+        arguments = payload["params"]["arguments"]
+        query = arguments["query"]
+        variables = arguments["variables"]
+        if "placesList" in query:
+            assert variables == {"input": {"active": True, "pageNo": 1, "pageSize": 20}}
+            return _localo_mcp_text_response(
+                {
+                    "data": {
+                        "placesList": {
+                            "places": [{"id": "place-one"}, {"id": "place-two"}],
+                            "placesTags": [],
+                        }
+                    }
+                }
+            )
+        if "activePlaceKeywords" in query:
+            if variables["placeId"] == "place-one":
+                return _localo_mcp_text_response(
+                    {
+                        "data": {
+                            "place": {
+                                "latestPlaceSnapshot": {"rating": 4.5, "reviewsCount": 10},
+                                "activePlaceKeywords": [
+                                    {
+                                        "visibility": {"current": 50, "change": 2},
+                                        "ahrefsOverview": {"volume": 100},
+                                        "latestGrids": [{"orderedPlacePosition": 3}],
+                                    },
+                                    {
+                                        "visibility": {"current": 70, "change": -1},
+                                        "ahrefsOverview": {"volume": 200},
+                                        "latestGrids": [{"orderedPlacePosition": 5}],
+                                    },
+                                ],
+                            }
+                        }
+                    }
+                )
+            return _localo_mcp_text_response(
+                {
+                    "data": {
+                        "place": {
+                            "latestPlaceSnapshot": {"rating": 4.0, "reviewsCount": 20},
+                            "activePlaceKeywords": [
+                                {
+                                    "visibility": {"current": 30, "change": 0},
+                                    "ahrefsOverview": {"volume": 50},
+                                    "latestGrids": [],
+                                }
+                            ],
+                        }
+                    }
+                }
+            )
+        if "reviewsStats" in query:
+            if variables["placeId"] == "place-one":
+                return _localo_mcp_text_response(
+                    {
+                        "data": {
+                            "reviewsStats": {
+                                "reviewsCount": 10,
+                                "repliedCount": 8,
+                                "removedCount": 1,
+                            }
+                        }
+                    }
+                )
+            return _localo_mcp_text_response(
+                {
+                    "data": {
+                        "reviewsStats": {
+                            "reviewsCount": 20,
+                            "repliedCount": 10,
+                            "removedCount": 2,
+                        }
+                    }
+                }
+            )
+        return httpx.Response(500, json={"error": "Unexpected Localo query"})
+
+    result = refresh_localo_visibility_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read, reason="contract test"),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert result.vendor_data_collected is True
+    assert result.metric_summary["api"] == "localo_mcp_oauth_probe"
+    assert result.metric_summary["localo_active_place_count"] == 2
+    assert result.metric_summary["localo_tracked_keyword_count"] == 3
+    assert result.metric_summary["localo_avg_visibility_current"] == 50.0
+    assert result.metric_summary["localo_avg_visibility_change"] == 0.3333
+    assert result.metric_summary["localo_avg_latest_grid_position"] == 4.0
+    assert result.metric_summary["localo_total_keyword_volume"] == 350
+    assert result.metric_summary["localo_reviews_count"] == 30
+    assert result.metric_summary["localo_review_reply_rate"] == 0.6
+    fact_by_name = {fact.name: fact for fact in result.metric_facts}
+    assert fact_by_name["localo_active_place_count"].dimensions == {
+        "contract": "place_inventory",
+        "scope": "active_places",
+    }
+    assert fact_by_name["localo_avg_visibility_current"].dimensions["contract"] == (
+        "local_rankings"
+    )
+    assert fact_by_name["localo_reviews_count"].dimensions["contract"] == "reviews"
+    serialized = json.dumps(
+        {
+            "summary": result.metric_summary,
+            "facts": [fact.__dict__ for fact in result.metric_facts],
+        },
+        ensure_ascii=False,
+    )
+    assert "place-one" not in serialized
+    assert "place-two" not in serialized
+    assert "localo-access-test" not in serialized
+    assert "localo-token-test" not in serialized
+
+
+def _localo_mcp_text_response(payload: dict[str, Any]) -> httpx.Response:
+    return httpx.Response(
+        200,
+        json={
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": json.dumps(payload),
+                    }
+                ]
+            },
+        },
+    )
 
 
 def test_wordpress_vendor_read_uses_rest_content_inventory(

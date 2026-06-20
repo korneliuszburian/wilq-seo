@@ -47,6 +47,13 @@ STRICT_DAILY_INSTRUCTION = (
 )
 GA4_CONNECTOR_ID = "google_analytics_4"
 GA4_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
+LOCALO_PROBE_METRIC_NAMES = {
+    "access_token_present",
+    "api",
+    "authorization_code_supported",
+    "mcp_initialize_status",
+    "pkce_s256_supported",
+}
 
 
 def build_command_center_response(
@@ -110,10 +117,16 @@ def build_command_center_brief(
             GA4_CONNECTOR_ID,
             GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
         )
+        localo_facts_future = executor.submit(
+            metric_store().list_metric_facts,
+            "localo",
+            120,
+        )
         ads = ads_future.result()
         content = content_future.result()
         merchant_facts = merchant_facts_future.result()
         ga4_facts = ga4_facts_future.result()
+        localo_facts = localo_facts_future.result()
     merchant = build_merchant_diagnostics(
         tactical_items=tactical_queue.items,
         actions=actions,
@@ -136,8 +149,8 @@ def build_command_center_brief(
     if ads_business_item is not None:
         items.append(ads_business_item)
     if localo is not None:
-        localo_item = _localo_item(localo, localo_runs)
-        if localo_item.status == "blocked":
+        localo_item = _localo_item(localo, localo_runs, localo_facts)
+        if localo_item.status == "blocked" or _localo_value_facts(localo_facts):
             items.append(localo_item)
     sorted_items = sorted(items, key=lambda item: item.priority)
     blocker_count = sum(1 for item in sorted_items if item.status == "blocked")
@@ -723,10 +736,13 @@ def _ga4_landing_group_count(facts: Iterable[MetricFact]) -> int:
 def _localo_item(
     connector: ConnectorStatus,
     runs: list[ConnectorRefreshRun],
+    metric_facts: list[MetricFact],
 ) -> CommandCenterBriefItem:
     successful_mcp_run = _latest_successful_localo_mcp_run(runs)
     latest_run = runs[0] if runs else None
     oauth_access_ready = successful_mcp_run is not None
+    value_facts = _localo_value_facts(metric_facts)
+    has_value_facts = bool(value_facts)
     missing = (
         ", ".join(connector.missing_credentials)
         if connector.missing_credentials
@@ -737,38 +753,51 @@ def _localo_item(
         evidence_ids = successful_mcp_run.evidence_ids
     elif latest_run is not None:
         evidence_ids = latest_run.evidence_ids
-    return CommandCenterBriefItem(
-        id="daily_localo_readiness",
-        title=(
-            "Localo: MCP access działa, brak jeszcze ranking/GBP facts"
-            if oauth_access_ready
-            else "Localo: brak dostępu przed lokalnymi rekomendacjami"
-        ),
-        route="/localo",
-        status="ready" if oauth_access_ready else "blocked",
-        priority=60 if oauth_access_ready else 20,
-        summary=(
+    if has_value_facts:
+        title = "Localo: agregaty widoczności i recenzji są gotowe"
+        summary = (
+            "Localo dostarczył read-only agregaty miejsc, monitorowanych fraz "
+            "i recenzji. WILQ nadal blokuje GBP, konkurencję i claim o wzroście "
+            "widoczności bez osobnych kontraktów."
+        )
+        next_step = (
+            "Otwórz /localo i przejrzyj agregaty fraz, grid positions oraz recenzji. "
+            "Nie twierdź nic o GBP/konkurencji bez dodatkowego evidence."
+        )
+        priority = 18
+        blocked_claims = ["GBP performance", "competitor visibility", "local visibility uplift"]
+    elif oauth_access_ready:
+        title = "Localo: MCP access działa, brak jeszcze ranking/GBP facts"
+        summary = (
             "Localo MCP initialize zwrócił 200. To potwierdza access, ale WILQ "
             "nie ma jeszcze konkretnych rankingów, GBP visibility ani konkurencji."
-            if oauth_access_ready
-            else f"Localo nie ma pełnego dostępu: {missing}."
-        ),
-        next_step=(
+        )
+        next_step = (
             "Otwórz /localo tylko jako status źródła; lokalne rekomendacje wymagają "
             "kolejnego read contractu z konkretnymi ranking/GBP facts."
-            if oauth_access_ready
-            else "Otwórz /localo i dokończ OAuth access token przez Localo MCP."
-        ),
+        )
+        priority = 60
+        blocked_claims = ["local ranking", "GBP performance", "local visibility uplift"]
+    else:
+        title = "Localo: brak dostępu przed lokalnymi rekomendacjami"
+        summary = f"Localo nie ma pełnego dostępu: {missing}."
+        next_step = "Otwórz /localo i dokończ OAuth access token przez Localo MCP."
+        priority = 20
+        blocked_claims = ["local ranking", "GBP performance", "local visibility uplift"]
+    return CommandCenterBriefItem(
+        id="daily_localo_readiness",
+        title=title,
+        route="/localo",
+        status="ready" if oauth_access_ready or has_value_facts else "blocked",
+        priority=priority,
+        summary=summary,
+        next_step=next_step,
         source_connectors=["localo"],
         evidence_ids=_limited_ids(evidence_ids),
         action_ids=[],
-        metric_tiles={
-            "MCP access": 1 if oauth_access_ready else 0,
-            "ranking facts": 0,
-            "GBP facts": 0,
-        },
-        blocked_claims=["local ranking", "GBP performance", "local visibility uplift"],
-        risk=ActionRisk.low if oauth_access_ready else ActionRisk.medium,
+        metric_tiles=_localo_metric_tiles(value_facts, oauth_access_ready),
+        blocked_claims=blocked_claims,
+        risk=ActionRisk.low if oauth_access_ready or has_value_facts else ActionRisk.medium,
     )
 
 
@@ -783,6 +812,47 @@ def _latest_successful_localo_mcp_run(
         ):
             return run
     return None
+
+
+def _localo_value_facts(metric_facts: list[MetricFact]) -> list[MetricFact]:
+    return [
+        fact
+        for fact in metric_facts
+        if not (fact.source_connector == "localo" and fact.name in LOCALO_PROBE_METRIC_NAMES)
+        and not (
+            fact.source_connector == "localo"
+            and fact.name == "api"
+            and fact.value == "localo_mcp_oauth_probe"
+        )
+    ]
+
+
+def _localo_metric_tiles(
+    value_facts: list[MetricFact],
+    oauth_access_ready: bool,
+) -> dict[str, int | float | str]:
+    if not value_facts:
+        return {
+            "MCP access": 1 if oauth_access_ready else 0,
+            "ranking facts": 0,
+            "GBP facts": 0,
+        }
+    return {
+        "miejsca": _numeric_fact(value_facts, "localo_active_place_count"),
+        "frazy": _numeric_fact(value_facts, "localo_tracked_keyword_count"),
+        "widoczność": _numeric_fact(value_facts, "localo_avg_visibility_current"),
+        "recenzje": _numeric_fact(value_facts, "localo_reviews_count"),
+    }
+
+
+def _numeric_fact(value_facts: list[MetricFact], name: str) -> int | float:
+    for fact in value_facts:
+        if fact.name != name or not isinstance(fact.value, int | float):
+            continue
+        if isinstance(fact.value, float) and fact.value.is_integer():
+            return int(fact.value)
+        return round(float(fact.value), 4) if isinstance(fact.value, float) else fact.value
+    return 0
 
 
 def _first_blocked_section(sections: Iterable[Any]) -> Any | None:

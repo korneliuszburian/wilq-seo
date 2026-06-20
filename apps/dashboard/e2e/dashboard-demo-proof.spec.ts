@@ -105,7 +105,11 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Status Localo / MCP access" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
-    await expect(page.getByText(/Localo access działa; brakuje ranking\/GBP facts/)).toBeVisible();
+    await expect(
+      page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
+    ).toBeVisible();
+    await expect(page.getByText(/rankingi lokalne/)).toBeVisible();
+    await expect(page.getByText(/wyniki GBP/).first()).toBeVisible();
     await expect(page.getByText(/MCP initialize zwrócił 200/)).toBeVisible();
     await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);
     await expect(page.getByText(/Local Visibility Focus/)).toHaveCount(0);

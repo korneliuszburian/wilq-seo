@@ -874,3 +874,51 @@ Fresh Codex eval proof:
   ActionObject.
 - Smoke script now summarizes `blocked_handoff=null` correctly for live Ads
   diagnostics instead of assuming an OAuth blocker object.
+
+## Latest Localo Aggregate Facts Slice
+
+Status: implemented, full `scripts/verify.sh` passed.
+
+What changed:
+
+- `wilq.connectors.localo.client.refresh_localo_visibility_summary()` now uses
+  Localo MCP as a read-only adapter after initialize:
+  `notifications/initialized`, then `tools/call` with GraphQL `query`.
+- The adapter stores aggregate facts only. It must not store raw Localo place
+  names, addresses, keywords, categories or Localo IDs.
+- Current live refresh:
+  `refresh_localo_9e9ff67eadad`, evidence
+  `ev_refresh_refresh_localo_9e9ff67eadad`.
+- Current live aggregate facts:
+  `localo_active_place_count=4`,
+  `localo_tracked_keyword_count=23`,
+  `localo_avg_visibility_current=52.8261`,
+  `localo_avg_latest_grid_position=3.2105`,
+  `localo_reviews_count=793`,
+  `localo_review_reply_rate=0.809584`.
+- `/api/localo/diagnostics` now reports:
+  `live_data_available=true`, `visibility_fact_count=17`,
+  `allowed_evidence=[place_inventory, local_rankings, reviews]`,
+  `missing_read_contracts=[gbp_visibility, competitor_visibility, local_tasks]`.
+- Command Center now promotes Localo only when real Localo facts exist or access
+  is genuinely blocked. Current live card tiles:
+  `miejsca=4`, `frazy=23`, `widoczność=52.8261`, `recenzje=793`.
+- `POST /api/codex/context-pack {"skill":"wilq-localo-operator"}` includes
+  the same Localo diagnostics. Redaction was fixed so metric names like
+  `localo_latest_grid_position_count` are not replaced with `[REDACTED]`.
+
+Still blocked by design:
+
+- Do not claim `GBP performance`, `competitor visibility`,
+  `local task completed`, `GBP write` or `local visibility uplift`.
+- Localo facts currently support review of aggregate place inventory,
+  local-ranking aggregates and reviews only. They do not prove competitor
+  movement, GBP profile performance or improvement after an action.
+
+Final proof:
+
+- `scripts/verify.sh` passed after this slice.
+- Backend API contracts: `122 passed`.
+- Dashboard route unit tests: `14 passed`.
+- Playwright e2e: `11 passed`.
+- Skill/API smokes and dashboard production build passed.

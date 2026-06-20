@@ -246,7 +246,33 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ads business context contract, 2026-06-20 10:12 CEST.
+1. Localo aggregate value facts, 2026-06-20 11:42 CEST.
+   Localo MCP vendor_read now performs read-only GraphQL `query` calls after
+   MCP initialize and stores only aggregate facts, not raw place names,
+   addresses, keywords or Localo IDs. Live proof:
+   `refresh_localo_9e9ff67eadad` completed with evidence
+   `ev_refresh_refresh_localo_9e9ff67eadad`; key facts are
+   `localo_active_place_count=4`, `localo_tracked_keyword_count=23`,
+   `localo_avg_visibility_current=52.8261`,
+   `localo_avg_latest_grid_position=3.2105`,
+   `localo_reviews_count=793`, `localo_review_reply_rate=0.809584`.
+   `/api/localo/diagnostics` now reports `live_data_available=true`,
+   `visibility_fact_count=17`, `allowed_evidence=[place_inventory,
+   local_rankings, reviews]`, and still blocks missing contracts
+   `gbp_visibility`, `competitor_visibility`, `local_tasks`. Command Center
+   now shows a Localo decision card only when real facts exist or access is
+   blocked; current live tiles are `miejsca=4`, `frazy=23`,
+   `widoczność=52.8261`, `recenzje=793`. Context-pack redaction was fixed so
+   long metric names such as `localo_latest_grid_position_count` are preserved,
+   while secret-like values remain redacted. Full proof passed:
+   ruff/mypy on changed modules, `uv run pytest tests/test_api_contracts.py -q
+   -k 'localo or redaction'`, dashboard route unit tests, live Localo
+   vendor_read, live context-pack redaction check and `scripts/verify.sh`.
+   Final verify result: backend API contracts `122 passed`, dashboard unit
+   tests `14 passed`, Playwright e2e `11 passed`, skill/API smokes and
+   production build passed.
+
+2. Ads business context contract, 2026-06-20 10:12 CEST.
    `AdsDiagnosticsResponse` exposes typed
    `business_context_read_contract`, shared Zod schema and Ads Doctor UI
    labels. Live proof after `scripts/local_stack.sh restart`:
@@ -258,7 +284,7 @@ Aktualny maintenance:
    `blocker_count=2`. `wilq-ads-doctor` smoke passed with the same contract
    in scoped context-pack (`context_pack_bytes=186844`, still under 200 KB).
 
-2. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
+3. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
    `wilq-ads-doctor` context-pack no longer ships duplicated Ads sections or
    row payloads inside `decision_queue`. Live proof: 174292 bytes over the wire
    and smoke-reported `context_pack_bytes=183152`; `sections_omitted=true`,
@@ -266,7 +292,7 @@ Aktualny maintenance:
    capped at 4, full endpoint pointer preserved. The smoke script now fails if
    `wilq-ads-doctor` exceeds 200 KB.
 
-3. Ads intent review gates, 2026-06-20 09:35 CEST.
+4. Ads intent review gates, 2026-06-20 09:35 CEST.
    Search-term safety, keyword match context and negative keyword review now
    expose `human_intent_review` as `operator_review_gates` instead of a missing
    read contract when supporting Ads evidence exists. Live proof:
@@ -278,7 +304,7 @@ Aktualny maintenance:
    `14 passed`, Playwright `11 passed`, skill/API smokes and production build
    passed.
 
-4. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
+5. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
    `LocaloDecisionItem` now exposes typed `priority` and `metric_tiles`, with
    the Zod schema, `/localo` UI and API tests updated. Live proof after stack
    restart: 2 decisions, no null priorities, no empty metric tiles;
@@ -287,7 +313,7 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-5. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
+6. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
    `MerchantDecisionItem` now exposes typed `priority` and numeric
    `metric_tiles`, with the Zod schema, `/merchant` UI and API tests updated.
    Live proof after stack restart: 8 decisions, no null priorities, no empty

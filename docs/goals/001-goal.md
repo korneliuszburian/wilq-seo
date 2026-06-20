@@ -2590,3 +2590,38 @@ Important product note:
 - Every route should preserve evidence/action traceability while making the
   marketer-facing hierarchy obvious: real metric, diagnosis, safe next action,
   blocked claims and matching Codex skill/prompt.
+
+Latest Localo aggregate value facts slice:
+
+- Done: Localo is no longer only an OAuth/MCP access proof. The Localo connector
+  now performs read-only MCP GraphQL `query` calls after initialize and stores
+  only aggregate facts. It must not store raw Localo place names, addresses,
+  keywords, categories or Localo IDs.
+- Live proof: `uv run wilq connectors refresh localo --mode vendor_read
+  --reason "Goal 001 Localo aggregate value facts proof"` completed as
+  `refresh_localo_9e9ff67eadad` with evidence
+  `ev_refresh_refresh_localo_9e9ff67eadad`.
+- Live aggregate facts: `localo_active_place_count=4`,
+  `localo_tracked_keyword_count=23`,
+  `localo_avg_visibility_current=52.8261`,
+  `localo_avg_latest_grid_position=3.2105`,
+  `localo_reviews_count=793`, `localo_review_reply_rate=0.809584`.
+- `/api/localo/diagnostics` now reports `live_data_available=true`,
+  `visibility_fact_count=17`, `allowed_evidence=[place_inventory,
+  local_rankings, reviews]`, and missing contracts
+  `[gbp_visibility, competitor_visibility, local_tasks]`.
+- Command Center now promotes Localo only when real facts exist or access is
+  genuinely blocked. Current live Localo card tiles:
+  `miejsca=4`, `frazy=23`, `widoczność=52.8261`, `recenzje=793`.
+- `wilq-localo-operator` context-pack receives the same diagnostics. Redaction
+  now preserves long metric names such as
+  `localo_latest_grid_position_count`; secret-like values remain redacted.
+- Still blocked by design: do not claim `GBP performance`,
+  `competitor visibility`, `local task completed`, `GBP write` or
+  `local visibility uplift` until separate read/action contracts exist.
+- Full proof passed: ruff/mypy on changed backend modules, selected
+  Localo/redaction API tests, dashboard route unit tests, live Localo
+  vendor_read, live context-pack redaction check and `scripts/verify.sh`.
+  Final verify result: backend API contracts `122 passed`, dashboard unit tests
+  `14 passed`, Playwright e2e `11 passed`, skill/API smokes and production
+  build passed.

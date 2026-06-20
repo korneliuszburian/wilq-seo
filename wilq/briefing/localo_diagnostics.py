@@ -34,6 +34,38 @@ LOCALO_VISIBILITY_READ_CONTRACTS = [
     "reviews",
     "local_tasks",
 ]
+LOCALO_CONTRACT_FACT_NAMES = {
+    "place_inventory": {
+        "localo_active_place_count",
+        "localo_place_detail_count",
+    },
+    "local_rankings": {
+        "localo_tracked_keyword_count",
+        "localo_visibility_score_count",
+        "localo_avg_visibility_current",
+        "localo_avg_visibility_change",
+        "localo_latest_grid_position_count",
+        "localo_avg_latest_grid_position",
+        "localo_keyword_volume_count",
+        "localo_total_keyword_volume",
+    },
+    "reviews": {
+        "localo_avg_rating",
+        "localo_snapshot_reviews_count",
+        "localo_reviews_count",
+        "localo_reviews_replied_count",
+        "localo_reviews_removed_count",
+        "localo_review_reply_rate",
+    },
+}
+LOCALO_CONTRACT_ORDER = [
+    "place_inventory",
+    "local_rankings",
+    "gbp_visibility",
+    "competitor_visibility",
+    "reviews",
+    "local_tasks",
+]
 LOCALO_BLOCKED_CLAIMS = [
     "local ranking",
     "GBP performance",
@@ -98,7 +130,14 @@ def _is_successful_mcp_probe(run: ConnectorRefreshRun) -> bool:
 
 
 def _visibility_facts(metric_facts: list[MetricFact]) -> list[MetricFact]:
-    return [fact for fact in metric_facts if fact.name not in LOCALO_PROBE_METRIC_NAMES]
+    facts_by_name: dict[str, MetricFact] = {}
+    for fact in metric_facts:
+        if fact.name in LOCALO_PROBE_METRIC_NAMES:
+            continue
+        existing = facts_by_name.get(fact.name)
+        if existing is None or (not existing.dimensions and fact.dimensions):
+            facts_by_name[fact.name] = fact
+    return list(facts_by_name.values())
 
 
 def _access_probe(
@@ -199,22 +238,31 @@ def _localo_sections(
         risk=ActionRisk.low if access_ready else ActionRisk.medium,
     )
 
+    present_contracts = _present_contracts(visibility_facts)
+    missing_contracts = _missing_visibility_contracts(present_contracts)
+    blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
     visibility_section = LocaloDiagnosticSection(
         id="localo_visibility_contract",
         title="Localo: ranking/GBP evidence",
         status="ready" if visibility_facts else "missing",
         summary=(
-            f"WILQ ma {len(visibility_facts)} Localo visibility facts."
+            (
+                f"WILQ ma {len(visibility_facts)} Localo aggregate facts dla kontraktów: "
+                f"{', '.join(present_contracts)}. Nadal brakuje: "
+                f"{', '.join(missing_contracts) or 'brak'}."
+            )
             if visibility_facts
             else "WILQ nie ma jeszcze rankingów, GBP, competitor visibility ani reviews z Localo."
         ),
         diagnosis=(
-            "Visibility facts mogą wspierać lokalną kolejkę działań."
+            "Localo facts wspierają tylko wskazane kontrakty. WILQ nie rozszerza ich "
+            "na GBP, konkurencję ani poprawę widoczności bez osobnego evidence."
             if visibility_facts
             else "Brak tych facts oznacza brak lokalnej diagnozy marketingowej, nie brak problemu."
         ),
         next_step=(
-            "Przejrzyj ranking/GBP facts i połącz je z ActionObjectem lokalnej kolejki."
+            "Przejrzyj agregaty miejsc, fraz i recenzji. Claimy z brakujących "
+            "kontraktów zostaw zablokowane."
             if visibility_facts
             else (
                 "Zbuduj Localo read contract dla rankings/GBP/competitors/reviews "
@@ -227,7 +275,7 @@ def _localo_sections(
         ),
         metric_facts=visibility_facts[:12],
         action_ids=[],
-        blocked_claims=[] if visibility_facts else LOCALO_BLOCKED_CLAIMS,
+        blocked_claims=blocked_claims if visibility_facts else LOCALO_BLOCKED_CLAIMS,
         risk=ActionRisk.low if visibility_facts else ActionRisk.medium,
     )
 
@@ -262,33 +310,52 @@ def _localo_decision_queue(
     visibility_facts: list[MetricFact],
 ) -> list[LocaloDecisionItem]:
     if visibility_facts:
-        return [
+        present_contracts = _present_contracts(visibility_facts)
+        missing_contracts = _missing_visibility_contracts(present_contracts)
+        blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
+        decisions = [
             LocaloDecisionItem(
                 id="localo_review_visibility_facts",
                 decision_type="review_local_visibility",
                 status="ready",
-                title="Przejrzyj lokalną widoczność z Localo facts",
-                summary=f"WILQ ma {len(visibility_facts)} Localo visibility facts.",
-                rationale="Ranking/GBP facts istnieją w WILQ evidence i mogą zostać ocenione.",
-                next_step="Zbuduj lokalną kolejkę review z evidence IDs i bez ścieżki zapisu.",
+                title="Przejrzyj agregaty widoczności lokalnej z Localo",
+                summary=(
+                    f"WILQ ma {len(visibility_facts)} Localo aggregate facts: "
+                    f"{', '.join(present_contracts)}."
+                ),
+                rationale=(
+                    "Localo dostarczył read-only agregaty dla miejsc, monitorowanych fraz "
+                    "i recenzji. To pozwala na review, ale nie na claim o poprawie "
+                    "widoczności ani działania GBP."
+                ),
+                next_step=(
+                    "Sprawdź średnią widoczność, pozycje grid i stan recenzji. "
+                    "Konkurencję/GBP/write path zostaw zablokowane."
+                ),
                 access_status=access_probe.status,
                 priority=20,
-                metric_tiles={
-                    "fakty Localo": len(visibility_facts),
-                    "braki kontraktu": 0,
-                },
-                allowed_evidence=["local_rankings", "gbp_visibility", "competitor_visibility"],
-                missing_read_contracts=[],
+                metric_tiles=_localo_visibility_tiles(visibility_facts, missing_contracts),
+                allowed_evidence=present_contracts,
+                missing_read_contracts=missing_contracts,
                 source_connectors=[LOCALO_CONNECTOR_ID],
                 evidence_ids=_unique(
                     [*(fact.evidence_id for fact in visibility_facts), *access_probe.evidence_ids]
                 ),
                 metric_facts=visibility_facts[:12],
                 action_ids=[],
-                blocked_claims=["GBP write", "visibility uplift guaranteed"],
+                blocked_claims=blocked_claims,
                 risk=ActionRisk.low,
             )
         ]
+        if missing_contracts:
+            decisions.append(
+                _blocked_visibility_decision(
+                    access_probe,
+                    missing_contracts=missing_contracts,
+                    blocked_claims=blocked_claims,
+                )
+            )
+        return decisions
 
     if access_probe.status == "access_ready":
         return [
@@ -357,7 +424,14 @@ def _localo_decision_queue(
     ]
 
 
-def _blocked_visibility_decision(access_probe: LocaloAccessProbe) -> LocaloDecisionItem:
+def _blocked_visibility_decision(
+    access_probe: LocaloAccessProbe,
+    *,
+    missing_contracts: list[str] | None = None,
+    blocked_claims: list[str] | None = None,
+) -> LocaloDecisionItem:
+    effective_missing_contracts = missing_contracts or LOCALO_VISIBILITY_READ_CONTRACTS
+    effective_blocked_claims = blocked_claims or LOCALO_BLOCKED_CLAIMS
     return LocaloDecisionItem(
         id="localo_block_visibility_claims_without_read_contract",
         decision_type="block_visibility_claims",
@@ -378,17 +452,90 @@ def _blocked_visibility_decision(access_probe: LocaloAccessProbe) -> LocaloDecis
         access_status=access_probe.status,
         priority=10,
         metric_tiles={
-            "blokady claimów": len(LOCALO_BLOCKED_CLAIMS),
-            "braki kontraktu": len(LOCALO_VISIBILITY_READ_CONTRACTS),
+            "blokady claimów": len(effective_blocked_claims),
+            "braki kontraktu": len(effective_missing_contracts),
         },
         allowed_evidence=["mcp_initialize"] if access_probe.status == "access_ready" else [],
-        missing_read_contracts=LOCALO_VISIBILITY_READ_CONTRACTS,
+        missing_read_contracts=effective_missing_contracts,
         source_connectors=[LOCALO_CONNECTOR_ID],
         evidence_ids=access_probe.evidence_ids,
         action_ids=[],
-        blocked_claims=LOCALO_BLOCKED_CLAIMS,
+        blocked_claims=effective_blocked_claims,
         risk=ActionRisk.medium,
     )
+
+
+def _present_contracts(visibility_facts: list[MetricFact]) -> list[str]:
+    fact_names = {fact.name for fact in visibility_facts}
+    present = [
+        contract
+        for contract in LOCALO_CONTRACT_ORDER
+        if contract in LOCALO_CONTRACT_FACT_NAMES
+        and fact_names.intersection(LOCALO_CONTRACT_FACT_NAMES[contract])
+    ]
+    return present
+
+
+def _missing_visibility_contracts(present_contracts: list[str]) -> list[str]:
+    present = set(present_contracts)
+    return [contract for contract in LOCALO_VISIBILITY_READ_CONTRACTS if contract not in present]
+
+
+def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
+    claims_by_contract = {
+        "local_rankings": "local ranking",
+        "gbp_visibility": "GBP performance",
+        "competitor_visibility": "competitor visibility",
+        "reviews": "review velocity",
+        "local_tasks": "local task completed",
+    }
+    claims = [
+        claim
+        for contract, claim in claims_by_contract.items()
+        if contract in missing_contracts
+    ]
+    claims.extend(["GBP write", "local visibility uplift"])
+    return _unique(claims)
+
+
+def _localo_visibility_tiles(
+    visibility_facts: list[MetricFact],
+    missing_contracts: list[str],
+) -> dict[str, int | float | str]:
+    return {
+        "fakty Localo": len(visibility_facts),
+        "miejsca": _int_fact_value(visibility_facts, "localo_active_place_count"),
+        "frazy": _int_fact_value(visibility_facts, "localo_tracked_keyword_count"),
+        "średnia widoczność": _float_fact_value(
+            visibility_facts,
+            "localo_avg_visibility_current",
+        ),
+        "recenzje": _int_fact_value(visibility_facts, "localo_reviews_count"),
+        "braki kontraktu": len(missing_contracts),
+    }
+
+
+def _int_fact_value(visibility_facts: list[MetricFact], name: str) -> int:
+    value = _fact_value(visibility_facts, name)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return 0
+
+
+def _float_fact_value(visibility_facts: list[MetricFact], name: str) -> float:
+    value = _fact_value(visibility_facts, name)
+    if isinstance(value, int | float):
+        return round(float(value), 4)
+    return 0.0
+
+
+def _fact_value(visibility_facts: list[MetricFact], name: str) -> int | float | str | None:
+    for fact in visibility_facts:
+        if fact.name == name:
+            return fact.value
+    return None
 
 
 def _refresh_or_connector_evidence_ids(run: ConnectorRefreshRun | None) -> list[str]:

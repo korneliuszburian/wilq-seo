@@ -122,19 +122,56 @@ def main() -> int:
             raise SystemExit("Completed Localo OAuth probe must report MCP initialize 200")
         if access_probe.get("status") != "access_ready":
             raise SystemExit("Completed Localo OAuth probe must produce access_ready diagnostics")
-        if "localo_access_ready_wait_for_visibility_facts" not in decision_ids:
-            raise SystemExit("Access-ready Localo diagnostics must wait for visibility facts")
-        if "localo_block_visibility_claims_without_read_contract" not in decision_ids:
-            raise SystemExit("Access-ready Localo diagnostics must block visibility claims")
         localo_metric_facts = [
             fact
             for decision in decision_queue
             for fact in decision.get("metric_facts", [])
         ]
-        if localo_metric_facts:
-            raise SystemExit(
-                "Localo OAuth probe is not ranking/GBP evidence and must not create metric facts"
+        if metric_summary.get("localo_read_contract_count"):
+            if "localo_review_visibility_facts" not in decision_ids:
+                raise SystemExit("Localo value facts must expose a visibility review decision")
+            if "localo_block_visibility_claims_without_read_contract" not in decision_ids:
+                raise SystemExit("Partial Localo value facts must keep blocked-claim decision")
+            review_decision: dict[str, Any] = next(
+                (
+                    decision
+                    for decision in decision_queue
+                    if decision.get("id") == "localo_review_visibility_facts"
+                ),
+                {},
             )
+            allowed_evidence = set(review_decision.get("allowed_evidence") or [])
+            if not {"place_inventory", "local_rankings", "reviews"}.issubset(
+                allowed_evidence
+            ):
+                raise SystemExit("Localo value review is missing aggregate evidence contracts")
+            missing_contracts = set(review_decision.get("missing_read_contracts") or [])
+            if not {"gbp_visibility", "competitor_visibility", "local_tasks"}.issubset(
+                missing_contracts
+            ):
+                raise SystemExit("Localo value review must keep unsupported contracts missing")
+            blocked_claims = set(review_decision.get("blocked_claims") or [])
+            if not {"GBP performance", "competitor visibility", "local visibility uplift"}.issubset(
+                blocked_claims
+            ):
+                raise SystemExit("Localo value review must block unsupported marketing claims")
+            if not localo_metric_facts:
+                raise SystemExit("Localo value review must expose aggregate metric facts")
+            redacted_metric_names = [
+                fact.get("name") for fact in localo_metric_facts if fact.get("name") == "[REDACTED]"
+            ]
+            if redacted_metric_names:
+                raise SystemExit("Localo metric fact names must not be redacted")
+        else:
+            if "localo_access_ready_wait_for_visibility_facts" not in decision_ids:
+                raise SystemExit("Access-ready Localo diagnostics must wait for visibility facts")
+            if "localo_block_visibility_claims_without_read_contract" not in decision_ids:
+                raise SystemExit("Access-ready Localo diagnostics must block visibility claims")
+            if localo_metric_facts:
+                raise SystemExit(
+                    "Localo OAuth probe is not ranking/GBP evidence "
+                    "and must not create metric facts"
+                )
 
     connector_results = []
     for connector in REQUIRED_CONNECTORS:
