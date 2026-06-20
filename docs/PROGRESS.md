@@ -34,6 +34,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads preliminary business context + custom-segments scoped context, 2026-06-20
+  17:34 CEST. Puste `WILQ_ADS_TARGET_ROAS` i
+  `WILQ_ADS_TARGET_CPA_MICROS` nie robią już fałszywego blockera, jeśli core
+  nie-sekretny context Ads jest ustawiony. Live
+  `/api/ads/diagnostics.business_context_read_contract` ma `status=ready`,
+  `missing_read_contracts=["target_roas_or_cpa"]`,
+  `allowed_metrics=["profit_margin","business_goal","human_budget_goal"]`,
+  `target_roas=null`, `target_cpa_micros=null`; decyzja
+  `ads_review_business_context` ma `action_ids=[]`, więc Command Center nie
+  pokazuje `daily_ads_business_context`. Jednocześnie
+  `wilq-custom-segments` context-pack jest scoped: ~50 KB,
+  `active_action_ids=["act_prepare_custom_segments_from_search_terms"]`,
+  `decision_ids=["ads_prepare_custom_segments_from_search_terms"]`,
+  `top_opportunity_count=0`, `purpose=custom_segments_context`. Dodano
+  dedicated route `/ads-doctor/custom-segments` z Playwright smoke.
 - Demand Gen diagnostics route, 2026-06-20 16:55 CEST.
   Demand Gen nie wpada już w generyczny registry surface. Dodano
   `GET /api/demand-gen/diagnostics`, a `/ads-doctor/demand-gen` renderuje ten
@@ -154,30 +169,24 @@ Aktualny proof produktowy:
 - Ads business context ma teraz wstępne, lokalne i nie-sekretne wartości w
   repo-local `.env` dla marży, celu biznesowego i celu budżetu, ale target
   ROAS/CPA jest celowo pusty do czasu ludzkiego potwierdzenia. Live proof
-  2026-06-20 15:39 CEST po `scripts/local_stack.sh restart`:
-  `/api/ads/diagnostics.business_context_read_contract.status=blocked`,
+  2026-06-20 17:34 CEST po `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics.business_context_read_contract.status=ready`,
   `missing=[target_roas_or_cpa]`, `target_roas=null`,
-  `target_cpa_micros=null`. Derived KPI rows nadal expose
+  `target_cpa_micros=null`, `allowed_metrics=[
+  profit_margin,business_goal,human_budget_goal]`. Derived KPI rows nadal expose
   `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
   `target_status_label` and `target_review_priority`, ale bez targetu pokazują
   `target_status=no_target` / `target_status_label=brak targetu` i pozostają
   triage/read-only, nie werdyktem.
-- Ads business context nie jest już ukryty tylko w `/ads-doctor`; przy pustych
-  targetach Command Center, Marketing Brief i scoped `wilq-daily-command` mają
-  pokazać osobny blocked item
-  `daily_ads_business_context` /
-  `decision_ads_business_context_before_budget_decisions` z ActionObject
-  `act_configure_ads_business_context`. `/api/opportunities` ma nadal pomijać
-  czysty setup blocker, bo opportunities są marketingowymi ruchami, nie
+- Ads business context z pustym targetem nie jest już globalnym blockerem.
+  Command Center nie pokazuje `daily_ads_business_context` ani
+  `decision_ads_business_context_before_budget_decisions`, a
+  `/api/actions` nie zwraca `act_configure_ads_business_context`, jeśli core
+  context jest ustawiony. Ten ActionObject wraca tylko wtedy, gdy brakuje
+  marży, celu biznesowego albo celu budżetu. `/api/opportunities` ma nadal
+  pomijać czysty setup blocker, bo opportunities są marketingowymi ruchami, nie
   naprawą konfiguracji.
-- Ads business context blocker ma teraz konkretną review-only ścieżkę akcji:
-  `/api/actions` zwraca `act_configure_ads_business_context` z payloadem
-  `configure_ads_business_context`, `missing_read_contracts=[
-  profit_margin, business_goal, human_budget_goal, target_roas_or_cpa]`,
-  `apply_allowed=false` i `destructive=false`. `/api/ads/diagnostics`
-  podpina ten action ID do `ads_review_business_context`, Command Center
-  podpina go do `decision_ads_business_context_before_budget_decisions`, a
-  Ads ready opportunity nadal ma tylko 4 właściwe review ActionObjecty.
+  Historical proof for the earlier blocker slice:
   Wąski proof: ruff/mypy OK, 3 targeted backend tests OK, dashboard unit
   `14 passed`, Playwright action-detail smoke `1 passed`. Full
   `scripts/verify.sh` passed after this slice: backend `120 passed`,
@@ -405,11 +414,12 @@ Aktualny maintenance:
 4. Ads business context contract, 2026-06-20 10:12 CEST.
    `AdsDiagnosticsResponse` exposes typed
    `business_context_read_contract`, shared Zod schema and Ads Doctor UI
-   labels. Current local target truth, live proof 2026-06-20 15:39 CEST:
+   labels. Current local target truth, live proof 2026-06-20 17:34 CEST:
    profit margin, business goal and budget goal can remain as non-secret review
    context, but `WILQ_ADS_TARGET_ROAS` and `WILQ_ADS_TARGET_CPA_MICROS` are
-   empty until a human confirms them. With empty targets, the contract is
-   blocked on `target_roas_or_cpa`.
+   empty until a human confirms them. With empty targets and core context
+   present, the contract is `ready` but keeps
+   `missing_read_contracts=[target_roas_or_cpa]`.
    Derived KPI rows still expose target comparison fields
    `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
    `target_status_label` and `target_review_priority`; this is review-only

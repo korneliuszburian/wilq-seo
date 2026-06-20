@@ -1893,7 +1893,7 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
           />
           <MetricTile
             label="Biznes"
-            value={data.business_context_read_contract.status === "ready" ? "gotowe" : "blokada"}
+            value={adsBusinessContextStatusValue(data.business_context_read_contract)}
           />
           <MetricTile
             label="90 dni"
@@ -2089,7 +2089,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
           <MetricTile
             label="Biznes"
-            value={data.business_context_read_contract.status === "ready" ? "gotowe" : "blokada"}
+            value={adsBusinessContextStatusValue(data.business_context_read_contract)}
           />
         </div>
       </div>
@@ -2983,6 +2983,14 @@ function adsSectionLabel(sectionId: string) {
   return sectionId;
 }
 
+function adsBusinessContextStatusValue(
+  contract: AdsDiagnosticsResponse["business_context_read_contract"]
+) {
+  if (contract.status === "blocked") return "blokada";
+  if (contract.missing_read_contracts.includes("target_roas_or_cpa")) return "wstępny";
+  return "gotowe";
+}
+
 function adsAllowedMetricLabel(value: string) {
   const labels: Record<string, string> = {
     clicks: "kliknięcia",
@@ -3070,6 +3078,8 @@ function adsMissingReadContractLabel(value: string) {
     check_existing_keywords_and_match_types: "sprawdzenie słów i typów dopasowania",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
     negative_keyword_payload_preview: "podgląd payloadu wykluczeń",
+    keyword_planner_enrichment: "enrichment Keyword Planner",
+    forecast_or_audience_size: "forecast albo audience size",
     "campaign activity": "aktywność kampanii",
     search_term_view: "widok zapytań użytkowników",
     zero_conversion_search_terms: "terminy z zerową konwersją"
@@ -3548,6 +3558,142 @@ function ga4BlockedClaimLabels(claims: string[]) {
     "tracking gap": "problem pomiaru"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
+}
+
+function CustomSegmentsDiagnosticSurface() {
+  const diagnostics = useQuery({
+    queryKey: ["ads-diagnostics", "custom-segments"],
+    queryFn: getAdsDiagnostics
+  });
+
+  if (diagnostics.isLoading) return <LoadingBand />;
+  if (diagnostics.error || !diagnostics.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/ads/diagnostics. Custom segments nie mogą być oceniane bez WILQ API." />
+      </main>
+    );
+  }
+
+  const data = diagnostics.data;
+  const contract = data.custom_segments_read_contract;
+  const customDecision = data.decision_queue.find(
+    (decision) => decision.id === "ads_prepare_custom_segments_from_search_terms"
+  );
+  const sourceTermCount = contract.candidates.reduce(
+    (total, candidate) => total + candidate.source_terms.length,
+    0,
+  );
+  const rejectedTermCount = contract.candidates.reduce(
+    (total, candidate) => total + candidate.rejected_terms.length,
+    0,
+  );
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Custom Segments</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Dedykowany widok kandydatów segmentów z Google Ads search terms.
+            WILQ pokazuje tylko source terms z evidence i payload preview do
+            review; zasięg, uplift, ROAS i targeting apply pozostają zablokowane.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+          <MetricTile label="Segmenty" value={contract.candidates.length} />
+          <MetricTile label="Source terms" value={sourceTermCount} />
+          <MetricTile label="Odrzucone" value={rejectedTermCount} />
+          <MetricTile label="Podgląd akcji" value={contract.payload_preview.length} />
+        </div>
+      </div>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Status Custom Segments / search terms evidence
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+              {contract.summary}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <StatusBadge value={contract.status === "ready" ? "gotowe" : "zablokowane"} />
+            <StatusBadge value={customDecision?.status === "ready" ? "do review" : "blocked"} />
+          </div>
+        </div>
+        <p className="mt-3 text-sm font-medium text-ink">{contract.next_step}</p>
+      </section>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+              Operator segmentów
+            </div>
+            <h2 className="mt-1 text-base font-semibold tracking-normal">
+              Co marketer może przygotować teraz
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              Użyj kandydatów tylko jako listy do review. Odrzuć frazy brandowe,
+              niskointencyjne lub zbyt szerokie, a przed apply wymagaj Keyword
+              Planner enrichment, forecastu i potwierdzenia człowieka.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center text-xs">
+            <MetricTile
+              label="Braki kontraktu"
+              value={contract.missing_read_contracts.length}
+            />
+            <MetricTile
+              label="Review gates"
+              value={contract.operator_review_gates.length}
+            />
+          </div>
+        </div>
+        <AdsCustomSegmentCandidatesPanel candidates={contract.candidates} />
+      </section>
+
+      <section className="rounded-md border border-line bg-white p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+            <ShieldAlert aria-hidden="true" size={18} />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Dowody i ograniczenia segmentów
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+              Ten ekran nie służy do tworzenia audience bez walidacji. Pokazuje
+              tylko review-only kontrakt z WILQ API.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-2 text-xs text-slate-600">
+          <TraceLine
+            label="Brakujące kontrakty"
+            values={contract.missing_read_contracts.map(adsMissingReadContractLabel)}
+          />
+          <TraceLine
+            label="Wymaga review"
+            values={contract.operator_review_gates.map(adsOperatorReviewGateLabel)}
+          />
+          <TraceLine
+            label="Nie wolno twierdzić"
+            values={contract.blocked_claims.map(adsBlockedClaimLabel)}
+          />
+          <TraceLine label="Źródła" values={contract.source_connectors} />
+          <LinkedTraceLine label="Dowody" values={contract.evidence_ids} kind="evidence" />
+          <LinkedTraceLine label="Akcje" values={contract.action_ids} kind="actions" />
+          <TraceLine
+            label="Context-pack"
+            values={["/api/codex/context-pack skill=wilq-custom-segments"]}
+          />
+        </div>
+      </section>
+    </main>
+  );
 }
 
 function DemandGenDiagnosticSurface() {
@@ -5681,6 +5827,9 @@ const generatedRoutes = operatingRoutes.map((path) =>
     component: () => {
       if (path === "/ads-doctor") {
         return <AdsDoctorSurface />;
+      }
+      if (path === "/ads-doctor/custom-segments") {
+        return <CustomSegmentsDiagnosticSurface />;
       }
       if (path === "/ads-doctor/demand-gen") {
         return <DemandGenDiagnosticSurface />;

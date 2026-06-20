@@ -4016,7 +4016,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Wymagany review/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/review strategii przez człowieka/).length).toBeGreaterThan(0);
-    expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();
+    expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
     expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
     expect(screen.queryByText(/wasted spend/)).not.toBeInTheDocument();
@@ -4025,6 +4025,30 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Campaign activity read contract")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
+  });
+
+  it("custom segments route renders dedicated review-only contract", async () => {
+    renderApp("/ads-doctor/custom-segments");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: "Custom Segments" })
+      ).toBeInTheDocument()
+    );
+
+    expect(
+      screen.getByText("Status Custom Segments / search terms evidence")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Co marketer może przygotować teraz")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i ograniczenia segmentów")).toBeInTheDocument();
+    expect(screen.getAllByText("Search terms: Ekologus Search").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Brakujące kontrakty/)).toBeInTheDocument();
+    expect(screen.getByText(/Wymaga review/)).toBeInTheDocument();
+    expect(screen.getByText(/nie twierdzi, że segment ma zasięg/)).toBeInTheDocument();
+    expect(screen.getByText(/skill=wilq-custom-segments/)).toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();
   });
 
   it("expert rules render on operating routes", async () => {

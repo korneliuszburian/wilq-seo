@@ -89,7 +89,7 @@ Audit `docs/audits/001-output.md` is now folded into
    `query/page=10`, `WP match=10`, `decyzje=4`, `wyświetlenia=7852`,
    `kliknięcia=138`.
 
-0. Ads business context truth, live proof 2026-06-20 15:39 CEST, after target
+0. Ads business context truth, live proof 2026-06-20 17:34 CEST, after target
    reset:
    `/api/ads/diagnostics` now exposes `business_context_read_contract` and
    decision `ads_review_business_context`. Current local runtime may keep
@@ -98,24 +98,38 @@ Audit `docs/audits/001-output.md` is now folded into
    `WILQ_ADS_TARGET_CPA_MICROS` are intentionally empty until a human confirms
    them. This is API product state, not skill prompt logic. After
    `scripts/local_stack.sh restart`,
-   `/api/ads/diagnostics.business_context_read_contract.status=blocked`,
-   `missing_read_contracts=[target_roas_or_cpa]`, `target_roas=null` and
-   `target_cpa_micros=null`.
+   `/api/ads/diagnostics.business_context_read_contract.status=ready`,
+   `missing_read_contracts=[target_roas_or_cpa]`, `target_roas=null`,
+   `target_cpa_micros=null` and
+   `allowed_metrics=[profit_margin,business_goal,human_budget_goal]`.
 
-0. Ads business context cockpit truth, live proof 2026-06-20 15:39 CEST, after
+0. Ads business context cockpit truth, live proof 2026-06-20 17:34 CEST, after
    target reset:
-   with empty target values, Command Center must expose the blocked Ads
-   business-context item instead of implying a configured CPA/ROAS goal.
+   with empty target values and core context present, Command Center must not
+   expose a false blocked business-context item. It should keep the single ready
+   Ads review card and show target emptiness inside Ads Doctor as
+   `missing_read_contracts=[target_roas_or_cpa]`.
    `/api/ads/diagnostics.derived_kpi_read_contract.kpi_rows` can still include
    `target_cpa_micros`, `cpa_vs_target_micros`, `target_status`,
    `target_status_label` and `target_review_priority`, but rows without human
    target confirmation now remain `no_target` / `brak targetu` style triage.
-   Current Command Center shows both read-only Ads review
-   `decision_review_ads_campaign_metrics` and blocked
-   `decision_ads_business_context_before_budget_decisions` with
-   `act_configure_ads_business_context`.
+   Current Command Center shows read-only Ads review
+   `decision_review_ads_campaign_metrics`; it does not show
+   `decision_ads_business_context_before_budget_decisions` and does not include
+   `act_configure_ads_business_context` in Ads action IDs.
    Daily Codex still must not claim profitability, margin verdict, wasted
    budget or budget scaling without the remaining optimizer contracts.
+
+0. Custom segments scoped context truth, live proof 2026-06-20 17:34 CEST:
+   `POST /api/codex/context-pack {"skill":"wilq-custom-segments"}` is scoped to
+   the custom-segments workflow only: about 50 KB, `active_action_ids` and
+   `ads_action_ids` contain only `act_prepare_custom_segments_from_search_terms`,
+   `decision_ids=[ads_prepare_custom_segments_from_search_terms]`,
+   `top_opportunity_count=0`, and
+   `context_pack_compaction.purpose=custom_segments_context`. The dedicated
+   `/ads-doctor/custom-segments` route renders this as a review-only segment
+   queue with source terms, missing Keyword Planner/forecast contracts and
+   blocked audience/apply/performance claims.
 
 0. Ads custom segment gate truth, live proof 2026-06-20 16:15 CEST:
    custom segments keep true missing read contracts separate from operator

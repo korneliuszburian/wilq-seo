@@ -545,11 +545,20 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
             "operator_review_gates": ["google_ads_rmf_compliance_review"],
+            "operations": ["custom_segment_candidate"],
+            "supported_actions": ["custom_segment_candidate"],
             "required_validation": ["google_ads_rmf_compliance_review"],
+            "preview_contract": "custom_segment_payload_preview_v1",
+            "recommended_actions": ["prepare_custom_segment_review"],
+            "source_metric_names": ["search_term_clicks"],
             "available_read_contracts": ["ga4_landing_source_campaign_quality"],
             "missing_read_contracts": [
                 "demand_gen_landing_quality_by_campaign",
                 "demand_gen_migration_constraints",
+            ],
+            "omitted_contracts": [
+                "keyword_match_context_read_contract",
+                "search_term_safety_read_contract",
             ],
             "blocked_claims": ["Demand Gen launch recommendation"],
             "cluster_id": (
@@ -579,13 +588,22 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
     assert redacted["operator_review_gates"] == ["google_ads_rmf_compliance_review"]
+    assert redacted["operations"] == ["custom_segment_candidate"]
+    assert redacted["supported_actions"] == ["custom_segment_candidate"]
     assert redacted["required_validation"] == ["google_ads_rmf_compliance_review"]
+    assert redacted["preview_contract"] == "custom_segment_payload_preview_v1"
+    assert redacted["recommended_actions"] == ["prepare_custom_segment_review"]
+    assert redacted["source_metric_names"] == ["search_term_clicks"]
     assert redacted["available_read_contracts"] == [
         "ga4_landing_source_campaign_quality"
     ]
     assert redacted["missing_read_contracts"] == [
         "demand_gen_landing_quality_by_campaign",
         "demand_gen_migration_constraints",
+    ]
+    assert redacted["omitted_contracts"] == [
+        "keyword_match_context_read_contract",
+        "search_term_safety_read_contract",
     ]
     assert redacted["blocked_claims"] == ["Demand Gen launch recommendation"]
     assert redact_mapping({"name": "localo_latest_grid_position_count"})["name"] == (
@@ -848,6 +866,66 @@ def test_google_ads_business_context_action_is_review_only(
     apply_response = client.post(f"/api/actions/{ADS_BUSINESS_CONTEXT_ACTION_ID}/apply")
     assert apply_response.status_code == 409
     assert "Action mode must be apply" in json.dumps(apply_response.json())
+
+
+def test_google_ads_business_context_allows_empty_preliminary_targets(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_google_ads_env(monkeypatch)
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_ADS_PROFIT_MARGIN", "0.35")
+    monkeypatch.setenv("WILQ_ADS_BUSINESS_GOAL", "lead quality review")
+    monkeypatch.setenv("WILQ_ADS_BUDGET_GOAL", "protect current monthly budget")
+    monkeypatch.setenv("WILQ_ADS_TARGET_ROAS", "")
+    monkeypatch.setenv("WILQ_ADS_TARGET_CPA_MICROS", "")
+
+    response = client.get("/api/ads/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    business_context_contract = payload["business_context_read_contract"]
+    assert business_context_contract["status"] == "ready"
+    assert business_context_contract["profit_margin"] == 0.35
+    assert business_context_contract["business_goal"] == "lead quality review"
+    assert business_context_contract["budget_goal"] == "protect current monthly budget"
+    assert business_context_contract["target_roas"] is None
+    assert business_context_contract["target_cpa_micros"] is None
+    assert business_context_contract["allowed_metrics"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+    ]
+    assert business_context_contract["missing_read_contracts"] == [
+        "target_roas_or_cpa"
+    ]
+    assert "wstępny lokalny kontekst" in business_context_contract["summary"]
+    assert "target verdict zostaje zablokowany" in business_context_contract["next_step"]
+
+    business_context_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_business_context"
+    )
+    assert business_context_section["status"] == "ready"
+    assert business_context_section["action_ids"] == []
+
+    business_context_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_business_context"
+    )
+    assert business_context_decision["status"] == "ready"
+    assert business_context_decision["missing_read_contracts"] == ["target_roas_or_cpa"]
+    assert business_context_decision["metric_tiles"] == {
+        "braki": 1,
+        "blokady": 6,
+        "ustawione pola": 3,
+    }
+    assert business_context_decision["action_ids"] == []
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    actions = {action["id"]: action for action in actions_response.json()}
+    assert ADS_BUSINESS_CONTEXT_ACTION_ID not in actions
 
 
 def test_metric_backed_prepare_actions_are_evidence_grounded(
@@ -6954,10 +7032,24 @@ def test_codex_context_pack_scopes_custom_segments_payload() -> None:
     assert data["context_scope"]["skill"] == "wilq-custom-segments"
     assert "content_diagnostics" not in data
     assert "command_center" not in data
+    assert [action["id"] for action in data["active_action_objects"]] == [
+        "act_prepare_custom_segments_from_search_terms"
+    ]
+    assert data["top_opportunities"] == []
+    assert ads_context["action_ids"] == ["act_prepare_custom_segments_from_search_terms"]
+    assert [decision["id"] for decision in ads_context["decision_queue"]] == [
+        "ads_prepare_custom_segments_from_search_terms"
+    ]
     assert ads_context["custom_segments_read_contract"]["payload_preview"]
     assert "custom_segment_payload_preview" not in ads_context[
         "custom_segments_read_contract"
     ]["missing_read_contracts"]
+    assert "recommendations_read_contract" not in ads_context
+    assert "negative_keywords_read_contract" not in ads_context
+    assert "budget_pacing_read_contract" not in ads_context
+    assert "campaign_read_contract" not in ads_context
+    assert "search_terms_read_contract" in ads_context
+    assert ads_context["context_pack_compaction"]["purpose"] == "custom_segments_context"
     assert ads_context["context_pack_compaction"][
         "custom_segment_payload_preview_included"
     ] <= 8

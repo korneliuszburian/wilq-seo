@@ -59,8 +59,35 @@ def main() -> int:
     pack_ads_diagnostics = pack.get("ads_diagnostics") or {}
     if pack_ads_diagnostics.get("evidence_ids") != ads_diagnostics.get("evidence_ids"):
         raise SystemExit("Context pack ads_diagnostics evidence IDs differ from endpoint")
-    if pack_ads_diagnostics.get("action_ids") != ads_diagnostics.get("action_ids"):
-        raise SystemExit("Context pack ads_diagnostics action IDs differ from endpoint")
+    pack_ads_action_ids = pack_ads_diagnostics.get("action_ids") or []
+    if any(action_id != CUSTOM_SEGMENT_ACTION_ID for action_id in pack_ads_action_ids):
+        raise SystemExit(
+            "Context pack for custom segments must not expose campaign, recommendation, "
+            "negative keyword or business-context ActionObjects"
+        )
+    active_action_ids = [
+        item.get("id")
+        for item in (pack.get("active_action_objects") or [])
+        if item.get("id")
+    ]
+    if any(action_id != CUSTOM_SEGMENT_ACTION_ID for action_id in active_action_ids):
+        raise SystemExit(
+            "Active actions for custom segments must not include campaign, "
+            "recommendation, negative keyword or business-context actions"
+        )
+    decision_ids = [
+        item.get("id")
+        for item in (pack_ads_diagnostics.get("decision_queue") or [])
+        if item.get("id")
+    ]
+    if any(
+        decision_id != "ads_prepare_custom_segments_from_search_terms"
+        for decision_id in decision_ids
+    ):
+        raise SystemExit(
+            "Context pack for custom segments must not expose campaign, recommendation, "
+            "negative keyword or business-context decisions"
+        )
 
     custom_segments_read_contract = ads_diagnostics.get("custom_segments_read_contract") or {}
     pack_custom_segments_read_contract = (
@@ -94,6 +121,18 @@ def main() -> int:
         if CUSTOM_SEGMENT_ACTION_ID not in custom_segments_read_contract.get("action_ids", []):
             raise SystemExit(
                 "Custom segments read contract must expose custom segment ActionObject"
+            )
+        if pack_ads_action_ids != [CUSTOM_SEGMENT_ACTION_ID]:
+            raise SystemExit(
+                "Ready custom segments context must expose custom segment ActionObject"
+            )
+        if active_action_ids != [CUSTOM_SEGMENT_ACTION_ID]:
+            raise SystemExit(
+                "Ready custom segments active actions must expose custom segment ActionObject"
+            )
+        if decision_ids != ["ads_prepare_custom_segments_from_search_terms"]:
+            raise SystemExit(
+                "Ready custom segments context must expose the custom segment decision"
             )
         custom_segment_action_validation = request_json(
             args.api_base,
@@ -211,6 +250,7 @@ def main() -> int:
                     for item in (pack.get("active_action_objects") or [])
                     if item.get("id")
                 ][:20],
+                "context_decision_ids": decision_ids,
             },
             indent=2,
             sort_keys=True,

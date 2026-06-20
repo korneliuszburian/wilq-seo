@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 16:55 CEST.
+Last updated: 2026-06-20 17:34 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -85,22 +85,35 @@ safety, apply confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts. Missing contracts must be shown
 as blockers, not hidden with prompt language.
 
-Latest Ads business context truth, live proof 2026-06-20 15:39 CEST:
+Latest Ads business context truth, live proof 2026-06-20 17:34 CEST:
 repo-local `.env` may contain non-secret Ads context such as profit margin,
 Polish business goal and Polish budget goal, but `WILQ_ADS_TARGET_ROAS` and
 `WILQ_ADS_TARGET_CPA_MICROS` are intentionally empty until a human confirms the
 target. Do not preserve guessed CPA/ROAS targets as product truth. With empty
-target values, current `/api/ads/diagnostics.business_context_read_contract`
-shows `status=blocked`, `missing_read_contracts=[target_roas_or_cpa]`,
-`target_roas=null` and `target_cpa_micros=null`, while derived KPI rows still
-expose `target_status=no_target` / `target_status_label=brak targetu` for
-future use. Current Command Center and Marketing Brief show the blocked
-business-context repair path through review-only ActionObject
-`act_configure_ads_business_context` while still showing read-only Ads review
-queues. This still does not unlock budget apply, recommendation apply,
+target values and the core non-secret context present, current
+`/api/ads/diagnostics.business_context_read_contract` shows `status=ready`,
+`missing_read_contracts=[target_roas_or_cpa]`, `target_roas=null`,
+`target_cpa_micros=null` and `allowed_metrics=[profit_margin, business_goal,
+human_budget_goal]`. The `ads_review_business_context` decision is also ready
+with `braki=1`, `ustawione pola=3` and no
+`act_configure_ads_business_context`; Command Center therefore keeps a single
+ready Ads review card instead of a false business-context blocker. This still
+does not unlock target verdicts, budget apply, recommendation apply,
 wasted-budget verdicts, profitability verdicts or scaling recommendations;
 those require confirmed targets plus the remaining optimizer contracts, human
 review and audit paths.
+
+Latest custom-segments context truth, live proof 2026-06-20 17:34 CEST:
+`POST /api/codex/context-pack {"skill":"wilq-custom-segments"}` is now
+workflow-specific: about 50 KB, `active_action_objects` and
+`ads_diagnostics.action_ids` contain only
+`act_prepare_custom_segments_from_search_terms`, `decision_queue` contains only
+`ads_prepare_custom_segments_from_search_terms`, and `top_opportunities=[]`.
+The dedicated `/ads-doctor/custom-segments` route renders the same review-only
+contract, including real source terms, payload preview, missing
+`keyword_planner_enrichment` and `forecast_or_audience_size`, and blocked
+audience/apply/performance claims. Do not re-expand this skill context with
+generic Ads decisions or opportunity cards.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

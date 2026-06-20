@@ -107,6 +107,25 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
   });
 
+  test("custom segments route exposes review-only segment candidates", async ({ page }) => {
+    await page.goto("/ads-doctor/custom-segments");
+
+    await expect(page.getByRole("heading", { name: "Custom Segments", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Status Custom Segments / search terms evidence" })
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Co marketer może przygotować teraz" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia segmentów" })).toBeVisible();
+    await expect(page.getByText(/Search terms:/).first()).toBeVisible();
+    await expect(page.getByText(/Source terms:/).first()).toBeVisible();
+    await expect(page.getByText(/enrichment Keyword Planner/).first()).toBeVisible();
+    await expect(page.getByText(/forecast albo audience size/).first()).toBeVisible();
+    await expect(page.getByText(/nie twierdzi, że segment ma zasięg/i).first()).toBeVisible();
+    await expect(page.getByText(/skill=wilq-custom-segments/)).toBeVisible();
+    await expect(page.getByText("Evidence Registry")).toHaveCount(0);
+    await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
+  });
+
   test("demand gen route exposes readiness blocker instead of generic registry", async ({ page }) => {
     await page.goto("/ads-doctor/demand-gen");
 

@@ -860,7 +860,15 @@ def _business_context_read_contract(
         ]
         if value is not None and value != ""
     ]
-    status: Literal["ready", "blocked"] = "ready" if not missing_read_contracts else "blocked"
+    blocking_missing_contracts = [
+        contract
+        for contract in missing_read_contracts
+        if contract != "target_roas_or_cpa"
+    ]
+    target_missing = "target_roas_or_cpa" in missing_read_contracts
+    status: Literal["ready", "blocked"] = (
+        "ready" if not blocking_missing_contracts else "blocked"
+    )
     metric_tiles = _clean_metric_tiles(
         {
             "marża": _format_ratio_percent(profit_margin)
@@ -881,15 +889,28 @@ def _business_context_read_contract(
         "wasted budget",
     ]
     if status == "ready":
-        summary = (
-            "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel budżetu "
-            "oraz target ROAS albo CPA. To pozwala interpretować KPI ostrożniej, ale "
-            "nadal nie odblokowuje automatycznych zmian."
-        )
-        next_step = (
-            "Użyj tych celów jako kontekstu review kampanii i budżetu. Apply nadal "
-            "wymaga ActionObject, payload preview, potwierdzenia i audytu."
-        )
+        if target_missing:
+            summary = (
+                "WILQ ma wstępny lokalny kontekst biznesowy Ads: marżę, cel "
+                "biznesowy i cel budżetu. Target ROAS/CPA jest celowo pusty, więc "
+                "KPI targetowe pozostają bez werdyktu i nie odblokowują skalowania "
+                "ani apply."
+            )
+            next_step = (
+                "Użyj marży i celu budżetu jako kontekstu review kampanii. Jeśli "
+                "operator potwierdzi target ROAS albo CPA, ustaw go później w "
+                "repo-local .env; do tego czasu target verdict zostaje zablokowany."
+            )
+        else:
+            summary = (
+                "WILQ ma lokalny kontekst biznesowy Ads: marżę, cel biznesowy, cel "
+                "budżetu oraz target ROAS albo CPA. To pozwala interpretować KPI "
+                "ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
+            )
+            next_step = (
+                "Użyj tych celów jako kontekstu review kampanii i budżetu. Apply "
+                "nadal wymaga ActionObject, payload preview, potwierdzenia i audytu."
+            )
     else:
         summary = (
             "WILQ ma live metryki Google Ads, ale nie ma kompletnego lokalnego "

@@ -22,6 +22,11 @@ ADS_BUSINESS_CONTEXT_TARGET_ENV_OPTIONS = (
     ADS_TARGET_ROAS_ENV,
     ADS_TARGET_CPA_MICROS_ENV,
 )
+ADS_BUSINESS_CONTEXT_BLOCKING_CONTRACTS = {
+    "profit_margin",
+    "business_goal",
+    "human_budget_goal",
+}
 
 
 def ads_business_context_payload(
@@ -82,7 +87,11 @@ def ads_business_context_missing_read_contracts() -> list[str]:
 
 
 def ads_business_context_configured() -> bool:
-    return not ads_business_context_missing_read_contracts()
+    missing_read_contracts = ads_business_context_missing_read_contracts()
+    return not any(
+        contract in ADS_BUSINESS_CONTEXT_BLOCKING_CONTRACTS
+        for contract in missing_read_contracts
+    )
 
 
 def ads_profit_margin_env() -> tuple[float | None, str | None]:

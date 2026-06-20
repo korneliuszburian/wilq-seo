@@ -559,6 +559,9 @@ SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
     },
+    "wilq-custom-segments": {
+        "act_prepare_custom_segments_from_search_terms",
+    },
     "wilq-demand-gen-operator": set(),
 }
 
@@ -601,11 +604,12 @@ def _skill_scoped_context_pack(
         for action in scoped_actions
         for evidence_id in action.evidence_ids
     )
-    scoped_opportunities = [
-        opportunity
-        for opportunity in opportunities
-        if _connectors_intersect(opportunity.source_connectors, scoped_connectors)
-    ][:max_opportunities]
+    scoped_opportunities = _opportunities_for_skill_scope(
+        skill,
+        opportunities,
+        scoped_connectors,
+        max_opportunities,
+    )
     evidence_ids.update(
         evidence_id
         for opportunity in scoped_opportunities
@@ -782,7 +786,7 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
         return _demand_gen_diagnostics_for_context()
     if skill == "wilq-custom-segments":
         return {
-            "ads_diagnostics": _compact_ads_diagnostics_for_context(
+            "ads_diagnostics": _custom_segments_diagnostics_for_context(
                 build_ads_diagnostics().model_dump(mode="json")
             )
         }
@@ -1269,6 +1273,7 @@ def _compact_ads_diagnostics_for_lite_context(
     *,
     allowed_decision_ids: set[str],
     allowed_action_ids: set[str] | None = None,
+    extra_keep_contracts: set[str] | None = None,
 ) -> dict[str, Any]:
     compact = _compact_ads_diagnostics_for_context(ads_diagnostics)
     decision_queue = compact.get("decision_queue")
@@ -1317,6 +1322,8 @@ def _compact_ads_diagnostics_for_lite_context(
         "decision_queue",
         "context_pack_compaction",
     }
+    if extra_keep_contracts:
+        keep_contracts.update(extra_keep_contracts)
     for key in list(compact):
         if key not in keep_contracts:
             compact.pop(key, None)
@@ -1325,18 +1332,75 @@ def _compact_ads_diagnostics_for_lite_context(
         decision_queue = compact.get("decision_queue")
         compaction["lite_context"] = True
         compaction["omitted_contracts"] = [
-            "change_history_read_contract",
-            "custom_segments_read_contract",
-            "keyword_match_context_read_contract",
-            "negative_keywords_read_contract",
-            "recommendations_read_contract",
-            "search_term_safety_read_contract",
-            "search_terms_read_contract",
-            "sections",
+            contract
+            for contract in [
+                "change_history_read_contract",
+                "custom_segments_read_contract",
+                "keyword_match_context_read_contract",
+                "negative_keywords_read_contract",
+                "recommendations_read_contract",
+                "search_term_safety_read_contract",
+                "search_terms_read_contract",
+                "sections",
+            ]
+            if contract not in keep_contracts
         ]
         compaction["decision_rows_included"] = len(
             decision_queue if isinstance(decision_queue, list) else []
         )
+    return compact
+
+
+def _custom_segments_diagnostics_for_context(
+    ads_diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    compact = _compact_ads_diagnostics_for_lite_context(
+        ads_diagnostics,
+        allowed_decision_ids={"ads_prepare_custom_segments_from_search_terms"},
+        allowed_action_ids=SKILL_ACTION_ID_SCOPES["wilq-custom-segments"],
+        extra_keep_contracts={
+            "custom_segments_read_contract",
+            "search_terms_read_contract",
+        },
+    )
+    keep_contracts = {
+        "generated_at",
+        "language",
+        "strict_instruction",
+        "latest_refresh",
+        "live_data_available",
+        "blocked_handoff",
+        "search_terms_read_contract",
+        "custom_segments_read_contract",
+        "action_ids",
+        "evidence_ids",
+        "blocker_count",
+        "decision_queue",
+        "context_pack_compaction",
+    }
+    for key in list(compact):
+        if key not in keep_contracts:
+            compact.pop(key, None)
+    compaction = compact.get("context_pack_compaction")
+    if isinstance(compaction, dict):
+        compaction["purpose"] = "custom_segments_context"
+        compaction["omitted_contracts"] = [
+            contract
+            for contract in [
+                "business_context_read_contract",
+                "campaign_read_contract",
+                "derived_kpi_read_contract",
+                "budget_pacing_read_contract",
+                "impression_share_read_contract",
+                "change_history_read_contract",
+                "keyword_match_context_read_contract",
+                "negative_keywords_read_contract",
+                "recommendations_read_contract",
+                "search_term_safety_read_contract",
+                "sections",
+            ]
+            if contract not in keep_contracts
+        ]
     return compact
 
 
@@ -1520,6 +1584,28 @@ def _collect_values_by_key(value: Any, key: str) -> set[str]:
         for item in value:
             values.update(_collect_values_by_key(item, key))
     return values
+
+
+def _opportunities_for_skill_scope(
+    skill: str,
+    opportunities: list[Opportunity],
+    scoped_connectors: set[str],
+    max_opportunities: int,
+) -> list[Opportunity]:
+    scoped = [
+        opportunity
+        for opportunity in opportunities
+        if _connectors_intersect(opportunity.source_connectors, scoped_connectors)
+    ]
+    allowed_action_ids = SKILL_ACTION_ID_SCOPES.get(skill)
+    if allowed_action_ids is None:
+        return scoped[:max_opportunities]
+    return [
+        opportunity
+        for opportunity in scoped
+        if opportunity.action_ids
+        and set(opportunity.action_ids).issubset(allowed_action_ids)
+    ][:max_opportunities]
 
 
 def _actions_for_scope(
