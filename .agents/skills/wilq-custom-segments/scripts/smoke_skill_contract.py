@@ -110,6 +110,24 @@ def main() -> int:
             raise SystemExit("Custom segment candidate must expose evidence_ids")
         if not first_candidate.get("payload_preview"):
             raise SystemExit("Custom segment candidate must expose payload_preview")
+        if first_candidate.get("review_priority") not in {
+            "pilne",
+            "wysokie",
+            "normalne",
+            "niski sygnał",
+        }:
+            raise SystemExit("Custom segment candidate must expose review_priority")
+        review_score = first_candidate.get("review_score")
+        if not isinstance(review_score, int) or not 0 <= review_score <= 100:
+            raise SystemExit("Custom segment candidate review_score must be 0-100")
+        review_reason = str(first_candidate.get("review_reason") or "")
+        if (
+            "kolejność review segmentu" not in review_reason
+            or "nie dowód audience size" not in review_reason
+        ):
+            raise SystemExit("Custom segment candidate must explain review-only triage")
+        if not first_candidate.get("human_review_gates"):
+            raise SystemExit("Custom segment candidate must expose human_review_gates")
         if first_candidate["payload_preview"].get("apply_allowed") is not False:
             raise SystemExit("Custom segment payload preview must keep apply_allowed=false")
         if "custom_segment_payload_preview" in (
@@ -223,6 +241,10 @@ def main() -> int:
                     {
                         "id": candidate.get("id"),
                         "name": candidate.get("name"),
+                        "review_priority": candidate.get("review_priority"),
+                        "review_score": candidate.get("review_score"),
+                        "review_reason": candidate.get("review_reason"),
+                        "human_review_gates": candidate.get("human_review_gates", []),
                         "source_terms": candidate.get("source_terms", []),
                         "confidence": candidate.get("confidence"),
                         "validation_status": candidate.get("validation_status"),

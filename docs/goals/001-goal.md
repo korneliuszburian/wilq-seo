@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 18:03 CEST.
+Last updated: 2026-06-20 18:24 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -114,6 +114,26 @@ contract, including real source terms, payload preview, missing
 `keyword_planner_enrichment` and `forecast_or_audience_size`, and blocked
 audience/apply/performance claims. Do not re-expand this skill context with
 generic Ads decisions or opportunity cards.
+Latest custom-segments triage follow-up, 2026-06-20 18:24 CEST:
+`/api/ads/diagnostics.custom_segments_read_contract.candidates` now carries
+typed `review_priority`, bounded `review_score`, Polish `review_reason` and
+`human_review_gates`. Live proof after `scripts/local_stack.sh restart`: one
+candidate, `Search terms: Kompendium PPWR`, with `review_priority=pilne`,
+`review_score=75`, 6 source terms and blocked claims for audience size, ROAS,
+targeting/apply and campaign performance. Decision
+`ads_prepare_custom_segments_from_search_terms.metric_tiles` shows
+`segmenty=1`, `pilne=1`, `wysokie=0`, `podgląd akcji=1`,
+`źródłowe zapytania=6`. Scoped `wilq-custom-segments` context-pack is about
+51 KB and keeps only `act_prepare_custom_segments_from_search_terms`,
+`ads_prepare_custom_segments_from_search_terms`, the custom segment candidate
+and no top opportunities. Strict eval now requires the review fields:
+`.local-lab/evals/codex-skill/20260620T162316Z/wilq-custom-segments/result.json`
+has `api_used=true`, `language=pl-PL`,
+`act_prepare_custom_segments_from_search_terms` validated,
+`operator_usefulness_score=5` and notes that audience size, ROAS, targeting
+and campaign performance remain blocked. Full `scripts/verify.sh` passed after
+this slice: backend `126 passed`, dashboard unit `17 passed`, Playwright e2e
+`14 passed`, dashboard production build OK.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

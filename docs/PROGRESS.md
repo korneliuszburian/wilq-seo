@@ -49,6 +49,24 @@ Aktualny proof produktowy:
   `decision_ids=["ads_prepare_custom_segments_from_search_terms"]`,
   `top_opportunity_count=0`, `purpose=custom_segments_context`. Dodano
   dedicated route `/ads-doctor/custom-segments` z Playwright smoke.
+- Ads custom segment review triage, 2026-06-20 18:24 CEST.
+  Custom segment candidates mają teraz typed `review_priority`, `review_score`,
+  polski `review_reason` i `human_review_gates`, tak jak negative keyword
+  review. Live proof po `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics.custom_segments_read_contract` ma `status=ready`,
+  1 kandydata `Search terms: Kompendium PPWR`, `review_priority=pilne`,
+  `review_score=75`, 6 source terms, `missing_read_contracts=[
+  keyword_planner_enrichment, forecast_or_audience_size]`. Decyzja
+  `ads_prepare_custom_segments_from_search_terms.metric_tiles` pokazuje
+  `segmenty=1`, `pilne=1`, `wysokie=0`, `podgląd akcji=1`,
+  `źródłowe zapytania=6`. Scoped `wilq-custom-segments` context-pack ma
+  ~51 KB, tylko `act_prepare_custom_segments_from_search_terms`, te same
+  review fields i `top_opportunity_count=0`. `codex exec` eval przeszedł:
+  `.local-lab/evals/codex-skill/20260620T162316Z/wilq-custom-segments/result.json`,
+  `operator_usefulness_score=5`, `api_used=true`, `language=pl-PL`. Full
+  `scripts/verify.sh` passed after this slice: backend `126 passed`,
+  dashboard unit `17 passed`, Playwright e2e `14 passed`, dashboard
+  production build OK.
 - Ads negative keyword review triage, 2026-06-20 18:03 CEST.
   Negative keyword candidates nie są już tylko listą search terms do review.
   `/api/ads/diagnostics.negative_keywords_read_contract.candidates` niesie

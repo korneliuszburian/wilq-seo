@@ -2996,11 +2996,30 @@ def _custom_segment_candidates(
             campaign_id=campaign_id,
             campaign_name=campaign_name,
         )
+        review_score = _custom_segment_review_score(
+            source_terms=source_terms,
+            rows=sorted_rows,
+            payload_preview=payload_preview,
+        )
         candidates.append(
             AdsCustomSegmentCandidate(
                 id=payload_preview.id.removeprefix("preview_"),
                 name=name,
                 intent="search_term_interest",
+                review_priority=_custom_segment_review_priority(review_score),
+                review_score=review_score,
+                review_reason=_custom_segment_review_reason(
+                    source_terms=source_terms,
+                    rows=sorted_rows,
+                    rejected_terms=rejected_terms,
+                ),
+                human_review_gates=[
+                    "sprawdź intencję source terms",
+                    "odrzuć brand, konkurencję i low-intent frazy",
+                    "dodaj Keyword Planner enrichment",
+                    "sprawdź forecast albo audience size",
+                    "zatwierdź segment przed apply",
+                ],
                 source_terms=source_terms,
                 rejected_terms=_unique(rejected_terms)[:12],
                 rejection_reasons=_unique(rejection_reasons)[:12],
@@ -3020,6 +3039,57 @@ def _custom_segment_candidates(
             )
         )
     return candidates[:4]
+
+
+def _custom_segment_review_score(
+    source_terms: list[str],
+    rows: list[AdsSearchTermMetricRow],
+    payload_preview: AdsCustomSegmentPayloadPreview | None,
+) -> int:
+    total_clicks = sum(row.clicks or 0 for row in rows)
+    total_impressions = sum(row.impressions or 0 for row in rows)
+    total_cost = sum(row.cost_micros or 0 for row in rows) / 1_000_000
+    total_conversions = sum(row.conversions or 0 for row in rows)
+    score = float(min(len(source_terms) * 8, 25))
+    score += min(total_clicks * 4, 25)
+    score += min(total_impressions / 50, 15)
+    score += min(total_cost, 15)
+    if total_conversions > 0:
+        score += 10
+    if payload_preview is not None:
+        score += 10
+    return min(100, int(round(score)))
+
+
+def _custom_segment_review_priority(
+    review_score: int,
+) -> Literal["pilne", "wysokie", "normalne", "niski sygnał"]:
+    if review_score >= 70:
+        return "pilne"
+    if review_score >= 45:
+        return "wysokie"
+    if review_score >= 15:
+        return "normalne"
+    return "niski sygnał"
+
+
+def _custom_segment_review_reason(
+    source_terms: list[str],
+    rows: list[AdsSearchTermMetricRow],
+    rejected_terms: list[str],
+) -> str:
+    total_clicks = sum(row.clicks or 0 for row in rows)
+    total_impressions = sum(row.impressions or 0 for row in rows)
+    total_cost_micros = sum(row.cost_micros or 0 for row in rows)
+    total_conversions = sum(row.conversions or 0 for row in rows)
+    return (
+        f"Source terms={len(source_terms)}, kliknięcia={total_clicks}, "
+        f"wyświetlenia={total_impressions}, koszt={_format_micros(total_cost_micros) or '0'}, "
+        f"konwersje={_format_float(float(total_conversions))}, "
+        f"odrzucone terminy={len(_unique(rejected_terms))}. "
+        "To jest kolejność review segmentu, nie dowód audience size, targetowania "
+        "ani wpływu na kampanię."
+    )
 
 
 def _custom_segment_payload_preview(
@@ -4291,6 +4361,16 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
         return _clean_metric_tiles(
             {
                 "segmenty": len(decision.custom_segment_candidates),
+                "pilne": sum(
+                    1
+                    for candidate in decision.custom_segment_candidates
+                    if candidate.review_priority == "pilne"
+                ),
+                "wysokie": sum(
+                    1
+                    for candidate in decision.custom_segment_candidates
+                    if candidate.review_priority == "wysokie"
+                ),
                 "podgląd akcji": len(decision.custom_segment_payload_preview),
                 "źródłowe zapytania": len(decision.search_term_rows),
             }

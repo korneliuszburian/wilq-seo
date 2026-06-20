@@ -198,7 +198,7 @@
   {
     "skill": "wilq-custom-segments",
     "surface_path": "/ads-doctor",
-    "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować custom segment candidates z realnych source_terms i evidence. Nie wymyślaj audience terms, audience size, ROAS ani efektu kampanii.",
+    "task_pl": "Użyj ads_diagnostics.custom_segments_read_contract i sprawdź, czy można zaproponować custom segment candidates z realnych source_terms i evidence. Uwzględnij review_priority, review_score i review_reason, ale nie wymyślaj audience terms, audience size, ROAS ani efektu kampanii.",
     "expected_connectors": ["google_ads", "google_search_console"],
     "expected_terms_pl": [
       "Ads Doctor",
@@ -206,6 +206,10 @@
       "ads_diagnostics",
       "custom_segments_read_contract",
       "custom_segment_payload_preview",
+      "review_priority",
+      "review_score",
+      "review_reason",
+      "kolejność review segmentu",
       "source_terms",
       "blocked claims",
       "audience size",

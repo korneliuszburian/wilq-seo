@@ -913,6 +913,12 @@ class AdsCustomSegmentCandidate(BaseModel):
     id: str
     name: str
     intent: str
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
+        "normalne"
+    )
+    review_score: int = Field(default=0, ge=0, le=100)
+    review_reason: str
+    human_review_gates: list[str] = Field(default_factory=list)
     source_terms: list[str] = Field(default_factory=list)
     rejected_terms: list[str] = Field(default_factory=list)
     rejection_reasons: list[str] = Field(default_factory=list)

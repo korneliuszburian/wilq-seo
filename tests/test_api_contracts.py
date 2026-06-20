@@ -4444,6 +4444,21 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "bdo rejestracja",
         "odpady cena",
     ]
+    assert custom_segments_contract["candidates"][0]["review_priority"] == "pilne"
+    assert custom_segments_contract["candidates"][0]["review_score"] == 75
+    assert "kolejność review segmentu" in custom_segments_contract["candidates"][0][
+        "review_reason"
+    ]
+    assert "nie dowód audience size" in custom_segments_contract["candidates"][0][
+        "review_reason"
+    ]
+    assert custom_segments_contract["candidates"][0]["human_review_gates"] == [
+        "sprawdź intencję source terms",
+        "odrzuć brand, konkurencję i low-intent frazy",
+        "dodaj Keyword Planner enrichment",
+        "sprawdź forecast albo audience size",
+        "zatwierdź segment przed apply",
+    ]
     assert custom_segments_contract["payload_preview"][0] == (
         custom_segments_contract["candidates"][0]["payload_preview"]
     )
@@ -4737,6 +4752,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_decision["priority"] == 55
     assert custom_segments_decision["metric_tiles"] == {
         "segmenty": 1,
+        "pilne": 1,
+        "wysokie": 0,
         "podgląd akcji": 1,
         "źródłowe zapytania": 2,
     }

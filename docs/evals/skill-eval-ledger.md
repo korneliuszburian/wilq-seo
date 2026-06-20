@@ -2204,3 +2204,55 @@ Product finding:
   Google Ads search-term evidence. This is not a targeting/apply path:
   Keyword Planner enrichment, forecast/audience-size, human confirmation and
   Ads apply/audit contracts remain required.
+
+## 2026-06-20 - wilq-custom-segments review-triage eval
+
+Purpose:
+
+- Prove that the Custom Segments skill sees the new typed review-triage fields:
+  `review_priority`, `review_score`, `review_reason` and
+  `human_review_gates`, while keeping audience size, ROAS, targeting and
+  campaign-performance claims blocked.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260620T162316Z/wilq-custom-segments/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `source_connectors=["google_ads","google_search_console"]`
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_631f03912b4c`.
+- Final JSON includes marker terms:
+  `custom_segments_read_contract`,
+  `custom_segment_payload_preview`,
+  `review_priority`,
+  `review_score`,
+  `review_reason`,
+  `kolejność review segmentu`,
+  `source_terms`,
+  `audience size`,
+  `ROAS`.
+- Action candidate:
+  `act_prepare_custom_segments_from_search_terms` with
+  `validation_state=validated`.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- Custom segments now have the same review-only triage pattern as negative
+  keyword candidates. This gives the marketer a ranked review queue, but it
+  still does not unlock audience size, targeting apply, ROAS, conversion uplift
+  or campaign-performance claims.

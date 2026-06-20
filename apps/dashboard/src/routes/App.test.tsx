@@ -1110,6 +1110,17 @@ const adsDiagnostics = {
         id: "ads_custom_segment_123",
         name: "Search terms: Ekologus Search",
         intent: "search_term_interest",
+        review_priority: "wysokie",
+        review_score: 65,
+        review_reason:
+          "Source terms=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność review segmentu, nie dowód audience size, targetowania ani wpływu na kampanię.",
+        human_review_gates: [
+          "sprawdź intencję source terms",
+          "odrzuć brand, konkurencję i low-intent frazy",
+          "dodaj Keyword Planner enrichment",
+          "sprawdź forecast albo audience size",
+          "zatwierdź segment przed apply"
+        ],
         source_terms: ["bdo rejestracja"],
         rejected_terms: [],
         rejection_reasons: [],
@@ -2086,6 +2097,17 @@ const adsDiagnostics = {
           id: "ads_custom_segment_123",
           name: "Search terms: Ekologus Search",
           intent: "search_term_interest",
+          review_priority: "wysokie",
+          review_score: 65,
+          review_reason:
+            "Source terms=1, kliknięcia=12, wyświetlenia=140, koszt=9.00, konwersje=1, odrzucone terminy=0. To jest kolejność review segmentu, nie dowód audience size, targetowania ani wpływu na kampanię.",
+          human_review_gates: [
+            "sprawdź intencję source terms",
+            "odrzuć brand, konkurencję i low-intent frazy",
+            "dodaj Keyword Planner enrichment",
+            "sprawdź forecast albo audience size",
+            "zatwierdź segment przed apply"
+          ],
           source_terms: ["bdo rejestracja"],
           rejected_terms: [],
           rejection_reasons: [],

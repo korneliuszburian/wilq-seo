@@ -2831,11 +2831,18 @@ function AdsCustomSegmentCandidatesPanel({
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                {candidate.validation_status === "pending_validation"
-                  ? "do walidacji"
-                  : "blocked"}
+                {candidate.review_priority} / {candidate.review_score}
               </span>
             </div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {candidate.review_reason}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              Walidacja:{" "}
+              {candidate.validation_status === "pending_validation"
+                ? "do walidacji"
+                : "blocked"}
+            </p>
             <p className="mt-2 text-sm font-medium text-ink">{candidate.next_step}</p>
             {candidate.payload_preview ? (
               <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2 text-xs leading-5 text-slate-700">
@@ -2853,6 +2860,11 @@ function AdsCustomSegmentCandidatesPanel({
               </div>
             ) : null}
             <div className="mt-2 grid gap-2 text-xs text-slate-600">
+              <TraceLine
+                label="Review człowieka"
+                values={candidate.human_review_gates}
+                empty="brak"
+              />
               <TraceLine label="Source terms" values={candidate.source_terms.slice(0, 8)} />
               <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />
               <LinkedTraceLine

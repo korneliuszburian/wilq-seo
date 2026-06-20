@@ -655,6 +655,12 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   id: z.string(),
   name: z.string(),
   intent: z.string(),
+  review_priority: z
+    .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
+    .default("normalne"),
+  review_score: z.number().min(0).max(100).default(0),
+  review_reason: z.string(),
+  human_review_gates: z.array(z.string()).default([]),
   source_terms: z.array(z.string()),
   rejected_terms: z.array(z.string()),
   rejection_reasons: z.array(z.string()),
