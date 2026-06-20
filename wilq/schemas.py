@@ -193,6 +193,21 @@ class AuditEvent(BaseModel):
     redacted: bool = True
 
 
+class ActionReviewGate(BaseModel):
+    status: Literal[
+        "pending_validation",
+        "validated_prepare_only",
+        "ready_to_apply",
+        "blocked_apply",
+    ] = "pending_validation"
+    summary: str = "Wymaga walidacji ActionObject przed kolejnym krokiem."
+    required_checks: list[str] = Field(default_factory=list)
+    operator_checklist: list[str] = Field(default_factory=list)
+    apply_blockers: list[str] = Field(default_factory=list)
+    confirmation_required: bool = True
+    apply_allowed: bool = False
+
+
 class ActionObject(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -209,6 +224,7 @@ class ActionObject(BaseModel):
     recommended_reason: str
     payload: dict[str, Any]
     validation_status: Literal["not_validated", "valid", "invalid"]
+    review_gate: ActionReviewGate = Field(default_factory=ActionReviewGate)
     created_by: str
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)

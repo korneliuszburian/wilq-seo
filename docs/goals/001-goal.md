@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 19:30 CEST.
+Last updated: 2026-06-20 20:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,24 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest ActionObject review gate truth, live proof 2026-06-20 20:04 CEST:
+`ActionObject.review_gate` is now a typed API/shared-schema/dashboard/Codex
+context-pack contract. It exposes `required_checks`, `operator_checklist`,
+`apply_blockers`, `confirmation_required` and `apply_allowed` for review-only
+actions. Current live `/api/actions` and `POST /api/codex/context-pack
+{"skill":"wilq-daily-command"}` show Merchant, content and Ads ActionObjects
+with `status=pending_validation`, `apply_allowed=false`,
+`confirmation_required=true` and explicit apply blockers. Redaction preserves
+review-gate IDs; no `[REDACTED]` review checklist values should appear in
+context-pack output. Scoped skill context-pack action metrics are compacted to
+one exemplar row plus `metrics_total`, because detailed Ads facts live in the
+typed diagnostics contracts and `wilq-ads-doctor` must stay under the 200 KB
+budget. This is a visibility/safety contract only. It does not permit
+write/apply mutations and does not satisfy the remaining apply confirmation or
+audit-path requirements. Full `scripts/verify.sh` after this slice passed:
+backend `127 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+dashboard build OK.
 
 Latest Ads Keyword Planner truth, live proof 2026-06-20 19:30 CEST:
 WILQ now has a conservative read-only Keyword Planner adapter using

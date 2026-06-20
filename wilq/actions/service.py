@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, Literal
 
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
@@ -34,6 +34,7 @@ from wilq.schemas import (
     ActionApplyResult,
     ActionMode,
     ActionObject,
+    ActionReviewGate,
     ActionRisk,
     ActionStatus,
     ActionValidationResult,
@@ -247,7 +248,7 @@ def list_actions() -> list[ActionObject]:
         business_context_action = _google_ads_business_context_action()
         if business_context_action is not None:
             actions[business_context_action.id] = business_context_action
-    return list(actions.values())
+    return [_with_review_gate(action) for action in actions.values()]
 
 
 def get_action(action_id: str) -> ActionObject | None:
@@ -255,7 +256,10 @@ def get_action(action_id: str) -> ActionObject | None:
     business_context_action = _google_ads_business_context_action()
     if business_context_action is not None:
         actions[business_context_action.id] = business_context_action
-    return actions.get(action_id)
+    action = actions.get(action_id)
+    if action is None:
+        return None
+    return _with_review_gate(action)
 
 
 def _google_ads_live_data_available() -> bool:
@@ -901,6 +905,7 @@ def validate_action(action: ActionObject) -> ActionValidationResult:
         action.status = ActionStatus.ready_to_apply
     else:
         action.status = ActionStatus.ready
+    action.review_gate = _action_review_gate(action)
     return ActionValidationResult(
         action_id=action.id,
         valid=valid,
@@ -944,6 +949,7 @@ def apply_action(
     action.audit_events.append(audit)
     if errors:
         action.status = ActionStatus.blocked
+        action.review_gate = _action_review_gate(action)
         return ActionApplyResult(
             action_id=action.id,
             applied=False,
@@ -952,6 +958,7 @@ def apply_action(
             errors=errors,
         )
     action.status = ActionStatus.applied
+    action.review_gate = _action_review_gate(action)
     return ActionApplyResult(action_id=action.id, applied=True, status="applied", audit_event=audit)
 
 
@@ -961,3 +968,143 @@ def _apply_audit_event_type(errors: list[str]) -> str:
     if any("confirmation" in error for error in errors):
         return "apply_confirmation_missing"
     return "apply_blocked"
+
+
+def _with_review_gate(action: ActionObject) -> ActionObject:
+    action.review_gate = _action_review_gate(action)
+    return action
+
+
+def _action_review_gate(action: ActionObject) -> ActionReviewGate:
+    status: Literal[
+        "pending_validation",
+        "validated_prepare_only",
+        "ready_to_apply",
+        "blocked_apply",
+    ]
+    required_checks = _action_required_checks(action.payload)
+    operator_checklist = _action_operator_checklist(action.payload)
+    apply_allowed = _action_payload_apply_allowed(action.payload)
+    apply_blockers = _action_apply_blockers(
+        action=action,
+        required_checks=required_checks,
+        apply_allowed=apply_allowed,
+    )
+    if action.validation_status == "invalid":
+        status = "blocked_apply"
+        summary = "ActionObject ma błędną walidację; apply pozostaje zablokowany."
+    elif action.mode == ActionMode.apply and action.validation_status == "valid" and apply_allowed:
+        status = "ready_to_apply"
+        summary = "ActionObject jest zwalidowany i wymaga jawnego potwierdzenia apply."
+    elif action.validation_status == "valid":
+        status = "validated_prepare_only"
+        summary = (
+            "ActionObject jest zwalidowany jako review/prepare-only; apply nadal "
+            "wymaga osobnego kontraktu."
+        )
+    else:
+        status = "pending_validation"
+        summary = (
+            "Wymaga walidacji ActionObject; apply pozostaje zablokowany osobnymi "
+            "warunkami."
+        )
+    return ActionReviewGate(
+        status=status,
+        summary=summary,
+        required_checks=required_checks,
+        operator_checklist=operator_checklist,
+        apply_blockers=apply_blockers,
+        confirmation_required=_action_confirmation_required(required_checks, action.mode),
+        apply_allowed=apply_allowed and action.mode == ActionMode.apply,
+    )
+
+
+def _action_required_checks(payload: dict[str, Any]) -> list[str]:
+    checks = _string_list(payload.get("required_validation"))
+    if checks:
+        return checks
+    preview_checks: list[str] = []
+    for preview in _payload_preview_items(payload):
+        preview_checks.extend(_string_list(preview.get("required_validation")))
+    if preview_checks:
+        return _unique(preview_checks)
+    for key in ("review_steps", "queue_steps", "draft_constraints"):
+        values = _string_list(payload.get(key))
+        if values:
+            return values
+    return ["validate_action_object", "human_review_before_apply"]
+
+
+def _action_operator_checklist(payload: dict[str, Any]) -> list[str]:
+    checklist = _string_list(payload.get("operator_review_gates"))
+    if checklist:
+        return checklist
+    for key in ("review_steps", "queue_steps"):
+        values = _string_list(payload.get(key))
+        if values:
+            return values
+    return _action_required_checks(payload)
+
+
+def _action_apply_blockers(
+    *,
+    action: ActionObject,
+    required_checks: list[str],
+    apply_allowed: bool,
+) -> list[str]:
+    blockers: list[str] = []
+    if action.mode != ActionMode.apply:
+        blockers.append("action_mode_prepare_only")
+    if action.validation_status != "valid":
+        blockers.append("action_validation_required")
+    if not apply_allowed:
+        blockers.append("payload_apply_allowed_false")
+    if action.payload.get("destructive") is True:
+        blockers.append("destructive_actions_blocked")
+    if _requires_human_confirmation(required_checks):
+        blockers.append("human_confirm_before_apply")
+    blocked_claims = _string_list(action.payload.get("blocked_claims"))
+    blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
+    return _unique(blockers)
+
+
+def _action_payload_apply_allowed(payload: dict[str, Any]) -> bool:
+    if payload.get("apply_allowed") is True:
+        return True
+    preview_items = _payload_preview_items(payload)
+    if not preview_items:
+        return False
+    return all(item.get("apply_allowed") is True for item in preview_items)
+
+
+def _action_confirmation_required(required_checks: list[str], mode: ActionMode) -> bool:
+    if _requires_human_confirmation(required_checks):
+        return True
+    return mode in {ActionMode.prepare, ActionMode.apply}
+
+
+def _requires_human_confirmation(required_checks: list[str]) -> bool:
+    return any("human" in check and "confirm" in check for check in required_checks)
+
+
+def _payload_preview_items(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    preview = payload.get("payload_preview")
+    if isinstance(preview, list):
+        return [item for item in preview if isinstance(item, dict)]
+    if isinstance(preview, dict):
+        return [preview]
+    preview_items: list[dict[str, Any]] = []
+    for value in payload.values():
+        if isinstance(value, list):
+            preview_items.extend(
+                item
+                for item in value
+                if isinstance(item, dict) and "apply_allowed" in item
+            )
+    return preview_items
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str) and item]

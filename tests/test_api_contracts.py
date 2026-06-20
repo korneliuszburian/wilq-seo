@@ -545,6 +545,17 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
             "operator_review_gates": ["google_ads_rmf_compliance_review"],
+            "review_gate": {
+                "required_checks": [
+                    "google_ads_rmf_compliance_review",
+                    "reject_brand_or_low_intent_terms",
+                ],
+                "operator_checklist": ["check_existing_keywords_and_match_types"],
+                "apply_blockers": [
+                    "payload_apply_allowed_false",
+                    "blocked_claim:recommendation apply",
+                ],
+            },
             "operations": ["custom_segment_candidate"],
             "supported_actions": ["custom_segment_candidate"],
             "required_validation": ["google_ads_rmf_compliance_review"],
@@ -588,6 +599,17 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
     assert redacted["operator_review_gates"] == ["google_ads_rmf_compliance_review"]
+    assert redacted["review_gate"]["required_checks"] == [
+        "google_ads_rmf_compliance_review",
+        "reject_brand_or_low_intent_terms",
+    ]
+    assert redacted["review_gate"]["operator_checklist"] == [
+        "check_existing_keywords_and_match_types"
+    ]
+    assert redacted["review_gate"]["apply_blockers"] == [
+        "payload_apply_allowed_false",
+        "blocked_claim:recommendation apply",
+    ]
     assert redacted["operations"] == ["custom_segment_candidate"]
     assert redacted["supported_actions"] == ["custom_segment_candidate"]
     assert redacted["required_validation"] == ["google_ads_rmf_compliance_review"]
@@ -974,6 +996,11 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
         assert action["payload"]["action_type"] == expected["action_type"]
         assert action["payload"]["mode"] == "prepare_only"
         assert action["payload"]["destructive"] is False
+        assert action["review_gate"]["status"] == "pending_validation"
+        assert action["review_gate"]["confirmation_required"] is True
+        assert action["review_gate"]["apply_allowed"] is False
+        assert "action_validation_required" in action["review_gate"]["apply_blockers"]
+        assert "payload_apply_allowed_false" in action["review_gate"]["apply_blockers"]
         assert action["evidence_ids"]
         if action_id.startswith("act_prepare_") and "social_drafts" in action_id:
             assert action["domain"] == "social"
@@ -1016,6 +1043,24 @@ def test_metric_backed_prepare_actions_validate_without_apply(
         apply_response = client.post(f"/api/actions/{action_id}/apply")
         assert apply_response.status_code == 409
         assert "Action mode must be apply" in json.dumps(apply_response.json())
+
+
+def test_daily_context_pack_preserves_action_review_gates(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    actions = {action["id"]: action for action in payload["active_action_objects"]}
+    merchant_action = actions["act_review_merchant_feed_issues"]
+    assert merchant_action["review_gate"]["status"] == "pending_validation"
+    assert merchant_action["review_gate"]["apply_allowed"] is False
+    assert "action_validation_required" in merchant_action["review_gate"]["apply_blockers"]
+    assert "payload_apply_allowed_false" in merchant_action["review_gate"]["apply_blockers"]
 
 
 def test_action_validation_rejects_unsupported_payload_action_type() -> None:

@@ -101,6 +101,18 @@ export const AuditEventSchema = z.object({
   redacted: z.boolean()
 });
 
+export const ActionReviewGateSchema = z.object({
+  status: z
+    .enum(["pending_validation", "validated_prepare_only", "ready_to_apply", "blocked_apply"])
+    .default("pending_validation"),
+  summary: z.string().default("Wymaga walidacji ActionObject przed kolejnym krokiem."),
+  required_checks: z.array(z.string()).default([]),
+  operator_checklist: z.array(z.string()).default([]),
+  apply_blockers: z.array(z.string()).default([]),
+  confirmation_required: z.boolean().default(true),
+  apply_allowed: z.boolean().default(false)
+});
+
 export const ActionObjectSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -114,6 +126,7 @@ export const ActionObjectSchema = z.object({
   human_diagnosis: z.string(),
   recommended_reason: z.string(),
   validation_status: z.string(),
+  review_gate: ActionReviewGateSchema.optional().default({}),
   payload: z.record(z.unknown()),
   audit_events: z.array(AuditEventSchema)
 });

@@ -508,6 +508,7 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
                 Najpierw walidacja, podgląd payloadu i jawna zgoda operatora.
               </div>
             ) : null}
+            <ActionReviewGatePanel action={action} />
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
               <LinkedTraceLine label="ActionObject" values={[action.id]} kind="actions" />
               <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
@@ -527,6 +528,64 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
       </div>
     </section>
   );
+}
+
+function ActionReviewGatePanel({ action }: { action: ActionObject }) {
+  const gate = action.review_gate;
+  return (
+    <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="font-semibold uppercase tracking-normal text-slate-600">
+            Warunki przeglądu
+          </div>
+          <p className="mt-1 leading-5 text-slate-600">{gate.summary}</p>
+        </div>
+        <StatusBadge value={actionReviewGateStatusLabel(gate.status)} />
+      </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <TraceLine
+          label="Checklista"
+          values={gate.operator_checklist.slice(0, 6).map(actionGateLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Blokady apply"
+          values={gate.apply_blockers.slice(0, 8).map(actionGateLabel)}
+          empty="brak"
+        />
+      </div>
+      <div className="mt-2 text-slate-600">
+        Potwierdzenie człowieka: {gate.confirmation_required ? "wymagane" : "niewymagane"}.
+        Apply: {gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
+      </div>
+    </div>
+  );
+}
+
+function actionReviewGateStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    pending_validation: "czeka na walidację",
+    validated_prepare_only: "zwalidowane do review",
+    ready_to_apply: "gotowe do potwierdzenia",
+    blocked_apply: "apply zablokowany"
+  };
+  return labels[value] ?? value;
+}
+
+function actionGateLabel(value: string) {
+  if (value.startsWith("blocked_claim:")) {
+    return `claim zablokowany: ${adsBlockedClaimLabel(value.replace("blocked_claim:", ""))}`;
+  }
+  const labels: Record<string, string> = {
+    action_mode_prepare_only: "tryb prepare-only",
+    action_validation_required: "wymagana walidacja ActionObject",
+    payload_apply_allowed_false: "payload nie pozwala na apply",
+    destructive_actions_blocked: "destructive actions zablokowane",
+    validate_action_object: "walidacja ActionObject",
+    human_review_before_apply: "review człowieka przed apply"
+  };
+  return labels[value] ?? adsMissingReadContractLabel(value);
 }
 
 function ActionValidationControls({ action }: { action: ActionObject }) {
@@ -5732,6 +5791,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
         <div className="mt-4 text-xs text-slate-600">
           <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
         </div>
+        <ActionReviewGatePanel action={action} />
         <ActionValidationControls action={action} />
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">

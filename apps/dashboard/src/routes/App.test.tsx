@@ -84,6 +84,28 @@ const actions = [
       }
     ],
     validation_status: "not_validated",
+    review_gate: {
+      status: "pending_validation",
+      summary: "Wymaga walidacji ActionObject; apply pozostaje zablokowany osobnymi warunkami.",
+      required_checks: [
+        "identify_disapproved_products",
+        "group_issue_reasons",
+        "require_human_confirm_before_apply"
+      ],
+      operator_checklist: [
+        "identify_disapproved_products",
+        "group_issue_reasons",
+        "require_human_confirm_before_apply"
+      ],
+      apply_blockers: [
+        "action_mode_prepare_only",
+        "action_validation_required",
+        "payload_apply_allowed_false",
+        "human_confirm_before_apply"
+      ],
+      confirmation_required: true,
+      apply_allowed: false
+    },
     human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ API.",
     recommended_reason: "Przygotuj kolejkę problemów feedu z payload preview.",
     payload: {
@@ -4318,6 +4340,10 @@ describe("WILQ dashboard", () => {
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
     ).toBeInTheDocument();
     expect(screen.getByText(/Apply zablokowany/)).toBeInTheDocument();
+    expect(screen.getByText("Warunki przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("czeka na walidację")).toBeInTheDocument();
+    expect(screen.getByText(/wymagana walidacja ActionObject/)).toBeInTheDocument();
+    expect(screen.getByText(/payload nie pozwala na apply/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("valid")).toBeInTheDocument();

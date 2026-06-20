@@ -336,6 +336,7 @@ def _compact_daily_action_for_context(
         "risk": dumped["risk"],
         "status": dumped["status"],
         "validation_status": dumped["validation_status"],
+        "review_gate": dumped["review_gate"],
         "evidence_ids": dumped["evidence_ids"],
         "human_diagnosis": dumped["human_diagnosis"],
         "recommended_reason": dumped["recommended_reason"],
@@ -616,7 +617,9 @@ def _skill_scoped_context_pack(
         for evidence_id in opportunity.evidence_ids
     )
     scoped_evidence = list_evidence_by_ids(sorted(evidence_ids))
-    evidence_summary_limit = 40 if skill == "wilq-custom-segments" else 80
+    evidence_summary_limit = 80
+    if skill in {"wilq-ads-doctor", "wilq-custom-segments"}:
+        evidence_summary_limit = 60 if skill == "wilq-ads-doctor" else 40
 
     pack = {
         "context_scope": {
@@ -1431,7 +1434,7 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     metrics = compact.get("metrics")
     if isinstance(metrics, list):
         compact["metrics_total"] = len(metrics)
-        compact["metrics"] = metrics[:3]
+        compact["metrics"] = metrics[:1]
         compact["metrics_included"] = len(compact["metrics"])
     payload = compact.get("payload")
     if not isinstance(payload, dict):

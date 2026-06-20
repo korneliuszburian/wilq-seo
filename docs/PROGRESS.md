@@ -34,6 +34,26 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- ActionObject review gate contract, 2026-06-20 20:04 CEST.
+  `ActionObject` ma teraz typed `review_gate` z `status`,
+  `required_checks`, `operator_checklist`, `apply_blockers`,
+  `confirmation_required` i `apply_allowed`. Ten sam stan idzie przez
+  `/api/actions`, dashboard i `POST /api/codex/context-pack
+  {"skill":"wilq-daily-command"}`. Live proof po
+  `scripts/local_stack.sh restart`: aktywne akcje
+  `act_review_merchant_feed_issues`, `act_prepare_content_refresh_queue`,
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` i
+  `act_prepare_negative_keyword_review_queue` mają
+  `review_gate.status=pending_validation`, `apply_allowed=false`,
+  `confirmation_required=true` i jawne blokady apply bez `[REDACTED]`.
+  Scoped skill context-pack kompaktuje `active_action_objects.metrics` do jednej
+  przykładowej metryki z `metrics_total`, żeby utrzymać `wilq-ads-doctor`
+  poniżej budżetu 200 KB. To domyka widoczność warunków review, ale nie
+  odblokowuje żadnego write/apply. Pełne `scripts/verify.sh` po slice:
+  backend `127 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+  dashboard build OK.
 - Ads Keyword Planner enrichment contract, 2026-06-20 19:30 CEST.
   WILQ ma read-only adapter dla Google Ads Keyword Planner
   `generateKeywordIdeas`, typed `keyword_planner_read_contract`, shared Zod

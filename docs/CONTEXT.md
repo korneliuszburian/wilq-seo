@@ -29,6 +29,23 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. ActionObject review gate truth, 2026-06-20 20:04 CEST:
+   `ActionObject.review_gate` is now typed backend/frontend product state, not
+   skill prose. It must preserve `required_checks`, `operator_checklist`,
+   `apply_blockers`, `confirmation_required` and `apply_allowed` through
+   `/api/actions`, dashboard views and `POST /api/codex/context-pack`. Redaction
+   allowlists these review-gate keys so IDs such as
+   `google_ads_rmf_compliance_review`, `review_source_terms` and
+   `negative_keyword_payload_preview` are not replaced with `[REDACTED]`.
+   Current live proof after `scripts/local_stack.sh restart`: Merchant,
+   content and Ads review actions all expose `status=pending_validation`,
+   `apply_allowed=false`, `confirmation_required=true` and explicit
+   `apply_blockers`. Scoped skill context-packs intentionally keep only one
+   exemplar `active_action_objects.metrics` row plus `metrics_total`, because
+   Ads diagnostics already carries the detailed read contracts and the
+   `wilq-ads-doctor` pack must stay below 200 KB. This closes review-gate
+   visibility only; it does not enable apply/write mutations.
+
 0. Daily context-pack action summary truth, 2026-06-20 14:30 Europe/Warsaw:
    `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` must use
    `CommandCenterResponse.daily_decisions` for active ActionObject summaries.
