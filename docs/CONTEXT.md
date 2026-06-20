@@ -29,6 +29,19 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Content decision metadata truth, 2026-06-20 14:06 Europe/Warsaw:
+   `/api/content/diagnostics.decision_queue` now owns marketer-facing
+   `status`, `priority` and `metric_tiles`. Do not recreate these fields in
+   dashboard or skills from raw tactical items. Live proof:
+   `decision_count=4`, `null_status=[]`, `null_priority=[]`, `empty_tiles=[]`.
+   Top decision is `SEO: odśwież lub scal "zielony ład co to" (7 zapytań)`
+   with metric tiles `zapytania=7`, `WP=znaleziono`, `wyświetlenia=2902`,
+   `kliknięcia=123`, `CTR=4.24%`, `pozycja=1.5`. Scoped
+   `wilq-content-strategist` context-pack carries the same fields. Command
+   Center `daily_content_queue` bridges the same API state and shows
+   `query/page=10`, `WP match=10`, `decyzje=4`, `wyświetlenia=7852`,
+   `kliknięcia=138`.
+
 0. Ads business context truth, 2026-06-20 10:12 Europe/Warsaw:
    `/api/ads/diagnostics` now exposes `business_context_read_contract` and
    decision `ads_review_business_context`. Live state is intentionally blocked

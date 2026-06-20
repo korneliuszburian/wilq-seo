@@ -34,6 +34,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content decision queue ma teraz typed metadata zamiast frontendowego
+  zgadywania. Live proof po `scripts/local_stack.sh restart`:
+  `/api/content/diagnostics.decision_queue` ma 4 decyzje, `null_status=[]`,
+  `null_priority=[]`, `empty_tiles=[]`; każda decyzja ma `status`, `priority`
+  i `metric_tiles`. Top decyzja to `SEO: odśwież lub scal "zielony ład co to"
+  (7 zapytań)` z `wyświetlenia=2902`, `kliknięcia=123`, `CTR=4.24%`,
+  `pozycja=1.5`, `WP=znaleziono`. Scoped `wilq-content-strategist`
+  context-pack niesie te same pola, a Command Center `daily_content_queue`
+  pokazuje `query/page=10`, `WP match=10`, `decyzje=4`,
+  `wyświetlenia=7852`, `kliknięcia=138`. Dashboard renderuje API
+  `metric_tiles` i `status`, bez duplikowania starych content metric chips.
+  Full `scripts/verify.sh` passed after this slice: backend `123 passed`,
+  dashboard unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
 - Ahrefs ma dedicated diagnostics, route i scoped context-pack. Live proof po
   `scripts/local_stack.sh restart`: `/api/ahrefs/diagnostics` ma
   `live_data_available=true`, `authority_fact_count=2`, `gap_fact_count=0`,

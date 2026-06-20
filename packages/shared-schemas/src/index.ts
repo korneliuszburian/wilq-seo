@@ -928,8 +928,11 @@ export const ContentDecisionItemSchema = z.object({
     "inventory_check_before_create",
     "block_as_tracking_not_content"
   ]),
+  status: z.enum(["ready", "blocked"]),
   title: z.string(),
   summary: z.string().nullable().optional(),
+  priority: z.number(),
+  metric_tiles: z.record(z.union([z.string(), z.number()])),
   page: z.string().nullable().optional(),
   normalized_page_path: z.string().nullable().optional(),
   queries: z.array(z.string()),

@@ -2762,9 +2762,19 @@ const contentDiagnostics = {
     {
       id: "content_decision_https_www_ekologus_pl_bdo",
       decision_type: "refresh_or_merge",
+      status: "ready",
       title: 'SEO: odśwież lub scal "bdo" (1 zapytanie)',
       summary:
         'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł.',
+      priority: 23,
+      metric_tiles: {
+        zapytania: 1,
+        WP: "znaleziono",
+        wyświetlenia: 120,
+        kliknięcia: 12,
+        CTR: "10.00%",
+        pozycja: 4.5
+      },
       page: "https://www.ekologus.pl/bdo/",
       normalized_page_path: "/bdo",
       queries: ["bdo"],

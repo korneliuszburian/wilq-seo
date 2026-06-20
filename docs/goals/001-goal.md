@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 13:33 CEST.
+Last updated: 2026-06-20 14:06 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -229,20 +229,26 @@ missing in that state. Remaining missing read contracts are
 and `demand_gen_action_object`. These IDs must not be redacted; they are
 product contracts, not secrets. The `wilq-demand-gen-operator` smoke script
 must fail if adjacent ActionObjects are again exposed as active Demand Gen
-actions or if channel-bearing campaign rows are reported as missing. Full
-`scripts/verify.sh` passed after this slice: backend `123 passed`, dashboard
-unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
+actions or if channel-bearing campaign rows are reported as missing. Latest
+full `scripts/verify.sh` passed after the content decision metadata slice:
+backend `123 passed`, dashboard unit `15 passed`, Playwright e2e `12 passed`,
+dashboard build OK.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and
 `wilq-content-strategist`. Do not rebuild content first-screen copy from raw
-tactical items. Current live first-screen proof after
-`scripts/local_stack.sh restart`: `/api/dashboard/command-center` and scoped
-`wilq-daily-command` context-pack both show `Przejrzyj kolejkę SEO z GSC i
-WordPress`, `4429 wyświetleń`, `4 kliknięcia`, CTR `0.09%`, `decyzje=4`,
-`wyświetlenia=7852`, `kliknięcia=138`, and no `[REDACTED]` in content decision
-prose. Evidence IDs and ActionObject IDs must stay in structured fields, not
-inside prose where redaction can mask useful marketer context.
+tactical items. Current live proof after `scripts/local_stack.sh restart`:
+`/api/content/diagnostics.decision_queue` has 4 decisions with
+`null_status=[]`, `null_priority=[]`, `empty_tiles=[]`. Top decision:
+`SEO: odśwież lub scal "zielony ład co to" (7 zapytań)` with `status=ready`,
+`priority=15`, `zapytania=7`, `WP=znaleziono`, `wyświetlenia=2902`,
+`kliknięcia=123`, `CTR=4.24%`, `pozycja=1.5`. Scoped
+`wilq-content-strategist` context-pack preserves those typed fields. Command
+Center `daily_content_queue` consumes the same state and shows `query/page=10`,
+`WP match=10`, `decyzje=4`, `wyświetlenia=7852`, `kliknięcia=138`, with no
+`[REDACTED]` in content decision prose. Evidence IDs and ActionObject IDs must
+stay in structured fields, not inside prose where redaction can mask useful
+marketer context.
 
 Merchant on Command Center must use the same
 `MerchantDiagnosticsResponse.decision_queue` semantics as `/merchant` and

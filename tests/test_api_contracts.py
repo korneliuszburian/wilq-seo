@@ -5087,6 +5087,15 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert payload["decision_queue"]
     first_decision = payload["decision_queue"][0]
     assert first_decision["decision_type"] == "refresh_or_merge"
+    assert first_decision["status"] == "ready"
+    assert first_decision["priority"] == 23
+    assert first_decision["metric_tiles"] == {
+        "zapytania": 1,
+        "WP": "znaleziono",
+        "wyświetlenia": 120,
+        "kliknięcia": 12,
+        "CTR": "10.00%",
+    }
     assert first_decision["title"] == 'SEO: odśwież lub scal "zielony ład" (1 zapytanie)'
     assert first_decision["summary"] == (
         'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: '
@@ -5118,6 +5127,9 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_payload["content_diagnostics"]["action_ids"] == payload["action_ids"]
     context_decision = context_payload["content_diagnostics"]["decision_queue"][0]
     assert context_decision["decision_type"] == first_decision["decision_type"]
+    assert context_decision["status"] == first_decision["status"]
+    assert context_decision["priority"] == first_decision["priority"]
+    assert context_decision["metric_tiles"] == first_decision["metric_tiles"]
     assert context_decision["summary"] == first_decision["summary"]
     assert context_decision["primary_query"] == first_decision["primary_query"]
     assert context_decision["total_impressions"] == first_decision["total_impressions"]

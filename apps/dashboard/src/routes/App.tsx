@@ -4309,7 +4309,7 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
             {contentDecisionTypeLabel(decision.decision_type)}
           </p>
         </div>
-        <StatusBadge value={decision.risk} />
+        <StatusBadge value={decision.status} />
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">
         {decision.summary ?? decision.rationale}
@@ -4318,28 +4318,14 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
         <p className="mt-1 text-xs leading-5 text-slate-500">{decision.rationale}</p>
       ) : null}
       <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      {Object.keys(decision.metric_tiles).length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+          {Object.entries(decision.metric_tiles).map(([label, value]) => (
+            <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
+          ))}
+        </div>
+      ) : null}
       <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-700">
-        {decision.total_impressions !== null && decision.total_impressions !== undefined ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Wyświetlenia: {decision.total_impressions}
-          </span>
-        ) : null}
-        {decision.total_clicks !== null && decision.total_clicks !== undefined ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Kliknięcia: {decision.total_clicks}
-          </span>
-        ) : null}
-        {decision.aggregate_ctr !== null && decision.aggregate_ctr !== undefined ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            CTR: {(decision.aggregate_ctr * 100).toFixed(2)}%
-          </span>
-        ) : null}
-        {decision.best_average_position !== null &&
-        decision.best_average_position !== undefined ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Pozycja: {decision.best_average_position.toFixed(2)}
-          </span>
-        ) : null}
         {decision.page ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Strona: {shortPath(decision.page)}
@@ -4348,11 +4334,6 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
         {decision.queries.length > 0 ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Zapytania: {decision.queries.slice(0, 4).join(", ")}
-          </span>
-        ) : null}
-        {decision.query_count > 0 ? (
-          <span className="rounded border border-line bg-white px-2 py-1">
-            Liczba zapytań: {decision.query_count}
           </span>
         ) : null}
         {decision.wordpress_match ? (
@@ -4430,13 +4411,17 @@ function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_ty
 }
 
 function contentDecisionSortValue(decision: ContentDecisionItem) {
+  const statusRank: Record<ContentDecisionItem["status"], number> = {
+    ready: 0,
+    blocked: 1
+  };
   const riskRank: Record<ContentDecisionItem["risk"], number> = {
     critical: 0,
     high: 1,
     medium: 2,
     low: 3
   };
-  return riskRank[decision.risk] * 100 - decision.query_count;
+  return statusRank[decision.status] * 1000 + decision.priority * 10 + riskRank[decision.risk];
 }
 
 function contentSectionLabel(sectionId: string) {

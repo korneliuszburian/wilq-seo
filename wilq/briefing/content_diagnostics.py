@@ -458,8 +458,20 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
             ContentDecisionItem(
                 id=f"content_decision_{_slug(page)}",
                 decision_type=decision_type,
+                status=_content_decision_status(decision_type),
                 title=title,
                 summary=summary,
+                priority=_content_decision_priority(
+                    decision_type,
+                    metrics,
+                    query_count,
+                ),
+                metric_tiles=_content_decision_metric_tiles(
+                    decision_type,
+                    metrics,
+                    query_count,
+                    wordpress_match,
+                ),
                 page=page,
                 normalized_page_path=first.dimensions.get("wordpress_requested_path"),
                 queries=queries,
@@ -511,7 +523,14 @@ def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentD
         ContentDecisionItem(
             id="content_decision_ga4_tracking_gap_block",
             decision_type="block_as_tracking_not_content",
+            status="blocked",
             title="Zablokuj GA4 tracking gaps jako zadania contentowe",
+            priority=12,
+            metric_tiles={
+                "blokady": len(tracking_gaps),
+                "dowody": len(evidence_ids),
+                "braki pomiaru": len(tracking_gaps),
+            },
             source_connectors=["google_analytics_4"],
             evidence_ids=evidence_ids,
             metric_facts=metric_facts[:8],
@@ -615,6 +634,79 @@ def _primary_query(metric_facts: list[MetricFact], queries: list[str]) -> str | 
     return queries[0] if queries else None
 
 
+def _content_decision_status(
+    decision_type: ContentDecisionType,
+) -> Literal["ready", "blocked"]:
+    if decision_type in {"inventory_check_before_create", "block_as_tracking_not_content"}:
+        return "blocked"
+    return "ready"
+
+
+def _content_decision_priority(
+    decision_type: ContentDecisionType,
+    metrics: ContentDecisionMetrics,
+    query_count: int,
+) -> int:
+    base_priority = {
+        "refresh_or_merge": 20,
+        "merge_create_after_inventory_check": 24,
+        "inventory_check_before_create": 28,
+        "block_as_tracking_not_content": 12,
+    }[decision_type]
+    impression_score = metrics.total_impressions or 0
+    if impression_score >= 1000:
+        evidence_bonus = 0
+    elif impression_score >= 500:
+        evidence_bonus = 2
+    elif impression_score >= 100:
+        evidence_bonus = 4
+    else:
+        evidence_bonus = 7
+    query_bonus = min(query_count, 5)
+    return max(1, base_priority + evidence_bonus - query_bonus)
+
+
+def _content_decision_metric_tiles(
+    decision_type: ContentDecisionType,
+    metrics: ContentDecisionMetrics,
+    query_count: int,
+    wordpress_match: str,
+) -> dict[str, int | float | str]:
+    tiles: dict[str, int | float | str] = {
+        "zapytania": query_count,
+        "WP": _wordpress_match_tile(wordpress_match),
+    }
+    if metrics.total_impressions is not None:
+        tiles["wyświetlenia"] = metrics.total_impressions
+    if metrics.total_clicks is not None:
+        tiles["kliknięcia"] = metrics.total_clicks
+    if metrics.aggregate_ctr is not None:
+        tiles["CTR"] = _format_percent(metrics.aggregate_ctr)
+    if metrics.best_average_position is not None:
+        tiles["pozycja"] = round(metrics.best_average_position, 2)
+    if decision_type != "refresh_or_merge":
+        tiles["tryb"] = _content_decision_mode_tile(decision_type)
+    return tiles
+
+
+def _wordpress_match_tile(wordpress_match: str) -> str:
+    if wordpress_match == "found":
+        return "znaleziono"
+    if wordpress_match == "missing":
+        return "brak"
+    return "niepewne"
+
+
+def _content_decision_mode_tile(decision_type: ContentDecisionType) -> str:
+    if decision_type == "merge_create_after_inventory_check":
+        return "sprawdź merge/create"
+    if decision_type == "inventory_check_before_create":
+        return "blokada create"
+    if decision_type == "block_as_tracking_not_content":
+        return "GA4 tracking"
+    return "refresh/merge"
+
+
 def _numeric_metric_value(fact: MetricFact) -> float | None:
     if isinstance(fact.value, int | float):
         return float(fact.value)
@@ -696,12 +788,12 @@ def _content_metric_sentence(metrics: ContentDecisionMetrics) -> str:
 
 
 def _content_decision_sort_key(decision: ContentDecisionItem) -> tuple[int, int, int, int, str]:
-    block_rank = 1 if decision.decision_type == "block_as_tracking_not_content" else 0
+    status_rank = 1 if decision.status == "blocked" else 0
     return (
-        block_rank,
+        status_rank,
+        decision.priority,
         -(decision.total_impressions or 0),
         -decision.query_count,
-        -(decision.total_clicks or 0),
         decision.id,
     )
 

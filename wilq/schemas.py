@@ -1194,8 +1194,11 @@ class ContentDecisionItem(BaseModel):
         "inventory_check_before_create",
         "block_as_tracking_not_content",
     ]
+    status: Literal["ready", "blocked"] = "ready"
     title: str
     summary: str | None = None
+    priority: int = 50
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     page: str | None = None
     normalized_page_path: str | None = None
     queries: list[str] = Field(default_factory=list)
