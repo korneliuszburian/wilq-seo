@@ -16,6 +16,11 @@ OAUTH_ENDPOINT = "https://oauth2.googleapis.com/token"
 GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords"
 SAFE_ERROR_LABEL = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 SAFE_FIELD_PATH = re.compile(r"^[A-Za-z0-9_.]{1,120}$")
+KEYWORD_PLANNER_IDEA_SOURCE_TERM_LIMIT = 10
+KEYWORD_PLANNER_IDEA_RESULT_LIMIT = 20
+KEYWORD_PLANNER_DEFAULT_LANGUAGE_RESOURCE = "languageConstants/1045"
+KEYWORD_PLANNER_DEFAULT_GEO_TARGET_RESOURCE = "geoTargetConstants/2616"
+KEYWORD_PLANNER_NETWORK = "GOOGLE_SEARCH_AND_PARTNERS"
 
 
 def _google_ads_env_name(*parts: str) -> str:
@@ -224,16 +229,26 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
+            keyword_planner_summary, keyword_planner_facts = (
+                _fetch_optional_keyword_planner_ideas(
+                    client,
+                    credentials,
+                    access_token,
+                    search_term_facts,
+                )
+            )
             metric_summary.update(search_term_summary)
             metric_summary.update(search_term_safety_summary)
             metric_summary.update(keyword_context_summary)
             metric_summary.update(recommendation_summary)
             metric_summary.update(change_event_summary)
+            metric_summary.update(keyword_planner_summary)
             metric_facts.extend(search_term_facts)
             metric_facts.extend(search_term_safety_facts)
             metric_facts.extend(keyword_context_facts)
             metric_facts.extend(recommendation_facts)
             metric_facts.extend(change_event_facts)
+            metric_facts.extend(keyword_planner_facts)
         except httpx.HTTPStatusError as exc:
             detail = _sanitized_http_error_detail(exc.response)
             if detail and "ads_error=queryError.REQUESTED_METRICS_FOR_MANAGER" in detail:
@@ -283,7 +298,8 @@ def refresh_google_ads_campaign_summary(
             "keyword match context rows: "
             f"{metric_summary.get('keyword_match_context_row_count', 0)}; "
             f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}; "
-            f"change events: {metric_summary.get('change_event_row_count', 0)}."
+            f"change events: {metric_summary.get('change_event_row_count', 0)}; "
+            f"keyword planner ideas: {metric_summary.get('keyword_planner_idea_count', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -549,6 +565,130 @@ def _fetch_change_event_summary(
     )
     response.raise_for_status()
     return _summarize_change_event_response(response.json())
+
+
+def _fetch_optional_keyword_planner_ideas(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+    search_term_facts: list[VendorMetricFact],
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    seed_terms = _keyword_planner_seed_terms(search_term_facts)
+    if not seed_terms:
+        return (
+            {
+                "keyword_planner_status": "blocked",
+                "keyword_planner_blocker": "missing_seed_terms",
+                "keyword_planner_seed_term_count": 0,
+                "keyword_planner_idea_count": 0,
+            },
+            [],
+        )
+
+    customer_id = credentials["customer_id"]
+    language_resource = _keyword_planner_language_resource()
+    geo_target_resource = _keyword_planner_geo_target_resource()
+    try:
+        response = client.post(
+            f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+            f"{customer_id}:generateKeywordIdeas",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "developer-token": str(credentials["developer_token"]),
+                "login-customer-id": str(credentials["login_customer_id"]),
+                "Content-Type": "application/json",
+            },
+            json={
+                "keywordSeed": {"keywords": seed_terms},
+                "language": language_resource,
+                "geoTargetConstants": [geo_target_resource],
+                "keywordPlanNetwork": KEYWORD_PLANNER_NETWORK,
+                "includeAdultKeywords": False,
+                "pageSize": KEYWORD_PLANNER_IDEA_RESULT_LIMIT,
+            },
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return _keyword_planner_http_failure_summary(exc)
+    except httpx.HTTPError as exc:
+        return (
+            {
+                "keyword_planner_status": "blocked",
+                "keyword_planner_blocker": type(exc).__name__,
+                "keyword_planner_seed_term_count": len(seed_terms),
+                "keyword_planner_idea_count": 0,
+            },
+            [],
+        )
+    return _summarize_keyword_planner_response(
+        response.json(),
+        seed_terms=seed_terms,
+        language_resource=language_resource,
+        geo_target_resource=geo_target_resource,
+    )
+
+
+def _keyword_planner_seed_terms(search_term_facts: list[VendorMetricFact]) -> list[str]:
+    grouped: dict[str, dict[str, int]] = {}
+    for fact in search_term_facts:
+        if fact.name not in {
+            "search_term_clicks",
+            "search_term_impressions",
+            "search_term_cost_micros",
+        }:
+            continue
+        search_term = fact.dimensions.get("search_term")
+        if not search_term:
+            continue
+        normalized = " ".join(search_term.split())
+        if len(normalized) < 3:
+            continue
+        row = grouped.setdefault(
+            normalized,
+            {"clicks": 0, "impressions": 0, "cost_micros": 0},
+        )
+        if fact.name == "search_term_clicks":
+            row["clicks"] = _int_metric(fact.value)
+        elif fact.name == "search_term_impressions":
+            row["impressions"] = _int_metric(fact.value)
+        elif fact.name == "search_term_cost_micros":
+            row["cost_micros"] = _int_metric(fact.value)
+    return [
+        term
+        for term, _metrics in sorted(
+            grouped.items(),
+            key=lambda item: (
+                -item[1]["cost_micros"],
+                -item[1]["clicks"],
+                -item[1]["impressions"],
+                item[0],
+            ),
+        )[:KEYWORD_PLANNER_IDEA_SOURCE_TERM_LIMIT]
+    ]
+
+
+def _keyword_planner_language_resource() -> str:
+    configured = variable_value("GOOGLE_ADS_KEYWORD_PLANNER_LANGUAGE_RESOURCE")
+    return configured or KEYWORD_PLANNER_DEFAULT_LANGUAGE_RESOURCE
+
+
+def _keyword_planner_geo_target_resource() -> str:
+    configured = variable_value("GOOGLE_ADS_KEYWORD_PLANNER_GEO_TARGET_RESOURCE")
+    return configured or KEYWORD_PLANNER_DEFAULT_GEO_TARGET_RESOURCE
+
+
+def _keyword_planner_http_failure_summary(
+    exc: httpx.HTTPStatusError,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    detail = _sanitized_http_error_detail(exc.response)
+    summary: dict[str, float | int | str] = {
+        "keyword_planner_status": "blocked",
+        "keyword_planner_http_status": exc.response.status_code,
+        "keyword_planner_idea_count": 0,
+    }
+    if detail:
+        summary["keyword_planner_blocker"] = detail
+    return summary, []
 
 
 def _change_event_summary_query(today: date | None = None) -> str:
@@ -898,6 +1038,135 @@ def _summarize_change_event_response(
         },
         metric_facts,
     )
+
+
+def _summarize_keyword_planner_response(
+    payload: Any,
+    *,
+    seed_terms: list[str],
+    language_resource: str,
+    geo_target_resource: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    results = payload.get("results") if isinstance(payload, dict) else None
+    if not isinstance(results, list):
+        results = []
+    metric_facts: list[VendorMetricFact] = []
+    max_avg_monthly_searches = 0
+    competition_values: set[str] = set()
+    seed_terms_label = _keyword_planner_seed_terms_label(seed_terms)
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+        idea_text = result.get("text")
+        if not isinstance(idea_text, str) or not idea_text.strip():
+            continue
+        metrics = result.get("keywordIdeaMetrics", result.get("keyword_idea_metrics", {}))
+        if not isinstance(metrics, dict):
+            metrics = {}
+        avg_monthly_searches = _int_metric(
+            metrics.get(
+                "avgMonthlySearches",
+                metrics.get("avg_monthly_searches"),
+            )
+        )
+        competition = metrics.get("competition")
+        if not isinstance(competition, str):
+            competition = None
+        competition_index = _optional_int_metric(
+            metrics.get("competitionIndex", metrics.get("competition_index"))
+        )
+        low_bid_micros = _optional_int_metric(
+            metrics.get(
+                "lowTopOfPageBidMicros",
+                metrics.get("low_top_of_page_bid_micros"),
+            )
+        )
+        high_bid_micros = _optional_int_metric(
+            metrics.get(
+                "highTopOfPageBidMicros",
+                metrics.get("high_top_of_page_bid_micros"),
+            )
+        )
+        dimensions = {
+            "keyword_idea_text": _clip_dimension(idea_text),
+            "seed_terms": seed_terms_label,
+            "seed_terms_count": str(len(seed_terms)),
+            "language_resource": language_resource,
+            "geo_target_resource": geo_target_resource,
+        }
+        if competition:
+            dimensions["competition"] = competition
+            competition_values.add(competition)
+        max_avg_monthly_searches = max(max_avg_monthly_searches, avg_monthly_searches)
+        metric_facts.extend(
+            [
+                VendorMetricFact(
+                    "keyword_planner_idea_available",
+                    1,
+                    dimensions,
+                    period="keyword_planner",
+                ),
+                VendorMetricFact(
+                    "keyword_planner_avg_monthly_searches",
+                    avg_monthly_searches,
+                    dimensions,
+                    period="keyword_planner",
+                ),
+            ]
+        )
+        if competition_index is not None:
+            metric_facts.append(
+                VendorMetricFact(
+                    "keyword_planner_competition_index",
+                    competition_index,
+                    dimensions,
+                    period="keyword_planner",
+                )
+            )
+        if low_bid_micros is not None:
+            metric_facts.append(
+                VendorMetricFact(
+                    "keyword_planner_low_top_of_page_bid_micros",
+                    low_bid_micros,
+                    dimensions,
+                    period="keyword_planner",
+                )
+            )
+        if high_bid_micros is not None:
+            metric_facts.append(
+                VendorMetricFact(
+                    "keyword_planner_high_top_of_page_bid_micros",
+                    high_bid_micros,
+                    dimensions,
+                    period="keyword_planner",
+                )
+            )
+    return (
+        {
+            "keyword_planner_status": "ready",
+            "keyword_planner_seed_term_count": len(seed_terms),
+            "keyword_planner_idea_count": sum(
+                1 for fact in metric_facts if fact.name == "keyword_planner_idea_available"
+            ),
+            "keyword_planner_avg_monthly_searches_max": max_avg_monthly_searches,
+            "keyword_planner_competition_values": ",".join(sorted(competition_values)),
+            "keyword_planner_language_resource": language_resource,
+            "keyword_planner_geo_target_resource": geo_target_resource,
+            "keyword_planner_network": KEYWORD_PLANNER_NETWORK,
+        },
+        metric_facts,
+    )
+
+
+def _keyword_planner_seed_terms_label(seed_terms: list[str]) -> str:
+    return _clip_dimension(", ".join(seed_terms[:5]))
+
+
+def _clip_dimension(value: str, limit: int = 240) -> str:
+    normalized = " ".join(value.split())
+    if len(normalized) <= limit:
+        return normalized
+    return f"{normalized[: limit - 3].rstrip()}..."
 
 
 def _summarize_search_term_response(

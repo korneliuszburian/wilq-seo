@@ -2876,6 +2876,24 @@ function AdsCustomSegmentCandidatesPanel({
                 </div>
               </div>
             ) : null}
+            {candidate.keyword_planner_ideas.length > 0 ? (
+              <div className="mt-2 rounded-md border border-emerald-100 bg-emerald-50 p-2 text-xs leading-5 text-slate-700">
+                <div className="font-semibold uppercase tracking-normal text-emerald-700">
+                  Keyword Planner enrichment
+                </div>
+                <div className="mt-1 grid gap-1">
+                  {candidate.keyword_planner_ideas.slice(0, compact ? 2 : 4).map((idea) => (
+                    <div key={`${candidate.id}-${idea.idea_text}`} className="text-slate-700">
+                      <span className="font-medium text-ink">{idea.idea_text}</span>
+                      {typeof idea.avg_monthly_searches === "number" ? (
+                        <span> / avg monthly searches: {idea.avg_monthly_searches}</span>
+                      ) : null}
+                      {idea.competition ? <span> / competition: {idea.competition}</span> : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-2 grid gap-2 text-xs text-slate-600">
               <TraceLine
                 label="Review człowieka"
@@ -3618,6 +3636,7 @@ function CustomSegmentsDiagnosticSurface() {
 
   const data = diagnostics.data;
   const contract = data.custom_segments_read_contract;
+  const keywordPlanner = data.keyword_planner_read_contract;
   const customDecision = data.decision_queue.find(
     (decision) => decision.id === "ads_prepare_custom_segments_from_search_terms"
   );
@@ -3645,7 +3664,7 @@ function CustomSegmentsDiagnosticSurface() {
           <MetricTile label="Segmenty" value={contract.candidates.length} />
           <MetricTile label="Source terms" value={sourceTermCount} />
           <MetricTile label="Odrzucone" value={rejectedTermCount} />
-          <MetricTile label="Podgląd akcji" value={contract.payload_preview.length} />
+          <MetricTile label="KP ideas" value={keywordPlanner.idea_rows.length} />
         </div>
       </div>
 
@@ -3662,9 +3681,13 @@ function CustomSegmentsDiagnosticSurface() {
           <div className="flex flex-wrap gap-2 text-xs">
             <StatusBadge value={contract.status === "ready" ? "gotowe" : "zablokowane"} />
             <StatusBadge value={customDecision?.status === "ready" ? "do review" : "blocked"} />
+            <StatusBadge value={keywordPlanner.status === "ready" ? "KP ready" : "KP blocked"} />
           </div>
         </div>
         <p className="mt-3 text-sm font-medium text-ink">{contract.next_step}</p>
+        <p className="mt-2 text-xs leading-5 text-slate-600">
+          Keyword Planner: {keywordPlanner.summary}
+        </p>
       </section>
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">

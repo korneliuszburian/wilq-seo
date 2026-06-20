@@ -34,6 +34,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Keyword Planner enrichment contract, 2026-06-20 19:30 CEST.
+  WILQ ma read-only adapter dla Google Ads Keyword Planner
+  `generateKeywordIdeas`, typed `keyword_planner_read_contract`, shared Zod
+  schema, dashboard enrichment dla custom segments i smoke skilla, który
+  rozróżnia `ready` od legalnego `blocked`. Live vendor_read
+  `refresh_google_ads_0477a745f098` zakończył się `status=completed`; kampanie,
+  search terms, 90-day safety, keyword match context, recommendations,
+  impression share i change history zostały zebrane, ale Keyword Planner
+  zwrócił `403 PERMISSION_DENIED` z
+  `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`. To jest zewnętrzny
+  readiness blocker developer tokena, nie brak `.env` ani błąd OAuth. Aktualne
+  `/api/ads/diagnostics.keyword_planner_read_contract.status=blocked`,
+  `missing_read_contracts=[keyword_planner_enrichment]`, a
+  `custom_segments_read_contract.missing_read_contracts=[
+  keyword_planner_enrichment, forecast_or_audience_size]`. Non-interactive
+  `wilq-ads-doctor` eval przeszedł:
+  `.local-lab/evals/codex-skill/20260620T173651Z/wilq-ads-doctor/result.json`.
 - Ads recommendation review triage, 2026-06-20 18:48 CEST.
   Recommendation rows mają teraz typed `review_priority`, `review_score`,
   polski `review_reason` i `human_review_gates`, tak jak negative keywords i
@@ -498,9 +515,10 @@ Aktualny maintenance:
 - Full BDOS-class Ads optimizer is not done. Remaining areas include setting
   and using business targets (`WILQ_ADS_PROFIT_MARGIN`,
   `WILQ_ADS_BUSINESS_GOAL`, `WILQ_ADS_BUDGET_GOAL`,
-  `WILQ_ADS_TARGET_ROAS` or `WILQ_ADS_TARGET_CPA_MICROS`), Keyword Planner
-  enrichment, forecast/audience size, recorded human strategy review outcome,
-  budget apply safety/confirmation, impact sanity checks and mutation audit.
+  `WILQ_ADS_TARGET_ROAS` or `WILQ_ADS_TARGET_CPA_MICROS`), approved Keyword
+  Planner access/idea rows, forecast/audience size, recorded human strategy
+  review outcome, budget apply safety/confirmation, impact sanity checks and
+  mutation audit.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety
   requirements are all verified.

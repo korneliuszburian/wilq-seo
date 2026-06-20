@@ -37,7 +37,7 @@
   {
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
-    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review i negative keyword safety review queue, a jasno zablokuj CPA, ROAS, search-term waste, wasted budget, budget scaling, recommendation apply oraz negative keyword apply bez human review, potwierdzenia i apply/audit contract.",
+    "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj CPA, ROAS, search-term waste, wasted budget, budget scaling, recommendation apply, targeting/apply oraz negative keyword apply bez human review, potwierdzenia i apply/audit contract.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
       "Ads Doctor",
@@ -62,7 +62,7 @@
       "review_priority",
       "review_score",
       "review_reason",
-      "kolejność review rekomendacji",
+      "review rekomendacji",
       "impression_share_read_contract",
       "ads_review_impression_share",
       "change_history_read_contract",
@@ -71,6 +71,11 @@
       "search_term_90d",
       "keyword_match_context_read_contract",
       "keyword_match_context",
+      "custom_segments_read_contract",
+      "custom segments",
+      "keyword_planner_read_contract",
+      "keyword_planner_enrichment",
+      "forecast_or_audience_size",
       "negative_keyword_payload_preview",
       "recommendation apply",
       "negative_keywords_read_contract",
@@ -96,6 +101,7 @@
     "expected_action_ids": [
       "act_prepare_ads_campaign_review_queue",
       "act_prepare_google_ads_recommendation_review_queue",
+      "act_prepare_custom_segments_from_search_terms",
       "act_prepare_negative_keyword_review_queue"
     ]
   },

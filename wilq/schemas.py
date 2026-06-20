@@ -915,6 +915,35 @@ class AdsCustomSegmentPayloadPreview(BaseModel):
     destructive: bool = False
 
 
+class AdsKeywordPlannerIdeaRow(BaseModel):
+    idea_text: str
+    avg_monthly_searches: int | None = None
+    competition: str | None = None
+    competition_index: int | None = None
+    low_top_of_page_bid_micros: int | None = None
+    high_top_of_page_bid_micros: int | None = None
+    source_terms: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsKeywordPlannerReadContract(BaseModel):
+    id: str = "ads_keyword_planner_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    idea_rows: list[AdsKeywordPlannerIdeaRow] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsCustomSegmentCandidate(BaseModel):
     id: str
     name: str
@@ -929,6 +958,7 @@ class AdsCustomSegmentCandidate(BaseModel):
     rejected_terms: list[str] = Field(default_factory=list)
     rejection_reasons: list[str] = Field(default_factory=list)
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
+    keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
@@ -1076,6 +1106,9 @@ class AdsDecisionItem(BaseModel):
     keyword_match_context_rows: list[AdsKeywordMatchContextRow] = Field(
         default_factory=list
     )
+    keyword_planner_idea_rows: list[AdsKeywordPlannerIdeaRow] = Field(
+        default_factory=list
+    )
     custom_segment_candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     custom_segment_payload_preview: list[AdsCustomSegmentPayloadPreview] = Field(
         default_factory=list
@@ -1109,6 +1142,7 @@ class AdsDiagnosticsResponse(BaseModel):
     search_terms_read_contract: AdsSearchTermsReadContract
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract
     keyword_match_context_read_contract: AdsKeywordMatchContextReadContract
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract
     decision_queue: list[AdsDecisionItem] = Field(default_factory=list)

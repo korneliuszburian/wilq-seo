@@ -657,6 +657,35 @@ export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   destructive: z.boolean()
 });
 
+export const AdsKeywordPlannerIdeaRowSchema = z.object({
+  idea_text: z.string(),
+  avg_monthly_searches: z.number().nullable().optional(),
+  competition: z.string().nullable().optional(),
+  competition_index: z.number().nullable().optional(),
+  low_top_of_page_bid_micros: z.number().nullable().optional(),
+  high_top_of_page_bid_micros: z.number().nullable().optional(),
+  source_terms: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsKeywordPlannerReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  operator_review_gates: z.array(z.string()).optional().default([]),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  idea_rows: z.array(AdsKeywordPlannerIdeaRowSchema),
+  next_step: z.string()
+});
+
 export const AdsCustomSegmentCandidateSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -671,6 +700,7 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   rejected_terms: z.array(z.string()),
   rejection_reasons: z.array(z.string()),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
+  keyword_planner_ideas: z.array(AdsKeywordPlannerIdeaRowSchema).optional().default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
@@ -814,6 +844,9 @@ export const AdsDecisionItemSchema = z.object({
   keyword_match_context_rows: z.array(AdsKeywordMatchContextRowSchema)
     .optional()
     .default([]),
+  keyword_planner_idea_rows: z.array(AdsKeywordPlannerIdeaRowSchema)
+    .optional()
+    .default([]),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   custom_segment_payload_preview: z.array(AdsCustomSegmentPayloadPreviewSchema)
     .optional()
@@ -845,6 +878,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   search_term_safety_read_contract: AdsSearchTermSafetyReadContractSchema,
   keyword_match_context_read_contract: AdsKeywordMatchContextReadContractSchema,
+  keyword_planner_read_contract: AdsKeywordPlannerReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,
   decision_queue: z.array(AdsDecisionItemSchema),

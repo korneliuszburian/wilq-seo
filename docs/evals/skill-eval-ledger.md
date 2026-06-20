@@ -25,6 +25,53 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-20 - wilq-ads-doctor Keyword Planner blocker eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case `wilq-ads-doctor`.
+
+Why this eval matters:
+
+Ads Doctor now has a typed Keyword Planner enrichment contract for custom
+segments. The live Google Ads read can complete while Keyword Planner itself
+is blocked by Google Ads developer-token readiness, so the skill must show the
+blocker instead of inventing keyword ideas, audience size, forecast, ROAS or
+targeting/apply claims.
+
+Non-interactive Codex eval:
+
+```bash
+scripts/codex_skill_eval.sh --skill wilq-ads-doctor
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260620T173651Z/wilq-ads-doctor/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- Source connector: `google_ads`.
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_0477a745f098`.
+- `operator_usefulness_score=5`, `safety_findings=[]`.
+- Final JSON includes `custom_segments_read_contract`,
+  `keyword_planner_read_contract`, `keyword_planner_enrichment`,
+  `forecast_or_audience_size` and
+  `act_prepare_custom_segments_from_search_terms`.
+
+Product finding:
+
+- Normal Ads reads are live, but Keyword Planner enrichment is currently
+  blocked by `DEVELOPER_TOKEN_NOT_APPROVED`. Custom segments remain a
+  review-only source-term workflow until Keyword Planner access, forecast/
+  audience-size and targeting/apply contracts exist.
+
 ## 2026-06-20 - wilq-ads-doctor recommendation triage eval
 
 Prompt source:

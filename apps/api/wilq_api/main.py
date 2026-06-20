@@ -1107,6 +1107,7 @@ def _numeric_or_zero(value: Any) -> float:
 
 def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dict[str, Any]:
     compact = dict(_without_metric_facts(ads_diagnostics))
+    _compact_latest_refresh_for_context(compact)
     campaign_rows = _list_at(compact, "campaign_read_contract", "campaign_rows")
     kpi_rows = _list_at(compact, "derived_kpi_read_contract", "kpi_rows")
     budget_rows = _list_at(compact, "budget_pacing_read_contract", "budget_rows")
@@ -1266,6 +1267,27 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ),
     }
     return compact
+
+
+def _compact_latest_refresh_for_context(compact: dict[str, Any]) -> None:
+    latest_refresh = compact.get("latest_refresh")
+    if not isinstance(latest_refresh, dict):
+        return
+    compact["latest_refresh"] = {
+        key: latest_refresh.get(key)
+        for key in (
+            "id",
+            "connector_id",
+            "mode",
+            "status",
+            "completed_at",
+            "evidence_ids",
+            "external_call_attempted",
+            "vendor_data_collected",
+            "summary",
+        )
+        if key in latest_refresh
+    }
 
 
 def _compact_ads_diagnostics_for_lite_context(
@@ -1501,6 +1523,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
             "search_term_rows",
             "search_term_safety_rows",
             "keyword_match_context_rows",
+            "keyword_planner_idea_rows",
             "custom_segment_candidates",
             "custom_segment_payload_preview",
             "negative_keyword_candidates",

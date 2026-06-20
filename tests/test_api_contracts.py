@@ -2366,12 +2366,40 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     monkeypatch.setenv("GOOGLE_ADS_LOGIN_CUSTOMER_ID", "999-888-7777")
 
     search_stream_queries: list[str] = []
+    keyword_planner_requests: list[dict[str, object]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "oauth2.googleapis.com":
             assert "grant_type=refresh_token" in request.content.decode()
             return httpx.Response(200, json={"access_token": "ya29.mocktoken"})
         assert request.url.host == "googleads.googleapis.com"
+        if request.url.path == "/v24/customers/1234567890:generateKeywordIdeas":
+            assert request.headers["developer-token"] == "developer-token-test"
+            assert request.headers["login-customer-id"] == "9998887777"
+            assert request.headers["authorization"] == "Bearer ya29.mocktoken"
+            payload = json.loads(request.content.decode())
+            keyword_planner_requests.append(payload)
+            assert payload["keywordSeed"]["keywords"] == ["bdo rejestracja"]
+            assert payload["keywordPlanNetwork"] == "GOOGLE_SEARCH_AND_PARTNERS"
+            assert payload["geoTargetConstants"] == ["geoTargetConstants/2616"]
+            assert payload["language"] == "languageConstants/1045"
+            return httpx.Response(
+                200,
+                json={
+                    "results": [
+                        {
+                            "text": "bdo szkolenie",
+                            "keywordIdeaMetrics": {
+                                "avgMonthlySearches": "100",
+                                "competition": "MEDIUM",
+                                "competitionIndex": "55",
+                                "lowTopOfPageBidMicros": "1200000",
+                                "highTopOfPageBidMicros": "4400000",
+                            },
+                        }
+                    ]
+                },
+            )
         assert request.url.path == "/v24/customers/1234567890/googleAds:searchStream"
         assert request.headers["developer-token"] == "developer-token-test"
         assert request.headers["login-customer-id"] == "9998887777"
@@ -2670,6 +2698,12 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["keyword_match_context_keyword_count"] == 1
     assert result.metric_summary["keyword_match_context_negative_count"] == 0
     assert result.metric_summary["keyword_match_context_match_types"] == "PHRASE"
+    assert result.metric_summary["keyword_planner_status"] == "ready"
+    assert result.metric_summary["keyword_planner_seed_term_count"] == 1
+    assert result.metric_summary["keyword_planner_idea_count"] == 1
+    assert result.metric_summary["keyword_planner_avg_monthly_searches_max"] == 100
+    assert result.metric_summary["keyword_planner_competition_values"] == "MEDIUM"
+    assert keyword_planner_requests
     assert any("FROM campaign" in query for query in search_stream_queries)
     assert any("FROM search_term_view" in query for query in search_stream_queries)
     assert any(
@@ -2813,6 +2847,21 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         if fact.name == "change_event_changed_field_count"
     )
     assert changed_field_count_fact.value == 2
+    keyword_planner_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "keyword_planner_avg_monthly_searches"
+    )
+    assert keyword_planner_fact.value == 100
+    assert keyword_planner_fact.period == "keyword_planner"
+    assert keyword_planner_fact.dimensions == {
+        "keyword_idea_text": "bdo szkolenie",
+        "seed_terms": "bdo rejestracja",
+        "seed_terms_count": "1",
+        "language_resource": "languageConstants/1045",
+        "geo_target_resource": "geoTargetConstants/2616",
+        "competition": "MEDIUM",
+    }
     serialized = json.dumps(result.metric_summary)
     assert "developer-token-test" not in serialized
     assert "refresh-token-test" not in serialized
@@ -3305,6 +3354,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "keyword_match_context_keyword_count": 1,
                 "keyword_match_context_negative_count": 0,
                 "keyword_match_context_match_types": "BROAD",
+                "keyword_planner_status": "ready",
+                "keyword_planner_seed_term_count": 2,
+                "keyword_planner_idea_count": 1,
+                "keyword_planner_avg_monthly_searches_max": 100,
+                "keyword_planner_competition_values": "MEDIUM",
             },
             metric_facts=[
                 VendorMetricFact(
@@ -3789,6 +3843,45 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                         "keyword_match_type": "BROAD",
                     },
                     period="keyword_match_context",
+                ),
+                VendorMetricFact(
+                    "keyword_planner_idea_available",
+                    1,
+                    {
+                        "keyword_idea_text": "bdo szkolenie",
+                        "seed_terms": "bdo rejestracja, odpady cena",
+                        "seed_terms_count": "2",
+                        "language_resource": "languageConstants/1045",
+                        "geo_target_resource": "geoTargetConstants/2616",
+                        "competition": "MEDIUM",
+                    },
+                    period="keyword_planner",
+                ),
+                VendorMetricFact(
+                    "keyword_planner_avg_monthly_searches",
+                    100,
+                    {
+                        "keyword_idea_text": "bdo szkolenie",
+                        "seed_terms": "bdo rejestracja, odpady cena",
+                        "seed_terms_count": "2",
+                        "language_resource": "languageConstants/1045",
+                        "geo_target_resource": "geoTargetConstants/2616",
+                        "competition": "MEDIUM",
+                    },
+                    period="keyword_planner",
+                ),
+                VendorMetricFact(
+                    "keyword_planner_competition_index",
+                    55,
+                    {
+                        "keyword_idea_text": "bdo szkolenie",
+                        "seed_terms": "bdo rejestracja, odpady cena",
+                        "seed_terms_count": "2",
+                        "language_resource": "languageConstants/1045",
+                        "geo_target_resource": "geoTargetConstants/2616",
+                        "competition": "MEDIUM",
+                    },
+                    period="keyword_planner",
                 ),
             ],
         ),
@@ -4442,13 +4535,27 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "card_google_ads_negative_keywords_playbook",
         "card_google_ads_search_playbook",
     ]
+    keyword_planner_contract = payload["keyword_planner_read_contract"]
+    assert keyword_planner_contract["status"] == "ready"
+    assert keyword_planner_contract["missing_read_contracts"] == [
+        "forecast_or_audience_size"
+    ]
+    assert keyword_planner_contract["idea_rows"][0]["idea_text"] == "bdo szkolenie"
+    assert keyword_planner_contract["idea_rows"][0]["avg_monthly_searches"] == 100
+    assert keyword_planner_contract["idea_rows"][0]["competition"] == "MEDIUM"
+    keyword_planner_section = next(
+        section for section in payload["sections"] if section["id"] == "ads_keyword_planner"
+    )
+    assert keyword_planner_section["status"] == "ready"
     custom_segments_contract = payload["custom_segments_read_contract"]
     assert custom_segments_contract["status"] == "ready"
     assert custom_segments_contract["title"] == "Custom segments z realnych search terms"
     assert custom_segments_contract["action_ids"] == [
         "act_prepare_custom_segments_from_search_terms"
     ]
-    assert "keyword_planner_enrichment" in custom_segments_contract["missing_read_contracts"]
+    assert "keyword_planner_enrichment" not in custom_segments_contract[
+        "missing_read_contracts"
+    ]
     assert "forecast_or_audience_size" in custom_segments_contract["missing_read_contracts"]
     assert custom_segments_contract["operator_review_gates"] == [
         "review_source_terms",
@@ -4464,7 +4571,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "odpady cena",
     ]
     assert custom_segments_contract["candidates"][0]["review_priority"] == "pilne"
-    assert custom_segments_contract["candidates"][0]["review_score"] == 75
+    assert custom_segments_contract["candidates"][0]["review_score"] == 85
     assert "kolejność review segmentu" in custom_segments_contract["candidates"][0][
         "review_reason"
     ]
@@ -4474,10 +4581,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_contract["candidates"][0]["human_review_gates"] == [
         "sprawdź intencję source terms",
         "odrzuć brand, konkurencję i low-intent frazy",
-        "dodaj Keyword Planner enrichment",
+        "sprawdź Keyword Planner enrichment",
         "sprawdź forecast albo audience size",
         "zatwierdź segment przed apply",
     ]
+    assert custom_segments_contract["candidates"][0]["keyword_planner_ideas"][0][
+        "idea_text"
+    ] == "bdo szkolenie"
     assert custom_segments_contract["payload_preview"][0] == (
         custom_segments_contract["candidates"][0]["payload_preview"]
     )
@@ -4786,10 +4896,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "wysokie": 0,
         "podgląd akcji": 1,
         "źródłowe zapytania": 2,
+        "KP ideas": 1,
     }
     assert custom_segments_decision["decision_type"] == "prepare_custom_segments"
     assert custom_segments_decision["missing_read_contracts"] == [
-        "keyword_planner_enrichment",
         "forecast_or_audience_size",
     ]
     assert custom_segments_decision["operator_review_gates"] == [
@@ -4801,6 +4911,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "bdo rejestracja",
         "odpady cena",
     ]
+    assert custom_segments_decision["keyword_planner_idea_rows"][0]["idea_text"] == (
+        "bdo szkolenie"
+    )
     assert custom_segments_decision["custom_segment_payload_preview"][0][
         "custom_segment_name"
     ] == "Search terms: Brand Search"

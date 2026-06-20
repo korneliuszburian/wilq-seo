@@ -120,6 +120,24 @@ Audit `docs/audits/001-output.md` is now folded into
    Daily Codex still must not claim profitability, margin verdict, wasted
    budget or budget scaling without the remaining optimizer contracts.
 
+0. Ads Keyword Planner truth, live proof 2026-06-20 19:30 CEST:
+   Keyword Planner is now a typed read-only contract, not prompt text.
+   `wilq/connectors/google_ads/client.py` calls Google Ads
+   `generateKeywordIdeas`; `/api/ads/diagnostics` exposes
+   `keyword_planner_read_contract`; the dashboard and shared schema understand
+   Keyword Planner ideas for custom segments. Current live vendor_read
+   `refresh_google_ads_0477a745f098` completed normal Ads reads but Keyword
+   Planner returned `403 PERMISSION_DENIED` /
+   `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`. This is a Google Ads
+   developer-token approval/readiness blocker, not missing `.env`, broken
+   OAuth, MCC setup or child-customer setup. Current contract state:
+   `keyword_planner_read_contract.status=blocked`,
+   `missing_read_contracts=[keyword_planner_enrichment]`, no idea rows; custom
+   segments keep
+   `missing_read_contracts=[keyword_planner_enrichment, forecast_or_audience_size]`.
+   Latest `wilq-ads-doctor` eval artifact:
+   `.local-lab/evals/codex-skill/20260620T173651Z/wilq-ads-doctor/result.json`.
+
 0. Ads recommendation triage truth, live proof 2026-06-20 18:48 CEST:
    `/api/ads/diagnostics.recommendations_read_contract.recommendation_rows`
    now carries `review_priority`, `review_score`, Polish `review_reason` and

@@ -1112,11 +1112,64 @@ const adsDiagnostics = {
     ],
     next_step: "Użyj tego jako kontekstu review, nie jako zgody na apply."
   },
+  keyword_planner_read_contract: {
+    id: "ads_keyword_planner_read_contract",
+    status: "ready",
+    title: "Keyword Planner: enrichment segmentów",
+    summary:
+      "WILQ ma 1 pomysłów Keyword Planner dla source terms z Ads. Najwyższe avg_monthly_searches=100.",
+    allowed_metrics: [
+      "keyword_idea_text",
+      "keyword_planner_avg_monthly_searches",
+      "keyword_planner_competition_index",
+      "keyword_planner_low_top_of_page_bid_micros",
+      "keyword_planner_high_top_of_page_bid_micros"
+    ],
+    missing_read_contracts: ["forecast_or_audience_size"],
+    operator_review_gates: [
+      "review_keyword_planner_ideas",
+      "reject_off-topic_or_brand_terms",
+      "human_confirm_before_apply"
+    ],
+    blocked_claims: [
+      "audience size",
+      "forecast",
+      "conversion uplift",
+      "ROAS",
+      "targeting applied",
+      "campaign performance"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    idea_rows: [
+      {
+        idea_text: "bdo szkolenie",
+        avg_monthly_searches: 100,
+        competition: "MEDIUM",
+        competition_index: 55,
+        low_top_of_page_bid_micros: 1200000,
+        high_top_of_page_bid_micros: 4400000,
+        source_terms: ["bdo rejestracja"],
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        metric_facts: [],
+        missing_metrics: [],
+        blocked_claims: [
+          "audience size",
+          "forecast",
+          "conversion uplift",
+          "ROAS",
+          "targeting applied"
+        ]
+      }
+    ],
+    next_step:
+      "Użyj enrichmentu jako dodatkowego kontekstu przy custom segments. Nie traktuj go jako forecastu."
+  },
   custom_segments_read_contract: {
     id: "ads_custom_segments_read_contract",
     status: "ready",
     title: "Custom segments z realnych search terms",
-    summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence.",
+    summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
     candidates: [
       {
         id: "ads_custom_segment_123",
@@ -1129,7 +1182,7 @@ const adsDiagnostics = {
         human_review_gates: [
           "sprawdź intencję source terms",
           "odrzuć brand, konkurencję i low-intent frazy",
-          "dodaj Keyword Planner enrichment",
+          "sprawdź Keyword Planner enrichment",
           "sprawdź forecast albo audience size",
           "zatwierdź segment przed apply"
         ],
@@ -1153,6 +1206,27 @@ const adsDiagnostics = {
             metric_facts: [],
             missing_metrics: [],
             blocked_claims: ["CPA", "ROAS", "negative keyword apply", "wasted budget"]
+          }
+        ],
+        keyword_planner_ideas: [
+          {
+            idea_text: "bdo szkolenie",
+            avg_monthly_searches: 100,
+            competition: "MEDIUM",
+            competition_index: 55,
+            low_top_of_page_bid_micros: 1200000,
+            high_top_of_page_bid_micros: 4400000,
+            source_terms: ["bdo rejestracja"],
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+            metric_facts: [],
+            missing_metrics: [],
+            blocked_claims: [
+              "audience size",
+              "forecast",
+              "conversion uplift",
+              "ROAS",
+              "targeting applied"
+            ]
           }
         ],
         source_connectors: ["google_ads"],
@@ -1230,10 +1304,7 @@ const adsDiagnostics = {
     ],
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
-    missing_read_contracts: [
-      "keyword_planner_enrichment",
-      "forecast_or_audience_size"
-    ],
+    missing_read_contracts: ["forecast_or_audience_size"],
     operator_review_gates: [
       "review_source_terms",
       "reject_brand_or_low_intent_terms",
@@ -2076,14 +2147,17 @@ const adsDiagnostics = {
       decision_type: "prepare_custom_segments",
       status: "ready",
       title: "Przygotuj custom segments z realnych search terms",
-      summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence.",
+      summary: "WILQ ma 1 kandydatów custom segments i 1 source terms z Google Ads evidence oraz 1 Keyword Planner ideas.",
       rationale: "WILQ ma source terms z Google Ads evidence, więc może przygotować kandydatów segmentów.",
       next_step: "Przejrzyj source terms i waliduj ActionObject przed apply.",
-      allowed_metrics: ["search_term", "search_term_clicks", "search_term_impressions"],
-      missing_read_contracts: [
-        "keyword_planner_enrichment",
-        "forecast_or_audience_size"
+      allowed_metrics: [
+        "search_term",
+        "search_term_clicks",
+        "search_term_impressions",
+        "keyword_planner_idea_text",
+        "keyword_planner_avg_monthly_searches"
       ],
+      missing_read_contracts: ["forecast_or_audience_size"],
       operator_review_gates: [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
@@ -2118,6 +2192,27 @@ const adsDiagnostics = {
         }
       ],
       search_term_safety_rows: [],
+      keyword_planner_idea_rows: [
+        {
+          idea_text: "bdo szkolenie",
+          avg_monthly_searches: 100,
+          competition: "MEDIUM",
+          competition_index: 55,
+          low_top_of_page_bid_micros: 1200000,
+          high_top_of_page_bid_micros: 4400000,
+          source_terms: ["bdo rejestracja"],
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          metric_facts: [],
+          missing_metrics: [],
+          blocked_claims: [
+            "audience size",
+            "forecast",
+            "conversion uplift",
+            "ROAS",
+            "targeting applied"
+          ]
+        }
+      ],
       custom_segment_candidates: [
         {
           id: "ads_custom_segment_123",
@@ -2130,7 +2225,7 @@ const adsDiagnostics = {
           human_review_gates: [
             "sprawdź intencję source terms",
             "odrzuć brand, konkurencję i low-intent frazy",
-            "dodaj Keyword Planner enrichment",
+            "sprawdź Keyword Planner enrichment",
             "sprawdź forecast albo audience size",
             "zatwierdź segment przed apply"
           ],
@@ -2138,6 +2233,27 @@ const adsDiagnostics = {
           rejected_terms: [],
           rejection_reasons: [],
           search_term_rows: [],
+          keyword_planner_ideas: [
+            {
+              idea_text: "bdo szkolenie",
+              avg_monthly_searches: 100,
+              competition: "MEDIUM",
+              competition_index: 55,
+              low_top_of_page_bid_micros: 1200000,
+              high_top_of_page_bid_micros: 4400000,
+              source_terms: ["bdo rejestracja"],
+              evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+              metric_facts: [],
+              missing_metrics: [],
+              blocked_claims: [
+                "audience size",
+                "forecast",
+                "conversion uplift",
+                "ROAS",
+                "targeting applied"
+              ]
+            }
+          ],
           source_connectors: ["google_ads"],
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           metric_facts: [],

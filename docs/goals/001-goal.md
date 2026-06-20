@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 18:48 CEST.
+Last updated: 2026-06-20 19:30 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -73,17 +73,37 @@ inputs, a read-only recommendation impact
 preview for recommendation types that expose impact metrics, a review-only
 recommendation apply payload preview, a read-only 90-day search-term safety
 contract and a review-only negative keyword payload preview plus read-only
-keyword match context for negative keyword review. Custom segments now have a
-review-only payload preview from real search terms, but no targeting/apply
-support. Campaign budgets now have review-only `CampaignBudgetOperation`
-payload previews from budget facts, but no budget apply support.
+keyword match context for negative keyword review, plus a read-only Keyword
+Planner enrichment contract for custom segment review. Custom segments now
+have a review-only payload preview from real search terms, but no
+targeting/apply support. Campaign budgets now have review-only
+`CampaignBudgetOperation` payload previews from budget facts, but no budget
+apply support.
 Full BDOS-class parity still requires optimizer contracts such as
 configured business targets used in decision scoring, recorded human strategy
-review outcome, pre/post change-impact windows, Keyword Planner enrichment, forecast or
-audience-size checks, custom segment targeting/apply previews, budget apply
-safety, apply confirmation and mutation audit paths, plus real Localo
-ranking/GBP/competitor/review read contracts. Missing contracts must be shown
-as blockers, not hidden with prompt language.
+review outcome, pre/post change-impact windows, approved Keyword Planner
+access/idea rows in live data, forecast or audience-size checks, custom segment
+targeting/apply previews, budget apply safety, apply confirmation and mutation
+audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
+Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads Keyword Planner truth, live proof 2026-06-20 19:30 CEST:
+WILQ now has a conservative read-only Keyword Planner adapter using
+Google Ads `generateKeywordIdeas`, typed `keyword_planner_read_contract`,
+shared frontend schema, dashboard enrichment for custom segments and an Ads
+Doctor smoke/eval guard. Current live `vendor_read`
+`refresh_google_ads_0477a745f098` completed and collected normal Ads evidence,
+but Keyword Planner returned `403 PERMISSION_DENIED` with
+`authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`. Treat this as a Google Ads
+developer-token approval/readiness blocker, not as missing `.env`, broken
+OAuth or missing MCC/child customer setup. Current
+`/api/ads/diagnostics.keyword_planner_read_contract.status=blocked`,
+`missing_read_contracts=[keyword_planner_enrichment]`, `idea_rows=[]`; custom
+segments remain review-only with
+`missing_read_contracts=[keyword_planner_enrichment, forecast_or_audience_size]`.
+Do not fabricate Keyword Planner ideas, audience size, forecast, targeting
+applied, campaign performance, ROAS or conversion uplift. Latest strict eval:
+`.local-lab/evals/codex-skill/20260620T173651Z/wilq-ads-doctor/result.json`.
 
 Latest Ads business context truth, live proof 2026-06-20 17:34 CEST:
 repo-local `.env` may contain non-secret Ads context such as profit margin,

@@ -58,6 +58,8 @@ from wilq.schemas import (
     AdsImpressionShareRow,
     AdsKeywordMatchContextReadContract,
     AdsKeywordMatchContextRow,
+    AdsKeywordPlannerIdeaRow,
+    AdsKeywordPlannerReadContract,
     AdsNegativeKeywordCandidate,
     AdsNegativeKeywordPayloadPreview,
     AdsNegativeKeywordsReadContract,
@@ -144,6 +146,10 @@ ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_keyword_match_context": (
         [CARD_ADS_NEGATIVE_KEYWORDS, CARD_ADS_SEARCH],
         ["ads_negative_keywords_v1", "ads_search_terms_v1", "ads_principles_v1"],
+    ),
+    "ads_keyword_planner": (
+        [CARD_ADS_CUSTOM_SEGMENTS],
+        ["ads_custom_segments_v1", "ads_keyword_planner_v1"],
     ),
     "ads_custom_segments": (
         [CARD_ADS_CUSTOM_SEGMENTS],
@@ -406,6 +412,10 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         trusted_metric_facts,
         latest_refresh,
     )
+    keyword_planner_read_contract = _keyword_planner_read_contract(
+        trusted_metric_facts,
+        latest_refresh,
+    )
     if search_term_safety_read_contract.status == "ready":
         search_terms_read_contract = search_terms_read_contract.model_copy(
             update={
@@ -438,6 +448,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     )
     custom_segments_read_contract = _custom_segments_read_contract(
         search_terms_read_contract,
+        keyword_planner_read_contract,
         action_ids,
     )
     negative_keywords_read_contract = _negative_keywords_read_contract(
@@ -463,6 +474,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         _search_terms_section(search_terms_read_contract, action_ids),
         _search_term_safety_section(search_term_safety_read_contract),
         _keyword_match_context_section(keyword_match_context_read_contract),
+        _keyword_planner_section(keyword_planner_read_contract),
         _custom_segments_section(custom_segments_read_contract),
         _negative_keywords_section(negative_keywords_read_contract),
         _safe_action_section(
@@ -484,6 +496,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         search_terms_read_contract,
         search_term_safety_read_contract,
         keyword_match_context_read_contract,
+        keyword_planner_read_contract,
         custom_segments_read_contract,
         negative_keywords_read_contract,
         sections,
@@ -506,6 +519,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         search_terms_read_contract=search_terms_read_contract,
         search_term_safety_read_contract=search_term_safety_read_contract,
         keyword_match_context_read_contract=keyword_match_context_read_contract,
+        keyword_planner_read_contract=keyword_planner_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
         decision_queue=decision_queue,
@@ -2991,8 +3005,203 @@ def _keyword_match_context_section(
     )
 
 
+def _keyword_planner_read_contract(
+    metric_facts: list[MetricFact],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsKeywordPlannerReadContract:
+    rows = _keyword_planner_idea_rows(metric_facts)
+    read_attempted = _latest_refresh_has_summary_metric(
+        latest_refresh,
+        "keyword_planner_idea_count",
+    )
+    latest_status = (
+        str(latest_refresh.metric_summary.get("keyword_planner_status"))
+        if latest_refresh is not None
+        else ""
+    )
+    blocked_claims = [
+        "audience size",
+        "forecast",
+        "conversion uplift",
+        "ROAS",
+        "targeting applied",
+        "campaign performance",
+    ]
+    if rows:
+        max_searches = max((row.avg_monthly_searches or 0 for row in rows), default=0)
+        return AdsKeywordPlannerReadContract(
+            status="ready",
+            title="Keyword Planner: enrichment segmentów",
+            summary=(
+                f"WILQ ma {len(rows)} pomysłów Keyword Planner dla source terms z Ads. "
+                f"Najwyższe avg_monthly_searches={max_searches}."
+            ),
+            allowed_metrics=[
+                "keyword_idea_text",
+                "keyword_planner_avg_monthly_searches",
+                "keyword_planner_competition_index",
+                "keyword_planner_low_top_of_page_bid_micros",
+                "keyword_planner_high_top_of_page_bid_micros",
+            ],
+            missing_read_contracts=["forecast_or_audience_size"],
+            operator_review_gates=[
+                "review_keyword_planner_ideas",
+                "reject_off-topic_or_brand_terms",
+                "human_confirm_before_apply",
+            ],
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(
+                evidence_id for row in rows for evidence_id in row.evidence_ids
+            ),
+            idea_rows=rows,
+            next_step=(
+                "Użyj enrichmentu jako dodatkowego kontekstu przy custom segments. "
+                "Nie traktuj go jako forecastu, audience size ani zgody na apply."
+            ),
+        )
+    if read_attempted or latest_status == "blocked":
+        blocker = (
+            str(latest_refresh.metric_summary.get("keyword_planner_blocker"))
+            if latest_refresh is not None
+            else "unknown"
+        )
+        return AdsKeywordPlannerReadContract(
+            status="blocked",
+            title="Keyword Planner: enrichment zablokowany",
+            summary=f"Keyword Planner read został podjęty, ale nie zwrócił idei ({blocker}).",
+            missing_read_contracts=["keyword_planner_enrichment"],
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+            idea_rows=[],
+            next_step=(
+                "Zostaw custom segments w trybie source-term review. Nie dopowiadaj "
+                "zasięgu ani forecastu bez Keyword Planner facts."
+            ),
+        )
+    return AdsKeywordPlannerReadContract(
+        status="blocked",
+        title="Keyword Planner: brak enrichmentu",
+        summary="WILQ nie ma jeszcze keyword_planner_* metric facts.",
+        missing_read_contracts=["keyword_planner_enrichment"],
+        blocked_claims=blocked_claims,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        idea_rows=[],
+        next_step=(
+            "Uruchom read-only Google Ads vendor_read z Keyword Planner albo zostaw "
+            "segmenty jako prepare-only source-term review."
+        ),
+    )
+
+
+def _keyword_planner_idea_rows(metric_facts: list[MetricFact]) -> list[AdsKeywordPlannerIdeaRow]:
+    grouped_facts: dict[str, list[MetricFact]] = {}
+    seen_metric_keys: set[tuple[str, str]] = set()
+    for fact in metric_facts:
+        if fact.name not in {
+            "keyword_planner_idea_available",
+            "keyword_planner_avg_monthly_searches",
+            "keyword_planner_competition_index",
+            "keyword_planner_low_top_of_page_bid_micros",
+            "keyword_planner_high_top_of_page_bid_micros",
+        }:
+            continue
+        idea_text = fact.dimensions.get("keyword_idea_text")
+        if not idea_text:
+            continue
+        metric_key = (idea_text, fact.name)
+        if metric_key in seen_metric_keys:
+            continue
+        seen_metric_keys.add(metric_key)
+        grouped_facts.setdefault(idea_text, []).append(fact)
+
+    rows = [
+        _keyword_planner_idea_row(idea_text, facts)
+        for idea_text, facts in grouped_facts.items()
+    ]
+    return sorted(
+        rows,
+        key=lambda row: (-(row.avg_monthly_searches or 0), row.idea_text),
+    )
+
+
+def _keyword_planner_idea_row(
+    idea_text: str,
+    facts: list[MetricFact],
+) -> AdsKeywordPlannerIdeaRow:
+    facts_by_name = {fact.name: fact for fact in facts}
+    expected_metrics = [
+        "keyword_planner_avg_monthly_searches",
+        "keyword_planner_competition_index",
+    ]
+    first_dimensions = facts[0].dimensions if facts else {}
+    source_terms = [
+        term.strip()
+        for term in (first_dimensions.get("seed_terms") or "").split(",")
+        if term.strip()
+    ]
+    return AdsKeywordPlannerIdeaRow(
+        idea_text=idea_text,
+        avg_monthly_searches=_int_metric_value(
+            facts_by_name.get("keyword_planner_avg_monthly_searches")
+        ),
+        competition=first_dimensions.get("competition"),
+        competition_index=_int_metric_value(
+            facts_by_name.get("keyword_planner_competition_index")
+        ),
+        low_top_of_page_bid_micros=_int_metric_value(
+            facts_by_name.get("keyword_planner_low_top_of_page_bid_micros")
+        ),
+        high_top_of_page_bid_micros=_int_metric_value(
+            facts_by_name.get("keyword_planner_high_top_of_page_bid_micros")
+        ),
+        source_terms=source_terms,
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        blocked_claims=[
+            "audience size",
+            "forecast",
+            "conversion uplift",
+            "ROAS",
+            "targeting applied",
+        ],
+    )
+
+
+def _keyword_planner_section(
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+) -> AdsDiagnosticSection:
+    metric_facts = [
+        fact
+        for row in keyword_planner_read_contract.idea_rows
+        for fact in row.metric_facts
+    ]
+    return AdsDiagnosticSection(
+        id="ads_keyword_planner",
+        title="Keyword Planner enrichment",
+        status=keyword_planner_read_contract.status,
+        summary=keyword_planner_read_contract.summary,
+        diagnosis=(
+            "Ten kontrakt wzbogaca source terms o pomysły i historyczne metryki "
+            "Keyword Planner. Nie jest forecastem, audience size ani zgodą na "
+            "targeting apply."
+        ),
+        next_step=keyword_planner_read_contract.next_step,
+        source_connectors=keyword_planner_read_contract.source_connectors,
+        evidence_ids=keyword_planner_read_contract.evidence_ids,
+        metric_facts=metric_facts[:12],
+        action_ids=[],
+        blocked_claims=keyword_planner_read_contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
 def _custom_segments_read_contract(
     search_terms_read_contract: AdsSearchTermsReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
     action_ids: list[str],
 ) -> AdsCustomSegmentsReadContract:
     if not search_terms_read_contract.search_term_rows:
@@ -3015,7 +3224,10 @@ def _custom_segments_read_contract(
             ),
         )
 
-    candidates = _custom_segment_candidates(search_terms_read_contract.search_term_rows)
+    candidates = _custom_segment_candidates(
+        search_terms_read_contract.search_term_rows,
+        keyword_planner_read_contract.idea_rows,
+    )
     custom_segment_action_ids = [
         action_id for action_id in action_ids if action_id == CUSTOM_SEGMENT_ACTION_ID
     ]
@@ -3031,7 +3243,11 @@ def _custom_segments_read_contract(
             evidence_ids=search_terms_read_contract.evidence_ids,
             missing_read_contracts=[
                 "eligible_source_terms",
-                "keyword_planner_enrichment",
+                *(
+                    []
+                    if keyword_planner_read_contract.status == "ready"
+                    else ["keyword_planner_enrichment"]
+                ),
                 "custom_segment_payload_preview",
             ],
             blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
@@ -3043,17 +3259,24 @@ def _custom_segments_read_contract(
         )
 
     source_terms_count = sum(len(candidate.source_terms) for candidate in candidates)
+    keyword_planner_idea_count = sum(
+        len(candidate.keyword_planner_ideas) for candidate in candidates
+    )
     payload_preview = [
         candidate.payload_preview
         for candidate in candidates
         if candidate.payload_preview is not None
     ]
+    missing_read_contracts = ["forecast_or_audience_size"]
+    if keyword_planner_read_contract.status != "ready":
+        missing_read_contracts.insert(0, "keyword_planner_enrichment")
     return AdsCustomSegmentsReadContract(
         status="ready",
         title="Custom segments z realnych search terms",
         summary=(
             f"WILQ ma {len(candidates)} kandydatów custom segments i "
             f"{source_terms_count} source terms z Google Ads evidence oraz "
+            f"{keyword_planner_idea_count} Keyword Planner ideas oraz "
             f"{len(payload_preview)} review-only payload preview."
         ),
         candidates=candidates,
@@ -3064,22 +3287,21 @@ def _custom_segments_read_contract(
             for candidate in candidates
             for evidence_id in candidate.evidence_ids
         ),
-        missing_read_contracts=[
-            "keyword_planner_enrichment",
-            "forecast_or_audience_size",
-        ],
+        missing_read_contracts=missing_read_contracts,
         operator_review_gates=CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES,
         blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
         action_ids=custom_segment_action_ids,
         next_step=(
             "Przejrzyj source terms i payload preview, odrzuć nietrafione frazy, "
-            "dodaj Keyword Planner enrichment i waliduj ActionObject przed apply."
+            "użyj Keyword Planner enrichment, jeśli jest dostępny, i waliduj "
+            "ActionObject przed apply."
         ),
     )
 
 
 def _custom_segment_candidates(
     rows: list[AdsSearchTermMetricRow],
+    keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow],
 ) -> list[AdsCustomSegmentCandidate]:
     grouped: dict[tuple[str | None, str | None], list[AdsSearchTermMetricRow]] = {}
     rejected_terms: list[str] = []
@@ -3102,10 +3324,28 @@ def _custom_segment_candidates(
         if not source_terms:
             continue
         name = _custom_segment_name(campaign_name, index)
-        evidence_ids = _unique(
-            evidence_id for row in sorted_rows for evidence_id in row.evidence_ids
+        matched_keyword_planner_ideas = _matching_keyword_planner_ideas(
+            source_terms,
+            keyword_planner_ideas,
         )
-        metric_facts = [fact for row in sorted_rows for fact in row.metric_facts][:20]
+        evidence_ids = _unique(
+            [
+                *(evidence_id for row in sorted_rows for evidence_id in row.evidence_ids),
+                *(
+                    evidence_id
+                    for idea in matched_keyword_planner_ideas
+                    for evidence_id in idea.evidence_ids
+                ),
+            ]
+        )
+        metric_facts = [
+            *(fact for row in sorted_rows for fact in row.metric_facts),
+            *(
+                fact
+                for idea in matched_keyword_planner_ideas
+                for fact in idea.metric_facts
+            ),
+        ][:28]
         payload_preview = _custom_segment_payload_preview(
             candidate_id=f"ads_custom_segment_{_slug(campaign_id or campaign_name or str(index))}",
             name=name,
@@ -3120,7 +3360,9 @@ def _custom_segment_candidates(
             source_terms=source_terms,
             rows=sorted_rows,
             payload_preview=payload_preview,
+            keyword_planner_ideas=matched_keyword_planner_ideas,
         )
+        has_keyword_planner = bool(matched_keyword_planner_ideas)
         candidates.append(
             AdsCustomSegmentCandidate(
                 id=payload_preview.id.removeprefix("preview_"),
@@ -3136,7 +3378,11 @@ def _custom_segment_candidates(
                 human_review_gates=[
                     "sprawdź intencję source terms",
                     "odrzuć brand, konkurencję i low-intent frazy",
-                    "dodaj Keyword Planner enrichment",
+                    (
+                        "sprawdź Keyword Planner enrichment"
+                        if has_keyword_planner
+                        else "dodaj Keyword Planner enrichment"
+                    ),
                     "sprawdź forecast albo audience size",
                     "zatwierdź segment przed apply",
                 ],
@@ -3144,6 +3390,7 @@ def _custom_segment_candidates(
                 rejected_terms=_unique(rejected_terms)[:12],
                 rejection_reasons=_unique(rejection_reasons)[:12],
                 search_term_rows=sorted_rows,
+                keyword_planner_ideas=matched_keyword_planner_ideas,
                 source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
                 evidence_ids=evidence_ids,
                 metric_facts=metric_facts,
@@ -3153,18 +3400,33 @@ def _custom_segment_candidates(
                 blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
                 next_step=(
                     "Użyj tych terminów jako prepare-only candidate. Payload preview "
-                    "jest tylko do review; przed apply wymagaj Keyword Planner "
-                    "enrichment, forecastu i walidacji ActionObject."
+                    "jest tylko do review; przed apply wymagaj forecastu, audience "
+                    "size i walidacji ActionObject."
                 ),
             )
         )
     return candidates[:4]
 
 
+def _matching_keyword_planner_ideas(
+    source_terms: list[str],
+    ideas: list[AdsKeywordPlannerIdeaRow],
+) -> list[AdsKeywordPlannerIdeaRow]:
+    source_terms_lower = {term.lower() for term in source_terms}
+    matched = [
+        idea
+        for idea in ideas
+        if not idea.source_terms
+        or any(term.lower() in source_terms_lower for term in idea.source_terms)
+    ]
+    return matched[:8]
+
+
 def _custom_segment_review_score(
     source_terms: list[str],
     rows: list[AdsSearchTermMetricRow],
     payload_preview: AdsCustomSegmentPayloadPreview | None,
+    keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow],
 ) -> int:
     total_clicks = sum(row.clicks or 0 for row in rows)
     total_impressions = sum(row.impressions or 0 for row in rows)
@@ -3177,6 +3439,8 @@ def _custom_segment_review_score(
     if total_conversions > 0:
         score += 10
     if payload_preview is not None:
+        score += 10
+    if keyword_planner_ideas:
         score += 10
     return min(100, int(round(score)))
 
@@ -3268,8 +3532,9 @@ def _custom_segments_section(
         summary=custom_segments_read_contract.summary,
         diagnosis=(
             "WILQ może przygotować kandydatów custom segments tylko z realnych "
-            "source terms. Keyword Planner enrichment, audience size i performance "
-            "pozostają brakującymi kontraktami."
+            "source terms. Keyword Planner enrichment jest dodatkowym kontekstem, "
+            "ale audience size i performance pozostają zablokowane bez osobnych "
+            "kontraktów."
         ),
         next_step=custom_segments_read_contract.next_step,
         source_connectors=custom_segments_read_contract.source_connectors,
@@ -3718,6 +3983,7 @@ def _ads_decision_queue(
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
     keyword_match_context_read_contract: AdsKeywordMatchContextReadContract,
+    keyword_planner_read_contract: AdsKeywordPlannerReadContract,
     custom_segments_read_contract: AdsCustomSegmentsReadContract,
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract,
     sections: list[AdsDiagnosticSection],
@@ -4131,6 +4397,11 @@ def _ads_decision_queue(
             for candidate in custom_segments_read_contract.candidates
             for row in candidate.search_term_rows
         ]
+        keyword_planner_idea_rows = [
+            idea
+            for candidate in custom_segments_read_contract.candidates
+            for idea in candidate.keyword_planner_ideas
+        ]
         decisions.append(
             AdsDecisionItem(
                 id="ads_prepare_custom_segments_from_search_terms",
@@ -4141,8 +4412,8 @@ def _ads_decision_queue(
                 rationale=(
                     "WILQ ma source terms z Google Ads evidence, więc może przygotować "
                     "kandydatów segmentów. To nie jest apply ani obietnica skuteczności: "
-                    "payload preview jest review-only, a nadal brakuje Keyword Planner "
-                    "enrichment, audience size i zgody człowieka."
+                    "payload preview jest review-only, a forecast, audience size i zgoda "
+                    "człowieka nadal są wymagane."
                 ),
                 next_step=custom_segments_read_contract.next_step,
                 allowed_metrics=[
@@ -4152,6 +4423,9 @@ def _ads_decision_queue(
                     "search_term_cost_micros",
                     "search_term_conversions",
                     "search_term_conversion_value",
+                    "keyword_planner_idea_text",
+                    "keyword_planner_avg_monthly_searches",
+                    "keyword_planner_competition_index",
                 ],
                 missing_read_contracts=custom_segments_read_contract.missing_read_contracts,
                 operator_review_gates=(
@@ -4161,6 +4435,7 @@ def _ads_decision_queue(
                 evidence_ids=custom_segments_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 search_term_rows=search_term_rows[:12],
+                keyword_planner_idea_rows=keyword_planner_idea_rows[:12],
                 custom_segment_candidates=custom_segments_read_contract.candidates,
                 custom_segment_payload_preview=custom_segments_read_contract.payload_preview,
                 action_ids=custom_segments_read_contract.action_ids,
@@ -4501,6 +4776,7 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
                 ),
                 "podgląd akcji": len(decision.custom_segment_payload_preview),
                 "źródłowe zapytania": len(decision.search_term_rows),
+                "KP ideas": len(decision.keyword_planner_idea_rows),
             }
         )
     if decision.decision_type in {"block_write_actions", "fix_ads_access"}:

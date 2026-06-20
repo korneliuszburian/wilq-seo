@@ -109,9 +109,11 @@ def main() -> int:
     keyword_match_context_read_contract = (
         ads_diagnostics.get("keyword_match_context_read_contract") or {}
     )
+    keyword_planner_read_contract = ads_diagnostics.get("keyword_planner_read_contract") or {}
     negative_keywords_read_contract = (
         ads_diagnostics.get("negative_keywords_read_contract") or {}
     )
+    custom_segments_read_contract = ads_diagnostics.get("custom_segments_read_contract") or {}
     decision_queue = ads_diagnostics.get("decision_queue") or []
     pack_decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
     budget_decision = _find_decision(decision_queue, "ads_review_budget_context")
@@ -344,6 +346,76 @@ def main() -> int:
         [],
     ):
         raise SystemExit("Blocked keyword match context must list missing read contract")
+    if keyword_planner_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose keyword_planner_read_contract")
+    if not keyword_planner_read_contract.get("blocked_claims"):
+        raise SystemExit("Keyword Planner contract must list blocked claims")
+    pack_keyword_planner_contract = (
+        pack.get("ads_diagnostics", {}).get("keyword_planner_read_contract") or {}
+    )
+    if pack_keyword_planner_contract.get("summary") != keyword_planner_read_contract.get(
+        "summary"
+    ):
+        raise SystemExit("Context pack Keyword Planner contract differs")
+    if keyword_planner_read_contract.get("status") == "ready":
+        if not keyword_planner_read_contract.get("idea_rows"):
+            raise SystemExit("Ready Keyword Planner contract must expose idea rows")
+        if not pack_keyword_planner_contract.get("idea_rows"):
+            raise SystemExit("Context pack must include ready Keyword Planner idea rows")
+        if "keyword_planner_enrichment" in keyword_planner_read_contract.get(
+            "missing_read_contracts",
+            [],
+        ):
+            raise SystemExit("Ready Keyword Planner contract must not stay missing")
+        if "forecast_or_audience_size" not in keyword_planner_read_contract.get(
+            "missing_read_contracts",
+            [],
+        ):
+            raise SystemExit("Keyword Planner must keep forecast/audience size blocked")
+    else:
+        if "keyword_planner_enrichment" not in keyword_planner_read_contract.get(
+            "missing_read_contracts",
+            [],
+        ):
+            raise SystemExit(
+                "Blocked Keyword Planner contract must list missing enrichment"
+            )
+        if keyword_planner_read_contract.get("idea_rows"):
+            raise SystemExit("Blocked Keyword Planner contract must not expose idea rows")
+    if custom_segments_read_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose custom_segments_read_contract")
+    pack_custom_segments_contract = (
+        pack.get("ads_diagnostics", {}).get("custom_segments_read_contract") or {}
+    )
+    if pack_custom_segments_contract.get("summary") != custom_segments_read_contract.get(
+        "summary"
+    ):
+        raise SystemExit("Context pack custom segments contract differs")
+    custom_segments_missing = set(
+        custom_segments_read_contract.get("missing_read_contracts") or []
+    )
+    custom_segment_idea_count = sum(
+        len(candidate.get("keyword_planner_ideas") or [])
+        for candidate in custom_segments_read_contract.get("candidates") or []
+    )
+    if keyword_planner_read_contract.get("status") == "ready":
+        if "keyword_planner_enrichment" in custom_segments_missing:
+            raise SystemExit(
+                "Ready Keyword Planner must unblock custom segments enrichment"
+            )
+        if not custom_segment_idea_count:
+            raise SystemExit(
+                "Ready Keyword Planner must enrich custom segment candidates"
+            )
+    elif custom_segments_read_contract.get("status") == "ready":
+        if "keyword_planner_enrichment" not in custom_segments_missing:
+            raise SystemExit(
+                "Custom segments must keep Keyword Planner enrichment missing when blocked"
+            )
+        if custom_segment_idea_count:
+            raise SystemExit(
+                "Blocked Keyword Planner must not enrich custom segment candidates"
+            )
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")
     if not negative_keywords_read_contract.get("blocked_claims"):
@@ -632,6 +704,34 @@ def main() -> int:
                         "blocked_claims": keyword_match_context_read_contract.get(
                             "blocked_claims", []
                         ),
+                    },
+                    "keyword_planner_read_contract": {
+                        "status": keyword_planner_read_contract.get("status"),
+                        "summary": keyword_planner_read_contract.get("summary"),
+                        "idea_row_count": len(
+                            keyword_planner_read_contract.get("idea_rows") or []
+                        ),
+                        "missing_read_contracts": keyword_planner_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "blocked_claims": keyword_planner_read_contract.get(
+                            "blocked_claims", []
+                        ),
+                    },
+                    "custom_segments_read_contract": {
+                        "status": custom_segments_read_contract.get("status"),
+                        "summary": custom_segments_read_contract.get("summary"),
+                        "candidate_count": len(
+                            custom_segments_read_contract.get("candidates") or []
+                        ),
+                        "keyword_planner_idea_count": custom_segment_idea_count,
+                        "missing_read_contracts": custom_segments_read_contract.get(
+                            "missing_read_contracts", []
+                        ),
+                        "blocked_claims": custom_segments_read_contract.get(
+                            "blocked_claims", []
+                        ),
+                        "action_ids": custom_segments_read_contract.get("action_ids", []),
                     },
                     "negative_keywords_read_contract": {
                         "status": negative_keywords_read_contract.get("status"),
