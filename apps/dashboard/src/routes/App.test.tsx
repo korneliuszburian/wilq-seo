@@ -3093,21 +3093,23 @@ function mockFetch() {
               },
               {
                 id: "daily_ga4_landing_quality",
-                title: "GA4: brak pełnego kontraktu interpretacji ruchu",
+                title: "GA4: pomiar i jakość ruchu do kontroli",
                 route: "/ga4",
                 status: "blocked",
                 priority: 14,
                 summary:
-                  "Landing groups=1, low engagement=1, WP match=0. Status blocked oznacza brak kontraktu na ROAS/revenue/conversion drop/tracking fixed, nie awarię connectora.",
-                next_step: "Otwórz /ga4 i waliduj `act_review_ga4_tracking_quality`.",
+                  "GA4 ma 1 grupę landing/source/campaign i 1 decyzję review: pomiar=1, jakość ruchu=0. Status blocked oznacza brak kontraktu na ROAS/revenue/conversion drop/tracking fixed, nie awarię connectora.",
+                next_step:
+                  "Otwórz /ga4 i przejdź przez kolejkę decyzji. Waliduj `act_review_ga4_tracking_quality`.",
                 source_connectors: ["google_analytics_4"],
                 evidence_ids: ["ev_refresh_ga4"],
                 action_ids: ["act_review_ga4_tracking_quality"],
                 metric_tiles: {
-                  "landing groups": 1,
-                  "low engagement": 1,
-                  "WP match": 0,
-                  blockery: 1
+                  "grupy ruchu": 1,
+                  decyzje: 1,
+                  pomiar: 1,
+                  "jakość ruchu": 0,
+                  "braki kontraktu": 1
                 },
                 blocked_claims: ["ROAS", "revenue", "conversion drop", "tracking fixed"],
                 risk: "medium"

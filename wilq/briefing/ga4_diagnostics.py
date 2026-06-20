@@ -32,14 +32,22 @@ Ga4DecisionType = Literal[
 ]
 
 
-def build_ga4_diagnostics() -> Ga4DiagnosticsResponse:
+def build_ga4_diagnostics(
+    tactical_items: list[TacticalQueueItem] | None = None,
+    actions: list[ActionObject] | None = None,
+    metric_facts: list[MetricFact] | None = None,
+) -> Ga4DiagnosticsResponse:
     connector = get_connector_status(GA4_CONNECTOR_ID)
     if connector is None:
         raise RuntimeError("GA4 connector is not registered.")
     latest_refresh = _latest_ga4_refresh()
-    metric_facts = metric_store().list_metric_facts(
-        connector_id=GA4_CONNECTOR_ID,
-        limit=GA4_METRIC_FACT_LIMIT,
+    metric_facts = (
+        metric_facts
+        if metric_facts is not None
+        else metric_store().list_metric_facts(
+            connector_id=GA4_CONNECTOR_ID,
+            limit=GA4_METRIC_FACT_LIMIT,
+        )
     )
     live_data_available = bool(metric_facts) and (
         latest_refresh is None
@@ -49,10 +57,14 @@ def build_ga4_diagnostics() -> Ga4DiagnosticsResponse:
         )
     )
     trusted_facts = metric_facts if live_data_available else []
+    source_tactical_items = (
+        tactical_items if tactical_items is not None else build_tactical_queue().items
+    )
     tactical_items = [
-        item for item in build_tactical_queue().items if item.domain == OpportunityDomain.ga4
+        item for item in source_tactical_items if item.domain == OpportunityDomain.ga4
     ]
-    action_ids = _ga4_action_ids(list_actions())
+    actions = actions if actions is not None else list_actions()
+    action_ids = _ga4_action_ids(actions)
     dimensioned_facts = _dimensioned_ga4_facts(trusted_facts)
     decision_queue = _ga4_decision_queue(tactical_items, action_ids, dimensioned_facts)
     sections = [

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 01:57 CEST.
+Last updated: 2026-06-20 02:14 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,7 +86,11 @@ as blockers, not hidden with prompt language.
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must
 say `Dowody`, `Przykładowe dowody`, `podgląd akcji`, `odczyt` and similar
-Polish terms instead of raw English implementation wording.
+Polish terms instead of raw English implementation wording. GA4 on Command
+Center must use the same `Ga4DiagnosticsResponse.decision_queue` semantics as
+`/ga4`, showing concrete review counts for `grupy ruchu`, `decyzje`, `pomiar`
+and `jakość ruchu` while still blocking ROAS/revenue/conversion/tracking-fixed
+claims until explicit contracts exist.
 
 ## Research And Knowledge Contract
 

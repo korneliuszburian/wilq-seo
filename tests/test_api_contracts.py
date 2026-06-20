@@ -1172,9 +1172,10 @@ def test_command_center_exposes_polish_operator_brief(
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["query/page"] >= 1
     assert "act_prepare_content_refresh_queue" in brief_by_id["daily_content_queue"]["action_ids"]
     assert brief_by_id["daily_ga4_landing_quality"]["status"] == "blocked"
-    assert "brak pełnego kontraktu" in brief_by_id["daily_ga4_landing_quality"]["title"]
-    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["landing groups"] >= 1
-    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["blockery"] == 1
+    assert "pomiar i jakość ruchu" in brief_by_id["daily_ga4_landing_quality"]["title"]
+    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["grupy ruchu"] >= 1
+    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["decyzje"] >= 1
+    assert brief_by_id["daily_ga4_landing_quality"]["metric_tiles"]["braki kontraktu"] == 1
     assert "ROAS" in brief_by_id["daily_ga4_landing_quality"]["blocked_claims"]
     assert (
         "act_review_ga4_tracking_quality"
@@ -1200,11 +1201,11 @@ def test_command_center_exposes_polish_operator_brief(
     assert plan_by_id["plan_review_ga4_landing_quality"]["route"] == "/ga4"
     assert plan_by_id["plan_review_ga4_landing_quality"]["skill_id"] == "wilq-ga4-analyst"
     assert plan_by_id["plan_review_ga4_landing_quality"]["status"] == "blocked"
-    assert "brak pełnego kontraktu" in plan_by_id["plan_review_ga4_landing_quality"]["title"]
-    assert "GA4 ma status blocked" in plan_by_id[
+    assert "pomiar i jakość ruchu" in plan_by_id["plan_review_ga4_landing_quality"]["title"]
+    assert "decyzji GA4 do review" in plan_by_id[
         "plan_review_ga4_landing_quality"
     ]["why_it_matters"]
-    assert "gotowej rekomendacji performance" in plan_by_id[
+    assert "review-only" in plan_by_id[
         "plan_review_ga4_landing_quality"
     ]["operator_action"]
     assert plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["status"] == "blocked"
@@ -1233,9 +1234,11 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["blocked_claims"]
     ga4_decision = decisions_by_id["decision_review_ga4_landing_quality"]
     assert ga4_decision["status"] == "blocked"
-    assert "brak pełnego kontraktu" in ga4_decision["title"]
-    assert ga4_decision["metric_tiles"]["landing groups"] >= 1
-    assert "landing groups=0" not in ga4_decision["co_widzimy"]
+    assert "pomiar i jakość ruchu" in ga4_decision["title"]
+    assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
+    assert ga4_decision["metric_tiles"]["decyzje"] >= 1
+    assert "grup landing/source/campaign" in ga4_decision["co_widzimy"]
+    assert "decyzji review" in ga4_decision["co_widzimy"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -1382,13 +1385,15 @@ def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
     brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
     ga4_item = brief_by_id["daily_ga4_landing_quality"]
     assert ga4_item["status"] == "blocked"
-    assert "brak pełnego kontraktu" in ga4_item["title"]
-    assert ga4_item["metric_tiles"]["landing groups"] == 1
-    assert "Landing groups=1" in ga4_item["summary"]
-    assert ga4_item["evidence_ids"] == [
+    assert "pomiar i jakość ruchu" in ga4_item["title"]
+    assert ga4_item["metric_tiles"]["grupy ruchu"] == 1
+    assert ga4_item["metric_tiles"]["decyzje"] == 1
+    assert "GA4 ma 1 grup" in ga4_item["summary"]
+    assert (
         "ev_refresh_refresh_google_analytics_4_command_center_fallback"
-    ]
-    assert "landing groups=0" not in json.dumps(payload, ensure_ascii=False)
+        in ga4_item["evidence_ids"]
+    )
+    assert "grupy ruchu=0" not in json.dumps(payload, ensure_ascii=False)
 
 
 def test_command_center_demotes_localo_access_ready_without_visibility_facts(
@@ -5775,8 +5780,8 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
     )
     monkeypatch.setattr(
         command_center,
-        "_ga4_item_from_tactical",
-        lambda _tactical_items, _actions, _facts: CommandCenterBriefItem(
+        "_ga4_item_from_diagnostics",
+        lambda _diagnostics: CommandCenterBriefItem(
             id="daily_ga4_landing_quality",
             title="GA4",
             route="/ga4",

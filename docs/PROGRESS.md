@@ -76,6 +76,12 @@ Aktualny proof produktowy:
   `Evidence` / `Przykładowe evidence` na kartach decyzji, taktyk i briefów.
   Widoczne etykiety to teraz `Dowody`, `Dowody: N ID(s)` i
   `Przykładowe dowody`; API nadal używa stabilnych pól `evidence_ids`.
+- Command Center GA4 nie buduje już osobnego ogólnego skrótu z samych metric
+  facts. Daily decision i scoped `wilq-daily-command` context-pack używają
+  teraz tego samego `Ga4DiagnosticsResponse.decision_queue`, co `/ga4`, więc
+  pokazują liczby `grupy ruchu`, `decyzje`, `pomiar`, `jakość ruchu` i
+  `braki kontraktu` zamiast angielskich `landing groups` i ogólnego
+  "brak pełnego kontraktu" jako głównego przekazu.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
 - Pełny `scripts/verify.sh` przeszedł po Command Center Ads review queues slice:
@@ -91,7 +97,19 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
+1. Command Center GA4 decision queue, 2026-06-20 02:14 CEST.
+   Command Center GA4 daily decision now consumes the same
+   `Ga4DiagnosticsResponse.decision_queue` contract as `/ga4` and the
+   `wilq-ga4-analyst` context-pack path. Live proof after
+   `scripts/local_stack.sh restart`: `decision_review_ga4_landing_quality`
+   shows title `GA4: pomiar i jakość ruchu do kontroli`, metric tiles
+   `grupy ruchu=10`, `decyzje=6`, `pomiar=2`, `jakość ruchu=4`,
+   `braki kontraktu=1`, and still blocks ROAS/revenue/conversion/tracking-fixed
+   claims. Full `scripts/verify.sh` passed: backend `117 passed`, dashboard
+   unit `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
+   dashboard production build passed.
+
+2. Command Center evidence label cleanup, 2026-06-20 01:57 CEST.
    Dashboard Command Center, tactical cards, daily decision cards and
    brief/action surfaces keep the stable `evidence_ids` API contract, but render
    marketer-facing labels as `Dowody`, `Dowody: N ID(s)` and
@@ -101,7 +119,7 @@ Aktualny maintenance:
    `brama bezpieczeństwa` language. Focused dashboard lint, typecheck, unit
    `App.test.tsx` and real-browser Command Center smoke passed.
 
-2. Command Center blocked-claim label cleanup, 2026-06-20 01:43 Europe/Warsaw.
+3. Command Center blocked-claim label cleanup, 2026-06-20 01:43 Europe/Warsaw.
    Dashboard Command Center, tactical cards and brief/action cards now translate
    raw blocked-claim contract values into Polish marketer-facing labels without
    changing API IDs. Live proof after `scripts/local_stack.sh restart`: Ads
@@ -113,7 +131,7 @@ Aktualny maintenance:
    mypy, command-center API tests, dashboard lint/typecheck/unit and Playwright
    Command Center smoke passed.
 
-3. Command Center Ads review queues, 2026-06-20.
+4. Command Center Ads review queues, 2026-06-20.
    Command Center i `wilq-daily-command` context-pack konsumują teraz istniejące
    Ads diagnostics zamiast pokazywać generyczne "live metrics" albo
    connector/readiness prose. Live proof po `scripts/local_stack.sh restart`:
@@ -130,7 +148,7 @@ Aktualny maintenance:
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
 
-4. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
+5. Ads campaign budget apply preview, 2026-06-20 00:52 Europe/Warsaw.
    Google Ads budget context ma teraz review-only
    `CampaignBudgetOperation` payload preview w typed API, shared schemas,
    dashboardzie `/ads-doctor` i ActionObject
@@ -149,17 +167,6 @@ Aktualny maintenance:
    `scripts/verify.sh` passed: backend `116 passed`, dashboard unit
    `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
    dashboard production build passed.
-
-5. Command Center operator cache, 2026-06-20 00:31 Europe/Warsaw.
-   Daily runtime cache TTL wzrósł z 2s do 30s
-   (`WILQ_DAILY_RUNTIME_CACHE_SECONDS` nadal może to nadpisać), a dashboardowy
-   TanStack Query client używa `staleTime=30000` i
-   `refetchOnWindowFocus=false` jako domyślnego server-state cache. Semantyka
-   danych nie zmienia się: cache jest czyszczony po connector refresh oraz
-   action validation/apply paths. Live proof po `scripts/local_stack.sh restart`:
-   `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, potem
-   `0.007s`, `0.009s`, `0.010s`, `0.007s` w oknie cache. Focused ruff, mypy,
-   backend cache tests, dashboard `App.test.tsx`, dashboard typecheck passed.
 
 ## Active Gaps
 

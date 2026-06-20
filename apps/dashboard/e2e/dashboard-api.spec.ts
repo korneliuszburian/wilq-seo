@@ -24,7 +24,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(page.getByText("produkty").first()).toBeVisible();
     await expect(page.getByText("10900").first()).toBeVisible();
-    await expect(page.getByText("landing groups").first()).toBeVisible();
+    await expect(page.getByText("grupy ruchu").first()).toBeVisible();
     await expect(page.getByText("10").first()).toBeVisible();
     await expect(page.getByText("kampanie").first()).toBeVisible();
     await expect(page.getByText("18").first()).toBeVisible();

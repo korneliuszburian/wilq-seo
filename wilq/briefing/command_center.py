@@ -6,6 +6,7 @@ from typing import Any, Literal
 
 from wilq.actions.service import list_actions
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
+from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.codex.runtime_status import codex_runtime_status
@@ -23,6 +24,8 @@ from wilq.schemas import (
     ConnectorStatus,
     ConnectorSummary,
     DailyDecision,
+    Ga4DecisionItem,
+    Ga4DiagnosticsResponse,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -98,13 +101,18 @@ def build_command_center_brief(
         ads = ads_future.result()
         merchant_facts = merchant_facts_future.result()
         ga4_facts = ga4_facts_future.result()
+    ga4_diagnostics = build_ga4_diagnostics(
+        tactical_items=tactical_queue.items,
+        actions=actions,
+        metric_facts=ga4_facts,
+    )
     localo = get_connector_status("localo")
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
         _ads_item(ads),
         _merchant_item_from_facts(tactical_queue.items, merchant_facts, actions),
         _content_item_from_tactical(tactical_queue.items, actions),
-        _ga4_item_from_tactical(tactical_queue.items, actions, ga4_facts),
+        _ga4_item_from_diagnostics(ga4_diagnostics),
     ]
     if localo is not None:
         localo_item = _localo_item(localo, localo_runs)
@@ -397,6 +405,85 @@ def _content_item_from_tactical(
     )
 
 
+def _ga4_item_from_diagnostics(data: Ga4DiagnosticsResponse) -> CommandCenterBriefItem:
+    decision_count = len(data.decision_queue)
+    measurement_issue_count = _ga4_decision_type_count(
+        data.decision_queue,
+        "fix_measurement",
+    )
+    traffic_review_count = _ga4_decision_type_count(
+        data.decision_queue,
+        "review_traffic_quality",
+    )
+    landing_mapping_count = _ga4_decision_type_count(
+        data.decision_queue,
+        "review_landing_mapping",
+    )
+    missing_contract_count = sum(1 for section in data.sections if section.status != "ready")
+    action_ids = data.action_ids or _unique(
+        action_id for decision in data.decision_queue for action_id in decision.action_ids
+    )
+    evidence_ids = (
+        data.evidence_ids
+        or _unique(
+            evidence_id
+            for decision in data.decision_queue
+            for evidence_id in decision.evidence_ids
+        )
+        or [connector_evidence_id(GA4_CONNECTOR_ID)]
+    )
+    live_data_available = data.live_data_available and data.landing_group_count > 0
+    return CommandCenterBriefItem(
+        id="daily_ga4_landing_quality",
+        title=(
+            "GA4: pomiar i jakość ruchu do kontroli"
+            if live_data_available
+            else "GA4: brak danych do oceny ruchu"
+        ),
+        route="/ga4",
+        status="blocked",
+        priority=14 if live_data_available else 42,
+        summary=(
+            f"GA4 ma {data.landing_group_count} grup landing/source/campaign i "
+            f"{decision_count} decyzji review: pomiar={measurement_issue_count}, "
+            f"jakość ruchu={traffic_review_count}, mapowanie={landing_mapping_count}. "
+            "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
+            "drop/tracking fixed, nie awarię connectora."
+        ),
+        next_step=(
+            "Otwórz /ga4 i przejdź przez kolejkę decyzji: problemy pomiaru, "
+            "mapowanie landingów i jakość ruchu. Waliduj "
+            "`act_review_ga4_tracking_quality`; nie traktuj tego jako werdyktu "
+            "performance."
+        ),
+        source_connectors=[GA4_CONNECTOR_ID],
+        evidence_ids=_limited_ids(evidence_ids),
+        action_ids=action_ids,
+        metric_tiles={
+            "grupy ruchu": data.landing_group_count,
+            "decyzje": decision_count,
+            "pomiar": measurement_issue_count,
+            "jakość ruchu": traffic_review_count,
+            "braki kontraktu": max(missing_contract_count, 1),
+        },
+        blocked_claims=_unique(
+            [
+                *(claim for section in data.sections for claim in section.blocked_claims),
+                *(claim for decision in data.decision_queue for claim in decision.blocked_claims),
+                "tracking fixed",
+            ]
+        )[:8],
+        risk=ActionRisk.medium,
+    )
+
+
+def _ga4_decision_type_count(
+    decisions: list[Ga4DecisionItem],
+    decision_type: str,
+) -> int:
+    return sum(1 for decision in decisions if decision.decision_type == decision_type)
+
+
 def _ga4_item_from_tactical(
     tactical_items: list[TacticalQueueItem],
     actions: list[ActionObject],
@@ -419,7 +506,7 @@ def _ga4_item_from_tactical(
     return CommandCenterBriefItem(
         id="daily_ga4_landing_quality",
         title=(
-            "GA4: brak pełnego kontraktu interpretacji ruchu"
+            "GA4: pomiar i jakość ruchu do kontroli"
             if live_data_available
             else "GA4: brak danych do oceny ruchu"
         ),
@@ -427,12 +514,16 @@ def _ga4_item_from_tactical(
         status="blocked",
         priority=14 if live_data_available else 42,
         summary=(
-            f"Landing groups={landing_group_count}, low engagement="
-            f"{len(low_engagement_items)}, WP match={len(matched_items)}. "
+            f"GA4 ma {landing_group_count} grup landing/source/campaign, "
+            f"{len(low_engagement_items)} grup niskiego zaangażowania i "
+            f"{len(matched_items)} dopasowań WordPress. "
             "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
             "drop/tracking fixed, nie awarię connectora."
         ),
-        next_step="Otwórz /ga4 i waliduj `act_review_ga4_tracking_quality`.",
+        next_step=(
+            "Otwórz /ga4, sprawdź kolejkę jakości ruchu i waliduj "
+            "`act_review_ga4_tracking_quality`."
+        ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_limited_ids(
             _unique(evidence_id for item in ga4_items for evidence_id in item.evidence_ids)
@@ -441,10 +532,11 @@ def _ga4_item_from_tactical(
         ),
         action_ids=action_ids,
         metric_tiles={
-            "landing groups": landing_group_count,
-            "low engagement": len(low_engagement_items),
-            "WP match": len(matched_items),
-            "blockery": 1,
+            "grupy ruchu": landing_group_count,
+            "decyzje": len(ga4_items),
+            "pomiar": sum(1 for item in ga4_items if item.intent == "tracking_gap"),
+            "jakość ruchu": len(low_engagement_items),
+            "braki kontraktu": 1,
         },
         blocked_claims=["ROAS", "revenue", "conversion drop", "tracking fixed"],
         risk=ActionRisk.medium,
@@ -693,16 +785,10 @@ def _action_plan_item(
             risk=item.risk,
         )
     if item.id == "daily_ga4_landing_quality":
-        review_tactics = [
-            tactic
-            for tactic in related_tactics
-            if getattr(tactic, "intent", None) != "tracking_gap"
-        ]
-        tactic_summary = (
-            _ga4_tactic_summary(review_tactics)
-            if review_tactics
-            else "Szczegóły landing/source/campaign są w /ga4 decision queue."
-        )
+        landing_groups = item.metric_tiles.get("grupy ruchu", 0)
+        decision_count = item.metric_tiles.get("decyzje", 0)
+        measurement_count = item.metric_tiles.get("pomiar", 0)
+        traffic_review_count = item.metric_tiles.get("jakość ruchu", 0)
         return CommandCenterActionPlanItem(
             id="plan_review_ga4_landing_quality",
             title=item.title,
@@ -711,20 +797,23 @@ def _action_plan_item(
             priority=14,
             category="GA4",
             why_it_matters=(
-                "GA4 ma status blocked, bo brakuje pełnego kontraktu do claimów "
-                "ROAS/revenue/conversion drop/tracking fixed. "
-                f"{item.summary} {tactic_summary}"
+                f"WILQ ma {landing_groups} grup landing/source/campaign i "
+                f"{decision_count} decyzji GA4 do review: pomiar={measurement_count}, "
+                f"jakość ruchu={traffic_review_count}. To jest kolejka analityczna, "
+                "nie werdykt performance, bo ROAS/revenue/conversion drop/tracking "
+                "fixed pozostają zablokowane bez osobnych kontraktów."
             ),
             operator_action=(
-                "Otwórz /ga4 jako diagnostykę brakującego kontraktu i waliduj "
-                "`act_review_ga4_tracking_quality`; nie traktuj tego jako gotowej "
-                "rekomendacji performance."
+                "Otwórz /ga4, przejdź przez kolejkę decyzji pomiaru i jakości "
+                "ruchu, a potem waliduj `act_review_ga4_tracking_quality` jako "
+                "review-only. Nie wdrażaj zmian ani nie oceniaj opłacalności."
             ),
             skill_id="wilq-ga4-analyst",
             codex_prompt=(
                 "Użyj skilla wilq-ga4-analyst. Sprawdź jakość ruchu Ekologus po "
-                "landing/source/campaign, rozdziel problem marketingowy od problemu "
-                "pomiaru i nie wyciągaj wniosków o ROAS, revenue ani konwersjach bez evidence."
+                "landing/source/campaign z /api/ga4/diagnostics decision_queue, "
+                "rozdziel problem marketingowy od problemu pomiaru i nie wyciągaj "
+                "wniosków o ROAS, revenue ani konwersjach bez dowodów."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -732,7 +821,7 @@ def _action_plan_item(
                 "blockerami i ActionObject."
             ),
             source_connectors=item.source_connectors,
-            evidence_ids=_merge_ids(item.evidence_ids, review_tactics),
+            evidence_ids=item.evidence_ids,
             action_ids=item.action_ids,
             blocked_claims=item.blocked_claims,
             risk=item.risk,
@@ -971,6 +1060,11 @@ def _decision_observation(
     if len(item.evidence_ids) != 1:
         evidence_label += "s"
     action_label = ", ".join(item.action_ids) if item.action_ids else "brak ActionObject"
+    if item.id == "plan_review_ga4_landing_quality" and brief_item is not None:
+        return (
+            f"{brief_item.summary} Źródła={connector_labels}, "
+            f"dowody={evidence_label}, akcje={action_label}."
+        )
     metric_sentence = ""
     if brief_item and brief_item.metric_tiles:
         metric_sentence = _metric_tiles_sentence(brief_item.metric_tiles) + ". "
