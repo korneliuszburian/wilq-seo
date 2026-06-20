@@ -136,7 +136,16 @@ export const ActionReviewGateSchema = z.object({
   last_impact_check_status: z.enum(["checked", "blocked"]).nullable().optional(),
   last_impact_checked_by: z.string().nullable().optional(),
   last_impact_checked_at: z.string().nullable().optional(),
-  last_impact_check_summary: z.string().nullable().optional()
+  last_impact_check_summary: z.string().nullable().optional(),
+  last_mutation_audit_id: z.string().nullable().optional(),
+  last_mutation_audit_status: z.enum(["blocked", "applied", "failed"]).nullable().optional(),
+  last_mutation_audit_actor: z.string().nullable().optional(),
+  last_mutation_audit_at: z.string().nullable().optional(),
+  last_mutation_audit_summary: z.string().nullable().optional(),
+  last_mutation_attempted: z.boolean().nullable().optional(),
+  last_mutation_adapter: z.string().nullable().optional(),
+  last_mutation_audit_event_id: z.string().nullable().optional(),
+  last_mutation_blockers: z.array(z.string()).default([])
 });
 
 export const ActionObjectSchema = z.object({

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 21:58 CEST.
+Last updated: 2026-06-20 22:24 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,21 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest ActionObject mutation audit visibility truth, runtime proof 2026-06-20
+22:24 CEST: `ActionObject.review_gate` now carries the latest mutation audit
+summary: `last_mutation_audit_id/status/actor/at/summary`,
+`last_mutation_attempted`, `last_mutation_adapter`,
+`last_mutation_audit_event_id` and `last_mutation_blockers`. Action detail,
+daily context-pack and dashboard render the same typed state. Runtime proof on a
+temporary state DB: blocked apply on `act_review_merchant_feed_issues` returned
+`mutation_status=blocked`, `mutation_attempted=false`; follow-up
+`/api/actions/{action_id}` and `POST /api/codex/context-pack
+{"skill":"wilq-daily-command"}` both returned
+`review_gate.last_mutation_audit_status=blocked` and
+`last_mutation_attempted=false`. `scripts/verify.sh` passed for this visibility
+follow-up, including API/skill smokes, Playwright e2e and dashboard production
+build.
 
 Latest ActionObject mutation audit truth, runtime proof 2026-06-20 21:58 CEST:
 WILQ now has typed `ActionMutationAuditRecord`, SQLite persistence for

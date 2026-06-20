@@ -271,7 +271,11 @@ def get_action(action_id: str) -> ActionObject | None:
     action = actions.get(action_id)
     if action is None:
         return None
-    return _with_review_gate(action, _persisted_audit_events_for_action(action.id))
+    return _with_review_gate(
+        action,
+        _persisted_audit_events_for_action(action.id),
+        _persisted_mutation_audits_for_action(action.id),
+    )
 
 
 def _google_ads_live_data_available() -> bool:
@@ -1189,11 +1193,15 @@ def _supported_mutation_adapter(action: ActionObject) -> str | None:
 
 def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[ActionObject]:
     action_list = list(actions)
-    audit_events_by_action_id = _persisted_audit_events_by_action_id(
-        {action.id for action in action_list}
-    )
+    action_ids = {action.id for action in action_list}
+    audit_events_by_action_id = _persisted_audit_events_by_action_id(action_ids)
+    mutation_audits_by_action_id = _persisted_mutation_audits_by_action_id(action_ids)
     return [
-        _with_review_gate(action, audit_events_by_action_id.get(action.id, []))
+        _with_review_gate(
+            action,
+            audit_events_by_action_id.get(action.id, []),
+            mutation_audits_by_action_id.get(action.id, []),
+        )
         for action in action_list
     ]
 
@@ -1201,14 +1209,18 @@ def _with_persisted_review_gates(actions: Iterable[ActionObject]) -> list[Action
 def _with_review_gate(
     action: ActionObject,
     audit_events: list[AuditEvent] | None = None,
+    mutation_audits: list[ActionMutationAuditRecord] | None = None,
 ) -> ActionObject:
     if audit_events is not None:
         action.audit_events = audit_events[:10]
-    action.review_gate = _action_review_gate(action)
+    action.review_gate = _action_review_gate(action, mutation_audits)
     return action
 
 
-def _action_review_gate(action: ActionObject) -> ActionReviewGate:
+def _action_review_gate(
+    action: ActionObject,
+    mutation_audits: list[ActionMutationAuditRecord] | None = None,
+) -> ActionReviewGate:
     status: Literal[
         "pending_validation",
         "validated_prepare_only",
@@ -1221,6 +1233,7 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
     last_review = _latest_human_review_event(action.audit_events)
     last_confirmation = _latest_action_confirmation_event(action.audit_events)
     last_impact_check = _latest_action_impact_check_event(action.audit_events)
+    last_mutation_audit = _latest_mutation_audit(mutation_audits or [])
     apply_blockers = _action_apply_blockers(
         action=action,
         required_checks=required_checks,
@@ -1228,9 +1241,23 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
         confirmation_satisfied=last_confirmation is not None,
         impact_sanity_satisfied=_impact_status_from_event(last_impact_check) == "checked",
     )
+    contract_apply_allowed = (
+        apply_allowed and action.mode == ActionMode.apply and not apply_blockers
+    )
     if action.validation_status == "invalid":
         status = "blocked_apply"
         summary = "ActionObject ma błędną walidację; apply pozostaje zablokowany."
+    elif (
+        action.mode == ActionMode.apply
+        and action.validation_status == "valid"
+        and apply_allowed
+        and apply_blockers
+    ):
+        status = "blocked_apply"
+        summary = (
+            "ActionObject ma payload apply, ale blokery bezpieczeństwa nadal "
+            "zatrzymują wykonanie."
+        )
     elif action.mode == ActionMode.apply and action.validation_status == "valid" and apply_allowed:
         status = "ready_to_apply"
         summary = "ActionObject jest zwalidowany i wymaga jawnego potwierdzenia apply."
@@ -1253,7 +1280,7 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
         operator_checklist=operator_checklist,
         apply_blockers=apply_blockers,
         confirmation_required=_action_confirmation_required(required_checks, action.mode),
-        apply_allowed=apply_allowed and action.mode == ActionMode.apply,
+        apply_allowed=contract_apply_allowed,
         last_review_outcome=_review_outcome_from_event(last_review),
         last_reviewed_by=last_review.actor if last_review is not None else None,
         last_reviewed_at=last_review.created_at if last_review is not None else None,
@@ -1275,6 +1302,33 @@ def _action_review_gate(action: ActionObject) -> ActionReviewGate:
         last_impact_check_summary=last_impact_check.summary
         if last_impact_check is not None
         else None,
+        last_mutation_audit_id=last_mutation_audit.id
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_audit_status=last_mutation_audit.status
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_audit_actor=last_mutation_audit.actor
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_audit_at=last_mutation_audit.created_at
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_audit_summary=last_mutation_audit.summary
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_attempted=last_mutation_audit.mutation_attempted
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_adapter=last_mutation_audit.mutation_adapter
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_audit_event_id=last_mutation_audit.audit_event_id
+        if last_mutation_audit is not None
+        else None,
+        last_mutation_blockers=last_mutation_audit.blockers
+        if last_mutation_audit is not None
+        else [],
     )
 
 
@@ -1293,6 +1347,29 @@ def _persisted_audit_events_by_action_id(action_ids: set[str]) -> dict[str, list
 
 def _persisted_audit_events_for_action(action_id: str) -> list[AuditEvent]:
     return local_state_store().list_audit_events(action_id=action_id)[:10]
+
+
+def _persisted_mutation_audits_by_action_id(
+    action_ids: set[str],
+) -> dict[str, list[ActionMutationAuditRecord]]:
+    if not action_ids:
+        return {}
+    audits_by_action_id: dict[str, list[ActionMutationAuditRecord]] = {
+        action_id: [] for action_id in action_ids
+    }
+    for audit in local_state_store().list_action_mutation_audits():
+        if audit.action_id not in action_ids:
+            continue
+        action_audits = audits_by_action_id.setdefault(audit.action_id, [])
+        if len(action_audits) < 10:
+            action_audits.append(audit)
+    return audits_by_action_id
+
+
+def _persisted_mutation_audits_for_action(
+    action_id: str,
+) -> list[ActionMutationAuditRecord]:
+    return local_state_store().list_action_mutation_audits(action_id=action_id)[:10]
 
 
 def _action_review_summary(request: ActionReviewRequest) -> str:
@@ -1478,6 +1555,8 @@ def _action_apply_blockers(
         blockers.append("human_confirm_before_apply")
     if not impact_sanity_satisfied:
         blockers.append("impact_sanity_check_required")
+    if action.mode == ActionMode.apply and _supported_mutation_adapter(action) is None:
+        blockers.append("vendor_mutation_adapter_required")
     blocked_claims = _string_list(action.payload.get("blocked_claims"))
     blockers.extend(f"blocked_claim:{claim}" for claim in blocked_claims[:8])
     return _unique(blockers)
@@ -1538,6 +1617,14 @@ def _latest_action_impact_check_event(events: list[AuditEvent]) -> AuditEvent | 
         if event.event_type in {"action_impact_check_completed", "action_impact_check_blocked"}:
             return event
     return None
+
+
+def _latest_mutation_audit(
+    audits: list[ActionMutationAuditRecord],
+) -> ActionMutationAuditRecord | None:
+    if not audits:
+        return None
+    return sorted(audits, key=lambda item: item.created_at, reverse=True)[0]
 
 
 def _impact_status_from_event(event: AuditEvent | None) -> Literal["checked", "blocked"] | None:

@@ -34,6 +34,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- ActionObject mutation audit visibility, 2026-06-20 22:24 CEST.
+  `ActionObject.review_gate` niesie teraz najnowszy mutation audit:
+  `last_mutation_audit_id/status/actor/at/summary`,
+  `last_mutation_attempted`, `last_mutation_adapter`,
+  `last_mutation_audit_event_id` i `last_mutation_blockers`. Ten sam stan
+  renderuje dashboard i trafia do daily context-packu. Runtime proof na
+  tymczasowej bazie: blocked apply na `act_review_merchant_feed_issues`
+  zwrócił `mutation_status=blocked`, `mutation_attempted=false`; follow-up
+  `/api/actions/{action_id}` i `POST /api/codex/context-pack
+  {"skill":"wilq-daily-command"}` oba miały
+  `review_gate.last_mutation_audit_status=blocked` i
+  `last_mutation_attempted=false`. `scripts/verify.sh` przeszedł dla tej
+  poprawki, w tym API/skill smokes, Playwright e2e i produkcyjny build
+  dashboardu.
 - ActionObject mutation audit boundary, 2026-06-20 21:58 CEST.
   WILQ ma teraz typed `ActionMutationAuditRecord`, lokalną tabelę
   `action_mutation_audits`, endpointy `GET /api/action-mutation-audits` i

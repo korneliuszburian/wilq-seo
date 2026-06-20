@@ -257,6 +257,15 @@ class ActionReviewGate(BaseModel):
     last_impact_checked_by: str | None = None
     last_impact_checked_at: datetime | None = None
     last_impact_check_summary: str | None = None
+    last_mutation_audit_id: str | None = None
+    last_mutation_audit_status: Literal["blocked", "applied", "failed"] | None = None
+    last_mutation_audit_actor: str | None = None
+    last_mutation_audit_at: datetime | None = None
+    last_mutation_audit_summary: str | None = None
+    last_mutation_attempted: bool | None = None
+    last_mutation_adapter: str | None = None
+    last_mutation_audit_event_id: str | None = None
+    last_mutation_blockers: list[str] = Field(default_factory=list)
 
 
 class ActionObject(BaseModel):

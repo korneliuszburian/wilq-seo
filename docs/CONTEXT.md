@@ -29,6 +29,21 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. ActionObject mutation audit visibility, 2026-06-20 22:24 CEST:
+   `ActionObject.review_gate` now carries the latest mutation audit fields:
+   `last_mutation_audit_id/status/actor/at/summary`,
+   `last_mutation_attempted`, `last_mutation_adapter`,
+   `last_mutation_audit_event_id` and `last_mutation_blockers`. Dashboard action
+   detail and daily context-pack render the same typed state. Runtime proof on a
+   temp state DB: blocked apply on `act_review_merchant_feed_issues` returned
+   `mutation_status=blocked`, `mutation_attempted=false`; follow-up
+   `/api/actions/{action_id}` and `POST /api/codex/context-pack
+   {"skill":"wilq-daily-command"}` both returned
+   `review_gate.last_mutation_audit_status=blocked` and
+   `last_mutation_attempted=false`. `scripts/verify.sh` passed for this
+   visibility follow-up, including API/skill smokes, Playwright e2e and
+   dashboard production build.
+
 0. ActionObject mutation audit boundary, 2026-06-20 21:58 CEST:
    `POST /api/actions/{action_id}/apply` must not report `applied=true`
    without a real vendor mutation adapter and persisted mutation audit. Current

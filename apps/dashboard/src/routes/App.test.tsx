@@ -104,7 +104,17 @@ const actions = [
         "human_confirm_before_apply"
       ],
       confirmation_required: true,
-      apply_allowed: false
+      apply_allowed: false,
+      last_mutation_audit_id: "mutation_act_review_merchant_feed_issues_test",
+      last_mutation_audit_status: "blocked",
+      last_mutation_audit_actor: "operator_local_dashboard",
+      last_mutation_audit_at: "2026-06-17T10:03:00Z",
+      last_mutation_audit_summary:
+        "Mutation blocked before any vendor API call. Blockers: Vendor mutation adapter is not implemented for this ActionObject.",
+      last_mutation_attempted: false,
+      last_mutation_adapter: null,
+      last_mutation_audit_event_id: "audit_act_review_merchant_feed_issues_apply_test",
+      last_mutation_blockers: ["vendor_mutation_adapter_required"]
     },
     human_diagnosis: "Merchant Center ma realne metryki produktu/feedu w WILQ API.",
     recommended_reason: "Przygotuj kolejkę problemów feedu z payload preview.",
@@ -4482,6 +4492,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("czeka na walidację")).toBeInTheDocument();
     expect(screen.getByText(/wymagana walidacja ActionObject/)).toBeInTheDocument();
     expect(screen.getByText(/payload nie pozwala na apply/)).toBeInTheDocument();
+    expect(screen.getByText("Ostatni mutation audit")).toBeInTheDocument();
+    expect(screen.getByText(/Mutation blocked before any vendor API call/)).toBeInTheDocument();
+    expect(screen.getByText(/brak adaptera mutacji vendorowej/)).toBeInTheDocument();
     expect(screen.getByText("Wynik review człowieka")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Zapisz review" }));
     await waitFor(() =>

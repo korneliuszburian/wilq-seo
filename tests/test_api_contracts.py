@@ -801,6 +801,17 @@ def test_action_apply_requires_validation(
     assert mutation_audits[0]["mutation_attempted"] is False
     assert mutation_audits[0]["audit_event_id"] == body["audit_event"]["id"]
 
+    action_response = client.get("/api/actions/act_configure_google_ads_env")
+    assert action_response.status_code == 200
+    review_gate = action_response.json()["review_gate"]
+    assert review_gate["last_mutation_audit_status"] == "blocked"
+    assert review_gate["last_mutation_attempted"] is False
+    assert review_gate["last_mutation_adapter"] is None
+    assert review_gate["last_mutation_audit_event_id"] == body["audit_event"]["id"]
+    assert "Explicit apply confirmation is required" in json.dumps(
+        review_gate["last_mutation_blockers"]
+    )
+
 
 def test_action_apply_requires_explicit_confirmation_actor(
     monkeypatch: pytest.MonkeyPatch,
@@ -923,6 +934,8 @@ def test_apply_ready_action_blocks_without_mutation_adapter(
     assert result.mutation_audit.status == "blocked"
     assert result.mutation_audit.mutation_attempted is False
     assert result.mutation_audit.mutation_adapter is None
+    assert "vendor_mutation_adapter_required" in action.review_gate.apply_blockers
+    assert action.review_gate.apply_allowed is False
     assert "Vendor mutation adapter is not implemented" in json.dumps(
         result.model_dump(mode="json")
     )

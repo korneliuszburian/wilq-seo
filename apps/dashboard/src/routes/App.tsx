@@ -751,8 +751,34 @@ function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           Ostatnie potwierdzenie: {gate.last_confirmation_summary}
         </p>
       ) : null}
+      {gate.last_mutation_audit_summary ? (
+        <div className="mt-2 rounded-md border border-risk/30 bg-white p-2 text-slate-600">
+          <div className="font-semibold text-risk">Ostatni mutation audit</div>
+          <p className="mt-1 leading-5">{gate.last_mutation_audit_summary}</p>
+          <div className="mt-2 grid gap-2 md:grid-cols-2">
+            <div>Status: {actionMutationAuditStatusLabel(gate.last_mutation_audit_status)}</div>
+            <div>Próba mutacji: {gate.last_mutation_attempted ? "tak" : "nie"}</div>
+            <div>Adapter: {gate.last_mutation_adapter ?? "brak"}</div>
+            <div>Audit event: {gate.last_mutation_audit_event_id ?? "brak"}</div>
+          </div>
+          <TraceLine
+            label="Blockery mutacji"
+            values={(gate.last_mutation_blockers ?? []).slice(0, 8).map(actionGateLabel)}
+            empty="brak"
+          />
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function actionMutationAuditStatusLabel(value?: string | null) {
+  const labels: Record<string, string> = {
+    blocked: "zablokowany",
+    applied: "wykonany",
+    failed: "błąd"
+  };
+  return value ? labels[value] ?? value : "brak";
 }
 
 function actionReviewGateStatusLabel(value: string) {
@@ -780,6 +806,7 @@ function actionGateLabel(value: string) {
     metric_facts_required: "wymagane metric facts",
     evidence_ids_required: "wymagane evidence IDs",
     impact_sanity_check_required: "wymagany impact sanity check",
+    vendor_mutation_adapter_required: "brak adaptera mutacji vendorowej",
     validate_action_object: "walidacja ActionObject",
     human_review_before_apply: "review człowieka przed apply",
     human_confirm_before_apply: "potwierdzenie człowieka przed apply"
