@@ -29,6 +29,21 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads campaign review triage, 2026-06-20 23:39 CEST:
+   campaign rows in `/api/ads/diagnostics` now carry `review_priority`,
+   `review_score`, Polish `review_reason` and `human_review_gates`. This is a
+   read-only review order, not a waste/CPA/ROAS verdict. Live proof after
+   `scripts/local_stack.sh restart`: 18 campaign rows; top campaign
+   `(2026) Ekologus Ogólna` is `pilne/90` with `clicks=94`,
+   `impressions=2763`, `cost_micros=61051723`, `conversions=0.0` and channel
+   `PERFORMANCE_MAX`; `ads_review_campaign_activity.metric_tiles` has
+   `kampanie=18`, `pilne=1`, `wysokie=1`, `kliknięcia=118`, `koszt=162`,
+   `konwersje=2`. Scoped `wilq-ads-doctor` context-pack includes those fields
+   with 4 of 18 campaign rows and is `184412` bytes, still below the 200 KB
+   budget. Full `scripts/verify.sh` passed after this slice: backend
+   `136 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+   API/skill smokes and dashboard production build OK.
+
 0. Ads search-term n-gram read contract, 2026-06-20 23:12 CEST:
    `/api/ads/diagnostics` exposes `search_term_ngram_read_contract` and
    decision `ads_review_search_term_ngrams`. It groups existing Google Ads

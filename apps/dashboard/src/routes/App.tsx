@@ -2553,11 +2553,13 @@ function AdsCampaignRowsTable({
         <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
           <tr>
             <th className="py-2 pl-3 pr-4 font-semibold">Kampania</th>
+            <th className="py-2 pr-4 font-semibold">Review</th>
             <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
             <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
             <th className="py-2 pr-4 font-semibold">Koszt</th>
             <th className="py-2 pr-4 font-semibold">Konwersje</th>
             <th className="py-2 pr-4 font-semibold">Wartość konw.</th>
+            <th className="py-2 pr-4 font-semibold">Powód</th>
             <th className="py-2 pr-3 font-semibold">Dowody</th>
           </tr>
         </thead>
@@ -2565,6 +2567,14 @@ function AdsCampaignRowsTable({
           {rows.slice(0, 12).map((row) => (
             <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name}`}>
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.campaign_name}</td>
+              <td className="py-2 pr-4 text-xs">
+                <div className="font-semibold text-ink">
+                  {row.review_priority} / {row.review_score}
+                </div>
+                <div className="mt-1 text-slate-500">
+                  {row.human_review_gates.slice(0, 2).map(adsOperatorReviewGateLabel).join(", ")}
+                </div>
+              </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.clicks)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.impressions)}</td>
               <td className="py-2 pr-4 text-slate-700">
@@ -2572,6 +2582,9 @@ function AdsCampaignRowsTable({
               </td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversion_value)}</td>
+              <td className="max-w-md py-2 pr-4 text-xs leading-5 text-slate-600">
+                {row.review_reason}
+              </td>
               <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
             </tr>
           ))}
@@ -3623,6 +3636,13 @@ function adsOperatorReviewGateLabel(value: string) {
     review_impact_metrics: "sprawdzenie impact metrics",
     review_change_history: "sprawdzenie historii zmian",
     review_business_goal: "sprawdzenie celu biznesowego",
+    review_campaign_goal: "sprawdzenie celu kampanii",
+    review_conversion_quality: "sprawdzenie jakości konwersji",
+    review_budget_context: "sprawdzenie kontekstu budżetu",
+    review_search_terms_before_budget_decision: "search terms przed decyzją budżetową",
+    review_conversion_tracking: "sprawdzenie trackingu konwersji",
+    review_pmax_asset_feed_context: "sprawdzenie PMax/feed/assets",
+    review_draft_campaign_status: "sprawdzenie statusu draftu",
     recommendation_apply_preview: "podgląd apply rekomendacji",
     google_ads_rmf_compliance_review: "review Google Ads RMF/compliance",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",

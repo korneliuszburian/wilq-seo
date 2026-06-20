@@ -387,7 +387,13 @@ export const AdsCampaignMetricRowSchema = z.object({
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   missing_metrics: z.array(z.string()),
-  blocked_claims: z.array(z.string())
+  blocked_claims: z.array(z.string()),
+  review_priority: z
+    .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
+    .default("niski sygnał"),
+  review_score: z.number().min(0).max(100).default(0),
+  review_reason: z.string().default(""),
+  human_review_gates: z.array(z.string()).default([])
 });
 
 export const AdsCampaignReadContractSchema = z.object({

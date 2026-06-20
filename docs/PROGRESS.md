@@ -34,6 +34,22 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads campaign review triage, 2026-06-20 23:39 CEST.
+  `AdsCampaignMetricRow` ma teraz typed `review_priority`, `review_score`,
+  polski `review_reason` i `human_review_gates`. `/api/ads/diagnostics`
+  sortuje kampanie do review bez claimów `wasted budget`, CPA, ROAS ani
+  profitability. Live proof po `scripts/local_stack.sh restart`: 18 kampanii,
+  top row `(2026) Ekologus Ogólna` ma `review_priority=pilne`,
+  `review_score=90`, `clicks=94`, `impressions=2763`,
+  `cost_micros=61051723`, `conversions=0.0`, kanał `PERFORMANCE_MAX`.
+  `ads_review_campaign_activity.metric_tiles` ma `kampanie=18`, `pilne=1`,
+  `wysokie=1`, `kliknięcia=118`, `koszt=162`, `konwersje=2`. Scoped
+  `wilq-ads-doctor` context-pack niesie te same pola, zawiera 4 z 18 kampanii
+  i ma `184412` bytes, czyli dalej mieści się pod budżetem 200 KB. To jest
+  kolejność review, nie apply ani werdykt optymalizacyjny. Full
+  `scripts/verify.sh` przeszedł: backend `136 passed`, dashboard unit
+  `17 passed`, Playwright e2e `14 passed`, API/skill smokes i produkcyjny
+  build dashboardu OK.
 - Ads search-term n-gram read contract, 2026-06-20 23:12 CEST.
   WILQ ma teraz typed `search_term_ngram_read_contract` w
   `/api/ads/diagnostics`, shared Zod schema, decyzję

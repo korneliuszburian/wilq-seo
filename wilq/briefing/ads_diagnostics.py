@@ -100,6 +100,13 @@ CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES = [
     "reject_brand_or_low_intent_terms",
     "human_confirm_before_apply",
 ]
+CAMPAIGN_REVIEW_HUMAN_GATES = [
+    "review_campaign_goal",
+    "review_conversion_quality",
+    "review_budget_context",
+    "review_search_terms_before_budget_decision",
+    "human_strategy_review",
+]
 ADS_NGRAM_STOPWORDS = {
     "a",
     "albo",
@@ -1076,21 +1083,162 @@ def _campaign_metric_row(
         "conversions",
         "conversion_value",
     ]
+    clicks = _int_metric_value(facts_by_name.get("clicks"))
+    impressions = _int_metric_value(facts_by_name.get("impressions"))
+    cost_micros = _int_metric_value(facts_by_name.get("cost_micros"))
+    conversions = _float_metric_value(facts_by_name.get("conversions"))
+    conversion_value = _float_metric_value(facts_by_name.get("conversion_value"))
+    advertising_channel_type = first_dimensions.get("advertising_channel_type")
+    campaign_status = first_dimensions.get("campaign_status")
+    missing_metrics = [name for name in expected_metrics if name not in facts_by_name]
+    review_score = _campaign_review_score(
+        campaign_name=campaign_name,
+        advertising_channel_type=advertising_channel_type,
+        clicks=clicks,
+        impressions=impressions,
+        cost_micros=cost_micros,
+        conversions=conversions,
+        missing_metrics=missing_metrics,
+    )
     return AdsCampaignMetricRow(
         campaign_id=campaign_id,
         campaign_name=campaign_name,
-        campaign_status=first_dimensions.get("campaign_status"),
-        advertising_channel_type=first_dimensions.get("advertising_channel_type"),
-        clicks=_int_metric_value(facts_by_name.get("clicks")),
-        impressions=_int_metric_value(facts_by_name.get("impressions")),
-        cost_micros=_int_metric_value(facts_by_name.get("cost_micros")),
-        conversions=_float_metric_value(facts_by_name.get("conversions")),
-        conversion_value=_float_metric_value(facts_by_name.get("conversion_value")),
+        campaign_status=campaign_status,
+        advertising_channel_type=advertising_channel_type,
+        clicks=clicks,
+        impressions=impressions,
+        cost_micros=cost_micros,
+        conversions=conversions,
+        conversion_value=conversion_value,
         evidence_ids=_unique(fact.evidence_id for fact in facts),
         metric_facts=sorted(facts, key=lambda fact: fact.name),
-        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
+        missing_metrics=missing_metrics,
         blocked_claims=["CPA", "ROAS", "search-term waste", "wasted budget"],
+        review_priority=_campaign_review_priority(review_score),
+        review_score=review_score,
+        review_reason=_campaign_review_reason(
+            campaign_name=campaign_name,
+            advertising_channel_type=advertising_channel_type,
+            clicks=clicks,
+            impressions=impressions,
+            cost_micros=cost_micros,
+            conversions=conversions,
+            missing_metrics=missing_metrics,
+        ),
+        human_review_gates=_campaign_review_gates(
+            campaign_name=campaign_name,
+            advertising_channel_type=advertising_channel_type,
+            cost_micros=cost_micros,
+            conversions=conversions,
+        ),
     )
+
+
+def _campaign_review_score(
+    *,
+    campaign_name: str,
+    advertising_channel_type: str | None,
+    clicks: int | None,
+    impressions: int | None,
+    cost_micros: int | None,
+    conversions: float | None,
+    missing_metrics: list[str],
+) -> int:
+    if missing_metrics:
+        return 10
+    score = 0
+    if (cost_micros or 0) > 0:
+        score += 25
+    if (clicks or 0) >= 20:
+        score += 20
+    elif (clicks or 0) > 0:
+        score += 10
+    if (impressions or 0) >= 500:
+        score += 10
+    if (cost_micros or 0) > 0 and not conversions:
+        score += 25
+    elif (conversions or 0) > 0:
+        score += 15
+    if advertising_channel_type == "PERFORMANCE_MAX":
+        score += 10
+    if _is_draft_campaign_name(campaign_name) and (
+        (cost_micros or 0) > 0 or (clicks or 0) > 0 or (impressions or 0) > 0
+    ):
+        score += 15
+    return min(100, score)
+
+
+def _campaign_review_priority(
+    review_score: int,
+) -> Literal["pilne", "wysokie", "normalne", "niski sygnał"]:
+    if review_score >= 70:
+        return "pilne"
+    if review_score >= 45:
+        return "wysokie"
+    if review_score >= 15:
+        return "normalne"
+    return "niski sygnał"
+
+
+def _campaign_review_reason(
+    *,
+    campaign_name: str,
+    advertising_channel_type: str | None,
+    clicks: int | None,
+    impressions: int | None,
+    cost_micros: int | None,
+    conversions: float | None,
+    missing_metrics: list[str],
+) -> str:
+    if missing_metrics:
+        return (
+            "Kampania ma niepełne metryki kampanii: "
+            f"{', '.join(missing_metrics)}. To jest blocker danych, nie "
+            "rekomendacja optymalizacyjna."
+        )
+    signals: list[str] = []
+    if (cost_micros or 0) > 0:
+        signals.append(f"koszt={_format_micros(cost_micros)}")
+    if (clicks or 0) > 0:
+        signals.append(f"kliknięcia={clicks}")
+    if (impressions or 0) > 0:
+        signals.append(f"wyświetlenia={impressions}")
+    if conversions is not None and conversions > 0:
+        signals.append(f"konwersje={_format_float(conversions)}")
+    elif (cost_micros or 0) > 0:
+        signals.append("koszt bez konwersji w bieżącym evidence")
+    if advertising_channel_type:
+        signals.append(f"typ={advertising_channel_type}")
+    if _is_draft_campaign_name(campaign_name):
+        signals.append("nazwa wygląda jak draft/NIE URUCHAMIAĆ")
+    signal_text = ", ".join(signals) or "brak aktywności w bieżącym evidence"
+    return (
+        f"Kolejność review kampanii wynika z faktów: {signal_text}. "
+        "To nie jest werdykt wasted budget, CPA ani ROAS; przed decyzją potrzebny "
+        "jest review celu, jakości konwersji, budżetu i search terms."
+    )
+
+
+def _campaign_review_gates(
+    *,
+    campaign_name: str,
+    advertising_channel_type: str | None,
+    cost_micros: int | None,
+    conversions: float | None,
+) -> list[str]:
+    gates = list(CAMPAIGN_REVIEW_HUMAN_GATES)
+    if (cost_micros or 0) > 0 and not conversions:
+        gates.append("review_conversion_tracking")
+    if advertising_channel_type == "PERFORMANCE_MAX":
+        gates.append("review_pmax_asset_feed_context")
+    if _is_draft_campaign_name(campaign_name):
+        gates.append("review_draft_campaign_status")
+    return _unique(gates)
+
+
+def _is_draft_campaign_name(campaign_name: str) -> bool:
+    normalized_name = campaign_name.upper()
+    return "DRAFT" in normalized_name or "NIE URUCHAMIAC" in normalized_name
 
 
 def _derived_kpi_read_contract(
@@ -2369,8 +2517,13 @@ def _micros_to_account_units(value: float | int | None) -> float | None:
     return float(value) / 1_000_000
 
 
-def _campaign_row_sort_key(row: AdsCampaignMetricRow) -> tuple[int, int, str]:
-    return (-(row.cost_micros or 0), -(row.clicks or 0), row.campaign_name)
+def _campaign_row_sort_key(row: AdsCampaignMetricRow) -> tuple[int, int, int, str]:
+    return (
+        -row.review_score,
+        -(row.cost_micros or 0),
+        -(row.clicks or 0),
+        row.campaign_name,
+    )
 
 
 def _int_metric_value(fact: MetricFact | None) -> int | None:
@@ -4889,9 +5042,13 @@ def _ads_decision_priority(decision: AdsDecisionItem) -> int:
 
 def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | float | str]:
     if decision.decision_type == "review_campaign_activity":
+        urgent_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "pilne")
+        high_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "wysokie")
         return _clean_metric_tiles(
             {
                 "kampanie": len(decision.campaign_rows),
+                "pilne": urgent_rows,
+                "wysokie": high_rows,
                 "kliknięcia": _sum_attr(decision.campaign_rows, "clicks"),
                 "wyświetlenia": _sum_attr(decision.campaign_rows, "impressions"),
                 "koszt": _format_micros(_sum_attr(decision.campaign_rows, "cost_micros")),

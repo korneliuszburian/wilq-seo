@@ -4392,22 +4392,33 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "ROAS" in read_contract["blocked_claims"]
     assert "search_term_view" not in read_contract["missing_read_contracts"]
     assert read_contract["campaign_rows"] == [
-            {
-                "campaign_id": "101",
-                "campaign_name": "Brand Search",
-                "campaign_status": "ENABLED",
-                "advertising_channel_type": "SEARCH",
-                "clicks": 9,
-                "impressions": 90,
-                "cost_micros": 12000000,
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "advertising_channel_type": "SEARCH",
+            "clicks": 9,
+            "impressions": 90,
+            "cost_micros": 12000000,
             "conversions": 2.5,
             "conversion_value": 450.75,
             "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
             "metric_facts": read_contract["campaign_rows"][0]["metric_facts"],
             "missing_metrics": [],
             "blocked_claims": ["CPA", "ROAS", "search-term waste", "wasted budget"],
+            "review_priority": "wysokie",
+            "review_score": 50,
+            "review_reason": read_contract["campaign_rows"][0]["review_reason"],
+            "human_review_gates": [
+                "review_campaign_goal",
+                "review_conversion_quality",
+                "review_budget_context",
+                "review_search_terms_before_budget_decision",
+                "human_strategy_review",
+            ],
         }
     ]
+    assert "Kolejność review kampanii" in read_contract["campaign_rows"][0]["review_reason"]
     currency_contract = payload["account_currency_read_contract"]
     assert currency_contract["status"] == "ready"
     assert currency_contract["currency_code"] == "PLN"
@@ -5207,6 +5218,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_decision["priority"] == 20
     assert campaign_decision["metric_tiles"] == {
         "kampanie": 1,
+        "pilne": 0,
+        "wysokie": 1,
         "kliknięcia": 9,
         "wyświetlenia": 90,
         "koszt": "12.0",
@@ -5214,6 +5227,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     }
     assert campaign_decision["title"] == "Przejrzyj aktywność kampanii Google Ads"
     assert campaign_decision["campaign_rows"][0]["campaign_name"] == "Brand Search"
+    assert campaign_decision["campaign_rows"][0]["review_priority"] == "wysokie"
+    assert campaign_decision["campaign_rows"][0]["review_score"] == 50
     assert campaign_decision["search_term_rows"] == []
     assert campaign_decision["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]

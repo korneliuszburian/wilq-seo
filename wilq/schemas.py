@@ -659,6 +659,12 @@ class AdsCampaignMetricRow(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     missing_metrics: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
+        "niski sygnał"
+    )
+    review_score: int = Field(default=0, ge=0, le=100)
+    review_reason: str = ""
+    human_review_gates: list[str] = Field(default_factory=list)
 
 
 class AdsCampaignReadContract(BaseModel):

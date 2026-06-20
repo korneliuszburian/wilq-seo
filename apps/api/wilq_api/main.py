@@ -1181,6 +1181,11 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
     )
     _limit_contract_rows(
         compact,
+        ("campaign_read_contract", "campaign_rows"),
+        ADS_CONTEXT_DECISION_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
         ("budget_pacing_read_contract", "budget_rows"),
         ADS_CONTEXT_ROW_LIMIT,
     )
@@ -1269,6 +1274,9 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "sections_total": len(sections) if isinstance(sections, list) else 0,
         "decision_row_payloads_omitted": True,
         "campaign_rows_total": len(campaign_rows),
+        "campaign_rows_included": len(
+            _list_at(compact, "campaign_read_contract", "campaign_rows")
+        ),
         "derived_kpi_rows_total": len(kpi_rows),
         "budget_rows_total": len(budget_rows),
         "budget_rows_included": len(
