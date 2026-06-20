@@ -666,7 +666,17 @@ const adsDiagnostics = {
       "recommendation_impact_base_cost_micros",
       "recommendation_impact_potential_cost_micros"
     ],
-    missing_read_contracts: ["change_history", "human_strategy_review"],
+    missing_read_contracts: ["change_history"],
+    operator_review_gates: [
+      "human_strategy_review",
+      "review_recommendation_type",
+      "review_impact_metrics",
+      "review_change_history",
+      "review_business_goal",
+      "recommendation_apply_preview",
+      "google_ads_rmf_compliance_review",
+      "human_confirm_before_apply"
+    ],
     blocked_claims: [
       "recommendation apply",
       "automatic recommendation accept",
@@ -1383,7 +1393,17 @@ const adsDiagnostics = {
         "recommendation_impact_base_cost_micros",
         "recommendation_impact_potential_cost_micros"
       ],
-      missing_read_contracts: ["change_history", "human_strategy_review"],
+      missing_read_contracts: ["change_history"],
+      operator_review_gates: [
+        "human_strategy_review",
+        "review_recommendation_type",
+        "review_impact_metrics",
+        "review_change_history",
+        "review_business_goal",
+        "recommendation_apply_preview",
+        "google_ads_rmf_compliance_review",
+        "human_confirm_before_apply"
+      ],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
@@ -3637,6 +3657,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/ads_scaling_candidates_v1/).length).toBeGreaterThan(0);
     expect(screen.getByText(/wartość_konwersji=120/)).toBeInTheDocument();
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Wymagany review/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/review strategii przez człowieka/).length).toBeGreaterThan(0);
     expect(screen.getByText("bdo rejestracja")).toBeInTheDocument();
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
     expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();

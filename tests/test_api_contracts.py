@@ -534,6 +534,8 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "decision_type": "merge_create_after_inventory_check",
             "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
+            "operator_review_gates": ["google_ads_rmf_compliance_review"],
+            "required_validation": ["google_ads_rmf_compliance_review"],
             "cluster_id": (
                 "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
             ),
@@ -560,6 +562,8 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["decision_type"] == "merge_create_after_inventory_check"
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
+    assert redacted["operator_review_gates"] == ["google_ads_rmf_compliance_review"]
+    assert redacted["required_validation"] == ["google_ads_rmf_compliance_review"]
     assert redacted["cluster_id"] == (
         "merchant_issue_pl_not_impacted_missing_potentially_required_attribute"
     )
@@ -3590,6 +3594,19 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert "impression_share" not in recommendations_contract["missing_read_contracts"]
     assert "change_history" not in recommendations_contract["missing_read_contracts"]
+    assert "human_strategy_review" not in recommendations_contract[
+        "missing_read_contracts"
+    ]
+    assert recommendations_contract["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_recommendation_type",
+        "review_impact_metrics",
+        "review_change_history",
+        "review_business_goal",
+        "recommendation_apply_preview",
+        "google_ads_rmf_compliance_review",
+        "human_confirm_before_apply",
+    ]
     assert recommendations_contract["action_ids"] == [
         "act_prepare_google_ads_recommendation_review_queue"
     ]
@@ -4082,6 +4099,17 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert recommendations_decision["expert_rule_ids"] == [
         "ads_recommendations_v1",
         "ads_principles_v1",
+    ]
+    assert recommendations_decision["missing_read_contracts"] == []
+    assert recommendations_decision["operator_review_gates"] == [
+        "human_strategy_review",
+        "review_recommendation_type",
+        "review_impact_metrics",
+        "review_change_history",
+        "review_business_goal",
+        "recommendation_apply_preview",
+        "google_ads_rmf_compliance_review",
+        "human_confirm_before_apply",
     ]
     assert "recommendation apply" in recommendations_decision["blocked_claims"]
     impression_share_decision = decisions_by_id["ads_review_impression_share"]
@@ -6235,6 +6263,11 @@ def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
     assert "command_center" not in data
     assert "merchant_diagnostics" not in data
     assert "content_diagnostics" not in data
+    action_ids = {action["id"] for action in data["active_action_objects"]}
+    assert action_ids == {
+        "act_prepare_ads_campaign_review_queue",
+        "act_prepare_google_ads_recommendation_review_queue",
+    }
     assert data["content_landing_context"]["source_connectors"] == [
         "google_search_console"
     ]

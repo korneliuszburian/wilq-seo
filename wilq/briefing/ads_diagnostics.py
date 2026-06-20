@@ -74,6 +74,7 @@ CARD_ADS_SEARCH = "card_google_ads_search_playbook"
 CARD_ADS_BUDGET_REVIEW = "card_google_ads_budget_review_playbook"
 CARD_ADS_NEGATIVE_KEYWORDS = "card_google_ads_negative_keywords_playbook"
 CARD_ADS_CUSTOM_SEGMENTS = "card_google_ads_custom_segments_playbook"
+ADS_RECOMMENDATION_HUMAN_REVIEW_GATE = "human_strategy_review"
 
 ADS_SECTION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
     "ads_live_data_status": (
@@ -1189,7 +1190,6 @@ def _recommendations_read_contract(
     missing_read_contracts = [
         "change_history",
         "impression_share",
-        "human_strategy_review",
         "recommendation_apply_preview",
     ]
     if impact_row_count == 0:
@@ -1239,6 +1239,10 @@ def _recommendations_read_contract(
                 "recommendation_impact_potential_conversion_value",
             ],
             missing_read_contracts=missing_read_contracts,
+            operator_review_gates=_recommendation_operator_review_gates(
+                rows_available=bool(rows),
+                payload_preview_ready=bool(payload_preview),
+            ),
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(
@@ -1260,6 +1264,7 @@ def _recommendations_read_contract(
         summary="WILQ nie ma jeszcze read-only facts z zasobu recommendation.",
         allowed_metrics=[],
         missing_read_contracts=["recommendations", *missing_read_contracts],
+        operator_review_gates=[],
         blocked_claims=["Google recommendations", *blocked_claims],
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
@@ -1270,6 +1275,25 @@ def _recommendations_read_contract(
             "Uruchom Google Ads vendor_read z recommendation fields. Nie przyjmuj "
             "ani nie odrzucaj rekomendacji bez osobnego ActionObject."
         ),
+    )
+
+
+def _recommendation_operator_review_gates(
+    *,
+    rows_available: bool,
+    payload_preview_ready: bool,
+) -> list[str]:
+    if not rows_available:
+        return []
+    return _unique(
+        [
+            ADS_RECOMMENDATION_HUMAN_REVIEW_GATE,
+            *(
+                gate
+                for gate in RECOMMENDATION_REVIEW_REQUIRED_VALIDATION
+                if gate != "recommendation_apply_preview" or payload_preview_ready
+            ),
+        ]
     )
 
 
@@ -3238,6 +3262,7 @@ def _ads_decision_queue(
                 next_step=recommendations_read_contract.next_step,
                 allowed_metrics=recommendations_read_contract.allowed_metrics,
                 missing_read_contracts=recommendations_read_contract.missing_read_contracts,
+                operator_review_gates=recommendations_read_contract.operator_review_gates,
                 source_connectors=recommendations_read_contract.source_connectors,
                 evidence_ids=recommendations_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],

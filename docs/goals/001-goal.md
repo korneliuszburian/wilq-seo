@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 07:55 CEST.
+Last updated: 2026-06-20 08:16 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -76,7 +76,7 @@ review-only payload preview from real search terms, but no targeting/apply
 support. Campaign budgets now have review-only `CampaignBudgetOperation`
 payload previews from budget facts, but no budget apply support.
 Full BDOS-class parity still requires optimizer contracts such as
-profit-margin/business-goal interpretation, human strategy review,
+profit-margin/business-goal interpretation, recorded human strategy review outcome,
 pre/post change-impact windows, Keyword Planner enrichment, forecast or
 audience-size checks, custom segment targeting/apply previews, budget apply
 safety, apply confirmation and mutation audit paths, plus real Localo
@@ -116,6 +116,26 @@ recommendations show `rekomendacje=4`, `podgląd wpływu=2`,
 `zapytania=50` and `kliknięcia=7`, because current search-term evidence does
 not contain `cost_micros`. Scoped `wilq-ads-doctor` context-pack carries the
 same fields with no Ads redaction paths.
+
+Ads recommendation review must separate missing read contracts from operator
+review gates. Current live proof after `scripts/local_stack.sh restart`:
+`/api/ads/diagnostics.recommendations_read_contract.missing_read_contracts=[]`
+and the same decision in `decision_queue` has `operator_review_gates`:
+`human_strategy_review`, `review_recommendation_type`, `review_impact_metrics`,
+`review_change_history`, `review_business_goal`, `recommendation_apply_preview`,
+`google_ads_rmf_compliance_review`, `human_confirm_before_apply`. Scoped
+`wilq-ads-doctor` context-pack preserves these gates without `[REDACTED]`.
+This does not unlock apply; it makes the human review gate explicit and
+traceable.
+
+Campaign-builder context-pack must stay workflow-specific. It must not pull
+negative keyword or custom-segment ActionObjects unless the selected workflow
+explicitly needs them. Current focused proof after the Ads review-gate slice:
+`wilq-campaign-builder` context-pack is `191737 bytes` in a fresh API process
+and `active_action_objects` contains only `act_prepare_ads_campaign_review_queue`
+and `act_prepare_google_ads_recommendation_review_queue`. This keeps the
+non-daily skill payload under the 200 KB budget and prevents Codex from mixing
+campaign-building with separate negative/custom-segment workflows.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and
@@ -327,7 +347,9 @@ Current connector truth:
   `change_history_read_contract.status=ready`,
   `recommendations_read_contract.status=ready`,
   `recommendations_read_contract.action_ids=["act_prepare_google_ads_recommendation_review_queue"]`,
-  `recommendations_read_contract.missing_read_contracts=["human_strategy_review"]`,
+  `recommendations_read_contract.missing_read_contracts=[]`,
+  `recommendations_read_contract.operator_review_gates` includes
+  `human_strategy_review` and `google_ads_rmf_compliance_review`,
   `search_term_safety_read_contract.status=ready`,
   `keyword_match_context_read_contract.status=ready`, decisions
   `ads_review_impression_share`, `ads_review_change_history` and
@@ -834,8 +856,11 @@ Work in this order:
    - `wilq-campaign-builder`: `90711 bytes`, cold `1.867s`, warm `0.158s`,
      sources `google_ads`, `google_analytics_4`, `google_search_console`.
      It now uses `ads_diagnostics` plus lightweight `content_landing_context`
-     instead of full `content_diagnostics`, and it no longer pulls Merchant
-     ActionObjects by default.
+     instead of full `content_diagnostics`, and it no longer pulls Merchant,
+     negative keyword or custom-segment ActionObjects by default. Latest fresh
+     API-process proof after Ads review-gate scope cleanup: `191737 bytes`,
+     active actions only `act_prepare_ads_campaign_review_queue` and
+     `act_prepare_google_ads_recommendation_review_queue`.
    - `wilq-demand-gen-operator`: `100349 bytes`, cold `2.574s`, warm `0.156s`,
      sources `google_ads`, `google_analytics_4`; Ads and GA4 diagnostics build
      in parallel and Merchant stays omitted until a concrete Demand Gen/Merchant

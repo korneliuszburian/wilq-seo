@@ -51,7 +51,11 @@ Aktualny proof produktowy:
 - `/api/ads/diagnostics.recommendations_read_contract.status=ready`; impact
   preview jest dostępny dla 2 z 4 rekomendacji, a review-only apply payload
   preview dla 4 z 4 rekomendacji. Brakujący kontrakt pozostaje celowo wąski:
-  `human_strategy_review`.
+  zapisany wynik/akceptacja review strategii przez człowieka. Sam review gate
+  jest już typed: `human_strategy_review`, `review_recommendation_type`,
+  `review_impact_metrics`, `review_change_history`, `review_business_goal`,
+  `recommendation_apply_preview`, `google_ads_rmf_compliance_review`,
+  `human_confirm_before_apply`.
 - `/api/ads/diagnostics.budget_pacing_read_contract.payload_preview` ma 18
   review-only `CampaignBudgetOperation` preview rows. ActionObject
   `act_prepare_ads_campaign_review_queue` ma 8 budżetowych preview rows,
@@ -100,6 +104,21 @@ Aktualny proof produktowy:
   `zapytania=50`, `kliknięcia=7`; `koszt` jest pomijany, gdy bieżący
   search-term evidence nie ma `cost_micros`. Scoped `wilq-ads-doctor`
   context-pack niesie te same `priority` i `metric_tiles` bez redakcji Ads.
+- Ads recommendations nie mieszają już human review z brakującymi read
+  contracts. Live proof po `scripts/local_stack.sh restart`: rekomendacje i
+  decision `ads_review_recommendations` mają `missing_read_contracts=[]` oraz
+  `operator_review_gates` z `human_strategy_review`,
+  `review_recommendation_type`, `review_impact_metrics`,
+  `review_change_history`, `review_business_goal`,
+  `recommendation_apply_preview`, `google_ads_rmf_compliance_review` i
+  `human_confirm_before_apply`. Scoped `wilq-ads-doctor` context-pack zachowuje
+  te gates bez `[REDACTED]`.
+- Scoped `wilq-campaign-builder` context-pack ma workflow-specific
+  `active_action_objects`: tylko `act_prepare_ads_campaign_review_queue` i
+  `act_prepare_google_ads_recommendation_review_queue`. Negative keywords i
+  custom segments zostają w swoich skillach, żeby campaign-builder nie mieszał
+  intencji i trzymał payload poniżej limitu 200 KB. Fresh API-process proof:
+  `191737 bytes`.
 - `/api/opportunities` nie jest już rejestrem connectorów. Live proof po
   `scripts/local_stack.sh restart`: zwraca 4 decision-backed opportunities:
   Merchant feed review, Content refresh queue, GA4 measurement/traffic review
@@ -172,7 +191,19 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Knowledge operating map, 2026-06-20 07:55 CEST.
+1. Ads recommendation review gates and campaign-builder context scope,
+   2026-06-20 08:16 CEST.
+   `/api/ads/diagnostics`, `/ads-doctor` and scoped `wilq-ads-doctor`
+   context-pack now separate missing read contracts from operator review gates
+   for Google Ads recommendations. `human_strategy_review` is no longer a
+   missing read contract when recommendation, impact, change-history,
+   impression-share and apply-preview facts are present; it is exposed as
+   `operator_review_gates` alongside review type, impact, change history,
+   business goal, RMF/compliance and human confirmation gates. Scoped
+   `wilq-campaign-builder` active actions are narrowed to campaign and
+   recommendation review. Apply remains blocked.
+
+2. Knowledge operating map, 2026-06-20 07:55 CEST.
    `/api/knowledge/operating-map` and `/knowledge` now connect knowledge cards,
    machine-readable playbooks and expert rules to operator decisions, routes,
    skills, evidence IDs, ActionObject IDs, blocked claims and missing
@@ -183,7 +214,7 @@ Aktualny maintenance:
    review-only ActionObjects; Localo remains blocked on explicit read
    contracts.
 
-2. Workflows decision contract, 2026-06-20 07:33 CEST.
+3. Workflows decision contract, 2026-06-20 07:33 CEST.
    `/api/workflows` and `/workflows` now expose operator workflows as typed
    WILQ API contracts, not generic automation placeholders. Core workflows are
    derived from daily decisions and carry `status`, `route`, `skill_id`,
@@ -197,7 +228,7 @@ Aktualny maintenance:
    dashboard unit `14 passed`, Playwright e2e `10 passed`, security,
    skill/API smokes and dashboard production build passed.
 
-3. Opportunities decision bridge, 2026-06-20 07:13 CEST.
+4. Opportunities decision bridge, 2026-06-20 07:13 CEST.
    `/api/opportunities`, `/opportunities` and full Codex context-pack
    `top_opportunities` now consume the same daily decisions as Command Center
    instead of the old connector registry cards. Live proof after
@@ -213,7 +244,7 @@ Aktualny maintenance:
    `9 passed`, security, skill/API smokes and dashboard production build
    passed.
 
-4. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
+5. Ads decision metadata bridge, 2026-06-20 06:55 CEST.
    `/api/ads/diagnostics.decision_queue` now exposes explicit `priority` and
    `metric_tiles` for every Ads decision, and `/ads-doctor` renders those tiles
    directly from typed API state. Shared schemas and `wilq-ads-doctor`
@@ -225,19 +256,6 @@ Aktualny maintenance:
    cost when `cost_micros` is absent from evidence instead of showing a false
    `0.00`.
 
-5. GA4 decision metadata bridge, 2026-06-20 06:34 CEST.
-   `/api/ga4/diagnostics.decision_queue` now exposes explicit `status`,
-   `priority` and `metric_tiles` for each GA4 decision, and `/ga4` renders the
-   tiles on decision cards. Live proof after `scripts/local_stack.sh restart`:
-   6 GA4 decisions, 2 `blocked` measurement decisions for `(not set)` rows and
-   4 `ready` traffic-quality review decisions; tiles include `aktywni`,
-   `sesje`, `zdarzenia`, `odsłony` and `engagement`. Scoped
-   `wilq-ga4-analyst` context-pack carries the same fields with no GA4
-   redaction paths, and no `status`/`priority`/`metric_tiles` nulls are present.
-   Full `scripts/verify.sh` passed: backend `117 passed`, dashboard unit
-   `14 passed`, Playwright e2e `9 passed`, security, skill/API smokes and
-   dashboard production build passed.
-
 ## Active Gaps
 
 - Demand Gen cold context-pack is still about `2.6s`; payload and warm runtime
@@ -245,8 +263,8 @@ Aktualny maintenance:
   browser/Codex proof.
 - Full BDOS-class Ads optimizer is not done. Remaining areas include Keyword
   Planner enrichment, forecast/audience size, profit-margin/business-goal
-  interpretation, human strategy review, budget apply safety/confirmation,
-  impact sanity checks and mutation audit.
+  interpretation, recorded human strategy review outcome, budget apply
+  safety/confirmation, impact sanity checks and mutation audit.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety
   requirements are all verified.

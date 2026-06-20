@@ -1842,6 +1842,9 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
   const missingReadContracts = uniqueValues(
     decisions.flatMap((decision) => decision.missing_read_contracts).map(adsMissingReadContractLabel)
   );
+  const operatorReviewGates = uniqueValues(
+    decisions.flatMap((decision) => decision.operator_review_gates).map(adsOperatorReviewGateLabel)
+  );
   const blockedClaims = uniqueValues(
     decisions.flatMap((decision) => decision.blocked_claims).map(adsBlockedClaimLabel)
   );
@@ -1922,6 +1925,7 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
               empty="brak"
             />
             <TraceLine label="Brakujące kontrakty" values={missingReadContracts} empty="brak" />
+            <TraceLine label="Wymagany review" values={operatorReviewGates} empty="brak" />
             <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
             <LinkedTraceLine label="ActionObjecty" values={data.action_ids} kind="actions" />
             <TraceLine label="Nie wolno twierdzić" values={blockedClaims} empty="brak" />
@@ -1981,6 +1985,12 @@ function AdsDecisionCard({
         ) : null}
         {decision.expert_rule_ids.length > 0 ? (
           <TraceLine label="Reguły" values={decision.expert_rule_ids} />
+        ) : null}
+        {decision.operator_review_gates.length > 0 ? (
+          <TraceLine
+            label="Wymagany review"
+            values={decision.operator_review_gates.map(adsOperatorReviewGateLabel)}
+          />
         ) : null}
         <TraceLine label="Nie wolno twierdzić" values={decision.blocked_claims.map(adsBlockedClaimLabel)} />
       </div>
@@ -3015,6 +3025,20 @@ function adsMissingReadContractLabel(value: string) {
     "campaign activity": "aktywność kampanii",
     search_term_view: "widok zapytań użytkowników",
     zero_conversion_search_terms: "terminy z zerową konwersją"
+  };
+  return labels[value] ?? value;
+}
+
+function adsOperatorReviewGateLabel(value: string) {
+  const labels: Record<string, string> = {
+    human_strategy_review: "review strategii przez człowieka",
+    review_recommendation_type: "sprawdzenie typu rekomendacji",
+    review_impact_metrics: "sprawdzenie impact metrics",
+    review_change_history: "sprawdzenie historii zmian",
+    review_business_goal: "sprawdzenie celu biznesowego",
+    recommendation_apply_preview: "podgląd apply rekomendacji",
+    google_ads_rmf_compliance_review: "review Google Ads RMF/compliance",
+    human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem"
   };
   return labels[value] ?? value;
 }

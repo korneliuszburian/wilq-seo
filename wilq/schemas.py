@@ -693,6 +693,7 @@ class AdsRecommendationsReadContract(BaseModel):
     summary: str
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
@@ -998,6 +999,7 @@ class AdsDecisionItem(BaseModel):
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)

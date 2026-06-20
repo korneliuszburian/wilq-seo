@@ -512,6 +512,13 @@ SKILL_KNOWLEDGE_CARD_IDS: dict[str, list[str]] = {
     ],
 }
 
+SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
+    "wilq-campaign-builder": {
+        "act_prepare_ads_campaign_review_queue",
+        "act_prepare_google_ads_recommendation_review_queue",
+    },
+}
+
 SKILL_EXPERT_RULE_IDS: dict[str, list[str]] = {
     "wilq-ads-doctor": [
         "ads_diagnostics_v1",
@@ -543,6 +550,7 @@ def _skill_scoped_context_pack(
     actions = list_actions()
     diagnostics = _diagnostics_for_skill(skill)
     actions = _stateful_context_actions(skill, actions, diagnostics)
+    actions = _actions_for_skill_scope(skill, actions)
     evidence_ids = _evidence_ids_from_context(diagnostics, actions, scoped_connectors)
     scoped_actions = _actions_for_scope(actions, scoped_connectors, evidence_ids)
     evidence_ids.update(
@@ -689,6 +697,13 @@ def _stateful_context_actions(
     ):
         return [action for action in actions if action.id != "act_configure_google_ads_env"]
     return actions
+
+
+def _actions_for_skill_scope(skill: str, actions: list[ActionObject]) -> list[ActionObject]:
+    allowed_action_ids = SKILL_ACTION_ID_SCOPES.get(skill)
+    if not allowed_action_ids:
+        return actions
+    return [action for action in actions if action.id in allowed_action_ids]
 
 
 def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
