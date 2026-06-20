@@ -131,6 +131,9 @@ def build_command_center_brief(
         _content_item_from_diagnostics(content),
         _ga4_item_from_diagnostics(ga4_diagnostics),
     ]
+    ads_business_item = _ads_business_context_item(ads)
+    if ads_business_item is not None:
+        items.append(ads_business_item)
     if localo is not None:
         localo_item = _localo_item(localo, localo_runs)
         if localo_item.status == "blocked":
@@ -153,6 +156,7 @@ def build_command_center_action_plan(
         "daily_content_queue",
         "daily_ga4_landing_quality",
         "daily_ads_status",
+        "daily_ads_business_context",
         "daily_localo_readiness",
     ):
         item = items_by_id.get(item_id)
@@ -207,6 +211,7 @@ def _brief_items_by_plan_id(
         "plan_review_ga4_landing_quality": "daily_ga4_landing_quality",
         "plan_review_ads_campaign_metrics": "daily_ads_status",
         "plan_fix_ads_oauth_before_spend_analysis": "daily_ads_status",
+        "plan_ads_business_context_before_budget_decisions": "daily_ads_business_context",
         "plan_localo_access_ready_wait_for_visibility_facts": "daily_localo_readiness",
         "plan_finish_localo_access_before_local_visibility": "daily_localo_readiness",
     }
@@ -280,6 +285,34 @@ def _ads_metric_tiles(data: AdsDiagnosticsResponse) -> dict[str, float | int | s
     }
 
 
+def _ads_business_context_item(
+    data: AdsDiagnosticsResponse,
+) -> CommandCenterBriefItem | None:
+    if not hasattr(data, "business_context_read_contract"):
+        return None
+    contract = data.business_context_read_contract
+    if not data.live_data_available or contract.status != "blocked":
+        return None
+    return CommandCenterBriefItem(
+        id="daily_ads_business_context",
+        title="Ads: brakuje kontekstu biznesowego do decyzji budżetowych",
+        route="/ads-doctor",
+        status="blocked",
+        priority=18,
+        summary=contract.summary,
+        next_step=contract.next_step,
+        source_connectors=contract.source_connectors,
+        evidence_ids=_limited_ids(contract.evidence_ids),
+        action_ids=[],
+        metric_tiles={
+            "braki": len(contract.missing_read_contracts),
+            **contract.metric_tiles,
+        },
+        blocked_claims=contract.blocked_claims,
+        risk=ActionRisk.medium,
+    )
+
+
 def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
     return (
         "Google Ads ma liczniki do oceny: "
@@ -319,6 +352,7 @@ def _ads_ready_blocked_claims(data: AdsDiagnosticsResponse) -> list[str]:
             *data.recommendations_read_contract.blocked_claims,
             *data.negative_keywords_read_contract.blocked_claims,
             *data.custom_segments_read_contract.blocked_claims,
+            *data.business_context_read_contract.blocked_claims,
             "profitability",
             "wasted budget",
         ]
@@ -897,6 +931,37 @@ def _action_plan_item(
             blocked_claims=item.blocked_claims,
             risk=item.risk,
         )
+    if item.id == "daily_ads_business_context":
+        return CommandCenterActionPlanItem(
+            id="plan_ads_business_context_before_budget_decisions",
+            title="Uzupełnij kontekst biznesowy Ads przed decyzjami budżetowymi",
+            route=item.route,
+            status="blocked",
+            priority=18,
+            category="Google Ads",
+            why_it_matters=(
+                "Ads ma live metryki i kolejki review, ale bez marży, celu biznesowego, "
+                "celu budżetu oraz targetu ROAS albo CPA WILQ nie może uczciwie mówić "
+                "o rentowności, zmarnowanym budżecie ani skalowaniu."
+            ),
+            operator_action=item.next_step,
+            skill_id="wilq-ads-doctor",
+            codex_prompt=(
+                "Użyj skilla wilq-ads-doctor. Wyjaśnij blocker kontekstu biznesowego "
+                "Ads dla Ekologus, wskaż brakujące pola .env i nie twierdź "
+                "rentowności, zmarnowanego budżetu ani skalowania budżetu bez tych danych."
+            ),
+            codex_context_endpoint="/api/codex/context-pack",
+            expected_codex_output=(
+                "Polski blocker handoff Ads z brakującymi polami kontekstu biznesowego, "
+                "evidence IDs i listą claimów, których nie wolno dopowiadać."
+            ),
+            source_connectors=item.source_connectors,
+            evidence_ids=item.evidence_ids,
+            action_ids=item.action_ids,
+            blocked_claims=item.blocked_claims,
+            risk=item.risk,
+        )
     if item.id == "daily_ads_status":
         if item.status == "ready":
             return CommandCenterActionPlanItem(
@@ -1102,6 +1167,11 @@ def _decision_observation(
         evidence_label += "s"
     action_label = _action_count_label(item.action_ids)
     if item.id == "plan_review_ga4_landing_quality" and brief_item is not None:
+        return (
+            f"{brief_item.summary} Źródła={connector_labels}, "
+            f"dowody={evidence_label}, akcje={action_label}."
+        )
+    if item.id == "plan_ads_business_context_before_budget_decisions" and brief_item is not None:
         return (
             f"{brief_item.summary} Źródła={connector_labels}, "
             f"dowody={evidence_label}, akcje={action_label}."

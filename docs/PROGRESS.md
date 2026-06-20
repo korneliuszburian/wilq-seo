@@ -68,6 +68,21 @@ Aktualny proof produktowy:
   `kampanie=18`, `zapytania=50`, `podgląd budżetu=18`, `rekomendacje=4`,
   `wykluczenia=6`, `segmenty=1`. Ten sam prompt i ActionObjecty trafiają do
   scoped `/api/codex/context-pack` dla `wilq-daily-command`.
+- Ads business context nie jest już ukryty tylko w `/ads-doctor`.
+  Live proof po `scripts/local_stack.sh restart`:
+  `/api/dashboard/command-center.blocker_count=2`, a `operator_brief` i
+  `daily_decisions` mają osobny blocked item
+  `daily_ads_business_context` / `decision_ads_business_context_before_budget_decisions`
+  z `braki=4`, `marża=brak`, `cel biznesowy=brak`, `cel budżetu=brak` oraz
+  blocked claims `profitability`, `margin verdict`, `budget scaling`,
+  `budget apply`, `recommendation apply`, `wasted budget`. Ten sam blocker
+  jest w `/api/marketing/brief.what_blocks_us` i scoped
+  `wilq-daily-command` context-pack, bez dołączania pełnego
+  `ads_diagnostics`. Downstream registry surfaces pozostają decyzjami
+  operacyjnymi: `/api/opportunities` nadal ma 4 action-backed opportunities
+  bez czystego Ads business blockera, a `/api/workflows` i
+  `/api/knowledge/operating-map` wybierają `ads_daily_check` jako `ready`
+  Ads review queue z 4 ActionObjectami.
 - Command Center tłumaczy teraz marketer-facing blocked claims w ogólnych
   kartach decyzyjnych/tactical/brief: API nadal niesie stabilne raw
   `blocked_claims`, ale UI pokazuje np. `ponowne zatwierdzenie produktu`,

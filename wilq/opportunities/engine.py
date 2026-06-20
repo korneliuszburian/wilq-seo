@@ -182,7 +182,7 @@ def _daily_decision_opportunities() -> list[Opportunity]:
     opportunities = [
         _opportunity_from_daily_decision(decision)
         for decision in runtime.command_center.daily_decisions
-        if decision.evidence_ids and decision.source_connectors
+        if decision.evidence_ids and decision.source_connectors and decision.action_ids
     ]
     return sorted(opportunities, key=lambda item: (_opportunity_sort_priority(item), item.id))
 

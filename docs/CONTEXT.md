@@ -40,6 +40,17 @@ Audit `docs/audits/001-output.md` is now folded into
    `ads_review_business_context.priority=22`, context-pack bytes for
    `wilq-ads-doctor` = 186844.
 
+0. Ads business context cockpit truth, 2026-06-20 10:28 Europe/Warsaw:
+   the Ads business blocker is now propagated beyond `/ads-doctor`.
+   `/api/dashboard/command-center` has `blocker_count=2`, keeps the Ads review
+   queue as `ready`, and adds blocked
+   `daily_ads_business_context` / `decision_ads_business_context_before_budget_decisions`
+   with `braki=4`, `marża=brak`, `cel biznesowy=brak` and `cel budżetu=brak`.
+   `/api/marketing/brief.what_blocks_us` and scoped `wilq-daily-command`
+   context-pack carry the same blocker. Daily Codex must not claim
+   profitability, margin verdict, wasted budget or budget scaling while these
+   business targets are missing.
+
 0. Ads recommendation apply-preview truth, 2026-06-20 00:20 Europe/Warsaw:
    Google Ads recommendation review now has a typed review-only apply payload
    preview in `/api/ads/diagnostics`, `/api/actions`,

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 10:12 CEST.
+Last updated: 2026-06-20 10:28 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -95,6 +95,15 @@ metric tiles `braki=4`, `blokady=6`, `ustawione pola=0`, and Ads
 scoped context-pack with `context_pack_bytes=186844`, still below the 200 KB
 budget. The next Ads optimizer step is to set or model those business targets,
 then use them in conservative review-only scoring without unlocking apply.
+This blocker is now also propagated into the daily cockpit, not only
+`/ads-doctor`: `/api/dashboard/command-center.blocker_count=2`, Ads review
+stays `ready`, and separate blocked
+`daily_ads_business_context` / `decision_ads_business_context_before_budget_decisions`
+shows `braki=4`, `marża=brak`, `cel biznesowy=brak`, `cel budżetu=brak`.
+The same blocker appears in `/api/marketing/brief.what_blocks_us` and scoped
+`wilq-daily-command` context-pack. Daily Codex must not claim profitability,
+margin verdict, wasted budget or budget scaling while these business targets
+are missing.
 
 Command Center is being held to the Polish marketer cockpit bar: stable API
 fields such as `evidence_ids` remain unchanged, but marketer-facing labels must

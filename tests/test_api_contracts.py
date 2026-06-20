@@ -1376,6 +1376,15 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "negative keyword candidates" not in ads_item["blocked_claims"]
     assert "act_prepare_ads_campaign_review_queue" in ads_item["action_ids"]
     assert "act_prepare_google_ads_recommendation_review_queue" in ads_item["action_ids"]
+    ads_business_item = brief_by_id["daily_ads_business_context"]
+    assert ads_business_item["status"] == "blocked"
+    assert ads_business_item["priority"] == 18
+    assert "kontekstu biznesowego" in ads_business_item["title"]
+    assert ads_business_item["metric_tiles"]["braki"] == 4
+    assert ads_business_item["metric_tiles"]["marża"] == "brak"
+    assert ads_business_item["metric_tiles"]["cel biznesowy"] == "brak"
+    assert "profitability" in ads_business_item["blocked_claims"]
+    assert "wasted budget" in ads_business_item["blocked_claims"]
 
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
     ads_plan = plan_by_id["plan_review_ads_campaign_metrics"]
@@ -1387,6 +1396,15 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "Użyj skilla wilq-ads-doctor" in ads_plan["codex_prompt"]
     assert "zablokowanymi claimami" in ads_plan["expected_codex_output"]
     assert ads_plan["blocked_claims"] == ads_item["blocked_claims"]
+    ads_business_plan = plan_by_id["plan_ads_business_context_before_budget_decisions"]
+    assert ads_business_plan["status"] == "blocked"
+    assert ads_business_plan["title"] == (
+        "Uzupełnij kontekst biznesowy Ads przed decyzjami budżetowymi"
+    )
+    assert "marży, celu biznesowego" in ads_business_plan["why_it_matters"]
+    assert "WILQ_ADS_PROFIT_MARGIN" in ads_business_plan["operator_action"]
+    assert "rentowności" in ads_business_plan["codex_prompt"]
+    assert ads_business_plan["blocked_claims"] == ads_business_item["blocked_claims"]
 
     decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
     ads_decision = decisions_by_id["decision_review_ads_campaign_metrics"]
@@ -1394,6 +1412,20 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_decision["metric_tiles"]["rekomendacje"] == 1
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
+    ads_business_decision = decisions_by_id[
+        "decision_ads_business_context_before_budget_decisions"
+    ]
+    assert ads_business_decision["status"] == "blocked"
+    assert ads_business_decision["metric_tiles"]["braki"] == 4
+    assert "Bez tego KPI są tylko triage" in ads_business_decision["co_widzimy"]
+    assert ads_business_decision["blocked_claims"] == ads_business_item["blocked_claims"]
+
+    brief_response = client.get("/api/marketing/brief")
+    assert brief_response.status_code == 200
+    sections_by_id = {section["id"]: section for section in brief_response.json()["sections"]}
+    blockers = sections_by_id["what_blocks_us"]
+    blocker_titles = {item["title"] for item in blockers["items"]}
+    assert "Uzupełnij kontekst biznesowy Ads przed decyzjami budżetowymi" in blocker_titles
 
 
 def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(

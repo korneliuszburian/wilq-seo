@@ -196,9 +196,7 @@ WORKFLOW_BLUEPRINTS: tuple[WorkflowBlueprint, ...] = (
 
 def list_workflows() -> list[Workflow]:
     runtime = build_daily_runtime()
-    decisions_by_route = {
-        decision.route: decision for decision in runtime.command_center.daily_decisions
-    }
+    decisions_by_route = _best_decisions_by_route(runtime.command_center.daily_decisions)
     workflows = [_daily_command_workflow(runtime.command_center.daily_decisions)]
 
     for route, workflow_id in DECISION_WORKFLOW_BY_ROUTE.items():
@@ -208,6 +206,27 @@ def list_workflows() -> list[Workflow]:
 
     workflows.extend(_workflow_from_blueprint(blueprint) for blueprint in WORKFLOW_BLUEPRINTS)
     return sorted(workflows, key=_workflow_sort_key)
+
+
+def _best_decisions_by_route(decisions: list[DailyDecision]) -> dict[str, DailyDecision]:
+    selected: dict[str, DailyDecision] = {}
+    for decision in decisions:
+        current = selected.get(decision.route)
+        if current is None or _decision_route_rank(decision) < _decision_route_rank(current):
+            selected[decision.route] = decision
+    return selected
+
+
+def _decision_route_rank(decision: DailyDecision) -> tuple[int, int]:
+    if decision.status == "ready" and decision.action_ids:
+        status_rank = 0
+    elif decision.status == "ready":
+        status_rank = 1
+    elif decision.action_ids:
+        status_rank = 2
+    else:
+        status_rank = 3
+    return (status_rank, decision.priority)
 
 
 def _daily_command_workflow(decisions: list[DailyDecision]) -> Workflow:
