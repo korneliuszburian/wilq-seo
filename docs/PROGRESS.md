@@ -128,6 +128,12 @@ Aktualny proof produktowy:
   custom segments zostają w swoich skillach, żeby campaign-builder nie mieszał
   intencji i trzymał payload poniżej limitu 200 KB. Fresh API-process proof:
   `191737 bytes`.
+- Scoped `wilq-ads-doctor` context-pack wrócił poniżej non-daily skill budget.
+  Live proof po `scripts/local_stack.sh restart`: payload over the wire
+  `174292 bytes`, smoke-reported `context_pack_bytes=183152`; `sections` i
+  zduplikowane row payloads w `decision_queue` są pominięte, budget preview w
+  kontrakcie jest ograniczony do 4 rows, a full endpoint pointer zostaje
+  `/api/ads/diagnostics`.
 - Scoped `wilq-demand-gen-operator` context-pack jest teraz honest-blocked:
   `160734 bytes`, `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`
   i `demand_gen_readiness.status=blocked`. Missing read contracts są jawne i
@@ -199,7 +205,8 @@ Aktualny proof produktowy:
   ma `priority=21` i `metric_tiles.zgłoszenia=892`.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
-- Pełny `scripts/verify.sh` przeszedł po Ads intent review-gates slice:
+- Pełny `scripts/verify.sh` przeszedł po Ads scoped context-pack compaction
+  slice:
   backend API contracts `119 passed`, dashboard route tests `14 passed`,
   Playwright e2e `11 passed`, security, skill/API smokes i dashboard production
   build passed.
@@ -212,7 +219,15 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ads intent review gates, 2026-06-20 09:35 CEST.
+1. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
+   `wilq-ads-doctor` context-pack no longer ships duplicated Ads sections or
+   row payloads inside `decision_queue`. Live proof: 174292 bytes over the wire
+   and smoke-reported `context_pack_bytes=183152`; `sections_omitted=true`,
+   `decision_row_payloads_omitted=true`, budget payload preview included rows
+   capped at 4, full endpoint pointer preserved. The smoke script now fails if
+   `wilq-ads-doctor` exceeds 200 KB.
+
+2. Ads intent review gates, 2026-06-20 09:35 CEST.
    Search-term safety, keyword match context and negative keyword review now
    expose `human_intent_review` as `operator_review_gates` instead of a missing
    read contract when supporting Ads evidence exists. Live proof:
@@ -224,7 +239,7 @@ Aktualny maintenance:
    `14 passed`, Playwright `11 passed`, skill/API smokes and production build
    passed.
 
-2. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
+3. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
    `LocaloDecisionItem` now exposes typed `priority` and `metric_tiles`, with
    the Zod schema, `/localo` UI and API tests updated. Live proof after stack
    restart: 2 decisions, no null priorities, no empty metric tiles;
@@ -233,7 +248,7 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-3. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
+4. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
    `MerchantDecisionItem` now exposes typed `priority` and numeric
    `metric_tiles`, with the Zod schema, `/merchant` UI and API tests updated.
    Live proof after stack restart: 8 decisions, no null priorities, no empty
@@ -241,23 +256,11 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-4. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
+5. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
    Scoped `wilq-demand-gen-operator` context-pack no longer exposes adjacent
    GA4/negative/custom-segment ActionObjects as Demand Gen actions. It now has
    `demand_gen_readiness.status=blocked`, explicit missing Demand Gen read
    contracts, no active actions and payload about `160734 bytes`.
-
-5. Ads recommendation review gates and campaign-builder context scope,
-   2026-06-20 08:16 CEST.
-   `/api/ads/diagnostics`, `/ads-doctor` and scoped `wilq-ads-doctor`
-   context-pack now separate missing read contracts from operator review gates
-   for Google Ads recommendations. `human_strategy_review` is no longer a
-   missing read contract when recommendation, impact, change-history,
-   impression-share and apply-preview facts are present; it is exposed as
-   `operator_review_gates` alongside review type, impact, change history,
-   business goal, RMF/compliance and human confirmation gates. Scoped
-   `wilq-campaign-builder` active actions are narrowed to campaign and
-   recommendation review. Apply remains blocked.
 
 ## Active Gaps
 

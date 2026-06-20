@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 09:35 CEST.
+Last updated: 2026-06-20 09:46 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -150,6 +150,15 @@ and `active_action_objects` contains only `act_prepare_ads_campaign_review_queue
 and `act_prepare_google_ads_recommendation_review_queue`. This keeps the
 non-daily skill payload under the 200 KB budget and prevents Codex from mixing
 campaign-building with separate negative/custom-segment workflows.
+
+`wilq-ads-doctor` scoped context-pack must stay under the non-daily skill budget
+without losing Ads decision state. Current live proof after
+`scripts/local_stack.sh restart`: `POST /api/codex/context-pack` for
+`wilq-ads-doctor` is `174292 bytes` over the wire, smoke-reported
+`context_pack_bytes=183152`, keeps 11 Ads decisions, omits duplicate `sections`
+and row payloads inside `decision_queue`, caps budget payload preview rows to 4,
+keeps source evidence/action IDs, and preserves the full endpoint pointer:
+`/api/ads/diagnostics`.
 
 Demand Gen must stay honest until WILQ has Demand Gen-specific evidence and
 ActionObjects. It must not present GA4 tracking review, negative keyword review
@@ -659,7 +668,7 @@ These are the current reasons Goal 001 is not complete:
    drafting can be prepare-only and evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the 2026-06-20 Ads intent review-gates
+   `scripts/verify.sh` passed after the 2026-06-20 Ads context-pack compaction
    slice: backend API contracts `119 passed`, dashboard route tests
    `14 passed`, Playwright e2e `11 passed`, security, skill/API smokes and
    dashboard production build passed. Keep this file current after every future
@@ -925,6 +934,10 @@ Work in this order:
    - `wilq-merchant-feed-operator`: `24007 bytes`, cold `1.819s`, warm
      `0.153s`.
    - `wilq-ads-doctor`: `185126 bytes`, cold `1.392s`, warm `0.156s`.
+     Latest live follow-up after Ads context-pack compaction:
+     `174292 bytes` over the wire, smoke-reported `context_pack_bytes=183152`,
+     duplicate `sections` and decision row payloads omitted, full Ads endpoint
+     pointer preserved.
    - `wilq-custom-segments`: `187121 bytes`, cold `1.408s`, warm `0.194s`.
    - `wilq-daily-command`: `120504 bytes`, cold `1.918s`, warm `0.236s`.
    Focused ruff, mypy, context-pack API tests and live smoke scripts for

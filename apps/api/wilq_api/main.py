@@ -1022,6 +1022,16 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ("budget_pacing_read_contract", "budget_rows"),
         ADS_CONTEXT_ROW_LIMIT,
     )
+    budget_payload_preview = _list_at(
+        compact,
+        "budget_pacing_read_contract",
+        "payload_preview",
+    )
+    _limit_contract_rows(
+        compact,
+        ("budget_pacing_read_contract", "payload_preview"),
+        ADS_CONTEXT_DECISION_ROW_LIMIT,
+    )
     _limit_contract_rows(
         compact,
         ("search_terms_read_contract", "search_term_rows"),
@@ -1083,14 +1093,23 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ("negative_keywords_read_contract", "candidates"),
     )
     _limit_decision_rows(compact)
+    _omit_decision_row_payloads(compact)
+    sections = compact.pop("sections", [])
     compact["context_pack_compaction"] = {
         "metric_facts_removed": True,
+        "sections_omitted": True,
         "full_endpoint": "/api/ads/diagnostics",
+        "sections_total": len(sections) if isinstance(sections, list) else 0,
+        "decision_row_payloads_omitted": True,
         "campaign_rows_total": len(campaign_rows),
         "derived_kpi_rows_total": len(kpi_rows),
         "budget_rows_total": len(budget_rows),
         "budget_rows_included": len(
             _list_at(compact, "budget_pacing_read_contract", "budget_rows")
+        ),
+        "budget_payload_preview_total": len(budget_payload_preview),
+        "budget_payload_preview_included": len(
+            _list_at(compact, "budget_pacing_read_contract", "payload_preview")
         ),
         "search_term_rows_total": len(search_term_rows),
         "search_term_rows_included": len(
@@ -1214,6 +1233,8 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     compact_payload = dict(payload)
     for key in (
         "campaign_candidates",
+        "budget_payload_preview",
+        "recommendations",
         "terms",
         "source_terms",
         "payload_preview",
@@ -1288,6 +1309,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
             "campaign_rows",
             "derived_kpi_rows",
             "budget_rows",
+            "budget_apply_preview",
             "recommendation_rows",
             "recommendation_apply_preview",
             "impression_share_rows",
@@ -1323,6 +1345,33 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
                 ]
             if isinstance(candidate, dict):
                 candidate.pop("payload_preview", None)
+
+
+def _omit_decision_row_payloads(data: dict[str, Any]) -> None:
+    for decision in _list_at(data, "decision_queue"):
+        if not isinstance(decision, dict):
+            continue
+        for rows_key in (
+            "campaign_rows",
+            "derived_kpi_rows",
+            "budget_rows",
+            "budget_apply_preview",
+            "recommendation_rows",
+            "recommendation_apply_preview",
+            "impression_share_rows",
+            "change_history_rows",
+            "search_term_rows",
+            "search_term_safety_rows",
+            "keyword_match_context_rows",
+            "custom_segment_candidates",
+            "custom_segment_payload_preview",
+            "negative_keyword_candidates",
+            "negative_keyword_payload_preview",
+        ):
+            rows = decision.get(rows_key)
+            if isinstance(rows, list):
+                decision[f"{rows_key}_total"] = len(rows)
+                decision[rows_key] = []
 
 
 def _evidence_ids_from_context(

@@ -10,6 +10,7 @@ from typing import Any
 
 SKILL_NAME = "wilq-ads-doctor"
 REQUIRED_CONNECTORS = ["google_ads"]
+MAX_CONTEXT_PACK_BYTES = 200_000
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
     "connector_status",
@@ -48,6 +49,11 @@ def main() -> int:
         raise SystemExit(f"WILQ API health is not ok: {health}")
 
     pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
+    pack_bytes = len(json.dumps(pack, ensure_ascii=False).encode())
+    if pack_bytes >= MAX_CONTEXT_PACK_BYTES:
+        raise SystemExit(
+            f"{SKILL_NAME} context-pack exceeds budget: {pack_bytes} bytes"
+        )
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
@@ -594,6 +600,7 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "context_pack_bytes": pack_bytes,
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])
