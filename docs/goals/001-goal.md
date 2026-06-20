@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 16:35 CEST.
+Last updated: 2026-06-20 16:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -220,23 +220,27 @@ keeps source evidence/action IDs, and preserves the full endpoint pointer:
 
 Demand Gen must stay honest until WILQ has Demand Gen-specific evidence and
 ActionObjects. It must not present GA4 tracking review, negative keyword review
-or custom segment review as Demand Gen actions. Current focused proof:
-after restarting the 8000 API process, `wilq-demand-gen-operator` context-pack
-has `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`, and
-`demand_gen_readiness.status=blocked` with `campaign_rows_evaluated=18`,
+or custom segment review as Demand Gen actions. Current live proof after
+`scripts/local_stack.sh restart`: dedicated endpoint
+`GET /api/demand-gen/diagnostics`, dashboard route `/ads-doctor/demand-gen`
+and scoped `wilq-demand-gen-operator` context-pack all expose the same blocked
+readiness contract: `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`,
+`demand_gen_readiness.status=blocked`, `campaign_rows_evaluated=18`,
 `campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}` and
-`demand_gen_campaign_rows=[]`. `demand_gen_campaign_rows` is now an available
-read contract when campaign channel facts exist; it must not be listed as
-missing in that state. Remaining missing read contracts are
+`demand_gen_campaign_rows=[]`. `/ads-doctor/demand-gen` must not fall back to
+generic registry sections such as `Evidence Registry` or `Connector Refresh Runs`.
+`demand_gen_campaign_rows` is now an available read contract when campaign
+channel facts exist; it must not be listed as missing in that state.
+Remaining missing read contracts are
 `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
 `demand_gen_landing_quality_by_campaign`, `demand_gen_migration_constraints`
 and `demand_gen_action_object`. These IDs must not be redacted; they are
 product contracts, not secrets. The `wilq-demand-gen-operator` smoke script
 must fail if adjacent ActionObjects are again exposed as active Demand Gen
-actions or if channel-bearing campaign rows are reported as missing. Latest
-full `scripts/verify.sh` passed after the content decision metadata slice:
-backend `123 passed`, dashboard unit `15 passed`, Playwright e2e `12 passed`,
-dashboard build OK.
+actions or if channel-bearing campaign rows are reported as missing. Focused
+route proof passed: API contract tests for Demand Gen, dashboard unit route
+test, Demand Gen Playwright route smoke, full `dashboard-api.spec.ts` with
+`12 passed`, and live skill smoke.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and

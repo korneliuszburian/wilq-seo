@@ -107,6 +107,24 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("configured", { exact: true })).toHaveCount(0);
   });
 
+  test("demand gen route exposes readiness blocker instead of generic registry", async ({ page }) => {
+    await page.goto("/ads-doctor/demand-gen");
+
+    await expect(page.getByRole("heading", { name: "Demand Gen", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status Demand Gen / Ads + GA4 evidence" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Co marketer ma wiedzieć przed planem Demand Gen" })
+    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Demand Gen" })).toBeVisible();
+    await expect(page.getByText("Kampanie Ads")).toBeVisible();
+    await expect(page.getByText("Brakujące kontrakty").first()).toBeVisible();
+    await expect(page.getByText("Demand Gen ActionObject").first()).toBeVisible();
+    await expect(page.getByText("rekomendacja launchu Demand Gen").first()).toBeVisible();
+    await expect(page.getByText("API-backed operating surface")).toHaveCount(0);
+    await expect(page.getByText("Evidence Registry")).toHaveCount(0);
+    await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
+  });
+
   test("ga4 route exposes metric-backed workflow focus", async ({ page }) => {
     await page.goto("/ga4");
 

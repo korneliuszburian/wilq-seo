@@ -45,6 +45,7 @@ import {
   getContentDiagnostics,
   getConnectorRefreshRuns,
   getConnectors,
+  getDemandGenDiagnostics,
   getEvidence,
   getExpertRules,
   getGa4Diagnostics,
@@ -3549,6 +3550,197 @@ function ga4BlockedClaimLabels(claims: string[]) {
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }
 
+function DemandGenDiagnosticSurface() {
+  const diagnostics = useQuery({
+    queryKey: ["demand-gen-diagnostics"],
+    queryFn: getDemandGenDiagnostics
+  });
+
+  if (diagnostics.isLoading) return <LoadingBand />;
+  if (diagnostics.error || !diagnostics.data) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+        <BlockerNotice message="Nie udało się odczytać /api/demand-gen/diagnostics. Demand Gen route nie może udawać gotowości migracji ani jakości kreacji bez WILQ API." />
+      </main>
+    );
+  }
+
+  const data = diagnostics.data;
+  const channelEntries = Object.entries(data.campaign_channel_counts);
+  const demandGenRowCount = data.demand_gen_campaign_rows.length;
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Demand Gen</h1>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Dedykowany widok Demand Gen z WILQ API. Oddziela kontekst kampanii
+            Ads i GA4 od prawdziwych kontraktów Demand Gen: assetów, kreacji,
+            jakości landingów per kampania, ograniczeń migracji i ActionObject.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+          <MetricTile label="Kampanie Ads" value={data.campaign_rows_evaluated} />
+          <MetricTile label="Kanały" value={channelEntries.length} />
+          <MetricTile label="Demand Gen rows" value={demandGenRowCount} />
+          <MetricTile label="Braki" value={data.missing_read_contracts.length} />
+        </div>
+      </div>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Status Demand Gen / Ads + GA4 evidence
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+              {data.summary}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <StatusBadge value={data.status === "blocked" ? "zablokowane" : "gotowe"} />
+            <StatusBadge value={data.risk} />
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+              Operator Demand Gen
+            </div>
+            <h2 className="mt-1 text-base font-semibold tracking-normal">
+              Co marketer ma wiedzieć przed planem Demand Gen
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              WILQ może użyć Ads i GA4 jako kontekstu, ale nie może polecić
+              launchu, migracji ani jakości kreacji bez osobnych rekordów
+              Demand Gen i review-only ActionObject.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center text-xs">
+            {channelEntries.slice(0, 4).map(([channel, count]) => (
+              <MetricTile key={channel} label={demandGenChannelLabel(channel)} value={count} />
+            ))}
+          </div>
+        </div>
+
+        {demandGenRowCount > 0 ? (
+          <div className="grid gap-3">
+            {data.demand_gen_campaign_rows.slice(0, 4).map((row) => (
+              <article key={row.campaign_id} className="rounded-md border border-line bg-slate-50 p-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-semibold text-ink">{row.campaign_name}</h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {row.advertising_channel_type} / {row.campaign_status}
+                    </p>
+                  </div>
+                  <StatusBadge value="do review" />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <MetricTile label="Kliknięcia" value={row.clicks ?? "brak"} />
+                  <MetricTile label="Wyświetlenia" value={row.impressions ?? "brak"} />
+                  <MetricTile label="Koszt" value={adsCost(row.cost_micros)} />
+                  <MetricTile label="Konwersje" value={row.conversions ?? "brak"} />
+                </div>
+                <div className="mt-3 text-xs text-slate-600">
+                  <LinkedTraceLine label="Dowody" values={row.evidence_ids.slice(0, 3)} kind="evidence" />
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <BlockerNotice message="W bieżącym evidence Ads nie ma kampanii Demand Gen ani Discovery. WILQ może pokazać kanały konta, ale nie stworzy rekomendacji Demand Gen z kampanii, których nie widzi w danych." />
+        )}
+      </section>
+
+      <section className="rounded-md border border-line bg-white p-4">
+        <div className="mb-3 flex items-start gap-3">
+          <div className="mt-0.5 rounded-md border border-line bg-white p-2 text-action">
+            <ShieldAlert aria-hidden="true" size={18} />
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+              Dowody i ograniczenia Demand Gen
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+              To jest kontrakt gotowości, nie kreator kampanii. Brakujące
+              kontrakty są jawne i muszą powstać w API przed rekomendacjami.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-2 text-xs text-slate-600">
+          <TraceLine
+            label="Dostępne kontrakty"
+            values={data.available_read_contracts.map(demandGenContractLabel)}
+          />
+          <TraceLine
+            label="Brakujące kontrakty"
+            values={data.missing_read_contracts.map(demandGenContractLabel)}
+          />
+          <TraceLine label="Źródła" values={data.source_connectors} />
+          <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
+          <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" empty="brak" />
+          <TraceLine
+            label="Bramki operatora"
+            values={data.operator_review_gates.map(demandGenContractLabel)}
+          />
+          <TraceLine
+            label="Nie wolno twierdzić"
+            values={demandGenBlockedClaimLabels(data.blocked_claims)}
+          />
+        </div>
+        <p className="mt-4 text-sm font-medium text-ink">{data.next_step}</p>
+      </section>
+    </main>
+  );
+}
+
+function demandGenChannelLabel(channel: string) {
+  const labels: Record<string, string> = {
+    DEMAND_GEN: "Demand Gen",
+    DISCOVERY: "Discovery",
+    PERFORMANCE_MAX: "PMax",
+    SEARCH: "Search",
+    UNKNOWN: "unknown"
+  };
+  return labels[channel] ?? channel;
+}
+
+function demandGenContractLabel(contract: string) {
+  const labels: Record<string, string> = {
+    demand_gen_action_object: "Demand Gen ActionObject",
+    demand_gen_asset_group_rows: "asset group rows",
+    demand_gen_campaign_rows: "wiersze kampanii Demand Gen/Discovery",
+    demand_gen_creative_asset_rows: "creative asset rows",
+    demand_gen_landing_quality_by_campaign: "jakość landingów per kampania",
+    demand_gen_migration_constraints: "ograniczenia migracji",
+    demand_gen_specific_evidence_required: "wymagane konkretne evidence Demand Gen",
+    ga4_landing_source_campaign_quality: "GA4 landing/source/campaign quality",
+    google_ads_budget_context: "kontekst budżetowy Google Ads",
+    google_ads_campaign_activity: "aktywność kampanii Google Ads",
+    google_ads_impression_share_context: "udział w wyświetleniach Google Ads",
+    human_confirm_before_apply: "potwierdzenie człowieka przed apply",
+    human_strategy_review: "review strategii przez człowieka"
+  };
+  return labels[contract] ?? contract;
+}
+
+function demandGenBlockedClaimLabels(claims: string[]) {
+  const labels: Record<string, string> = {
+    "asset performance verdict": "werdykt performance assetów",
+    "campaign apply": "wdrożenie kampanii",
+    "creative quality verdict": "werdykt jakości kreacji",
+    "Demand Gen launch recommendation": "rekomendacja launchu Demand Gen",
+    "Demand Gen migration ready": "gotowość migracji Demand Gen",
+    "performance uplift": "wzrost performance"
+  };
+  return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
+}
+
 function LocaloDiagnosticSurface() {
   const diagnostics = useQuery({
     queryKey: ["localo-diagnostics"],
@@ -5489,6 +5681,9 @@ const generatedRoutes = operatingRoutes.map((path) =>
     component: () => {
       if (path === "/ads-doctor") {
         return <AdsDoctorSurface />;
+      }
+      if (path === "/ads-doctor/demand-gen") {
+        return <DemandGenDiagnosticSurface />;
       }
       if (path === "/ga4") {
         return <Ga4DiagnosticSurface />;

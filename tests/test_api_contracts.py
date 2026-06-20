@@ -7067,6 +7067,28 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
 
 
+def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
+    response = client.get("/api/demand-gen/diagnostics")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "blocked"
+    assert data["source_connectors"] == ["google_ads", "google_analytics_4"]
+    assert data["action_ids"] == []
+    assert isinstance(data["campaign_rows_evaluated"], int)
+    assert isinstance(data["campaign_channel_counts"], dict)
+    assert isinstance(data["demand_gen_campaign_rows"], list)
+    if data["campaign_rows_evaluated"] > 0:
+        assert "demand_gen_campaign_rows" in data["available_read_contracts"]
+        assert "demand_gen_campaign_rows" not in data["missing_read_contracts"]
+    assert "demand_gen_asset_group_rows" in data["missing_read_contracts"]
+    assert "demand_gen_creative_asset_rows" in data["missing_read_contracts"]
+    assert "demand_gen_landing_quality_by_campaign" in data["missing_read_contracts"]
+    assert "demand_gen_migration_constraints" in data["missing_read_contracts"]
+    assert "demand_gen_action_object" in data["missing_read_contracts"]
+    assert "Demand Gen launch recommendation" in data["blocked_claims"]
+
+
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:
     response = client.post("/api/codex/context-pack", json={"skill": "wilq-daily-command"})
     assert response.status_code == 200

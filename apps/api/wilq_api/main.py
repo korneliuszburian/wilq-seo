@@ -831,6 +831,15 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
     }
 
 
+def _build_demand_gen_readiness_contract() -> DemandGenReadinessContract:
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        ads_future = executor.submit(build_ads_diagnostics)
+        ga4_future = executor.submit(build_ga4_diagnostics)
+        ads_diagnostics = ads_future.result().model_dump(mode="json")
+        ga4_diagnostics = ga4_future.result().model_dump(mode="json")
+    return _demand_gen_readiness_contract(ads_diagnostics, ga4_diagnostics)
+
+
 def _demand_gen_readiness_contract(
     ads_diagnostics: dict[str, Any],
     ga4_diagnostics: dict[str, Any],
@@ -1697,6 +1706,11 @@ def localo_diagnostics() -> LocaloDiagnosticsResponse:
 @app.get("/api/ahrefs/diagnostics", response_model=AhrefsDiagnosticsResponse)
 def ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
     return build_ahrefs_diagnostics()
+
+
+@app.get("/api/demand-gen/diagnostics", response_model=DemandGenReadinessContract)
+def demand_gen_diagnostics() -> DemandGenReadinessContract:
+    return _build_demand_gen_readiness_contract()
 
 
 @app.get("/api/opportunities", response_model=list[Opportunity])

@@ -34,6 +34,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Demand Gen diagnostics route, 2026-06-20 16:55 CEST.
+  Demand Gen nie wpada już w generyczny registry surface. Dodano
+  `GET /api/demand-gen/diagnostics`, a `/ads-doctor/demand-gen` renderuje ten
+  sam readiness contract co `wilq-demand-gen-operator` context-pack:
+  `status=blocked`, `campaign_rows_evaluated=18`,
+  `campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}`,
+  `demand_gen_campaign_rows=[]`, `action_ids=[]`. `demand_gen_campaign_rows`
+  jest available, a brakujące kontrakty to asset groups, creative assets,
+  landing quality per campaign, migration constraints i Demand Gen ActionObject.
+  Route pokazuje to marketerowi jako blocker kontraktów, nie jako gotową
+  rekomendację launch/migration.
 - Localo metric fact evidence selection, 2026-06-20 16:35 CEST.
   Naprawiono regresję, w której późniejsze probe'y Localo `401` wypełniały
   limit `list_metric_facts` i Command Center pokazywało `frazy=0` mimo

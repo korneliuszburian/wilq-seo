@@ -3290,6 +3290,51 @@ const ahrefsDiagnostics = {
   blocker_count: 1
 };
 
+const demandGenDiagnostics = {
+  status: "blocked",
+  summary:
+    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu, ale nadal nie ma Demand Gen-specific read contractów dla assetów, kreacji, landing quality per campaign, migracji i ActionObject.",
+  available_read_contracts: [
+    "google_ads_campaign_activity",
+    "google_ads_budget_context",
+    "google_ads_impression_share_context",
+    "ga4_landing_source_campaign_quality",
+    "demand_gen_campaign_rows"
+  ],
+  missing_read_contracts: [
+    "demand_gen_asset_group_rows",
+    "demand_gen_creative_asset_rows",
+    "demand_gen_landing_quality_by_campaign",
+    "demand_gen_migration_constraints",
+    "demand_gen_action_object"
+  ],
+  blocked_claims: [
+    "Demand Gen launch recommendation",
+    "Demand Gen migration ready",
+    "creative quality verdict",
+    "asset performance verdict",
+    "campaign apply",
+    "performance uplift"
+  ],
+  source_connectors: ["google_ads", "google_analytics_4"],
+  evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
+  action_ids: [],
+  operator_review_gates: [
+    "demand_gen_specific_evidence_required",
+    "human_strategy_review",
+    "human_confirm_before_apply"
+  ],
+  campaign_rows_evaluated: 18,
+  campaign_channel_counts: {
+    PERFORMANCE_MAX: 8,
+    SEARCH: 10
+  },
+  demand_gen_campaign_rows: [],
+  next_step:
+    "Użyj odczytu kanałów kampanii tylko jako kontekstu. Zanim skill pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative read contracts, landing quality by campaign, migration constraints i prepare-only Demand Gen ActionObject.",
+  risk: "medium"
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -3690,6 +3735,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/ahrefs/diagnostics")) {
         return Promise.resolve(Response.json(ahrefsDiagnostics));
+      }
+      if (url.endsWith("/api/demand-gen/diagnostics")) {
+        return Promise.resolve(Response.json(demandGenDiagnostics));
       }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
@@ -4215,6 +4263,30 @@ describe("WILQ dashboard", () => {
     expect(
       screen.queryByText("API-backed operating surface with evidence, connector and action state.")
     ).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+  });
+
+  it("demand gen route renders readiness contract instead of generic registry", async () => {
+    renderApp("/ads-doctor/demand-gen");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Demand Gen" })).toBeInTheDocument()
+    );
+
+    expect(screen.getByText("Status Demand Gen / Ads + GA4 evidence")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma wiedzieć przed planem Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i ograniczenia Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText("Kampanie Ads")).toBeInTheDocument();
+    expect(screen.getByText("PMax")).toBeInTheDocument();
+    expect(screen.getByText("Search")).toBeInTheDocument();
+    expect(
+      screen.getByText(/W bieżącym evidence Ads nie ma kampanii Demand Gen ani Discovery/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/asset group rows/)).toBeInTheDocument();
+    expect(screen.getByText(/creative asset rows/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Demand Gen ActionObject/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/rekomendacja launchu Demand Gen/)).toBeInTheDocument();
+    expect(screen.queryByText("API-backed operating surface")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });

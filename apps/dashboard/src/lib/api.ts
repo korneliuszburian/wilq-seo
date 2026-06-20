@@ -8,6 +8,7 @@ import {
   ContentDiagnosticsResponseSchema,
   ConnectorRefreshRunSchema,
   ConnectorStatusSchema,
+  DemandGenReadinessContractSchema,
   EvidenceSchema,
   ExpertRuleSchema,
   Ga4DiagnosticsResponseSchema,
@@ -33,6 +34,7 @@ import {
   type ContentDiagnosticsResponse,
   type ConnectorRefreshRun,
   type ConnectorStatus,
+  type DemandGenReadinessContract,
   type Evidence,
   type ExpertRule,
   type Ga4DiagnosticsResponse,
@@ -112,6 +114,10 @@ export function getGa4Diagnostics(): Promise<Ga4DiagnosticsResponse> {
 
 export function getLocaloDiagnostics(): Promise<LocaloDiagnosticsResponse> {
   return apiGet("/api/localo/diagnostics", LocaloDiagnosticsResponseSchema);
+}
+
+export function getDemandGenDiagnostics(): Promise<DemandGenReadinessContract> {
+  return apiGet("/api/demand-gen/diagnostics", DemandGenReadinessContractSchema);
 }
 
 export function getConnectors(): Promise<ConnectorStatus[]> {
@@ -206,6 +212,7 @@ export type {
   ContentDiagnosticsResponse,
   ConnectorRefreshRun,
   ConnectorStatus,
+  DemandGenReadinessContract,
   Evidence,
   ExpertRule,
   Ga4DiagnosticsResponse,

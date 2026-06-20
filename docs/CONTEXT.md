@@ -63,6 +63,19 @@ Audit `docs/audits/001-output.md` is now folded into
    `decision_review_localo_visibility_facts` has `frazy=23`, and
    `daily_localo_readiness` count is `0` while visibility facts exist.
 
+0. Demand Gen dedicated route truth, live proof 2026-06-20 16:55 CEST:
+   Demand Gen readiness is now a first-class product surface, not a generic
+   registry fallback. `GET /api/demand-gen/diagnostics`, `/ads-doctor/demand-gen`
+   and the scoped `wilq-demand-gen-operator` context-pack share the same
+   blocked readiness contract: Ads campaign channel rows are available
+   (`PERFORMANCE_MAX=8`, `SEARCH=10`), there are no Demand Gen/Discovery rows
+   in current evidence, `action_ids=[]`, and missing contracts remain
+   `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
+   `demand_gen_landing_quality_by_campaign`,
+   `demand_gen_migration_constraints`, `demand_gen_action_object`. The route
+   must not show `Evidence Registry`, `Connector Refresh Runs` or adjacent Ads
+   ActionObjects as Demand Gen actions.
+
 0. Content decision metadata truth, 2026-06-20 14:06 Europe/Warsaw:
    `/api/content/diagnostics.decision_queue` now owns marketer-facing
    `status`, `priority` and `metric_tiles`. Do not recreate these fields in
