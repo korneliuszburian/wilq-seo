@@ -29,6 +29,18 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads n-gram decision usefulness, 2026-06-21 00:45 CEST:
+   `ads_review_search_term_ngrams` now keeps useful decision metric tiles after
+   lineage normalization instead of falling back to `{}` and priority `90`.
+   It is priority `42` and exposes non-additive overlapping n-gram tiles:
+   total n-grams, displayed rows, rows with clicks, max source queries per
+   topic and top clicks per topic; cost is shown only when present. Live proof:
+   `/api/ads/diagnostics` returned `n-gramy=30`, `pokazane=8`,
+   `z kliknięciami=8`, `max query/temat=12`, `top kliknięcia=2`, while still
+   blocking `search-term waste`, `negative keyword apply`, CPA, ROAS and
+   conversion loss. Scoped `wilq-ads-doctor` context-pack was `188899` bytes
+   and carries the same lightweight decision tiles without heavy n-gram rows.
+
 0. Ads target-aware campaign review, 2026-06-21 00:31 CEST:
    Campaign rows, derived KPI rows, Ads campaign review ActionObject and scoped
    `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now carry

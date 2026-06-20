@@ -34,6 +34,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads n-gram decision usefulness, 2026-06-21 00:45 CEST.
+  `ads_review_search_term_ngrams` no longer falls back to empty metric tiles
+  and priority `90` after decision lineage normalization. It is now priority
+  `42`, directly after raw search-term review, and exposes honest overlapping
+  n-gram tiles: total n-grams, displayed rows, rows with clicks,
+  max source queries per topic and top clicks per topic; cost is only shown
+  when present. Live proof after `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics` returned `metric_tiles={"n-gramy":30,"pokazane":8,
+  "z kliknięciami":8,"max query/temat":12,"top kliknięcia":2}` and kept
+  blocked claims for `search-term waste`, `negative keyword apply`, CPA, ROAS
+  and conversion loss. Scoped `wilq-ads-doctor` context-pack stayed under
+  200 KB at `188899` bytes and carries the same decision tiles without heavy
+  n-gram rows. Narrow checks passed: ruff/mypy, Ads API contract test,
+  dashboard lint/typecheck and `App.test.tsx`.
 - Ads target-aware campaign review, 2026-06-21 00:31 CEST.
   Campaign rows, derived KPI rows, Ads campaign review ActionObject and scoped
   `wilq-ads-doctor` context-pack now carry target-aware state:

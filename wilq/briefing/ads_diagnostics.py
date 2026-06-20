@@ -4956,6 +4956,7 @@ def _ads_decision_priority(decision: AdsDecisionItem) -> int:
         "review_budget_context": 30,
         "review_recommendations": 35,
         "review_search_terms": 40,
+        "review_search_term_ngrams": 42,
         "review_negative_keyword_safety": 45,
         "review_search_term_safety": 50,
         "prepare_custom_segments": 55,
@@ -5054,6 +5055,22 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
                 "podgląd akcji": len(decision.recommendation_apply_preview),
             }
         )
+    if decision.decision_type == "review_search_term_ngrams":
+        rows = decision.search_term_ngram_rows
+        rows_with_clicks = sum(1 for row in rows if (row.clicks or 0) > 0)
+        max_source_terms = max((row.source_search_term_count for row in rows), default=0)
+        max_clicks = max((row.clicks or 0 for row in rows), default=0)
+        max_cost_micros = max((row.cost_micros or 0 for row in rows), default=0)
+        ngram_tiles: dict[str, int | float | str | None] = {
+            "n-gramy": decision.metric_tiles.get("n-gramy", len(rows)),
+            "pokazane": len(rows),
+            "z kliknięciami": rows_with_clicks,
+            "max query/temat": max_source_terms,
+            "top kliknięcia": max_clicks,
+        }
+        if max_cost_micros:
+            ngram_tiles["top koszt"] = _format_micros(max_cost_micros)
+        return _clean_metric_tiles(ngram_tiles)
     if decision.decision_type == "review_impression_share":
         return _clean_metric_tiles(
             {

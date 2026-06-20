@@ -4988,6 +4988,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         if decision["id"] == "ads_review_search_term_ngrams"
     )
     assert ngram_decision["decision_type"] == "review_search_term_ngrams"
+    assert ngram_decision["priority"] == 42
+    assert ngram_decision["metric_tiles"]["n-gramy"] == len(ngram_contract["ngram_rows"])
+    assert ngram_decision["metric_tiles"]["pokazane"] == len(
+        ngram_decision["search_term_ngram_rows"]
+    )
+    assert ngram_decision["metric_tiles"]["max query/temat"] >= 1
+    assert ngram_decision["metric_tiles"]["top kliknięcia"] >= 4
+    assert "top koszt" in ngram_decision["metric_tiles"]
     assert ngram_decision["search_term_ngram_rows"]
     assert "negative_keyword_payload_preview" in ngram_decision["missing_read_contracts"]
     assert "card_google_ads_search_playbook" in ngram_decision["knowledge_card_ids"]

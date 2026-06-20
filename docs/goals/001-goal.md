@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 00:31 CEST.
+Last updated: 2026-06-21 00:45 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -88,6 +88,21 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads n-gram decision usefulness truth, live proof 2026-06-21 00:45
+CEST: `ads_review_search_term_ngrams` no longer loses its metric tiles during
+decision lineage normalization. It is priority `42`, directly after raw
+search-term review, and exposes non-additive overlapping n-gram tiles:
+`n-gramy`, `pokazane`, `z kliknięciami`, `max query/temat`,
+`top kliknięcia` and conditional `top koszt`. Live `/api/ads/diagnostics` after
+`scripts/local_stack.sh restart` returned `n-gramy=30`, `pokazane=8`,
+`z kliknięciami=8`, `max query/temat=12`, `top kliknięcia=2`; blocked claims
+still include `search-term waste`, `negative keyword apply`, CPA, ROAS and
+conversion loss. Scoped `wilq-ads-doctor` context-pack remained under 200 KB at
+`188899` bytes and carries the same decision tiles without heavy n-gram rows.
+Narrow checks passed: ruff/mypy, Ads API contract test, dashboard
+lint/typecheck and `App.test.tsx`. This is still search-term review only; it
+does not create negative keywords or claim waste.
 
 Latest Ads target-aware campaign review truth, live proof 2026-06-21 00:31
 CEST: campaign rows, derived KPI rows, Ads campaign review ActionObject and
