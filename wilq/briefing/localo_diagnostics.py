@@ -272,6 +272,11 @@ def _localo_decision_queue(
                 rationale="Ranking/GBP facts istnieją w WILQ evidence i mogą zostać ocenione.",
                 next_step="Zbuduj lokalną kolejkę review z evidence IDs i bez ścieżki zapisu.",
                 access_status=access_probe.status,
+                priority=20,
+                metric_tiles={
+                    "fakty Localo": len(visibility_facts),
+                    "braki kontraktu": 0,
+                },
                 allowed_evidence=["local_rankings", "gbp_visibility", "competitor_visibility"],
                 missing_read_contracts=[],
                 source_connectors=[LOCALO_CONNECTOR_ID],
@@ -305,6 +310,12 @@ def _localo_decision_queue(
                     "dla rankings/GBP/competitors/reviews."
                 ),
                 access_status=access_probe.status,
+                priority=30,
+                metric_tiles={
+                    "dostęp MCP": 1,
+                    "fakty Localo": 0,
+                    "braki kontraktu": len(LOCALO_VISIBILITY_READ_CONTRACTS),
+                },
                 allowed_evidence=["mcp_initialize", "oauth_metadata", "access_token_presence"],
                 missing_read_contracts=LOCALO_VISIBILITY_READ_CONTRACTS,
                 source_connectors=[LOCALO_CONNECTOR_ID],
@@ -329,6 +340,11 @@ def _localo_decision_queue(
             ),
             next_step="Wykonaj Localo OAuth helper i vendor_read, potem wróć do /localo.",
             access_status=access_probe.status,
+            priority=5,
+            metric_tiles={
+                "dostęp MCP": 0,
+                "braki kontraktu": len(LOCALO_VISIBILITY_READ_CONTRACTS) + 1,
+            },
             allowed_evidence=[],
             missing_read_contracts=["mcp_initialize", *LOCALO_VISIBILITY_READ_CONTRACTS],
             source_connectors=[LOCALO_CONNECTOR_ID],
@@ -360,6 +376,11 @@ def _blocked_visibility_decision(access_probe: LocaloAccessProbe) -> LocaloDecis
             "lokalne ActionObjecty."
         ),
         access_status=access_probe.status,
+        priority=10,
+        metric_tiles={
+            "blokady claimów": len(LOCALO_BLOCKED_CLAIMS),
+            "braki kontraktu": len(LOCALO_VISIBILITY_READ_CONTRACTS),
+        },
         allowed_evidence=["mcp_initialize"] if access_probe.status == "access_ready" else [],
         missing_read_contracts=LOCALO_VISIBILITY_READ_CONTRACTS,
         source_connectors=[LOCALO_CONNECTOR_ID],

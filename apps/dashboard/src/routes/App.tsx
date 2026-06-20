@@ -3630,7 +3630,8 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Localo / {localoDecisionTypeLabel(decision.decision_type)}
+            Localo / {localoDecisionTypeLabel(decision.decision_type)} /{" "}
+            {priorityLabel(decision.priority)}
           </p>
           <h3 className="mt-1 text-base font-semibold">{decision.title}</h3>
         </div>
@@ -3641,6 +3642,13 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">{decision.summary}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">{decision.rationale}</p>
       <p className="mt-3 text-sm font-semibold leading-6 text-ink">{decision.next_step}</p>
+      {Object.keys(decision.metric_tiles ?? {}).length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Object.entries(decision.metric_tiles).map(([label, value]) => (
+            <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
+          ))}
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine label="Access" values={[localoAccessStatusLabel(decision.access_status)]} />
         <TraceLine
@@ -3709,13 +3717,7 @@ function localoDecisionSortValue(decision: LocaloDecisionItem) {
     ready: 0,
     blocked: 1
   };
-  const typeRank: Record<LocaloDecisionItem["decision_type"], number> = {
-    access_ready_wait_for_visibility_facts: 0,
-    review_local_visibility: 0,
-    fix_access: 0,
-    block_visibility_claims: 1
-  };
-  return statusRank[decision.status] * 10 + typeRank[decision.decision_type];
+  return statusRank[decision.status] * 1000 + decision.priority;
 }
 
 function localoDecisionStatusLabel(status: string) {

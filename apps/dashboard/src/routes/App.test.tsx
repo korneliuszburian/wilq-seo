@@ -2890,6 +2890,12 @@ const localoDiagnostics = {
       next_step:
         "Zostaw Localo jako status źródła i dodaj Localo read contract dla rankings/GBP/competitors/reviews.",
       access_status: "access_ready",
+      priority: 30,
+      metric_tiles: {
+        "dostęp MCP": 1,
+        "fakty Localo": 0,
+        "braki kontraktu": 5
+      },
       allowed_evidence: ["mcp_initialize", "oauth_metadata", "access_token_presence"],
       missing_read_contracts: [
         "local_rankings",
@@ -2922,6 +2928,11 @@ const localoDiagnostics = {
       next_step:
         "Najpierw dodaj typed Localo read contract; dopiero potem buduj lokalne ActionObjecty.",
       access_status: "access_ready",
+      priority: 10,
+      metric_tiles: {
+        "blokady claimów": 5,
+        "braki kontraktu": 5
+      },
       allowed_evidence: ["mcp_initialize"],
       missing_read_contracts: [
         "local_rankings",
@@ -3843,6 +3854,10 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Localo access działa; brakuje ranking/GBP facts")
     ).toBeInTheDocument();
+    expect(screen.getByText("dostęp MCP")).toBeInTheDocument();
+    expect(screen.getByText("fakty Localo")).toBeInTheDocument();
+    expect(screen.getAllByText("braki kontraktu").length).toBeGreaterThan(0);
+    expect(screen.getByText("blokady claimów")).toBeInTheDocument();
     expect(
       screen.getByText("Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts")
     ).toBeInTheDocument();

@@ -203,7 +203,16 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
+1. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
+   `LocaloDecisionItem` now exposes typed `priority` and `metric_tiles`, with
+   the Zod schema, `/localo` UI and API tests updated. Live proof after stack
+   restart: 2 decisions, no null priorities, no empty metric tiles;
+   access-ready decision shows `dostęp MCP=1`, `fakty Localo=0`,
+   `braki kontraktu=5`; visibility blocker shows `blokady claimów=5`.
+   Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
+   `14 passed`, Playwright `11 passed`, production build passed.
+
+2. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
    `MerchantDecisionItem` now exposes typed `priority` and numeric
    `metric_tiles`, with the Zod schema, `/merchant` UI and API tests updated.
    Live proof after stack restart: 8 decisions, no null priorities, no empty
@@ -211,13 +220,13 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-2. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
+3. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
    Scoped `wilq-demand-gen-operator` context-pack no longer exposes adjacent
    GA4/negative/custom-segment ActionObjects as Demand Gen actions. It now has
    `demand_gen_readiness.status=blocked`, explicit missing Demand Gen read
    contracts, no active actions and payload about `160734 bytes`.
 
-3. Ads recommendation review gates and campaign-builder context scope,
+4. Ads recommendation review gates and campaign-builder context scope,
    2026-06-20 08:16 CEST.
    `/api/ads/diagnostics`, `/ads-doctor` and scoped `wilq-ads-doctor`
    context-pack now separate missing read contracts from operator review gates
@@ -229,7 +238,7 @@ Aktualny maintenance:
    `wilq-campaign-builder` active actions are narrowed to campaign and
    recommendation review. Apply remains blocked.
 
-4. Knowledge operating map, 2026-06-20 07:55 CEST.
+5. Knowledge operating map, 2026-06-20 07:55 CEST.
    `/api/knowledge/operating-map` and `/knowledge` now connect knowledge cards,
    machine-readable playbooks and expert rules to operator decisions, routes,
    skills, evidence IDs, ActionObject IDs, blocked claims and missing
@@ -239,20 +248,6 @@ Aktualny maintenance:
    `ads_search_terms_v1`, `/ads-doctor`, `wilq-ads-doctor` and four
    review-only ActionObjects; Localo remains blocked on explicit read
    contracts.
-
-5. Workflows decision contract, 2026-06-20 07:33 CEST.
-   `/api/workflows` and `/workflows` now expose operator workflows as typed
-   WILQ API contracts, not generic automation placeholders. Core workflows are
-   derived from daily decisions and carry `status`, `route`, `skill_id`,
-   `metric_tiles`, source connectors, evidence IDs, ActionObject IDs, blocked
-   claims and safe next steps. Planned workflows explicitly list missing
-   contracts instead of implying automation exists. Live proof after
-   `scripts/local_stack.sh restart`: 15 workflows, 4 `ready`, 4 `blocked`,
-   7 `planned`; `daily_command` has `decyzje=4`, `blockery=1`, `źródła=6`,
-   `akcje=7`; `ads_daily_check` has Ads review tiles and 4 review-only
-   ActionObjects. Full `scripts/verify.sh` passed: backend `118 passed`,
-   dashboard unit `14 passed`, Playwright e2e `10 passed`, security,
-   skill/API smokes and dashboard production build passed.
 
 ## Active Gaps
 

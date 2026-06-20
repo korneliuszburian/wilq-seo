@@ -1560,10 +1560,21 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     access_decision = decision_by_id["localo_access_ready_wait_for_visibility_facts"]
     assert access_decision["status"] == "ready"
+    assert access_decision["priority"] == 30
+    assert access_decision["metric_tiles"] == {
+        "dostęp MCP": 1,
+        "fakty Localo": 0,
+        "braki kontraktu": 5,
+    }
     assert "local_rankings" in access_decision["missing_read_contracts"]
     assert "GBP performance" in access_decision["blocked_claims"]
     block_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
     assert block_decision["status"] == "blocked"
+    assert block_decision["priority"] == 10
+    assert block_decision["metric_tiles"] == {
+        "blokady claimów": 5,
+        "braki kontraktu": 5,
+    }
     assert "local visibility uplift" in block_decision["blocked_claims"]
     assert all(fact["name"] != "mcp_initialize_status" for fact in block_decision["metric_facts"])
     serialized = json.dumps(payload, ensure_ascii=False)
@@ -1600,6 +1611,10 @@ def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
     assert payload["visibility_fact_count"] == 0
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     assert decision_by_id["localo_fix_access_before_visibility_review"]["status"] == "blocked"
+    assert decision_by_id["localo_fix_access_before_visibility_review"]["metric_tiles"] == {
+        "dostęp MCP": 0,
+        "braki kontraktu": 6,
+    }
     assert "mcp_initialize" in decision_by_id[
         "localo_fix_access_before_visibility_review"
     ]["missing_read_contracts"]

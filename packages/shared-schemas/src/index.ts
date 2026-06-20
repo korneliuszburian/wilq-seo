@@ -1042,6 +1042,8 @@ export const LocaloDecisionItemSchema = z.object({
   rationale: z.string(),
   next_step: z.string(),
   access_status: z.enum(["access_ready", "access_blocked", "unknown"]),
+  priority: z.number(),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   allowed_evidence: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   source_connectors: z.array(z.string()),

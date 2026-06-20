@@ -1308,6 +1308,8 @@ class LocaloDecisionItem(BaseModel):
     rationale: str
     next_step: str
     access_status: Literal["access_ready", "access_blocked", "unknown"]
+    priority: int = Field(ge=1, le=100)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_evidence: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)

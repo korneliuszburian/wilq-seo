@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 09:07 CEST.
+Last updated: 2026-06-20 09:19 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -634,16 +634,22 @@ These are the current reasons Goal 001 is not complete:
    Localo access/readiness has a typed API surface in `/api/localo/diagnostics`.
    It proves MCP initialize/access state and names missing contracts, but local
    ranking/GBP/competitor/review insight remains blocked until a concrete Localo
-   visibility read contract exists. Fresh `wilq-localo-operator` eval passed on
-   2026-06-19 and proves this exact state: access is ready, local visibility
-   insight is blocked. Social publishing remains permission-gated; drafting can
-   be prepare-only and evidence-backed.
+   visibility read contract exists. Latest Localo follow-up: every
+   `LocaloDecisionItem` now exposes typed `priority` and `metric_tiles`.
+   Live proof after restart: 2 Localo decisions, `null_priority=[]`,
+   `empty_tiles=[]`; access-ready decision shows `dostęp MCP=1`,
+   `fakty Localo=0`, `braki kontraktu=5`, while the visibility blocker shows
+   `blokady claimów=5`. Fresh `wilq-localo-operator` eval passed on
+   2026-06-19 and proves the same semantic state: access is ready, local
+   visibility insight is blocked. Social publishing remains permission-gated;
+   drafting can be prepare-only and evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the 2026-06-19 Localo diagnostics route
-   cleanup: backend API contracts `100 passed`, dashboard route tests
-   `13 passed`, Playwright e2e `9 passed` and dashboard production build
-   passed. Keep this file current after every future slice.
+   `scripts/verify.sh` passed after the 2026-06-20 Localo priority/metric tiles
+   slice: backend API contracts `119 passed`, dashboard route tests
+   `14 passed`, Playwright e2e `11 passed`, security, skill/API smokes and
+   dashboard production build passed. Keep this file current after every future
+   slice.
 
 ## What WILQ Must Give The Marketer
 
