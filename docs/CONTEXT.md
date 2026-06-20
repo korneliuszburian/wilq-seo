@@ -44,6 +44,19 @@ Audit `docs/audits/001-output.md` is now folded into
    `Kontrakt luk Ahrefs`. This is still a blocker, not gap analysis; next
    Ahrefs value work is actual competitor/content/backlink gap records.
 
+0. Ads custom segment missing-metric truth, 2026-06-21 01:40 CEST:
+   Custom segment review must not coerce absent search-term impressions/cost to
+   zero. Current live proof after restart: `/api/ads/diagnostics` returns
+   `Source terms=6, kliknięcia=7, wyświetlenia=brak danych, koszt=brak danych,
+   konwersje=0, odrzucone terminy=44` for the custom segment candidate.
+   `operator_review_gates` now includes `keyword_planner_enrichment` and
+   `forecast_or_audience_size` in both `custom_segments_read_contract` and
+   decision `ads_prepare_custom_segments_from_search_terms`. Dashboard labels
+   these gates in Polish. This remains prepare/review-only: Keyword Planner
+   live access is still blocked and WILQ must not claim forecast, audience
+   size, targeting applied, ROAS, CPA or campaign performance from this
+   contract.
+
 0. Ads business policy gates, 2026-06-21 01:01 CEST:
    `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
    `operator_review_gates`. Current live policy IDs:

@@ -1395,6 +1395,8 @@ const adsDiagnostics = {
     operator_review_gates: [
       "review_source_terms",
       "reject_brand_or_low_intent_terms",
+      "keyword_planner_enrichment",
+      "forecast_or_audience_size",
       "human_confirm_before_apply"
     ],
     blocked_claims: [
@@ -2248,6 +2250,8 @@ const adsDiagnostics = {
       operator_review_gates: [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
+        "keyword_planner_enrichment",
+        "forecast_or_audience_size",
         "human_confirm_before_apply"
       ],
       source_connectors: ["google_ads"],

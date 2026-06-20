@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 01:21 CEST.
+Last updated: 2026-06-21 01:40 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -76,8 +76,9 @@ contract and a review-only negative keyword payload preview plus read-only
 keyword match context for negative keyword review, a read-only search-term
 n-gram contract for grouping repeated query themes, plus a read-only Keyword
 Planner enrichment contract for custom segment review. Custom segments now
-have a review-only payload preview from real search terms, but no
-targeting/apply support. Campaign budgets now have review-only
+have a review-only payload preview from real search terms, and their review
+reason preserves missing search-term impressions/cost as `brak danych` instead
+of fake zeroes, but no targeting/apply support. Campaign budgets now have review-only
 `CampaignBudgetOperation` payload previews from budget facts, but no budget
 apply support.
 Full BDOS-class parity still requires optimizer contracts such as
@@ -106,6 +107,23 @@ authority decisions and sections. Current live truth: DR=90, Ahrefs Rank=1450,
 `Kontrakt luk Ahrefs` panel. This is still not gap analysis: no competitor page,
 content gap, backlink gap, organic keyword by URL or top competitor page records
 exist yet.
+
+Latest Ads custom segment missing-metric truth, live proof 2026-06-21 01:40
+CEST: custom segment review no longer shows absent search-term impressions or
+cost as zero. Current live `/api/ads/diagnostics` candidate says
+`Source terms=6, kliknięcia=7, wyświetlenia=brak danych, koszt=brak danych,
+konwersje=0, odrzucone terminy=44`. Both the
+`custom_segments_read_contract` and decision
+`ads_prepare_custom_segments_from_search_terms` expose operator gates
+`review_source_terms`, `reject_brand_or_low_intent_terms`,
+`keyword_planner_enrichment`, `forecast_or_audience_size` and
+`human_confirm_before_apply`; dashboard labels them in Polish. This is still
+prepare/review-only. Do not claim Keyword Planner enrichment, forecast,
+audience size, targeting applied, CPA, ROAS or campaign performance from this
+contract until the corresponding read/safety/apply contracts exist and are
+fresh. Full `scripts/verify.sh` passed after this slice: backend API contracts
+`137 passed`, dashboard unit tests `17 passed`, Playwright e2e `14 passed`,
+skill/API smokes and dashboard production build passed.
 
 Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
 `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and

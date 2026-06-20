@@ -3659,7 +3659,9 @@ function adsOperatorReviewGateLabel(value: string) {
     negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń",
     human_intent_review: "ręczny review intencji",
     review_source_terms: "sprawdzenie source terms",
-    reject_brand_or_low_intent_terms: "odrzucenie brand/low intent terms"
+    reject_brand_or_low_intent_terms: "odrzucenie brand/low intent terms",
+    keyword_planner_enrichment: "enrichment Keyword Planner",
+    forecast_or_audience_size: "forecast albo audience size"
   };
   return labels[value] ?? value;
 }

@@ -34,6 +34,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads custom segment missing-metric truth, 2026-06-21 01:40 CEST.
+  Custom segment review reason no longer renders missing search-term
+  impressions or cost as `0`. Current live proof after
+  `scripts/local_stack.sh restart`: `/api/ads/diagnostics` custom segment
+  candidate says `wyświetlenia=brak danych` and `koszt=brak danych` while
+  keeping `kliknięcia=7`, `konwersje=0` and `odrzucone terminy=44`. Operator
+  review gates now explicitly include `keyword_planner_enrichment` and
+  `forecast_or_audience_size` alongside source-term review, low-intent rejection
+  and human confirmation. Dashboard labels those gates in Polish. This is still
+  prepare/review-only: Keyword Planner live access remains blocked and no
+  forecast, audience-size, targeting or apply claim is allowed. Full
+  `scripts/verify.sh` passed after this slice: backend API contracts
+  `137 passed`, dashboard unit tests `17 passed`, Playwright e2e `14 passed`,
+  skill/API smokes and dashboard production build passed.
 - Ahrefs typed gap read contract, 2026-06-21 01:21 CEST.
   `/api/ahrefs/diagnostics` exposes `gap_read_contract` as typed API state,
   not only prose in sections. Live proof after `scripts/local_stack.sh restart`:

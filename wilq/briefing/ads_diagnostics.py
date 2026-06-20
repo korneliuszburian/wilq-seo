@@ -105,6 +105,8 @@ ADS_RECOMMENDATION_HUMAN_REVIEW_GATE = "human_strategy_review"
 CUSTOM_SEGMENT_OPERATOR_REVIEW_GATES = [
     "review_source_terms",
     "reject_brand_or_low_intent_terms",
+    "keyword_planner_enrichment",
+    "forecast_or_audience_size",
     "human_confirm_before_apply",
 ]
 ADS_NGRAM_STOPWORDS = {
@@ -3815,17 +3817,28 @@ def _custom_segment_review_reason(
     rejected_terms: list[str],
 ) -> str:
     total_clicks = sum(row.clicks or 0 for row in rows)
-    total_impressions = sum(row.impressions or 0 for row in rows)
-    total_cost_micros = sum(row.cost_micros or 0 for row in rows)
     total_conversions = sum(row.conversions or 0 for row in rows)
     return (
         f"Source terms={len(source_terms)}, kliknięcia={total_clicks}, "
-        f"wyświetlenia={total_impressions}, koszt={_format_micros(total_cost_micros) or '0'}, "
+        f"wyświetlenia={_search_term_impressions_review_value(rows)}, "
+        f"koszt={_search_term_cost_review_value(rows)}, "
         f"konwersje={_format_float(float(total_conversions))}, "
         f"odrzucone terminy={len(_unique(rejected_terms))}. "
         "To jest kolejność review segmentu, nie dowód audience size, targetowania "
         "ani wpływu na kampanię."
     )
+
+
+def _search_term_impressions_review_value(rows: list[AdsSearchTermMetricRow]) -> str:
+    if not any(row.impressions is not None for row in rows):
+        return "brak danych"
+    return str(sum(row.impressions or 0 for row in rows))
+
+
+def _search_term_cost_review_value(rows: list[AdsSearchTermMetricRow]) -> str:
+    if not any(row.cost_micros is not None for row in rows):
+        return "brak danych"
+    return _format_micros(sum(row.cost_micros or 0 for row in rows)) or "0"
 
 
 def _custom_segment_payload_preview(

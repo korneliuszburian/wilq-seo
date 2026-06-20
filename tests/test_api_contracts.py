@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from apps.api.wilq_api.main import app
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
 from wilq.actions.service import apply_action
+from wilq.briefing.ads_diagnostics import _custom_segment_review_reason
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
@@ -33,6 +34,7 @@ from wilq.schemas import (
     ActionObject,
     ActionRisk,
     ActionStatus,
+    AdsSearchTermMetricRow,
     AuditEvent,
     CommandCenterBriefItem,
     CommandCenterResponse,
@@ -5159,6 +5161,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_contract["operator_review_gates"] == [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
+        "keyword_planner_enrichment",
+        "forecast_or_audience_size",
         "human_confirm_before_apply",
     ]
     assert "custom_segment_payload_preview" not in custom_segments_contract[
@@ -5516,6 +5520,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_decision["operator_review_gates"] == [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
+        "keyword_planner_enrichment",
+        "forecast_or_audience_size",
         "human_confirm_before_apply",
     ]
     assert custom_segments_decision["custom_segment_candidates"][0]["source_terms"] == [
@@ -5848,6 +5854,32 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         for action_id in item["action_ids"]
     }
     assert "act_configure_google_ads_env" not in brief_action_ids
+
+
+def test_ads_custom_segment_review_reason_keeps_missing_metrics_unknown() -> None:
+    reason = _custom_segment_review_reason(
+        source_terms=["bdo szkolenie"],
+        rows=[
+            AdsSearchTermMetricRow(
+                search_term="bdo szkolenie",
+                campaign_id="101",
+                campaign_name="Brand Search",
+                clicks=7,
+                conversions=0.0,
+                evidence_ids=["ev_test"],
+                missing_metrics=[
+                    "search_term_impressions",
+                    "search_term_cost_micros",
+                ],
+            )
+        ],
+        rejected_terms=[],
+    )
+
+    assert "wyświetlenia=brak danych" in reason
+    assert "koszt=brak danych" in reason
+    assert "wyświetlenia=0" not in reason
+    assert "koszt=0.00" not in reason
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(
