@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 09:19 CEST.
+Last updated: 2026-06-20 09:35 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -127,6 +127,20 @@ and the same decision in `decision_queue` has `operator_review_gates`:
 `wilq-ads-doctor` context-pack preserves these gates without `[REDACTED]`.
 This does not unlock apply; it makes the human review gate explicit and
 traceable.
+
+Ads search-term and negative keyword review must apply the same rule:
+`human_intent_review` is an operator review gate, not a missing read contract.
+Current live proof after `scripts/local_stack.sh restart`:
+`/api/ads/diagnostics.search_term_safety_read_contract.missing_read_contracts=[]`,
+`keyword_match_context_read_contract.missing_read_contracts=[]`, and both carry
+`operator_review_gates=["human_intent_review"]`. Decisions
+`ads_review_search_term_safety` and `ads_review_negative_keyword_safety` carry
+the same gate while keeping missing read contracts empty when the 90-day safety
+rows and keyword match context are present. This still does not unlock negative
+keyword apply; it only prevents the dashboard and skills from mislabeling human
+review as missing data. Full `scripts/verify.sh` passed after this slice:
+backend `119 passed`, dashboard unit `14 passed`, Playwright e2e `11 passed`,
+skill/API smokes, security checks and dashboard production build passed.
 
 Campaign-builder context-pack must stay workflow-specific. It must not pull
 negative keyword or custom-segment ActionObjects unless the selected workflow
@@ -645,7 +659,7 @@ These are the current reasons Goal 001 is not complete:
    drafting can be prepare-only and evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the 2026-06-20 Localo priority/metric tiles
+   `scripts/verify.sh` passed after the 2026-06-20 Ads intent review-gates
    slice: backend API contracts `119 passed`, dashboard route tests
    `14 passed`, Playwright e2e `11 passed`, security, skill/API smokes and
    dashboard production build passed. Keep this file current after every future
@@ -866,6 +880,19 @@ Work in this order:
    `wdrożenie zmian` in Polish instead of visible raw `profitability` /
    `wasted budget`. Focused backend/frontend checks and real-browser Command
    Center smoke passed for this slice.
+
+   Follow-up completed on 2026-06-20: Ads search-term safety, keyword match
+   context and negative keyword review now separate data availability from
+   human intent review. `human_intent_review` moved out of
+   `missing_read_contracts` and into `operator_review_gates` when the 90-day
+   safety rows and keyword match context are present. Live proof after
+   `scripts/local_stack.sh restart`: search-term safety and keyword context
+   both have empty missing read contracts plus
+   `operator_review_gates=["human_intent_review"]`; decisions
+   `ads_review_search_term_safety` and `ads_review_negative_keyword_safety`
+   carry the same gate. Full `scripts/verify.sh` passed with backend
+   `119 passed`, dashboard unit `14 passed`, Playwright e2e `11 passed`,
+   skill/API smokes, security checks and dashboard production build.
 
 3. **Slice 2: performance budget and scoped runtime.**
    Command Center summary target: under 1s local and about 80-120 KB when

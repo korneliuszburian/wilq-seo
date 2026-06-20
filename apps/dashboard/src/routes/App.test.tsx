@@ -988,9 +988,9 @@ const adsDiagnostics = {
       "search_term_90d_conversion_value"
     ],
     missing_read_contracts: [
-      "keyword match context",
-      "human_intent_review"
+      "keyword match context"
     ],
+    operator_review_gates: ["human_intent_review"],
     blocked_claims: [
       "negative keyword apply",
       "search-term waste",
@@ -1036,7 +1036,8 @@ const adsDiagnostics = {
       "campaign",
       "ad_group"
     ],
-    missing_read_contracts: ["human_intent_review"],
+    missing_read_contracts: [],
+    operator_review_gates: ["human_intent_review"],
     blocked_claims: [
       "negative keyword apply",
       "search-term waste",
@@ -1730,9 +1731,9 @@ const adsDiagnostics = {
         "search_term_90d_conversion_value"
       ],
       missing_read_contracts: [
-        "keyword match context",
-        "human_intent_review"
+        "keyword match context"
       ],
+      operator_review_gates: ["human_intent_review"],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],
@@ -1795,6 +1796,7 @@ const adsDiagnostics = {
         "search_term_conversions"
       ],
       missing_read_contracts: ["keyword match context"],
+      operator_review_gates: ["human_intent_review"],
       source_connectors: ["google_ads"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
       metric_facts: [],

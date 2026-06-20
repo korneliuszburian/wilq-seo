@@ -2113,8 +2113,8 @@ def _search_term_safety_read_contract(
             ],
             missing_read_contracts=[
                 "keyword match context",
-                "human_intent_review",
             ],
+            operator_review_gates=["human_intent_review"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(
@@ -2274,7 +2274,8 @@ def _keyword_match_context_read_contract(
                 "campaign",
                 "ad_group",
             ],
-            missing_read_contracts=["human_intent_review"],
+            missing_read_contracts=[],
+            operator_review_gates=["human_intent_review"],
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(
@@ -3394,6 +3395,7 @@ def _ads_decision_queue(
                 missing_read_contracts=(
                     search_term_safety_read_contract.missing_read_contracts
                 ),
+                operator_review_gates=search_term_safety_read_contract.operator_review_gates,
                 source_connectors=search_term_safety_read_contract.source_connectors,
                 evidence_ids=search_term_safety_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
@@ -3454,6 +3456,7 @@ def _ads_decision_queue(
                     "keyword_match_type",
                 ],
                 missing_read_contracts=negative_keywords_read_contract.missing_read_contracts,
+                operator_review_gates=["human_intent_review"],
                 source_connectors=negative_keywords_read_contract.source_connectors,
                 evidence_ids=negative_keywords_read_contract.evidence_ids,
                 metric_facts=[

@@ -3901,6 +3901,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "keyword match context" not in search_term_safety_contract[
         "missing_read_contracts"
     ]
+    assert "human_intent_review" not in search_term_safety_contract[
+        "missing_read_contracts"
+    ]
+    assert search_term_safety_contract["operator_review_gates"] == [
+        "human_intent_review"
+    ]
     assert "negative keyword apply" in search_term_safety_contract["blocked_claims"]
     assert search_term_safety_contract["safety_rows"] == [
         {
@@ -3941,7 +3947,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "campaign",
         "ad_group",
     ]
-    assert keyword_context_contract["missing_read_contracts"] == ["human_intent_review"]
+    assert keyword_context_contract["missing_read_contracts"] == []
+    assert keyword_context_contract["operator_review_gates"] == [
+        "human_intent_review"
+    ]
     assert keyword_context_contract["context_rows"][0]["keyword_text"] == "odpady"
     assert keyword_context_contract["context_rows"][0]["match_type"] == "BROAD"
     assert keyword_context_contract["context_rows"][0]["negative"] is False
@@ -4201,6 +4210,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "odpady cena"
     )
     assert "negative keyword apply" in search_term_safety_decision["blocked_claims"]
+    assert search_term_safety_decision["missing_read_contracts"] == []
+    assert search_term_safety_decision["operator_review_gates"] == [
+        "human_intent_review"
+    ]
     assert search_term_safety_decision["knowledge_card_ids"] == [
         "card_google_ads_negative_keywords_playbook",
         "card_google_ads_search_playbook",
@@ -4222,6 +4235,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "negative_keyword_text"
     ] == "odpady cena"
     assert negative_keyword_decision["missing_read_contracts"] == []
+    assert negative_keyword_decision["operator_review_gates"] == [
+        "human_intent_review"
+    ]
     assert negative_keyword_decision["keyword_match_context_rows"][0]["keyword_text"] == (
         "odpady"
     )

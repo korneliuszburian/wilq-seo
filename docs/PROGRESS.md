@@ -113,6 +113,15 @@ Aktualny proof produktowy:
   `recommendation_apply_preview`, `google_ads_rmf_compliance_review` i
   `human_confirm_before_apply`. Scoped `wilq-ads-doctor` context-pack zachowuje
   te gates bez `[REDACTED]`.
+- `/api/ads/diagnostics.search_term_safety_read_contract` i
+  `keyword_match_context_read_contract` nie traktują już
+  `human_intent_review` jako brakującego kontraktu danych, kiedy 90-dniowe
+  safety rows i keyword match context istnieją. Live proof po
+  `scripts/local_stack.sh restart`: oba kontrakty mają
+  `missing_read_contracts=[]` oraz
+  `operator_review_gates=["human_intent_review"]`; decyzje
+  `ads_review_search_term_safety` i `ads_review_negative_keyword_safety`
+  niosą tę samą bramkę. To nadal nie odblokowuje negative keyword apply.
 - Scoped `wilq-campaign-builder` context-pack ma workflow-specific
   `active_action_objects`: tylko `act_prepare_ads_campaign_review_queue` i
   `act_prepare_google_ads_recommendation_review_queue`. Negative keywords i
@@ -190,7 +199,7 @@ Aktualny proof produktowy:
   ma `priority=21` i `metric_tiles.zgłoszenia=892`.
 - `wilq-ads-doctor` smoke przeszedł na świeżym API i potwierdza ten sam
   recommendations contract w scoped context-packu.
-- Pełny `scripts/verify.sh` przeszedł po Merchant priority/metric tiles slice:
+- Pełny `scripts/verify.sh` przeszedł po Ads intent review-gates slice:
   backend API contracts `119 passed`, dashboard route tests `14 passed`,
   Playwright e2e `11 passed`, security, skill/API smokes i dashboard production
   build passed.
@@ -203,7 +212,19 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
+1. Ads intent review gates, 2026-06-20 09:35 CEST.
+   Search-term safety, keyword match context and negative keyword review now
+   expose `human_intent_review` as `operator_review_gates` instead of a missing
+   read contract when supporting Ads evidence exists. Live proof:
+   search-term safety and keyword context both have
+   `missing_read_contracts=[]`, `operator_review_gates=["human_intent_review"]`;
+   decisions `ads_review_search_term_safety` and
+   `ads_review_negative_keyword_safety` carry the same gate. Full
+   `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
+   `14 passed`, Playwright `11 passed`, skill/API smokes and production build
+   passed.
+
+2. Localo priority and metric tiles, 2026-06-20 09:19 CEST.
    `LocaloDecisionItem` now exposes typed `priority` and `metric_tiles`, with
    the Zod schema, `/localo` UI and API tests updated. Live proof after stack
    restart: 2 decisions, no null priorities, no empty metric tiles;
@@ -212,7 +233,7 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-2. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
+3. Merchant priority and metric tiles, 2026-06-20 09:07 CEST.
    `MerchantDecisionItem` now exposes typed `priority` and numeric
    `metric_tiles`, with the Zod schema, `/merchant` UI and API tests updated.
    Live proof after stack restart: 8 decisions, no null priorities, no empty
@@ -220,13 +241,13 @@ Aktualny maintenance:
    Full `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
    `14 passed`, Playwright `11 passed`, production build passed.
 
-3. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
+4. Demand Gen honest blocker contract, 2026-06-20 08:42 CEST.
    Scoped `wilq-demand-gen-operator` context-pack no longer exposes adjacent
    GA4/negative/custom-segment ActionObjects as Demand Gen actions. It now has
    `demand_gen_readiness.status=blocked`, explicit missing Demand Gen read
    contracts, no active actions and payload about `160734 bytes`.
 
-4. Ads recommendation review gates and campaign-builder context scope,
+5. Ads recommendation review gates and campaign-builder context scope,
    2026-06-20 08:16 CEST.
    `/api/ads/diagnostics`, `/ads-doctor` and scoped `wilq-ads-doctor`
    context-pack now separate missing read contracts from operator review gates
@@ -237,17 +258,6 @@ Aktualny maintenance:
    business goal, RMF/compliance and human confirmation gates. Scoped
    `wilq-campaign-builder` active actions are narrowed to campaign and
    recommendation review. Apply remains blocked.
-
-5. Knowledge operating map, 2026-06-20 07:55 CEST.
-   `/api/knowledge/operating-map` and `/knowledge` now connect knowledge cards,
-   machine-readable playbooks and expert rules to operator decisions, routes,
-   skills, evidence IDs, ActionObject IDs, blocked claims and missing
-   contracts. Live proof after `scripts/local_stack.sh restart`: 11 bindings,
-   15 source cards, 14 playbooks and 31 expert rules; Ads daily check links
-   `card_google_ads_search_playbook`, `google_ads_search_playbook`,
-   `ads_search_terms_v1`, `/ads-doctor`, `wilq-ads-doctor` and four
-   review-only ActionObjects; Localo remains blocked on explicit read
-   contracts.
 
 ## Active Gaps
 
