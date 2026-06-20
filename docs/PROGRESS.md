@@ -49,6 +49,20 @@ Aktualny proof produktowy:
   `decision_ids=["ads_prepare_custom_segments_from_search_terms"]`,
   `top_opportunity_count=0`, `purpose=custom_segments_context`. Dodano
   dedicated route `/ads-doctor/custom-segments` z Playwright smoke.
+- Ads negative keyword review triage, 2026-06-20 18:03 CEST.
+  Negative keyword candidates nie są już tylko listą search terms do review.
+  `/api/ads/diagnostics.negative_keywords_read_contract.candidates` niesie
+  `review_priority`, `review_score`, polski `review_reason` i
+  `human_review_gates`. Live proof po `scripts/local_stack.sh restart`:
+  6 kandydatów, w tym `pilne=1`, `wysokie=1`; top candidate
+  `asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a`
+  ma `review_priority=pilne`, `review_score=84`. Decyzja
+  `ads_review_negative_keyword_safety.metric_tiles` pokazuje teraz
+  `kandydaci=6`, `pilne=1`, `wysokie=1`, `podgląd akcji=6`,
+  `kontekst słów=12`. To nadal jest kolejność review, nie werdykt
+  zmarnowanego budżetu i nie negative keyword apply. Full `scripts/verify.sh`
+  passed after this slice: backend `126 passed`, dashboard unit `17 passed`,
+  Playwright e2e `14 passed`, dashboard production build OK.
 - Demand Gen diagnostics route, 2026-06-20 16:55 CEST.
   Demand Gen nie wpada już w generyczny registry surface. Dodano
   `GET /api/demand-gen/diagnostics`, a `/ads-doctor/demand-gen` renderuje ten

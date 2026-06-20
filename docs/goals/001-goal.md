@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 17:34 CEST.
+Last updated: 2026-06-20 18:03 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -212,6 +212,21 @@ skills from mislabeling validation/human review as missing data. Full
 `scripts/verify.sh` passed after the earlier safety slice:
 backend `119 passed`, dashboard unit `14 passed`, Playwright e2e `11 passed`,
 skill/API smokes, security checks and dashboard production build passed.
+Latest negative keyword triage follow-up, 2026-06-20 18:03 CEST:
+`/api/ads/diagnostics.negative_keywords_read_contract.candidates` now carries
+typed `review_priority`, bounded `review_score`, Polish `review_reason` and
+`human_review_gates`. Live proof after `scripts/local_stack.sh restart`: 6
+candidates, top candidate
+`asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a`
+has `review_priority=pilne`, `review_score=84`; decision
+`ads_review_negative_keyword_safety.metric_tiles` shows `kandydaci=6`,
+`pilne=1`, `wysokie=1`, `podgląd akcji=6`, `kontekst słów=12`. The reason text
+must keep saying that this is review ordering, not a wasted-budget verdict.
+Dashboard `/ads-doctor` renders the same fields. This does not unlock negative
+keyword apply, wasted-budget claims, CPA/ROAS verdicts or automatic exclusions.
+Full `scripts/verify.sh` passed after this slice: backend `126 passed`,
+dashboard unit `17 passed`, Playwright e2e `14 passed`, dashboard production
+build OK.
 
 Campaign-builder context-pack must stay workflow-specific. It must not pull
 negative keyword or custom-segment ActionObjects unless the selected workflow

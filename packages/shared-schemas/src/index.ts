@@ -708,6 +708,12 @@ export const AdsNegativeKeywordPayloadPreviewSchema = z.object({
 export const AdsNegativeKeywordCandidateSchema = z.object({
   id: z.string(),
   search_term: z.string(),
+  review_priority: z
+    .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
+    .default("normalne"),
+  review_score: z.number().min(0).max(100).default(0),
+  review_reason: z.string(),
+  human_review_gates: z.array(z.string()).default([]),
   campaign_id: z.string().nullable().optional(),
   campaign_name: z.string().nullable().optional(),
   ad_group_id: z.string().nullable().optional(),

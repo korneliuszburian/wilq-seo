@@ -966,6 +966,12 @@ class AdsNegativeKeywordPayloadPreview(BaseModel):
 class AdsNegativeKeywordCandidate(BaseModel):
     id: str
     search_term: str
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
+        "normalne"
+    )
+    review_score: int = Field(default=0, ge=0, le=100)
+    review_reason: str
+    human_review_gates: list[str] = Field(default_factory=list)
     campaign_id: str | None = None
     campaign_name: str | None = None
     ad_group_id: str | None = None

@@ -3240,6 +3240,11 @@ def _negative_keyword_candidates(
             [],
         )[:8]
         payload_preview = _negative_keyword_payload_preview(row, safety_row)
+        review_score = _negative_keyword_review_score(
+            row,
+            safety_row,
+            row_keyword_context,
+        )
         candidates.append(
             AdsNegativeKeywordCandidate(
                 id=(
@@ -3249,6 +3254,19 @@ def _negative_keyword_candidates(
                     f"{_slug(row.search_term)}"
                 ),
                 search_term=row.search_term,
+                review_priority=_negative_keyword_review_priority(review_score),
+                review_score=review_score,
+                review_reason=_negative_keyword_review_reason(
+                    row,
+                    safety_row,
+                    row_keyword_context,
+                ),
+                human_review_gates=[
+                    "sprawdź intencję zapytania",
+                    "porównaj z istniejącymi keywords i match types",
+                    "sprawdź 90-dniowy safety read",
+                    "zatwierdź poziom wykluczenia przed apply",
+                ],
                 campaign_id=row.campaign_id,
                 campaign_name=row.campaign_name,
                 ad_group_id=row.ad_group_id,
@@ -3293,6 +3311,67 @@ def _negative_keyword_candidates(
             )
         )
     return candidates[:12]
+
+
+def _negative_keyword_review_score(
+    row: AdsSearchTermMetricRow,
+    safety_row: AdsSearchTermSafetyRow | None,
+    keyword_context_rows: list[AdsKeywordMatchContextRow],
+) -> int:
+    current_cost = (row.cost_micros or 0) / 1_000_000
+    safety_cost = ((safety_row.cost_micros_90d if safety_row else 0) or 0) / 1_000_000
+    current_clicks = row.clicks or 0
+    safety_clicks = (safety_row.clicks_90d if safety_row else 0) or 0
+    score = min(current_cost * 2, 40)
+    score += min(safety_cost, 25)
+    score += min(max(current_clicks, safety_clicks) * 5, 20)
+    if safety_row is not None:
+        score += 10
+    if keyword_context_rows:
+        score += 5
+    return min(100, int(round(score)))
+
+
+def _negative_keyword_review_priority(
+    review_score: int,
+) -> Literal["pilne", "wysokie", "normalne", "niski sygnał"]:
+    if review_score >= 70:
+        return "pilne"
+    if review_score >= 45:
+        return "wysokie"
+    if review_score >= 15:
+        return "normalne"
+    return "niski sygnał"
+
+
+def _negative_keyword_review_reason(
+    row: AdsSearchTermMetricRow,
+    safety_row: AdsSearchTermSafetyRow | None,
+    keyword_context_rows: list[AdsKeywordMatchContextRow],
+) -> str:
+    current_cost = _format_micros(row.cost_micros)
+    safety_cost = _format_micros(safety_row.cost_micros_90d if safety_row else None)
+    current_conversions = _format_float(float(row.conversions or 0))
+    safety_conversions_value = (
+        safety_row.conversions_90d if safety_row is not None else 0
+    )
+    safety_conversions = _format_float(float(safety_conversions_value or 0))
+    safety_part = (
+        f"90 dni: kliknięcia={safety_row.clicks_90d or 0}, koszt={safety_cost or '0'}, "
+        f"konwersje={safety_conversions}"
+        if safety_row is not None
+        else "brak dopasowanego 90-dniowego safety row"
+    )
+    context_part = (
+        f"kontekst keywords={len(keyword_context_rows)} rows"
+        if keyword_context_rows
+        else "brak keyword match context dla tej grupy"
+    )
+    return (
+        f"Bieżący read: kliknięcia={row.clicks or 0}, koszt={current_cost or '0'}, "
+        f"konwersje={current_conversions}; {safety_part}; {context_part}. "
+        "To jest kolejność review, nie werdykt zmarnowanego budżetu."
+    )
 
 
 def _negative_keyword_payload_preview(
@@ -4194,6 +4273,16 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
         return _clean_metric_tiles(
             {
                 "kandydaci": len(decision.negative_keyword_candidates),
+                "pilne": sum(
+                    1
+                    for candidate in decision.negative_keyword_candidates
+                    if candidate.review_priority == "pilne"
+                ),
+                "wysokie": sum(
+                    1
+                    for candidate in decision.negative_keyword_candidates
+                    if candidate.review_priority == "wysokie"
+                ),
                 "podgląd akcji": len(decision.negative_keyword_payload_preview),
                 "kontekst słów": len(decision.keyword_match_context_rows),
             }

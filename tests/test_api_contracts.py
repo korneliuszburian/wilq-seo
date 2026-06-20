@@ -4475,6 +4475,20 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["missing_read_contracts"] == []
     assert "negative keyword apply" in negative_keywords_contract["blocked_claims"]
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
+    assert negative_keywords_contract["candidates"][0]["review_priority"] == "wysokie"
+    assert negative_keywords_contract["candidates"][0]["review_score"] == 53
+    assert "kolejność review" in negative_keywords_contract["candidates"][0][
+        "review_reason"
+    ]
+    assert "nie werdykt zmarnowanego budżetu" in negative_keywords_contract[
+        "candidates"
+    ][0]["review_reason"]
+    assert negative_keywords_contract["candidates"][0]["human_review_gates"] == [
+        "sprawdź intencję zapytania",
+        "porównaj z istniejącymi keywords i match types",
+        "sprawdź 90-dniowy safety read",
+        "zatwierdź poziom wykluczenia przed apply",
+    ]
     assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
         "keyword_text"
     ] == "odpady"
@@ -4694,6 +4708,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keyword_decision["priority"] == 45
     assert negative_keyword_decision["metric_tiles"] == {
         "kandydaci": 1,
+        "pilne": 0,
+        "wysokie": 1,
         "podgląd akcji": 1,
         "kontekst słów": 1,
     }

@@ -2710,13 +2710,20 @@ function AdsNegativeKeywordCandidatesPanel({
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                {candidate.safety_status === "needs_90_day_review"
-                  ? "wymaga 90 dni"
-                  : candidate.safety_status === "read_ready_needs_human_review"
-                    ? "90 dni odczytane"
-                    : "blocked"}
+                {candidate.review_priority} / {candidate.review_score}
               </span>
             </div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {candidate.review_reason}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              Safety:{" "}
+              {candidate.safety_status === "needs_90_day_review"
+                ? "wymaga 90 dni"
+                : candidate.safety_status === "read_ready_needs_human_review"
+                  ? "90 dni odczytane"
+                  : "blocked"}
+            </p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
               <MetricTile label="Kliknięcia" value={adsNumber(candidate.clicks)} />
               <MetricTile
@@ -2765,6 +2772,11 @@ function AdsNegativeKeywordCandidatesPanel({
               </div>
             ) : null}
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
+              <TraceLine
+                label="Review człowieka"
+                values={candidate.human_review_gates}
+                empty="brak"
+              />
               <TraceLine label="Wymagane checki" values={candidate.required_checks.map(adsMissingReadContractLabel)} />
               <LinkedTraceLine
                 label="Dowody"

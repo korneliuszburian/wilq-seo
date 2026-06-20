@@ -1236,6 +1236,16 @@ const adsDiagnostics = {
       {
         id: "ads_negative_keyword_review_123_789_odpady_cena",
         search_term: "odpady cena",
+        review_priority: "wysokie",
+        review_score: 53,
+        review_reason:
+          "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie werdykt zmarnowanego budżetu.",
+        human_review_gates: [
+          "sprawdź intencję zapytania",
+          "porównaj z istniejącymi keywords i match types",
+          "sprawdź 90-dniowy safety read",
+          "zatwierdź poziom wykluczenia przed apply"
+        ],
         campaign_id: "123",
         campaign_name: "Ekologus Search",
         ad_group_id: "789",
@@ -1929,6 +1939,16 @@ const adsDiagnostics = {
         {
           id: "ads_negative_keyword_review_123_789_odpady_cena",
           search_term: "odpady cena",
+          review_priority: "wysokie",
+          review_score: 53,
+          review_reason:
+            "Bieżący read: kliknięcia=6, koszt=5.00, konwersje=0; 90 dni: kliknięcia=10, koszt=8.00, konwersje=0; kontekst keywords=1 rows. To jest kolejność review, nie werdykt zmarnowanego budżetu.",
+          human_review_gates: [
+            "sprawdź intencję zapytania",
+            "porównaj z istniejącymi keywords i match types",
+            "sprawdź 90-dniowy safety read",
+            "zatwierdź poziom wykluczenia przed apply"
+          ],
           campaign_id: "123",
           campaign_name: "Ekologus Search",
           ad_group_id: "789",
