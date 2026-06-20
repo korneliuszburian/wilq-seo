@@ -34,6 +34,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- ActionObject dry-run preview contract, 2026-06-20 20:44 CEST.
+  WILQ ma teraz `POST /api/actions/{action_id}/preview`, typed
+  `ActionPreviewRequest/ActionPreviewResult`, lokalny audit event
+  `action_preview_generated` i dashboardowy panel `Dry-run preview`.
+  Preview używa istniejących payload preview rows z ActionObjecta, zwraca
+  `dry_run=true`, `mutation_allowed=false`, `preview_items_total`,
+  `omitted_items`, `blockers` i `review_gate`. Runtime proof na tymczasowej
+  bazie: endpoint zwrócił `200`, `event_type=action_preview_generated`,
+  ActionObject i daily context-pack mają `latest_audit_event=action_preview_generated`,
+  `apply_allowed=false`. To domyka standardowy etap `dry_run -> preview` bez
+  mutacji vendorów; nadal nie odblokowuje `confirm -> apply`. Pełne
+  `scripts/verify.sh` po slice: backend `131 passed`, dashboard unit
+  `17 passed`, Playwright e2e `14 passed`, dashboard build OK.
 - Human review outcome contract, 2026-06-20 20:28 CEST.
   WILQ ma teraz `POST /api/actions/{action_id}/review`, typed
   `ActionReviewRequest/ActionReviewResult`, lokalny audit event
@@ -550,8 +563,8 @@ Aktualny maintenance:
   `WILQ_ADS_BUSINESS_GOAL`, `WILQ_ADS_BUDGET_GOAL`,
   `WILQ_ADS_TARGET_ROAS` or `WILQ_ADS_TARGET_CPA_MICROS`), approved Keyword
   Planner access/idea rows, forecast/audience size, strategy-specific review
-  policies beyond the generic human review outcome, budget apply safety/
-  confirmation, impact sanity checks and mutation audit.
+  policies beyond the generic human review outcome, budget apply safety,
+  final confirmation, impact sanity checks and real mutation audit.
 - Command Center/dashboard is moving toward a usable marketer cockpit, but Goal
   001 remains active until the goal file's API/dashboard/skills/evals/safety
   requirements are all verified.

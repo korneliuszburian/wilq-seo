@@ -17,6 +17,7 @@ from wilq.actions.service import (
     apply_action,
     get_action,
     list_actions,
+    preview_action,
     record_action_review,
     validate_action,
 )
@@ -63,6 +64,7 @@ from wilq.opportunities.engine import OPPORTUNITY_TYPES, get_opportunity, list_o
 from wilq.schemas import (
     ActionApplyRequest,
     ActionObject,
+    ActionPreviewRequest,
     ActionReviewRequest,
     AdsCampaignMetricRow,
     AdsDiagnosticsResponse,
@@ -334,6 +336,10 @@ def _compact_daily_action_for_context(
     dumped = action.model_dump(mode="json")
     payload = dumped.get("payload")
     payload_keys = sorted(payload) if isinstance(payload, dict) else []
+    audit_events = dumped.get("audit_events")
+    latest_audit_event = (
+        audit_events[0] if isinstance(audit_events, list) and audit_events else None
+    )
     compact = {
         "id": dumped["id"],
         "title": dumped["title"],
@@ -348,6 +354,7 @@ def _compact_daily_action_for_context(
         "human_diagnosis": dumped["human_diagnosis"],
         "recommended_reason": dumped["recommended_reason"],
         "metric_count": len(dumped.get("metrics", [])),
+        "latest_audit_event": latest_audit_event,
         "payload_keys": payload_keys,
         "api_endpoint_template": "/api/actions/{action_id}",
     }
@@ -1945,6 +1952,21 @@ def review_action_endpoint(
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = record_action_review(action, request)
+    local_state_store().save_audit_event(result.audit_event)
+    clear_daily_runtime_cache()
+    clear_skill_context_cache()
+    return result.model_dump(mode="json")
+
+
+@app.post("/api/actions/{action_id}/preview")
+def preview_action_endpoint(
+    action_id: str,
+    request: ActionPreviewRequest | None = None,
+) -> dict[str, Any]:
+    action = get_action(action_id)
+    if action is None:
+        raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
+    result = preview_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
     clear_daily_runtime_cache()
     clear_skill_context_cache()

@@ -1,6 +1,7 @@
 import {
   ActionObjectSchema,
   ActionApplyResultSchema,
+  ActionPreviewResultSchema,
   ActionReviewResultSchema,
   ActionValidationResultSchema,
   AdsDiagnosticsResponseSchema,
@@ -28,6 +29,7 @@ import {
   type ActionObject,
   type ActionApplyRequest,
   type ActionApplyResult,
+  type ActionPreviewResult,
   type ActionReviewRequest,
   type ActionReviewResult,
   type ActionValidationResult,
@@ -151,6 +153,13 @@ export function validateAction(actionId: string): Promise<ActionValidationResult
   return apiPost(`/api/actions/${actionId}/validate`, ActionValidationResultSchema);
 }
 
+export function previewAction(actionId: string): Promise<ActionPreviewResult> {
+  return apiPost(`/api/actions/${actionId}/preview`, ActionPreviewResultSchema, {
+    requested_by: "operator_local_dashboard",
+    max_items: 8
+  });
+}
+
 export function reviewAction(
   actionId: string,
   request: ActionReviewRequest
@@ -215,6 +224,7 @@ export function getKnowledgeOperatingMap(): Promise<KnowledgeOperatingMapRespons
 export type {
   ActionObject,
   ActionApplyResult,
+  ActionPreviewResult,
   ActionReviewRequest,
   ActionReviewResult,
   ActionValidationResult,

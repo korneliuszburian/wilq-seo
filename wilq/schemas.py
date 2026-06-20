@@ -282,6 +282,25 @@ class ActionApplyResult(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
+class ActionPreviewRequest(BaseModel):
+    requested_by: str | None = None
+    max_items: int = Field(default=8, ge=1, le=50)
+
+
+class ActionPreviewResult(BaseModel):
+    action_id: str
+    status: Literal["preview_ready", "blocked"]
+    dry_run: bool = True
+    mutation_allowed: bool = False
+    preview_contract: str | None = None
+    preview_items: list[dict[str, Any]] = Field(default_factory=list)
+    preview_items_total: int = 0
+    omitted_items: int = 0
+    blockers: list[str] = Field(default_factory=list)
+    audit_event: AuditEvent
+    review_gate: ActionReviewGate
+
+
 class ActionReviewResult(BaseModel):
     action_id: str
     status: Literal["recorded"]

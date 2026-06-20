@@ -3995,6 +3995,41 @@ function mockFetch() {
           })
         );
       }
+      if (url.includes("/api/actions/") && url.endsWith("/preview")) {
+        const actionId = url.split("/api/actions/")[1]?.replace("/preview", "") ?? "unknown";
+        return Promise.resolve(
+          Response.json({
+            action_id: actionId,
+            status: "blocked",
+            dry_run: true,
+            mutation_allowed: false,
+            preview_contract: "merchant_feed_issue_preview_v1",
+            preview_items: [],
+            preview_items_total: 0,
+            omitted_items: 0,
+            blockers: ["payload_preview_missing", "action_validation_required"],
+            audit_event: {
+              id: `audit_${actionId}_preview_test`,
+              action_id: actionId,
+              event_type: "action_preview_generated",
+              actor: "operator_local_dashboard",
+              created_at: "2026-06-17T10:00:00Z",
+              summary: "Dry-run preview generated without vendor mutations.",
+              evidence_ids: ["ev_refresh_merchant_feed"],
+              redacted: true
+            },
+            review_gate: {
+              status: "pending_validation",
+              summary: "Wymaga walidacji ActionObject przed kolejnym krokiem.",
+              required_checks: [],
+              operator_checklist: [],
+              apply_blockers: ["action_validation_required"],
+              confirmation_required: true,
+              apply_allowed: false
+            }
+          })
+        );
+      }
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
       if (url.endsWith("/api/connectors/refresh-runs")) {
         return Promise.resolve(Response.json(connectorRefreshRuns));
@@ -4381,6 +4416,11 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByText("Zapisano audit event: human_review_approved_for_prepare")).toBeInTheDocument()
     );
+    expect(screen.getByText("Dry-run preview")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generuj preview" }));
+    await waitFor(() => expect(screen.getByText("Audit event: action_preview_generated")).toBeInTheDocument());
+    expect(screen.getByText(/Dry-run: tak; mutacje:/)).toBeInTheDocument();
+    expect(screen.getByText(/zablokowane/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("valid")).toBeInTheDocument();

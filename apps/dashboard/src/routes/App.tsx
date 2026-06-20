@@ -30,6 +30,7 @@ import {
 import {
   ActionObject,
   ActionApplyResult,
+  ActionPreviewResult,
   ActionReviewRequest,
   ActionValidationResult,
   AdsDiagnosticsResponse,
@@ -60,6 +61,7 @@ import {
   getOpportunities,
   getTacticalQueue,
   applyAction,
+  previewAction,
   reviewAction,
   validateAction,
   getWorkflowRuns,
@@ -513,6 +515,7 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             ) : null}
             <ActionReviewGatePanel action={action} />
             <ActionHumanReviewControls action={action} />
+            <ActionPreviewControls action={action} />
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
               <LinkedTraceLine label="ActionObject" values={[action.id]} kind="actions" />
               <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
@@ -531,6 +534,80 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
         ))}
       </div>
     </section>
+  );
+}
+
+function ActionPreviewControls({ action }: { action: ActionObject }) {
+  const queryClient = useQueryClient();
+  const previewMutation = useMutation({
+    mutationFn: () => previewAction(action.id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+    }
+  });
+
+  return (
+    <div className="mt-3 rounded-md border border-line bg-slate-50 p-3 text-xs">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="font-semibold uppercase tracking-normal text-slate-600">
+            Dry-run preview
+          </div>
+          <p className="mt-1 leading-5 text-slate-600">
+            Generuje podgląd payloadu i audit event bez mutacji vendorów.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => previewMutation.mutate()}
+          disabled={previewMutation.isPending}
+          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {previewMutation.isPending ? (
+            <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
+          ) : (
+            <FileJson aria-hidden="true" size={15} />
+          )}
+          {previewMutation.isPending ? "Generuję" : "Generuj preview"}
+        </button>
+      </div>
+      <ActionPreviewResultPanel
+        result={previewMutation.data}
+        error={previewMutation.error instanceof Error ? previewMutation.error.message : null}
+      />
+    </div>
+  );
+}
+
+function ActionPreviewResultPanel({
+  result,
+  error
+}: {
+  result?: ActionPreviewResult;
+  error: string | null;
+}) {
+  if (error) {
+    return <div className="mt-3 text-xs leading-5 text-risk">Preview zablokowany: {error}</div>;
+  }
+  if (!result) {
+    return null;
+  }
+  return (
+    <div className="mt-3 grid gap-2 text-xs text-slate-700">
+      <div>
+        Preview: <span className="font-semibold">{result.status}</span>
+      </div>
+      <div>
+        Dry-run: {result.dry_run ? "tak" : "nie"}; mutacje:{" "}
+        {result.mutation_allowed ? "dopuszczone" : "zablokowane"}
+      </div>
+      <div>
+        Pozycje preview: {result.preview_items.length}/{result.preview_items_total}
+        {result.omitted_items > 0 ? `, pominięto ${result.omitted_items}` : ""}
+      </div>
+      <TraceLine label="Blokady preview" values={result.blockers.map(actionGateLabel)} empty="brak" />
+      <div>Audit event: {result.audit_event.event_type}</div>
+    </div>
   );
 }
 
@@ -5901,6 +5978,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
         </div>
         <ActionReviewGatePanel action={action} />
         <ActionHumanReviewControls action={action} />
+        <ActionPreviewControls action={action} />
         <ActionValidationControls action={action} />
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">

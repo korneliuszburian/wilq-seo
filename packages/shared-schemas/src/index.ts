@@ -167,6 +167,25 @@ export const ActionApplyResultSchema = z.object({
   errors: z.array(z.string())
 });
 
+export const ActionPreviewRequestSchema = z.object({
+  requested_by: z.string().min(1).nullable().optional(),
+  max_items: z.number().int().min(1).max(50).optional()
+});
+
+export const ActionPreviewResultSchema = z.object({
+  action_id: z.string(),
+  status: z.enum(["preview_ready", "blocked"]),
+  dry_run: z.boolean(),
+  mutation_allowed: z.boolean(),
+  preview_contract: z.string().nullable().optional(),
+  preview_items: z.array(z.record(z.unknown())),
+  preview_items_total: z.number(),
+  omitted_items: z.number(),
+  blockers: z.array(z.string()),
+  audit_event: AuditEventSchema,
+  review_gate: ActionReviewGateSchema
+});
+
 export const ActionReviewResultSchema = z.object({
   action_id: z.string(),
   status: z.enum(["recorded"]),
@@ -1552,6 +1571,8 @@ export type Opportunity = z.infer<typeof OpportunitySchema>;
 export type ActionObject = z.infer<typeof ActionObjectSchema>;
 export type ActionValidationResult = z.infer<typeof ActionValidationResultSchema>;
 export type ActionApplyResult = z.infer<typeof ActionApplyResultSchema>;
+export type ActionPreviewRequest = z.infer<typeof ActionPreviewRequestSchema>;
+export type ActionPreviewResult = z.infer<typeof ActionPreviewResultSchema>;
 export type ActionReviewRequest = z.infer<typeof ActionReviewRequestSchema>;
 export type ActionReviewResult = z.infer<typeof ActionReviewResultSchema>;
 export type ActionApplyRequest = z.infer<typeof ActionApplyRequestSchema>;

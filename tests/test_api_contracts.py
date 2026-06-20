@@ -864,6 +864,67 @@ def test_action_review_records_human_outcome_without_apply(
     assert action["review_gate"]["apply_allowed"] is False
 
 
+def test_action_preview_generates_dry_run_audit_without_apply(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "preview_state.sqlite3"))
+
+    preview_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/preview",
+        json={"requested_by": "operator_test", "max_items": 3},
+    )
+
+    assert preview_response.status_code == 200
+    preview = preview_response.json()
+    assert preview["status"] in {"preview_ready", "blocked"}
+    assert preview["dry_run"] is True
+    assert preview["mutation_allowed"] is False
+    assert preview["audit_event"]["event_type"] == "action_preview_generated"
+    assert preview["audit_event"]["actor"] == "operator_test"
+    assert preview["preview_items_total"] >= len(preview["preview_items"])
+    assert len(preview["preview_items"]) <= 3
+    assert preview["review_gate"]["apply_allowed"] is False
+    assert "mutation_allowed=false" in preview["audit_event"]["summary"]
+
+    audit_response = client.get(
+        "/api/audit/events?action_id=act_review_merchant_feed_issues"
+    )
+    assert audit_response.status_code == 200
+    assert audit_response.json()[0]["event_type"] == "action_preview_generated"
+
+
+def test_daily_context_pack_preserves_action_preview_audit(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "preview_context_state.sqlite3"),
+    )
+    preview_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/preview",
+        json={"requested_by": "operator_test", "max_items": 2},
+    )
+    assert preview_response.status_code == 200
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-daily-command"},
+    )
+
+    assert context_response.status_code == 200
+    payload = context_response.json()
+    actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
+    merchant_action = actions_by_id["act_review_merchant_feed_issues"]
+    latest_audit_event = merchant_action["latest_audit_event"]
+    assert latest_audit_event["event_type"] == "action_preview_generated"
+    assert "mutation_allowed=false" in latest_audit_event["summary"]
+    assert merchant_action["review_gate"]["apply_allowed"] is False
+
+
 def test_daily_context_pack_preserves_human_review_outcome(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

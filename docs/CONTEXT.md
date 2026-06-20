@@ -59,6 +59,22 @@ Audit `docs/audits/001-output.md` is now folded into
    `[REDACTED]` marker. This is only local review/audit state and must not be
    interpreted as vendor mutation permission.
 
+0. ActionObject dry-run preview truth, 2026-06-20 20:44 CEST:
+   `POST /api/actions/{action_id}/preview` is the standard local preview step
+   in the Goal 001 `dry_run -> preview -> confirm -> audit` path. It returns
+   typed `ActionPreviewResult` with `dry_run=true`, `mutation_allowed=false`,
+   preview rows extracted from the existing ActionObject payload,
+   `preview_items_total`, `omitted_items`, blockers, `review_gate` and local
+   audit event `action_preview_generated`. Dashboard shows `Dry-run preview`
+   next to review/validation. Daily context-pack carries the latest audit event
+   as `latest_audit_event`, not the full audit history. Runtime proof on a temp
+   state DB: preview endpoint returned `200`, ActionObject and
+   `wilq-daily-command` context-pack both carried
+   `latest_audit_event.event_type=action_preview_generated`,
+   `apply_allowed=false`. This does not enable vendor apply. Full
+   `scripts/verify.sh` passed after this slice: backend `131 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, dashboard build OK.
+
 0. Daily context-pack action summary truth, 2026-06-20 14:30 Europe/Warsaw:
    `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` must use
    `CommandCenterResponse.daily_decisions` for active ActionObject summaries.

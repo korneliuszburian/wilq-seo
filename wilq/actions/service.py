@@ -35,6 +35,8 @@ from wilq.schemas import (
     ActionApplyResult,
     ActionMode,
     ActionObject,
+    ActionPreviewRequest,
+    ActionPreviewResult,
     ActionReviewGate,
     ActionReviewOutcome,
     ActionReviewRequest,
@@ -942,6 +944,44 @@ def record_action_review(
     )
 
 
+def preview_action(
+    action: ActionObject,
+    request: ActionPreviewRequest | None = None,
+) -> ActionPreviewResult:
+    preview_request = request or ActionPreviewRequest()
+    action.review_gate = _action_review_gate(action)
+    preview_items = _payload_preview_items(action.payload)
+    included_items = preview_items[: preview_request.max_items]
+    blockers = _action_preview_blockers(action, preview_items)
+    status: Literal["preview_ready", "blocked"] = "blocked" if blockers else "preview_ready"
+    audit = AuditEvent(
+        id=f"audit_{action.id}_preview_{uuid4().hex[:12]}",
+        action_id=action.id,
+        event_type="action_preview_generated",
+        actor=preview_request.requested_by or "wilq_api",
+        summary=(
+            f"Dry-run preview generated: status={status}, "
+            f"items={len(included_items)}/{len(preview_items)}, "
+            f"mutation_allowed=false. This did not execute vendor mutations."
+        ),
+        evidence_ids=action.evidence_ids,
+    )
+    action.audit_events = [audit, *action.audit_events]
+    return ActionPreviewResult(
+        action_id=action.id,
+        status=status,
+        dry_run=True,
+        mutation_allowed=False,
+        preview_contract=_preview_contract(action.payload, preview_items),
+        preview_items=included_items,
+        preview_items_total=len(preview_items),
+        omitted_items=max(len(preview_items) - len(included_items), 0),
+        blockers=blockers,
+        audit_event=audit,
+        review_gate=action.review_gate,
+    )
+
+
 def apply_action(
     action: ActionObject,
     request: ActionApplyRequest | None = None,
@@ -1120,6 +1160,29 @@ def _review_outcome_from_event(event: AuditEvent | None) -> ActionReviewOutcome 
     outcome = event.event_type.removeprefix("human_review_")
     if outcome in {"approved_for_prepare", "needs_changes", "rejected", "deferred"}:
         return cast(ActionReviewOutcome, outcome)
+    return None
+
+
+def _action_preview_blockers(
+    action: ActionObject,
+    preview_items: list[dict[str, Any]],
+) -> list[str]:
+    blockers: list[str] = []
+    if not preview_items:
+        blockers.append("payload_preview_missing")
+    if action.payload.get("destructive") is True:
+        blockers.append("destructive_actions_blocked")
+    blockers.extend(action.review_gate.apply_blockers)
+    return _unique(blockers)
+
+
+def _preview_contract(payload: dict[str, Any], preview_items: list[dict[str, Any]]) -> str | None:
+    if isinstance(payload.get("preview_contract"), str):
+        return str(payload["preview_contract"])
+    for item in preview_items:
+        contract = item.get("preview_contract")
+        if isinstance(contract, str):
+            return contract
     return None
 
 

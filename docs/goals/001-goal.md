@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 20:28 CEST.
+Last updated: 2026-06-20 20:44 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -86,6 +86,23 @@ access/idea rows in live data, forecast or audience-size checks, custom segment
 targeting/apply previews, budget apply safety, apply confirmation and mutation
 audit paths, plus real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest ActionObject dry-run preview truth, runtime proof 2026-06-20 20:44 CEST:
+WILQ now has `POST /api/actions/{action_id}/preview`, typed
+`ActionPreviewRequest/ActionPreviewResult`, local audit event
+`action_preview_generated` and dashboard panel `Dry-run preview`. Preview uses
+existing ActionObject payload preview rows and returns `dry_run=true`,
+`mutation_allowed=false`, `preview_items_total`, `omitted_items`, blockers and
+`review_gate`. Daily context-pack includes the compact `latest_audit_event`
+for active actions so Codex can see that preview was generated without loading
+full audit history. Runtime proof on a temporary state DB: preview endpoint
+returned `200`, ActionObject and `wilq-daily-command` context-pack both carried
+`latest_audit_event.event_type=action_preview_generated` and
+`apply_allowed=false`. This satisfies the local dry-run/preview visibility step
+only. It does not execute vendor apply, does not confirm mutation and does not
+satisfy remaining impact-sanity or real mutation-audit requirements. Full
+`scripts/verify.sh` after this slice passed: backend `131 passed`, dashboard
+unit `17 passed`, Playwright e2e `14 passed`, dashboard build OK.
 
 Latest human review outcome truth, runtime proof 2026-06-20 20:28 CEST:
 WILQ now has `POST /api/actions/{action_id}/review`, typed
