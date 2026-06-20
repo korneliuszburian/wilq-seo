@@ -25,6 +25,89 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-20 - wilq-ahrefs-gap-finder strict blocker eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-ahrefs-gap-finder`.
+
+Why this eval matters:
+
+The previous Ahrefs eval proved safe blocking, but it still allowed adjacent
+content ActionObject context to appear. After `/api/ahrefs/diagnostics`, the
+skill must prove a narrower contract: Ahrefs DR/rank are authority context only,
+not content gap, backlink gap, competitor gap, ranking opportunity, traffic
+uplift or authority improvement.
+
+Harness changes:
+
+- Case now targets `/ahrefs`.
+- Case requires `ahrefs_diagnostics`, `decision_queue`,
+  `ahrefs_review_authority_context`,
+  `ahrefs_block_gap_claims_without_records`, `missing_read_contracts`,
+  `domain_rating`, `ahrefs_rank` and the missing gap contract names.
+- Harness now supports `expected_blocked`, `expected_no_action_ids`,
+  `blocked_claim_terms` and `forbidden_action_ids`.
+- Forbidden adjacent actions include `act_prepare_content_refresh_queue`,
+  Ads negative/custom-segment actions, Merchant feed review and GA4 tracking
+  review.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- `blocked=true`.
+- Source connectors:
+  `ahrefs`, `google_search_console`, `wordpress_ekologus`.
+- Evidence IDs include:
+  `ev_connector_ahrefs_status`,
+  `ev_refresh_refresh_ahrefs_fd1660e9bd44`.
+- Recommendations:
+  1. use Ahrefs only as authority context from `domain_rating` and
+     `ahrefs_rank`;
+  2. block `content gap`, `backlink gap`, `competitor gap`,
+     `ranking opportunity`, `traffic uplift` and `authority improvement`.
+- Action candidate has `action_id=null`, `validation_state=blocked`.
+- `operator_usefulness_score=4`.
+- No safety findings, no allowed endpoint violation.
+
+Useful output:
+
+- The skill now gives a concrete negative decision: Ahrefs is usable as
+  authority context but not as gap analysis.
+- The output points the operator back to typed read contracts:
+  `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records` and
+  `ahrefs_competitor_pages`.
+- The eval would now fail if the skill reused content/Ads/Merchant/GA4
+  ActionObjects to fake an Ahrefs workflow.
+
+Product gaps found:
+
+1. This is a strong guardrail/value-boundary pass, not full Ahrefs gap value.
+2. WILQ still needs typed Ahrefs competitor pages, content gap records, backlink
+   gap records, organic keywords by URL and top pages by competitor.
+3. Dashboard and skills must keep DR/rank separate from gap claims until those
+   records exist.
+
+Verdict:
+
+Good strict blocker eval. It improves usefulness by preventing false Ahrefs
+recommendations and preserving a clear next API-contract target.
+
 ## 2026-06-19 - wilq-daily-command compact daily context-pack
 
 Context-pack performance proof:

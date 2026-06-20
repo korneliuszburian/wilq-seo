@@ -43,7 +43,12 @@ Aktualny proof produktowy:
   `wilq-ahrefs-gap-finder` context-pack ma `32244 bytes`,
   `active_action_ids=[]`, zawiera `ahrefs_diagnostics` i nie zawiera
   `marketing_brief` ani `content_diagnostics`. Skill smoke przeszedł z
-  `action_count=0`; route `/ahrefs` ma unit i Playwright smoke.
+  `action_count=0`; route `/ahrefs` ma unit i Playwright smoke. Strict
+  non-interactive eval przeszedł:
+  `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+  Wynik ma `blocked=true`, `api_used=true`, `operator_usefulness_score=4`,
+  `action_id=null` i blokuje `content gap`, `backlink gap`, `competitor gap`,
+  `ranking opportunity`, `traffic uplift` oraz `authority improvement`.
 - Command Center ma teraz 30-sekundowy operator snapshot cache po stronie WILQ
   API i dashboardu. Live proof po `scripts/local_stack.sh restart`:
   `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, potem
@@ -256,7 +261,20 @@ Aktualny maintenance:
 
 ## Last Completed Slices
 
-1. Ahrefs diagnostics contract, 2026-06-20 12:41 CEST.
+1. Ahrefs strict skill usefulness eval, 2026-06-20 13:05 CEST.
+   `wilq-ahrefs-gap-finder` eval case now targets `/ahrefs`, requires
+   `ahrefs_diagnostics`, `decision_queue`,
+   `ahrefs_review_authority_context`,
+   `ahrefs_block_gap_claims_without_records`, missing gap read contracts and
+   `blocked=true`. The harness now supports `expected_blocked`,
+   `expected_no_action_ids`, `blocked_claim_terms` and
+   `forbidden_action_ids`, so Ahrefs cannot pass by recommending adjacent
+   content/Ads/Merchant/GA4 actions. Non-interactive eval passed at
+   `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`
+   with `api_used=true`, `blocked=true`, evidence from Ahrefs,
+   `action_id=null` and `operator_usefulness_score=4`.
+
+2. Ahrefs diagnostics contract, 2026-06-20 12:41 CEST.
    `/api/ahrefs/diagnostics`, dashboard `/ahrefs`, shared schemas and scoped
    `wilq-ahrefs-gap-finder` context-pack now expose Ahrefs as authority
    context only. Current live proof: DR=90, Ahrefs Rank=1450,
@@ -272,7 +290,7 @@ Aktualny maintenance:
    passed: backend `123 passed`, dashboard unit `15 passed`, Playwright e2e
    `12 passed`, skill/API smokes and dashboard production build passed.
 
-2. Localo aggregate value facts, 2026-06-20 11:42 CEST.
+3. Localo aggregate value facts, 2026-06-20 11:42 CEST.
    Localo MCP vendor_read now performs read-only GraphQL `query` calls after
    MCP initialize and stores only aggregate facts, not raw place names,
    addresses, keywords or Localo IDs. Live proof:
@@ -298,7 +316,7 @@ Aktualny maintenance:
    tests `14 passed`, Playwright e2e `11 passed`, skill/API smokes and
    production build passed.
 
-3. Ads business context contract, 2026-06-20 10:12 CEST.
+4. Ads business context contract, 2026-06-20 10:12 CEST.
    `AdsDiagnosticsResponse` exposes typed
    `business_context_read_contract`, shared Zod schema and Ads Doctor UI
    labels. Live proof after `scripts/local_stack.sh restart`:
@@ -310,7 +328,7 @@ Aktualny maintenance:
    `blocker_count=2`. `wilq-ads-doctor` smoke passed with the same contract
    in scoped context-pack (`context_pack_bytes=186844`, still under 200 KB).
 
-4. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
+5. Ads scoped context-pack compaction, 2026-06-20 09:46 CEST.
    `wilq-ads-doctor` context-pack no longer ships duplicated Ads sections or
    row payloads inside `decision_queue`. Live proof: 174292 bytes over the wire
    and smoke-reported `context_pack_bytes=183152`; `sections_omitted=true`,
@@ -318,23 +336,12 @@ Aktualny maintenance:
    capped at 4, full endpoint pointer preserved. The smoke script now fails if
    `wilq-ads-doctor` exceeds 200 KB.
 
-5. Ads intent review gates, 2026-06-20 09:35 CEST.
-   Search-term safety, keyword match context and negative keyword review now
-   expose `human_intent_review` as `operator_review_gates` instead of a missing
-   read contract when supporting Ads evidence exists. Live proof:
-   search-term safety and keyword context both have
-   `missing_read_contracts=[]`, `operator_review_gates=["human_intent_review"]`;
-   decisions `ads_review_search_term_safety` and
-   `ads_review_negative_keyword_safety` carry the same gate. Full
-   `scripts/verify.sh` passed: backend `119 passed`, dashboard unit
-   `14 passed`, Playwright `11 passed`, skill/API smokes and production build
-   passed.
-
 ## Active Gaps
 
 - Ahrefs now has a dedicated diagnostics surface, but true competitor/content/
   backlink gap work is still blocked until WILQ stores typed Ahrefs gap
-  records. DR/rank must stay authority context only.
+  records. DR/rank must stay authority context only; strict eval now enforces
+  that no adjacent ActionObject can be used as an Ahrefs gap recommendation.
 - Demand Gen is honest-blocked, not useful yet. It still needs real
   Demand Gen read contracts: campaign rows, asset groups, creative assets,
   landing quality by campaign, migration constraints and a Demand Gen

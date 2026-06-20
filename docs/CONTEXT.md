@@ -556,8 +556,12 @@ Ważne pliki:
 - `.agents/skills/*/scripts/smoke_*`
 
 Harness sprawdza schema, język PL, API usage, evidence/source connectors i
-ActionObject safety. Nie zastępuje ręcznej oceny użyteczności odpowiedzi dla
-marketera; tę ocenę zapisujemy w `docs/evals/skill-eval-ledger.md`.
+ActionObject safety. Wspiera też case-specific guardrails:
+`expected_blocked`, `expected_no_action_ids`, `blocked_claim_terms` i
+`forbidden_action_ids`. Używaj ich, gdy skill ma zwrócić blocker zamiast
+rekomendacji albo nie może dziedziczyć ActionObjectów z sąsiedniego workflow.
+Nie zastępuje ręcznej oceny użyteczności odpowiedzi dla marketera; tę ocenę
+zapisujemy w `docs/evals/skill-eval-ledger.md`.
 
 ## Skill Eval Pipeline
 
@@ -925,7 +929,8 @@ Final proof:
 
 ## Latest Ahrefs Diagnostics Slice
 
-Status: implemented; full `scripts/verify.sh` passed.
+Status: implemented; full `scripts/verify.sh` passed. Follow-up strict skill
+eval also passed.
 
 What changed:
 
@@ -938,6 +943,10 @@ What changed:
   `content_diagnostics`, and has `active_action_ids=[]`.
 - Skill smoke now fails if Ahrefs diagnostics has no actions but the context
   pack exposes adjacent ActionObjects.
+- Strict non-interactive eval now targets `/ahrefs`, requires
+  `ahrefs_diagnostics`, `ahrefs_block_gap_claims_without_records`,
+  `blocked=true`, no non-null `action_id`, and forbids adjacent content/Ads/
+  Merchant/GA4 ActionObjects.
 
 Current live proof after `scripts/local_stack.sh restart`:
 
@@ -950,6 +959,10 @@ Current live proof after `scripts/local_stack.sh restart`:
   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
   `ahrefs_top_pages_by_competitor`.
 - Context-pack size: `32244 bytes`; active action IDs: none.
+- Eval artifact:
+  `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+  Result: `api_used=true`, `blocked=true`, Ahrefs evidence IDs present,
+  `action_id=null`, `operator_usefulness_score=4`.
 
 Still blocked by design:
 

@@ -104,8 +104,43 @@
   },
   {
     "skill": "wilq-ahrefs-gap-finder",
-    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. Jeżeli nie, zwróć uczciwy blocker.",
-    "expected_connectors": ["ahrefs"]
+    "surface_path": "/ahrefs",
+    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. Jeżeli WILQ ma tylko authority facts bez rekordów luk, zwróć blocker: wolno użyć Ahrefs jako kontekstu autorytetu, ale nie wolno rekomendować content gap, backlink gap ani przewagi konkurencji.",
+    "expected_connectors": ["ahrefs"],
+    "expected_terms_pl": [
+      "Ahrefs",
+      "ahrefs_diagnostics",
+      "decision_queue",
+      "ahrefs_review_authority_context",
+      "ahrefs_block_gap_claims_without_records",
+      "missing_read_contracts",
+      "ahrefs_content_gap_records",
+      "ahrefs_backlink_gap_records",
+      "ahrefs_competitor_pages",
+      "domain_rating",
+      "ahrefs_rank",
+      "content gap",
+      "backlink gap",
+      "competitor gap",
+      "blocked claims"
+    ],
+    "expected_blocked": true,
+    "expected_no_action_ids": true,
+    "blocked_claim_terms": [
+      "content gap",
+      "backlink gap",
+      "competitor gap",
+      "ranking opportunity",
+      "traffic uplift",
+      "authority improvement"
+    ],
+    "forbidden_action_ids": [
+      "act_prepare_content_refresh_queue",
+      "act_prepare_negative_keyword_review_queue",
+      "act_prepare_custom_segments_from_search_terms",
+      "act_review_merchant_feed_issues",
+      "act_review_ga4_tracking_quality"
+    ]
   },
   {
     "skill": "wilq-localo-operator",

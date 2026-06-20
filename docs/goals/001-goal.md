@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 12:41 CEST.
+Last updated: 2026-06-20 13:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -148,9 +148,15 @@ authority evidence separately from true gap evidence. Current live proof after
 `32244 bytes`, includes `ahrefs_diagnostics`, omits `marketing_brief` and
 `content_diagnostics`, and has `active_action_ids=[]`. This prevents the skill
 from inheriting content ActionObjects when Ahrefs diagnostics has no actions.
-Do not claim competitor/content/backlink gaps from DR/rank alone. Full
-`scripts/verify.sh` passed after this slice: backend `123 passed`, dashboard
-unit `15 passed`, Playwright e2e `12 passed`, skill/API smokes and dashboard
+Do not claim competitor/content/backlink gaps from DR/rank alone. Strict
+non-interactive eval now enforces this: case `wilq-ahrefs-gap-finder` targets
+`/ahrefs`, requires `blocked=true`, no non-null `action_id`, missing gap read
+contracts and blocked claim terms. Latest eval artifact:
+`.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`;
+result has `api_used=true`, `blocked=true`, Ahrefs evidence IDs,
+`action_id=null` and `operator_usefulness_score=4`. Full `scripts/verify.sh`
+passed after the diagnostics slice: backend `123 passed`, dashboard unit
+`15 passed`, Playwright e2e `12 passed`, skill/API smokes and dashboard
 production build passed.
 
 Ads dedicated route and `wilq-ads-doctor` context-pack must expose decision
@@ -735,7 +741,9 @@ These are the current reasons Goal 001 is not complete:
    competitor/content/backlink gap claims. Current live proof: DR=90,
    Ahrefs Rank=1450, `gap_fact_count=0`, `active_action_ids=[]`, and 5 missing
    gap read contracts. Next Ahrefs value work is to implement typed gap records,
-   not to make the skill infer gaps from aggregate rank metrics.
+   not to make the skill infer gaps from aggregate rank metrics. Strict eval
+   coverage now exists for this guardrail:
+   `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
 
 ## What WILQ Must Give The Marketer
 
@@ -1240,9 +1248,14 @@ Work in this order:
      `act_prepare_custom_segments_from_search_terms`; keep rerunning when
      Keyword Planner enrichment, forecast/audience-size or targeting/apply
      contracts are added;
-   - `wilq-ahrefs-gap-finder`, `wilq-campaign-builder`,
-     `wilq-demand-gen-operator` and `wilq-social-publisher` only after their
-     required read contracts or ActionObjects exist.
+   - done for `wilq-ahrefs-gap-finder` as an authority-only blocker workflow
+     after `/api/ahrefs/diagnostics` and scoped context-pack were added. Fresh
+     strict eval passed on 2026-06-20:
+     `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+     Rerun after typed competitor/content/backlink gap records exist;
+   - `wilq-campaign-builder`, `wilq-demand-gen-operator` and
+     `wilq-social-publisher` only after their required read contracts or
+     ActionObjects exist.
 
    Repair means:
    - `SKILL.md` has clean trigger intent, allowed endpoints, evidence
@@ -1716,9 +1729,12 @@ Current eval progress:
   ActionObject validation are missing.
 
 Current eval coverage: 12/12 WILQ skills have recorded non-interactive Codex
-evals, and GA4 has a fresh strict decision_queue rerun. This proves API
-integration and guardrails, not Goal 001 completion. The next product work must
-convert eval findings into fixes: Localo facts, Ahrefs gap records,
+evals. GA4 has a fresh strict decision_queue rerun, Ads has multiple strengthened
+read-contract reruns, and Ahrefs now has a strict blocker eval proving that
+authority metrics cannot be promoted into gap recommendations:
+`.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+This proves API integration and guardrails, not Goal 001 completion. The next
+product work must convert eval findings into fixes: Ahrefs gap records,
 source-term/custom-segment evidence, campaign ActionObjects, Demand Gen
 diagnostics and the final plug-and-play Codex acceptance session.
 
@@ -2078,8 +2094,8 @@ Commit rules:
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
    regression. Next product work should add missing value contracts:
-   profit-margin/business-goal interpretation for Ads, Localo visibility facts,
-   typed Ahrefs gap records, deeper source-term/custom-segment evidence, remaining
+   profit-margin/business-goal interpretation for Ads, typed Ahrefs gap records,
+   deeper source-term/custom-segment evidence, remaining
    campaign optimization contracts and Demand Gen diagnostics. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget

@@ -66,6 +66,27 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "terms": {"SEO / GSC", "GSC", "treści", "content_diagnostics", "query/page"},
             "action_ids": {"act_prepare_content_refresh_queue"},
         },
+        "wilq-ahrefs-gap-finder": {
+            "surface_path": "/ahrefs",
+            "terms": {
+                "Ahrefs",
+                "ahrefs_diagnostics",
+                "decision_queue",
+                "ahrefs_review_authority_context",
+                "ahrefs_block_gap_claims_without_records",
+                "missing_read_contracts",
+                "ahrefs_content_gap_records",
+                "ahrefs_backlink_gap_records",
+                "ahrefs_competitor_pages",
+                "domain_rating",
+                "ahrefs_rank",
+                "content gap",
+                "backlink gap",
+                "competitor gap",
+                "blocked claims",
+            },
+            "action_ids": set(),
+        },
         "wilq-merchant-feed-operator": {
             "surface_path": "/merchant",
             "terms": {
@@ -145,6 +166,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert set(daily_case["required_source_connectors"]) <= set(
         daily_case["expected_connectors"]
     )
+    ahrefs_case = cases["wilq-ahrefs-gap-finder"]
+    assert ahrefs_case["expected_blocked"] is True
+    assert ahrefs_case["expected_no_action_ids"] is True
+    assert "content gap" in ahrefs_case["blocked_claim_terms"]
+    assert "act_prepare_content_refresh_queue" in ahrefs_case["forbidden_action_ids"]
 
 
 def test_codex_skill_eval_harness_validates_route_markers() -> None:
@@ -158,6 +184,10 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "expected knowledge_card_id missing",
         "expected expert_rule_id missing",
         "required_source_connectors",
+        "blocked must be",
+        "expected no action_ids",
+        "forbidden action_id present",
+        "uses blocked claim term without blocked_reason",
     ):
         assert required in harness
 
@@ -243,3 +273,18 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             in content_smoke_script
         )
         assert '"content_diagnostics": {' in content_smoke_script
+
+    ahrefs_skill_doc = Path(".agents/skills/wilq-ahrefs-gap-finder/SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    ahrefs_smoke_script = Path(
+        ".agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    assert "GET /api/ahrefs/diagnostics" in ahrefs_skill_doc
+    assert (
+        'request_json(args.api_base, "POST", "/api/codex/context-pack"'
+        in ahrefs_smoke_script
+    )
+    assert "ahrefs_diagnostics" in ahrefs_smoke_script
+    assert "ahrefs_block_gap_claims_without_records" in ahrefs_smoke_script
+    assert "Context pack ahrefs_diagnostics must be an object" in ahrefs_smoke_script

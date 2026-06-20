@@ -120,6 +120,10 @@ expected_terms = case.get("expected_terms_pl", [])
 expected_action_ids = case.get("expected_action_ids", [])
 expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
 expected_expert_rule_ids = case.get("expected_expert_rule_ids", [])
+expected_blocked = case.get("expected_blocked")
+expected_no_action_ids = case.get("expected_no_action_ids", False)
+blocked_claim_terms = case.get("blocked_claim_terms", [])
+forbidden_action_ids = case.get("forbidden_action_ids", [])
 is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
@@ -160,6 +164,27 @@ expected_lineage_instruction = (
     if expected_knowledge_card_ids or expected_expert_rule_ids
     else ""
 )
+expected_blocker_instruction = (
+    "\n<expected_blocker>\nTen eval oczekuje `blocked=true` i niepustego `blocked_reason`. "
+    f"Claimy, które wolno wymienić tylko jako zablokowane: {', '.join(blocked_claim_terms)}.\n"
+    "</expected_blocker>\n"
+    if expected_blocked is True
+    else ""
+)
+expected_no_actions_instruction = (
+    "\n<expected_no_action_ids>\nWILQ API nie zwraca ActionObject dla tego workflow. "
+    "Nie dodawaj żadnych nie-null `action_id` w `action_candidates`.\n"
+    "</expected_no_action_ids>\n"
+    if expected_no_action_ids
+    else ""
+)
+forbidden_actions_instruction = (
+    "\n<forbidden_action_ids>\nTe ActionObject IDs są z innych workflow i nie mogą trafić "
+    f"do finalnego JSON: {', '.join(forbidden_action_ids)}.\n"
+    "</forbidden_action_ids>\n"
+    if forbidden_action_ids
+    else ""
+)
 print(f"""<task>
 Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
 Zadanie: {case["task_pl"]}
@@ -168,6 +193,9 @@ Zadanie: {case["task_pl"]}
 {expected_terms_instruction}
 {expected_actions_instruction}
 {expected_lineage_instruction}
+{expected_blocker_instruction}
+{expected_no_actions_instruction}
+{forbidden_actions_instruction}
 
 <api>
 WILQ API base: {api_base}
@@ -277,6 +305,11 @@ if data.get("safety_findings"):
 if int(data.get("operator_usefulness_score", 0)) < 3:
     errors.append("operator_usefulness_score must be >= 3")
 
+if "expected_blocked" in case and data.get("blocked") is not case["expected_blocked"]:
+    errors.append(f"blocked must be {case['expected_blocked']!r}")
+if case.get("expected_blocked") is True and not data.get("blocked_reason"):
+    errors.append("blocked_reason must be non-empty when blocked=true is expected")
+
 texts = [data.get("operator_next_step", ""), data.get("notes", "")]
 texts.extend(rec.get("label_pl", "") for rec in data.get("recommendations", []))
 texts.extend(action.get("label_pl", "") for action in data.get("action_candidates", []))
@@ -317,13 +350,33 @@ for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
             errors.append(f"recommendation {idx} has no evidence_ids")
         if not recommendation.get("source_connectors"):
             errors.append(f"recommendation {idx} has no source_connectors")
+        recommendation_text = json.dumps(recommendation, ensure_ascii=False).lower()
+        for term in case.get("blocked_claim_terms", []):
+            if term.lower() in recommendation_text:
+                errors.append(
+                    f"recommendation {idx} uses blocked claim term without blocked_reason: {term}"
+                )
 
 for idx, action in enumerate(data.get("action_candidates", []), start=1):
     state = action.get("validation_state")
     if state == "validated" and not action.get("action_id"):
         errors.append(f"action candidate {idx} is validated without action_id")
+    action_text = json.dumps(action, ensure_ascii=False).lower()
+    if state not in {"blocked", "missing"}:
+        for term in case.get("blocked_claim_terms", []):
+            if term.lower() in action_text:
+                errors.append(
+                    f"action candidate {idx} uses blocked claim term outside blocked/missing state: {term}"
+                )
 
 action_ids = {action.get("action_id") for action in data.get("action_candidates", [])}
+if case.get("expected_no_action_ids"):
+    non_null_action_ids = sorted(action_id for action_id in action_ids if action_id)
+    if non_null_action_ids:
+        errors.append(f"expected no action_ids, got: {non_null_action_ids}")
+for action_id in case.get("forbidden_action_ids", []):
+    if action_id in action_ids:
+        errors.append(f"forbidden action_id present in action_candidates: {action_id}")
 for action_id in case.get("expected_action_ids", []):
     if action_id not in action_ids:
         errors.append(f"expected action_id missing from action_candidates: {action_id}")
