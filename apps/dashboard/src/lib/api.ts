@@ -3,6 +3,7 @@ import {
   ActionApplyResultSchema,
   ActionValidationResultSchema,
   AdsDiagnosticsResponseSchema,
+  AhrefsDiagnosticsResponseSchema,
   CommandCenterResponseSchema,
   ContentDiagnosticsResponseSchema,
   ConnectorRefreshRunSchema,
@@ -27,6 +28,7 @@ import {
   type ActionApplyResult,
   type ActionValidationResult,
   type AdsDiagnosticsResponse,
+  type AhrefsDiagnosticsResponse,
   type CommandCenterResponse,
   type ContentDiagnosticsResponse,
   type ConnectorRefreshRun,
@@ -90,6 +92,10 @@ export function getTacticalQueue(): Promise<TacticalQueueResponse> {
 
 export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
   return apiGet("/api/ads/diagnostics", AdsDiagnosticsResponseSchema);
+}
+
+export function getAhrefsDiagnostics(): Promise<AhrefsDiagnosticsResponse> {
+  return apiGet("/api/ahrefs/diagnostics", AhrefsDiagnosticsResponseSchema);
 }
 
 export function getMerchantDiagnostics(): Promise<MerchantDiagnosticsResponse> {
@@ -195,6 +201,7 @@ export type {
   ActionApplyResult,
   ActionValidationResult,
   AdsDiagnosticsResponse,
+  AhrefsDiagnosticsResponse,
   CommandCenterResponse,
   ContentDiagnosticsResponse,
   ConnectorRefreshRun,

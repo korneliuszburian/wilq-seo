@@ -922,3 +922,45 @@ Final proof:
 - Dashboard route unit tests: `14 passed`.
 - Playwright e2e: `11 passed`.
 - Skill/API smokes and dashboard production build passed.
+
+## Latest Ahrefs Diagnostics Slice
+
+Status: implemented; full `scripts/verify.sh` passed.
+
+What changed:
+
+- `/api/ahrefs/diagnostics` now exposes typed Ahrefs decisions instead of
+  relying on generic metric cards.
+- Dashboard `/ahrefs` renders `Status Ahrefs / dowody SEO`,
+  `Co marketer ma wiedzieć o Ahrefs` and `Dowody i ograniczenia Ahrefs`.
+- Scoped `POST /api/codex/context-pack {"skill":"wilq-ahrefs-gap-finder"}`
+  contains `ahrefs_diagnostics`, omits `marketing_brief` and
+  `content_diagnostics`, and has `active_action_ids=[]`.
+- Skill smoke now fails if Ahrefs diagnostics has no actions but the context
+  pack exposes adjacent ActionObjects.
+
+Current live proof after `scripts/local_stack.sh restart`:
+
+- `/api/ahrefs/diagnostics.live_data_available=true`.
+- `authority_fact_count=2`, `gap_fact_count=0`, `blocker_count=1`.
+- Ready decision `ahrefs_review_authority_context`: `DR=90`,
+  `Ahrefs Rank=1450`, `fakty luk=0`.
+- Blocked decision `ahrefs_block_gap_claims_without_records` lists missing
+  contracts: `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
+  `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
+  `ahrefs_top_pages_by_competitor`.
+- Context-pack size: `32244 bytes`; active action IDs: none.
+
+Still blocked by design:
+
+- Do not claim competitor gap, content gap, backlink gap, ranking opportunity,
+  traffic uplift or authority improvement from DR/rank alone.
+- Next Ahrefs value work is typed gap records, not prompt-language polish.
+
+Final proof:
+
+- `scripts/verify.sh` passed after this slice.
+- Backend API contracts: `123 passed`.
+- Dashboard route unit tests: `15 passed`.
+- Playwright e2e: `12 passed`.
+- Skill/API smokes and dashboard production build passed.

@@ -1826,6 +1826,87 @@ def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
     ] == "blocked"
 
 
+def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_diag_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_diag.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    ahrefs_run = ConnectorRefreshRun(
+        id="refresh_ahrefs_diag_test",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_ahrefs_diag_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "api": "ahrefs_site_explorer_domain_rating",
+            "domain_rating": 90,
+            "ahrefs_rank": 1450,
+        },
+        summary="Ahrefs domain rating completed through test adapter.",
+    )
+    local_state_store().save_connector_refresh_run(ahrefs_run)
+    metric_store().save_connector_refresh_metrics(
+        ahrefs_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "domain_rating",
+                90,
+                {"contract": "authority_summary"},
+                period="ahrefs_site_explorer",
+            ),
+            VendorMetricFact(
+                "ahrefs_rank",
+                1450,
+                {"contract": "authority_summary"},
+                period="ahrefs_site_explorer",
+            ),
+        ],
+    )
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["language"] == "pl-PL"
+    assert payload["live_data_available"] is True
+    assert payload["authority_fact_count"] == 2
+    assert payload["gap_fact_count"] == 0
+    assert payload["blocker_count"] == 1
+    decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
+    authority_decision = decision_by_id["ahrefs_review_authority_context"]
+    assert authority_decision["status"] == "ready"
+    assert authority_decision["metric_tiles"]["DR"] == 90
+    assert authority_decision["metric_tiles"]["Ahrefs Rank"] == 1450
+    assert authority_decision["metric_tiles"]["fakty luk"] == 0
+    assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
+    assert "content gap" in authority_decision["blocked_claims"]
+    block_decision = decision_by_id["ahrefs_block_gap_claims_without_records"]
+    assert block_decision["status"] == "blocked"
+    assert block_decision["metric_tiles"]["braki kontraktu"] == 5
+    assert block_decision["evidence_ids"] == ["ev_refresh_refresh_ahrefs_diag_test"]
+    assert all(fact["source_connector"] == "ahrefs" for fact in authority_decision["metric_facts"])
+    serialized = json.dumps(payload, ensure_ascii=False)
+    assert "ahrefs-token-test" not in serialized
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-ahrefs-gap-finder"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    assert context_payload["ahrefs_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
+    assert context_payload["ahrefs_diagnostics"]["decision_queue"][0]["id"] in decision_by_id
+    assert context_payload["active_action_objects"] == []
+    assert "marketing_brief" not in context_payload
+    assert "content_diagnostics" not in context_payload
+
+
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

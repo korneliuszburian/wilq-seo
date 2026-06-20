@@ -11,6 +11,7 @@ from typing import Any
 SKILL_NAME = "wilq-ahrefs-gap-finder"
 REQUIRED_CONNECTORS = ["ahrefs", "google_search_console", "wordpress_ekologus"]
 REQUIRED_CONTEXT_KEYS = {
+    "ahrefs_diagnostics",
     "strict_instruction",
     "connector_status",
     "evidence_summaries",
@@ -50,6 +51,35 @@ def main() -> int:
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
+    ahrefs_diagnostics = pack.get("ahrefs_diagnostics")
+    if not isinstance(ahrefs_diagnostics, dict):
+        raise SystemExit("Context pack ahrefs_diagnostics must be an object")
+    if ahrefs_diagnostics.get("language") != "pl-PL":
+        raise SystemExit("Ahrefs diagnostics must use pl-PL language contract")
+    decision_ids = {
+        decision.get("id")
+        for decision in ahrefs_diagnostics.get("decision_queue", [])
+        if isinstance(decision, dict)
+    }
+    if not decision_ids:
+        raise SystemExit("Ahrefs diagnostics must expose a decision_queue")
+    if "ahrefs_block_gap_claims_without_records" not in decision_ids:
+        raise SystemExit("Ahrefs diagnostics must explicitly block gap claims without records")
+    serialized_ahrefs = json.dumps(ahrefs_diagnostics, ensure_ascii=False)
+    for required_term in ("evidence_ids", "missing_read_contracts", "blocked_claims"):
+        if required_term not in serialized_ahrefs:
+            raise SystemExit(f"Ahrefs diagnostics missing {required_term}")
+    diagnostics_action_ids = ahrefs_diagnostics.get("action_ids") or []
+    context_action_ids = [
+        item.get("id")
+        for item in (pack.get("active_action_objects") or [])
+        if isinstance(item, dict) and item.get("id")
+    ]
+    if not diagnostics_action_ids and context_action_ids:
+        raise SystemExit(
+            "Ahrefs context pack must not expose adjacent ActionObjects when "
+            f"diagnostics action_ids is empty: {context_action_ids}"
+        )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -99,6 +129,12 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "ahrefs_authority_fact_count": ahrefs_diagnostics.get(
+                    "authority_fact_count"
+                ),
+                "ahrefs_gap_fact_count": ahrefs_diagnostics.get("gap_fact_count"),
+                "ahrefs_blocker_count": ahrefs_diagnostics.get("blocker_count"),
+                "ahrefs_decision_ids": sorted(decision_ids),
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])

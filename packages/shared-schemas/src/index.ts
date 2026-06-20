@@ -1094,6 +1094,61 @@ export const LocaloDiagnosticsResponseSchema = z.object({
   blocker_count: z.number()
 });
 
+export const AhrefsDiagnosticSectionSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.enum(["ready", "blocked", "missing"]),
+  summary: z.string(),
+  diagnosis: z.string(),
+  next_step: z.string(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
+export const AhrefsDecisionItemSchema = z.object({
+  id: z.string(),
+  decision_type: z.enum([
+    "review_authority_context",
+    "run_authority_read",
+    "block_gap_claims"
+  ]),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  rationale: z.string(),
+  next_step: z.string(),
+  priority: z.number(),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
+  allowed_evidence: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  metric_facts: z.array(MetricFactSchema),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  risk: z.enum(["low", "medium", "high", "critical"])
+});
+
+export const AhrefsDiagnosticsResponseSchema = z.object({
+  generated_at: z.string().nullable().optional(),
+  language: z.literal("pl-PL"),
+  strict_instruction: z.string(),
+  connector: ConnectorStatusSchema,
+  latest_refresh: ConnectorRefreshRunSchema.nullable().optional(),
+  live_data_available: z.boolean(),
+  authority_fact_count: z.number(),
+  gap_fact_count: z.number(),
+  decision_queue: z.array(AhrefsDecisionItemSchema),
+  sections: z.array(AhrefsDiagnosticSectionSchema),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocker_count: z.number()
+});
+
 export const ExpertRuleSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -1353,6 +1408,7 @@ export const ContextPackResponseSchema = z.object({
   content_diagnostics: ContentDiagnosticsResponseSchema,
   ga4_diagnostics: Ga4DiagnosticsResponseSchema,
   localo_diagnostics: LocaloDiagnosticsResponseSchema.optional(),
+  ahrefs_diagnostics: AhrefsDiagnosticsResponseSchema.optional(),
   strict_instruction: z.string()
 });
 
@@ -1411,6 +1467,9 @@ export type LocaloAccessProbe = z.infer<typeof LocaloAccessProbeSchema>;
 export type LocaloDecisionItem = z.infer<typeof LocaloDecisionItemSchema>;
 export type LocaloDiagnosticSection = z.infer<typeof LocaloDiagnosticSectionSchema>;
 export type LocaloDiagnosticsResponse = z.infer<typeof LocaloDiagnosticsResponseSchema>;
+export type AhrefsDecisionItem = z.infer<typeof AhrefsDecisionItemSchema>;
+export type AhrefsDiagnosticSection = z.infer<typeof AhrefsDiagnosticSectionSchema>;
+export type AhrefsDiagnosticsResponse = z.infer<typeof AhrefsDiagnosticsResponseSchema>;
 export type MarketingBrief = z.infer<typeof MarketingBriefSchema>;
 export type MarketingBriefItem = z.infer<typeof MarketingBriefItemSchema>;
 export type MarketingBriefSection = z.infer<typeof MarketingBriefSectionSchema>;

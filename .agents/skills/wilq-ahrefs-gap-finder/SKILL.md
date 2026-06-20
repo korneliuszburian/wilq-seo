@@ -30,7 +30,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
-3. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ahrefs-gap-finder"}` przed podsumowaniem metryk, opportunities lub kandydatów działań.
+3. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ahrefs-gap-finder"}` przed podsumowaniem metryk, opportunities lub kandydatów działań. Context-pack musi zawierać `ahrefs_diagnostics`.
 4. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 5. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
 6. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
@@ -45,6 +45,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
 - `GET /api/marketing/brief`
+- `GET /api/ahrefs/diagnostics`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `GET /api/connectors/{connector}/refresh-runs`

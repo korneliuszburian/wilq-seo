@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-20 11:05 CEST.
+Last updated: 2026-06-20 12:41 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -133,6 +133,25 @@ the same fields with no GA4 redaction paths and no null
 `status`/`priority`/`metric_tiles`. Full `scripts/verify.sh` passed after this
 slice: backend `117 passed`, dashboard unit `14 passed`, Playwright e2e
 `9 passed`, security, skill/API smokes and dashboard production build passed.
+
+Ahrefs dedicated route and `wilq-ahrefs-gap-finder` context-pack must expose
+authority evidence separately from true gap evidence. Current live proof after
+`scripts/local_stack.sh restart`: `/api/ahrefs/diagnostics` has
+`live_data_available=true`, `authority_fact_count=2`, `gap_fact_count=0`,
+`blocker_count=1`, ready decision `ahrefs_review_authority_context` with
+`DR=90`, `Ahrefs Rank=1450`, `fakty luk=0`, and blocked decision
+`ahrefs_block_gap_claims_without_records` with missing read contracts:
+`ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
+`ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
+`ahrefs_top_pages_by_competitor`. Scoped
+`POST /api/codex/context-pack {"skill":"wilq-ahrefs-gap-finder"}` is
+`32244 bytes`, includes `ahrefs_diagnostics`, omits `marketing_brief` and
+`content_diagnostics`, and has `active_action_ids=[]`. This prevents the skill
+from inheriting content ActionObjects when Ahrefs diagnostics has no actions.
+Do not claim competitor/content/backlink gaps from DR/rank alone. Full
+`scripts/verify.sh` passed after this slice: backend `123 passed`, dashboard
+unit `15 passed`, Playwright e2e `12 passed`, skill/API smokes and dashboard
+production build passed.
 
 Ads dedicated route and `wilq-ads-doctor` context-pack must expose decision
 metadata directly, not rely on frontend inference. Current live proof after
@@ -512,8 +531,10 @@ Current connector truth:
   decision and causes confusion.
 - `wordpress_ekologus` and `wordpress_sklep`: inventory context exists and must
   protect against duplicate content.
-- `ahrefs`: aggregate authority/rank facts exist; deeper gap workflows still
-  need richer evidence.
+- `ahrefs`: aggregate authority/rank facts exist and `/api/ahrefs/diagnostics`
+  now exposes them as authority context with a dedicated blocker for missing gap
+  records. Deeper competitor/content/backlink workflows still need typed Ahrefs
+  gap records before any gap claim is allowed.
 - `localo`: MCP Server URL, OAuth Client ID/Organization ID, OAuth Client
   Secret/Create Token and local OAuth access token are configured. On
   2026-06-18, `refresh_localo_af3a75e8659e` completed a live API-triggered
@@ -540,7 +561,7 @@ Do not rebuild these from scratch:
 - 12 repo-local WILQ skills under `.agents/skills`.
 - Baseline non-interactive Codex eval harness and deterministic skill smokes.
 - API-backed dashboard shell using typed frontend boundaries.
-- Command Center, Merchant, Content Planner, GA4, Ads Doctor and Localo route
+- Command Center, Merchant, Content Planner, GA4, Ads Doctor, Localo and Ahrefs route
   surfaces.
 - Google Ads OAuth helper and successful live campaign metric read.
 - Real-browser Playwright smoke in `scripts/verify.sh`.
@@ -590,6 +611,11 @@ Do not rebuild these from scratch:
   Localo/GBP safety gate instead of the generic tactical queue, `Metric facts`,
   `24 Taktyki` counters or stale `Dokończ Localo access` copy when MCP
   initialize already works.
+- Ahrefs route operator cleanup: `/api/ahrefs/diagnostics` now exposes typed
+  authority-context decisions and a blocker for missing competitor/content/
+  backlink gap records. Dashboard `/ahrefs` renders `Status Ahrefs / dowody
+  SEO`, `Co marketer ma wiedzieć o Ahrefs`, `Dowody i ograniczenia Ahrefs`
+  and does not fall back to the generic registry surface.
 - Metric store grouped batch reads for tactical/content surfaces: latest
   query/page groups keep clicks, impressions, CTR and position together instead
   of truncating by connector row count.
@@ -605,7 +631,8 @@ These are the current reasons Goal 001 is not complete:
    content decision queue. `/ga4` has been cleaned up around its typed GA4
    decision queue. `/ads-doctor` has been cleaned up around its typed Ads
    decision queue. `/localo` has been cleaned up around
-   `/api/localo/diagnostics`. Remaining route work is now regression control:
+   `/api/localo/diagnostics`. `/ahrefs` has been cleaned up around
+   `/api/ahrefs/diagnostics`. Remaining route work is now regression control:
    every touched route must preserve the decision-first hierarchy, Polish
    operator copy, Codex bridge, evidence IDs and blocked claims. Do not
    reintroduce generic registries, readiness-only cards, stale blocker copy or
@@ -697,11 +724,18 @@ These are the current reasons Goal 001 is not complete:
    drafting can be prepare-only and evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the 2026-06-20 Ads context-pack compaction
-   slice: backend API contracts `119 passed`, dashboard route tests
-   `14 passed`, Playwright e2e `11 passed`, security, skill/API smokes and
-   dashboard production build passed. Keep this file current after every future
-   slice.
+   `scripts/verify.sh` passed after the 2026-06-20 Ahrefs diagnostics slice:
+   backend API contracts `123 passed`, dashboard route tests `15 passed`,
+   Playwright e2e `12 passed`, security, skill/API smokes and dashboard
+   production build passed. Keep this file current after every future slice.
+
+8. **Ahrefs is authority-context-ready, not gap-analysis-ready.**
+   `/api/ahrefs/diagnostics`, `/ahrefs` and scoped `wilq-ahrefs-gap-finder`
+   context-pack now prove DR/rank authority facts and explicitly block
+   competitor/content/backlink gap claims. Current live proof: DR=90,
+   Ahrefs Rank=1450, `gap_fact_count=0`, `active_action_ids=[]`, and 5 missing
+   gap read contracts. Next Ahrefs value work is to implement typed gap records,
+   not to make the skill infer gaps from aggregate rank metrics.
 
 ## What WILQ Must Give The Marketer
 
@@ -2045,7 +2079,7 @@ Commit rules:
    cleanup proof. Do not restart those audits unless browser proof shows a
    regression. Next product work should add missing value contracts:
    profit-margin/business-goal interpretation for Ads, Localo visibility facts,
-   Ahrefs gap records, deeper source-term/custom-segment evidence, remaining
+   typed Ahrefs gap records, deeper source-term/custom-segment evidence, remaining
    campaign optimization contracts and Demand Gen diagnostics. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget

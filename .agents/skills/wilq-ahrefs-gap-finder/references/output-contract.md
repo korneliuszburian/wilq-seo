@@ -2,13 +2,13 @@
 
 ## Cel
 
-Ahrefs-driven gap analysis constrained by existing WILQ evidence and content inventory.
+Analiza luk z Ahrefs ograniczona do istniejącego WILQ evidence i content inventory.
 
 Oczekiwany wynik: Gap opportunities with confidence notes, evidence IDs and next validation steps.
 
 ## Wymagany kontekst API
 
-Pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-ahrefs-gap-finder"}` przed analizą marketingową. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
+Pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-ahrefs-gap-finder"}` przed analizą marketingową. Context-pack musi zawierać `ahrefs_diagnostics`, czyli ten sam kontrakt co `GET /api/ahrefs/diagnostics`. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
 Wymagane connectory:
 
@@ -26,7 +26,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 1. `Status`: zasięg API, gotowość connectorów i znane blockery.
 2. `Dowody`: evidence IDs, connector IDs, notatki freshness i metric summaries wyłącznie z WILQ API.
 3. `Diagnoza`: co wspiera evidence, z niepewnością gdy evidence jest zagregowane, stare albo niepełne.
-4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
+4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące read contracts/evidence potrzebne do ich utworzenia.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
@@ -37,6 +37,7 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
 - Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
+- `ahrefs_diagnostics` ma tylko fakty autorytetu (`domain_rating`, `ahrefs_rank`) i nie ma rekordów luk; wtedy wolno użyć Ahrefs jako kontekstu autorytetu, ale trzeba zablokować claimy o luce treści, luce backlinków i przewadze konkurencji.
 - Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
 
 ## Reguły evidence

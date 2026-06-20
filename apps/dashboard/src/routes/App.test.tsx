@@ -3096,6 +3096,182 @@ const localoDiagnostics = {
   blocker_count: 1
 };
 
+const ahrefsDiagnostics = {
+  generated_at: "2026-06-17T10:00:00Z",
+  language: "pl-PL",
+  strict_instruction: "WILQ pokazuje tylko metryki z API/evidence.",
+  connector: {
+    id: "ahrefs",
+    label: "Ahrefs",
+    status: "configured",
+    configured: true,
+    missing_credentials: [],
+    available_credential_sources: ["repo_env"],
+    freshness: { state: "fresh" },
+    supported_actions: ["content_gap", "backlink_gap", "competitor_gap"]
+  },
+  latest_refresh: {
+    id: "refresh_ahrefs_test",
+    connector_id: "ahrefs",
+    mode: "vendor_read",
+    status: "completed",
+    started_at: "2026-06-17T10:00:00Z",
+    completed_at: "2026-06-17T10:00:01Z",
+    evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+    missing_credentials: [],
+    checked_credentials: ["AHREFS_API_TOKEN"],
+    external_call_attempted: true,
+    vendor_data_collected: true,
+    metric_summary: {
+      api: "ahrefs_site_explorer_domain_rating",
+      domain_rating: 90,
+      ahrefs_rank: 1450
+    },
+    summary: "Ahrefs domain-rating read completed.",
+    errors: [],
+    redacted: true
+  },
+  live_data_available: true,
+  authority_fact_count: 2,
+  gap_fact_count: 0,
+  decision_queue: [
+    {
+      id: "ahrefs_review_authority_context",
+      decision_type: "review_authority_context",
+      status: "ready",
+      title: "Użyj Ahrefs tylko jako kontekstu autorytetu",
+      summary: "domain_rating=90, ahrefs_rank=1450",
+      rationale:
+        "WILQ ma Ahrefs DR/rank z evidence, więc może dodać kontekst autorytetu do SEO/content review. To nadal nie jest gap analysis.",
+      next_step:
+        "Połącz ten kontekst z /content-planner i GSC. Nie twierdź, że Ahrefs wykrył lukę treści/backlinków.",
+      priority: 25,
+      metric_tiles: {
+        DR: 90,
+        "Ahrefs Rank": 1450,
+        "fakty luk": 0,
+        "braki kontraktu": 5
+      },
+      allowed_evidence: ["domain_rating", "ahrefs_rank", "authority_summary"],
+      missing_read_contracts: [
+        "ahrefs_competitor_pages",
+        "ahrefs_content_gap_records",
+        "ahrefs_backlink_gap_records",
+        "ahrefs_organic_keywords_by_url",
+        "ahrefs_top_pages_by_competitor"
+      ],
+      source_connectors: ["ahrefs"],
+      evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      metric_facts: [
+        {
+          name: "domain_rating",
+          value: 90,
+          period: "ahrefs_site_explorer",
+          source_connector: "ahrefs",
+          evidence_id: "ev_refresh_refresh_ahrefs_test",
+          dimensions: { contract: "authority_summary" },
+          unit: null
+        },
+        {
+          name: "ahrefs_rank",
+          value: 1450,
+          period: "ahrefs_site_explorer",
+          source_connector: "ahrefs",
+          evidence_id: "ev_refresh_refresh_ahrefs_test",
+          dimensions: { contract: "authority_summary" },
+          unit: null
+        }
+      ],
+      action_ids: [],
+      blocked_claims: [
+        "competitor gap",
+        "content gap",
+        "backlink gap",
+        "ranking opportunity",
+        "traffic uplift",
+        "authority improvement"
+      ],
+      risk: "low"
+    },
+    {
+      id: "ahrefs_block_gap_claims_without_records",
+      decision_type: "block_gap_claims",
+      status: "blocked",
+      title: "Nie wskazuj luk konkurencji bez rekordów Ahrefs",
+      summary:
+        "Brakuje typed Ahrefs records dla content gaps, backlink gaps, organic keywords i top pages konkurencji.",
+      rationale:
+        "DR/rank to metryki domeny. Nie mówią, które treści, linki albo konkurenci tworzą realną przestrzeń do działania.",
+      next_step:
+        "Dodaj read-only contracts: strony konkurencji, rekordy luk treści, rekordy luk backlinków, organiczne słowa per URL i top pages konkurencji.",
+      priority: 12,
+      metric_tiles: {
+        "braki kontraktu": 5,
+        "blokady claimów": 6
+      },
+      allowed_evidence: ["domain_rating", "ahrefs_rank"],
+      missing_read_contracts: [
+        "ahrefs_competitor_pages",
+        "ahrefs_content_gap_records",
+        "ahrefs_backlink_gap_records",
+        "ahrefs_organic_keywords_by_url",
+        "ahrefs_top_pages_by_competitor"
+      ],
+      source_connectors: ["ahrefs"],
+      evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      metric_facts: [],
+      action_ids: [],
+      blocked_claims: [
+        "competitor gap",
+        "content gap",
+        "backlink gap",
+        "ranking opportunity",
+        "traffic uplift",
+        "authority improvement"
+      ],
+      risk: "medium"
+    }
+  ],
+  sections: [
+    {
+      id: "ahrefs_authority_context",
+      title: "Ahrefs: kontekst autorytetu",
+      status: "ready",
+      summary:
+        "WILQ ma 2 świeże fakty autorytetu z Ahrefs: domain_rating=90, ahrefs_rank=1450.",
+      diagnosis:
+        "DR i Ahrefs Rank mogą wspierać priorytety SEO jako kontekst autorytetu.",
+      next_step:
+        "Użyj tych facts jako pomocniczego kontekstu przy content/GSC review.",
+      source_connectors: ["ahrefs"],
+      evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      metric_facts: [],
+      action_ids: [],
+      blocked_claims: [],
+      risk: "low"
+    },
+    {
+      id: "ahrefs_gap_contract",
+      title: "Ahrefs: rekordy luk SEO",
+      status: "blocked",
+      summary:
+        "WILQ nie ma jeszcze rekordów luk konkurencji, treści ani backlinków z Ahrefs.",
+      diagnosis: "To jest brak kontraktu odczytu, nie brak promptu.",
+      next_step:
+        "Dodaj typed Ahrefs read contracts dla competitor pages, content gaps i backlink gaps.",
+      source_connectors: ["ahrefs"],
+      evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+      metric_facts: [],
+      action_ids: [],
+      blocked_claims: ["content gap", "backlink gap", "competitor gap"],
+      risk: "medium"
+    }
+  ],
+  evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+  action_ids: [],
+  blocker_count: 1
+};
+
 const expertRules = [
   {
     id: "ads_search_terms_v1",
@@ -3493,6 +3669,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/localo/diagnostics")) {
         return Promise.resolve(Response.json(localoDiagnostics));
+      }
+      if (url.endsWith("/api/ahrefs/diagnostics")) {
+        return Promise.resolve(Response.json(ahrefsDiagnostics));
       }
       if (url.endsWith("/api/connectors")) return Promise.resolve(Response.json(connectors));
       if (url.includes("/api/metrics?")) return Promise.resolve(Response.json(metricFacts));
@@ -3994,6 +4173,32 @@ describe("WILQ dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("valid")).toBeInTheDocument();
+  });
+
+  it("ahrefs route renders authority context and honest gap blockers", async () => {
+    renderApp("/ahrefs");
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Ahrefs" })).toBeInTheDocument()
+    );
+
+    expect(screen.getByText("Status Ahrefs / dowody SEO")).toBeInTheDocument();
+    expect(screen.getByText("Co marketer ma wiedzieć o Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("Dowody i ograniczenia Ahrefs")).toBeInTheDocument();
+    expect(
+      screen.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Nie wskazuj luk konkurencji bez rekordów Ahrefs")
+    ).toBeInTheDocument();
+    expect(screen.getByText("DR")).toBeInTheDocument();
+    expect(screen.getByText("Ahrefs Rank")).toBeInTheDocument();
+    expect(screen.getAllByText("braki kontraktu").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/rekordy luk treści/).length).toBeGreaterThan(0);
+    expect(
+      screen.queryByText("API-backed operating surface with evidence, connector and action state.")
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });
 
   it("evidence detail route renders source trace from linked evidence id", async () => {

@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from wilq.actions.service import apply_action, get_action, list_actions, validate_action
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
+from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.daily_runtime import build_daily_runtime, clear_daily_runtime_cache
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
@@ -56,6 +57,7 @@ from wilq.schemas import (
     ActionApplyRequest,
     ActionObject,
     AdsDiagnosticsResponse,
+    AhrefsDiagnosticsResponse,
     AuditEvent,
     CodexRun,
     CommandCenterResponse,
@@ -514,6 +516,7 @@ SKILL_KNOWLEDGE_CARD_IDS: dict[str, list[str]] = {
 }
 
 SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
+    "wilq-ahrefs-gap-finder": set(),
     "wilq-campaign-builder": {
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
@@ -715,6 +718,8 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
                 build_content_diagnostics().model_dump(mode="json")
             )
         }
+    if skill == "wilq-ahrefs-gap-finder":
+        return {"ahrefs_diagnostics": build_ahrefs_diagnostics().model_dump(mode="json")}
     if skill == "wilq-ads-doctor":
         return {
             "ads_diagnostics": _compact_ads_diagnostics_for_context(
@@ -1582,6 +1587,11 @@ def ga4_diagnostics() -> Ga4DiagnosticsResponse:
 @app.get("/api/localo/diagnostics", response_model=LocaloDiagnosticsResponse)
 def localo_diagnostics() -> LocaloDiagnosticsResponse:
     return build_localo_diagnostics()
+
+
+@app.get("/api/ahrefs/diagnostics", response_model=AhrefsDiagnosticsResponse)
+def ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
+    return build_ahrefs_diagnostics()
 
 
 @app.get("/api/opportunities", response_model=list[Opportunity])

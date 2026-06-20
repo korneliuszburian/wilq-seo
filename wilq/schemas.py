@@ -1360,6 +1360,61 @@ class LocaloDiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
 
+class AhrefsDiagnosticSection(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "blocked", "missing"]
+    summary: str
+    diagnosis: str
+    next_step: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
+class AhrefsDecisionItem(BaseModel):
+    id: str
+    decision_type: Literal[
+        "review_authority_context",
+        "run_authority_read",
+        "block_gap_claims",
+    ]
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    rationale: str
+    next_step: str
+    priority: int = Field(ge=1, le=100)
+    metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
+    allowed_evidence: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    metric_facts: list[MetricFact] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.low
+
+
+class AhrefsDiagnosticsResponse(BaseModel):
+    generated_at: datetime = Field(default_factory=utc_now)
+    language: Literal["pl-PL"] = "pl-PL"
+    strict_instruction: str
+    connector: ConnectorStatus
+    latest_refresh: ConnectorRefreshRun | None = None
+    live_data_available: bool
+    authority_fact_count: int = 0
+    gap_fact_count: int = 0
+    decision_queue: list[AhrefsDecisionItem] = Field(default_factory=list)
+    sections: list[AhrefsDiagnosticSection] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocker_count: int = 0
+
+
 class CommandCenterBriefItem(BaseModel):
     id: str
     title: str
