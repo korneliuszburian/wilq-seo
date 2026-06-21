@@ -34,6 +34,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content brief payload preview, 2026-06-21 09:35 CEST.
+  `act_prepare_content_refresh_queue` ma teraz review-only
+  `content_brief_preview_v1` w ActionObject payloadzie, a `/content-planner`
+  pokazuje panel `Podgląd briefów do review`. Live proof po restarcie stacka:
+  `/api/actions/act_prepare_content_refresh_queue` zwraca `preview_count=4`,
+  tematy `beczka`, `denios`, `denios.pl`, `manutan.pl`, `contains_cuk=false`.
+  `/api/actions/act_prepare_content_refresh_queue/preview` zwraca
+  `status=blocked`, `preview_contract=content_brief_preview_v1`,
+  `preview_items_total=4`, apply blockers dla prepare-only, walidacji,
+  human confirm, impact sanity check i zablokowanych claimów. Preview jest
+  ograniczony do review: GSC/WordPress/Ahrefs evidence, wymagane checki,
+  blocked claims i brak WordPress publish/apply. Full `scripts/verify.sh`
+  passed after this slice: backend `142 passed`, dashboard unit `17 passed`,
+  Playwright e2e `14 passed`, skill/API smokes and dashboard production build
+  passed.
 - Ahrefs relevance/off-topic scoring in Content Planner, 2026-06-21 06:07 CEST.
   `content_decision_ahrefs_gap_records_review` nie pokazuje już off-topic
   query jako przykładowych tematów contentowych. Live proof z
@@ -883,11 +898,12 @@ Aktualny maintenance:
 
 ## Active Gaps
 
-- Ahrefs now stores typed competitor/content/backlink gap records, bridges
-  relevant/review records into Content Planner and exposes per-topic candidate
-  rows with GSC/WP/relevance status. Remaining work is turning reviewed
-  candidate rows into concrete content brief payload previews after operator
-  selection; do not claim ranking/traffic/authority uplift.
+- Content now has typed Ahrefs candidate rows and review-only
+  `content_brief_preview_v1` payload previews in
+  `act_prepare_content_refresh_queue`. Remaining work is operator selection/
+  review persistence, stronger GSC/WP overlap for Ahrefs candidates and eventual
+  WordPress draft payload preview after explicit review. Do not claim ranking,
+  traffic, authority, lead or revenue uplift.
 - Demand Gen is honest-blocked, not useful yet. Campaign channel rows are now
   available from Google Ads evidence, and current live state has no
   Demand Gen/Discovery campaigns. It still needs real Demand Gen read
@@ -912,7 +928,8 @@ Aktualny maintenance:
 Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
-   useful decisions.
+   useful decisions, or persist operator selection/review outcome for content
+   brief previews if Content Planner is the active focus.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

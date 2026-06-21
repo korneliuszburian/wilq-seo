@@ -551,6 +551,14 @@ def _content_item_from_diagnostics(data: ContentDiagnosticsResponse) -> CommandC
 def _top_content_decision(
     decisions: list[ContentDecisionItem],
 ) -> ContentDecisionItem | None:
+    preferred_decision_types = {
+        "refresh_or_merge",
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+    }
+    for decision in decisions:
+        if decision.decision_type in preferred_decision_types:
+            return decision
     return next(
         (
             decision

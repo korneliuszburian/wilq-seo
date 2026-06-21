@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 from uuid import uuid4
 
+from wilq.actions.content_refresh import content_refresh_payload_from_metric_facts
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ads_business_context_configured,
@@ -435,6 +436,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             content_facts,
             required_names={"content_object_count", "clicks", "domain_rating"},
         )[:10]
+        content_payload = content_refresh_payload_from_metric_facts(content_facts)
         action = ActionObject(
             id="act_prepare_content_refresh_queue",
             title="Przygotuj kolejkę odświeżenia treści ekologus.pl",
@@ -452,9 +454,13 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             ),
             recommended_reason=(
                 "Na /content-planner przygotuj queue refresh/create/merge/block. "
-                "Nie twórz nowych tematów bez query/page evidence i sprawdzenia inventory."
+                "Traktuj podgląd briefu jako review-only: GSC/WordPress może dać "
+                "refresh/merge, a Ahrefs tylko kandydatów po dodatkowym sprawdzeniu "
+                "GSC demand i inventory."
             ),
-            payload={
+            payload=content_payload
+            if content_payload is not None
+            else {
                 "action_type": "wordpress_content_refresh",
                 "connector": "wordpress_ekologus",
                 "mode": "prepare_only",

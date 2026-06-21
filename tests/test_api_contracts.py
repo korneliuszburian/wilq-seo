@@ -284,6 +284,26 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
                 },
             )
         ],
+        "refresh_ahrefs_action_test": [
+            VendorMetricFact(
+                name="ahrefs_content_gap_count",
+                value=1,
+                dimensions={
+                    "gap_type": "content_gap",
+                    "keyword": "audyt środowiskowy",
+                    "competitor_domain": "denios.pl",
+                    "source_url": "https://www.denios.pl/audyt-srodowiskowy/",
+                },
+            ),
+            VendorMetricFact(
+                name="ahrefs_competitor_page_count",
+                value=2207,
+                dimensions={
+                    "gap_type": "competitor_page",
+                    "competitor_domain": "cuk.pl",
+                },
+            ),
+        ],
         "refresh_google_merchant_center_action_test": [
             VendorMetricFact(
                 name="issue_product_count",
@@ -1045,6 +1065,39 @@ def test_action_preview_generates_dry_run_audit_without_apply(
     assert audit_response.json()[0]["event_type"] == "action_preview_generated"
 
 
+def test_content_action_preview_exposes_review_only_brief_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_preview_state.sqlite3"))
+
+    preview_response = client.post(
+        "/api/actions/act_prepare_content_refresh_queue/preview",
+        json={"requested_by": "operator_test", "max_items": 4},
+    )
+
+    assert preview_response.status_code == 200
+    preview = preview_response.json()
+    assert preview["preview_contract"] == "content_brief_preview_v1"
+    assert preview["dry_run"] is True
+    assert preview["mutation_allowed"] is False
+    assert preview["status"] == "blocked"
+    assert preview["preview_items_total"] >= 2
+    assert any(
+        item["source_type"] == "gsc_query_page" for item in preview["preview_items"]
+    )
+    assert any(
+        item["source_type"] == "ahrefs_gap_review" for item in preview["preview_items"]
+    )
+    for item in preview["preview_items"]:
+        assert item["apply_allowed"] is False
+        assert item["api_mutation_ready"] is False
+        assert item["evidence_ids"]
+        assert "ranking guarantee" in item["blocked_claims"]
+    assert "action_mode_prepare_only" in preview["blockers"]
+
+
 def test_daily_context_pack_preserves_action_preview_audit(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1480,6 +1533,43 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert {"ev_connector_linkedin_status", "ev_connector_facebook_status"}.issubset(
                 set(action["evidence_ids"])
             )
+        if action_id == "act_prepare_content_refresh_queue":
+            content_payload = action["payload"]
+            assert content_payload["preview_contract"] == "content_brief_preview_v1"
+            assert content_payload["apply_allowed"] is False
+            assert content_payload["api_mutation_ready"] is False
+            assert "content_brief_preview" in content_payload
+            assert len(content_payload["content_brief_preview"]) >= 2
+            gsc_preview = next(
+                item
+                for item in content_payload["content_brief_preview"]
+                if item["source_type"] == "gsc_query_page"
+            )
+            assert gsc_preview["mode"] == "refresh"
+            assert gsc_preview["wordpress_inventory_match"] == "present"
+            assert gsc_preview["metric_snapshot"]["clicks"] == 12
+            assert gsc_preview["metric_snapshot"]["impressions"] == 120
+            assert gsc_preview["apply_allowed"] is False
+            assert "ranking guarantee" in gsc_preview["blocked_claims"]
+            assert "human_confirm_before_wordpress_write" in gsc_preview[
+                "required_validation"
+            ]
+            ahrefs_preview = next(
+                item
+                for item in content_payload["content_brief_preview"]
+                if item["source_type"] == "ahrefs_gap_review"
+            )
+            serialized_content_preview = json.dumps(
+                content_payload["content_brief_preview"],
+                ensure_ascii=False,
+            )
+            assert ahrefs_preview["mode"] == "review"
+            assert ahrefs_preview["topic"] == "audyt środowiskowy"
+            assert ahrefs_preview["gsc_demand"] == "unknown"
+            assert ahrefs_preview["apply_allowed"] is False
+            assert "gsc_demand_check" in ahrefs_preview["required_validation"]
+            assert ahrefs_preview["evidence_ids"] == ["ev_refresh_refresh_ahrefs_action_test"]
+            assert "cuk.pl" not in serialized_content_preview
         metric_names = {str(metric["name"]) for metric in action["metrics"]}
         assert metric_names.issuperset(expected["metric_names"])
         assert "prepare" in json.dumps(action["payload"])

@@ -190,6 +190,67 @@ const actions = [
       action_type: "wordpress_content_refresh",
       connector: "wordpress_ekologus",
       mode: "prepare_only",
+      preview_contract: "content_brief_preview_v1",
+      content_brief_preview: [
+        {
+          preview_contract: "content_brief_preview_v1",
+          candidate_id: "content_brief_gsc_zielony_lad",
+          source_type: "gsc_query_page",
+          mode: "refresh",
+          topic: "zielony ład",
+          target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          wordpress_inventory_match: "present",
+          gsc_demand: "present",
+          metric_snapshot: {
+            clicks: 12,
+            impressions: 120,
+            ctr: 0.1
+          },
+          brief_goal:
+            "Przygotuj refresh/merge brief dla istniejącej treści pod temat `zielony ład`.",
+          required_validation: [
+            "wordpress_existing_url_confirmed",
+            "gsc_query_page_check",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write"
+          ],
+          blocked_claims: ["lead uplift", "revenue impact", "ranking guarantee"],
+          evidence_ids: ["ev_refresh_gsc"],
+          source_connectors: ["google_search_console", "wordpress_ekologus"],
+          apply_allowed: false,
+          api_mutation_ready: false,
+          destructive: false
+        },
+        {
+          preview_contract: "content_brief_preview_v1",
+          candidate_id: "content_brief_ahrefs_audyt_srodowiskowy",
+          source_type: "ahrefs_gap_review",
+          mode: "review",
+          topic: "audyt środowiskowy",
+          source_url: "https://www.denios.pl/audyt-srodowiskowy/",
+          competitor_domain: "denios.pl",
+          wordpress_inventory_match: "unknown",
+          gsc_demand: "unknown",
+          metric_snapshot: {
+            metric_name: "ahrefs_content_gap_count",
+            metric_value: 1
+          },
+          brief_goal:
+            "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim powstanie brief.",
+          required_validation: [
+            "business_relevance_review",
+            "gsc_demand_check",
+            "wordpress_inventory_check",
+            "duplicate_or_cannibalization_check"
+          ],
+          blocked_claims: ["traffic uplift", "authority improvement", "ranking guarantee"],
+          evidence_ids: ["ev_refresh_ahrefs_gap_records"],
+          source_connectors: ["ahrefs"],
+          apply_allowed: false,
+          api_mutation_ready: false,
+          destructive: false
+        }
+      ],
       destructive: false
     },
     audit_events: []
@@ -4920,7 +4981,11 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("review luk Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("Kandydaci Ahrefs do review")).toBeInTheDocument();
-    expect(screen.getByText("audyt środowiskowy")).toBeInTheDocument();
+    expect(screen.getByText("Podgląd briefów do review")).toBeInTheDocument();
+    expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
+    expect(screen.getByText("GSC query/page / refresh")).toBeInTheDocument();
+    expect(screen.getByText("Ahrefs review / review")).toBeInTheDocument();
+    expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("GSC: brak")).toBeInTheDocument();
     expect(screen.getByText("WP: brak")).toBeInTheDocument();
     expect(

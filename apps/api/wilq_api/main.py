@@ -1519,6 +1519,15 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         compact_payload["campaign_candidates_included"] = len(
             compact_payload["campaign_candidates"]
         )
+    content_brief_preview = compact_payload.get("content_brief_preview")
+    if isinstance(content_brief_preview, list):
+        compact_payload["content_brief_preview_total"] = len(content_brief_preview)
+        compact_payload["content_brief_preview"] = (
+            _compact_content_brief_preview_for_context(content_brief_preview)
+        )
+        compact_payload["content_brief_preview_included"] = len(
+            compact_payload["content_brief_preview"]
+        )
     for key in (
         "budget_payload_preview",
         "recommendations",
@@ -1534,6 +1543,36 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload[f"{key}_included"] = len(compact_payload[key])
     compact["payload"] = compact_payload
     return compact
+
+
+def _compact_content_brief_preview_for_context(
+    preview_items: list[Any],
+) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    keep_keys = {
+        "candidate_id",
+        "source_type",
+        "mode",
+        "topic",
+        "target_url",
+        "source_url",
+        "competitor_domain",
+        "wordpress_inventory_match",
+        "gsc_demand",
+        "metric_snapshot",
+        "brief_goal",
+        "required_validation",
+        "blocked_claims",
+        "source_connectors",
+        "evidence_ids",
+        "apply_allowed",
+        "api_mutation_ready",
+        "destructive",
+    }
+    for item in preview_items[:4]:
+        if isinstance(item, dict):
+            compact_items.append({key: item[key] for key in keep_keys if key in item})
+    return compact_items
 
 
 def _compact_campaign_candidates_for_context(

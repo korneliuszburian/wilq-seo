@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 09:05 CEST.
+Last updated: 2026-06-21 09:35 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -89,6 +89,29 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Content brief preview truth, live proof 2026-06-21 09:35 CEST:
+`act_prepare_content_refresh_queue` now exposes review-only
+`content_brief_preview_v1` inside the ActionObject payload. The payload turns
+GSC/WordPress/Ahrefs evidence into brief candidates with source type, topic,
+metric snapshot, required validation, evidence IDs, blocked claims,
+`apply_allowed=false`, `api_mutation_ready=false` and `destructive=false`.
+Runtime proof after `scripts/local_stack.sh restart`:
+`/api/actions/act_prepare_content_refresh_queue` returns `preview_count=4`,
+topics `beczka`, `denios`, `denios.pl`, `manutan.pl`, and `contains_cuk=false`;
+`/api/actions/act_prepare_content_refresh_queue/preview` returns
+`status=blocked`, `preview_contract=content_brief_preview_v1`,
+`preview_items_total=4`, plus blockers for prepare-only mode, validation,
+human confirmation, impact sanity check and blocked marketing claims. Scoped
+`wilq-content-strategist` context-pack includes the compacted same preview, and
+dashboard `/content-planner` renders `Podgląd briefów do review`. This is not a
+publish path, not a final article, and not a ranking/traffic/lead/revenue
+promise. Remaining content work: persist operator selection/review outcome,
+strengthen GSC/WP overlap for Ahrefs candidates and only later create
+WordPress draft payload previews behind explicit review. Full
+`scripts/verify.sh` passed after this slice: backend `142 passed`, dashboard
+unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
+production build passed.
 
 Latest Ahrefs content-gap truth, live proof 2026-06-21 05:05 CEST:
 `refresh_ahrefs_cb31460610d3` used real read-only Ahrefs API for authority,
@@ -1055,7 +1078,10 @@ Current connector truth:
   follow-up on 2026-06-20 makes `content_diagnostics.decision_queue` carry
   marketer-facing `summary`, `primary_query`, `total_clicks`,
   `total_impressions`, `aggregate_ctr` and `best_average_position`, sorted by
-  real GSC demand instead of URL/id.
+  real GSC demand instead of URL/id. Latest 2026-06-21 follow-up adds
+  review-only `content_brief_preview_v1` to `act_prepare_content_refresh_queue`
+  so the same GSC/WordPress/Ahrefs evidence can become a blocked payload preview
+  for Codex and `/content-planner`, not only a diagnostic card.
 - `google_analytics_4`: landing/source/campaign facts exist and
   `/api/ga4/diagnostics.decision_queue` now feeds both dashboard `/ga4` and
   `wilq-ga4-analyst`. Current live decisions are traffic-quality review; ROAS,
@@ -1066,10 +1092,13 @@ Current connector truth:
   decision and causes confusion.
 - `wordpress_ekologus` and `wordpress_sklep`: inventory context exists and must
   protect against duplicate content.
-- `ahrefs`: aggregate authority/rank facts exist and `/api/ahrefs/diagnostics`
-  now exposes them as authority context with a dedicated blocker for missing gap
-  records. Deeper competitor/content/backlink workflows still need typed Ahrefs
-  gap records before any gap claim is allowed.
+- `ahrefs`: authority/rank, competitor, content gap and backlink gap facts exist
+  as read-only evidence. `/api/content/diagnostics` scores Ahrefs gap records
+  into relevant/review/off-topic candidates, and
+  `act_prepare_content_refresh_queue` now exposes only review-safe Ahrefs brief
+  previews that still require GSC demand, WordPress inventory and duplicate
+  checks before any create/refresh decision. No traffic, ranking, authority,
+  lead or revenue uplift claim is allowed.
 - `localo`: MCP Server URL, OAuth Client ID/Organization ID, OAuth Client
   Secret/Create Token and local OAuth access token are configured. On
   2026-06-18, `refresh_localo_af3a75e8659e` completed a live API-triggered

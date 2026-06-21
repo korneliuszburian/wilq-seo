@@ -5230,6 +5230,8 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
 
       <ContentOperatorSummary data={data} />
 
+      <ContentBriefPreviewPanel actions={routeActions} />
+
       <ContentDiagnosticProof data={data} />
 
       {routeActions.length > 0 ? (
@@ -5260,6 +5262,96 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
         />
       </section>
     </main>
+  );
+}
+
+type ContentBriefPreviewItem = {
+  candidate_id: string;
+  source_type: string;
+  mode: string;
+  topic: string;
+  target_url?: string | null;
+  source_url?: string | null;
+  competitor_domain?: string | null;
+  wordpress_inventory_match?: string | null;
+  gsc_demand?: string | null;
+  metric_snapshot: Record<string, string | number | boolean | null>;
+  brief_goal: string;
+  required_validation: string[];
+  blocked_claims: string[];
+  evidence_ids: string[];
+  apply_allowed: boolean;
+  api_mutation_ready: boolean;
+};
+
+function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
+  const previews = contentBriefPreviewItemsFromActions(actions).slice(0, 4);
+  if (previews.length === 0) return null;
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Podgląd briefów do review
+          </div>
+          <h2 className="mt-1 text-base font-semibold tracking-normal">
+            Co WILQ może przygotować bez publikacji
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            To są kandydaci z ActionObject. Każdy wymaga walidacji GSC/WordPress,
+            sprawdzenia duplikatów i decyzji operatora przed jakąkolwiek zmianą treści.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+          <MetricTile label="Preview" value={previews.length} />
+          <MetricTile
+            label="Apply"
+            value={previews.some((preview) => preview.apply_allowed) ? "otwarte" : "zablokowane"}
+          />
+        </div>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {previews.map((preview) => (
+          <article key={preview.candidate_id} className="rounded-md border border-line bg-slate-50 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-ink">{preview.topic}</h3>
+                <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
+                  {contentBriefSourceLabel(preview.source_type)} / {contentBriefModeLabel(preview.mode)}
+                </p>
+              </div>
+              <StatusBadge value={preview.apply_allowed ? "ready" : "blocked"} />
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{preview.brief_goal}</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+              {Object.entries(preview.metric_snapshot).slice(0, 4).map(([label, value]) => (
+                <MetricTile
+                  key={`${preview.candidate_id}-${label}`}
+                  label={label}
+                  value={contentBriefMetricValue(value)}
+                />
+              ))}
+            </div>
+            <div className="mt-3 grid gap-2 text-xs text-slate-600">
+              <TraceLine
+                label="Walidacje"
+                values={preview.required_validation.slice(0, 4)}
+              />
+              <TraceLine
+                label="Blokady claimów"
+                values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
+              />
+              <LinkedTraceLine
+                label="Dowody"
+                values={preview.evidence_ids.slice(0, 3)}
+                kind="evidence"
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -5474,6 +5566,60 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
 
 function contentDecisionTitle(decision: ContentDecisionItem) {
   return decision.title;
+}
+
+function contentBriefPreviewItemsFromActions(actions: ActionObject[]): ContentBriefPreviewItem[] {
+  return actions.flatMap((action) => {
+    const rows = action.payload.content_brief_preview;
+    if (!Array.isArray(rows)) return [];
+    return rows.filter(isContentBriefPreviewItem);
+  });
+}
+
+function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreviewItem {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.candidate_id === "string" &&
+    typeof value.source_type === "string" &&
+    typeof value.mode === "string" &&
+    typeof value.topic === "string" &&
+    isPlainObject(value.metric_snapshot) &&
+    typeof value.brief_goal === "string" &&
+    Array.isArray(value.required_validation) &&
+    Array.isArray(value.blocked_claims) &&
+    Array.isArray(value.evidence_ids) &&
+    typeof value.apply_allowed === "boolean" &&
+    typeof value.api_mutation_ready === "boolean"
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function contentBriefSourceLabel(value: string) {
+  const labels: Record<string, string> = {
+    gsc_query_page: "GSC query/page",
+    ahrefs_gap_review: "Ahrefs review"
+  };
+  return labels[value] ?? value;
+}
+
+function contentBriefModeLabel(value: string) {
+  const labels: Record<string, string> = {
+    refresh: "refresh",
+    inventory_check: "sprawdzenie inventory",
+    review: "review",
+    merge: "merge",
+    create: "create",
+    block: "block"
+  };
+  return labels[value] ?? value;
+}
+
+function contentBriefMetricValue(value: string | number | boolean | null) {
+  if (typeof value === "boolean") return value ? "tak" : "nie";
+  return value ?? "brak";
 }
 
 function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_type"]) {
