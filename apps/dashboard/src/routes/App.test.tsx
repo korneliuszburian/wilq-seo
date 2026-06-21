@@ -3429,27 +3429,25 @@ const ahrefsDiagnostics = {
   gap_fact_count: 0,
   gap_read_contract: {
     id: "ahrefs_gap_read_contract",
-    status: "blocked",
+    status: "ready",
     title: "Ahrefs gap records",
-    summary:
-      "WILQ ma 0 typed Ahrefs gap records. Brakujące kontrakty: ahrefs_competitor_pages, ahrefs_content_gap_records, ahrefs_backlink_gap_records, ahrefs_organic_keywords_by_url, ahrefs_top_pages_by_competitor.",
-    available_read_contracts: ["ahrefs_authority_summary"],
-    missing_read_contracts: [
+    summary: "WILQ ma 2 typed Ahrefs gap records. Brakujące kontrakty: brak.",
+    available_read_contracts: [
+      "ahrefs_authority_summary",
       "ahrefs_competitor_pages",
       "ahrefs_content_gap_records",
       "ahrefs_backlink_gap_records",
       "ahrefs_organic_keywords_by_url",
       "ahrefs_top_pages_by_competitor"
     ],
-    allowed_evidence: ["domain_rating", "ahrefs_rank"],
-    blocked_claims: [
-      "competitor gap",
-      "content gap",
-      "backlink gap",
-      "ranking opportunity",
-      "traffic uplift",
-      "authority improvement"
+    missing_read_contracts: [],
+    allowed_evidence: [
+      "domain_rating",
+      "ahrefs_rank",
+      "ahrefs_content_gap_count",
+      "ahrefs_referring_domain_gap_count"
     ],
+    blocked_claims: ["traffic uplift", "authority improvement"],
     operator_review_gates: [
       "ahrefs_gap_records_required",
       "content_planner_review_required",
@@ -3457,9 +3455,74 @@ const ahrefsDiagnostics = {
     ],
     source_connectors: ["ahrefs"],
     evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-    gap_records: [],
-    next_step:
-      "Dodaj read-only records dla konkurencyjnych stron, luk treści, luk backlinków, organicznych słów per URL i top pages konkurencji. Do tego czasu używaj Ahrefs tylko jako kontekstu autorytetu.",
+    gap_records: [
+      {
+        id: "ahrefs_gap_content_gap_test",
+        gap_type: "content_gap",
+        title: "Luka treści: audyt środowiskowy",
+        summary:
+          "Luka treści: audyt środowiskowy. Fakty Ahrefs: content_gaps=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+        source_url: "https://competitor.example/audyt-srodowiskowy",
+        target_url: null,
+        competitor_domain: "competitor.example",
+        keyword: "audyt środowiskowy",
+        metric_facts: [
+          {
+            name: "ahrefs_content_gap_count",
+            value: 1,
+            period: "ahrefs_content_gap",
+            source_connector: "ahrefs",
+            evidence_id: "ev_refresh_refresh_ahrefs_test",
+            dimensions: {
+              competitor_domain: "competitor.example",
+              gap_type: "content_gap",
+              keyword: "audyt środowiskowy",
+              source_url: "https://competitor.example/audyt-srodowiskowy",
+              target_domain: "ekologus.pl"
+            },
+            unit: null
+          }
+        ],
+        evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+        blocked_claims: ["traffic uplift", "authority improvement"],
+        next_step:
+          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+        risk: "medium"
+      },
+      {
+        id: "ahrefs_gap_backlink_gap_test",
+        gap_type: "backlink_gap",
+        title: "Luka backlinków: example.org",
+        summary:
+          "Luka backlinków: example.org. Fakty Ahrefs: referring_domain_gaps=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+        source_url: "example.org",
+        target_url: null,
+        competitor_domain: "competitor.example",
+        keyword: null,
+        metric_facts: [
+          {
+            name: "ahrefs_referring_domain_gap_count",
+            value: 1,
+            period: "ahrefs_refdomains_gap",
+            source_connector: "ahrefs",
+            evidence_id: "ev_refresh_refresh_ahrefs_test",
+            dimensions: {
+              competitor_domain: "competitor.example",
+              gap_type: "backlink_gap",
+              referring_domain: "example.org",
+              target_domain: "ekologus.pl"
+            },
+            unit: null
+          }
+        ],
+        evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+        blocked_claims: ["traffic uplift", "authority improvement"],
+        next_step:
+          "Sprawdź ręcznie jakość domen/linków i nie planuj link buildingu bez review ryzyka oraz źródła.",
+        risk: "medium"
+      }
+    ],
+    next_step: "Połącz gap records z GSC/WordPress i przygotuj kolejkę review.",
     risk: "medium"
   },
   decision_queue: [
@@ -3477,17 +3540,11 @@ const ahrefsDiagnostics = {
       metric_tiles: {
         DR: 90,
         "Ahrefs Rank": 1450,
-        "fakty luk": 0,
-        "braki kontraktu": 5
+        "fakty luk": 2,
+        "braki kontraktu": 0
       },
       allowed_evidence: ["domain_rating", "ahrefs_rank", "authority_summary"],
-      missing_read_contracts: [
-        "ahrefs_competitor_pages",
-        "ahrefs_content_gap_records",
-        "ahrefs_backlink_gap_records",
-        "ahrefs_organic_keywords_by_url",
-        "ahrefs_top_pages_by_competitor"
-      ],
+      missing_read_contracts: [],
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [
@@ -3512,52 +3569,54 @@ const ahrefsDiagnostics = {
       ],
       action_ids: [],
       blocked_claims: [
-        "competitor gap",
-        "content gap",
-        "backlink gap",
-        "ranking opportunity",
         "traffic uplift",
         "authority improvement"
       ],
       risk: "low"
     },
     {
-      id: "ahrefs_block_gap_claims_without_records",
-      decision_type: "block_gap_claims",
-      status: "blocked",
-      title: "Nie wskazuj luk konkurencji bez rekordów Ahrefs",
+      id: "ahrefs_review_gap_records",
+      decision_type: "review_gap_records",
+      status: "ready",
+      title: "Przejrzyj rekordy luk Ahrefs",
       summary:
-        "Brakuje typed Ahrefs records dla content gaps, backlink gaps, organic keywords i top pages konkurencji.",
+        "WILQ ma 2 typed Ahrefs gap records. Braki kontraktu: brak.",
       rationale:
-        "DR/rank to metryki domeny. Nie mówią, które treści, linki albo konkurenci tworzą realną przestrzeń do działania.",
+        "To są konkretne rekordy z Ahrefs evidence, więc mogą wejść do review SEO/content.",
       next_step:
-        "Dodaj read-only contracts: strony konkurencji, rekordy luk treści, rekordy luk backlinków, organiczne słowa per URL i top pages konkurencji.",
-      priority: 12,
+        "Połącz rekordy z /content-planner, sprawdź duplikaty WordPress i przygotuj refresh/create/merge/block zamiast obiecywać uplift.",
+      priority: 18,
       metric_tiles: {
-        "braki kontraktu": 5,
-        "blokady claimów": 6
+        "rekordy luk": 2,
+        "braki kontraktu": 0
       },
-      allowed_evidence: ["domain_rating", "ahrefs_rank"],
-      missing_read_contracts: [
-        "ahrefs_competitor_pages",
-        "ahrefs_content_gap_records",
-        "ahrefs_backlink_gap_records",
-        "ahrefs_organic_keywords_by_url",
-        "ahrefs_top_pages_by_competitor"
+      allowed_evidence: [
+        "domain_rating",
+        "ahrefs_rank",
+        "ahrefs_content_gap_count",
+        "ahrefs_referring_domain_gap_count"
       ],
+      missing_read_contracts: [],
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
-      metric_facts: [],
-      action_ids: [],
-      blocked_claims: [
-        "competitor gap",
-        "content gap",
-        "backlink gap",
-        "ranking opportunity",
-        "traffic uplift",
-        "authority improvement"
+      metric_facts: [
+        {
+          name: "ahrefs_content_gap_count",
+          value: 1,
+          period: "ahrefs_content_gap",
+          source_connector: "ahrefs",
+          evidence_id: "ev_refresh_refresh_ahrefs_test",
+          dimensions: {
+            competitor_domain: "competitor.example",
+            gap_type: "content_gap",
+            keyword: "audyt środowiskowy"
+          },
+          unit: null
+        }
       ],
-      risk: "medium"
+      action_ids: [],
+      blocked_claims: ["traffic uplift", "authority improvement"],
+      risk: "low"
     }
   ],
   sections: [
@@ -3581,18 +3640,16 @@ const ahrefsDiagnostics = {
     {
       id: "ahrefs_gap_contract",
       title: "Ahrefs: rekordy luk SEO",
-      status: "blocked",
-      summary:
-        "WILQ nie ma jeszcze rekordów luk konkurencji, treści ani backlinków z Ahrefs.",
-      diagnosis: "To jest brak kontraktu odczytu, nie brak promptu.",
-      next_step:
-        "Dodaj typed Ahrefs read contracts dla competitor pages, content gaps i backlink gaps.",
+      status: "ready",
+      summary: "WILQ ma typed content/backlink gap records z Ahrefs.",
+      diagnosis: "To jest read-only materiał do review, nie automatyczna obietnica wzrostu.",
+      next_step: "Połącz rekordy z GSC i WordPress inventory przed decyzją contentową.",
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
       metric_facts: [],
       action_ids: [],
-      blocked_claims: ["content gap", "backlink gap", "competitor gap"],
-      risk: "medium"
+      blocked_claims: ["traffic uplift", "authority improvement"],
+      risk: "low"
     }
   ],
   evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
@@ -4744,7 +4801,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("valid")).toBeInTheDocument();
   });
 
-  it("ahrefs route renders authority context and honest gap blockers", async () => {
+  it("ahrefs route renders authority context and typed gap records", async () => {
     renderApp("/ahrefs");
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Ahrefs" })).toBeInTheDocument()
@@ -4757,15 +4814,14 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Nie wskazuj luk konkurencji bez rekordów Ahrefs")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj rekordy luk Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("DR")).toBeInTheDocument();
     expect(screen.getByText("Ahrefs Rank")).toBeInTheDocument();
     expect(screen.getByText("Gap records")).toBeInTheDocument();
+    expect(screen.getByText("Luka treści: audyt środowiskowy")).toBeInTheDocument();
+    expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
     expect(screen.getByText(/wymagane rekordy luk Ahrefs/)).toBeInTheDocument();
-    expect(screen.getAllByText("braki kontraktu").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/rekordy luk treści/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/poprawa autorytetu/).length).toBeGreaterThan(0);
     expect(
       screen.queryByText("API-backed operating surface with evidence, connector and action state.")
     ).not.toBeInTheDocument();

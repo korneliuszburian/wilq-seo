@@ -29,25 +29,27 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
-0. Ahrefs backlink gap candidates, 2026-06-21 04:46 CEST:
-   `refresh_ahrefs_950b2a5831c2` performed read-only Ahrefs `refdomains` reads
-   for the target and 2 competitors. A backlink-gap record is stored only for a
-   competitor referring domain that is absent from the target refdomains sample.
-   Live facts: DR=40, Ahrefs Rank=1541946, `organic_competitor_rows=10`,
+0. Ahrefs content/backlink gap candidates, 2026-06-21 05:05 CEST:
+   `refresh_ahrefs_cb31460610d3` performed read-only Ahrefs `organic-keywords`
+   for the target sample and `refdomains` for backlink gap candidates. Content
+   gap records are sample-backed: a competitor keyword becomes a content gap
+   only when it is absent from the target organic-keyword sample. Backlink gap
+   records are also sample-backed: a competitor referring domain becomes a gap
+   only when it is absent from the target refdomains sample. Live facts:
+   DR=40, Ahrefs Rank=1541946, `organic_competitor_rows=10`,
    `top_pages_by_competitor_rows=4`, `organic_keywords_by_url_rows=4`,
-   `backlink_gap_read_status=completed`, `backlink_gap_rows=9`,
-   `backlink_gap_competitors=2`, `backlink_gap_target_refdomains=100`.
-   `/api/ahrefs/diagnostics` now has `gap_records=24`,
-   `backlink_records=9`, available contracts `ahrefs_competitor_pages`,
-   `ahrefs_top_pages_by_competitor`, `ahrefs_organic_keywords_by_url` and
-   `ahrefs_backlink_gap_records`. Missing contract is now only
-   `ahrefs_content_gap_records`. Scoped `wilq-ahrefs-gap-finder` context-pack
-   is about `101728` bytes, `active_action_objects=0`, and latest eval is
-   `.local-lab/evals/codex-skill/20260621T024538Z/wilq-ahrefs-gap-finder/result.json`.
+   `content_gap_read_status=completed`, `content_gap_rows=4`,
+   `content_gap_target_keywords=100`, `backlink_gap_read_status=completed`,
+   `backlink_gap_rows=9`. `/api/ahrefs/diagnostics` now has
+   `gap_read_contract.status=ready`, `missing_read_contracts=[]`,
+   `gap_records=24`, `content_records=4`, `backlink_records=9`, all Ahrefs gap
+   read contracts available, context-pack about `100234` bytes and
+   `active_action_objects=0`. Latest eval is
+   `.local-lab/evals/codex-skill/20260621T030447Z/wilq-ahrefs-gap-finder/result.json`.
    Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
    dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
-   dashboard production build passed. This still blocks content/uplift impact
-   claims; it only makes backlink gap candidate review real.
+   dashboard production build passed. This still blocks traffic/authority
+   uplift claims; it makes gap candidate review real.
 
 0. Ahrefs competitor page records, 2026-06-21 03:38 CEST:
    `refresh_ahrefs_a106dd4ab417` performed a real read-only Ahrefs API refresh
@@ -1371,7 +1373,7 @@ What changed:
   Merchant/GA4 ActionObjects.
 
 Historical live proof after the 2026-06-21 Ahrefs target fix, superseded by the
-04:46 backlink-gap proof near the top of this file:
+05:05 content/backlink-gap proof near the top of this file:
 
 - `/api/ahrefs/diagnostics.live_data_available=true`.
 - `authority_fact_count=2`, `gap_fact_count=10`, `blocker_count=1`.
@@ -1393,10 +1395,11 @@ Historical live proof after the 2026-06-21 Ahrefs target fix, superseded by the
 Still blocked by design:
 
 - Current Ahrefs can support review of competitor pages, top pages, organic
-  keywords by URL and backlink gap candidates. Do not claim content gap,
-  traffic uplift or authority improvement until those specific contracts exist.
-- Next Ahrefs value work is the remaining missing read contract,
-  `ahrefs_content_gap_records`, not prompt-language polish.
+  keywords by URL, content gap candidates and backlink gap candidates. Do not
+  claim traffic uplift or authority improvement until impact/change-window
+  contracts exist.
+- Next Ahrefs value work is to connect these records into GSC/WordPress/action
+  review, not prompt-language polish or another fake gap unlock.
 
 Final proof:
 

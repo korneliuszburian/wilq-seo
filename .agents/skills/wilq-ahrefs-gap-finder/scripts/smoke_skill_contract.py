@@ -63,8 +63,21 @@ def main() -> int:
     }
     if not decision_ids:
         raise SystemExit("Ahrefs diagnostics must expose a decision_queue")
-    if "ahrefs_block_gap_claims_without_records" not in decision_ids:
-        raise SystemExit("Ahrefs diagnostics must explicitly block gap claims without records")
+    gap_contract = ahrefs_diagnostics.get("gap_read_contract") or {}
+    if not isinstance(gap_contract, dict):
+        raise SystemExit("Ahrefs diagnostics gap_read_contract must be an object")
+    missing_read_contracts = gap_contract.get("missing_read_contracts") or []
+    gap_records = gap_contract.get("gap_records") or []
+    if gap_records and "ahrefs_review_gap_records" not in decision_ids:
+        raise SystemExit("Ahrefs diagnostics must expose gap records review decision")
+    if missing_read_contracts and "ahrefs_block_gap_claims_without_records" not in decision_ids:
+        raise SystemExit("Ahrefs diagnostics must block gap claims when contracts are missing")
+    if not missing_read_contracts and gap_contract.get("status") != "ready":
+        raise SystemExit(
+            "Ahrefs diagnostics gap contract must be ready when no contracts are missing"
+        )
+    if not missing_read_contracts and "ahrefs_review_gap_records" not in decision_ids:
+        raise SystemExit("Ahrefs diagnostics must expose ready gap review decision")
     serialized_ahrefs = json.dumps(ahrefs_diagnostics, ensure_ascii=False)
     for required_term in ("evidence_ids", "missing_read_contracts", "blocked_claims"):
         if required_term not in serialized_ahrefs:

@@ -34,26 +34,27 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Ahrefs backlink gap candidates, 2026-06-21 04:46 CEST.
-  `refresh_ahrefs_950b2a5831c2` wykonał read-only Ahrefs `refdomains` dla
-  targetu i 2 konkurentów. Rekord gap powstaje tylko dla referring domain,
-  której nie ma w próbce target refdomains. Live facts: DR=40, Ahrefs
+- Ahrefs content/backlink gap candidates, 2026-06-21 05:05 CEST.
+  `refresh_ahrefs_cb31460610d3` wykonał read-only Ahrefs `organic-keywords`
+  dla targetu jako próbkę content gap oraz `refdomains` dla backlink gap.
+  Rekord content gap powstaje tylko dla konkurencyjnej frazy, której nie ma w
+  target organic keyword sample; rekord backlink gap tylko dla referring domain,
+  której nie ma w target refdomains sample. Live facts: DR=40, Ahrefs
   Rank=1541946, `organic_competitor_rows=10`,
   `top_pages_by_competitor_rows=4`, `organic_keywords_by_url_rows=4`,
-  `backlink_gap_read_status=completed`, `backlink_gap_rows=9`,
-  `backlink_gap_competitors=2`, `backlink_gap_target_refdomains=100`.
-  `/api/ahrefs/diagnostics` ma teraz `gap_records=24`,
-  `backlink_records=9`, available contracts `ahrefs_competitor_pages`,
-  `ahrefs_top_pages_by_competitor`, `ahrefs_organic_keywords_by_url` oraz
-  `ahrefs_backlink_gap_records`; missing contract spadł do jednego:
-  `ahrefs_content_gap_records`. Scoped `wilq-ahrefs-gap-finder` context-pack
-  ma około `101728` bytes i `active_action_objects=0`. Non-interactive eval
+  `content_gap_read_status=completed`, `content_gap_rows=4`,
+  `content_gap_target_keywords=100`, `backlink_gap_read_status=completed`,
+  `backlink_gap_rows=9`. `/api/ahrefs/diagnostics` ma teraz
+  `gap_read_contract.status=ready`, `missing_read_contracts=[]`,
+  `gap_records=24`, `content_records=4`, `backlink_records=9` i wszystkie
+  Ahrefs gap contracts available. Scoped `wilq-ahrefs-gap-finder` context-pack
+  ma około `100234` bytes i `active_action_objects=0`. Non-interactive eval
   przeszedł:
-  `.local-lab/evals/codex-skill/20260621T024538Z/wilq-ahrefs-gap-finder/result.json`;
+  `.local-lab/evals/codex-skill/20260621T030447Z/wilq-ahrefs-gap-finder/result.json`;
   wynik ma `api_used=true`, `language=pl-PL`, `blocked=true`, brak ActionObject
-  IDs i brak safety findings. Full `scripts/verify.sh` passed after this
-  slice: backend `139 passed`, dashboard unit `17 passed`, Playwright e2e
-  `14 passed`, skill/API smokes and dashboard production build passed.
+  IDs i brak safety findings. Full `scripts/verify.sh` passed after this slice:
+  backend `139 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+  skill/API smokes and dashboard production build passed.
 - Ahrefs competitor page records, 2026-06-21 03:38 CEST.
   `refresh_ahrefs_a106dd4ab417` wykonał realny read-only Ahrefs API dla
   authority i organic competitors na prawdziwym targetcie `ekologus.pl`, nie
@@ -467,16 +468,17 @@ Aktualny proof produktowy:
   dashboard unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
 - Ahrefs ma dedicated diagnostics, route i scoped context-pack. Current proof:
   `/api/ahrefs/diagnostics` has `live_data_available=true`, authority facts
-  `DR=40`, `Ahrefs Rank=1541946`, `gap_records=24`, ready decision
+  `DR=40`, `Ahrefs Rank=1541946`, `gap_read_contract.status=ready`,
+  `missing_read_contracts=[]`, `gap_records=24`, ready decision
   `ahrefs_review_gap_records` with competitor pages, top pages, organic
-  keywords by URL and backlink gap records, and blocked decision for the
-  remaining content contract. `wilq-ahrefs-gap-finder` context-pack has about
-  `101728 bytes`, `active_action_objects=0`, contains `ahrefs_diagnostics` and
+  keywords by URL, content gap records and backlink gap records. The only
+  remaining blocked claims are impact claims: traffic uplift and authority
+  improvement. `wilq-ahrefs-gap-finder` context-pack has about `100234 bytes`,
+  `active_action_objects=0`, contains `ahrefs_diagnostics` and
   omits broad unrelated context. Strict non-interactive eval passed:
-  `.local-lab/evals/codex-skill/20260621T024538Z/wilq-ahrefs-gap-finder/result.json`.
+  `.local-lab/evals/codex-skill/20260621T030447Z/wilq-ahrefs-gap-finder/result.json`.
   Result has `blocked=true`, `api_used=true`, `language=pl-PL`, Ahrefs evidence
-  IDs and no unsafe action IDs. Remaining blocks are content gap, traffic
-  uplift and authority improvement.
+  IDs and no unsafe action IDs.
 - Command Center ma teraz 30-sekundowy operator snapshot cache po stronie WILQ
   API i dashboardu. Live proof po `scripts/local_stack.sh restart`:
   `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, potem

@@ -33,6 +33,11 @@ AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_DEFAULT = 10
 AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_MAX = 50
 AHREFS_BACKLINK_GAP_MODE_DEFAULT = "subdomains"
 AHREFS_BACKLINK_GAP_HISTORY_DEFAULT = "live"
+AHREFS_CONTENT_GAP_TARGET_KEYWORD_LIMIT_DEFAULT = 1000
+AHREFS_CONTENT_GAP_TARGET_KEYWORD_LIMIT_MAX = 5000
+AHREFS_CONTENT_GAP_RECORD_LIMIT_DEFAULT = 24
+AHREFS_CONTENT_GAP_RECORD_LIMIT_MAX = 100
+AHREFS_CONTENT_GAP_MODE_DEFAULT = "subdomains"
 
 
 def refresh_ahrefs_domain_rating(
@@ -85,6 +90,7 @@ def refresh_ahrefs_domain_rating(
                 )
                 metric_summary.update(top_pages_summary)
                 metric_facts.extend(top_page_facts)
+                keyword_facts: list[VendorMetricFact] = []
                 try:
                     keyword_summary, keyword_facts = _fetch_organic_keywords_by_top_pages(
                         client,
@@ -113,6 +119,37 @@ def refresh_ahrefs_domain_rating(
                     )
                     errors.append(
                         f"Ahrefs Site Explorer organic-keywords {type(exc).__name__}."
+                    )
+                try:
+                    content_summary, content_facts = _fetch_content_gaps(
+                        client,
+                        token,
+                        target,
+                        keyword_facts,
+                    )
+                    metric_summary.update(content_summary)
+                    metric_facts.extend(content_facts)
+                except httpx.HTTPStatusError as exc:
+                    status_code = exc.response.status_code
+                    metric_summary.update(
+                        {
+                            "content_gap_read_status": f"http_{status_code}",
+                            "content_gap_rows": 0,
+                        }
+                    )
+                    errors.append(
+                        f"Ahrefs Site Explorer content-gap organic-keywords HTTP {status_code}."
+                    )
+                except httpx.HTTPError as exc:
+                    metric_summary.update(
+                        {
+                            "content_gap_read_status": type(exc).__name__,
+                            "content_gap_rows": 0,
+                        }
+                    )
+                    errors.append(
+                        "Ahrefs Site Explorer content-gap organic-keywords "
+                        f"{type(exc).__name__}."
                     )
                 try:
                     backlink_summary, backlink_facts = _fetch_backlink_gaps(
@@ -191,6 +228,7 @@ def refresh_ahrefs_domain_rating(
             f"Top page rows: {metric_summary.get('top_pages_by_competitor_rows', 0)}. "
             "Organic keyword rows by top page: "
             f"{metric_summary.get('organic_keywords_by_url_rows', 0)}. "
+            f"Content gap rows: {metric_summary.get('content_gap_rows', 0)}. "
             f"Backlink gap rows: {metric_summary.get('backlink_gap_rows', 0)}."
         ),
         external_call_attempted=True,
@@ -533,6 +571,113 @@ def _fetch_backlink_gaps(
     )
 
 
+def _fetch_content_gaps(
+    client: httpx.Client,
+    token: str,
+    target: str,
+    competitor_keyword_facts: list[VendorMetricFact],
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    if not competitor_keyword_facts:
+        return (
+            {
+                "content_gap_read_status": "skipped_no_competitor_keywords",
+                "content_gap_rows": 0,
+                "content_gap_target_keywords": 0,
+                "content_gap_competitor_keywords": 0,
+                "content_gap_mode": _content_gap_mode(),
+            },
+            [],
+        )
+
+    report_date = _report_date()
+    country = _organic_competitor_country()
+    mode = _content_gap_mode()
+    target_limit = _content_gap_target_keyword_limit()
+    target_rows = _fetch_organic_keywords(
+        client,
+        token,
+        target=target,
+        mode=mode,
+        country=country,
+        date=report_date,
+        limit=target_limit,
+    )
+    target_keywords = {
+        normalized
+        for row in target_rows
+        if (normalized := _normalized_keyword(_first_text(row, "keyword"))) is not None
+    }
+    facts = [
+        fact
+        for competitor_fact in competitor_keyword_facts[: _content_gap_record_limit()]
+        if (
+            fact := _content_gap_fact(
+                competitor_fact,
+                target=target,
+                target_keywords=target_keywords,
+                target_keyword_sample_size=len(target_keywords),
+                target_keyword_limit=target_limit,
+                mode=mode,
+            )
+        )
+        is not None
+    ]
+    return (
+        {
+            "content_gap_read_status": "completed",
+            "content_gap_rows": len(facts),
+            "content_gap_target_keywords": len(target_keywords),
+            "content_gap_target_keyword_limit": target_limit,
+            "content_gap_competitor_keywords": len(competitor_keyword_facts),
+            "content_gap_mode": mode,
+        },
+        facts,
+    )
+
+
+def _fetch_organic_keywords(
+    client: httpx.Client,
+    token: str,
+    *,
+    target: str,
+    mode: str,
+    country: str,
+    date: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    response = client.get(
+        f"{AHREFS_API_BASE}/site-explorer/organic-keywords",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+        params={
+            "target": target,
+            "mode": mode,
+            "country": country,
+            "date": date,
+            "limit": limit,
+            "output": "json",
+            "order_by": "sum_traffic:desc",
+            "select": ",".join(
+                [
+                    "keyword",
+                    "best_position",
+                    "best_position_url",
+                    "volume",
+                    "sum_traffic",
+                    "keyword_difficulty",
+                    "cpc",
+                    "is_branded",
+                    "is_commercial",
+                    "is_informational",
+                    "is_local",
+                    "is_transactional",
+                ]
+            ),
+        },
+    )
+    response.raise_for_status()
+    return _response_rows(response.json(), "keywords")[:limit]
+
+
 def _fetch_refdomains(
     client: httpx.Client,
     token: str,
@@ -680,6 +825,30 @@ def _backlink_gap_refdomain_limit() -> int:
     if configured and configured.isdigit():
         return max(1, min(int(configured), AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_MAX))
     return AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_DEFAULT
+
+
+def _content_gap_mode() -> str:
+    mode = variable_value("AHREFS_CONTENT_GAP_MODE")
+    if mode and mode.strip().lower() in AHREFS_ORGANIC_COMPETITOR_MODES:
+        return mode.strip().lower()
+    return AHREFS_CONTENT_GAP_MODE_DEFAULT
+
+
+def _content_gap_target_keyword_limit() -> int:
+    configured = variable_value("AHREFS_CONTENT_GAP_TARGET_KEYWORD_LIMIT")
+    if configured and configured.isdigit():
+        return max(
+            1,
+            min(int(configured), AHREFS_CONTENT_GAP_TARGET_KEYWORD_LIMIT_MAX),
+        )
+    return AHREFS_CONTENT_GAP_TARGET_KEYWORD_LIMIT_DEFAULT
+
+
+def _content_gap_record_limit() -> int:
+    configured = variable_value("AHREFS_CONTENT_GAP_RECORD_LIMIT")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_CONTENT_GAP_RECORD_LIMIT_MAX))
+    return AHREFS_CONTENT_GAP_RECORD_LIMIT_DEFAULT
 
 
 def _response_rows(payload: Any, preferred_key: str) -> list[dict[str, Any]]:
@@ -899,6 +1068,52 @@ def _backlink_gap_fact(
     )
 
 
+def _content_gap_fact(
+    competitor_fact: VendorMetricFact,
+    *,
+    target: str,
+    target_keywords: set[str],
+    target_keyword_sample_size: int,
+    target_keyword_limit: int,
+    mode: str,
+) -> VendorMetricFact | None:
+    keyword = competitor_fact.dimensions.get("keyword")
+    normalized = _normalized_keyword(keyword)
+    if normalized is None or normalized in target_keywords:
+        return None
+    dimensions = _clean_dimensions(
+        {
+            "gap_type": "content_gap",
+            "competitor_domain": competitor_fact.dimensions.get("competitor_domain"),
+            "source_url": competitor_fact.dimensions.get("source_url"),
+            "target_domain": target,
+            "keyword": keyword,
+            "country": competitor_fact.dimensions.get("country"),
+            "target_mode": mode,
+            "competitor_target_mode": competitor_fact.dimensions.get("target_mode"),
+            "best_position": competitor_fact.dimensions.get("best_position"),
+            "best_position_url": competitor_fact.dimensions.get("best_position_url"),
+            "volume": competitor_fact.dimensions.get("volume"),
+            "sum_traffic": competitor_fact.dimensions.get("sum_traffic"),
+            "keyword_difficulty": competitor_fact.dimensions.get("keyword_difficulty"),
+            "cpc": competitor_fact.dimensions.get("cpc"),
+            "is_branded": competitor_fact.dimensions.get("is_branded"),
+            "is_commercial": competitor_fact.dimensions.get("is_commercial"),
+            "is_informational": competitor_fact.dimensions.get("is_informational"),
+            "is_local": competitor_fact.dimensions.get("is_local"),
+            "is_transactional": competitor_fact.dimensions.get("is_transactional"),
+            "target_keyword_sample_size": str(target_keyword_sample_size),
+            "target_keyword_limit": str(target_keyword_limit),
+        }
+    )
+    return VendorMetricFact(
+        "ahrefs_content_gap_count",
+        1,
+        dimensions,
+        period="ahrefs_content_gap",
+    )
+
+
 def _competitor_domain(row: dict[str, Any]) -> str | None:
     value = _first_text(
         row,
@@ -922,6 +1137,13 @@ def _refdomain(row: dict[str, Any]) -> str | None:
     if value is None:
         return None
     return _clean_hostname(value)
+
+
+def _normalized_keyword(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = " ".join(value.casefold().split())
+    return normalized or None
 
 
 def _first_text(row: dict[str, Any], *keys: str) -> str | None:

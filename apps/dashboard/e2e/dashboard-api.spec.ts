@@ -321,7 +321,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("24 Taktyki")).toHaveCount(0);
   });
 
-  test("ahrefs route exposes authority context and blocks gap claims", async ({ page }) => {
+  test("ahrefs route exposes authority context and typed gap records", async ({ page }) => {
     await page.goto("/ahrefs");
 
     await expect(page.getByRole("heading", { name: "Ahrefs", exact: true })).toBeVisible();
@@ -331,10 +331,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ahrefs" })).toBeVisible();
     await expect(page.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")).toBeVisible();
-    await expect(page.getByText("Nie wskazuj luk konkurencji bez rekordów Ahrefs")).toBeVisible();
+    await expect(page.getByText("Przejrzyj rekordy luk Ahrefs")).toBeVisible();
     await expect(page.getByText("DR").first()).toBeVisible();
     await expect(page.getByText("fakty luk").first()).toBeVisible();
-    await expect(page.getByText(/rekordy luk treści/).first()).toBeVisible();
+    await expect(page.getByText("gotowe").first()).toBeVisible();
+    await expect(page.getByText(/Luka treści:/).first()).toBeVisible();
+    await expect(page.getByText(/poprawa autorytetu/).first()).toBeVisible();
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);

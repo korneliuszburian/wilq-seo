@@ -25,6 +25,72 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-21 - wilq-ahrefs-gap-finder content-gap eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-ahrefs-gap-finder`.
+
+Why this eval matters:
+
+Ahrefs now exposes all planned gap read contracts: competitor pages, top pages,
+organic keywords by URL, content gap candidates and backlink gap candidates.
+The skill should treat those records as reviewable source evidence while still
+blocking unsupported traffic uplift and authority improvement claims.
+
+Pre-eval API proof:
+
+- Live refresh: `refresh_ahrefs_cb31460610d3`.
+- Evidence: `ev_refresh_refresh_ahrefs_cb31460610d3`.
+- `/api/ahrefs/diagnostics` live facts: DR=40, Ahrefs Rank=1541946,
+  `organic_competitor_rows=10`, `top_pages_by_competitor_rows=4`,
+  `organic_keywords_by_url_rows=4`,
+  `content_gap_read_status=completed`, `content_gap_rows=4`,
+  `content_gap_target_keywords=100`,
+  `backlink_gap_read_status=completed`, `backlink_gap_rows=9`.
+- `gap_read_contract.status=ready`, `missing_read_contracts=[]`,
+  `gap_records=24`, `content_records=4`, `backlink_records=9`.
+- `available_read_contracts` includes every Ahrefs gap contract:
+  `ahrefs_competitor_pages`, `ahrefs_top_pages_by_competitor`,
+  `ahrefs_organic_keywords_by_url`, `ahrefs_content_gap_records` and
+  `ahrefs_backlink_gap_records`.
+- Scoped `wilq-ahrefs-gap-finder` context-pack is about `100234` bytes and has
+  `active_action_objects=0`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T030447Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- `blocked=true` because impact claims remain blocked.
+- Source connectors include `ahrefs`, `google_search_console` and
+  `wordpress_ekologus`.
+- Evidence IDs include `ev_connector_ahrefs_status`,
+  `ev_refresh_refresh_ahrefs_cb31460610d3` and
+  `ev_refresh_refresh_ahrefs_950b2a5831c2`.
+- No ActionObject IDs were promoted.
+- No safety findings.
+
+Product finding:
+
+- Ahrefs gap read contracts are no longer just safe blockers. They now give a
+  real review queue that can be connected to GSC/WordPress and later
+  ActionObject review. They still do not prove traffic uplift or authority
+  improvement.
+
 ## 2026-06-21 - wilq-ahrefs-gap-finder backlink-gap eval
 
 Prompt source:

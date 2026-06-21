@@ -7031,30 +7031,42 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
             )
         if request.url.path == "/v3/site-explorer/organic-keywords":
             assert len(request.url.params["date"]) == 10
-            assert request.url.params["target"] == "https://konkurent.pl/top-bdo/"
-            assert request.url.params["mode"] == "exact"
             assert request.url.params["country"] == "pl"
-            assert request.url.params["limit"] == "3"
             assert request.url.params["order_by"] == "sum_traffic:desc"
             assert "keyword" in request.url.params["select"]
+            if request.url.params["target"] == "https://konkurent.pl/top-bdo/":
+                assert request.url.params["mode"] == "exact"
+                assert request.url.params["limit"] == "3"
+                return httpx.Response(
+                    200,
+                    json={
+                        "keywords": [
+                            {
+                                "keyword": "bdo szkolenie online",
+                                "best_position": 3,
+                                "best_position_url": "https://konkurent.pl/top-bdo/",
+                                "volume": 150,
+                                "sum_traffic": 24,
+                                "keyword_difficulty": 8,
+                                "cpc": 1.21,
+                                "is_branded": False,
+                                "is_commercial": True,
+                                "is_informational": False,
+                                "is_local": False,
+                                "is_transactional": True,
+                            }
+                        ]
+                    },
+                )
+            assert request.url.params["target"] == "ekologus.pl"
+            assert request.url.params["mode"] == "subdomains"
+            assert request.url.params["limit"] == "1000"
             return httpx.Response(
                 200,
                 json={
                     "keywords": [
-                        {
-                            "keyword": "bdo szkolenie online",
-                            "best_position": 3,
-                            "best_position_url": "https://konkurent.pl/top-bdo/",
-                            "volume": 150,
-                            "sum_traffic": 24,
-                            "keyword_difficulty": 8,
-                            "cpc": 1.21,
-                            "is_branded": False,
-                            "is_commercial": True,
-                            "is_informational": False,
-                            "is_local": False,
-                            "is_transactional": True,
-                        }
+                        {"keyword": "ekologus"},
+                        {"keyword": "audyt środowiskowy"},
                     ]
                 },
             )
@@ -7122,6 +7134,12 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "organic_keywords_by_url_country": "pl",
         "organic_keywords_by_url_mode": "exact",
         "organic_keywords_by_url_keyword_limit": 3,
+        "content_gap_read_status": "completed",
+        "content_gap_rows": 1,
+        "content_gap_target_keywords": 2,
+        "content_gap_target_keyword_limit": 1000,
+        "content_gap_competitor_keywords": 1,
+        "content_gap_mode": "subdomains",
         "backlink_gap_read_status": "completed",
         "backlink_gap_rows": 1,
         "backlink_gap_competitors": 1,
@@ -7191,6 +7209,34 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
             period="ahrefs_organic_keywords",
         ),
         VendorMetricFact(
+            "ahrefs_content_gap_count",
+            1,
+            {
+                "gap_type": "content_gap",
+                "competitor_domain": "konkurent.pl",
+                "source_url": "https://konkurent.pl/top-bdo/",
+                "target_domain": "ekologus.pl",
+                "keyword": "bdo szkolenie online",
+                "country": "pl",
+                "target_mode": "subdomains",
+                "competitor_target_mode": "exact",
+                "best_position": "3",
+                "best_position_url": "https://konkurent.pl/top-bdo/",
+                "volume": "150",
+                "sum_traffic": "24",
+                "keyword_difficulty": "8",
+                "cpc": "1.21",
+                "is_branded": "False",
+                "is_commercial": "True",
+                "is_informational": "False",
+                "is_local": "False",
+                "is_transactional": "True",
+                "target_keyword_sample_size": "2",
+                "target_keyword_limit": "1000",
+            },
+            period="ahrefs_content_gap",
+        ),
+        VendorMetricFact(
             "ahrefs_referring_domain_gap_count",
             1,
             {
@@ -7221,6 +7267,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "/v3/site-explorer/domain-rating",
         "/v3/site-explorer/organic-competitors",
         "/v3/site-explorer/top-pages",
+        "/v3/site-explorer/organic-keywords",
         "/v3/site-explorer/organic-keywords",
         "/v3/site-explorer/refdomains",
         "/v3/site-explorer/refdomains",

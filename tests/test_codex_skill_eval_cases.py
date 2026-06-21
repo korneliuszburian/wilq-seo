@@ -85,7 +85,6 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "decision_queue",
                 "ahrefs_review_authority_context",
                 "ahrefs_review_gap_records",
-                "ahrefs_block_gap_claims_without_records",
                 "missing_read_contracts",
                 "ahrefs_content_gap_records",
                 "ahrefs_backlink_gap_records",
@@ -188,7 +187,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     ahrefs_case = cases["wilq-ahrefs-gap-finder"]
     assert ahrefs_case["expected_blocked"] is True
     assert ahrefs_case["expected_no_action_ids"] is True
-    assert "content gap" in ahrefs_case["blocked_claim_terms"]
+    assert "content gap" not in ahrefs_case["blocked_claim_terms"]
     assert "backlink gap" not in ahrefs_case["blocked_claim_terms"]
     assert "ranking opportunity" not in ahrefs_case["blocked_claim_terms"]
     assert "traffic uplift" in ahrefs_case["blocked_claim_terms"]
@@ -309,5 +308,5 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         in ahrefs_smoke_script
     )
     assert "ahrefs_diagnostics" in ahrefs_smoke_script
-    assert "ahrefs_block_gap_claims_without_records" in ahrefs_smoke_script
+    assert "ahrefs_review_gap_records" in ahrefs_smoke_script
     assert "Context pack ahrefs_diagnostics must be an object" in ahrefs_smoke_script
