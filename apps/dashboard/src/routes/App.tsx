@@ -5388,6 +5388,40 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
           </span>
         ) : null}
       </div>
+      {decision.ahrefs_candidate_rows.length > 0 ? (
+        <div className="mt-3 rounded-md border border-line bg-white p-3">
+          <h4 className="text-sm font-semibold text-ink">Kandydaci Ahrefs do review</h4>
+          <div className="mt-2 grid gap-2">
+            {decision.ahrefs_candidate_rows.slice(0, 3).map((candidate) => (
+              <div key={candidate.id} className="rounded border border-line bg-slate-50 p-2">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-semibold text-ink">{candidate.topic}</div>
+                    <div className="mt-0.5 text-xs text-slate-500">
+                      {contentAhrefsGapTypeLabel(candidate.gap_type)} /{" "}
+                      {contentAhrefsRelevanceLabel(candidate.relevance_status)} / score{" "}
+                      {candidate.relevance_score}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 text-xs">
+                    <span className="rounded border border-line bg-white px-2 py-1">
+                      GSC: {candidate.gsc_demand === "present" ? "jest" : "brak"}
+                    </span>
+                    <span className="rounded border border-line bg-white px-2 py-1">
+                      WP: {candidate.wordpress_inventory_match === "present" ? "jest" : "brak"}
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-600">{candidate.next_step}</p>
+                <TraceLine
+                  label="Powody"
+                  values={candidate.business_relevance_reasons.map(contentAhrefsReasonLabel)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={decision.source_connectors} />
@@ -5450,6 +5484,41 @@ function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_ty
   if (decisionType === "inventory_check_before_create") return "kontrola inventory przed briefem";
   if (decisionType === "review_ahrefs_gap_records") return "review luk Ahrefs";
   return "blokada zadania contentowego";
+}
+
+function contentAhrefsGapTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    content_gap: "content gap",
+    organic_keyword_gap: "keyword gap",
+    top_page_gap: "top page",
+    backlink_gap: "backlink gap",
+    competitor_page: "strona konkurencji"
+  };
+  return labels[value] ?? value;
+}
+
+function contentAhrefsRelevanceLabel(value: string) {
+  const labels: Record<string, string> = {
+    relevant: "pasuje",
+    review: "do sprawdzenia",
+    off_topic: "off-topic"
+  };
+  return labels[value] ?? value;
+}
+
+function contentAhrefsReasonLabel(value: string) {
+  const labels: Record<string, string> = {
+    ekologus_domain_term: "pasuje do zakresu Ekologus",
+    relevant_competitor_domain: "istotny konkurent",
+    gsc_overlap: "pokrywa się z GSC",
+    wordpress_inventory_overlap: "pokrywa się z WordPress",
+    content_candidate: "kandydat contentowy",
+    backlink_review_only: "tylko review backlinkowe",
+    off_topic_phrase: "fraza off-topic",
+    off_topic_competitor_domain: "konkurent off-topic",
+    broad_backlink_domain: "szeroki backlink"
+  };
+  return labels[value] ?? value;
 }
 
 function contentDecisionSortValue(decision: ContentDecisionItem) {

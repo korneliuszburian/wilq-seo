@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 08:51 CEST.
+Last updated: 2026-06-21 09:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -141,6 +141,23 @@ instead of being shown as content candidates. This is backend scoring logic, not
 a prompt workaround. It still does not produce a content brief, ranking promise,
 traffic uplift or authority improvement claim; it only narrows what the marketer
 should review before cross-checking GSC and WordPress inventory.
+
+Latest Ahrefs candidate-row truth, live proof 2026-06-21 09:05 CEST:
+Content Planner no longer exposes Ahrefs gap review only as aggregate counts.
+`content_decision_ahrefs_gap_records_review` now carries typed
+`ahrefs_candidate_rows` with `topic`, `gap_type`, `relevance_status`,
+`relevance_score`, `business_relevance_reasons`, `gsc_demand`,
+`wordpress_inventory_match`, evidence IDs and a safe next step per row. Current
+live `/api/content/diagnostics` returns 6 candidate rows; first examples are
+`beczka`, `denios`, `denios.pl`. `/content-planner` renders these rows as
+`Kandydaci Ahrefs do review`, so Ahrefs becomes a review queue for the marketer,
+not a loose metric block. This still does not create content briefs by itself
+and still blocks ranking, traffic, authority and lead uplift claims. Focused
+proof passed: ruff/mypy on changed backend modules, content diagnostics API
+test, dashboard typecheck/lint/unit tests and API-backed Playwright
+`dashboard-api.spec.ts` (`13 passed`). Full `scripts/verify.sh` passed after
+this slice: backend `141 passed`, dashboard unit `17 passed`, Playwright e2e
+`14 passed`, skill/API smokes and dashboard production build passed.
 
 Latest Ads custom segment source-quality truth, live proof 2026-06-21 06:27
 CEST: custom segment review now exposes typed `source_quality` instead of only

@@ -1214,6 +1214,28 @@ export const ContentDecisionItemSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
+  ahrefs_candidate_rows: z
+    .array(
+      z.object({
+        id: z.string(),
+        topic: z.string(),
+        gap_type: z.string(),
+        relevance_status: z.enum(["relevant", "review", "off_topic"]),
+        relevance_score: z.number(),
+        business_relevance_reasons: z.array(z.string()).default([]),
+        gsc_demand: z.enum(["present", "missing"]),
+        wordpress_inventory_match: z.enum(["present", "missing"]),
+        keyword: z.string().nullable().optional(),
+        competitor_domain: z.string().nullable().optional(),
+        source_url: z.string().nullable().optional(),
+        target_url: z.string().nullable().optional(),
+        metric_name: z.string(),
+        metric_value: z.union([z.string(), z.number()]),
+        evidence_ids: z.array(z.string()),
+        next_step: z.string()
+      })
+    )
+    .default([]),
   action_ids: z.array(z.string()),
   blocked_claims: z.array(z.string()),
   rationale: z.string(),

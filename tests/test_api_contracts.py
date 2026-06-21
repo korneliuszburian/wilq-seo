@@ -6510,6 +6510,16 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     }
     assert ahrefs_decision["queries"] == ["audyt środowiskowy", "pozwolenie zintegrowane"]
     assert "branża.example" not in json.dumps(ahrefs_decision["queries"])
+    assert len(ahrefs_decision["ahrefs_candidate_rows"]) == 2
+    first_ahrefs_candidate = ahrefs_decision["ahrefs_candidate_rows"][0]
+    assert first_ahrefs_candidate["topic"] == "audyt środowiskowy"
+    assert first_ahrefs_candidate["relevance_status"] == "relevant"
+    assert first_ahrefs_candidate["gsc_demand"] == "missing"
+    assert first_ahrefs_candidate["wordpress_inventory_match"] == "missing"
+    assert "ekologus_domain_term" in first_ahrefs_candidate["business_relevance_reasons"]
+    assert "content_candidate" in first_ahrefs_candidate["business_relevance_reasons"]
+    assert first_ahrefs_candidate["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
+    assert "branża.example" not in json.dumps(ahrefs_decision["ahrefs_candidate_rows"])
     assert ahrefs_decision["source_connectors"] == ["ahrefs"]
     assert ahrefs_decision["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
     assert "act_prepare_content_refresh_queue" in ahrefs_decision["action_ids"]
@@ -6548,6 +6558,14 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         decision["decision_type"] == "review_ahrefs_gap_records"
         for decision in context_payload["content_diagnostics"]["decision_queue"]
     )
+    context_ahrefs_decision = next(
+        decision
+        for decision in context_payload["content_diagnostics"]["decision_queue"]
+        if decision["decision_type"] == "review_ahrefs_gap_records"
+    )
+    assert context_ahrefs_decision["ahrefs_candidate_rows"] == ahrefs_decision[
+        "ahrefs_candidate_rows"
+    ]
     serialized = json.dumps(payload)
     assert "google_adc.json" not in serialized
     assert "app-password" not in serialized

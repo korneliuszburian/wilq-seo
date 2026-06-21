@@ -1452,6 +1452,25 @@ class ContentDiagnosticSection(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class ContentAhrefsCandidateRow(BaseModel):
+    id: str
+    topic: str
+    gap_type: str
+    relevance_status: Literal["relevant", "review", "off_topic"]
+    relevance_score: int
+    business_relevance_reasons: list[str] = Field(default_factory=list)
+    gsc_demand: Literal["present", "missing"]
+    wordpress_inventory_match: Literal["present", "missing"]
+    keyword: str | None = None
+    competitor_domain: str | None = None
+    source_url: str | None = None
+    target_url: str | None = None
+    metric_name: str
+    metric_value: int | float | str
+    evidence_ids: list[str] = Field(default_factory=list)
+    next_step: str
+
+
 class ContentDecisionItem(BaseModel):
     id: str
     decision_type: Literal[
@@ -1481,6 +1500,7 @@ class ContentDecisionItem(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
+    ahrefs_candidate_rows: list[ContentAhrefsCandidateRow] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     rationale: str

@@ -17,6 +17,7 @@ from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    ContentAhrefsCandidateRow,
     ContentDecisionItem,
     ContentDiagnosticSection,
     ContentDiagnosticsResponse,
@@ -739,6 +740,7 @@ def _ahrefs_gap_record_decisions(
             source_connectors=["ahrefs"],
             evidence_ids=evidence_ids,
             metric_facts=display_facts,
+            ahrefs_candidate_rows=_ahrefs_candidate_rows(candidate_scores),
             action_ids=content_action_ids,
             blocked_claims=[
                 "off-topic content recommendation",
@@ -763,6 +765,61 @@ def _ahrefs_gap_record_decisions(
             risk=ActionRisk.medium if candidate_scores else ActionRisk.high,
         )
     ]
+
+
+def _ahrefs_candidate_rows(
+    scores: list[AhrefsGapFactScore],
+) -> list[ContentAhrefsCandidateRow]:
+    return [_ahrefs_candidate_row(score) for score in scores[:6]]
+
+
+def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRow:
+    fact = score.fact
+    dimensions = fact.dimensions
+    topic = _ahrefs_candidate_topic(fact)
+    gsc_overlap = "gsc_overlap" in score.reasons
+    wordpress_overlap = "wordpress_inventory_overlap" in score.reasons
+    return ContentAhrefsCandidateRow(
+        id=f"ahrefs_candidate_{_slug(f'{topic}_{fact.name}_{fact.evidence_id}')}",
+        topic=topic,
+        gap_type=dimensions.get("gap_type") or fact.name,
+        relevance_status=score.status,
+        relevance_score=score.score,
+        business_relevance_reasons=list(score.reasons),
+        gsc_demand="present" if gsc_overlap else "missing",
+        wordpress_inventory_match="present" if wordpress_overlap else "missing",
+        keyword=dimensions.get("keyword") or None,
+        competitor_domain=dimensions.get("competitor_domain") or None,
+        source_url=dimensions.get("source_url") or None,
+        target_url=dimensions.get("target_url") or None,
+        metric_name=fact.name,
+        metric_value=fact.value,
+        evidence_ids=[fact.evidence_id],
+        next_step=_ahrefs_candidate_next_step(score, topic),
+    )
+
+
+def _ahrefs_candidate_topic(fact: MetricFact) -> str:
+    dimensions = fact.dimensions
+    for key in ("keyword", "source_url", "target_url", "competitor_domain"):
+        value = dimensions.get(key)
+        if value:
+            return value
+    return fact.name
+
+
+def _ahrefs_candidate_next_step(score: AhrefsGapFactScore, topic: str) -> str:
+    if score.status == "relevant":
+        return (
+            f"Zweryfikuj `{topic}` z GSC i WordPress inventory, potem zdecyduj: "
+            "refresh, merge, create albo block."
+        )
+    if score.status == "review":
+        return (
+            f"Sprawdź ręcznie, czy `{topic}` pasuje do Ekologus; bez GSC/WP overlap "
+            "nie twórz briefu."
+        )
+    return f"Odrzuć `{topic}` jako off-topic/broad, chyba że operator poda biznesowy wyjątek."
 
 
 def _ahrefs_gap_fact_counts(metric_facts: list[MetricFact]) -> dict[str, int]:

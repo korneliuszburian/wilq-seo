@@ -3161,6 +3161,27 @@ const contentDiagnostics = {
       source_connectors: ["ahrefs"],
       evidence_ids: ["ev_refresh_ahrefs_gap_records"],
       metric_facts: [metricFacts[6]],
+      ahrefs_candidate_rows: [
+        {
+          id: "ahrefs_candidate_audyt_srodowiskowy",
+          topic: "audyt środowiskowy",
+          gap_type: "content_gap",
+          relevance_status: "relevant",
+          relevance_score: 5,
+          business_relevance_reasons: ["ekologus_domain_term", "content_candidate"],
+          gsc_demand: "missing",
+          wordpress_inventory_match: "missing",
+          keyword: "audyt środowiskowy",
+          competitor_domain: "konkurent.example",
+          source_url: null,
+          target_url: null,
+          metric_name: "ahrefs_content_gap_count",
+          metric_value: 1,
+          evidence_ids: ["ev_refresh_ahrefs_gap_records"],
+          next_step:
+            "Zweryfikuj `audyt środowiskowy` z GSC i WordPress inventory, potem zdecyduj: refresh, merge, create albo block."
+        }
+      ],
       action_ids: ["act_prepare_content_refresh_queue"],
       blocked_claims: [
         "off-topic content recommendation",
@@ -4898,6 +4919,10 @@ describe("WILQ dashboard", () => {
       screen.getByText("Ahrefs: zweryfikuj luki SEO przed briefem contentowym")
     ).toBeInTheDocument();
     expect(screen.getByText("review luk Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("Kandydaci Ahrefs do review")).toBeInTheDocument();
+    expect(screen.getByText("audyt środowiskowy")).toBeInTheDocument();
+    expect(screen.getByText("GSC: brak")).toBeInTheDocument();
+    expect(screen.getByText("WP: brak")).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
     ).toBeInTheDocument();

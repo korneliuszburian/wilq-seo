@@ -162,6 +162,21 @@ Aktualny proof produktowy:
   IDs for this workflow. Full `scripts/verify.sh` passed after this slice:
   backend `141 passed`, dashboard unit `17 passed`, Playwright e2e
   `14 passed`, skill/API smokes and dashboard production build passed.
+- Ahrefs candidate rows in Content Planner, 2026-06-21 09:05 CEST.
+  `content_decision_ahrefs_gap_records_review` now exposes typed
+  `ahrefs_candidate_rows` instead of only aggregate counts and sample queries.
+  Candidate rows include `topic`, `gap_type`, `relevance_status`,
+  `relevance_score`, `business_relevance_reasons`, `gsc_demand`,
+  `wordpress_inventory_match`, source URLs/competitor hints, evidence IDs and a
+  safe next step. Live `/api/content/diagnostics` currently returns 6 Ahrefs
+  candidates; first examples are `beczka`, `denios`, `denios.pl`. The dashboard
+  Content Planner renders the top rows under `Kandydaci Ahrefs do review`,
+  making the Ahrefs card a review queue rather than a loose metric block.
+  Focused proof passed: ruff/mypy for changed backend, content diagnostics API
+  test, dashboard typecheck/lint/unit tests and API-backed Playwright
+  `dashboard-api.spec.ts` (`13 passed`). Full `scripts/verify.sh` passed after
+  this slice: backend `141 passed`, dashboard unit `17 passed`, Playwright e2e
+  `14 passed`, skill/API smokes and dashboard production build passed.
 - Ahrefs typed gap read contract, 2026-06-21 01:21 CEST, superseded by the
   03:38 target fix above. The important surviving contract is still valid:
   `/api/ahrefs/diagnostics` exposes `gap_read_contract` as typed API state and
@@ -868,10 +883,11 @@ Aktualny maintenance:
 
 ## Active Gaps
 
-- Ahrefs now stores typed competitor/content/backlink gap records and bridges
-  relevant/review records into Content Planner. Remaining work is per-topic
-  candidate rows with explicit GSC demand, WordPress inventory match and
-  business-relevance reasons before any content brief/ranking/traffic claim.
+- Ahrefs now stores typed competitor/content/backlink gap records, bridges
+  relevant/review records into Content Planner and exposes per-topic candidate
+  rows with GSC/WP/relevance status. Remaining work is turning reviewed
+  candidate rows into concrete content brief payload previews after operator
+  selection; do not claim ranking/traffic/authority uplift.
 - Demand Gen is honest-blocked, not useful yet. Campaign channel rows are now
   available from Google Ads evidence, and current live state has no
   Demand Gen/Discovery campaigns. It still needs real Demand Gen read
