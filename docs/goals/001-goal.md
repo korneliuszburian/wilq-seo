@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 22:09 CEST.
+Last updated: 2026-06-21 23:13 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -605,28 +605,41 @@ output. Full `scripts/verify.sh` passed after this fix: backend `141 passed`,
 dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
 dashboard production build passed.
 
-Latest Demand Gen review ActionObject truth, live proof 2026-06-21 21:38 CEST:
+Latest Demand Gen ad/creative empty-read truth, live proof 2026-06-21 22:53 CEST:
 `/api/demand-gen/diagnostics` and scoped
 `POST /api/codex/context-pack {"skill":"wilq-demand-gen-operator"}` now expose
-the same marketer-facing title, metric tiles and review-only ActionObject.
+the same marketer-facing title, metric tiles, read contracts and review-only
+ActionObject.
 Current live title is `Demand Gen: brak kampanii do rekomendacji`; current
-tiles are `kampanie Ads=18`, `kanały=2`, `wiersze DG=0`, `braki=4`.
+tiles are `kampanie Ads=18`, `kanały=2`, `wiersze DG=0`, `reklamy DG=0`,
+`assety DG=0`, `braki=2`.
 Readiness exposes `action_ids=["act_review_demand_gen_readiness"]`,
 `demand_gen_readiness_review_action_object` as available and
-`demand_gen_readiness_review_preview_v1` in `payload_preview`. The ActionObject
-is `prepare_only`, `apply_allowed=false`, `api_mutation_ready=false` and
-`destructive=false`; validation passes. This keeps the route useful as a
-decision/blocker surface without pretending there is a Demand Gen launch or
-migration recommendation. Strict eval passed:
-`.local-lab/evals/codex-skill/20260621T194941Z/wilq-demand-gen-operator/result.json`.
+`demand_gen_readiness_review_preview_v1` in `payload_preview`. Live read-only
+Google Ads refresh `refresh_google_ads_dc9e77806e9c` proves that the Demand Gen
+ad-level and creative asset-level queries are valid in the current Ads API:
+`demand_gen_ad_group_ad_status=ready`, `demand_gen_ad_group_ad_row_count=0`,
+`demand_gen_creative_asset_status=ready`,
+`demand_gen_creative_asset_row_count=0`. Therefore
+`demand_gen_ad_group_ad_rows` and `demand_gen_creative_asset_rows` are available
+empty-read contracts. The obsolete `demand_gen_asset_group_rows` contract must
+not come back. Remaining missing contracts are now only
+`demand_gen_landing_quality_by_campaign` and
+`demand_gen_migration_constraints`. The ActionObject is `prepare_only`,
+`apply_allowed=false`, `api_mutation_ready=false` and `destructive=false`;
+validation passes. This keeps the route useful as a decision/blocker surface
+without pretending there is a Demand Gen launch or migration recommendation.
+Strict eval passed:
+`.local-lab/evals/codex-skill/20260621T205115Z/wilq-demand-gen-operator/result.json`.
 Result: `blocked=true`, `language=pl-PL`, `api_used=true`,
 `source_connectors=["google_ads","google_analytics_4"]`,
 `action_candidates=[act_review_demand_gen_readiness]` and
 `operator_usefulness_score=4`. Adjacent GA4/Ads ActionObject IDs must remain
-forbidden as active Demand Gen actions. Final verification passed on
-2026-06-21 22:09 CEST: `scripts/verify.sh` green, including 148 backend tests,
-17 dashboard unit tests, API/skill smokes, 14 Playwright e2e tests and
-dashboard production build.
+forbidden as active Demand Gen actions. Redaction false-positive fixed:
+lowercase contract IDs in Demand Gen summaries stay visible, while token-like
+values remain redacted. Final verification passed on 2026-06-21 23:13 CEST:
+`scripts/verify.sh` green, including 149 backend tests, 17 dashboard unit tests,
+Skill API smoke, 14 Playwright e2e tests and dashboard production build.
 
 Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
 `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
@@ -1100,22 +1113,29 @@ readiness contract: `active_action_objects=[act_review_demand_gen_readiness]`,
 `ads_diagnostics.action_ids=[]`,
 `demand_gen_readiness.action_ids=[act_review_demand_gen_readiness]`,
 `demand_gen_readiness.status=blocked`, `campaign_rows_evaluated=18`,
-`campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}` and
-`demand_gen_campaign_rows=[]`. `/ads-doctor/demand-gen` must not fall back to
-generic registry sections such as `Evidence Registry` or `Connector Refresh Runs`.
+`campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}`,
+`demand_gen_campaign_rows=[]`, `demand_gen_ad_group_ad_rows=[]` and
+`demand_gen_creative_asset_rows=[]`. `/ads-doctor/demand-gen` must not fall
+back to generic registry sections such as `Evidence Registry` or
+`Connector Refresh Runs`.
 `demand_gen_campaign_rows` is now an available read contract when campaign
-channel facts exist; it must not be listed as missing in that state.
-Remaining missing read contracts are
-`demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
-`demand_gen_landing_quality_by_campaign`, `demand_gen_migration_constraints`
-while `demand_gen_readiness_review_action_object` is available. These IDs must
-not be redacted; they are product contracts, not secrets. The
+channel facts exist; it must not be listed as missing in that state. The
+ad-level and creative asset empty-read contracts are also available after live
+Google Ads proof `refresh_google_ads_dc9e77806e9c`: both queries are `ready`
+with row count `0`. Remaining missing read contracts are only
+`demand_gen_landing_quality_by_campaign` and
+`demand_gen_migration_constraints`, while
+`demand_gen_readiness_review_action_object` is available. These IDs must not be
+redacted; they are product contracts, not secrets. The
 `wilq-demand-gen-operator` smoke script must fail if adjacent ActionObjects are
 again exposed as active Demand Gen actions, if its review-only payload preview
-is missing, or if channel-bearing campaign rows are reported as missing.
-Focused route proof passed: API contract tests for Demand Gen, dashboard unit
-route test, live skill smoke and non-interactive eval at
-`.local-lab/evals/codex-skill/20260621T194941Z/wilq-demand-gen-operator/result.json`.
+is missing, if obsolete `demand_gen_asset_group_rows` returns, or if
+channel/ad/creative read contracts are neither available nor honestly missing.
+Live seeded/API tests and the live smoke prove the available empty-read state;
+full verify can run on a temporary DB where these contracts remain honest
+missing contracts. Focused route proof passed: API contract tests for Demand
+Gen, dashboard unit route test, live skill smoke and non-interactive eval at
+`.local-lab/evals/codex-skill/20260621T205115Z/wilq-demand-gen-operator/result.json`.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and
@@ -3122,10 +3142,11 @@ Commit rules:
    regression. Next product work should add missing value contracts:
    deeper
    search-term/custom-segment evidence, remaining campaign optimization
-   contracts and Demand Gen asset/creative/landing/migration read contracts.
+   contracts and Demand Gen landing/migration read contracts.
    Demand Gen readiness now has review-only
-   `act_review_demand_gen_readiness`; do not count that as launch/migration
-   readiness. Ads
+   `act_review_demand_gen_readiness` plus available empty-read contracts for
+   `demand_gen_ad_group_ad_rows` and `demand_gen_creative_asset_rows`; do not
+   count that as launch/migration readiness. Ads
    target-aware KPI triage is started, but remains review-only. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget

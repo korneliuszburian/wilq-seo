@@ -879,6 +879,19 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
         "Sprawdzone: "
         "candidate:content_brief_gsc_europejski_zielony_lad_co_to_takiego."
     )
+    assert redact_mapping(
+        {
+            "summary": (
+                "Nadal brakujące kontrakty: "
+                "demand_gen_landing_quality_by_campaign, "
+                "demand_gen_migration_constraints."
+            )
+        }
+    )["summary"] == (
+        "Nadal brakujące kontrakty: "
+        "demand_gen_landing_quality_by_campaign, "
+        "demand_gen_migration_constraints."
+    )
     assert redact_mapping({"summary": "token sk-this_must_be_hidden"})["summary"] == (
         "[REDACTED]"
     )
@@ -4035,6 +4048,79 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
+        if "FROM ad_group_ad_asset_view" in query:
+            assert "ad_group_ad_asset_view.field_type = DEMAND_GEN_CAROUSEL_CARD" in query
+            assert "asset.id" in query
+            assert "asset.type" in query
+            assert "metrics.impressions" in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "asset": {
+                                    "id": "901",
+                                    "type": "DEMAND_GEN_CAROUSEL_CARD",
+                                },
+                                "adGroupAdAssetView": {
+                                    "fieldType": "DEMAND_GEN_CAROUSEL_CARD",
+                                },
+                                "metrics": {"impressions": "44"},
+                            },
+                        ]
+                    }
+                ],
+            )
+        if "FROM ad_group_ad" in query:
+            assert "campaign.advertising_channel_type = DEMAND_GEN" in query
+            assert "ad_group_ad.ad.type" in query
+            assert "ad_group_ad.ad.final_urls" in query
+            assert "demand_gen_multi_asset_ad.marketing_images" in query
+            assert "demand_gen_carousel_ad.carousel_cards" in query
+            assert "demand_gen_video_responsive_ad.videos" in query
+            assert "ad_group_ad.ad.demand_gen_multi_asset_ad.headlines" not in query
+            assert "ad_group_ad.ad.demand_gen_multi_asset_ad.descriptions" not in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "campaign": {
+                                    "id": "103",
+                                    "name": "Demand Gen Test",
+                                    "status": "ENABLED",
+                                    "advertisingChannelType": "DEMAND_GEN",
+                                },
+                                "adGroup": {"id": "203", "name": "DG grupa"},
+                                "adGroupAd": {
+                                    "status": "ENABLED",
+                                    "ad": {
+                                        "id": "803",
+                                        "type": "DEMAND_GEN_MULTI_ASSET_AD",
+                                        "finalUrls": [
+                                            "https://www.ekologus.pl/oferta/"
+                                        ],
+                                        "demandGenMultiAssetAd": {
+                                            "marketingImages": [
+                                                "customers/123/assets/901",
+                                                "customers/123/assets/902",
+                                            ],
+                                            "squareMarketingImages": [
+                                                "customers/123/assets/903",
+                                            ],
+                                            "portraitMarketingImages": [],
+                                            "classicDisplayImages": [],
+                                            "logoImages": ["customers/123/assets/904"],
+                                        },
+                                    },
+                                },
+                            },
+                        ]
+                    }
+                ],
+            )
         if "FROM ad_group_criterion" in query:
             assert "ad_group_criterion.keyword.text" in query
             assert "ad_group_criterion.keyword.match_type" in query
@@ -4177,6 +4263,14 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["keyword_planner_idea_count"] == 1
     assert result.metric_summary["keyword_planner_avg_monthly_searches_max"] == 100
     assert result.metric_summary["keyword_planner_competition_values"] == "MEDIUM"
+    assert result.metric_summary["demand_gen_ad_group_ad_status"] == "ready"
+    assert result.metric_summary["demand_gen_ad_group_ad_row_count"] == 1
+    assert result.metric_summary["demand_gen_multi_asset_ad_count"] == 1
+    assert result.metric_summary["demand_gen_final_url_count"] == 1
+    assert result.metric_summary["demand_gen_asset_reference_count"] == 4
+    assert result.metric_summary["demand_gen_creative_asset_status"] == "ready"
+    assert result.metric_summary["demand_gen_creative_asset_row_count"] == 1
+    assert result.metric_summary["demand_gen_creative_asset_impressions"] == 44
     assert keyword_planner_requests
     assert any("FROM campaign" in query for query in search_stream_queries)
     assert any("FROM search_term_view" in query for query in search_stream_queries)
@@ -4187,6 +4281,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert any("FROM recommendation" in query for query in search_stream_queries)
     assert any("FROM change_event" in query for query in search_stream_queries)
     assert any("FROM ad_group_criterion" in query for query in search_stream_queries)
+    assert any("FROM ad_group_ad\n" in query for query in search_stream_queries)
+    assert any("FROM ad_group_ad_asset_view" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
@@ -4336,11 +4432,47 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "geo_target_resource": "geoTargetConstants/2616",
         "competition": "MEDIUM",
     }
+    demand_gen_ad_fact = next(
+        fact for fact in result.metric_facts if fact.name == "demand_gen_ad_available"
+    )
+    assert demand_gen_ad_fact.value == 1
+    assert demand_gen_ad_fact.period == "demand_gen_ad_inventory"
+    assert demand_gen_ad_fact.dimensions == {
+        "campaign_id": "103",
+        "campaign_name": "Demand Gen Test",
+        "campaign_status": "ENABLED",
+        "advertising_channel_type": "DEMAND_GEN",
+        "ad_group_id": "203",
+        "ad_group_name": "DG grupa",
+        "ad_id": "803",
+        "ad_type": "DEMAND_GEN_MULTI_ASSET_AD",
+        "ad_status": "ENABLED",
+    }
+    demand_gen_asset_count_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "demand_gen_ad_asset_reference_count"
+    )
+    assert demand_gen_asset_count_fact.value == 4
+    assert demand_gen_asset_count_fact.dimensions["ad_id"] == "803"
+    demand_gen_asset_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "demand_gen_creative_asset_impressions"
+    )
+    assert demand_gen_asset_fact.value == 44
+    assert demand_gen_asset_fact.period == "demand_gen_creative_asset"
+    assert demand_gen_asset_fact.dimensions == {
+        "asset_id": "901",
+        "asset_type": "DEMAND_GEN_CAROUSEL_CARD",
+        "field_type": "DEMAND_GEN_CAROUSEL_CARD",
+    }
     serialized = json.dumps(result.metric_summary)
     assert "developer-token-test" not in serialized
     assert "refresh-token-test" not in serialized
     serialized_facts = json.dumps([fact.__dict__ for fact in result.metric_facts])
     assert "user_email" not in serialized_facts
+    assert "https://www.ekologus.pl/oferta/" not in serialized_facts
 
 
 def test_google_ads_vendor_read_discovers_child_accounts_for_manager_customer(
@@ -9802,7 +9934,17 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
         assert readiness["campaign_channel_counts"]
         assert "demand_gen_campaign_rows" in readiness["available_read_contracts"]
         assert "demand_gen_campaign_rows" not in readiness["missing_read_contracts"]
-    assert "demand_gen_asset_group_rows" in readiness["missing_read_contracts"]
+    assert "demand_gen_asset_group_rows" not in readiness["missing_read_contracts"]
+    assert isinstance(readiness["demand_gen_ad_group_ad_rows"], list)
+    assert isinstance(readiness["demand_gen_creative_asset_rows"], list)
+    if "demand_gen_ad_group_ad_rows" in readiness["available_read_contracts"]:
+        assert "demand_gen_ad_group_ad_rows" not in readiness["missing_read_contracts"]
+    else:
+        assert "demand_gen_ad_group_ad_rows" in readiness["missing_read_contracts"]
+    if "demand_gen_creative_asset_rows" in readiness["available_read_contracts"]:
+        assert "demand_gen_creative_asset_rows" not in readiness["missing_read_contracts"]
+    else:
+        assert "demand_gen_creative_asset_rows" in readiness["missing_read_contracts"]
     assert "demand_gen_readiness_review_action_object" in readiness["available_read_contracts"]
     assert "demand_gen_action_object" not in readiness["missing_read_contracts"]
     assert "Demand Gen launch recommendation" in readiness["blocked_claims"]
@@ -9839,12 +9981,131 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     if data["campaign_rows_evaluated"] > 0:
         assert "demand_gen_campaign_rows" in data["available_read_contracts"]
         assert "demand_gen_campaign_rows" not in data["missing_read_contracts"]
-    assert "demand_gen_asset_group_rows" in data["missing_read_contracts"]
-    assert "demand_gen_creative_asset_rows" in data["missing_read_contracts"]
+    assert "demand_gen_asset_group_rows" not in data["missing_read_contracts"]
+    assert isinstance(data["demand_gen_ad_group_ad_rows"], list)
+    assert isinstance(data["demand_gen_creative_asset_rows"], list)
+    if "demand_gen_ad_group_ad_rows" in data["available_read_contracts"]:
+        assert "demand_gen_ad_group_ad_rows" not in data["missing_read_contracts"]
+    else:
+        assert "demand_gen_ad_group_ad_rows" in data["missing_read_contracts"]
+    if "demand_gen_creative_asset_rows" in data["available_read_contracts"]:
+        assert "demand_gen_creative_asset_rows" not in data["missing_read_contracts"]
+    else:
+        assert "demand_gen_creative_asset_rows" in data["missing_read_contracts"]
     assert "demand_gen_landing_quality_by_campaign" in data["missing_read_contracts"]
     assert "demand_gen_migration_constraints" in data["missing_read_contracts"]
     assert "demand_gen_readiness_review_action_object" in data["available_read_contracts"]
     assert "demand_gen_action_object" not in data["missing_read_contracts"]
+    assert "Demand Gen launch recommendation" in data["blocked_claims"]
+
+
+def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "demand_gen.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "demand_gen.duckdb"))
+    run = ConnectorRefreshRun(
+        id="refresh_google_ads_demand_gen_empty_read",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_google_ads_demand_gen_empty_read"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "demand_gen_ad_group_ad_status": "ready",
+            "demand_gen_ad_group_ad_row_count": 0,
+            "demand_gen_asset_reference_count": 0,
+            "demand_gen_creative_asset_status": "ready",
+            "demand_gen_creative_asset_row_count": 0,
+            "demand_gen_creative_asset_impressions": 0,
+        },
+        summary="Google Ads Demand Gen empty-read proof seed.",
+    )
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=12,
+                dimensions={
+                    "campaign_id": "103",
+                    "campaign_name": "Demand Gen Test",
+                    "campaign_status": "PAUSED",
+                    "advertising_channel_type": "DEMAND_GEN",
+                },
+            ),
+            VendorMetricFact(
+                name="demand_gen_ad_available",
+                value=1,
+                dimensions={
+                    "campaign_id": "103",
+                    "campaign_name": "Demand Gen Test",
+                    "campaign_status": "PAUSED",
+                    "advertising_channel_type": "DEMAND_GEN",
+                    "ad_group_id": "203",
+                    "ad_group_name": "DG grupa",
+                    "ad_id": "803",
+                    "ad_type": "DEMAND_GEN_MULTI_ASSET_AD",
+                    "ad_status": "PAUSED",
+                },
+                period="demand_gen_ad_inventory",
+            ),
+            VendorMetricFact(
+                name="demand_gen_ad_asset_reference_count",
+                value=4,
+                dimensions={
+                    "campaign_id": "103",
+                    "campaign_name": "Demand Gen Test",
+                    "campaign_status": "PAUSED",
+                    "advertising_channel_type": "DEMAND_GEN",
+                    "ad_group_id": "203",
+                    "ad_group_name": "DG grupa",
+                    "ad_id": "803",
+                    "ad_type": "DEMAND_GEN_MULTI_ASSET_AD",
+                    "ad_status": "PAUSED",
+                },
+                period="demand_gen_ad_inventory",
+            ),
+            VendorMetricFact(
+                name="demand_gen_creative_asset_impressions",
+                value=44,
+                dimensions={
+                    "asset_id": "901",
+                    "asset_type": "DEMAND_GEN_CAROUSEL_CARD",
+                    "field_type": "DEMAND_GEN_CAROUSEL_CARD",
+                },
+                period="demand_gen_creative_asset",
+            ),
+        ],
+    )
+
+    response = client.get("/api/demand-gen/diagnostics")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "blocked"
+    assert "demand_gen_ad_group_ad_rows" in data["available_read_contracts"]
+    assert "demand_gen_creative_asset_rows" in data["available_read_contracts"]
+    assert "demand_gen_ad_group_ad_rows" not in data["missing_read_contracts"]
+    assert "demand_gen_asset_group_rows" not in data["missing_read_contracts"]
+    assert "demand_gen_creative_asset_rows" not in data["missing_read_contracts"]
+    assert "demand_gen_landing_quality_by_campaign" in data["missing_read_contracts"]
+    assert "demand_gen_migration_constraints" in data["missing_read_contracts"]
+    assert data["metric_tiles"]["reklamy DG"] == 1
+    assert data["metric_tiles"]["assety DG"] == 1
+    assert len(data["demand_gen_ad_group_ad_rows"]) == 1
+    assert len(data["demand_gen_creative_asset_rows"]) == 1
+    assert data["demand_gen_ad_group_ad_rows"][0]["ad_id"] == "803"
+    assert data["demand_gen_ad_group_ad_rows"][0]["asset_reference_count"] == 4
+    assert data["demand_gen_creative_asset_rows"][0]["asset_id"] == "901"
+    assert data["demand_gen_creative_asset_rows"][0]["impressions"] == 44
+    preview = data["payload_preview"][0]
+    assert preview["demand_gen_ad_group_ad_row_count"] == 1
+    assert preview["demand_gen_creative_asset_row_count"] == 1
+    assert preview["apply_allowed"] is False
     assert "Demand Gen launch recommendation" in data["blocked_claims"]
 
 

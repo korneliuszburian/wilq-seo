@@ -33,8 +33,20 @@ from wilq.actions.google_ads.custom_segments import (
     custom_segment_payload_from_metric_facts,
 )
 from wilq.actions.google_ads.demand_gen import (
+    DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
+    DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
+    DEMAND_GEN_AD_READ_STATUS_FACT,
+    DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT,
+    DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
+    DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
+    DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
+    DEMAND_GEN_LANDING_QUALITY_CONTRACT,
+    DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+    demand_gen_ad_group_ad_rows_from_facts,
+    demand_gen_contract_has_ready_fact,
+    demand_gen_creative_asset_rows_from_facts,
     demand_gen_readiness_review_payload,
 )
 from wilq.actions.google_ads.keyword_planner import (
@@ -1051,25 +1063,59 @@ def _demand_gen_readiness_review_action(
     campaign_rows = _campaign_context_rows_from_metric_facts(google_ads_facts)
     channel_counts = _campaign_channel_counts_from_context_rows(campaign_rows)
     if campaign_rows:
-        available_read_contracts.append("demand_gen_campaign_rows")
+        available_read_contracts.append(DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
     missing_read_contracts = [
-        "demand_gen_asset_group_rows",
-        "demand_gen_creative_asset_rows",
-        "demand_gen_landing_quality_by_campaign",
-        "demand_gen_migration_constraints",
+        DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
+        DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
+        DEMAND_GEN_LANDING_QUALITY_CONTRACT,
+        DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
     ]
     if not campaign_rows:
-        missing_read_contracts.insert(0, "demand_gen_campaign_rows")
+        missing_read_contracts.insert(0, DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
     demand_gen_rows = [
         row
         for row in campaign_rows
         if str(row.get("advertising_channel_type") or "").strip().upper()
         in {"DEMAND_GEN", "DISCOVERY"}
     ][:8]
+    demand_gen_ad_group_ad_rows = demand_gen_ad_group_ad_rows_from_facts(
+        google_ads_facts,
+    )
+    demand_gen_creative_asset_rows = demand_gen_creative_asset_rows_from_facts(
+        google_ads_facts,
+    )
+    if demand_gen_contract_has_ready_fact(
+        google_ads_facts,
+        status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
+        row_count_fact_name=DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
+    ) or demand_gen_ad_group_ad_rows:
+        available_read_contracts.append(DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT)
+        missing_read_contracts = [
+            contract
+            for contract in missing_read_contracts
+            if contract != DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT
+        ]
+    if demand_gen_contract_has_ready_fact(
+        google_ads_facts,
+        status_fact_name=DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
+        row_count_fact_name=DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
+    ) or demand_gen_creative_asset_rows:
+        available_read_contracts.append(DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT)
+        missing_read_contracts = [
+            contract
+            for contract in missing_read_contracts
+            if contract != DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT
+        ]
     payload = demand_gen_readiness_review_payload(
         campaign_rows_evaluated=len(campaign_rows),
         campaign_channel_counts=channel_counts,
         demand_gen_campaign_rows=demand_gen_rows,
+        demand_gen_ad_group_ad_rows=[
+            row.model_dump(mode="json") for row in demand_gen_ad_group_ad_rows
+        ],
+        demand_gen_creative_asset_rows=[
+            row.model_dump(mode="json") for row in demand_gen_creative_asset_rows
+        ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
         source_connectors=["google_ads", "google_analytics_4"],

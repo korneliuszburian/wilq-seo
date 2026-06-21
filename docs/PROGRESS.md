@@ -37,31 +37,32 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Demand Gen review-only ActionObject, 2026-06-21 21:38 CEST.
+- Demand Gen ad/creative empty-read contracts, 2026-06-21 22:53 CEST.
   `/api/demand-gen/diagnostics` nadal uczciwie zwraca `status=blocked`, ale
-  nie jest już pustym blockerem bez działania. Readiness contract ma teraz
-  `action_ids=["act_review_demand_gen_readiness"]`,
-  `demand_gen_readiness_review_action_object` w available contracts i
-  `payload_preview` z `demand_gen_readiness_review_preview_v1`. Nowy
-  ActionObject `/api/actions/act_review_demand_gen_readiness` jest
-  `prepare_only`, `apply_allowed=false`, `api_mutation_ready=false`,
-  `destructive=false` i przechodzi validation. Scoped context-pack dla
-  `wilq-demand-gen-operator` pokazuje dokładnie ten jeden active ActionObject,
-  bez pobocznych Ads/GA4 actionów. Dashboard route `/ads-doctor/demand-gen`
-  pokazuje review-only payload preview zamiast twierdzić, że brakuje
-  ActionObjecta. Live skill smoke passed po `scripts/local_stack.sh restart`.
-  Non-interactive eval passed:
-  `.local-lab/evals/codex-skill/20260621T194941Z/wilq-demand-gen-operator/result.json`.
-  Wynik: `language=pl-PL`, `api_used=true`, evidence IDs z Google Ads + GA4,
+  ma teraz realny proof, że Google Ads Demand Gen ad-level i creative
+  asset-level reads działają. Live read-only refresh
+  `refresh_google_ads_dc9e77806e9c` zakończył się `status=completed`; metric
+  summary ma `demand_gen_ad_group_ad_status=ready`,
+  `demand_gen_ad_group_ad_row_count=0`,
+  `demand_gen_creative_asset_status=ready` i
+  `demand_gen_creative_asset_row_count=0`. Readiness contract pokazuje
+  `demand_gen_ad_group_ad_rows` i `demand_gen_creative_asset_rows` jako
+  available read contracts, a `demand_gen_asset_group_rows` nie jest już
+  używany. Po live proof: `kampanie Ads=18`, `kanały=2`, `wiersze DG=0`,
+  `reklamy DG=0`, `assety DG=0`, `braki=2`; missing pozostają tylko
+  `demand_gen_landing_quality_by_campaign` i
+  `demand_gen_migration_constraints`. `act_review_demand_gen_readiness` nadal
+  jest review-only: `apply_allowed=false`, `api_mutation_ready=false`,
+  `destructive=false`. Naprawiono też redaction false-positive: lowercase
+  contract IDs w summary nie są już zamieniane na `[REDACTED]`, ale tokeny
+  nadal są redagowane. Live skill smoke passed, a non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T205115Z/wilq-demand-gen-operator/result.json`
+  z `language=pl-PL`, `api_used=true`, evidence IDs Google Ads + GA4,
   `action_candidates=[act_review_demand_gen_readiness]`,
-  `operator_usefulness_score=4`, `blocked=true`. Nadal zablokowane:
-  Demand Gen launch/migration, creative/asset verdicts, campaign apply i
-  performance uplift, bo live evidence ma `demand_gen_campaign_rows=0`, a braki
-  kontraktów to `demand_gen_asset_group_rows`,
-  `demand_gen_creative_asset_rows`, `demand_gen_landing_quality_by_campaign`
-  oraz `demand_gen_migration_constraints`. Final proof 2026-06-21 22:09 CEST:
-  `scripts/verify.sh` green, w tym 148 backend tests, 17 dashboard unit tests,
-  API/skill smokes, 14 Playwright e2e tests i dashboard production build.
+  `operator_usefulness_score=4`, `blocked=true`. Final proof
+  2026-06-21 23:13 CEST: `scripts/verify.sh` green, w tym 149 backend tests,
+  17 dashboard unit tests, Skill API smoke, 14 Playwright e2e tests i dashboard
+  production build.
 - Ads Doctor context-pack impact-row consistency, 2026-06-21 20:59 CEST.
   Naprawiono rozjazd między `/api/ads/diagnostics` i scoped
   `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}`: generic
@@ -1116,17 +1117,20 @@ Aktualny proof produktowy:
   kontrakcie jest ograniczony do 4 rows, a full endpoint pointer zostaje
   `/api/ads/diagnostics`.
 - Scoped `wilq-demand-gen-operator` context-pack jest teraz honest-blocked, ale
-  nie kłamie już o brakującym campaign-row read contract. Live API proof po
-  restarcie portu 8000: `demand_gen_readiness.status=blocked`,
+  nie kłamie już o brakującym campaign-row/ad/creative read contract. Live API
+  proof po restarcie portu 8000: `demand_gen_readiness.status=blocked`,
   `campaign_rows_evaluated=18`, `campaign_channel_counts={PERFORMANCE_MAX: 8,
-  SEARCH: 10}`, `demand_gen_campaign_rows=[]`, `active_action_objects=[]` i
-  `ads_diagnostics.action_ids=[]`. `demand_gen_campaign_rows` jest teraz w
+  SEARCH: 10}`, `demand_gen_campaign_rows=[]`,
+  `demand_gen_ad_group_ad_rows=[]`, `demand_gen_creative_asset_rows=[]`,
+  `active_action_objects=[act_review_demand_gen_readiness]` i
+  `ads_diagnostics.action_ids=[]`. `demand_gen_campaign_rows`,
+  `demand_gen_ad_group_ad_rows` i `demand_gen_creative_asset_rows` są teraz w
   `available_read_contracts`; missing zostają tylko
-  `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
   `demand_gen_landing_quality_by_campaign`,
-  `demand_gen_migration_constraints`, `demand_gen_action_object`. Skill smoke
+  `demand_gen_migration_constraints`. Skill smoke
   failuje, jeśli adjacent ActionObject wróci jako aktywna akcja Demand Gen albo
-  jeśli campaign rows z kanałami są ponownie raportowane jako missing. Full
+  jeśli campaign/ad/creative read contracts są ponownie raportowane jako
+  missing. Full
   `scripts/verify.sh` passed after this slice: backend `123 passed`,
   dashboard unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
 - `/api/opportunities` nie jest już rejestrem connectorów. Live proof po

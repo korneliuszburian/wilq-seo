@@ -3079,6 +3079,8 @@ Result:
 
 Product finding:
 
+- Superseded by later 2026-06-21 Demand Gen ad/creative empty-read proof. Keep
+  this entry only as historical evidence of the earlier blocker state.
 - `/api/demand-gen/diagnostics` and the scoped context-pack now carry
   marketer-facing `title` and `metric_tiles`: current live title is
   `Demand Gen: brak kampanii do rekomendacji`, tiles are `kampanie Ads=18`,
@@ -3129,10 +3131,60 @@ Product finding:
   `PERFORMANCE_MAX=8` and `SEARCH=10`, and `demand_gen_campaign_rows=0`.
   The useful behavior is therefore a review-only readiness gate, not a Demand
   Gen recommendation.
-- Missing contracts remain: `demand_gen_asset_group_rows`,
-  `demand_gen_creative_asset_rows`,
-  `demand_gen_landing_quality_by_campaign`,
+- Superseded by the 2026-06-21 ad/creative empty-read eval below. Do not bring
+  back `demand_gen_asset_group_rows`; the correct contract is
+  `demand_gen_ad_group_ad_rows`.
+
+## 2026-06-21 - wilq-demand-gen-operator ad/creative empty-read eval
+
+Purpose:
+
+- Prove that Demand Gen ad-level and creative asset-level reads are real API
+  contracts now, even when the current Ekologus evidence has zero Demand Gen
+  rows. The skill must stay blocked for launch/migration/performance claims and
+  must not invent creative verdicts.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260621T205115Z/wilq-demand-gen-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `source_connectors=["google_ads","google_analytics_4"]`
+- Evidence includes `ev_refresh_refresh_google_ads_dc9e77806e9c`,
+  `ev_connector_google_ads_status`, `ev_connector_google_analytics_4_status`
+  and GA4 refresh IDs.
+- `action_candidates` contains `act_review_demand_gen_readiness`.
+- `blocked=true`
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- Live Google Ads refresh `refresh_google_ads_dc9e77806e9c` proves
+  `demand_gen_ad_group_ad_status=ready`,
+  `demand_gen_ad_group_ad_row_count=0`,
+  `demand_gen_creative_asset_status=ready` and
+  `demand_gen_creative_asset_row_count=0`.
+- `/api/demand-gen/diagnostics` now lists `demand_gen_ad_group_ad_rows` and
+  `demand_gen_creative_asset_rows` in `available_read_contracts`. The obsolete
+  `demand_gen_asset_group_rows` contract must not return.
+- Remaining missing contracts are only
+  `demand_gen_landing_quality_by_campaign` and
   `demand_gen_migration_constraints`.
-- The next value slice for Demand Gen is a real read contract for
-  assets/creative/landing quality or migration constraints; do not push that
-  logic into skill references.
+- Redaction false-positive fixed: lowercase contract IDs in summaries are not
+  redacted, while token-like values stay redacted.
+- Final `scripts/verify.sh` passed after this slice: backend `149 passed`,
+  dashboard unit `17 passed`, Skill API smoke, Playwright e2e `14 passed` and
+  dashboard production build passed.

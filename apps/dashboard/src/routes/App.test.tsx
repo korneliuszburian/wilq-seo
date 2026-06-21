@@ -4093,12 +4093,14 @@ const demandGenDiagnostics = {
   status: "blocked",
   title: "Demand Gen: brak kampanii do rekomendacji",
   summary:
-    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu, ale nadal nie ma Demand Gen-specific read contractów dla assetów, kreacji, landing quality per campaign i migracji.",
+    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu oraz Demand Gen ad/asset empty-read proof, ale nadal nie ma landing quality per campaign i migration constraints.",
   metric_tiles: {
     "kampanie Ads": 18,
     kanały: 2,
     "wiersze DG": 0,
-    braki: 4
+    "reklamy DG": 1,
+    "assety DG": 1,
+    braki: 2
   },
   available_read_contracts: [
     "google_ads_campaign_activity",
@@ -4106,11 +4108,11 @@ const demandGenDiagnostics = {
     "google_ads_impression_share_context",
     "ga4_landing_source_campaign_quality",
     "demand_gen_readiness_review_action_object",
-    "demand_gen_campaign_rows"
+    "demand_gen_campaign_rows",
+    "demand_gen_ad_group_ad_rows",
+    "demand_gen_creative_asset_rows"
   ],
   missing_read_contracts: [
-    "demand_gen_asset_group_rows",
-    "demand_gen_creative_asset_rows",
     "demand_gen_landing_quality_by_campaign",
     "demand_gen_migration_constraints"
   ],
@@ -4142,17 +4144,44 @@ const demandGenDiagnostics = {
       },
       demand_gen_campaign_row_count: 0,
       demand_gen_campaign_rows: [],
+      demand_gen_ad_group_ad_row_count: 1,
+      demand_gen_ad_group_ad_rows: [
+        {
+          campaign_id: "103",
+          campaign_name: "Demand Gen Test",
+          campaign_status: "PAUSED",
+          advertising_channel_type: "DEMAND_GEN",
+          ad_group_id: "203",
+          ad_group_name: "DG grupa",
+          ad_id: "803",
+          ad_type: "DEMAND_GEN_MULTI_ASSET_AD",
+          ad_status: "PAUSED",
+          final_url_count: 1,
+          asset_reference_count: 4,
+          evidence_ids: ["ev_refresh_refresh_google_ads_demand_gen"]
+        }
+      ],
+      demand_gen_creative_asset_row_count: 1,
+      demand_gen_creative_asset_rows: [
+        {
+          asset_id: "901",
+          asset_type: "DEMAND_GEN_CAROUSEL_CARD",
+          field_type: "DEMAND_GEN_CAROUSEL_CARD",
+          impressions: 44,
+          evidence_ids: ["ev_refresh_refresh_google_ads_demand_gen"]
+        }
+      ],
       available_read_contracts: [
         "google_ads_campaign_activity",
         "google_ads_budget_context",
         "google_ads_impression_share_context",
         "ga4_landing_source_campaign_quality",
         "demand_gen_readiness_review_action_object",
-        "demand_gen_campaign_rows"
+        "demand_gen_campaign_rows",
+        "demand_gen_ad_group_ad_rows",
+        "demand_gen_creative_asset_rows"
       ],
       missing_read_contracts: [
-        "demand_gen_asset_group_rows",
-        "demand_gen_creative_asset_rows",
         "demand_gen_landing_quality_by_campaign",
         "demand_gen_migration_constraints"
       ],
@@ -4183,6 +4212,31 @@ const demandGenDiagnostics = {
     SEARCH: 10
   },
   demand_gen_campaign_rows: [],
+  demand_gen_ad_group_ad_rows: [
+    {
+      campaign_id: "103",
+      campaign_name: "Demand Gen Test",
+      campaign_status: "PAUSED",
+      advertising_channel_type: "DEMAND_GEN",
+      ad_group_id: "203",
+      ad_group_name: "DG grupa",
+      ad_id: "803",
+      ad_type: "DEMAND_GEN_MULTI_ASSET_AD",
+      ad_status: "PAUSED",
+      final_url_count: 1,
+      asset_reference_count: 4,
+      evidence_ids: ["ev_refresh_refresh_google_ads_demand_gen"]
+    }
+  ],
+  demand_gen_creative_asset_rows: [
+    {
+      asset_id: "901",
+      asset_type: "DEMAND_GEN_CAROUSEL_CARD",
+      field_type: "DEMAND_GEN_CAROUSEL_CARD",
+      impressions: 44,
+      evidence_ids: ["ev_refresh_refresh_google_ads_demand_gen"]
+    }
+  ],
   next_step:
     "Zwaliduj act_review_demand_gen_readiness jako review-only. Zanim skill pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative read contracts, landing quality by campaign i migration constraints.",
   risk: "medium"
@@ -5358,8 +5412,8 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/W bieżącym evidence Ads nie ma kampanii Demand Gen ani Discovery/)
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/asset group rows/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/creative asset rows/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/wiersze reklam Demand Gen/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/wiersze assetów kreacji/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/review-only ActionObject/).length).toBeGreaterThan(0);
     expect(screen.getByText("Podgląd walidacji gotowości Demand Gen")).toBeInTheDocument();
     expect(screen.getByText(/review kanałów kampanii Ads/)).toBeInTheDocument();

@@ -3,11 +3,22 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.schemas import DemandGenAdGroupAdRow, DemandGenCreativeAssetRow, MetricFact
+
 DEMAND_GEN_READINESS_REVIEW_ACTION_ID = "act_review_demand_gen_readiness"
 DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE = "google_ads_demand_gen_readiness_review"
 DEMAND_GEN_READINESS_REVIEW_PREVIEW_CONTRACT = "demand_gen_readiness_review_preview_v1"
 DEMAND_GEN_READINESS_REVIEW_OPERATION_TYPE = "DemandGenReadinessReview"
 DEMAND_GEN_READINESS_AVAILABLE_CONTRACT = "demand_gen_readiness_review_action_object"
+DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT = "demand_gen_campaign_rows"
+DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT = "demand_gen_ad_group_ad_rows"
+DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT = "demand_gen_creative_asset_rows"
+DEMAND_GEN_LANDING_QUALITY_CONTRACT = "demand_gen_landing_quality_by_campaign"
+DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT = "demand_gen_migration_constraints"
+DEMAND_GEN_AD_READ_STATUS_FACT = "demand_gen_ad_group_ad_status"
+DEMAND_GEN_AD_READ_ROW_COUNT_FACT = "demand_gen_ad_group_ad_row_count"
+DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT = "demand_gen_creative_asset_status"
+DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT = "demand_gen_creative_asset_row_count"
 DEMAND_GEN_READINESS_REQUIRED_VALIDATION = [
     "review_ads_campaign_channel_context",
     "review_ga4_landing_source_campaign_context",
@@ -30,6 +41,8 @@ def demand_gen_readiness_review_payload(
     campaign_rows_evaluated: int,
     campaign_channel_counts: dict[str, int],
     demand_gen_campaign_rows: list[dict[str, Any]],
+    demand_gen_ad_group_ad_rows: list[dict[str, Any]],
+    demand_gen_creative_asset_rows: list[dict[str, Any]],
     available_read_contracts: list[str],
     missing_read_contracts: list[str],
     source_connectors: list[str],
@@ -45,6 +58,10 @@ def demand_gen_readiness_review_payload(
         "campaign_channel_counts": campaign_channel_counts,
         "demand_gen_campaign_row_count": len(demand_gen_campaign_rows),
         "demand_gen_campaign_rows": demand_gen_campaign_rows[:4],
+        "demand_gen_ad_group_ad_row_count": len(demand_gen_ad_group_ad_rows),
+        "demand_gen_ad_group_ad_rows": demand_gen_ad_group_ad_rows[:4],
+        "demand_gen_creative_asset_row_count": len(demand_gen_creative_asset_rows),
+        "demand_gen_creative_asset_rows": demand_gen_creative_asset_rows[:4],
         "available_read_contracts": available_read_contracts,
         "missing_read_contracts": missing_read_contracts,
         "reason": (
@@ -128,6 +145,10 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
             errors.append(f"Demand Gen readiness preview item {index} requires operation type.")
         if not isinstance(preview.get("campaign_channel_counts"), dict):
             errors.append(f"Demand Gen readiness preview item {index} requires channel counts.")
+        if not isinstance(preview.get("demand_gen_ad_group_ad_rows"), list):
+            errors.append(f"Demand Gen readiness preview item {index} requires ad rows.")
+        if not isinstance(preview.get("demand_gen_creative_asset_rows"), list):
+            errors.append(f"Demand Gen readiness preview item {index} requires asset rows.")
         if not isinstance(preview.get("missing_read_contracts"), list):
             errors.append(
                 f"Demand Gen readiness preview item {index} requires missing contracts."
@@ -153,9 +174,129 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
     return errors
 
 
+def demand_gen_ad_group_ad_rows_from_facts(
+    facts: Iterable[MetricFact],
+) -> list[DemandGenAdGroupAdRow]:
+    grouped: dict[tuple[str | None, str | None, str | None], list[MetricFact]] = {}
+    for fact in facts:
+        if fact.name not in {
+            "demand_gen_ad_available",
+            "demand_gen_ad_final_url_count",
+            "demand_gen_ad_asset_reference_count",
+        }:
+            continue
+        ad_id = fact.dimensions.get("ad_id")
+        if not ad_id:
+            continue
+        ad_type = fact.dimensions.get("ad_type")
+        campaign_id = fact.dimensions.get("campaign_id")
+        grouped.setdefault((campaign_id, ad_id, ad_type), []).append(fact)
+    rows = [_demand_gen_ad_group_ad_row(group_facts) for group_facts in grouped.values()]
+    return sorted(
+        rows,
+        key=lambda row: (
+            row.campaign_name or "",
+            row.ad_group_name or "",
+            row.ad_id or "",
+            row.ad_type or "",
+        ),
+    )
+
+
+def demand_gen_creative_asset_rows_from_facts(
+    facts: Iterable[MetricFact],
+) -> list[DemandGenCreativeAssetRow]:
+    grouped: dict[tuple[str | None, str | None, str | None], list[MetricFact]] = {}
+    for fact in facts:
+        if fact.name != "demand_gen_creative_asset_impressions":
+            continue
+        asset_id = fact.dimensions.get("asset_id")
+        if not asset_id:
+            continue
+        asset_type = fact.dimensions.get("asset_type")
+        field_type = fact.dimensions.get("field_type")
+        grouped.setdefault((asset_id, asset_type, field_type), []).append(fact)
+    rows = [_demand_gen_creative_asset_row(group_facts) for group_facts in grouped.values()]
+    return sorted(
+        rows,
+        key=lambda row: (row.asset_type or "", row.asset_id or "", row.field_type or ""),
+    )
+
+
+def demand_gen_contract_has_ready_fact(
+    facts: Iterable[MetricFact],
+    *,
+    status_fact_name: str,
+    row_count_fact_name: str,
+) -> bool:
+    status_ready = False
+    row_count_seen = False
+    for fact in facts:
+        if fact.name == status_fact_name and str(fact.value) == "ready":
+            status_ready = True
+        elif fact.name == row_count_fact_name:
+            row_count_seen = True
+    return status_ready or row_count_seen
+
+
 def unique_items(items: Iterable[str]) -> list[str]:
     unique: list[str] = []
     for item in items:
         if item and item not in unique:
             unique.append(item)
     return unique
+
+
+def _demand_gen_ad_group_ad_row(facts: list[MetricFact]) -> DemandGenAdGroupAdRow:
+    first = facts[0]
+    return DemandGenAdGroupAdRow(
+        campaign_id=first.dimensions.get("campaign_id"),
+        campaign_name=first.dimensions.get("campaign_name"),
+        campaign_status=first.dimensions.get("campaign_status"),
+        advertising_channel_type=first.dimensions.get("advertising_channel_type"),
+        ad_group_id=first.dimensions.get("ad_group_id"),
+        ad_group_name=first.dimensions.get("ad_group_name"),
+        ad_id=first.dimensions.get("ad_id"),
+        ad_type=first.dimensions.get("ad_type"),
+        ad_status=first.dimensions.get("ad_status"),
+        final_url_count=_int_fact_value(facts, "demand_gen_ad_final_url_count"),
+        asset_reference_count=_int_fact_value(
+            facts,
+            "demand_gen_ad_asset_reference_count",
+        ),
+        evidence_ids=sorted({fact.evidence_id for fact in facts if fact.evidence_id}),
+    )
+
+
+def _demand_gen_creative_asset_row(facts: list[MetricFact]) -> DemandGenCreativeAssetRow:
+    first = facts[0]
+    impressions_fact = next(
+        (fact for fact in facts if fact.name == "demand_gen_creative_asset_impressions"),
+        None,
+    )
+    return DemandGenCreativeAssetRow(
+        asset_id=first.dimensions.get("asset_id"),
+        asset_type=first.dimensions.get("asset_type"),
+        field_type=first.dimensions.get("field_type"),
+        impressions=_int_value(impressions_fact.value) if impressions_fact else None,
+        evidence_ids=sorted({fact.evidence_id for fact in facts if fact.evidence_id}),
+    )
+
+
+def _int_fact_value(facts: list[MetricFact], name: str) -> int:
+    fact = next((candidate for candidate in facts if candidate.name == name), None)
+    if fact is None:
+        return 0
+    return _int_value(fact.value)
+
+
+def _int_value(value: Any) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return 0

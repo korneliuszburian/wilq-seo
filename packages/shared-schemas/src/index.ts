@@ -1784,6 +1784,27 @@ export const DemandGenReadinessContractSchema = z.object({
   campaign_rows_evaluated: z.number(),
   campaign_channel_counts: z.record(z.number()),
   demand_gen_campaign_rows: z.array(AdsCampaignMetricRowSchema),
+  demand_gen_ad_group_ad_rows: z.array(z.object({
+    campaign_id: z.string().nullable().optional(),
+    campaign_name: z.string().nullable().optional(),
+    campaign_status: z.string().nullable().optional(),
+    advertising_channel_type: z.string().nullable().optional(),
+    ad_group_id: z.string().nullable().optional(),
+    ad_group_name: z.string().nullable().optional(),
+    ad_id: z.string().nullable().optional(),
+    ad_type: z.string().nullable().optional(),
+    ad_status: z.string().nullable().optional(),
+    final_url_count: z.number().default(0),
+    asset_reference_count: z.number().default(0),
+    evidence_ids: z.array(z.string()).default([])
+  })).default([]),
+  demand_gen_creative_asset_rows: z.array(z.object({
+    asset_id: z.string().nullable().optional(),
+    asset_type: z.string().nullable().optional(),
+    field_type: z.string().nullable().optional(),
+    impressions: z.number().nullable().optional(),
+    evidence_ids: z.array(z.string()).default([])
+  })).default([]),
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high"])
 });

@@ -338,18 +338,25 @@ Audit `docs/audits/001-output.md` is now folded into
    `decision_review_localo_visibility_facts` has `frazy=23`, and
    `daily_localo_readiness` count is `0` while visibility facts exist.
 
-0. Demand Gen dedicated route truth, live proof 2026-06-20 16:55 CEST:
+0. Demand Gen dedicated route truth, updated live proof 2026-06-21 22:53 CEST:
    Demand Gen readiness is now a first-class product surface, not a generic
    registry fallback. `GET /api/demand-gen/diagnostics`, `/ads-doctor/demand-gen`
    and the scoped `wilq-demand-gen-operator` context-pack share the same
    blocked readiness contract: Ads campaign channel rows are available
    (`PERFORMANCE_MAX=8`, `SEARCH=10`), there are no Demand Gen/Discovery rows
-   in current evidence, `action_ids=[]`, and missing contracts remain
-   `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
-   `demand_gen_landing_quality_by_campaign`,
-   `demand_gen_migration_constraints`, `demand_gen_action_object`. The route
-   must not show `Evidence Registry`, `Connector Refresh Runs` or adjacent Ads
-   ActionObjects as Demand Gen actions.
+   in current evidence, and `act_review_demand_gen_readiness` is the only
+   scoped Demand Gen ActionObject. Live Google Ads refresh
+   `refresh_google_ads_dc9e77806e9c` proves `demand_gen_ad_group_ad_rows` and
+   `demand_gen_creative_asset_rows` are available empty-read contracts with
+   row count `0`. Remaining missing contracts are only
+   `demand_gen_landing_quality_by_campaign` and
+   `demand_gen_migration_constraints`. The obsolete
+   `demand_gen_asset_group_rows` contract must not return. The route must not
+   show `Evidence Registry`, `Connector Refresh Runs` or adjacent Ads
+   ActionObjects as Demand Gen actions. The smoke script is state-neutral for
+   full verify: with a temporary empty DB, ad/creative contracts may be honest
+   missing contracts; with live proof they must be available empty-read
+   contracts.
 
 0. Content decision metadata truth, 2026-06-20 14:06 Europe/Warsaw:
    `/api/content/diagnostics.decision_queue` now owns marketer-facing
@@ -590,18 +597,21 @@ Audit `docs/audits/001-output.md` is now folded into
    `scripts/verify.sh` passed after this slice with API smoke, skill smokes,
    dashboard route tests, Playwright e2e `9 passed` and dashboard production
    build.
-0. Demand Gen campaign-channel truth, 2026-06-20 13:33 Europe/Warsaw:
+0. Demand Gen campaign-channel truth, updated 2026-06-21 22:53 Europe/Warsaw:
    `wilq-demand-gen-operator` is still correctly blocked, but campaign rows are
    no longer a missing read contract when Google Ads campaign channel facts are
-   present. Live API proof after restarting the 8000 API process:
+   present, and Demand Gen ad/creative empty-read contracts are now available.
+   Live API proof after restarting the 8000 API process:
    `campaign_rows_evaluated=18`,
    `campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}`,
-   `demand_gen_campaign_rows=[]`, `active_action_objects=[]` and
-   `ads_diagnostics.action_ids=[]`. `demand_gen_campaign_rows` is now an
-   available read contract. Remaining missing contracts are
-   `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
-   `demand_gen_landing_quality_by_campaign`,
-   `demand_gen_migration_constraints` and `demand_gen_action_object`. Do not
+   `demand_gen_campaign_rows=[]`, `demand_gen_ad_group_ad_rows=[]`,
+   `demand_gen_creative_asset_rows=[]`,
+   `active_action_objects=[act_review_demand_gen_readiness]` and
+   `ads_diagnostics.action_ids=[]`. `demand_gen_campaign_rows`,
+   `demand_gen_ad_group_ad_rows` and `demand_gen_creative_asset_rows` are now
+   available read contracts. Remaining missing contracts are
+   `demand_gen_landing_quality_by_campaign` and
+   `demand_gen_migration_constraints`. Do not
    unlock launch/migration recommendations from this; it only proves there are
    currently no Demand Gen/Discovery campaign rows in the Ads evidence. Full
    `scripts/verify.sh` passed after this slice: backend `123 passed`,

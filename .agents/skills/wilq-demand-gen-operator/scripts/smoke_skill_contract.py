@@ -102,6 +102,18 @@ def main() -> int:
     missing_read_contracts = readiness.get("missing_read_contracts")
     if not isinstance(missing_read_contracts, list) or not missing_read_contracts:
         raise SystemExit("Demand Gen readiness must expose missing read contracts")
+    available_read_contracts = readiness.get("available_read_contracts")
+    if not isinstance(available_read_contracts, list):
+        raise SystemExit("Demand Gen readiness must expose available read contracts")
+    if "demand_gen_asset_group_rows" in missing_read_contracts:
+        raise SystemExit("Demand Gen readiness must not use obsolete asset group rows contract")
+    for contract in ("demand_gen_ad_group_ad_rows", "demand_gen_creative_asset_rows"):
+        in_available = contract in available_read_contracts
+        in_missing = contract in missing_read_contracts
+        if in_available and in_missing:
+            raise SystemExit(f"Demand Gen contract {contract} cannot be both available and missing")
+        if not in_available and not in_missing:
+            raise SystemExit(f"Demand Gen contract {contract} must be either available or missing")
     campaign_rows_evaluated = readiness.get("campaign_rows_evaluated")
     if not isinstance(campaign_rows_evaluated, int):
         raise SystemExit("Demand Gen readiness must expose campaign_rows_evaluated")
@@ -124,6 +136,12 @@ def main() -> int:
     demand_gen_campaign_rows = readiness.get("demand_gen_campaign_rows")
     if not isinstance(demand_gen_campaign_rows, list):
         raise SystemExit("Demand Gen readiness must expose demand_gen_campaign_rows list")
+    demand_gen_ad_group_ad_rows = readiness.get("demand_gen_ad_group_ad_rows")
+    if not isinstance(demand_gen_ad_group_ad_rows, list):
+        raise SystemExit("Demand Gen readiness must expose demand_gen_ad_group_ad_rows list")
+    demand_gen_creative_asset_rows = readiness.get("demand_gen_creative_asset_rows")
+    if not isinstance(demand_gen_creative_asset_rows, list):
+        raise SystemExit("Demand Gen readiness must expose demand_gen_creative_asset_rows list")
     action_ids = readiness.get("action_ids")
     if action_ids != [EXPECTED_ACTION_ID]:
         raise SystemExit("Demand Gen readiness must expose the review-only ActionObject")
@@ -162,6 +180,13 @@ def main() -> int:
                     "campaign_rows_evaluated": campaign_rows_evaluated,
                     "campaign_channel_counts": campaign_channel_counts,
                     "demand_gen_campaign_row_count": len(demand_gen_campaign_rows),
+                    "demand_gen_ad_group_ad_row_count": len(
+                        demand_gen_ad_group_ad_rows
+                    ),
+                    "demand_gen_creative_asset_row_count": len(
+                        demand_gen_creative_asset_rows
+                    ),
+                    "available_read_contracts": available_read_contracts,
                     "missing_read_contracts": missing_read_contracts,
                     "blocked_claims": readiness.get("blocked_claims", []),
                 },

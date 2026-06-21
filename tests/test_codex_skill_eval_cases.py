@@ -144,7 +144,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "Demand Gen",
                 "demand_gen_readiness",
                 "demand_gen_campaign_rows",
-                "demand_gen_asset_group_rows",
+                "demand_gen_ad_group_ad_rows",
                 "demand_gen_creative_asset_rows",
                 "demand_gen_landing_quality_by_campaign",
                 "demand_gen_migration_constraints",

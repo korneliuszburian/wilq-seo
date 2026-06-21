@@ -13,6 +13,7 @@ SAFE_TRACE_VALUE_RE = re.compile(
     r"^(act|audit|card|connector|content_brief|ev|job|opp|refresh|run|tq|workflow)"
     r"_[A-Za-z0-9_-]+$"
 )
+SAFE_LOWER_ENUM_VALUE_RE = re.compile(r"^[a-z][a-z0-9_]{7,}$")
 SAFE_IDENTIFIER_KEYS = {
     "api",
     "action_type",
@@ -138,7 +139,10 @@ def _looks_like_env_name(value: str) -> bool:
 
 
 def _looks_like_safe_trace_identifier(value: str) -> bool:
-    return bool(SAFE_TRACE_VALUE_RE.fullmatch(value))
+    return bool(
+        SAFE_TRACE_VALUE_RE.fullmatch(value)
+        or SAFE_LOWER_ENUM_VALUE_RE.fullmatch(value)
+    )
 
 
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:

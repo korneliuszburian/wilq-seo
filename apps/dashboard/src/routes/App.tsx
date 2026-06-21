@@ -4442,8 +4442,8 @@ function DemandGenDiagnosticSurface() {
           </p>
         </div>
         {metricTileEntries.length > 0 ? (
-          <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
-            {metricTileEntries.slice(0, 4).map(([label, value]) => (
+          <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-6">
+            {metricTileEntries.slice(0, 6).map(([label, value]) => (
               <MetricTile key={label} label={label} value={value} />
             ))}
           </div>
@@ -4530,7 +4530,7 @@ function DemandGenDiagnosticSurface() {
               Ten payload sprawdza kanały i braki kontraktów. Nie tworzy kampanii,
               nie migruje budżetu i nie odblokowuje apply.
             </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
               <MetricTile
                 label="Kampanie"
                 value={String(demandGenPreview.campaign_rows_evaluated ?? "brak")}
@@ -4538,6 +4538,14 @@ function DemandGenDiagnosticSurface() {
               <MetricTile
                 label="DG rows"
                 value={String(demandGenPreview.demand_gen_campaign_row_count ?? "0")}
+              />
+              <MetricTile
+                label="Reklamy"
+                value={String(demandGenPreview.demand_gen_ad_group_ad_row_count ?? "0")}
+              />
+              <MetricTile
+                label="Assety"
+                value={String(demandGenPreview.demand_gen_creative_asset_row_count ?? "0")}
               />
               <MetricTile label="Braki" value={previewMissingContracts.length} />
               <MetricTile
@@ -4616,9 +4624,9 @@ function demandGenChannelLabel(channel: string) {
 function demandGenContractLabel(contract: string) {
   const labels: Record<string, string> = {
     demand_gen_action_object: "Demand Gen ActionObject",
-    demand_gen_asset_group_rows: "asset group rows",
+    demand_gen_ad_group_ad_rows: "wiersze reklam Demand Gen",
     demand_gen_campaign_rows: "wiersze kampanii Demand Gen/Discovery",
-    demand_gen_creative_asset_rows: "creative asset rows",
+    demand_gen_creative_asset_rows: "wiersze assetów kreacji",
     demand_gen_landing_quality_by_campaign: "jakość landingów per kampania",
     demand_gen_migration_constraints: "ograniczenia migracji",
     demand_gen_readiness_review_action_object: "review-only ActionObject",

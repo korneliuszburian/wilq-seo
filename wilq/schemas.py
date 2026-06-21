@@ -1463,6 +1463,29 @@ class AdsDiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
 
+class DemandGenAdGroupAdRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    campaign_status: str | None = None
+    advertising_channel_type: str | None = None
+    ad_group_id: str | None = None
+    ad_group_name: str | None = None
+    ad_id: str | None = None
+    ad_type: str | None = None
+    ad_status: str | None = None
+    final_url_count: int = 0
+    asset_reference_count: int = 0
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class DemandGenCreativeAssetRow(BaseModel):
+    asset_id: str | None = None
+    asset_type: str | None = None
+    field_type: str | None = None
+    impressions: int | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class MerchantDiagnosticSection(BaseModel):
     id: str
     title: str
@@ -1983,5 +2006,9 @@ class DemandGenReadinessContract(BaseModel):
     campaign_rows_evaluated: int = 0
     campaign_channel_counts: dict[str, int] = Field(default_factory=dict)
     demand_gen_campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
+    demand_gen_ad_group_ad_rows: list[DemandGenAdGroupAdRow] = Field(default_factory=list)
+    demand_gen_creative_asset_rows: list[DemandGenCreativeAssetRow] = Field(
+        default_factory=list
+    )
     next_step: str
     risk: ActionRisk = ActionRisk.medium

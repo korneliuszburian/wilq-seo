@@ -18,9 +18,21 @@ from wilq.actions.google_ads.business_context import (
     ADS_TARGET_CONFIRMATION_ACTION_ID,
 )
 from wilq.actions.google_ads.demand_gen import (
+    DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
+    DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
+    DEMAND_GEN_AD_READ_STATUS_FACT,
+    DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT,
+    DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
+    DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
+    DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
+    DEMAND_GEN_LANDING_QUALITY_CONTRACT,
+    DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
     DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
     DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+    demand_gen_ad_group_ad_rows_from_facts,
+    demand_gen_contract_has_ready_fact,
+    demand_gen_creative_asset_rows_from_facts,
     demand_gen_readiness_review_payload,
 )
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
@@ -52,7 +64,12 @@ from wilq.connectors.refresh import (
 )
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.credentials.runtime import credential_runtime_status
-from wilq.evidence.registry import get_evidence, list_evidence, list_evidence_by_ids
+from wilq.evidence.registry import (
+    connector_evidence_id,
+    get_evidence,
+    list_evidence,
+    list_evidence_by_ids,
+)
 from wilq.expert.rules import (
     get_expert_rule,
     list_expert_capabilities,
@@ -866,6 +883,7 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
         ga4_future = executor.submit(build_ga4_diagnostics)
         ads_diagnostics = ads_future.result().model_dump(mode="json")
         ga4_diagnostics = ga4_future.result().model_dump(mode="json")
+    demand_gen_metric_facts = _demand_gen_google_ads_metric_facts()
     return {
         "ads_diagnostics": _compact_ads_diagnostics_for_lite_context(
             ads_diagnostics,
@@ -880,6 +898,7 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
         "demand_gen_readiness": _demand_gen_readiness_contract(
             ads_diagnostics,
             ga4_diagnostics,
+            demand_gen_metric_facts,
         ).model_dump(mode="json"),
     }
 
@@ -890,12 +909,17 @@ def _build_demand_gen_readiness_contract() -> DemandGenReadinessContract:
         ga4_future = executor.submit(build_ga4_diagnostics)
         ads_diagnostics = ads_future.result().model_dump(mode="json")
         ga4_diagnostics = ga4_future.result().model_dump(mode="json")
-    return _demand_gen_readiness_contract(ads_diagnostics, ga4_diagnostics)
+    return _demand_gen_readiness_contract(
+        ads_diagnostics,
+        ga4_diagnostics,
+        _demand_gen_google_ads_metric_facts(),
+    )
 
 
 def _demand_gen_readiness_contract(
     ads_diagnostics: dict[str, Any],
     ga4_diagnostics: dict[str, Any],
+    demand_gen_metric_facts: list[MetricFact],
 ) -> DemandGenReadinessContract:
     campaign_rows = [
         row
@@ -911,11 +935,36 @@ def _demand_gen_readiness_contract(
         for row in campaign_rows
         if _is_demand_gen_channel(row.get("advertising_channel_type"))
     ][:DEMAND_GEN_CAMPAIGN_ROW_LIMIT]
-    evidence_ids = sorted(
-        {
-            *_collect_values_by_key(ads_diagnostics, "evidence_ids"),
-            *_collect_values_by_key(ga4_diagnostics, "evidence_ids"),
-        }
+    demand_gen_ad_group_ad_rows = demand_gen_ad_group_ad_rows_from_facts(
+        demand_gen_metric_facts,
+    )
+    demand_gen_creative_asset_rows = demand_gen_creative_asset_rows_from_facts(
+        demand_gen_metric_facts,
+    )
+    demand_gen_ad_read_available = demand_gen_contract_has_ready_fact(
+        demand_gen_metric_facts,
+        status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
+        row_count_fact_name=DEMAND_GEN_AD_READ_ROW_COUNT_FACT,
+    ) or bool(demand_gen_ad_group_ad_rows)
+    demand_gen_creative_asset_read_available = demand_gen_contract_has_ready_fact(
+        demand_gen_metric_facts,
+        status_fact_name=DEMAND_GEN_CREATIVE_ASSET_STATUS_FACT,
+        row_count_fact_name=DEMAND_GEN_CREATIVE_ASSET_ROW_COUNT_FACT,
+    ) or bool(demand_gen_creative_asset_rows)
+    evidence_ids = list(
+        dict.fromkeys(
+            [
+                *(
+                    fact.evidence_id
+                    for fact in demand_gen_metric_facts
+                    if fact.evidence_id and fact.name.startswith("demand_gen_")
+                ),
+                connector_evidence_id("google_ads"),
+                connector_evidence_id("google_analytics_4"),
+                *_collect_values_by_key(ads_diagnostics, "evidence_ids"),
+                *_collect_values_by_key(ga4_diagnostics, "evidence_ids"),
+            ]
+        )
     )[:12]
     available_read_contracts = [
         "google_ads_campaign_activity",
@@ -925,23 +974,38 @@ def _demand_gen_readiness_contract(
         DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     ]
     missing_read_contracts = [
-        "demand_gen_asset_group_rows",
-        "demand_gen_creative_asset_rows",
-        "demand_gen_landing_quality_by_campaign",
-        "demand_gen_migration_constraints",
+        DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
+        DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
+        DEMAND_GEN_LANDING_QUALITY_CONTRACT,
+        DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
     ]
     if campaign_channel_read_available:
-        available_read_contracts.append("demand_gen_campaign_rows")
+        available_read_contracts.append(DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
         campaign_context = (
             f"WILQ ocenił {len(campaign_rows)} kampanii Ads z typami kanałów "
             f"({_format_channel_counts(channel_counts)}); "
             f"Demand Gen/Discovery rows={len(demand_gen_campaign_rows)}."
         )
     else:
-        missing_read_contracts.insert(0, "demand_gen_campaign_rows")
+        missing_read_contracts.insert(0, DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
         campaign_context = (
             "WILQ nie ma jeszcze pewnego odczytu typów kanałów kampanii Ads."
         )
+    if demand_gen_ad_read_available:
+        available_read_contracts.append(DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT)
+        missing_read_contracts = [
+            contract
+            for contract in missing_read_contracts
+            if contract != DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT
+        ]
+    if demand_gen_creative_asset_read_available:
+        available_read_contracts.append(DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT)
+        missing_read_contracts = [
+            contract
+            for contract in missing_read_contracts
+            if contract != DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT
+        ]
+    missing_contract_summary = ", ".join(missing_read_contracts) or "brak"
     title = (
         "Demand Gen: sprawdź istniejące kampanie bez launch/apply"
         if demand_gen_campaign_rows
@@ -952,6 +1016,12 @@ def _demand_gen_readiness_contract(
         campaign_channel_counts=channel_counts,
         demand_gen_campaign_rows=[
             row.model_dump(mode="json") for row in demand_gen_campaign_rows
+        ],
+        demand_gen_ad_group_ad_rows=[
+            row.model_dump(mode="json") for row in demand_gen_ad_group_ad_rows
+        ],
+        demand_gen_creative_asset_rows=[
+            row.model_dump(mode="json") for row in demand_gen_creative_asset_rows
         ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
@@ -965,14 +1035,17 @@ def _demand_gen_readiness_contract(
         title=title,
         summary=(
             f"{campaign_context} WILQ ma Ads i GA4 evidence do oceny ruchu, "
-            "ale nadal nie ma Demand Gen-specific read contractów dla assetów, "
-            "kreacji, landing quality per campaign i migracji. "
+            "a Demand Gen ad/creative read contracts są dostępne, jeśli widnieją "
+            "w available_read_contracts. "
+            f"Nadal brakujące kontrakty: {missing_contract_summary}. "
             "To jest blocker użytecznej rekomendacji, nie brak promptu."
         ),
         metric_tiles={
             "kampanie Ads": len(campaign_rows),
             "kanały": len(channel_counts),
             "wiersze DG": len(demand_gen_campaign_rows),
+            "reklamy DG": len(demand_gen_ad_group_ad_rows),
+            "assety DG": len(demand_gen_creative_asset_rows),
             "braki": len(missing_read_contracts),
         },
         available_read_contracts=available_read_contracts,
@@ -990,12 +1063,18 @@ def _demand_gen_readiness_contract(
         campaign_rows_evaluated=len(campaign_rows),
         campaign_channel_counts=channel_counts,
         demand_gen_campaign_rows=demand_gen_campaign_rows,
+        demand_gen_ad_group_ad_rows=demand_gen_ad_group_ad_rows,
+        demand_gen_creative_asset_rows=demand_gen_creative_asset_rows,
         next_step=(
             "Zwaliduj act_review_demand_gen_readiness jako review-only. Zanim skill "
-            "pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative read "
-            "contracts, landing quality by campaign i migration constraints."
+            "pokaże kandydatów Demand Gen lub migracji, domknij brakujące "
+            "landing quality by campaign i migration constraints."
         ),
     )
+
+
+def _demand_gen_google_ads_metric_facts() -> list[MetricFact]:
+    return metric_store().list_metric_facts(connector_id="google_ads", limit=5000)
 
 
 def _campaign_channel_counts(campaign_rows: list[dict[str, Any]]) -> dict[str, int]:

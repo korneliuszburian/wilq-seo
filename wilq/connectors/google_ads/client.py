@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from collections.abc import Mapping
 from datetime import date, timedelta
 from typing import Any
@@ -150,6 +151,45 @@ ORDER BY change_event.change_date_time DESC
 LIMIT 50
 """.strip()
 
+DEMAND_GEN_AD_GROUP_AD_QUERY = """
+SELECT
+  campaign.id,
+  campaign.name,
+  campaign.status,
+  campaign.advertising_channel_type,
+  ad_group.id,
+  ad_group.name,
+  ad_group_ad.status,
+  ad_group_ad.ad.id,
+  ad_group_ad.ad.type,
+  ad_group_ad.ad.final_urls,
+  ad_group_ad.ad.demand_gen_multi_asset_ad.marketing_images,
+  ad_group_ad.ad.demand_gen_multi_asset_ad.square_marketing_images,
+  ad_group_ad.ad.demand_gen_multi_asset_ad.portrait_marketing_images,
+  ad_group_ad.ad.demand_gen_multi_asset_ad.classic_display_images,
+  ad_group_ad.ad.demand_gen_multi_asset_ad.logo_images,
+  ad_group_ad.ad.demand_gen_carousel_ad.logo_image,
+  ad_group_ad.ad.demand_gen_carousel_ad.carousel_cards,
+  ad_group_ad.ad.demand_gen_video_responsive_ad.logo_images,
+  ad_group_ad.ad.demand_gen_video_responsive_ad.call_to_actions,
+  ad_group_ad.ad.demand_gen_video_responsive_ad.videos
+FROM ad_group_ad
+WHERE campaign.advertising_channel_type = DEMAND_GEN
+  AND ad_group_ad.status != 'REMOVED'
+LIMIT 100
+""".strip()
+
+DEMAND_GEN_CREATIVE_ASSET_QUERY = """
+SELECT
+  asset.id,
+  asset.type,
+  ad_group_ad_asset_view.field_type,
+  metrics.impressions
+FROM ad_group_ad_asset_view
+WHERE ad_group_ad_asset_view.field_type = DEMAND_GEN_CAROUSEL_CARD
+LIMIT 100
+""".strip()
+
 CUSTOMER_CLIENT_QUERY = """
 SELECT
   customer_client.client_customer,
@@ -229,6 +269,20 @@ def refresh_google_ads_campaign_summary(
                 credentials,
                 access_token,
             )
+            demand_gen_ad_summary, demand_gen_ad_facts = (
+                _fetch_optional_demand_gen_ad_group_ads(
+                    client,
+                    credentials,
+                    access_token,
+                )
+            )
+            demand_gen_asset_summary, demand_gen_asset_facts = (
+                _fetch_optional_demand_gen_creative_assets(
+                    client,
+                    credentials,
+                    access_token,
+                )
+            )
             keyword_planner_summary, keyword_planner_facts = (
                 _fetch_optional_keyword_planner_ideas(
                     client,
@@ -242,12 +296,16 @@ def refresh_google_ads_campaign_summary(
             metric_summary.update(keyword_context_summary)
             metric_summary.update(recommendation_summary)
             metric_summary.update(change_event_summary)
+            metric_summary.update(demand_gen_ad_summary)
+            metric_summary.update(demand_gen_asset_summary)
             metric_summary.update(keyword_planner_summary)
             metric_facts.extend(search_term_facts)
             metric_facts.extend(search_term_safety_facts)
             metric_facts.extend(keyword_context_facts)
             metric_facts.extend(recommendation_facts)
             metric_facts.extend(change_event_facts)
+            metric_facts.extend(demand_gen_ad_facts)
+            metric_facts.extend(demand_gen_asset_facts)
             metric_facts.extend(keyword_planner_facts)
         except httpx.HTTPStatusError as exc:
             detail = _sanitized_http_error_detail(exc.response)
@@ -299,6 +357,10 @@ def refresh_google_ads_campaign_summary(
             f"{metric_summary.get('keyword_match_context_row_count', 0)}; "
             f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}; "
             f"change events: {metric_summary.get('change_event_row_count', 0)}; "
+            "Demand Gen ads: "
+            f"{metric_summary.get('demand_gen_ad_group_ad_row_count', 0)}; "
+            "Demand Gen creative assets: "
+            f"{metric_summary.get('demand_gen_creative_asset_row_count', 0)}; "
             f"keyword planner ideas: {metric_summary.get('keyword_planner_idea_count', 0)}."
         ),
         external_call_attempted=True,
@@ -567,6 +629,60 @@ def _fetch_change_event_summary(
     return _summarize_change_event_response(response.json())
 
 
+def _fetch_optional_demand_gen_ad_group_ads(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    try:
+        response = _post_google_ads_search_stream(
+            client,
+            credentials,
+            access_token,
+            DEMAND_GEN_AD_GROUP_AD_QUERY,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return _demand_gen_http_failure_summary("ad_group_ad", exc)
+    except httpx.HTTPError as exc:
+        return (
+            {
+                "demand_gen_ad_group_ad_status": "blocked",
+                "demand_gen_ad_group_ad_blocker": type(exc).__name__,
+                "demand_gen_ad_group_ad_row_count": 0,
+            },
+            [],
+        )
+    return _summarize_demand_gen_ad_group_ad_response(response.json())
+
+
+def _fetch_optional_demand_gen_creative_assets(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    try:
+        response = _post_google_ads_search_stream(
+            client,
+            credentials,
+            access_token,
+            DEMAND_GEN_CREATIVE_ASSET_QUERY,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return _demand_gen_http_failure_summary("creative_asset", exc)
+    except httpx.HTTPError as exc:
+        return (
+            {
+                "demand_gen_creative_asset_status": "blocked",
+                "demand_gen_creative_asset_blocker": type(exc).__name__,
+                "demand_gen_creative_asset_row_count": 0,
+            },
+            [],
+        )
+    return _summarize_demand_gen_creative_asset_response(response.json())
+
+
 def _fetch_optional_keyword_planner_ideas(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
@@ -626,6 +742,50 @@ def _fetch_optional_keyword_planner_ideas(
         language_resource=language_resource,
         geo_target_resource=geo_target_resource,
     )
+
+
+def _post_google_ads_search_stream(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+    query: str,
+) -> httpx.Response:
+    customer_id = credentials["customer_id"]
+    return client.post(
+        f"https://googleads.googleapis.com/{GOOGLE_ADS_API_VERSION}/customers/"
+        f"{customer_id}/googleAds:searchStream",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "developer-token": str(credentials["developer_token"]),
+            "login-customer-id": str(credentials["login_customer_id"]),
+            "Content-Type": "application/json",
+        },
+        json={"query": query},
+    )
+
+
+def _demand_gen_http_failure_summary(
+    contract: str,
+    exc: httpx.HTTPStatusError,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    detail = _sanitized_http_error_detail(exc.response)
+    if contract == "creative_asset":
+        summary: dict[str, float | int | str] = {
+            "demand_gen_creative_asset_status": "blocked",
+            "demand_gen_creative_asset_http_status": exc.response.status_code,
+            "demand_gen_creative_asset_row_count": 0,
+        }
+        if detail:
+            summary["demand_gen_creative_asset_blocker"] = detail
+        return summary, []
+    summary = {
+        "demand_gen_ad_group_ad_status": "blocked",
+        "demand_gen_ad_group_ad_http_status": exc.response.status_code,
+        "demand_gen_ad_group_ad_row_count": 0,
+    }
+    if detail:
+        summary["demand_gen_ad_group_ad_blocker"] = detail
+    return summary, []
 
 
 def _keyword_planner_seed_terms(search_term_facts: list[VendorMetricFact]) -> list[str]:
@@ -1352,6 +1512,99 @@ def _summarize_keyword_match_context_response(
     )
 
 
+def _summarize_demand_gen_ad_group_ad_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    metric_facts: list[VendorMetricFact] = []
+    ad_type_counts: Counter[str] = Counter()
+    final_url_count = 0
+    asset_reference_count = 0
+    for row in rows:
+        dimensions = _demand_gen_ad_dimensions(row)
+        if not dimensions:
+            continue
+        ad_type = dimensions.get("ad_type", "UNKNOWN")
+        ad_type_counts[ad_type] += 1
+        ad_group_ad = row.get("adGroupAd", row.get("ad_group_ad", {}))
+        ad = ad_group_ad.get("ad", {}) if isinstance(ad_group_ad, dict) else {}
+        row_final_url_count = _list_count(ad, "finalUrls", "final_urls")
+        row_asset_reference_count = _demand_gen_ad_asset_reference_count(ad)
+        final_url_count += row_final_url_count
+        asset_reference_count += row_asset_reference_count
+        metric_facts.extend(
+            [
+                VendorMetricFact(
+                    "demand_gen_ad_available",
+                    1,
+                    dimensions,
+                    period="demand_gen_ad_inventory",
+                ),
+                VendorMetricFact(
+                    "demand_gen_ad_final_url_count",
+                    row_final_url_count,
+                    dimensions,
+                    period="demand_gen_ad_inventory",
+                ),
+                VendorMetricFact(
+                    "demand_gen_ad_asset_reference_count",
+                    row_asset_reference_count,
+                    dimensions,
+                    period="demand_gen_ad_inventory",
+                ),
+            ]
+        )
+    return (
+        {
+            "demand_gen_ad_group_ad_status": "ready",
+            "demand_gen_ad_group_ad_query": "demand_gen_ad_group_ad_inventory",
+            "demand_gen_ad_group_ad_row_count": len(rows),
+            "demand_gen_multi_asset_ad_count": ad_type_counts[
+                "DEMAND_GEN_MULTI_ASSET_AD"
+            ],
+            "demand_gen_carousel_ad_count": ad_type_counts["DEMAND_GEN_CAROUSEL_AD"],
+            "demand_gen_video_responsive_ad_count": ad_type_counts[
+                "DEMAND_GEN_VIDEO_RESPONSIVE_AD"
+            ],
+            "demand_gen_final_url_count": final_url_count,
+            "demand_gen_asset_reference_count": asset_reference_count,
+        },
+        metric_facts,
+    )
+
+
+def _summarize_demand_gen_creative_asset_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    impressions = 0
+    metric_facts: list[VendorMetricFact] = []
+    for row in rows:
+        dimensions = _demand_gen_creative_asset_dimensions(row)
+        if not dimensions:
+            continue
+        metrics = row.get("metrics", {})
+        row_impressions = _int_metric(metrics.get("impressions"))
+        impressions += row_impressions
+        metric_facts.append(
+            VendorMetricFact(
+                "demand_gen_creative_asset_impressions",
+                row_impressions,
+                dimensions,
+                period="demand_gen_creative_asset",
+            )
+        )
+    return (
+        {
+            "demand_gen_creative_asset_status": "ready",
+            "demand_gen_creative_asset_query": "demand_gen_carousel_asset_performance",
+            "demand_gen_creative_asset_row_count": len(rows),
+            "demand_gen_creative_asset_impressions": impressions,
+        },
+        metric_facts,
+    )
+
+
 def _search_stream_rows(payload: Any) -> list[dict[str, Any]]:
     if not isinstance(payload, list):
         return []
@@ -1415,6 +1668,72 @@ def _float_metric(value: Any) -> float:
         except ValueError:
             return 0.0
     return 0.0
+
+
+def _list_count(mapping: Any, *keys: str) -> int:
+    if not isinstance(mapping, dict):
+        return 0
+    for key in keys:
+        value = mapping.get(key)
+        if isinstance(value, list):
+            return len(value)
+        if isinstance(value, str) and value:
+            return 1
+    return 0
+
+
+def _demand_gen_ad_asset_reference_count(ad: Any) -> int:
+    if not isinstance(ad, dict):
+        return 0
+    return (
+        _demand_gen_multi_asset_reference_count(ad)
+        + _demand_gen_carousel_asset_reference_count(ad)
+        + _demand_gen_video_responsive_asset_reference_count(ad)
+    )
+
+
+def _demand_gen_multi_asset_reference_count(ad: dict[str, Any]) -> int:
+    info = ad.get("demandGenMultiAssetAd", ad.get("demand_gen_multi_asset_ad", {}))
+    if not isinstance(info, dict):
+        return 0
+    return sum(
+        _list_count(info, camel_key, snake_key)
+        for camel_key, snake_key in (
+            ("marketingImages", "marketing_images"),
+            ("squareMarketingImages", "square_marketing_images"),
+            ("portraitMarketingImages", "portrait_marketing_images"),
+            ("classicDisplayImages", "classic_display_images"),
+            ("logoImages", "logo_images"),
+        )
+    )
+
+
+def _demand_gen_carousel_asset_reference_count(ad: dict[str, Any]) -> int:
+    info = ad.get("demandGenCarouselAd", ad.get("demand_gen_carousel_ad", {}))
+    if not isinstance(info, dict):
+        return 0
+    return _list_count(info, "logoImage", "logo_image") + _list_count(
+        info,
+        "carouselCards",
+        "carousel_cards",
+    )
+
+
+def _demand_gen_video_responsive_asset_reference_count(ad: dict[str, Any]) -> int:
+    info = ad.get(
+        "demandGenVideoResponsiveAd",
+        ad.get("demand_gen_video_responsive_ad", {}),
+    )
+    if not isinstance(info, dict):
+        return 0
+    return sum(
+        _list_count(info, camel_key, snake_key)
+        for camel_key, snake_key in (
+            ("logoImages", "logo_images"),
+            ("callToActions", "call_to_actions"),
+            ("videos", "videos"),
+        )
+    )
 
 
 def _optional_float_metric(value: Any) -> float | None:
@@ -1527,6 +1846,52 @@ def _keyword_match_context_dimensions(row: dict[str, Any]) -> dict[str, str]:
         match_type = keyword.get("matchType", keyword.get("match_type"))
         if isinstance(match_type, str) and match_type:
             dimensions["keyword_match_type"] = match_type
+    return dimensions
+
+
+def _demand_gen_ad_dimensions(row: dict[str, Any]) -> dict[str, str]:
+    dimensions = _campaign_dimensions(row.get("campaign", {}))
+    ad_group = row.get("adGroup", row.get("ad_group", {}))
+    if isinstance(ad_group, dict):
+        ad_group_id = ad_group.get("id")
+        if ad_group_id is not None:
+            dimensions["ad_group_id"] = str(ad_group_id)
+        ad_group_name = ad_group.get("name")
+        if isinstance(ad_group_name, str) and ad_group_name:
+            dimensions["ad_group_name"] = ad_group_name
+    ad_group_ad = row.get("adGroupAd", row.get("ad_group_ad", {}))
+    if not isinstance(ad_group_ad, dict):
+        return dimensions
+    ad_status = ad_group_ad.get("status")
+    if isinstance(ad_status, str) and ad_status:
+        dimensions["ad_status"] = ad_status
+    ad = ad_group_ad.get("ad", {})
+    if not isinstance(ad, dict):
+        return dimensions
+    ad_id = ad.get("id")
+    if ad_id is not None:
+        dimensions["ad_id"] = str(ad_id)
+    ad_type = ad.get("type")
+    if isinstance(ad_type, str) and ad_type:
+        dimensions["ad_type"] = ad_type
+    return dimensions
+
+
+def _demand_gen_creative_asset_dimensions(row: dict[str, Any]) -> dict[str, str]:
+    dimensions: dict[str, str] = {}
+    asset = row.get("asset", {})
+    if isinstance(asset, dict):
+        asset_id = asset.get("id")
+        if asset_id is not None:
+            dimensions["asset_id"] = str(asset_id)
+        asset_type = asset.get("type")
+        if isinstance(asset_type, str) and asset_type:
+            dimensions["asset_type"] = asset_type
+    asset_view = row.get("adGroupAdAssetView", row.get("ad_group_ad_asset_view", {}))
+    if isinstance(asset_view, dict):
+        field_type = asset_view.get("fieldType", asset_view.get("field_type"))
+        if isinstance(field_type, str) and field_type:
+            dimensions["field_type"] = field_type
     return dimensions
 
 

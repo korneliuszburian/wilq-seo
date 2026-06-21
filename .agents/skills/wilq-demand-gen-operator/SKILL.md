@@ -45,6 +45,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/system/status`
 - `POST /api/codex/context-pack`
 - `GET /api/marketing/brief`
+- `GET /api/demand-gen/diagnostics`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `GET /api/connectors/{connector}/refresh-runs`
