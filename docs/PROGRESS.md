@@ -37,6 +37,26 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads change history impact review ActionObject, 2026-06-21 15:12 CEST.
+  Change history nie jest już martwą sekcją bez kolejnego kroku, gdy WILQ ma
+  `change_event_*` evidence. Po pojawieniu się change-event metric facts WILQ
+  wystawia review-only `act_review_ads_change_history_impact` z payloadem
+  `google_ads_change_history_impact_review`,
+  `preview_contract=change_history_impact_review_v1`,
+  `operation_type=ChangeHistoryImpactReview`, listą
+  `change_history_preview`, required validation dla review change history,
+  pre/post performance windows, human impact review i business goal review,
+  oraz hard `apply_allowed=false`, `api_mutation_ready=false`,
+  `destructive=false`. Targeted test fixture potwierdza, że
+  `/api/ads/diagnostics.change_history_read_contract.action_ids`,
+  sekcja `ads_change_history`, decision `ads_review_change_history` i
+  `/api/actions/act_review_ads_change_history_impact/validate` są spięte, gdy
+  change rows istnieją. Live state po restarcie stacka: Ads ma live data, ale
+  `change_history_read_contract.status=blocked`, `rows=0`, `action_ids=[]`,
+  więc ActionObject nie jest pokazywany i `/api/actions/act_review_ads_change_history_impact`
+  zwraca 404. To jest intencjonalne: brak `change_event_rows` nadal blokuje
+  claimy `change impact`, `performance uplift`, `budget scaling`,
+  `budget apply` i `campaign mutation`.
 - Ads target guardrail confirmation ActionObject, 2026-06-21 14:31 CEST.
   Brak `target_roas_or_cpa` nie jest już tylko opisowym blockerem w Ads
   business context. WILQ wystawia review-only

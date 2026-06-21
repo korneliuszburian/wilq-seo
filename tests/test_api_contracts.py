@@ -16,6 +16,7 @@ from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
 )
+from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import apply_action
@@ -4377,6 +4378,7 @@ def test_ads_change_history_blocks_empty_read_attempt(
     assert change_history_decision["status"] == "blocked"
     assert change_history_decision["metric_tiles"] == {"zmiany": 0, "kampanie": 0}
     assert "change_event_rows" in change_history_decision["missing_read_contracts"]
+    assert change_history_decision["action_ids"] == []
     assert "impact review zablokowany" in change_history_decision["next_step"]
 
 
@@ -5583,6 +5585,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     change_history_contract = payload["change_history_read_contract"]
     assert change_history_contract["status"] == "ready"
+    assert change_history_contract["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
     assert change_history_contract["allowed_metrics"] == [
         "change_event_available",
         "change_event_changed_field_count",
@@ -5617,6 +5620,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_change_history"
     )
     assert change_history_section["status"] == "ready"
+    assert change_history_section["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
     assert change_history_section["knowledge_card_ids"] == [
         "card_google_ads_budget_review_playbook"
     ]
@@ -6145,7 +6149,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert change_history_decision["change_history_rows"][0]["change_resource_type"] == (
         "CAMPAIGN"
     )
-    assert change_history_decision["action_ids"] == []
+    assert change_history_decision["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
     assert change_history_decision["knowledge_card_ids"] == [
         "card_google_ads_budget_review_playbook"
     ]
@@ -6154,6 +6158,30 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_principles_v1",
     ]
     assert "change impact" in change_history_decision["blocked_claims"]
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    actions = {action["id"]: action for action in actions_response.json()}
+    assert CHANGE_HISTORY_IMPACT_ACTION_ID in actions
+    change_history_action = actions[CHANGE_HISTORY_IMPACT_ACTION_ID]
+    assert change_history_action["payload"]["action_type"] == (
+        "google_ads_change_history_impact_review"
+    )
+    assert change_history_action["payload"]["preview_contract"] == (
+        "change_history_impact_review_v1"
+    )
+    assert change_history_action["payload"]["change_history_preview"][0][
+        "change_event_id"
+    ] == "change-1"
+    assert change_history_action["payload"]["apply_allowed"] is False
+    assert change_history_action["payload"]["destructive"] is False
+    assert change_history_action["payload"]["api_mutation_ready"] is False
+    assert "pre_change_performance_window" in change_history_action["payload"][
+        "missing_read_contracts"
+    ]
+    validate_response = client.post(f"/api/actions/{CHANGE_HISTORY_IMPACT_ACTION_ID}/validate")
+    assert validate_response.status_code == 200
+    assert validate_response.json()["valid"] is True
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["priority"] == 40
@@ -6266,7 +6294,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert safety_decision["priority"] == 10
-    assert safety_decision["metric_tiles"] == {"ActionObjecty": 5, "blokady": 3}
+    assert safety_decision["metric_tiles"] == {"ActionObjecty": 6, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
     assert payload["blocker_count"] == 2
 
@@ -6323,6 +6351,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     action_ids = {action["id"] for action in actions_payload}
     assert "act_configure_google_ads_env" not in action_ids
     assert "act_prepare_ads_campaign_review_queue" in action_ids
+    assert CHANGE_HISTORY_IMPACT_ACTION_ID in action_ids
     assert "act_prepare_google_ads_recommendation_review_queue" in action_ids
     assert "act_prepare_custom_segments_from_search_terms" in action_ids
     assert "act_prepare_negative_keyword_review_queue" in action_ids

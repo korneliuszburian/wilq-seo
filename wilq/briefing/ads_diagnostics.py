@@ -25,6 +25,7 @@ from wilq.actions.google_ads.campaign_triage import (
     campaign_review_score,
     campaign_target_context,
 )
+from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
 from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     CUSTOM_SEGMENT_BLOCKED_CLAIMS,
@@ -503,6 +504,10 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     )
     business_context_read_contract = _business_context_with_action_ids(
         business_context_read_contract,
+        action_ids,
+    )
+    change_history_read_contract = _change_history_with_action_ids(
+        change_history_read_contract,
         action_ids,
     )
     custom_segments_read_contract = _custom_segments_read_contract(
@@ -2648,9 +2653,21 @@ def _change_history_section(
         source_connectors=change_history_read_contract.source_connectors,
         evidence_ids=change_history_read_contract.evidence_ids,
         metric_facts=metric_facts[:12],
-        action_ids=[],
+        action_ids=change_history_read_contract.action_ids,
         blocked_claims=change_history_read_contract.blocked_claims,
         risk=ActionRisk.medium,
+    )
+
+
+def _change_history_with_action_ids(
+    change_history_read_contract: AdsChangeHistoryReadContract,
+    action_ids: list[str],
+) -> AdsChangeHistoryReadContract:
+    if not change_history_read_contract.change_history_rows:
+        return change_history_read_contract
+    change_history_action_ids = _change_history_action_ids(action_ids)
+    return change_history_read_contract.model_copy(
+        update={"action_ids": change_history_action_ids}
     )
 
 
@@ -4872,7 +4889,7 @@ def _ads_decision_queue(
                 evidence_ids=change_history_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 change_history_rows=change_history_read_contract.change_history_rows,
-                action_ids=[],
+                action_ids=change_history_read_contract.action_ids,
                 blocked_claims=change_history_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
@@ -5160,6 +5177,12 @@ def _recommendation_action_ids(action_ids: list[str]) -> list[str]:
         action_id
         for action_id in action_ids
         if action_id == RECOMMENDATION_REVIEW_ACTION_ID
+    ]
+
+
+def _change_history_action_ids(action_ids: list[str]) -> list[str]:
+    return [
+        action_id for action_id in action_ids if action_id == CHANGE_HISTORY_IMPACT_ACTION_ID
     ]
 
 

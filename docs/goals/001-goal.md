@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 14:31 CEST.
+Last updated: 2026-06-21 15:12 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -71,9 +71,11 @@ contract for CTR/CPC/conversion rate/CPA/ROAS as calculations from campaign
 facts, a read-only account currency contract, a read-only budget context
 contract for campaign daily budgets versus 7-day cost, a read-only Google Ads
 recommendations contract, a read-only Google Ads impression-share contract, a
-read-only Google Ads change-history contract, a typed Ads business context
-contract for profit margin, business goal, budget goal and target ROAS/CPA
-inputs plus typed `ads_business_target_interpretation_v1`, a read-only recommendation impact
+read-only Google Ads change-history contract plus a review-only
+`change_history_impact_review_v1` ActionObject path when change-event rows
+exist, a typed Ads business context contract for profit margin, business goal,
+budget goal and target ROAS/CPA inputs plus typed
+`ads_business_target_interpretation_v1`, a read-only recommendation impact
 preview for recommendation types that expose impact metrics, a review-only
 recommendation apply payload preview, a read-only 90-day search-term safety
 contract and a review-only negative keyword payload preview plus read-only
@@ -92,11 +94,31 @@ apply support. Missing target ROAS/CPA now has a dedicated review-only
 not yet completed and does not unlock apply or profitability verdicts.
 Full BDOS-class parity still requires optimizer contracts such as
 recorded target confirmation values for live decisions, recorded human strategy
-review outcome, pre/post change-impact windows, approved Keyword Planner
-access/idea rows in live data, forecast or audience-size checks, custom segment
-targeting/apply previews, apply confirmation and mutation audit paths, plus
-real Localo ranking/GBP/competitor/review read contracts.
+review outcome, live change-event rows plus pre/post change-impact windows,
+approved Keyword Planner access/idea rows in live data, forecast or
+audience-size checks, custom segment targeting/apply previews, apply
+confirmation and mutation audit paths, plus real Localo
+ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads change-history impact truth, live proof 2026-06-21 15:12 CEST:
+WILQ now has a typed review-only path for change history impact review, but it
+does not appear without real change-event rows. In seeded contract tests,
+`change_history_read_contract.action_ids`,
+`sections[id=ads_change_history].action_ids`,
+`decision_queue[id=ads_review_change_history].action_ids` and
+`/api/actions/act_review_ads_change_history_impact/validate` are connected to
+`act_review_ads_change_history_impact`. Its payload uses
+`action_type=google_ads_change_history_impact_review`,
+`preview_contract=change_history_impact_review_v1`,
+`operation_type=ChangeHistoryImpactReview`, carries
+`change_history_preview`, `missing_read_contracts` for pre/post performance
+windows, human review and apply preview, and keeps `apply_allowed=false`,
+`api_mutation_ready=false` and `destructive=false`. Live local Ads diagnostics
+after stack restart still report `change_history_read_contract.status=blocked`,
+`rows=0`, `action_ids=[]`; `/api/actions/act_review_ads_change_history_impact`
+returns 404. This is correct: no change-event evidence means no impact claim
+and no review ActionObject.
 
 Latest Ads target guardrail confirmation truth, live proof 2026-06-21
 14:31 CEST: missing `target_roas_or_cpa` is now an operational ActionObject,

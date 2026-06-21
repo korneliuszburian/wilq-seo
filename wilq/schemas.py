@@ -994,6 +994,7 @@ class AdsChangeHistoryReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     change_history_rows: list[AdsChangeHistoryRow] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
     next_step: str
 
 

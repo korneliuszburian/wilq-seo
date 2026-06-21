@@ -723,6 +723,7 @@ export const AdsChangeHistoryReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   change_history_rows: z.array(AdsChangeHistoryRowSchema),
+  action_ids: z.array(z.string()).optional().default([]),
   next_step: z.string()
 });
 

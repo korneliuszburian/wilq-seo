@@ -21,6 +21,10 @@ from wilq.actions.google_ads.campaign_review import (
     CAMPAIGN_REVIEW_ACTION_ID,
     campaign_review_payload_from_metric_facts,
 )
+from wilq.actions.google_ads.change_history import (
+    CHANGE_HISTORY_IMPACT_ACTION_ID,
+    change_history_impact_payload_from_metric_facts,
+)
 from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     custom_segment_payload_from_metric_facts,
@@ -730,6 +734,46 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "zgodę na apply."
             ),
             payload=recommendation_review_payload,
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
+    change_history_payload = change_history_impact_payload_from_metric_facts(google_ads_facts)
+    if change_history_payload is not None:
+        change_event_ids = {
+            preview.get("change_event_id")
+            for preview in change_history_payload["change_history_preview"][:6]
+            if isinstance(preview, dict)
+        }
+        change_history_metrics = [
+            fact
+            for fact in google_ads_facts
+            if fact.name in change_history_payload["source_metric_names"]
+            and fact.evidence_id in change_history_payload["evidence_ids"]
+            and fact.dimensions.get("change_event_id") in change_event_ids
+        ][:12]
+        action = ActionObject(
+            id=CHANGE_HISTORY_IMPACT_ACTION_ID,
+            title="Przygotuj review wpływu zmian Google Ads",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=change_history_payload["evidence_ids"],
+            metrics=change_history_metrics,
+            human_diagnosis=(
+                "Google Ads ma change_event facts. WILQ może przygotować kolejkę "
+                "impact review zmian, ale nie może claimować wpływu na wynik bez "
+                "okna przed/po i ręcznego review."
+            ),
+            recommended_reason=(
+                "Na /ads-doctor sprawdź co zmieniono, na jakim zasobie i które "
+                "pola ruszono. Traktuj payload jako review-only: bez apply, "
+                "bez skalowania i bez performance uplift claimów."
+            ),
+            payload=change_history_payload,
             validation_status="not_validated",
             created_by="system_metric_seed",
         )
