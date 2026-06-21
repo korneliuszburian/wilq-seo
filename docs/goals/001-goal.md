@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 10:44 CEST.
+Last updated: 2026-06-21 11:07 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -115,12 +115,31 @@ saved audit preserves non-secret trace IDs such as
 `candidate:content_brief_*`, while token-like values are still redacted. This
 is not a publish path, not a final article, and not a
 ranking/traffic/lead/revenue promise. Remaining content work: use the
-strengthened GSC/WP overlap to improve brief selection, then create WordPress
-draft payload previews behind explicit review. Ads scoped context-pack is still kept below
+strengthened GSC/WP overlap and review-gated draft preview to improve final
+brief selection before any real WordPress write adapter exists. Ads scoped context-pack is still kept below
 200 KB after trace redaction (`197559` bytes in focused proof). Full
 `scripts/verify.sh` passed after this slice: backend `143 passed`, dashboard
 unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
 production build passed.
+
+Latest review-gated WordPress draft preview truth, live proof 2026-06-21
+11:07 CEST: after a human review audit selects a content brief candidate with
+`candidate:content_brief_*`, `act_prepare_content_refresh_queue` now enriches
+its payload with `wordpress_draft_payload_preview_v1`. The draft preview is
+derived from the selected `content_brief_preview_v1` candidate and includes
+`post_status=draft`, draft title/excerpt direction, content blocks, evidence
+IDs, required validation, blocked claims, `mutation_allowed=false`,
+`apply_allowed=false`, `api_mutation_ready=false` and `destructive=false`.
+Runtime proof with a temporary state DB: before review,
+`wordpress_draft_payload_preview` is absent; after
+`human_review_approved_for_prepare`, one draft preview appears and
+`POST /api/actions/act_prepare_content_refresh_queue/preview` includes it while
+the preview status remains `blocked`. Dashboard `/content-planner` renders
+`Payload draftu po review` only when the ActionObject contains this review-gated
+payload. This is still not a publish path and not a vendor mutation adapter.
+Full `scripts/verify.sh` passed after this slice: backend `143 passed`,
+dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+dashboard production build passed.
 
 Latest Ahrefs overlap evidence truth, live proof 2026-06-21 10:44 CEST:
 Ahrefs candidate rows in `/api/content/diagnostics` now expose exact overlap

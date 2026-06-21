@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Review-gated WordPress draft payload preview, 2026-06-21 11:07 CEST.
+  Po zapisanym human review dla `candidate:content_brief_*`,
+  `act_prepare_content_refresh_queue` wzbogaca payload o
+  `wordpress_draft_payload_preview_v1`. Preview powstaje z wybranego
+  `content_brief_preview_v1` i zawiera `post_status=draft`, kierunek tytułu/
+  excerptu, bloki treści, evidence IDs, wymagane walidacje, blocked claims,
+  `mutation_allowed=false`, `apply_allowed=false`, `api_mutation_ready=false`
+  i `destructive=false`. Runtime proof na tymczasowym state DB: przed review
+  brak `wordpress_draft_payload_preview`; po `human_review_approved_for_prepare`
+  pojawia się 1 draft preview, a `/api/actions/act_prepare_content_refresh_queue/preview`
+  zwraca je przy statusie `blocked`. Dashboard `/content-planner` renderuje
+  `Payload draftu po review`. To nadal nie jest publikacja ani WordPress write
+  adapter. Full `scripts/verify.sh` passed: backend `143 passed`, dashboard
+  unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
+  production build passed.
 - Ahrefs overlap evidence in Content Planner, 2026-06-21 10:44 CEST.
   `content_decision_ahrefs_gap_records_review.ahrefs_candidate_rows` ma teraz
   `gsc_overlap_terms` i `wordpress_overlap_urls`, więc marketer i Codex widzą
@@ -923,10 +938,12 @@ Aktualny maintenance:
 
 - Content now has typed Ahrefs candidate rows and review-only
   `content_brief_preview_v1` payload previews in
-  `act_prepare_content_refresh_queue`. Remaining work is operator selection/
-  review persistence, stronger GSC/WP overlap for Ahrefs candidates and eventual
-  WordPress draft payload preview after explicit review. Do not claim ranking,
-  traffic, authority, lead or revenue uplift.
+  `act_prepare_content_refresh_queue`, operator selection/review persistence,
+  stronger GSC/WP overlap for Ahrefs candidates and review-gated
+  `wordpress_draft_payload_preview_v1`. Remaining work is better final brief
+  selection, eventual WordPress write adapter/safety after explicit review and
+  richer content impact contracts. Do not claim ranking, traffic, authority,
+  lead or revenue uplift.
 - Demand Gen is honest-blocked, not useful yet. Campaign channel rows are now
   available from Google Ads evidence, and current live state has no
   Demand Gen/Discovery campaigns. It still needs real Demand Gen read

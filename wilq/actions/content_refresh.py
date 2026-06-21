@@ -8,6 +8,7 @@ from wilq.schemas import MetricFact
 
 CONTENT_REFRESH_ACTION_TYPE = "wordpress_content_refresh"
 CONTENT_BRIEF_PREVIEW_CONTRACT = "content_brief_preview_v1"
+WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT = "wordpress_draft_payload_preview_v1"
 
 CONTENT_SOURCE_CONNECTORS = {
     "google_search_console",
@@ -117,6 +118,34 @@ def content_refresh_payload_from_metric_facts(
     }
 
 
+def content_payload_with_reviewed_wordpress_draft_previews(
+    payload: dict[str, Any],
+    *,
+    review_event_summaries: Iterable[str],
+) -> dict[str, Any]:
+    if payload.get("action_type") != CONTENT_REFRESH_ACTION_TYPE:
+        return payload
+    enriched_payload = dict(payload)
+    enriched_payload.pop("wordpress_draft_payload_preview", None)
+    reviewed_candidate_ids = _reviewed_candidate_ids(review_event_summaries)
+    if not reviewed_candidate_ids:
+        return enriched_payload
+    brief_previews = [
+        item
+        for item in enriched_payload.get("content_brief_preview", [])
+        if isinstance(item, dict)
+    ]
+    draft_previews = [
+        _wordpress_draft_payload_preview(item)
+        for item in brief_previews
+        if isinstance(item.get("candidate_id"), str)
+        and item["candidate_id"] in reviewed_candidate_ids
+    ]
+    if draft_previews:
+        enriched_payload["wordpress_draft_payload_preview"] = draft_previews
+    return enriched_payload
+
+
 def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str, Any]]:
     wordpress_paths = _wordpress_inventory_paths(metric_facts)
     gsc_facts_by_page: dict[str, list[MetricFact]] = {}
@@ -172,6 +201,116 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
             }
         )
     return previews
+
+
+def _reviewed_candidate_ids(review_event_summaries: Iterable[str]) -> set[str]:
+    candidate_ids: set[str] = set()
+    for summary in review_event_summaries:
+        if "candidate:" not in summary:
+            continue
+        for fragment in summary.split("candidate:")[1:]:
+            candidate_id = fragment.split(",", 1)[0].split(".", 1)[0].strip()
+            if candidate_id:
+                candidate_ids.add(candidate_id)
+    return candidate_ids
+
+
+def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
+    topic = str(preview.get("topic") or "Brief treści")
+    mode = str(preview.get("mode") or "review")
+    source_type = str(preview.get("source_type") or "unknown")
+    target_url = preview.get("target_url") if isinstance(preview.get("target_url"), str) else None
+    source_url = preview.get("source_url") if isinstance(preview.get("source_url"), str) else None
+    candidate_id = str(preview["candidate_id"])
+    return {
+        "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
+        "source_preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
+        "candidate_id": candidate_id,
+        "source_type": source_type,
+        "mode": mode,
+        "connector": "wordpress_ekologus",
+        "operation_type": _wordpress_draft_operation(mode),
+        "post_status": "draft",
+        "topic": topic,
+        "target_url": target_url,
+        "source_url": source_url,
+        "draft_payload": {
+            "post_status": "draft",
+            "post_title": _draft_title(topic, mode),
+            "post_excerpt_direction": _draft_excerpt_direction(preview),
+            "content_blocks": _draft_content_blocks(preview),
+        },
+        "required_validation": _unique(
+            [
+                "operator_review_approved_for_prepare",
+                *[
+                    item
+                    for item in preview.get("required_validation", [])
+                    if isinstance(item, str)
+                ],
+                "wordpress_draft_payload_review",
+                "human_confirm_before_wordpress_write",
+            ]
+        ),
+        "blocked_claims": _unique(
+            [
+                item
+                for item in preview.get("blocked_claims", [])
+                if isinstance(item, str)
+            ]
+        ),
+        "source_connectors": _unique(
+            [
+                item
+                for item in preview.get("source_connectors", [])
+                if isinstance(item, str)
+            ]
+        ),
+        "evidence_ids": _unique(
+            [
+                item
+                for item in preview.get("evidence_ids", [])
+                if isinstance(item, str)
+            ]
+        ),
+        "mutation_allowed": False,
+        "apply_allowed": False,
+        "api_mutation_ready": False,
+        "destructive": False,
+    }
+
+
+def _wordpress_draft_operation(mode: str) -> str:
+    if mode in {"refresh", "merge"}:
+        return "prepare_existing_content_draft"
+    return "prepare_new_content_draft_review"
+
+
+def _draft_title(topic: str, mode: str) -> str:
+    prefix = "Refresh" if mode in {"refresh", "merge"} else "Brief"
+    return f"{prefix}: {topic}"
+
+
+def _draft_excerpt_direction(preview: dict[str, Any]) -> str:
+    goal = preview.get("brief_goal")
+    if isinstance(goal, str) and goal:
+        return goal
+    return "Szkic briefu do review. Nie publikować bez walidacji operatora."
+
+
+def _draft_content_blocks(preview: dict[str, Any]) -> list[dict[str, str]]:
+    outline = preview.get("brief_outline")
+    if not isinstance(outline, list):
+        return []
+    blocks: list[dict[str, str]] = []
+    for item in outline[:8]:
+        if not isinstance(item, dict):
+            continue
+        section = item.get("section")
+        instruction = item.get("instruction")
+        if isinstance(section, str) and isinstance(instruction, str):
+            blocks.append({"section": section, "instruction": instruction})
+    return blocks
 
 
 def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str, Any]]:

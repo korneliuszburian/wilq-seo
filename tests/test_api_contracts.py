@@ -1112,6 +1112,10 @@ def test_content_action_preview_exposes_review_only_brief_payload(
     assert any(
         item["source_type"] == "ahrefs_gap_review" for item in preview["preview_items"]
     )
+    assert not any(
+        item.get("preview_contract") == "wordpress_draft_payload_preview_v1"
+        for item in preview["preview_items"]
+    )
     for item in preview["preview_items"]:
         assert item["apply_allowed"] is False
         assert item["api_mutation_ready"] is False
@@ -1168,6 +1172,40 @@ def test_content_brief_candidate_review_persists_audit_event(
     persisted_audit = audit_response.json()[0]
     assert persisted_audit["event_type"] == "human_review_approved_for_prepare"
     assert f"candidate:{candidate_id}" in persisted_audit["summary"]
+
+    reviewed_action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    assert reviewed_action_response.status_code == 200
+    reviewed_action = reviewed_action_response.json()
+    draft_previews = reviewed_action["payload"]["wordpress_draft_payload_preview"]
+    assert len(draft_previews) == 1
+    draft_preview = draft_previews[0]
+    assert draft_preview["preview_contract"] == "wordpress_draft_payload_preview_v1"
+    assert draft_preview["source_preview_contract"] == "content_brief_preview_v1"
+    assert draft_preview["candidate_id"] == candidate_id
+    assert draft_preview["post_status"] == "draft"
+    assert draft_preview["mutation_allowed"] is False
+    assert draft_preview["apply_allowed"] is False
+    assert draft_preview["api_mutation_ready"] is False
+    assert draft_preview["destructive"] is False
+    assert draft_preview["draft_payload"]["post_status"] == "draft"
+    assert draft_preview["draft_payload"]["post_title"]
+    assert "human_confirm_before_wordpress_write" in draft_preview[
+        "required_validation"
+    ]
+    assert "ranking guarantee" in draft_preview["blocked_claims"]
+    assert draft_preview["evidence_ids"]
+
+    preview_response = client.post(
+        "/api/actions/act_prepare_content_refresh_queue/preview",
+        json={"requested_by": "operator_test", "max_items": 12},
+    )
+    assert preview_response.status_code == 200
+    preview_items = preview_response.json()["preview_items"]
+    assert any(
+        item.get("preview_contract") == "wordpress_draft_payload_preview_v1"
+        and item.get("candidate_id") == candidate_id
+        for item in preview_items
+    )
 
 
 def test_daily_context_pack_preserves_action_preview_audit(

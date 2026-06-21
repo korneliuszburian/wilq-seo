@@ -5287,6 +5287,7 @@ type ContentBriefPreviewItem = {
 
 function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
   const previews = contentBriefPreviewItemsFromActions(actions).slice(0, 4);
+  const draftPreviews = wordpressDraftPayloadPreviewItemsFromActions(actions).slice(0, 4);
   if (previews.length === 0) return null;
 
   return (
@@ -5320,6 +5321,30 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
           />
         ))}
       </div>
+      {draftPreviews.length > 0 ? (
+        <div className="mt-5 rounded-md border border-line bg-white p-3">
+          <div className="mb-3">
+            <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+              Payload draftu po review
+            </div>
+            <h3 className="mt-1 text-sm font-semibold text-ink">
+              Co WILQ może przygotować jako szkic WordPress
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              Te payloady pojawiają się dopiero po zapisanym review kandydata.
+              Status pozostaje `draft`, a mutacje i publikacja są zablokowane.
+            </p>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {draftPreviews.map((preview) => (
+              <WordPressDraftPayloadPreviewCard
+                key={`${preview.action_id}-${preview.candidate_id}`}
+                preview={preview}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -5394,6 +5419,73 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           Nie udało się zapisać review: {reviewMutation.error.message}
         </p>
       ) : null}
+    </article>
+  );
+}
+
+type WordPressDraftPayloadPreviewItem = {
+  action_id: string;
+  preview_contract: string;
+  candidate_id: string;
+  operation_type: string;
+  post_status: string;
+  topic: string;
+  target_url?: string | null;
+  source_url?: string | null;
+  draft_payload: {
+    post_status?: string;
+    post_title?: string;
+    post_excerpt_direction?: string;
+    content_blocks?: Array<{ section: string; instruction: string }>;
+  };
+  required_validation: string[];
+  blocked_claims: string[];
+  evidence_ids: string[];
+  mutation_allowed: boolean;
+  apply_allowed: boolean;
+  api_mutation_ready: boolean;
+};
+
+function WordPressDraftPayloadPreviewCard({
+  preview
+}: {
+  preview: WordPressDraftPayloadPreviewItem;
+}) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold text-ink">
+            {preview.draft_payload.post_title ?? `Draft: ${preview.topic}`}
+          </h4>
+          <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
+            {contentDraftOperationLabel(preview.operation_type)} / {preview.post_status}
+          </p>
+        </div>
+        <StatusBadge value={preview.mutation_allowed ? "ready" : "blocked"} />
+      </div>
+      <p className="mt-2 text-xs leading-5 text-slate-600">
+        {preview.draft_payload.post_excerpt_direction ??
+          "Szkic payloadu do review. Nie publikuje i nie wykonuje apply."}
+      </p>
+      {preview.target_url ? (
+        <p className="mt-2 text-xs text-slate-600">URL: {shortPath(preview.target_url)}</p>
+      ) : null}
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine
+          label="Bloki"
+          values={(preview.draft_payload.content_blocks ?? [])
+            .slice(0, 4)
+            .map((block) => block.section)}
+        />
+        <TraceLine label="Walidacje" values={preview.required_validation.slice(0, 4)} />
+        <TraceLine
+          label="Blokady claimów"
+          values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
+        />
+        <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
+        <LinkedTraceLine label="ActionObject" values={[preview.action_id]} kind="actions" />
+      </div>
     </article>
   );
 }
@@ -5650,6 +5742,18 @@ function contentBriefPreviewItemsFromActions(actions: ActionObject[]): ContentBr
   });
 }
 
+function wordpressDraftPayloadPreviewItemsFromActions(
+  actions: ActionObject[]
+): WordPressDraftPayloadPreviewItem[] {
+  return actions.flatMap((action) => {
+    const rows = action.payload.wordpress_draft_payload_preview;
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .filter(isWordPressDraftPayloadPreviewItem)
+      .map((row) => ({ ...row, action_id: action.id }));
+  });
+}
+
 function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreviewPayload {
   if (!isPlainObject(value)) return false;
   return (
@@ -5662,6 +5766,26 @@ function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreview
     Array.isArray(value.required_validation) &&
     Array.isArray(value.blocked_claims) &&
     Array.isArray(value.evidence_ids) &&
+    typeof value.apply_allowed === "boolean" &&
+    typeof value.api_mutation_ready === "boolean"
+  );
+}
+
+function isWordPressDraftPayloadPreviewItem(
+  value: unknown
+): value is Omit<WordPressDraftPayloadPreviewItem, "action_id"> {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.preview_contract === "string" &&
+    typeof value.candidate_id === "string" &&
+    typeof value.operation_type === "string" &&
+    typeof value.post_status === "string" &&
+    typeof value.topic === "string" &&
+    isPlainObject(value.draft_payload) &&
+    Array.isArray(value.required_validation) &&
+    Array.isArray(value.blocked_claims) &&
+    Array.isArray(value.evidence_ids) &&
+    typeof value.mutation_allowed === "boolean" &&
     typeof value.apply_allowed === "boolean" &&
     typeof value.api_mutation_ready === "boolean"
   );
@@ -5687,6 +5811,14 @@ function contentBriefModeLabel(value: string) {
     merge: "merge",
     create: "create",
     block: "block"
+  };
+  return labels[value] ?? value;
+}
+
+function contentDraftOperationLabel(value: string) {
+  const labels: Record<string, string> = {
+    prepare_existing_content_draft: "draft istniejącej treści",
+    prepare_new_content_draft_review: "draft nowej treści do review"
   };
   return labels[value] ?? value;
 }

@@ -251,6 +251,48 @@ const actions = [
           destructive: false
         }
       ],
+      wordpress_draft_payload_preview: [
+        {
+          preview_contract: "wordpress_draft_payload_preview_v1",
+          source_preview_contract: "content_brief_preview_v1",
+          candidate_id: "content_brief_gsc_zielony_lad",
+          source_type: "gsc_query_page",
+          mode: "refresh",
+          connector: "wordpress_ekologus",
+          operation_type: "prepare_existing_content_draft",
+          post_status: "draft",
+          topic: "zielony ład",
+          target_url: "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+          draft_payload: {
+            post_status: "draft",
+            post_title: "Refresh: zielony ład",
+            post_excerpt_direction:
+              "Przygotuj refresh/merge brief dla istniejącej treści pod temat `zielony ład`.",
+            content_blocks: [
+              {
+                section: "intent",
+                instruction: "Opisz intencję użytkownika."
+              },
+              {
+                section: "title_h1",
+                instruction: "Zaproponuj kierunek title/H1."
+              }
+            ]
+          },
+          required_validation: [
+            "operator_review_approved_for_prepare",
+            "wordpress_existing_url_confirmed",
+            "human_confirm_before_wordpress_write"
+          ],
+          blocked_claims: ["lead uplift", "revenue impact", "ranking guarantee"],
+          source_connectors: ["google_search_console", "wordpress_ekologus"],
+          evidence_ids: ["ev_refresh_gsc"],
+          mutation_allowed: false,
+          apply_allowed: false,
+          api_mutation_ready: false,
+          destructive: false
+        }
+      ],
       destructive: false
     },
     audit_events: []
@@ -4997,6 +5039,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("WP: jest")).toBeInTheDocument();
     expect(screen.getByText("Overlap GSC: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Overlap WP: /audyt-srodowiskowy/")).toBeInTheDocument();
+    expect(screen.getByText("Payload draftu po review")).toBeInTheDocument();
+    expect(screen.getByText("Co WILQ może przygotować jako szkic WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Refresh: zielony ład")).toBeInTheDocument();
+    expect(screen.getByText("draft istniejącej treści / draft")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Zapisz review briefu" })[0]);
     await waitFor(() =>
       expect(

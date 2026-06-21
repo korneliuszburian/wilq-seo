@@ -4,7 +4,10 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 from uuid import uuid4
 
-from wilq.actions.content_refresh import content_refresh_payload_from_metric_facts
+from wilq.actions.content_refresh import (
+    content_payload_with_reviewed_wordpress_draft_previews,
+    content_refresh_payload_from_metric_facts,
+)
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ads_business_context_configured,
@@ -1219,6 +1222,14 @@ def _with_review_gate(
 ) -> ActionObject:
     if audit_events is not None:
         action.audit_events = audit_events[:10]
+    action.payload = content_payload_with_reviewed_wordpress_draft_previews(
+        action.payload,
+        review_event_summaries=(
+            event.summary
+            for event in action.audit_events
+            if event.event_type == "human_review_approved_for_prepare"
+        ),
+    )
     action.review_gate = _action_review_gate(action, mutation_audits)
     return action
 
