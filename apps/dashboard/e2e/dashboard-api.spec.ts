@@ -148,7 +148,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Demand Gen" })).toBeVisible();
     await expect(page.getByText("kampanie Ads")).toBeVisible();
     await expect(page.getByText("Brakujące kontrakty").first()).toBeVisible();
-    await expect(page.getByText("Demand Gen ActionObject").first()).toBeVisible();
+    await expect(page.getByText("Review-only ActionObject", { exact: true })).toBeVisible();
+    await expect(page.getByText("Podgląd walidacji gotowości Demand Gen")).toBeVisible();
     await expect(page.getByText("rekomendacja launchu Demand Gen").first()).toBeVisible();
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);

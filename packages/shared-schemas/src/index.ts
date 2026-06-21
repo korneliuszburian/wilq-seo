@@ -1780,6 +1780,7 @@ export const DemandGenReadinessContractSchema = z.object({
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
   operator_review_gates: z.array(z.string()),
+  payload_preview: z.array(z.record(z.unknown())).default([]),
   campaign_rows_evaluated: z.number(),
   campaign_channel_counts: z.record(z.number()),
   demand_gen_campaign_rows: z.array(AdsCampaignMetricRowSchema),

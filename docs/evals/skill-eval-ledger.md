@@ -3090,3 +3090,49 @@ Product finding:
 - Full `scripts/verify.sh` passed after this slice: backend `141 passed`,
   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
   dashboard production build passed.
+
+## 2026-06-21 - wilq-demand-gen-operator review ActionObject eval
+
+Purpose:
+
+- Prove that Demand Gen is still blocked for launch/migration/performance
+  claims, but no longer a dead-end blocker: the skill gets one scoped
+  review-only ActionObject and the same payload preview as the dashboard/API.
+
+Command:
+
+```bash
+scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260621T194941Z/wilq-demand-gen-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `source_connectors=["google_ads","google_analytics_4"]`
+- Evidence includes Google Ads and GA4 connector/refresh IDs.
+- `action_candidates` contains `act_review_demand_gen_readiness`.
+- `blocked=true`
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- Current live Ads evidence has `campaign_rows_evaluated=18`, channels
+  `PERFORMANCE_MAX=8` and `SEARCH=10`, and `demand_gen_campaign_rows=0`.
+  The useful behavior is therefore a review-only readiness gate, not a Demand
+  Gen recommendation.
+- Missing contracts remain: `demand_gen_asset_group_rows`,
+  `demand_gen_creative_asset_rows`,
+  `demand_gen_landing_quality_by_campaign`,
+  `demand_gen_migration_constraints`.
+- The next value slice for Demand Gen is a real read contract for
+  assets/creative/landing quality or migration constraints; do not push that
+  logic into skill references.

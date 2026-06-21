@@ -4418,6 +4418,17 @@ function DemandGenDiagnosticSurface() {
   const channelEntries = Object.entries(data.campaign_channel_counts);
   const demandGenRowCount = data.demand_gen_campaign_rows.length;
   const metricTileEntries = Object.entries(data.metric_tiles);
+  const demandGenPreview = data.payload_preview[0] as Record<string, unknown> | undefined;
+  const previewMissingContracts = Array.isArray(demandGenPreview?.missing_read_contracts)
+    ? demandGenPreview.missing_read_contracts.filter(
+        (value): value is string => typeof value === "string"
+      )
+    : [];
+  const previewValidation = Array.isArray(demandGenPreview?.required_validation)
+    ? demandGenPreview.required_validation.filter(
+        (value): value is string => typeof value === "string"
+      )
+    : [];
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -4466,9 +4477,9 @@ function DemandGenDiagnosticSurface() {
               Co marketer ma wiedzieć przed planem Demand Gen
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              WILQ może użyć Ads i GA4 jako kontekstu, ale nie może polecić
-              launchu, migracji ani jakości kreacji bez osobnych rekordów
-              Demand Gen i review-only ActionObject.
+              WILQ może zwalidować review-only ActionObject i użyć Ads/GA4
+              jako kontekstu, ale nie może polecić launchu, migracji ani
+              jakości kreacji bez osobnych rekordów Demand Gen.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 text-center text-xs">
@@ -4506,6 +4517,47 @@ function DemandGenDiagnosticSurface() {
         ) : (
           <BlockerNotice message="W bieżącym evidence Ads nie ma kampanii Demand Gen ani Discovery. WILQ może pokazać kanały konta, ale nie stworzy rekomendacji Demand Gen z kampanii, których nie widzi w danych." />
         )}
+
+        {demandGenPreview ? (
+          <article className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
+            <div className="text-xs font-semibold uppercase tracking-normal text-blue-700">
+              Review-only ActionObject
+            </div>
+            <h3 className="mt-1 text-sm font-semibold text-ink">
+              Podgląd walidacji gotowości Demand Gen
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Ten payload sprawdza kanały i braki kontraktów. Nie tworzy kampanii,
+              nie migruje budżetu i nie odblokowuje apply.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <MetricTile
+                label="Kampanie"
+                value={String(demandGenPreview.campaign_rows_evaluated ?? "brak")}
+              />
+              <MetricTile
+                label="DG rows"
+                value={String(demandGenPreview.demand_gen_campaign_row_count ?? "0")}
+              />
+              <MetricTile label="Braki" value={previewMissingContracts.length} />
+              <MetricTile
+                label="Apply"
+                value={demandGenPreview.apply_allowed === true ? "możliwy" : "zablokowany"}
+              />
+            </div>
+            <div className="mt-3 grid gap-2 text-xs text-slate-600">
+              <TraceLine
+                label="Braki kontraktów"
+                values={previewMissingContracts.map(demandGenContractLabel)}
+              />
+              <TraceLine
+                label="Walidacja"
+                values={previewValidation.map(demandGenContractLabel)}
+              />
+              <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
+            </div>
+          </article>
+        ) : null}
       </section>
 
       <section className="rounded-md border border-line bg-white p-4">
@@ -4569,13 +4621,17 @@ function demandGenContractLabel(contract: string) {
     demand_gen_creative_asset_rows: "creative asset rows",
     demand_gen_landing_quality_by_campaign: "jakość landingów per kampania",
     demand_gen_migration_constraints: "ograniczenia migracji",
+    demand_gen_readiness_review_action_object: "review-only ActionObject",
     demand_gen_specific_evidence_required: "wymagane konkretne evidence Demand Gen",
     ga4_landing_source_campaign_quality: "GA4 landing/source/campaign quality",
     google_ads_budget_context: "kontekst budżetowy Google Ads",
     google_ads_campaign_activity: "aktywność kampanii Google Ads",
     google_ads_impression_share_context: "udział w wyświetleniach Google Ads",
     human_confirm_before_apply: "potwierdzenie człowieka przed apply",
-    human_strategy_review: "review strategii przez człowieka"
+    human_strategy_review: "review strategii przez człowieka",
+    review_ads_campaign_channel_context: "review kanałów kampanii Ads",
+    review_demand_gen_missing_contracts: "review brakujących kontraktów Demand Gen",
+    review_ga4_landing_source_campaign_context: "review GA4 landing/source/campaign"
   };
   return labels[contract] ?? contract;
 }

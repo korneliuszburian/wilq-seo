@@ -33,6 +33,7 @@ from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     CUSTOM_SEGMENT_BLOCKED_CLAIMS,
 )
+from wilq.actions.google_ads.demand_gen import DEMAND_GEN_READINESS_REVIEW_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.negative_keywords import (
     NEGATIVE_KEYWORD_ACTION_ID,
@@ -626,6 +627,7 @@ def _google_ads_action_ids(
         for action in actions
         if action.connector == GOOGLE_ADS_CONNECTOR_ID
         and not (live_data_available and action.id == "act_configure_google_ads_env")
+        and action.id != DEMAND_GEN_READINESS_REVIEW_ACTION_ID
     ]
 
 

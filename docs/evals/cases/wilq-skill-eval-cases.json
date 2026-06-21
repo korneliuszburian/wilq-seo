@@ -243,10 +243,10 @@
       "demand_gen_creative_asset_rows",
       "demand_gen_landing_quality_by_campaign",
       "demand_gen_migration_constraints",
-      "demand_gen_action_object",
+      "demand_gen_readiness_review_action_object",
       "blocked claims"
     ],
-    "expected_no_action_ids": true,
+    "expected_action_ids": ["act_review_demand_gen_readiness"],
     "forbidden_action_ids": [
       "act_review_ga4_tracking_quality",
       "act_prepare_ads_campaign_review_queue",

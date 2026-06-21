@@ -32,6 +32,11 @@ from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     custom_segment_payload_from_metric_facts,
 )
+from wilq.actions.google_ads.demand_gen import (
+    DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
+    DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+    demand_gen_readiness_review_payload,
+)
 from wilq.actions.google_ads.keyword_planner import (
     KEYWORD_PLANNER_ACCESS_ACTION_ID,
     keyword_planner_access_payload,
@@ -717,6 +722,13 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         actions[action.id] = action
 
     google_ads_facts = by_connector.get("google_ads", [])
+    demand_gen_action = _demand_gen_readiness_review_action(
+        google_ads_facts,
+        by_connector.get("google_analytics_4", []),
+    )
+    if demand_gen_action is not None:
+        actions[demand_gen_action.id] = demand_gen_action
+
     campaign_review_payload = campaign_review_payload_from_metric_facts(google_ads_facts)
     if campaign_review_payload is not None:
         campaign_review_metric_names = set(campaign_review_payload["source_metric_names"])
@@ -1013,6 +1025,144 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         actions.update(_social_draft_actions(social_facts))
 
     return actions
+
+
+def _demand_gen_readiness_review_action(
+    google_ads_facts: list[MetricFact],
+    ga4_facts: list[MetricFact],
+) -> ActionObject | None:
+    evidence_ids = _unique(
+        [
+            connector_evidence_id("google_ads"),
+            connector_evidence_id("google_analytics_4"),
+            *_latest_vendor_read_evidence_ids("google_ads"),
+            *_latest_vendor_read_evidence_ids("google_analytics_4"),
+            *[fact.evidence_id for fact in google_ads_facts[:12]],
+            *[fact.evidence_id for fact in ga4_facts[:8]],
+        ]
+    )
+    available_read_contracts = [
+        "google_ads_campaign_activity",
+        "google_ads_budget_context",
+        "google_ads_impression_share_context",
+        "ga4_landing_source_campaign_quality",
+        DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
+    ]
+    campaign_rows = _campaign_context_rows_from_metric_facts(google_ads_facts)
+    channel_counts = _campaign_channel_counts_from_context_rows(campaign_rows)
+    if campaign_rows:
+        available_read_contracts.append("demand_gen_campaign_rows")
+    missing_read_contracts = [
+        "demand_gen_asset_group_rows",
+        "demand_gen_creative_asset_rows",
+        "demand_gen_landing_quality_by_campaign",
+        "demand_gen_migration_constraints",
+    ]
+    if not campaign_rows:
+        missing_read_contracts.insert(0, "demand_gen_campaign_rows")
+    demand_gen_rows = [
+        row
+        for row in campaign_rows
+        if str(row.get("advertising_channel_type") or "").strip().upper()
+        in {"DEMAND_GEN", "DISCOVERY"}
+    ][:8]
+    payload = demand_gen_readiness_review_payload(
+        campaign_rows_evaluated=len(campaign_rows),
+        campaign_channel_counts=channel_counts,
+        demand_gen_campaign_rows=demand_gen_rows,
+        available_read_contracts=available_read_contracts,
+        missing_read_contracts=missing_read_contracts,
+        source_connectors=["google_ads", "google_analytics_4"],
+        evidence_ids=evidence_ids,
+    )
+    if payload is None:
+        return None
+    action_metrics = _prioritize_action_metrics(
+        [*google_ads_facts, *ga4_facts],
+        required_names={"clicks", "impressions", "cost_micros", "active_users", "sessions"},
+    )[:10]
+    return ActionObject(
+        id=DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+        title="Przygotuj review gotowości Demand Gen",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=evidence_ids[:12],
+        metrics=action_metrics,
+        human_diagnosis=(
+            "WILQ ma kontekst Google Ads i GA4 do wstępnego review Demand Gen, "
+            "ale nadal blokuje launch, migrację, werdykty kreatywne i apply bez "
+            "osobnych kontraktów assetów, kreacji, landing quality i migracji."
+        ),
+        recommended_reason=(
+            "Na /ads-doctor/demand-gen zwaliduj review-only payload, sprawdź "
+            "kanały kampanii i listę brakujących kontraktów. Nie przygotowuj "
+            "kampanii ani migracji bez kolejnych read contracts."
+        ),
+        payload=payload,
+        validation_status="not_validated",
+        created_by="system_metric_seed",
+    )
+
+
+def _latest_vendor_read_evidence_ids(connector_id: str) -> list[str]:
+    for run in list_connector_refresh_runs(connector_id=connector_id):
+        if run.mode == ConnectorRefreshMode.vendor_read:
+            return run.evidence_ids
+    return []
+
+
+def _campaign_context_rows_from_metric_facts(facts: list[MetricFact]) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str | None, str], list[MetricFact]] = {}
+    for fact in facts:
+        campaign_id = fact.dimensions.get("campaign_id")
+        campaign_name = fact.dimensions.get("campaign_name")
+        if not campaign_id and not campaign_name:
+            continue
+        grouped.setdefault((campaign_id, campaign_name or f"campaign {campaign_id}"), []).append(
+            fact
+        )
+    rows: list[dict[str, Any]] = []
+    for (campaign_id, campaign_name), group_facts in grouped.items():
+        first_dimensions = group_facts[0].dimensions
+        rows.append(
+            {
+                "campaign_id": campaign_id,
+                "campaign_name": campaign_name,
+                "campaign_status": first_dimensions.get("campaign_status"),
+                "advertising_channel_type": first_dimensions.get("advertising_channel_type"),
+                "clicks": _numeric_metric(group_facts, "clicks"),
+                "impressions": _numeric_metric(group_facts, "impressions"),
+                "cost_micros": _numeric_metric(group_facts, "cost_micros"),
+                "conversions": _numeric_metric(group_facts, "conversions"),
+                "conversion_value": _numeric_metric(group_facts, "conversion_value"),
+                "evidence_ids": _unique(fact.evidence_id for fact in group_facts),
+            }
+        )
+    return sorted(
+        rows,
+        key=lambda row: (
+            str(row.get("advertising_channel_type") or ""),
+            str(row.get("campaign_name") or ""),
+        ),
+    )
+
+
+def _campaign_channel_counts_from_context_rows(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        channel = str(row.get("advertising_channel_type") or "UNKNOWN").strip() or "UNKNOWN"
+        counts[channel] = counts.get(channel, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _numeric_metric(facts: list[MetricFact], name: str) -> float | int | None:
+    value = next((fact.value for fact in facts if fact.name == name), None)
+    if isinstance(value, int | float):
+        return value
+    return None
 
 
 def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:

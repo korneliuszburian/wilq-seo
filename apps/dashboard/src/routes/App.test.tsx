@@ -4093,26 +4093,26 @@ const demandGenDiagnostics = {
   status: "blocked",
   title: "Demand Gen: brak kampanii do rekomendacji",
   summary:
-    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu, ale nadal nie ma Demand Gen-specific read contractów dla assetów, kreacji, landing quality per campaign, migracji i ActionObject.",
+    "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu, ale nadal nie ma Demand Gen-specific read contractów dla assetów, kreacji, landing quality per campaign i migracji.",
   metric_tiles: {
     "kampanie Ads": 18,
     kanały: 2,
     "wiersze DG": 0,
-    braki: 5
+    braki: 4
   },
   available_read_contracts: [
     "google_ads_campaign_activity",
     "google_ads_budget_context",
     "google_ads_impression_share_context",
     "ga4_landing_source_campaign_quality",
+    "demand_gen_readiness_review_action_object",
     "demand_gen_campaign_rows"
   ],
   missing_read_contracts: [
     "demand_gen_asset_group_rows",
     "demand_gen_creative_asset_rows",
     "demand_gen_landing_quality_by_campaign",
-    "demand_gen_migration_constraints",
-    "demand_gen_action_object"
+    "demand_gen_migration_constraints"
   ],
   blocked_claims: [
     "Demand Gen launch recommendation",
@@ -4124,11 +4124,58 @@ const demandGenDiagnostics = {
   ],
   source_connectors: ["google_ads", "google_analytics_4"],
   evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
-  action_ids: [],
+  action_ids: ["act_review_demand_gen_readiness"],
   operator_review_gates: [
     "demand_gen_specific_evidence_required",
     "human_strategy_review",
     "human_confirm_before_apply"
+  ],
+  payload_preview: [
+    {
+      id: "demand_gen_readiness_review",
+      preview_contract: "demand_gen_readiness_review_preview_v1",
+      operation_type: "DemandGenReadinessReview",
+      campaign_rows_evaluated: 18,
+      campaign_channel_counts: {
+        PERFORMANCE_MAX: 8,
+        SEARCH: 10
+      },
+      demand_gen_campaign_row_count: 0,
+      demand_gen_campaign_rows: [],
+      available_read_contracts: [
+        "google_ads_campaign_activity",
+        "google_ads_budget_context",
+        "google_ads_impression_share_context",
+        "ga4_landing_source_campaign_quality",
+        "demand_gen_readiness_review_action_object",
+        "demand_gen_campaign_rows"
+      ],
+      missing_read_contracts: [
+        "demand_gen_asset_group_rows",
+        "demand_gen_creative_asset_rows",
+        "demand_gen_landing_quality_by_campaign",
+        "demand_gen_migration_constraints"
+      ],
+      required_validation: [
+        "review_ads_campaign_channel_context",
+        "review_ga4_landing_source_campaign_context",
+        "review_demand_gen_missing_contracts",
+        "human_strategy_review",
+        "human_confirm_before_apply"
+      ],
+      blocked_claims: [
+        "Demand Gen launch recommendation",
+        "Demand Gen migration ready",
+        "creative quality verdict",
+        "asset performance verdict",
+        "campaign apply",
+        "performance uplift"
+      ],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test", "ev_refresh_refresh_ga4_test"],
+      api_mutation_ready: false,
+      apply_allowed: false,
+      destructive: false
+    }
   ],
   campaign_rows_evaluated: 18,
   campaign_channel_counts: {
@@ -4137,7 +4184,7 @@ const demandGenDiagnostics = {
   },
   demand_gen_campaign_rows: [],
   next_step:
-    "Użyj odczytu kanałów kampanii tylko jako kontekstu. Zanim skill pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative read contracts, landing quality by campaign, migration constraints i prepare-only Demand Gen ActionObject.",
+    "Zwaliduj act_review_demand_gen_readiness jako review-only. Zanim skill pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative read contracts, landing quality by campaign i migration constraints.",
   risk: "medium"
 };
 
@@ -5311,9 +5358,11 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/W bieżącym evidence Ads nie ma kampanii Demand Gen ani Discovery/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/asset group rows/)).toBeInTheDocument();
-    expect(screen.getByText(/creative asset rows/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Demand Gen ActionObject/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/asset group rows/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/creative asset rows/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/review-only ActionObject/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Podgląd walidacji gotowości Demand Gen")).toBeInTheDocument();
+    expect(screen.getByText(/review kanałów kampanii Ads/)).toBeInTheDocument();
     expect(screen.getByText(/rekomendacja launchu Demand Gen/)).toBeInTheDocument();
     expect(screen.queryByText("API-backed operating surface")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();

@@ -17,6 +17,12 @@ from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
 )
+from wilq.actions.google_ads.demand_gen import (
+    DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
+    DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
+    DEMAND_GEN_READINESS_REVIEW_ACTION_ID,
+    demand_gen_readiness_review_payload,
+)
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import (
@@ -602,7 +608,7 @@ SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
     "wilq-custom-segments": {
         "act_prepare_custom_segments_from_search_terms",
     },
-    "wilq-demand-gen-operator": set(),
+    "wilq-demand-gen-operator": {DEMAND_GEN_READINESS_REVIEW_ACTION_ID},
 }
 
 SKILL_EXPERT_RULE_IDS: dict[str, list[str]] = {
@@ -916,13 +922,13 @@ def _demand_gen_readiness_contract(
         "google_ads_budget_context",
         "google_ads_impression_share_context",
         "ga4_landing_source_campaign_quality",
+        DEMAND_GEN_READINESS_AVAILABLE_CONTRACT,
     ]
     missing_read_contracts = [
         "demand_gen_asset_group_rows",
         "demand_gen_creative_asset_rows",
         "demand_gen_landing_quality_by_campaign",
         "demand_gen_migration_constraints",
-        "demand_gen_action_object",
     ]
     if campaign_channel_read_available:
         available_read_contracts.append("demand_gen_campaign_rows")
@@ -941,13 +947,26 @@ def _demand_gen_readiness_contract(
         if demand_gen_campaign_rows
         else "Demand Gen: brak kampanii do rekomendacji"
     )
+    payload = demand_gen_readiness_review_payload(
+        campaign_rows_evaluated=len(campaign_rows),
+        campaign_channel_counts=channel_counts,
+        demand_gen_campaign_rows=[
+            row.model_dump(mode="json") for row in demand_gen_campaign_rows
+        ],
+        available_read_contracts=available_read_contracts,
+        missing_read_contracts=missing_read_contracts,
+        source_connectors=["google_ads", "google_analytics_4"],
+        evidence_ids=evidence_ids,
+    )
+    action_ids = [DEMAND_GEN_READINESS_REVIEW_ACTION_ID] if payload is not None else []
+    payload_preview = payload["payload_preview"] if payload is not None else []
     return DemandGenReadinessContract(
         status="blocked",
         title=title,
         summary=(
             f"{campaign_context} WILQ ma Ads i GA4 evidence do oceny ruchu, "
             "ale nadal nie ma Demand Gen-specific read contractów dla assetów, "
-            "kreacji, landing quality per campaign, migracji i ActionObject. "
+            "kreacji, landing quality per campaign i migracji. "
             "To jest blocker użytecznej rekomendacji, nie brak promptu."
         ),
         metric_tiles={
@@ -958,30 +977,23 @@ def _demand_gen_readiness_contract(
         },
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
-        blocked_claims=[
-            "Demand Gen launch recommendation",
-            "Demand Gen migration ready",
-            "creative quality verdict",
-            "asset performance verdict",
-            "campaign apply",
-            "performance uplift",
-        ],
+        blocked_claims=DEMAND_GEN_READINESS_BLOCKED_CLAIMS,
         source_connectors=["google_ads", "google_analytics_4"],
         evidence_ids=evidence_ids,
-        action_ids=[],
+        action_ids=action_ids,
         operator_review_gates=[
             "demand_gen_specific_evidence_required",
             "human_strategy_review",
             "human_confirm_before_apply",
         ],
+        payload_preview=payload_preview,
         campaign_rows_evaluated=len(campaign_rows),
         campaign_channel_counts=channel_counts,
         demand_gen_campaign_rows=demand_gen_campaign_rows,
         next_step=(
-            "Użyj odczytu kanałów kampanii tylko jako kontekstu. Zanim skill "
-            "pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative "
-            "read contracts, landing quality by campaign, migration constraints "
-            "i prepare-only Demand Gen ActionObject."
+            "Zwaliduj act_review_demand_gen_readiness jako review-only. Zanim skill "
+            "pokaże kandydatów Demand Gen lub migracji, dodaj asset/creative read "
+            "contracts, landing quality by campaign i migration constraints."
         ),
     )
 

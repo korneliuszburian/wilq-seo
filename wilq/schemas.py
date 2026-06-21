@@ -1979,6 +1979,7 @@ class DemandGenReadinessContract(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    payload_preview: list[dict[str, Any]] = Field(default_factory=list)
     campaign_rows_evaluated: int = 0
     campaign_channel_counts: dict[str, int] = Field(default_factory=dict)
     demand_gen_campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)

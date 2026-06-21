@@ -10,6 +10,8 @@ from typing import Any
 
 SKILL_NAME = "wilq-demand-gen-operator"
 REQUIRED_CONNECTORS = ["google_ads", "google_analytics_4"]
+EXPECTED_ACTION_ID = "act_review_demand_gen_readiness"
+EXPECTED_PREVIEW_CONTRACT = "demand_gen_readiness_review_preview_v1"
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
     "connector_status",
@@ -122,14 +124,30 @@ def main() -> int:
     demand_gen_campaign_rows = readiness.get("demand_gen_campaign_rows")
     if not isinstance(demand_gen_campaign_rows, list):
         raise SystemExit("Demand Gen readiness must expose demand_gen_campaign_rows list")
+    action_ids = readiness.get("action_ids")
+    if action_ids != [EXPECTED_ACTION_ID]:
+        raise SystemExit("Demand Gen readiness must expose the review-only ActionObject")
+    payload_preview = readiness.get("payload_preview")
+    if not isinstance(payload_preview, list) or not payload_preview:
+        raise SystemExit("Demand Gen readiness must expose review payload_preview")
+    if payload_preview[0].get("preview_contract") != EXPECTED_PREVIEW_CONTRACT:
+        raise SystemExit("Demand Gen readiness payload preview uses wrong contract")
+    if payload_preview[0].get("api_mutation_ready") is not False:
+        raise SystemExit("Demand Gen readiness payload preview must be review-only")
     if "[REDACTED]" in json.dumps(readiness):
         raise SystemExit("Demand Gen readiness contract IDs must not be redacted")
     active_actions = pack.get("active_action_objects") or []
-    if active_actions:
-        raise SystemExit("Demand Gen context must not expose adjacent ActionObjects as active")
+    active_action_ids = [action.get("id") for action in active_actions]
+    if active_action_ids != [EXPECTED_ACTION_ID]:
+        raise SystemExit("Demand Gen context must expose only its review ActionObject")
+    active_payload = active_actions[0].get("payload") or {}
+    if active_payload.get("preview_contract") != EXPECTED_PREVIEW_CONTRACT:
+        raise SystemExit("Demand Gen action payload preview contract is wrong")
+    if active_payload.get("apply_allowed") is not False:
+        raise SystemExit("Demand Gen action must keep apply_allowed=false")
     ads_diagnostics = pack.get("ads_diagnostics") or {}
     if ads_diagnostics.get("action_ids"):
-        raise SystemExit("Demand Gen Ads diagnostics must not expose adjacent Ads action IDs")
+        raise SystemExit("Demand Gen Ads diagnostics must not expose scoped action IDs")
 
     print(
         json.dumps(

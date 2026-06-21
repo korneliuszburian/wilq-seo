@@ -9773,14 +9773,24 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
         "google_ads",
         "google_analytics_4",
     }
-    assert data["active_action_objects"] == []
+    assert [action["id"] for action in data["active_action_objects"]] == [
+        "act_review_demand_gen_readiness"
+    ]
+    assert data["active_action_objects"][0]["payload"]["preview_contract"] == (
+        "demand_gen_readiness_review_preview_v1"
+    )
+    assert data["active_action_objects"][0]["payload"]["apply_allowed"] is False
     assert data["ads_diagnostics"]["action_ids"] == []
     readiness = data["demand_gen_readiness"]
     assert readiness["status"] == "blocked"
     assert readiness["title"].startswith("Demand Gen:")
     assert readiness["metric_tiles"]["kampanie Ads"] == readiness["campaign_rows_evaluated"]
     assert readiness["metric_tiles"]["braki"] == len(readiness["missing_read_contracts"])
-    assert readiness["action_ids"] == []
+    assert readiness["action_ids"] == ["act_review_demand_gen_readiness"]
+    assert readiness["payload_preview"][0]["preview_contract"] == (
+        "demand_gen_readiness_review_preview_v1"
+    )
+    assert readiness["payload_preview"][0]["api_mutation_ready"] is False
     assert readiness["source_connectors"] == ["google_ads", "google_analytics_4"]
     assert isinstance(readiness["campaign_rows_evaluated"], int)
     assert isinstance(readiness["campaign_channel_counts"], dict)
@@ -9793,7 +9803,8 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
         assert "demand_gen_campaign_rows" in readiness["available_read_contracts"]
         assert "demand_gen_campaign_rows" not in readiness["missing_read_contracts"]
     assert "demand_gen_asset_group_rows" in readiness["missing_read_contracts"]
-    assert "demand_gen_action_object" in readiness["missing_read_contracts"]
+    assert "demand_gen_readiness_review_action_object" in readiness["available_read_contracts"]
+    assert "demand_gen_action_object" not in readiness["missing_read_contracts"]
     assert "Demand Gen launch recommendation" in readiness["blocked_claims"]
     assert "sections" not in data["ga4_diagnostics"]
     assert '"metric_facts":' not in json.dumps(data["ga4_diagnostics"])
@@ -9816,7 +9827,12 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert data["metric_tiles"]["kampanie Ads"] == data["campaign_rows_evaluated"]
     assert data["metric_tiles"]["braki"] == len(data["missing_read_contracts"])
     assert data["source_connectors"] == ["google_ads", "google_analytics_4"]
-    assert data["action_ids"] == []
+    assert data["action_ids"] == ["act_review_demand_gen_readiness"]
+    assert data["payload_preview"][0]["preview_contract"] == (
+        "demand_gen_readiness_review_preview_v1"
+    )
+    assert data["payload_preview"][0]["apply_allowed"] is False
+    assert data["payload_preview"][0]["destructive"] is False
     assert isinstance(data["campaign_rows_evaluated"], int)
     assert isinstance(data["campaign_channel_counts"], dict)
     assert isinstance(data["demand_gen_campaign_rows"], list)
@@ -9827,8 +9843,32 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert "demand_gen_creative_asset_rows" in data["missing_read_contracts"]
     assert "demand_gen_landing_quality_by_campaign" in data["missing_read_contracts"]
     assert "demand_gen_migration_constraints" in data["missing_read_contracts"]
-    assert "demand_gen_action_object" in data["missing_read_contracts"]
+    assert "demand_gen_readiness_review_action_object" in data["available_read_contracts"]
+    assert "demand_gen_action_object" not in data["missing_read_contracts"]
     assert "Demand Gen launch recommendation" in data["blocked_claims"]
+
+
+def test_demand_gen_review_action_is_validate_only_and_scoped() -> None:
+    response = client.get("/api/actions/act_review_demand_gen_readiness")
+
+    assert response.status_code == 200
+    action = response.json()
+    assert action["connector"] == "google_ads"
+    assert action["mode"] == "prepare"
+    assert action["payload"]["action_type"] == "google_ads_demand_gen_readiness_review"
+    assert action["payload"]["preview_contract"] == "demand_gen_readiness_review_preview_v1"
+    assert action["payload"]["apply_allowed"] is False
+    assert action["payload"]["destructive"] is False
+    assert action["payload"]["payload_preview"][0]["api_mutation_ready"] is False
+    assert "Demand Gen launch recommendation" in action["payload"]["blocked_claims"]
+
+    validation = client.post(
+        "/api/actions/act_review_demand_gen_readiness/validate",
+        json={},
+    )
+
+    assert validation.status_code == 200
+    assert validation.json()["valid"] is True
 
 
 def test_codex_context_pack_includes_expert_rule_summaries() -> None:

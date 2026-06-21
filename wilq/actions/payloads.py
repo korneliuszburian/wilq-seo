@@ -17,6 +17,10 @@ from wilq.actions.google_ads.business_context import (
 from wilq.actions.google_ads.campaign_review import validate_campaign_review_payload
 from wilq.actions.google_ads.change_history import validate_change_history_impact_payload
 from wilq.actions.google_ads.custom_segments import validate_custom_segment_payload
+from wilq.actions.google_ads.demand_gen import (
+    DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE,
+    validate_demand_gen_readiness_review_payload,
+)
 from wilq.actions.google_ads.keyword_planner import (
     KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
     validate_keyword_planner_access_payload,
@@ -107,6 +111,8 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         errors.extend(validate_change_history_impact_payload(payload))
     if connector_id == "google_ads" and action_type == "google_ads_search_term_ngram_review":
         errors.extend(validate_search_term_ngram_payload(payload))
+    if connector_id == "google_ads" and action_type == DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE:
+        errors.extend(validate_demand_gen_readiness_review_payload(payload))
     if connector_id == "google_analytics_4" and action_type == GA4_TRACKING_QUALITY_ACTION_TYPE:
         errors.extend(validate_ga4_tracking_quality_payload(payload))
     if connector_id == "localo" and action_type == LOCALO_VISIBILITY_REVIEW_ACTION_TYPE:

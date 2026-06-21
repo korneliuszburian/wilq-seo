@@ -37,6 +37,31 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Demand Gen review-only ActionObject, 2026-06-21 21:38 CEST.
+  `/api/demand-gen/diagnostics` nadal uczciwie zwraca `status=blocked`, ale
+  nie jest już pustym blockerem bez działania. Readiness contract ma teraz
+  `action_ids=["act_review_demand_gen_readiness"]`,
+  `demand_gen_readiness_review_action_object` w available contracts i
+  `payload_preview` z `demand_gen_readiness_review_preview_v1`. Nowy
+  ActionObject `/api/actions/act_review_demand_gen_readiness` jest
+  `prepare_only`, `apply_allowed=false`, `api_mutation_ready=false`,
+  `destructive=false` i przechodzi validation. Scoped context-pack dla
+  `wilq-demand-gen-operator` pokazuje dokładnie ten jeden active ActionObject,
+  bez pobocznych Ads/GA4 actionów. Dashboard route `/ads-doctor/demand-gen`
+  pokazuje review-only payload preview zamiast twierdzić, że brakuje
+  ActionObjecta. Live skill smoke passed po `scripts/local_stack.sh restart`.
+  Non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T194941Z/wilq-demand-gen-operator/result.json`.
+  Wynik: `language=pl-PL`, `api_used=true`, evidence IDs z Google Ads + GA4,
+  `action_candidates=[act_review_demand_gen_readiness]`,
+  `operator_usefulness_score=4`, `blocked=true`. Nadal zablokowane:
+  Demand Gen launch/migration, creative/asset verdicts, campaign apply i
+  performance uplift, bo live evidence ma `demand_gen_campaign_rows=0`, a braki
+  kontraktów to `demand_gen_asset_group_rows`,
+  `demand_gen_creative_asset_rows`, `demand_gen_landing_quality_by_campaign`
+  oraz `demand_gen_migration_constraints`. Final proof 2026-06-21 22:09 CEST:
+  `scripts/verify.sh` green, w tym 148 backend tests, 17 dashboard unit tests,
+  API/skill smokes, 14 Playwright e2e tests i dashboard production build.
 - Ads Doctor context-pack impact-row consistency, 2026-06-21 20:59 CEST.
   Naprawiono rozjazd między `/api/ads/diagnostics` i scoped
   `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}`: generic

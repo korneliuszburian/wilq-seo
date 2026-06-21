@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 21:18 CEST.
+Last updated: 2026-06-21 22:09 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -605,23 +605,28 @@ output. Full `scripts/verify.sh` passed after this fix: backend `141 passed`,
 dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
 dashboard production build passed.
 
-Latest Demand Gen typed blocker truth, live proof 2026-06-21 08:22 CEST:
+Latest Demand Gen review ActionObject truth, live proof 2026-06-21 21:38 CEST:
 `/api/demand-gen/diagnostics` and scoped
 `POST /api/codex/context-pack {"skill":"wilq-demand-gen-operator"}` now expose
-the same marketer-facing title and metric tiles. Current live title is
-`Demand Gen: brak kampanii do rekomendacji`; current tiles are
-`kampanie Ads=18`, `kanały=2`, `wiersze DG=0`, `braki=5`. This keeps the route
-useful as a decision/blocker surface without pretending there is a Demand Gen
-launch or migration recommendation. The skill smoke asserts title and tiles.
-Strict eval passed:
-`.local-lab/evals/codex-skill/20260621T062101Z/wilq-demand-gen-operator/result.json`.
-Result: `blocked=true`, `language=pl-PL`, `api_used=true`, source connectors
-`google_ads` and `google_analytics_4`, evidence count `14`, no non-null Demand
-Gen ActionObject IDs. The eval case no longer requires
-`google_merchant_center` and now forbids adjacent GA4/Ads ActionObject IDs for
-this scoped workflow. Full `scripts/verify.sh` passed after this slice:
-backend `141 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
-skill/API smokes and dashboard production build passed.
+the same marketer-facing title, metric tiles and review-only ActionObject.
+Current live title is `Demand Gen: brak kampanii do rekomendacji`; current
+tiles are `kampanie Ads=18`, `kanały=2`, `wiersze DG=0`, `braki=4`.
+Readiness exposes `action_ids=["act_review_demand_gen_readiness"]`,
+`demand_gen_readiness_review_action_object` as available and
+`demand_gen_readiness_review_preview_v1` in `payload_preview`. The ActionObject
+is `prepare_only`, `apply_allowed=false`, `api_mutation_ready=false` and
+`destructive=false`; validation passes. This keeps the route useful as a
+decision/blocker surface without pretending there is a Demand Gen launch or
+migration recommendation. Strict eval passed:
+`.local-lab/evals/codex-skill/20260621T194941Z/wilq-demand-gen-operator/result.json`.
+Result: `blocked=true`, `language=pl-PL`, `api_used=true`,
+`source_connectors=["google_ads","google_analytics_4"]`,
+`action_candidates=[act_review_demand_gen_readiness]` and
+`operator_usefulness_score=4`. Adjacent GA4/Ads ActionObject IDs must remain
+forbidden as active Demand Gen actions. Final verification passed on
+2026-06-21 22:09 CEST: `scripts/verify.sh` green, including 148 backend tests,
+17 dashboard unit tests, API/skill smokes, 14 Playwright e2e tests and
+dashboard production build.
 
 Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
 `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and
@@ -1091,7 +1096,9 @@ or custom segment review as Demand Gen actions. Current live proof after
 `scripts/local_stack.sh restart`: dedicated endpoint
 `GET /api/demand-gen/diagnostics`, dashboard route `/ads-doctor/demand-gen`
 and scoped `wilq-demand-gen-operator` context-pack all expose the same blocked
-readiness contract: `active_action_objects=[]`, `ads_diagnostics.action_ids=[]`,
+readiness contract: `active_action_objects=[act_review_demand_gen_readiness]`,
+`ads_diagnostics.action_ids=[]`,
+`demand_gen_readiness.action_ids=[act_review_demand_gen_readiness]`,
 `demand_gen_readiness.status=blocked`, `campaign_rows_evaluated=18`,
 `campaign_channel_counts={PERFORMANCE_MAX: 8, SEARCH: 10}` and
 `demand_gen_campaign_rows=[]`. `/ads-doctor/demand-gen` must not fall back to
@@ -1101,13 +1108,14 @@ channel facts exist; it must not be listed as missing in that state.
 Remaining missing read contracts are
 `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
 `demand_gen_landing_quality_by_campaign`, `demand_gen_migration_constraints`
-and `demand_gen_action_object`. These IDs must not be redacted; they are
-product contracts, not secrets. The `wilq-demand-gen-operator` smoke script
-must fail if adjacent ActionObjects are again exposed as active Demand Gen
-actions or if channel-bearing campaign rows are reported as missing. Focused
-route proof passed: API contract tests for Demand Gen, dashboard unit route
-test, Demand Gen Playwright route smoke, full `dashboard-api.spec.ts` with
-`12 passed`, and live skill smoke.
+while `demand_gen_readiness_review_action_object` is available. These IDs must
+not be redacted; they are product contracts, not secrets. The
+`wilq-demand-gen-operator` smoke script must fail if adjacent ActionObjects are
+again exposed as active Demand Gen actions, if its review-only payload preview
+is missing, or if channel-bearing campaign rows are reported as missing.
+Focused route proof passed: API contract tests for Demand Gen, dashboard unit
+route test, live skill smoke and non-interactive eval at
+`.local-lab/evals/codex-skill/20260621T194941Z/wilq-demand-gen-operator/result.json`.
 
 Content on Command Center must use the same
 `ContentDiagnosticsResponse.decision_queue` semantics as `/content-planner` and
@@ -3114,7 +3122,10 @@ Commit rules:
    regression. Next product work should add missing value contracts:
    deeper
    search-term/custom-segment evidence, remaining campaign optimization
-   contracts and Demand Gen diagnostics. Ads
+   contracts and Demand Gen asset/creative/landing/migration read contracts.
+   Demand Gen readiness now has review-only
+   `act_review_demand_gen_readiness`; do not count that as launch/migration
+   readiness. Ads
    target-aware KPI triage is started, but remains review-only. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget
