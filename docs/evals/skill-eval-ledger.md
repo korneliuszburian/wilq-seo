@@ -114,6 +114,74 @@ Eval output facts:
   `recommendation apply`, `negative_keyword_payload_preview` and
   `90_day_safety_check`.
 
+## 2026-06-21 - wilq-ahrefs-gap-finder competitor records eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-ahrefs-gap-finder`.
+
+Why this eval matters:
+
+Ahrefs no longer reads the staging WordPress runtime host for SEO evidence.
+The connector now prefers the real marketing site target and uses Ahrefs
+`subdomains` mode, which produced live competitor page records for Ekologus.
+The skill must use those records while still blocking unsupported content,
+backlink, organic-keyword, top-page, traffic-uplift and authority-improvement
+claims.
+
+Pre-eval API proof:
+
+- Live refresh: `refresh_ahrefs_a106dd4ab417`.
+- Evidence: `ev_refresh_refresh_ahrefs_a106dd4ab417`.
+- `/api/ahrefs/diagnostics` live facts: DR=40, Ahrefs Rank=1541946,
+  `organic_competitor_read_status=completed`, `organic_competitor_rows=10`,
+  `organic_competitor_country=pl`, `organic_competitor_mode=subdomains`.
+- `gap_fact_count=10`, `gap_records=10`,
+  `available_read_contracts` includes `ahrefs_competitor_pages`.
+- Missing read contracts still include `ahrefs_content_gap_records`,
+  `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
+  `ahrefs_top_pages_by_competitor`.
+- Scoped `wilq-ahrefs-gap-finder` context-pack is about `53100` bytes and has
+  `active_action_objects=0`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- `blocked=true`.
+- Evidence IDs include `ev_connector_ahrefs_status`,
+  `ev_refresh_refresh_ahrefs_a106dd4ab417`.
+- Source connectors include `ahrefs`, `google_search_console`,
+  `wordpress_ekologus`.
+- `operator_usefulness_score=4`.
+- No safety findings.
+
+Product gaps found:
+
+1. Competitor page records are now real, but content gaps, backlink gaps,
+   organic keywords by URL and top pages still need their own read contracts.
+2. The skill remains blocked because those missing contracts still block
+   broader gap/uplift claims.
+
+Verdict:
+
+Useful improvement over zero-row Ahrefs reads. WILQ can now show concrete
+competitor page records while still protecting the marketer from overclaiming.
+
 ## 2026-06-21 - wilq-ahrefs-gap-finder organic competitors domain-mode eval
 
 Prompt source:

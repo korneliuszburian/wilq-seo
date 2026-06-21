@@ -13,7 +13,7 @@ from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 AHREFS_API_BASE = "https://api.ahrefs.com/v3"
 AHREFS_ORGANIC_COMPETITOR_LIMIT_DEFAULT = 10
 AHREFS_ORGANIC_COMPETITOR_LIMIT_MAX = 25
-AHREFS_ORGANIC_COMPETITOR_MODE_DEFAULT = "domain"
+AHREFS_ORGANIC_COMPETITOR_MODE_DEFAULT = "subdomains"
 AHREFS_ORGANIC_COMPETITOR_MODES = {"exact", "prefix", "domain", "subdomains"}
 
 
@@ -98,7 +98,7 @@ def refresh_ahrefs_domain_rating(
 
 
 def _target() -> str | None:
-    for name in ("AHREFS_TARGET", "WORDPRESS_EKOLOGUS_URL", "MIS_PRIMARY_SITE_URL"):
+    for name in ("AHREFS_TARGET", "MIS_PRIMARY_SITE_URL", "WORDPRESS_EKOLOGUS_URL"):
         value = variable_value(name)
         normalized = _normalize_target(value)
         if normalized:
@@ -202,7 +202,7 @@ def _report_date() -> str:
 
 
 def _target_source_label() -> str:
-    for name in ("AHREFS_TARGET", "WORDPRESS_EKOLOGUS_URL", "MIS_PRIMARY_SITE_URL"):
+    for name in ("AHREFS_TARGET", "MIS_PRIMARY_SITE_URL", "WORDPRESS_EKOLOGUS_URL"):
         if variable_value(name):
             return variable_source(name) or "configured"
     return "missing"
@@ -292,6 +292,8 @@ def _competitor_domain(row: dict[str, Any]) -> str | None:
     value = _first_text(
         row,
         "competitor_domain",
+        "competitor_url",
+        "url",
         "competitor",
         "domain",
         "target",

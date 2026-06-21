@@ -2488,7 +2488,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
             "organic_competitor_read_status": "completed",
             "organic_competitor_rows": 0,
             "organic_competitor_country": "pl",
-            "organic_competitor_mode": "domain",
+            "organic_competitor_mode": "subdomains",
         },
         summary="Ahrefs domain rating completed through test adapter.",
     )
@@ -2550,7 +2550,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert authority_decision["metric_tiles"]["Ahrefs Rank"] == 1450
     assert authority_decision["metric_tiles"]["konkurenci organiczni"] == 0
     assert authority_decision["metric_tiles"]["odczyt konkurencji"] == "completed"
-    assert authority_decision["metric_tiles"]["tryb konkurencji"] == "domain"
+    assert authority_decision["metric_tiles"]["tryb konkurencji"] == "subdomains"
     assert authority_decision["metric_tiles"]["fakty luk"] == 0
     assert "organic_competitor_rows" in authority_decision["allowed_evidence"]
     assert "organic_competitor_mode" in authority_decision["allowed_evidence"]
@@ -6981,7 +6981,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
             )
         assert request.url.path == "/v3/site-explorer/organic-competitors"
-        assert request.url.params["mode"] == "domain"
+        assert request.url.params["mode"] == "subdomains"
         assert request.url.params["country"] == "pl"
         assert request.url.params["limit"] == "10"
         assert "competitor_domain" in request.url.params["select"]
@@ -6990,7 +6990,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
             json={
                 "competitors": [
                     {
-                        "competitor_domain": "konkurent.pl",
+                        "competitor_domain": None,
                         "competitor_url": "https://konkurent.pl/bdo/",
                         "keywords_common": 8,
                         "keywords_competitor": 42,
@@ -7019,7 +7019,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "organic_competitor_read_status": "completed",
         "organic_competitor_rows": 1,
         "organic_competitor_country": "pl",
-        "organic_competitor_mode": "domain",
+        "organic_competitor_mode": "subdomains",
     }
     assert result.metric_facts == [
         VendorMetricFact(
@@ -7030,7 +7030,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 "competitor_domain": "konkurent.pl",
                 "source_url": "https://konkurent.pl/bdo/",
                 "country": "pl",
-                "target_mode": "domain",
+                "target_mode": "subdomains",
                 "keywords_common": "8",
                 "keywords_competitor": "42",
                 "keywords_target": "12",
@@ -7042,6 +7042,36 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
     serialized = json.dumps(result.metric_summary)
     assert "ahrefs-token-test" not in serialized
     assert "ekologus.pl" not in serialized
+
+
+def test_ahrefs_vendor_read_prefers_marketing_site_over_wordpress_runtime_url(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    monkeypatch.setenv("MIS_PRIMARY_SITE_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://ekologus.dev.proudsite.pl")
+    requested_targets: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_targets.append(request.url.params["target"])
+        if request.url.path == "/v3/site-explorer/domain-rating":
+            return httpx.Response(
+                200,
+                json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
+            )
+        return httpx.Response(200, json={"competitors": []})
+
+    result = refresh_ahrefs_domain_rating(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert requested_targets == ["ekologus.pl", "ekologus.pl"]
+    assert result.metric_summary["target_source"] == "process_env"
 
 
 def test_ahrefs_vendor_read_routes_through_refresh_endpoint(

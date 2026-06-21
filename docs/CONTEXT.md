@@ -29,41 +29,36 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
-0. Ahrefs organic competitors source read, 2026-06-21 02:59 CEST:
-   `refresh_ahrefs_21a12047ec6a` performed a real read-only Ahrefs API refresh
-   with explicit `mode=domain` and parser coverage for the official
-   `competitors[]` response shape. Live facts: DR=24, Ahrefs Rank=6459608,
-   `organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
-   `organic_competitor_country=pl`, `organic_competitor_mode=domain`.
-   `/api/ahrefs/diagnostics` filters orphan/test DuckDB facts whose evidence
-   IDs do not belong to known local-state refresh runs, so stale DR=90 rows no
-   longer override current Ahrefs evidence. The diagnostics API can still build
-   typed `AhrefsGapRecord` rows from record-level facts when they exist, but
-   the live gap contract is correctly blocked: `gap_fact_count=0`,
-   `gap_records=[]`, `gap_read_contract.status=blocked`,
-   `active_action_ids=[]`. Scoped `wilq-ahrefs-gap-finder` context-pack is about
-   `27084` bytes and the latest eval is
-   `.local-lab/evals/codex-skill/20260621T005750Z/wilq-ahrefs-gap-finder/result.json`.
-   This is an API/view-model fix, not a skill-reference workaround.
-   Full `scripts/verify.sh` passed after the domain-mode patch: backend
-   `138 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
-   skill/API smokes and dashboard production build passed.
+0. Ahrefs competitor page records, 2026-06-21 03:38 CEST:
+   `refresh_ahrefs_a106dd4ab417` performed a real read-only Ahrefs API refresh
+   against the real marketing target `ekologus.pl`, not
+   `ekologus.dev.proudsite.pl`. Target priority is now `AHREFS_TARGET`,
+   `MIS_PRIMARY_SITE_URL`, then `WORDPRESS_EKOLOGUS_URL`. Live facts: DR=40,
+   Ahrefs Rank=1541946, `organic_competitor_read_status=completed`,
+   `organic_competitor_rows=10`, `organic_competitor_country=pl`,
+   `organic_competitor_mode=subdomains`. `/api/ahrefs/diagnostics` has
+   `gap_fact_count=10`, `gap_records=10`, available contract
+   `ahrefs_competitor_pages`, ready decision `ahrefs_review_gap_records`, and
+   blocked claim decision for the remaining content/backlink/organic-keyword/
+   top-page contracts. Scoped `wilq-ahrefs-gap-finder` context-pack is about
+   `53100` bytes, `active_action_objects=0`, and latest eval is
+   `.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`.
+   Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
+   and dashboard production build passed. This is an API/view-model fix, not a
+   skill-reference workaround.
 
-0. Ahrefs typed gap read contract, 2026-06-21 01:21 CEST:
-   `/api/ahrefs/diagnostics` now includes `gap_read_contract`. Current live
-   state after the organic competitors read slice: DR=24,
-   Ahrefs Rank=6459608, `organic_competitor_rows=0`, `gap_records=[]`,
-   `gap_read_contract.status=blocked`, available contract
-   `ahrefs_authority_summary`, and missing contracts
-   `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
+0. Ahrefs typed gap read contract, 2026-06-21 01:21 CEST, superseded by the
+   03:38 target fix above:
+   `/api/ahrefs/diagnostics` includes `gap_read_contract` and must block
+   unsupported content/backlink/ranking/traffic/authority claims. The old
+   zero-row state from `refresh_ahrefs_21a12047ec6a` is historical only. Current
+   proof is `refresh_ahrefs_a106dd4ab417`: DR=40, Ahrefs Rank=1541946,
+   `organic_competitor_rows=10`, `gap_records=10`,
+   `available_read_contracts` includes `ahrefs_competitor_pages`, and the
+   remaining missing contracts are `ahrefs_content_gap_records`,
    `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
-   `ahrefs_top_pages_by_competitor`. Review gates are
-   `ahrefs_gap_records_required`, `content_planner_review_required`,
-   `human_strategy_review`. Scoped `wilq-ahrefs-gap-finder` context-pack is
-   about `27084` bytes and carries the same gap contract with
-   `active_action_objects=[]`. Dashboard `/ahrefs` renders
-   `Kontrakt luk Ahrefs`. This is still a blocker, not gap analysis; next
-   Ahrefs value work is actual competitor/content/backlink gap records.
+   `ahrefs_top_pages_by_competitor`.
 
 0. Ads custom segment missing-metric truth, 2026-06-21 01:40 CEST:
    Custom segment review must not coerce absent search-term impressions/cost to
@@ -1355,28 +1350,31 @@ What changed:
   `blocked=true`, no non-null `action_id`, and forbids adjacent content/Ads/
   Merchant/GA4 ActionObjects.
 
-Current live proof after `scripts/local_stack.sh restart`:
+Current live proof after the 2026-06-21 Ahrefs target fix:
 
 - `/api/ahrefs/diagnostics.live_data_available=true`.
-- `authority_fact_count=2`, `gap_fact_count=0`, `blocker_count=1`.
-- Ready decision `ahrefs_review_authority_context`: `DR=24`,
-  `Ahrefs Rank=6459608`, `konkurenci organiczni=0`,
-  `odczyt konkurencji=completed`, `fakty luk=0`.
+- `authority_fact_count=2`, `gap_fact_count=10`, `blocker_count=1`.
+- Authority facts: `DR=40`, `Ahrefs Rank=1541946`.
+- Organic competitor read: `organic_competitor_read_status=completed`,
+  `organic_competitor_rows=10`, `organic_competitor_country=pl`,
+  `organic_competitor_mode=subdomains`.
+- Ready decision `ahrefs_review_gap_records` exposes 10 competitor-page records
+  through available contract `ahrefs_competitor_pages`.
 - Blocked decision `ahrefs_block_gap_claims_without_records` lists missing
-  contracts: `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
-  `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
-  `ahrefs_top_pages_by_competitor`.
-- Context-pack size: about `27084 bytes`; active action IDs: none.
+  contracts: `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
+  `ahrefs_organic_keywords_by_url`, `ahrefs_top_pages_by_competitor`.
+- Context-pack size: about `53100 bytes`; active action IDs: none.
 - Eval artifact:
-  `.local-lab/evals/codex-skill/20260621T005750Z/wilq-ahrefs-gap-finder/result.json`.
+  `.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`.
   Result: `api_used=true`, `blocked=true`, Ahrefs evidence IDs present,
-  `action_id=null`, `operator_usefulness_score=5`.
+  `operator_usefulness_score=4`.
 
 Still blocked by design:
 
 - Do not claim competitor gap, content gap, backlink gap, ranking opportunity,
   traffic uplift or authority improvement from DR/rank alone.
-- Next Ahrefs value work is typed gap records, not prompt-language polish.
+- Next Ahrefs value work is the four missing read contracts, not prompt-language
+  polish.
 
 Final proof:
 
