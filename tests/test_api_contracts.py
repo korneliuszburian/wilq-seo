@@ -598,6 +598,12 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "wordpress_content_url": (
                 "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
             ),
+            "allowed_evidence": ["ahrefs_organic_keyword_gap_count"],
+            "gap_type": "organic_keyword_gap",
+            "source_url": "https://example.pl/poradnik/",
+            "target_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+            "competitor_domain": "example.pl",
+            "keyword": "zielony ład obowiązki",
         }
     )
 
@@ -667,6 +673,14 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["wordpress_content_url"] == (
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
     )
+    assert redacted["allowed_evidence"] == ["ahrefs_organic_keyword_gap_count"]
+    assert redacted["gap_type"] == "organic_keyword_gap"
+    assert redacted["source_url"] == "https://example.pl/poradnik/"
+    assert redacted["target_url"] == (
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    )
+    assert redacted["competitor_domain"] == "example.pl"
+    assert redacted["keyword"] == "zielony ład obowiązki"
 
 
 def test_google_first_party_status_accepts_authorized_user_credentials(
@@ -2541,6 +2555,150 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert context_payload["active_action_objects"] == []
     assert "marketing_brief" not in context_payload
     assert "content_diagnostics" not in context_payload
+
+
+def test_ahrefs_diagnostics_builds_typed_gap_records_from_metric_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_gap_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_gap.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    ahrefs_run = ConnectorRefreshRun(
+        id="refresh_ahrefs_gap_test",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_ahrefs_gap_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "domain_rating": 90,
+            "ahrefs_rank": 1450,
+            "ahrefs_competitor_page_count": 3,
+            "ahrefs_content_gap_count": 2,
+            "ahrefs_backlink_gap_count": 4,
+            "ahrefs_organic_keyword_gap_count": 5,
+        },
+        summary="Ahrefs gap read completed through test adapter.",
+    )
+    local_state_store().save_connector_refresh_run(ahrefs_run)
+    metric_store().save_connector_refresh_metrics(
+        ahrefs_run,
+        detailed_facts=[
+            VendorMetricFact("domain_rating", 90, period="ahrefs_site_explorer"),
+            VendorMetricFact("ahrefs_rank", 1450, period="ahrefs_site_explorer"),
+            VendorMetricFact(
+                "ahrefs_competitor_page_count",
+                3,
+                {
+                    "competitor_domain": "example.pl",
+                    "source_url": "https://example.pl/bdo/",
+                    "target_url": "https://www.ekologus.pl/bdo/",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                2,
+                {
+                    "competitor_domain": "example.pl",
+                    "keyword": "bdo szkolenie",
+                    "target_url": "https://www.ekologus.pl/bdo/",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_backlink_gap_count",
+                4,
+                {
+                    "competitor_domain": "example.pl",
+                    "source_url": "https://example.pl/poradnik/",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_organic_keyword_gap_count",
+                5,
+                {
+                    "keyword": "zielony ład obowiązki",
+                    "target_url": (
+                        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+                    ),
+                },
+                period="ahrefs_gap",
+            ),
+        ],
+    )
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["live_data_available"] is True
+    assert payload["gap_fact_count"] == 8
+    assert payload["blocker_count"] == 0
+    gap_contract = payload["gap_read_contract"]
+    assert gap_contract["status"] == "ready"
+    assert gap_contract["missing_read_contracts"] == []
+    assert gap_contract["available_read_contracts"] == [
+        "ahrefs_authority_summary",
+        "ahrefs_gap_metric_facts",
+        "ahrefs_competitor_pages",
+        "ahrefs_content_gap_records",
+        "ahrefs_backlink_gap_records",
+        "ahrefs_organic_keywords_by_url",
+        "ahrefs_top_pages_by_competitor",
+    ]
+    assert set(gap_contract["allowed_evidence"]) == {
+        "domain_rating",
+        "ahrefs_rank",
+        "ahrefs_competitor_page_count",
+        "ahrefs_content_gap_count",
+        "ahrefs_backlink_gap_count",
+        "ahrefs_organic_keyword_gap_count",
+    }
+    assert {record["gap_type"] for record in gap_contract["gap_records"]} == {
+        "competitor_page",
+        "content_gap",
+        "backlink_gap",
+        "organic_keyword_gap",
+    }
+    content_record = next(
+        record
+        for record in gap_contract["gap_records"]
+        if record["gap_type"] == "content_gap"
+    )
+    assert content_record["keyword"] == "bdo szkolenie"
+    assert content_record["competitor_domain"] == "example.pl"
+    assert "content_gaps=2" in content_record["summary"]
+    assert "traffic uplift" in content_record["blocked_claims"]
+
+    decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
+    gap_decision = decision_by_id["ahrefs_review_gap_records"]
+    assert gap_decision["status"] == "ready"
+    assert gap_decision["metric_tiles"] == {
+        "rekordy luk": 4,
+        "content gaps": 1,
+        "backlink gaps": 1,
+        "strony konkurencji": 1,
+        "organic keywords": 1,
+        "braki kontraktu": 0,
+    }
+    assert gap_decision["missing_read_contracts"] == []
+    assert "traffic uplift" in gap_decision["blocked_claims"]
+    assert "ahrefs_block_gap_claims_without_records" not in decision_by_id
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-ahrefs-gap-finder"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    assert context_payload["ahrefs_diagnostics"]["gap_read_contract"] == gap_contract
+    assert context_payload["active_action_objects"] == []
 
 
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(

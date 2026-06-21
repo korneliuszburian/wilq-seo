@@ -34,6 +34,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs typed gap record parser, 2026-06-21 02:04 CEST.
+  `/api/ahrefs/diagnostics` potrafi teraz zbudować typed `AhrefsGapRecord`
+  z record-level Ahrefs metric facts i dodać ready decyzję
+  `ahrefs_review_gap_records`, kiedy takie fakty istnieją. Test API pokrywa
+  rekordy competitor page, content gap, backlink gap i organic keyword gap,
+  zachowanie `allowed_evidence`, wymiarów gapów, URL-i, domen konkurencji i
+  keywords w scoped `wilq-ahrefs-gap-finder` context-packu po redakcji. Live
+  proof po `scripts/local_stack.sh restart`: obecny Ahrefs nadal ma tylko
+  authority facts (`authority_fact_count=2`) i nie ma live gap records
+  (`gap_fact_count=0`, `gap_records=[]`, `gap_read_contract.status=blocked`).
+  To jest właściwy stan: API nie udaje luk konkurencji, ale ma już kontrakt do
+  ich wyświetlania, gdy pojawią się record-level facts.
 - Ads custom segment missing-metric truth, 2026-06-21 01:40 CEST.
   Custom segment review reason no longer renders missing search-term
   impressions or cost as `0`. Current live proof after

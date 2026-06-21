@@ -1368,6 +1368,7 @@ export const AhrefsDecisionItemSchema = z.object({
   id: z.string(),
   decision_type: z.enum([
     "review_authority_context",
+    "review_gap_records",
     "run_authority_read",
     "block_gap_claims"
   ]),

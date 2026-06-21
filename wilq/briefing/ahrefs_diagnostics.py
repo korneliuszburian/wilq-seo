@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Literal, cast
 
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -18,6 +19,14 @@ from wilq.schemas import (
     MetricFact,
 )
 from wilq.storage.metric_store import metric_store
+
+AhrefsGapType = Literal[
+    "competitor_page",
+    "content_gap",
+    "backlink_gap",
+    "organic_keyword_gap",
+    "top_page_gap",
+]
 
 AHREFS_CONNECTOR_ID = "ahrefs"
 AHREFS_METRIC_FACT_LIMIT = 120
@@ -44,6 +53,17 @@ AHREFS_GAP_BLOCKED_CLAIMS = [
     "traffic uplift",
     "authority improvement",
 ]
+AHREFS_GAP_IMPACT_BLOCKED_CLAIMS = [
+    "traffic uplift",
+    "authority improvement",
+]
+AHREFS_GAP_TYPES = {
+    "competitor_page",
+    "content_gap",
+    "backlink_gap",
+    "organic_keyword_gap",
+    "top_page_gap",
+}
 
 
 def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
@@ -109,7 +129,7 @@ def _ahrefs_gap_read_contract(
     gap_facts: list[MetricFact],
 ) -> AhrefsGapReadContract:
     missing_contracts = _missing_gap_contracts(gap_facts)
-    gap_records: list[AhrefsGapRecord] = []
+    gap_records = _ahrefs_gap_records(gap_facts)
     blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
     evidence_ids = _evidence_ids_for_facts_or_refresh(
         [*gap_facts, *authority_facts],
@@ -120,6 +140,7 @@ def _ahrefs_gap_read_contract(
         available_contracts.append("ahrefs_authority_summary")
     if gap_facts:
         available_contracts.append("ahrefs_gap_metric_facts")
+        available_contracts.extend(_available_gap_contracts(missing_contracts))
     return AhrefsGapReadContract(
         status="ready" if gap_records and not missing_contracts else "blocked",
         title="Ahrefs gap records",
@@ -129,7 +150,7 @@ def _ahrefs_gap_read_contract(
         ),
         available_read_contracts=available_contracts,
         missing_read_contracts=missing_contracts,
-        allowed_evidence=["domain_rating", "ahrefs_rank"] if authority_facts else [],
+        allowed_evidence=_allowed_gap_evidence(authority_facts, gap_facts),
         blocked_claims=blocked_claims,
         operator_review_gates=[
             "ahrefs_gap_records_required",
@@ -177,6 +198,222 @@ def _latest_facts_by_name(
 
 def _gap_facts(facts: list[MetricFact]) -> list[MetricFact]:
     return [fact for fact in facts if fact.name in AHREFS_GAP_FACT_NAMES]
+
+
+def _ahrefs_gap_records(gap_facts: list[MetricFact]) -> list[AhrefsGapRecord]:
+    grouped_facts: dict[
+        tuple[AhrefsGapType, str | None, str | None, str | None, str | None],
+        list[MetricFact],
+    ] = {}
+    for fact in gap_facts:
+        if not _is_record_level_gap_fact(fact):
+            continue
+        gap_type = _gap_type_for_fact(fact)
+        source_url = _dimension_value(
+            fact,
+            "source_url",
+            "competitor_url",
+            "competitor_page",
+            "source_page",
+            "url",
+            "page_url",
+        )
+        target_url = _dimension_value(
+            fact,
+            "target_url",
+            "target_page",
+            "ekologus_url",
+            "ekologus_page",
+            "page",
+        )
+        competitor_domain = _dimension_value(
+            fact,
+            "competitor_domain",
+            "competitor",
+            "domain",
+        )
+        keyword = _dimension_value(fact, "keyword", "query", "organic_keyword")
+        key = (gap_type, source_url, target_url, competitor_domain, keyword)
+        grouped_facts.setdefault(key, []).append(fact)
+
+    records = [
+        _ahrefs_gap_record(
+            gap_type=gap_type,
+            source_url=source_url,
+            target_url=target_url,
+            competitor_domain=competitor_domain,
+            keyword=keyword,
+            facts=facts,
+        )
+        for (
+            gap_type,
+            source_url,
+            target_url,
+            competitor_domain,
+            keyword,
+        ), facts in grouped_facts.items()
+    ]
+    return sorted(records, key=lambda record: (record.risk.value, record.id))[:24]
+
+
+def _ahrefs_gap_record(
+    *,
+    gap_type: AhrefsGapType,
+    source_url: str | None,
+    target_url: str | None,
+    competitor_domain: str | None,
+    keyword: str | None,
+    facts: list[MetricFact],
+) -> AhrefsGapRecord:
+    title = _gap_record_title(
+        gap_type=gap_type,
+        source_url=source_url,
+        target_url=target_url,
+        competitor_domain=competitor_domain,
+        keyword=keyword,
+    )
+    return AhrefsGapRecord(
+        id=_gap_record_id(gap_type, source_url, target_url, competitor_domain, keyword),
+        gap_type=gap_type,
+        title=title,
+        summary=(
+            f"{title}. Fakty Ahrefs: {_gap_fact_summary(facts)}. "
+            "To jest read-only rekord do review, nie obietnica wzrostu ruchu."
+        ),
+        source_url=source_url,
+        target_url=target_url,
+        competitor_domain=competitor_domain,
+        keyword=keyword,
+        metric_facts=sorted(facts, key=lambda fact: fact.name),
+        evidence_ids=_unique(fact.evidence_id for fact in facts),
+        blocked_claims=AHREFS_GAP_IMPACT_BLOCKED_CLAIMS,
+        next_step=_gap_record_next_step(gap_type),
+        risk=ActionRisk.medium,
+    )
+
+
+def _gap_type_for_fact(fact: MetricFact) -> AhrefsGapType:
+    configured_type = fact.dimensions.get("gap_type")
+    if configured_type in AHREFS_GAP_TYPES:
+        return cast(AhrefsGapType, configured_type)
+    if fact.name == "ahrefs_competitor_page_count":
+        return "competitor_page"
+    if fact.name == "ahrefs_content_gap_count":
+        return "content_gap"
+    if fact.name in {"ahrefs_backlink_gap_count", "ahrefs_referring_domain_gap_count"}:
+        return "backlink_gap"
+    if fact.name == "ahrefs_organic_keyword_gap_count":
+        return "organic_keyword_gap"
+    return "content_gap"
+
+
+def _dimension_value(fact: MetricFact, *keys: str) -> str | None:
+    for key in keys:
+        value = fact.dimensions.get(key)
+        if value:
+            return value
+    return None
+
+
+def _is_record_level_gap_fact(fact: MetricFact) -> bool:
+    return (
+        _dimension_value(
+            fact,
+            "source_url",
+            "competitor_url",
+            "competitor_page",
+            "source_page",
+            "url",
+            "page_url",
+            "target_url",
+            "target_page",
+            "ekologus_url",
+            "ekologus_page",
+            "page",
+            "competitor_domain",
+            "competitor",
+            "domain",
+            "keyword",
+            "query",
+            "organic_keyword",
+            "gap_type",
+        )
+        is not None
+    )
+
+
+def _gap_record_title(
+    *,
+    gap_type: AhrefsGapType,
+    source_url: str | None,
+    target_url: str | None,
+    competitor_domain: str | None,
+    keyword: str | None,
+) -> str:
+    anchor = keyword or target_url or source_url or competitor_domain or "brak wymiaru"
+    labels = {
+        "competitor_page": "Strona konkurencji",
+        "content_gap": "Luka treści",
+        "backlink_gap": "Luka backlinków",
+        "organic_keyword_gap": "Luka organic keyword",
+        "top_page_gap": "Top page gap",
+    }
+    return f"{labels[gap_type]}: {anchor}"
+
+
+def _gap_fact_summary(facts: list[MetricFact]) -> str:
+    sorted_facts = sorted(facts, key=lambda fact: fact.name)
+    return ", ".join(f"{_gap_fact_label(fact.name)}={fact.value}" for fact in sorted_facts)
+
+
+def _gap_fact_label(name: str) -> str:
+    labels = {
+        "ahrefs_competitor_page_count": "competitor_pages",
+        "ahrefs_content_gap_count": "content_gaps",
+        "ahrefs_backlink_gap_count": "backlink_gaps",
+        "ahrefs_referring_domain_gap_count": "referring_domain_gaps",
+        "ahrefs_organic_keyword_gap_count": "organic_keyword_gaps",
+        "ahrefs_top_page_gap_count": "top_page_gaps",
+    }
+    return labels.get(name, name)
+
+
+def _gap_record_next_step(gap_type: AhrefsGapType) -> str:
+    if gap_type == "backlink_gap":
+        return (
+            "Sprawdź ręcznie jakość domen/linków i nie planuj link buildingu bez "
+            "review ryzyka oraz źródła."
+        )
+    if gap_type in {"content_gap", "organic_keyword_gap", "competitor_page", "top_page_gap"}:
+        return (
+            "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, "
+            "create, merge albo block."
+        )
+    return "Przejrzyj rekord Ahrefs z operatorem przed jakąkolwiek rekomendacją."
+
+
+def _gap_record_id(
+    gap_type: AhrefsGapType,
+    source_url: str | None,
+    target_url: str | None,
+    competitor_domain: str | None,
+    keyword: str | None,
+) -> str:
+    parts = [gap_type, competitor_domain, keyword, target_url, source_url]
+    return f"ahrefs_gap_{_slug('_'.join(part for part in parts if part))}"
+
+
+def _slug(value: str) -> str:
+    normalized = []
+    previous_separator = False
+    for character in value.lower():
+        if character.isalnum():
+            normalized.append(character)
+            previous_separator = False
+        elif not previous_separator:
+            normalized.append("_")
+            previous_separator = True
+    return "".join(normalized).strip("_")[:96] or "record"
 
 
 def _ahrefs_sections(
@@ -286,6 +523,7 @@ def _ahrefs_decision_queue(
     gap_facts: list[MetricFact],
 ) -> list[AhrefsDecisionItem]:
     decisions: list[AhrefsDecisionItem] = []
+    gap_records = _ahrefs_gap_records(gap_facts)
     if authority_facts:
         decisions.append(
             AhrefsDecisionItem(
@@ -346,6 +584,42 @@ def _ahrefs_decision_queue(
         )
 
     missing_gap_contracts = _missing_gap_contracts(gap_facts)
+    if gap_records:
+        decisions.append(
+            AhrefsDecisionItem(
+                id="ahrefs_review_gap_records",
+                decision_type="review_gap_records",
+                status="ready",
+                title="Przejrzyj rekordy luk Ahrefs",
+                summary=(
+                    f"WILQ ma {len(gap_records)} typed Ahrefs gap records. "
+                    f"Braki kontraktu: {', '.join(missing_gap_contracts) or 'brak'}."
+                ),
+                rationale=(
+                    "To są konkretne rekordy z Ahrefs evidence, więc mogą wejść do "
+                    "review SEO/content. Nadal wymagają połączenia z GSC i WordPress "
+                    "inventory przed decyzją publikacyjną."
+                ),
+                next_step=(
+                    "Połącz rekordy z /content-planner, sprawdź duplikaty WordPress "
+                    "i przygotuj refresh/create/merge/block zamiast obiecywać uplift."
+                ),
+                priority=18,
+                metric_tiles=_gap_record_tiles(gap_records, missing_gap_contracts),
+                allowed_evidence=_allowed_gap_evidence(authority_facts, gap_facts),
+                missing_read_contracts=missing_gap_contracts,
+                source_connectors=[AHREFS_CONNECTOR_ID],
+                evidence_ids=_unique(
+                    evidence_id
+                    for record in gap_records
+                    for evidence_id in record.evidence_ids
+                ),
+                metric_facts=[fact for record in gap_records for fact in record.metric_facts][:12],
+                action_ids=[],
+                blocked_claims=_blocked_claims_for_missing_contracts(missing_gap_contracts),
+                risk=ActionRisk.medium if missing_gap_contracts else ActionRisk.low,
+            )
+        )
     if missing_gap_contracts:
         decisions.append(
             AhrefsDecisionItem(
@@ -423,13 +697,33 @@ def _authority_tiles(
     )
 
 
+def _gap_record_tiles(
+    gap_records: list[AhrefsGapRecord],
+    missing_contracts: list[str],
+) -> dict[str, int | float | str]:
+    counts_by_type: dict[str, int] = {}
+    for record in gap_records:
+        counts_by_type[record.gap_type] = counts_by_type.get(record.gap_type, 0) + 1
+    return _clean_metric_tiles(
+        {
+            "rekordy luk": len(gap_records),
+            "content gaps": counts_by_type.get("content_gap"),
+            "backlink gaps": counts_by_type.get("backlink_gap"),
+            "strony konkurencji": counts_by_type.get("competitor_page"),
+            "organic keywords": counts_by_type.get("organic_keyword_gap"),
+            "top pages": counts_by_type.get("top_page_gap"),
+            "braki kontraktu": len(missing_contracts),
+        }
+    )
+
+
 def _missing_gap_contracts(gap_facts: list[MetricFact]) -> list[str]:
     if not gap_facts:
         return AHREFS_GAP_READ_CONTRACTS.copy()
     # Future-proof for detailed records: each gap contract is considered present only
     # after a matching metric fact exists. Current domain-rating reads intentionally
     # leave all gap contracts missing.
-    fact_names = {fact.name for fact in gap_facts}
+    fact_names = {fact.name for fact in gap_facts if _is_record_level_gap_fact(fact)}
     present_by_fact = {
         "ahrefs_competitor_pages": {"ahrefs_competitor_page_count"},
         "ahrefs_content_gap_records": {"ahrefs_content_gap_count"},
@@ -447,6 +741,26 @@ def _missing_gap_contracts(gap_facts: list[MetricFact]) -> list[str]:
     ]
 
 
+def _available_gap_contracts(missing_contracts: list[str]) -> list[str]:
+    return [
+        contract
+        for contract in AHREFS_GAP_READ_CONTRACTS
+        if contract not in missing_contracts
+    ]
+
+
+def _allowed_gap_evidence(
+    authority_facts: list[MetricFact],
+    gap_facts: list[MetricFact],
+) -> list[str]:
+    return _unique(
+        [
+            *(fact.name for fact in authority_facts),
+            *(fact.name for fact in gap_facts),
+        ]
+    )
+
+
 def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
     claims_by_contract = {
         "ahrefs_competitor_pages": "competitor gap",
@@ -460,7 +774,7 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
         for contract, claim in claims_by_contract.items()
         if contract in missing_contracts
     ]
-    claims.append("authority improvement")
+    claims.extend(AHREFS_GAP_IMPACT_BLOCKED_CLAIMS)
     return _unique(claims)
 
 

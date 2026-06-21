@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 01:40 CEST.
+Last updated: 2026-06-21 02:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -90,23 +90,21 @@ mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
 
-Latest Ahrefs gap-contract truth, live proof 2026-06-21 01:21 CEST:
-`/api/ahrefs/diagnostics` now exposes typed `gap_read_contract` in addition to
-authority decisions and sections. Current live truth: DR=90, Ahrefs Rank=1450,
-`gap_records=[]`, `status=blocked`, available contract
-`ahrefs_authority_summary`, missing contracts
-`ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
-`ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url` and
-`ahrefs_top_pages_by_competitor`. Review gates are
-`ahrefs_gap_records_required`, `content_planner_review_required` and
-`human_strategy_review`; blocked claims remain `competitor gap`, `content gap`,
-`backlink gap`, `ranking opportunity`, `traffic uplift` and
-`authority improvement`. Scoped `wilq-ahrefs-gap-finder` context-pack is about
-`22181` bytes and carries the same `gap_read_contract` with
-`active_action_objects=[]`. Dashboard `/ahrefs` renders a dedicated
-`Kontrakt luk Ahrefs` panel. This is still not gap analysis: no competitor page,
-content gap, backlink gap, organic keyword by URL or top competitor page records
-exist yet.
+Latest Ahrefs gap-record parser truth, live proof 2026-06-21 02:04 CEST:
+`/api/ahrefs/diagnostics` can now build typed `AhrefsGapRecord` rows from
+record-level Ahrefs metric facts and expose a ready `ahrefs_review_gap_records`
+decision when those facts exist. Synthetic API coverage proves competitor page,
+content gap, backlink gap and organic keyword gap records, preserved
+`allowed_evidence`, gap dimensions, source URLs, target URLs, competitor domains
+and keywords through scoped `wilq-ahrefs-gap-finder` context-pack redaction.
+Current live truth remains blocked, not hidden: DR=90, Ahrefs Rank=1450,
+`gap_records=[]`, `gap_read_contract.status=blocked`, available contract
+`ahrefs_authority_summary`, missing contracts `ahrefs_competitor_pages`,
+`ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
+`ahrefs_organic_keywords_by_url` and `ahrefs_top_pages_by_competitor`. Dashboard
+`/ahrefs` still renders `Kontrakt luk Ahrefs`; it must not claim competitor,
+content, backlink, ranking opportunity, traffic uplift or authority improvement
+until live record-level facts exist.
 
 Latest Ads custom segment missing-metric truth, live proof 2026-06-21 01:40
 CEST: custom segment review no longer shows absent search-term impressions or

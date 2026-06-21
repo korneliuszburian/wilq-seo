@@ -5066,6 +5066,7 @@ function ahrefsDecisionTypeLabel(value: string) {
   const labels: Record<string, string> = {
     block_gap_claims: "blokada luk",
     review_authority_context: "kontekst autorytetu",
+    review_gap_records: "review rekordów luk",
     run_authority_read: "odczyt autorytetu"
   };
   return labels[value] ?? value;

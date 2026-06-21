@@ -1639,6 +1639,7 @@ class AhrefsDecisionItem(BaseModel):
     id: str
     decision_type: Literal[
         "review_authority_context",
+        "review_gap_records",
         "run_authority_read",
         "block_gap_claims",
     ]

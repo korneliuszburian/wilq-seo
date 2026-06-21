@@ -29,6 +29,18 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ahrefs typed gap record parser, 2026-06-21 02:04 CEST:
+   `/api/ahrefs/diagnostics` can build typed `AhrefsGapRecord` rows from
+   record-level Ahrefs metric facts and expose ready decision
+   `ahrefs_review_gap_records` when competitor page, content gap, backlink gap
+   or organic keyword gap facts exist. Scoped `wilq-ahrefs-gap-finder`
+   context-pack redaction preserves safe evidence fields such as
+   `allowed_evidence`, `gap_type`, `source_url`, `target_url`,
+   `competitor_domain` and `keyword`. Live state is still honestly blocked:
+   `authority_fact_count=2`, `gap_fact_count=0`, `gap_records=[]`,
+   `gap_read_contract.status=blocked`. This parser is an API/view-model fix,
+   not a skill-reference workaround.
+
 0. Ahrefs typed gap read contract, 2026-06-21 01:21 CEST:
    `/api/ahrefs/diagnostics` now includes `gap_read_contract`. Live state after
    restart: DR=90, Ahrefs Rank=1450, `gap_records=[]`,
