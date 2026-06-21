@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads budget apply safety review, 2026-06-21 13:50 CEST.
+  Budget preview nie jest już tylko `CampaignBudgetOperation` z tekstową
+  blokadą. Każdy Ads budget apply preview ma typed
+  `safety_review.safety_contract=campaign_budget_apply_safety_v1`,
+  `status=blocked`, `max_allowed_delta_percent=0.3`, missing requirements,
+  evidence IDs i twarde `apply_allowed=false`, `api_mutation_ready=false`,
+  `destructive=false`. Ten sam safety review jest w
+  `/api/ads/diagnostics`, `act_prepare_ads_campaign_review_queue`, scoped
+  `wilq-ads-doctor` context-pack i `/ads-doctor`. Context-pack zachowuje
+  kompaktowy safety review (`4` budget preview rows, około `184632` bytes) bez
+  `[REDACTED]` w missing requirements. Nadal zablokowane: realny vendor budget
+  apply, apply confirmation i mutation audit do Google Ads. Full
+  `scripts/verify.sh` passed po tym slice: backend `144 passed`, dashboard
+  unit `17 passed`, Playwright `14 passed`, skill smokes i dashboard build.
 - GA4 tracking-quality payload preview, 2026-06-21 13:17 CEST.
   `act_review_ga4_tracking_quality` ma teraz typed review-only
   `ga4_tracking_quality_review_v1` payload preview. Preview grupuje

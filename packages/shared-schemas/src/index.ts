@@ -500,6 +500,25 @@ export const AdsDerivedKpiReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsBudgetApplySafetyReviewSchema = z.object({
+  id: z.string(),
+  budget_preview_id: z.string(),
+  safety_contract: z.literal("campaign_budget_apply_safety_v1"),
+  status: z.literal("blocked"),
+  reason: z.string(),
+  max_allowed_delta_percent: z.number(),
+  current_budget_amount_micros: z.number().nullable().optional(),
+  proposed_budget_amount_micros: z.number().nullable().optional(),
+  proposed_delta_percent: z.number().nullable().optional(),
+  missing_requirements: z.array(z.string()),
+  required_validation: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsBudgetApplyPreviewSchema = z.object({
   id: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -515,6 +534,7 @@ export const AdsBudgetApplyPreviewSchema = z.object({
   source_metric_names: z.array(z.string()),
   required_validation: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  safety_review: AdsBudgetApplySafetyReviewSchema,
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
   destructive: z.boolean()

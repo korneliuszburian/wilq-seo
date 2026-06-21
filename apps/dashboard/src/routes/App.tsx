@@ -2732,6 +2732,18 @@ function AdsBudgetPacingRowsTable({
                       {row.payload_preview.operation_type} /{" "}
                       {row.payload_preview.apply_allowed ? "apply możliwy" : "apply zablokowany"}
                     </div>
+                    <div className="mt-1 text-slate-500">
+                      Safety: {row.payload_preview.safety_review.safety_contract} /{" "}
+                      {row.payload_preview.safety_review.apply_allowed
+                        ? "mutation ready"
+                        : "blocked"}
+                    </div>
+                    <div className="text-slate-500">
+                      Braki:{" "}
+                      {row.payload_preview.safety_review.missing_requirements
+                        .slice(0, 2)
+                        .join(", ") || "brak"}
+                    </div>
                   </div>
                 ) : (
                   "brak"

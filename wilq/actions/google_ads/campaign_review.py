@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.actions.google_ads.budget_safety import budget_apply_safety_review
 from wilq.actions.google_ads.business_context import (
     ADS_TARGET_CPA_MICROS_ENV,
     ADS_TARGET_ROAS_ENV,
@@ -36,6 +37,7 @@ CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION = [
     "impression_share",
     "change_history",
     "human_budget_goal",
+    "campaign_budget_apply_safety",
     "campaign_budget_operation_preview",
     "human_confirm_before_apply",
 ]
@@ -44,6 +46,7 @@ CAMPAIGN_REVIEW_REQUIRED_VALIDATION = [
     "verify_account_currency",
     "budget_pacing",
     "budget_apply_preview",
+    "campaign_budget_apply_safety",
     "impression_share",
     "change_history",
     "recommendations",
@@ -117,6 +120,26 @@ def validate_campaign_review_payload(payload: dict[str, Any]) -> list[str]:
             )
         if not item.get("evidence_ids"):
             errors.append(f"Budget payload preview item {index} requires evidence IDs.")
+        safety_review = item.get("safety_review")
+        if not isinstance(safety_review, dict):
+            errors.append(f"Budget payload preview item {index} requires safety_review.")
+            continue
+        if safety_review.get("safety_contract") != "campaign_budget_apply_safety_v1":
+            errors.append(
+                f"Budget payload preview item {index} requires campaign budget safety contract."
+            )
+        if safety_review.get("apply_allowed") is not False:
+            errors.append(
+                f"Budget payload preview item {index} safety review must keep apply_allowed=false."
+            )
+        if safety_review.get("api_mutation_ready") is not False:
+            errors.append(
+                f"Budget payload preview item {index} safety review must not be API-mutation ready."
+            )
+        if safety_review.get("destructive") is not False:
+            errors.append(
+                f"Budget payload preview item {index} safety review must be non-destructive."
+            )
     return errors
 
 
@@ -362,11 +385,12 @@ def _budget_payload_preview(
             "propozycję kwoty do czasu human_budget_goal."
         )
     )
+    preview_id = (
+        f"budget_apply_preview_{_slug(campaign_id or campaign_name)}_"
+        f"{_slug(budget_id or budget_name or 'budget')}"
+    )
     return {
-        "id": (
-            f"budget_apply_preview_{_slug(campaign_id or campaign_name)}_"
-            f"{_slug(budget_id or budget_name or 'budget')}"
-        ),
+        "id": preview_id,
         "campaign_id": campaign_id,
         "campaign_name": campaign_name,
         "campaign_budget_id": budget_id,
@@ -380,6 +404,13 @@ def _budget_payload_preview(
         "source_metric_names": source_metric_names,
         "required_validation": CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION,
         "blocked_claims": CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+        "safety_review": budget_apply_safety_review(
+            preview_id=preview_id,
+            current_budget_amount_micros=budget_amount_micros,
+            proposed_budget_amount_micros=proposed_budget_amount_micros,
+            proposed_budget_delta_micros=proposed_budget_delta_micros,
+            evidence_ids=evidence_ids,
+        ),
         "api_mutation_ready": False,
         "apply_allowed": False,
         "destructive": False,

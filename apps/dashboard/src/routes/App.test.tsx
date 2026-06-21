@@ -794,6 +794,48 @@ const adsDiagnostics = {
             "ROAS verdict",
             "recommendation apply"
           ],
+          safety_review: {
+            id: "budget_apply_preview_123_777_safety",
+            budget_preview_id: "budget_apply_preview_123_777",
+            safety_contract: "campaign_budget_apply_safety_v1",
+            status: "blocked",
+            reason:
+              "Budget apply zablokowany: proponowana zmiana przekracza limit 30%.",
+            max_allowed_delta_percent: 0.3,
+            current_budget_amount_micros: 30000000,
+            proposed_budget_amount_micros: 42000000,
+            proposed_delta_percent: 0.4,
+            missing_requirements: [
+              "change_history",
+              "human_budget_goal",
+              "mutation_audit",
+              "human_confirm_before_apply",
+              "budget_delta_within_30_percent"
+            ],
+            required_validation: [
+              "review_campaign_activity",
+              "verify_account_currency",
+              "budget_pacing",
+              "change_history",
+              "human_budget_goal",
+              "budget_delta_limit_30_percent",
+              "campaign_budget_operation_preview",
+              "mutation_audit",
+              "human_confirm_before_apply"
+            ],
+            blocked_claims: [
+              "budget apply",
+              "budget scaling",
+              "campaign pause",
+              "profitability",
+              "wasted budget",
+              "automatic budget mutation"
+            ],
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+            api_mutation_ready: false,
+            apply_allowed: false,
+            destructive: false
+          },
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -845,6 +887,47 @@ const adsDiagnostics = {
           "ROAS verdict",
           "recommendation apply"
         ],
+        safety_review: {
+          id: "budget_apply_preview_123_777_safety",
+          budget_preview_id: "budget_apply_preview_123_777",
+          safety_contract: "campaign_budget_apply_safety_v1",
+          status: "blocked",
+          reason: "Budget apply zablokowany: proponowana zmiana przekracza limit 30%.",
+          max_allowed_delta_percent: 0.3,
+          current_budget_amount_micros: 30000000,
+          proposed_budget_amount_micros: 42000000,
+          proposed_delta_percent: 0.4,
+          missing_requirements: [
+            "change_history",
+            "human_budget_goal",
+            "mutation_audit",
+            "human_confirm_before_apply",
+            "budget_delta_within_30_percent"
+          ],
+          required_validation: [
+            "review_campaign_activity",
+            "verify_account_currency",
+            "budget_pacing",
+            "change_history",
+            "human_budget_goal",
+            "budget_delta_limit_30_percent",
+            "campaign_budget_operation_preview",
+            "mutation_audit",
+            "human_confirm_before_apply"
+          ],
+          blocked_claims: [
+            "budget apply",
+            "budget scaling",
+            "campaign pause",
+            "profitability",
+            "wasted budget",
+            "automatic budget mutation"
+          ],
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        },
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false

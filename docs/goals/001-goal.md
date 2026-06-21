@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 13:17 CEST.
+Last updated: 2026-06-21 13:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -84,7 +84,9 @@ have a review-only payload preview and a review-only targeting preview from
 real search terms, and their review reason preserves missing search-term
 impressions/cost as `brak danych` instead of fake zeroes, but no custom segment
 targeting apply support. Campaign budgets now have review-only
-`CampaignBudgetOperation` payload previews from budget facts, but no budget
+`CampaignBudgetOperation` payload previews from budget facts plus typed
+`campaign_budget_apply_safety_v1` safety reviews that keep budget apply
+blocked until missing requirements are satisfied. There is still no budget
 apply support.
 Full BDOS-class parity still requires optimizer contracts such as
 human-confirmed business target values for live decisions, recorded human
@@ -94,6 +96,23 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads budget apply safety truth, live proof 2026-06-21 13:50 CEST:
+`/api/ads/diagnostics.budget_pacing_read_contract.payload_preview[*]` and
+`act_prepare_ads_campaign_review_queue.payload.budget_payload_preview[*]`
+now include `safety_review.safety_contract=campaign_budget_apply_safety_v1`.
+The safety review carries `status=blocked`, `max_allowed_delta_percent=0.3`,
+missing requirements such as `change_history`, `human_budget_goal`,
+`mutation_audit`, `human_confirm_before_apply`, `recommended_budget_missing`
+and `budget_delta_percent`, plus evidence IDs and hard
+`apply_allowed=false`, `api_mutation_ready=false`, `destructive=false`.
+Scoped `wilq-ads-doctor` context-pack keeps a compacted safety review under
+200 KB (`4` budget preview rows, about `184632` bytes). Dashboard `/ads-doctor`
+shows the safety contract and first missing requirements in the budget pacing
+table. This still does not unlock Google Ads budget mutation: vendor apply,
+operator confirmation and mutation audit remain blocked. Full
+`scripts/verify.sh` passed for this slice: backend `144 passed`, dashboard
+unit `17 passed`, Playwright `14 passed`, skill smokes and dashboard build.
 
 Latest GA4 tracking-quality preview truth, live proof 2026-06-21 13:17 CEST:
 `act_review_ga4_tracking_quality` now exposes typed review-only
@@ -1901,8 +1920,9 @@ Work in this order:
    Still missing for BDOS-class Ads value: change history,
    keyword/match context, full 90-day safety history, Keyword
    Planner enrichment, forecast/audience-size contract, custom segment payload
-   preview, margin/currency interpretation, budget apply safety/confirmation
-   and all Ads apply/audit paths. Full `scripts/verify.sh` passed after the custom
+   preview, margin/currency interpretation, budget apply confirmation
+   and all Ads apply/audit paths. Budget apply safety now exists as
+   `campaign_budget_apply_safety_v1`. Full `scripts/verify.sh` passed after the custom
    segments slice on 2026-06-19: backend API contracts `100 passed`, dashboard
    route tests `13 passed`, Playwright e2e `9 passed` and dashboard production
    build passed. For the negative keyword safety slice, focused
@@ -2968,8 +2988,9 @@ Live `:8000` proof after API restart:
 
 Remaining Ads optimizer blockers:
 
-- budget apply preview exists as review-only `CampaignBudgetOperation`, but
-  human budget-goal interpretation and actual vendor budget-apply adapter are
+- budget apply preview exists as review-only `CampaignBudgetOperation` with
+  typed `campaign_budget_apply_safety_v1`, but human budget-goal
+  interpretation, apply confirmation and actual vendor budget-apply adapter are
   still missing,
 - no recommendation apply support or vendor recommendation-apply adapter,
 - no profit-margin/business-goal interpretation contract,

@@ -767,6 +767,27 @@ class AdsDerivedKpiReadContract(BaseModel):
     next_step: str
 
 
+class AdsBudgetApplySafetyReview(BaseModel):
+    id: str
+    budget_preview_id: str
+    safety_contract: Literal["campaign_budget_apply_safety_v1"] = (
+        "campaign_budget_apply_safety_v1"
+    )
+    status: Literal["blocked"] = "blocked"
+    reason: str
+    max_allowed_delta_percent: float = 0.3
+    current_budget_amount_micros: int | None = None
+    proposed_budget_amount_micros: int | None = None
+    proposed_delta_percent: float | None = None
+    missing_requirements: list[str] = Field(default_factory=list)
+    required_validation: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class AdsBudgetApplyPreview(BaseModel):
     id: str
     campaign_id: str | None = None
@@ -782,6 +803,7 @@ class AdsBudgetApplyPreview(BaseModel):
     source_metric_names: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    safety_review: AdsBudgetApplySafetyReview
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False

@@ -4,6 +4,7 @@ import re
 from collections.abc import Iterable
 from typing import Literal
 
+from wilq.actions.google_ads.budget_safety import budget_apply_safety_review
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ads_float_env,
@@ -48,6 +49,7 @@ from wilq.schemas import (
     AdsAccountCurrencyReadContract,
     AdsBlockedHandoff,
     AdsBudgetApplyPreview,
+    AdsBudgetApplySafetyReview,
     AdsBudgetPacingReadContract,
     AdsBudgetPacingRow,
     AdsBusinessContextReadContract,
@@ -1612,11 +1614,12 @@ def _budget_apply_preview(
             "propozycję kwoty do czasu human_budget_goal."
         )
     )
+    preview_id = (
+        f"budget_apply_preview_{_slug(campaign_id or campaign_name)}_"
+        f"{_slug(budget_id or budget_name or 'budget')}"
+    )
     return AdsBudgetApplyPreview(
-        id=(
-            f"budget_apply_preview_{_slug(campaign_id or campaign_name)}_"
-            f"{_slug(budget_id or budget_name or 'budget')}"
-        ),
+        id=preview_id,
         campaign_id=campaign_id,
         campaign_name=campaign_name,
         campaign_budget_id=budget_id,
@@ -1629,6 +1632,15 @@ def _budget_apply_preview(
         source_metric_names=source_metric_names,
         required_validation=CAMPAIGN_BUDGET_APPLY_PREVIEW_REQUIRED_VALIDATION,
         blocked_claims=CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+        safety_review=AdsBudgetApplySafetyReview.model_validate(
+            budget_apply_safety_review(
+                preview_id=preview_id,
+                current_budget_amount_micros=budget_amount_micros,
+                proposed_budget_amount_micros=proposed_budget_amount_micros,
+                proposed_budget_delta_micros=proposed_budget_delta_micros,
+                evidence_ids=evidence_ids,
+            )
+        ),
     )
 
 

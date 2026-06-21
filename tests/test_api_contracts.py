@@ -5254,6 +5254,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "impression_share",
                 "change_history",
                 "human_budget_goal",
+                "campaign_budget_apply_safety",
                 "campaign_budget_operation_preview",
                 "human_confirm_before_apply",
             ],
@@ -5267,11 +5268,23 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                 "ROAS verdict",
                 "recommendation apply",
             ],
+            "safety_review": budget_contract["payload_preview"][0]["safety_review"],
             "api_mutation_ready": False,
             "apply_allowed": False,
             "destructive": False,
         }
     ]
+    budget_safety_review = budget_contract["payload_preview"][0]["safety_review"]
+    assert budget_safety_review["safety_contract"] == "campaign_budget_apply_safety_v1"
+    assert budget_safety_review["status"] == "blocked"
+    assert budget_safety_review["max_allowed_delta_percent"] == 0.3
+    assert budget_safety_review["proposed_delta_percent"] == 0.4
+    assert "budget_delta_within_30_percent" in budget_safety_review[
+        "missing_requirements"
+    ]
+    assert budget_safety_review["api_mutation_ready"] is False
+    assert budget_safety_review["apply_allowed"] is False
+    assert budget_safety_review["destructive"] is False
     assert budget_contract["budget_rows"] == [
         {
             "campaign_id": "101",
@@ -6305,10 +6318,20 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_review_action["payload"]["budget_payload_preview"][0][
         "apply_allowed"
     ] is False
+    budget_safety_review = campaign_review_action["payload"]["budget_payload_preview"][0][
+        "safety_review"
+    ]
+    assert budget_safety_review["safety_contract"] == "campaign_budget_apply_safety_v1"
+    assert budget_safety_review["apply_allowed"] is False
+    assert budget_safety_review["api_mutation_ready"] is False
+    assert budget_safety_review["destructive"] is False
     assert campaign_review_action["payload"]["apply_allowed"] is False
     assert campaign_review_action["payload"]["destructive"] is False
     assert "budget_pacing" in campaign_review_action["payload"]["required_validation"]
     assert "budget_apply_preview" in campaign_review_action["payload"][
+        "required_validation"
+    ]
+    assert "campaign_budget_apply_safety" in campaign_review_action["payload"][
         "required_validation"
     ]
     assert "budget scaling" in campaign_review_action["payload"]["blocked_claims"]
@@ -9004,6 +9027,11 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     assert len(ads_context["search_term_safety_read_contract"]["safety_rows"]) <= 8
     assert len(ads_context["keyword_match_context_read_contract"]["context_rows"]) <= 8
     assert len(ads_context["budget_pacing_read_contract"]["payload_preview"]) <= 4
+    budget_preview = ads_context["budget_pacing_read_contract"]["payload_preview"][0]
+    assert budget_preview["safety_review"]["safety_contract"] == (
+        "campaign_budget_apply_safety_v1"
+    )
+    assert budget_preview["safety_review"]["apply_allowed"] is False
     assert len(ads_context["recommendations_read_contract"]["payload_preview"]) <= 8
     assert len(ads_context["negative_keywords_read_contract"]["payload_preview"]) <= 8
     assert (

@@ -1214,6 +1214,12 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ("budget_pacing_read_contract", "payload_preview"),
         ADS_CONTEXT_DECISION_ROW_LIMIT,
     )
+    _compact_budget_apply_preview_for_context(
+        _list_at(compact, "budget_pacing_read_contract", "payload_preview")
+    )
+    _compact_budget_row_payload_preview_for_context(
+        _list_at(compact, "budget_pacing_read_contract", "budget_rows")
+    )
     _limit_contract_rows(
         compact,
         ("search_terms_read_contract", "search_term_rows"),
@@ -1343,6 +1349,92 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ),
     }
     return compact
+
+
+def _compact_budget_row_payload_preview_for_context(rows: list[Any]) -> None:
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        payload_preview = row.get("payload_preview")
+        if isinstance(payload_preview, dict):
+            safety_review = payload_preview.get("safety_review")
+            row["payload_preview"] = {
+                "id": payload_preview.get("id"),
+                "operation_type": payload_preview.get("operation_type"),
+                "apply_allowed": payload_preview.get("apply_allowed"),
+                "safety_contract": safety_review.get("safety_contract")
+                if isinstance(safety_review, dict)
+                else None,
+                "safety_status": safety_review.get("status")
+                if isinstance(safety_review, dict)
+                else None,
+            }
+
+
+def _compact_budget_apply_preview_for_context(preview_items: list[Any]) -> None:
+    for index, item in enumerate(preview_items):
+        if isinstance(item, dict):
+            preview_items[index] = _compact_budget_apply_preview_item(item)
+
+
+def _compact_budget_apply_preview_item(item: dict[str, Any]) -> dict[str, Any]:
+    compact_item = {
+        key: item.get(key)
+        for key in (
+            "id",
+            "campaign_id",
+            "campaign_name",
+            "campaign_budget_id",
+            "campaign_budget_name",
+            "operation_type",
+            "current_budget_amount_micros",
+            "proposed_budget_amount_micros",
+            "proposed_budget_delta_micros",
+            "evidence_ids",
+            "api_mutation_ready",
+            "apply_allowed",
+            "destructive",
+        )
+        if key in item
+    }
+    required_validation = item.get("required_validation")
+    if isinstance(required_validation, list):
+        compact_item["required_validation_total"] = len(required_validation)
+    blocked_claims = item.get("blocked_claims")
+    if isinstance(blocked_claims, list):
+        compact_item["blocked_claims"] = blocked_claims[:4]
+    safety_review = item.get("safety_review")
+    if isinstance(safety_review, dict):
+        compact_item["safety_review"] = _compact_budget_safety_review_item(
+            safety_review
+        )
+    return compact_item
+
+
+def _compact_budget_safety_review_item(item: dict[str, Any]) -> dict[str, Any]:
+    compact_item = {
+        key: item.get(key)
+        for key in (
+            "id",
+            "safety_contract",
+            "status",
+            "reason",
+            "max_allowed_delta_percent",
+            "proposed_delta_percent",
+            "missing_requirements",
+            "api_mutation_ready",
+            "apply_allowed",
+            "destructive",
+        )
+        if key in item
+    }
+    required_validation = item.get("required_validation")
+    if isinstance(required_validation, list):
+        compact_item["required_validation_total"] = len(required_validation)
+    blocked_claims = item.get("blocked_claims")
+    if isinstance(blocked_claims, list):
+        compact_item["blocked_claims"] = blocked_claims[:4]
+    return compact_item
 
 
 def _compact_latest_refresh_for_context(compact: dict[str, Any]) -> None:
