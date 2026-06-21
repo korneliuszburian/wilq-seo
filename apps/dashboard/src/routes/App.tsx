@@ -5266,6 +5266,7 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
 }
 
 type ContentBriefPreviewItem = {
+  action_id: string;
   candidate_id: string;
   source_type: string;
   mode: string;
@@ -5313,46 +5314,107 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
         {previews.map((preview) => (
-          <article key={preview.candidate_id} className="rounded-md border border-line bg-slate-50 p-3">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">{preview.topic}</h3>
-                <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
-                  {contentBriefSourceLabel(preview.source_type)} / {contentBriefModeLabel(preview.mode)}
-                </p>
-              </div>
-              <StatusBadge value={preview.apply_allowed ? "ready" : "blocked"} />
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-700">{preview.brief_goal}</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
-              {Object.entries(preview.metric_snapshot).slice(0, 4).map(([label, value]) => (
-                <MetricTile
-                  key={`${preview.candidate_id}-${label}`}
-                  label={label}
-                  value={contentBriefMetricValue(value)}
-                />
-              ))}
-            </div>
-            <div className="mt-3 grid gap-2 text-xs text-slate-600">
-              <TraceLine
-                label="Walidacje"
-                values={preview.required_validation.slice(0, 4)}
-              />
-              <TraceLine
-                label="Blokady claimów"
-                values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
-              />
-              <LinkedTraceLine
-                label="Dowody"
-                values={preview.evidence_ids.slice(0, 3)}
-                kind="evidence"
-              />
-            </div>
-          </article>
+          <ContentBriefPreviewCard
+            key={`${preview.action_id}-${preview.candidate_id}`}
+            preview={preview}
+          />
         ))}
       </div>
     </section>
   );
+}
+
+function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem }) {
+  const queryClient = useQueryClient();
+  const reviewMutation = useMutation({
+    mutationFn: () => reviewAction(preview.action_id, contentBriefReviewRequest(preview)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["content-diagnostics"] });
+      void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
+    }
+  });
+
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">{preview.topic}</h3>
+          <p className="mt-0.5 text-xs uppercase tracking-normal text-slate-500">
+            {contentBriefSourceLabel(preview.source_type)} / {contentBriefModeLabel(preview.mode)}
+          </p>
+        </div>
+        <StatusBadge value={preview.apply_allowed ? "ready" : "blocked"} />
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{preview.brief_goal}</p>
+      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+        {Object.entries(preview.metric_snapshot).slice(0, 4).map(([label, value]) => (
+          <MetricTile
+            key={`${preview.candidate_id}-${label}`}
+            label={label}
+            value={contentBriefMetricValue(value)}
+          />
+        ))}
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine label="Walidacje" values={preview.required_validation.slice(0, 4)} />
+        <TraceLine
+          label="Blokady claimów"
+          values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
+        />
+        <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
+        <LinkedTraceLine label="ActionObject" values={[preview.action_id]} kind="actions" />
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => reviewMutation.mutate()}
+          disabled={reviewMutation.isPending}
+          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {reviewMutation.isPending ? (
+            <RefreshCw aria-hidden="true" className="animate-spin" size={15} />
+          ) : (
+            <ClipboardCheck aria-hidden="true" size={15} />
+          )}
+          {reviewMutation.isPending ? "Zapisuję review" : "Zapisz review briefu"}
+        </button>
+        <span className="text-xs text-slate-600">
+          Zapisuje wybór kandydata. Nie publikuje i nie wykonuje apply.
+        </span>
+      </div>
+      {reviewMutation.data ? (
+        <p className="mt-2 rounded-md border border-line bg-white p-2 text-xs leading-5 text-slate-600">
+          Zapisano review: {reviewMutation.data.audit_event.event_type}. Apply nadal:{" "}
+          {reviewMutation.data.review_gate.apply_allowed ? "otwarte" : "zablokowane"}.
+        </p>
+      ) : null}
+      {reviewMutation.error instanceof Error ? (
+        <p className="mt-2 text-xs leading-5 text-risk">
+          Nie udało się zapisać review: {reviewMutation.error.message}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
+function contentBriefReviewRequest(preview: ContentBriefPreviewItem): ActionReviewRequest {
+  return {
+    outcome: "approved_for_prepare",
+    reviewed_by: "operator_local_dashboard",
+    notes: `Wybrano kandydata briefu ${preview.candidate_id} (${preview.topic}) do dalszego review. Ten zapis nie publikuje treści i nie wykonuje apply.`,
+    checked_items: uniqueValues([
+      `candidate:${preview.candidate_id}`,
+      `source_type:${preview.source_type}`,
+      `mode:${preview.mode}`,
+      ...preview.required_validation.slice(0, 5)
+    ]),
+    blockers: uniqueValues([
+      "payload_apply_allowed_false",
+      "wordpress_write_not_requested",
+      ...preview.blocked_claims.slice(0, 5).map((claim) => `blocked_claim:${claim}`)
+    ])
+  };
 }
 
 function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
@@ -5568,15 +5630,19 @@ function contentDecisionTitle(decision: ContentDecisionItem) {
   return decision.title;
 }
 
+type ContentBriefPreviewPayload = Omit<ContentBriefPreviewItem, "action_id">;
+
 function contentBriefPreviewItemsFromActions(actions: ActionObject[]): ContentBriefPreviewItem[] {
   return actions.flatMap((action) => {
     const rows = action.payload.content_brief_preview;
     if (!Array.isArray(rows)) return [];
-    return rows.filter(isContentBriefPreviewItem);
+    return rows
+      .filter(isContentBriefPreviewItem)
+      .map((row) => ({ ...row, action_id: action.id }));
   });
 }
 
-function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreviewItem {
+function isContentBriefPreviewItem(value: unknown): value is ContentBriefPreviewPayload {
   if (!isPlainObject(value)) return false;
   return (
     typeof value.candidate_id === "string" &&

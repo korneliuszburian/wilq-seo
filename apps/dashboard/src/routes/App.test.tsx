@@ -4988,6 +4988,13 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("GSC: brak")).toBeInTheDocument();
     expect(screen.getByText("WP: brak")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Zapisz review briefu" })[0]);
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Zapisano review: human_review_approved_for_prepare/)
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText(/Apply nadal: zablokowane/)).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
     ).toBeInTheDocument();

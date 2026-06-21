@@ -9,6 +9,10 @@ SECRET_VALUE_RE = re.compile(
     r"(gho_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+|ya29\.[A-Za-z0-9._-]+|[A-Za-z0-9_-]{32,})"
 )
 ENV_NAME_RE = re.compile(r"^[A-Z][A-Z0-9_]+$")
+SAFE_TRACE_VALUE_RE = re.compile(
+    r"^(act|audit|card|connector|content_brief|ev|job|opp|refresh|run|tq|workflow)"
+    r"_[A-Za-z0-9_-]+$"
+)
 SAFE_IDENTIFIER_KEYS = {
     "api",
     "affected_attribute",
@@ -105,7 +109,10 @@ def redact_value(value: Any) -> Any:
         return None
     if isinstance(value, str):
         matches = SECRET_VALUE_RE.findall(value)
-        if matches and not all(_looks_like_env_name(match) for match in matches):
+        if matches and not all(
+            _looks_like_env_name(match) or _looks_like_safe_trace_identifier(match)
+            for match in matches
+        ):
             return "[REDACTED]"
         return value
     if isinstance(value, list):
@@ -117,6 +124,10 @@ def redact_value(value: Any) -> Any:
 
 def _looks_like_env_name(value: str) -> bool:
     return "_" in value and bool(ENV_NAME_RE.fullmatch(value))
+
+
+def _looks_like_safe_trace_identifier(value: str) -> bool:
+    return bool(SAFE_TRACE_VALUE_RE.fullmatch(value))
 
 
 def redact_mapping(data: Mapping[str, Any]) -> dict[str, Any]:

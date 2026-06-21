@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 09:35 CEST.
+Last updated: 2026-06-21 10:16 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -90,7 +90,7 @@ mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
 
-Latest Content brief preview truth, live proof 2026-06-21 09:35 CEST:
+Latest Content brief preview/review truth, live proof 2026-06-21 10:16 CEST:
 `act_prepare_content_refresh_queue` now exposes review-only
 `content_brief_preview_v1` inside the ActionObject payload. The payload turns
 GSC/WordPress/Ahrefs evidence into brief candidates with source type, topic,
@@ -104,12 +104,17 @@ topics `beczka`, `denios`, `denios.pl`, `manutan.pl`, and `contains_cuk=false`;
 `preview_items_total=4`, plus blockers for prepare-only mode, validation,
 human confirmation, impact sanity check and blocked marketing claims. Scoped
 `wilq-content-strategist` context-pack includes the compacted same preview, and
-dashboard `/content-planner` renders `Podgląd briefów do review`. This is not a
-publish path, not a final article, and not a ranking/traffic/lead/revenue
-promise. Remaining content work: persist operator selection/review outcome,
-strengthen GSC/WP overlap for Ahrefs candidates and only later create
-WordPress draft payload previews behind explicit review. Full
-`scripts/verify.sh` passed after this slice: backend `142 passed`, dashboard
+dashboard `/content-planner` renders `Podgląd briefów do review`. The
+dashboard now lets the operator save `Zapisz review briefu` for a specific
+candidate through the existing `/api/actions/{action_id}/review` path. The
+saved audit preserves non-secret trace IDs such as
+`candidate:content_brief_*`, while token-like values are still redacted. This
+is not a publish path, not a final article, and not a
+ranking/traffic/lead/revenue promise. Remaining content work: strengthen GSC/WP
+overlap for Ahrefs candidates and only later create WordPress draft payload
+previews behind explicit review. Ads scoped context-pack is still kept below
+200 KB after trace redaction (`197559` bytes in focused proof). Full
+`scripts/verify.sh` passed after this slice: backend `143 passed`, dashboard
 unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
 production build passed.
 

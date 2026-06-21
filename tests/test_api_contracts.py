@@ -704,6 +704,20 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     )
     assert redacted["competitor_domain"] == "example.pl"
     assert redacted["keyword"] == "zielony ład obowiązki"
+    assert redact_mapping(
+        {
+            "summary": (
+                "Sprawdzone: "
+                "candidate:content_brief_gsc_europejski_zielony_lad_co_to_takiego."
+            )
+        }
+    )["summary"] == (
+        "Sprawdzone: "
+        "candidate:content_brief_gsc_europejski_zielony_lad_co_to_takiego."
+    )
+    assert redact_mapping({"summary": "token sk-this_must_be_hidden"})["summary"] == (
+        "[REDACTED]"
+    )
 
 
 def test_google_first_party_status_accepts_authorized_user_credentials(
@@ -1096,6 +1110,56 @@ def test_content_action_preview_exposes_review_only_brief_payload(
         assert item["evidence_ids"]
         assert "ranking guarantee" in item["blocked_claims"]
     assert "action_mode_prepare_only" in preview["blockers"]
+
+
+def test_content_brief_candidate_review_persists_audit_event(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_review_state.sqlite3"))
+
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    candidate = action["payload"]["content_brief_preview"][0]
+    candidate_id = candidate["candidate_id"]
+
+    review_response = client.post(
+        "/api/actions/act_prepare_content_refresh_queue/review",
+        json={
+            "outcome": "approved_for_prepare",
+            "reviewed_by": "operator_test",
+            "notes": f"Wybrano kandydata briefu {candidate_id} do dalszego review.",
+            "checked_items": [
+                f"candidate:{candidate_id}",
+                f"source_type:{candidate['source_type']}",
+                f"mode:{candidate['mode']}",
+            ],
+            "blockers": [
+                "payload_apply_allowed_false",
+                "wordpress_write_not_requested",
+                "blocked_claim:ranking guarantee",
+            ],
+        },
+    )
+
+    assert review_response.status_code == 200
+    result = review_response.json()
+    assert result["status"] == "recorded"
+    assert result["audit_event"]["event_type"] == "human_review_approved_for_prepare"
+    assert result["review_gate"]["apply_allowed"] is False
+    assert result["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+    assert f"candidate:{candidate_id}" in result["audit_event"]["summary"]
+    assert "Ten zapis nie wykonuje apply" in result["audit_event"]["summary"]
+
+    audit_response = client.get(
+        "/api/audit/events?action_id=act_prepare_content_refresh_queue"
+    )
+    assert audit_response.status_code == 200
+    persisted_audit = audit_response.json()[0]
+    assert persisted_audit["event_type"] == "human_review_approved_for_prepare"
+    assert f"candidate:{candidate_id}" in persisted_audit["summary"]
 
 
 def test_daily_context_pack_preserves_action_preview_audit(

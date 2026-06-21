@@ -650,7 +650,8 @@ def _skill_scoped_context_pack(
     scoped_evidence = list_evidence_by_ids(sorted(evidence_ids))
     evidence_summary_limit = 80
     if skill in {"wilq-ads-doctor", "wilq-custom-segments"}:
-        evidence_summary_limit = 60 if skill == "wilq-ads-doctor" else 40
+        evidence_summary_limit = 50 if skill == "wilq-ads-doctor" else 40
+    connector_refresh_run_limit = 2 if skill == "wilq-ads-doctor" else 3
 
     pack = {
         "context_scope": {
@@ -684,7 +685,7 @@ def _skill_scoped_context_pack(
             run.model_dump(mode="json")
             for run in list_connector_refresh_runs()[:25]
             if run.connector_id in scoped_connectors
-        ][:3],
+        ][:connector_refresh_run_limit],
         "evidence_summaries": [
             evidence.model_dump(mode="json")
             for evidence in scoped_evidence

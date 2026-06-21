@@ -34,7 +34,7 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Content brief payload preview, 2026-06-21 09:35 CEST.
+- Content brief preview + review persistence, 2026-06-21 10:16 CEST.
   `act_prepare_content_refresh_queue` ma teraz review-only
   `content_brief_preview_v1` w ActionObject payloadzie, a `/content-planner`
   pokazuje panel `Podgląd briefów do review`. Live proof po restarcie stacka:
@@ -45,10 +45,15 @@ Aktualny proof produktowy:
   `preview_items_total=4`, apply blockers dla prepare-only, walidacji,
   human confirm, impact sanity check i zablokowanych claimów. Preview jest
   ograniczony do review: GSC/WordPress/Ahrefs evidence, wymagane checki,
-  blocked claims i brak WordPress publish/apply. Full `scripts/verify.sh`
-  passed after this slice: backend `142 passed`, dashboard unit `17 passed`,
-  Playwright e2e `14 passed`, skill/API smokes and dashboard production build
-  passed.
+  blocked claims i brak WordPress publish/apply. Dashboard zapisuje teraz
+  wybór konkretnego kandydata przez istniejący
+  `/api/actions/{action_id}/review` jako human review audit; `candidate:*`,
+  ActionObject ID i evidence IDs pozostają traceable, a token-like values dalej
+  są redagowane. Focused proof: Ads scoped context-pack po tej zmianie ma
+  `197559` bytes i 2 refresh summaries, więc nadal mieści się w limicie 200 KB.
+  Full `scripts/verify.sh` passed after this slice: backend `143 passed`,
+  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+  dashboard production build passed.
 - Ahrefs relevance/off-topic scoring in Content Planner, 2026-06-21 06:07 CEST.
   `content_decision_ahrefs_gap_records_review` nie pokazuje już off-topic
   query jako przykładowych tematów contentowych. Live proof z
