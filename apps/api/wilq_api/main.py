@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from wilq.actions.google_ads.business_context import ADS_TARGET_CONFIRMATION_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import (
@@ -75,6 +76,7 @@ from wilq.schemas import (
     ActionReviewRequest,
     AdsCampaignMetricRow,
     AdsDiagnosticsResponse,
+    AdsTargetGuardrailConfirmation,
     AhrefsDiagnosticsResponse,
     AuditEvent,
     CodexRun,
@@ -2464,6 +2466,19 @@ def confirm_action_endpoint(
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = confirm_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
+    if action.id == ADS_TARGET_CONFIRMATION_ACTION_ID and result.confirmed:
+        local_state_store().save_ads_target_guardrail_confirmation(
+            AdsTargetGuardrailConfirmation(
+                id=f"ads_target_guardrail_{uuid4().hex[:12]}",
+                action_id=action.id,
+                target_roas=request.target_roas,
+                target_cpa_micros=request.target_cpa_micros,
+                confirmed_by=request.confirmed_by,
+                notes=request.notes,
+                audit_event_id=result.audit_event.id,
+                evidence_ids=action.evidence_ids,
+            )
+        )
     clear_daily_runtime_cache()
     clear_skill_context_cache()
     return result.model_dump(mode="json")

@@ -1319,9 +1319,9 @@ def confirm_action(
     audit = AuditEvent(
         id=f"audit_{action.id}_confirm_{uuid4().hex[:12]}",
         action_id=action.id,
-        event_type="action_apply_confirmed" if confirmed else "action_confirmation_blocked",
+        event_type=_action_confirmation_event_type(action, confirmed),
         actor=request.confirmed_by,
-        summary=_action_confirmation_summary(request, blockers, latest_preview),
+        summary=_action_confirmation_summary(action, request, blockers, latest_preview),
         evidence_ids=action.evidence_ids,
     )
     action.audit_events = [audit, *action.audit_events]
@@ -1754,6 +1754,9 @@ def _action_confirmation_blockers(
     request: ActionConfirmRequest,
     latest_preview: AuditEvent | None,
 ) -> list[str]:
+    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
+        return _ads_target_confirmation_blockers(request)
+
     blockers: list[str] = []
     if not request.preview_acknowledged:
         blockers.append("preview_acknowledgement_required")
@@ -1764,11 +1767,25 @@ def _action_confirmation_blockers(
     return _unique(blockers)
 
 
+def _action_confirmation_event_type(action: ActionObject, confirmed: bool) -> str:
+    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
+        return (
+            "ads_target_guardrail_confirmed"
+            if confirmed
+            else "ads_target_guardrail_confirmation_blocked"
+        )
+    return "action_apply_confirmed" if confirmed else "action_confirmation_blocked"
+
+
 def _action_confirmation_summary(
+    action: ActionObject,
     request: ActionConfirmRequest,
     blockers: list[str],
     latest_preview: AuditEvent | None,
 ) -> str:
+    if action.payload.get("action_type") == "confirm_ads_target_guardrails":
+        return _ads_target_confirmation_summary(request, blockers)
+
     if blockers:
         return (
             "Potwierdzenie apply zablokowane: "
@@ -1781,6 +1798,41 @@ def _action_confirmation_summary(
         f"Potwierdzenie preview zapisane. Preview audit: {preview_ref}. "
         f"Notatka: {request.notes}. "
         "Ten zapis nie wykonuje apply ani mutacji vendorów."
+    )
+
+
+def _ads_target_confirmation_blockers(request: ActionConfirmRequest) -> list[str]:
+    blockers: list[str] = []
+    target_count = int(request.target_roas is not None) + int(
+        request.target_cpa_micros is not None
+    )
+    if target_count == 0:
+        blockers.append("target_roas_or_cpa_required")
+    if target_count > 1:
+        blockers.append("exactly_one_target_guardrail_allowed")
+    return blockers
+
+
+def _ads_target_confirmation_summary(
+    request: ActionConfirmRequest,
+    blockers: list[str],
+) -> str:
+    if blockers:
+        return (
+            "Potwierdzenie targetu Ads zablokowane: "
+            f"{', '.join(blockers)}. "
+            f"Notatka: {request.notes}. "
+            "Ten zapis nie wykonuje apply ani mutacji Google Ads."
+        )
+    if request.target_roas is not None:
+        target_summary = f"target_roas={request.target_roas}"
+    else:
+        target_summary = f"target_cpa_micros={request.target_cpa_micros}"
+    return (
+        f"Potwierdzono roboczy guardrail Ads: {target_summary}. "
+        f"Notatka: {request.notes}. "
+        "Ten zapis odblokowuje tylko kontekst review targetu; nie wykonuje apply, "
+        "nie potwierdza rentowności i nie skaluje budżetu."
     )
 
 
@@ -1932,7 +1984,10 @@ def _latest_preview_event(events: list[AuditEvent]) -> AuditEvent | None:
 
 def _latest_action_confirmation_event(events: list[AuditEvent]) -> AuditEvent | None:
     for event in sorted(events, key=lambda item: item.created_at, reverse=True):
-        if event.event_type == "action_apply_confirmed":
+        if event.event_type in {
+            "action_apply_confirmed",
+            "ads_target_guardrail_confirmed",
+        }:
             return event
     return None
 

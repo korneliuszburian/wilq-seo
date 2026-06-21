@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 15:38 CEST.
+Last updated: 2026-06-21 16:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -91,16 +91,31 @@ targeting apply support. Campaign budgets now have review-only
 `campaign_budget_apply_safety_v1` safety reviews that keep budget apply
 blocked until missing requirements are satisfied. There is still no budget
 apply support. Missing target ROAS/CPA now has a dedicated review-only
-`act_confirm_ads_target_guardrails` ActionObject, but target confirmation is
-not yet completed and does not unlock apply or profitability verdicts.
+`act_confirm_ads_target_guardrails` ActionObject, and successful confirmations
+are persisted as local `AdsTargetGuardrailConfirmation` state. Target
+confirmation still does not unlock apply or profitability verdicts.
 Full BDOS-class parity still requires optimizer contracts such as
-recorded target confirmation values for live decisions, recorded human strategy
-review outcome, live change-event rows plus pre/post change-impact windows,
-approved Keyword Planner access/idea rows in live data, forecast or
+recorded human strategy review outcome, live change-event rows plus pre/post
+change-impact windows, approved Keyword Planner access/idea rows in live data,
+forecast or
 audience-size checks, custom segment targeting/apply previews, apply
 confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads target guardrail confirmation state truth, contract proof
+2026-06-21 16:05 CEST: target ROAS/CPA confirmation is now an API/local-state
+contract, not only a `.env` instruction. `ActionConfirmRequest` accepts
+`target_roas` or `target_cpa_micros`; the `confirm_ads_target_guardrails`
+confirm path requires exactly one target, records audit event
+`ads_target_guardrail_confirmed`, and persists `AdsTargetGuardrailConfirmation`
+in SQLite local state. Ads diagnostics reads `.env` first and then local state,
+so a confirmed target removes `target_roas_or_cpa` from
+`business_context_read_contract.missing_read_contracts`, changes
+`target_interpretation.status` from `preliminary` to `ready`, and removes
+`act_confirm_ads_target_guardrails` from active `action_ids`. This still does
+not unlock profitability verdicts, budget apply, recommendation apply,
+automatic scaling or Google Ads mutations.
 
 Latest Ads search-term n-gram review truth, live proof 2026-06-21 15:38 CEST:
 `ads_review_search_term_ngrams` now has a concrete review-only ActionObject,

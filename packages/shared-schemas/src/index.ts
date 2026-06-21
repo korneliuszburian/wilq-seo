@@ -230,7 +230,9 @@ export const ActionReviewResultSchema = z.object({
 export const ActionConfirmRequestSchema = z.object({
   confirmed_by: z.string().min(1),
   notes: z.string().min(1).max(2000),
-  preview_acknowledged: z.boolean().default(false)
+  preview_acknowledged: z.boolean().default(false),
+  target_roas: z.number().positive().nullable().optional(),
+  target_cpa_micros: z.number().int().positive().nullable().optional()
 });
 
 export const ActionConfirmResultSchema = z.object({

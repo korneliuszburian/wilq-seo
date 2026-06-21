@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 def utc_now() -> datetime:
@@ -346,6 +346,8 @@ class ActionConfirmRequest(BaseModel):
     confirmed_by: str = Field(min_length=1)
     notes: str = Field(min_length=1, max_length=2000)
     preview_acknowledged: bool = False
+    target_roas: float | None = Field(default=None, gt=0)
+    target_cpa_micros: int | None = Field(default=None, gt=0)
 
 
 class ActionConfirmResult(BaseModel):
@@ -355,6 +357,28 @@ class ActionConfirmResult(BaseModel):
     blockers: list[str] = Field(default_factory=list)
     audit_event: AuditEvent
     review_gate: ActionReviewGate
+
+
+class AdsTargetGuardrailConfirmation(BaseModel):
+    id: str
+    connector_id: Literal["google_ads"] = "google_ads"
+    action_id: str
+    target_roas: float | None = Field(default=None, gt=0)
+    target_cpa_micros: int | None = Field(default=None, gt=0)
+    confirmed_by: str = Field(min_length=1)
+    notes: str = Field(min_length=1, max_length=2000)
+    audit_event_id: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def exactly_one_target(self) -> AdsTargetGuardrailConfirmation:
+        target_count = int(self.target_roas is not None) + int(
+            self.target_cpa_micros is not None
+        )
+        if target_count != 1:
+            raise ValueError("exactly one Ads target guardrail must be confirmed")
+        return self
 
 
 class ActionImpactCheckRequest(BaseModel):

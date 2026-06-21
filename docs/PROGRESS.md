@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads target guardrail confirmation state, 2026-06-21 16:05 CEST.
+  `act_confirm_ads_target_guardrails` nie jest już tylko instrukcją ustawienia
+  `.env`. `ActionConfirmRequest` przyjmuje opcjonalnie `target_roas` albo
+  `target_cpa_micros`; dla `confirm_ads_target_guardrails` wymagany jest
+  dokładnie jeden target i nie jest wymagany wcześniejszy preview apply, bo to
+  jest zapis guardraila decyzyjnego, nie mutacja Google Ads. Udany confirm
+  zapisuje `AdsTargetGuardrailConfirmation` w SQLite local state razem z audit
+  eventem `ads_target_guardrail_confirmed`. Ads diagnostics czyta najpierw
+  `.env`, a jeśli targetu tam nie ma, używa najnowszego local-state
+  confirmation jako `local_state:act_confirm_ads_target_guardrails`.
+  Po potwierdzeniu `business_context_read_contract.missing_read_contracts=[]`,
+  `target_interpretation.status=ready`, a resolved ActionObject znika z
+  aktywnych `action_ids`. Nadal zablokowane: profitability verdict,
+  budget/recommendation apply, automatic scaling i realne mutacje Ads.
 - Ads search-term n-gram review ActionObject, 2026-06-21 15:38 CEST.
   `ads_review_search_term_ngrams` nie jest już tylko tabelą tematów bez
   workflow. Gdy WILQ ma search-term evidence, `/api/ads/diagnostics` wystawia

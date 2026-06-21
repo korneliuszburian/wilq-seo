@@ -1642,6 +1642,71 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert validate_response.json()["valid"] is True
 
 
+def test_google_ads_target_guardrail_confirmation_persists_local_target(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_google_ads_env(monkeypatch)
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_ADS_PROFIT_MARGIN", "0.35")
+    monkeypatch.setenv("WILQ_ADS_BUSINESS_GOAL", "lead quality review")
+    monkeypatch.setenv("WILQ_ADS_BUDGET_GOAL", "protect current monthly budget")
+    monkeypatch.delenv("WILQ_ADS_TARGET_ROAS", raising=False)
+    monkeypatch.delenv("WILQ_ADS_TARGET_CPA_MICROS", raising=False)
+
+    before_response = client.get("/api/ads/diagnostics")
+    assert before_response.status_code == 200
+    before_payload = before_response.json()
+    assert before_payload["business_context_read_contract"]["missing_read_contracts"] == [
+        "target_roas_or_cpa"
+    ]
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID in before_payload["action_ids"]
+
+    confirm_response = client.post(
+        f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/confirm",
+        json={
+            "confirmed_by": "operator_test",
+            "notes": "Potwierdzam roboczy target ROAS 4.2 do review kampanii.",
+            "target_roas": 4.2,
+        },
+    )
+
+    assert confirm_response.status_code == 200
+    confirmation = confirm_response.json()
+    assert confirmation["confirmed"] is True
+    assert confirmation["status"] == "confirmed"
+    assert confirmation["blockers"] == []
+    assert confirmation["audit_event"]["event_type"] == "ads_target_guardrail_confirmed"
+    assert confirmation["review_gate"]["last_confirmation_by"] == "operator_test"
+    assert confirmation["review_gate"]["apply_allowed"] is False
+
+    after_response = client.get("/api/ads/diagnostics")
+    assert after_response.status_code == 200
+    after_payload = after_response.json()
+    business_context = after_payload["business_context_read_contract"]
+    assert business_context["target_roas"] == 4.2
+    assert business_context["target_cpa_micros"] is None
+    assert business_context["missing_read_contracts"] == []
+    assert f"local_state:{ADS_TARGET_CONFIRMATION_ACTION_ID}" in business_context[
+        "configured_sources"
+    ]
+    assert business_context["target_interpretation"]["status"] == "ready"
+    assert "target_roas_review" in business_context["target_interpretation"]["allowed_uses"]
+    assert "budget_apply" in business_context["target_interpretation"]["blocked_uses"]
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID not in after_payload["action_ids"]
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    action_ids = {action["id"] for action in actions_response.json()}
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID not in action_ids
+
+    audit_response = client.get(
+        f"/api/audit/events?action_id={ADS_TARGET_CONFIRMATION_ACTION_ID}"
+    )
+    assert audit_response.status_code == 200
+    assert audit_response.json()[0]["event_type"] == "ads_target_guardrail_confirmed"
+
+
 def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

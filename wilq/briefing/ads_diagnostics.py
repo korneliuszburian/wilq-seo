@@ -11,6 +11,7 @@ from wilq.actions.google_ads.business_context import (
     ads_float_env,
     ads_int_env,
     ads_profit_margin_env,
+    ads_target_guardrail_values,
     ads_text_env,
 )
 from wilq.actions.google_ads.campaign_review import (
@@ -925,8 +926,13 @@ def _business_context_read_contract(
     profit_margin, profit_margin_source = _profit_margin_env()
     business_goal, business_goal_source = _text_env("WILQ_ADS_BUSINESS_GOAL")
     budget_goal, budget_goal_source = _text_env("WILQ_ADS_BUDGET_GOAL")
-    target_roas, target_roas_source = _float_env("WILQ_ADS_TARGET_ROAS")
-    target_cpa_micros, target_cpa_source = _int_env("WILQ_ADS_TARGET_CPA_MICROS")
+    (
+        target_roas,
+        target_roas_source,
+        target_cpa_micros,
+        target_cpa_source,
+        target_confirmation,
+    ) = ads_target_guardrail_values()
     configured_sources = _unique(
         source
         for source in [
@@ -990,6 +996,9 @@ def _business_context_read_contract(
             "cel budżetu": budget_goal or "brak",
             "target ROAS": target_roas,
             "target CPA": _format_micros(target_cpa_micros),
+            "target source": "potwierdzony"
+            if target_confirmation is not None
+            else None,
         }
     )
     blocked_claims = [
@@ -1010,8 +1019,9 @@ def _business_context_read_contract(
             )
             next_step = (
                 "Użyj marży i celu budżetu jako kontekstu review kampanii. Jeśli "
-                "operator potwierdzi target ROAS albo CPA, ustaw go później w "
-                "repo-local .env; do tego czasu target verdict zostaje zablokowany."
+                "operator potwierdzi target ROAS albo CPA przez ActionObject, WILQ "
+                "zapisze go w lokalnym state; do tego czasu target verdict zostaje "
+                "zablokowany."
             )
         else:
             summary = (
@@ -1020,8 +1030,9 @@ def _business_context_read_contract(
                 "ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
             )
             next_step = (
-                "Użyj tych celów jako kontekstu review kampanii i budżetu. Apply "
-                "nadal wymaga ActionObject, payload preview, potwierdzenia i audytu."
+                "Użyj potwierdzonego targetu jako kontekstu review kampanii i "
+                "budżetu. Apply nadal wymaga ActionObject, payload preview, "
+                "potwierdzenia i audytu."
             )
     else:
         summary = (

@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from wilq.jobs.models import JobRun
 from wilq.schemas import (
     ActionMutationAuditRecord,
+    AdsTargetGuardrailConfirmation,
     AuditEvent,
     CodexRun,
     ConnectorRefreshRun,
@@ -56,6 +57,9 @@ class LocalStateStore:
                 "SELECT COUNT(*) AS count FROM connector_refresh_runs"
             ),
             "job_runs": self._count_with_query("SELECT COUNT(*) AS count FROM job_runs"),
+            "ads_target_guardrail_confirmations": self._count_with_query(
+                "SELECT COUNT(*) AS count FROM ads_target_guardrail_confirmations"
+            ),
         }
 
     def save_codex_run(self, run: CodexRun) -> CodexRun:
@@ -319,6 +323,51 @@ class LocalStateStore:
             for row in rows
         ]
 
+    def save_ads_target_guardrail_confirmation(
+        self,
+        confirmation: AdsTargetGuardrailConfirmation,
+    ) -> AdsTargetGuardrailConfirmation:
+        payload_json = _model_json(confirmation)
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO ads_target_guardrail_confirmations (
+                  id, connector_id, created_at, payload_json
+                )
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  connector_id = excluded.connector_id,
+                  created_at = excluded.created_at,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    confirmation.id,
+                    confirmation.connector_id,
+                    confirmation.created_at.isoformat(),
+                    payload_json,
+                ),
+            )
+        return confirmation
+
+    def latest_ads_target_guardrail_confirmation(
+        self,
+    ) -> AdsTargetGuardrailConfirmation | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM ads_target_guardrail_confirmations
+                WHERE connector_id = 'google_ads'
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        if row is None:
+            return None
+        return _model_from_json(
+            AdsTargetGuardrailConfirmation,
+            cast(str, row["payload_json"]),
+        )
+
     def _count_with_query(self, query: str) -> int:
         with self._connect() as connection:
             row = connection.execute(query).fetchone()
@@ -376,6 +425,13 @@ class LocalStateStore:
               job_id TEXT NOT NULL,
               status TEXT NOT NULL,
               updated_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS ads_target_guardrail_confirmations (
+              id TEXT PRIMARY KEY,
+              connector_id TEXT NOT NULL,
+              created_at TEXT NOT NULL,
               payload_json TEXT NOT NULL
             );
             """

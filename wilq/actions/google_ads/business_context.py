@@ -4,6 +4,9 @@ import os
 from collections.abc import Iterable
 from typing import Any
 
+from wilq.schemas import AdsTargetGuardrailConfirmation
+from wilq.storage.local_state import local_state_store
+
 ADS_BUSINESS_CONTEXT_ACTION_ID = "act_configure_ads_business_context"
 ADS_BUSINESS_CONTEXT_ACTION_TYPE = "configure_ads_business_context"
 ADS_TARGET_CONFIRMATION_ACTION_ID = "act_confirm_ads_target_guardrails"
@@ -76,8 +79,13 @@ def ads_target_confirmation_payload(
     profit_margin, profit_margin_source = ads_profit_margin_env()
     business_goal, business_goal_source = ads_text_env(ADS_BUSINESS_GOAL_ENV)
     budget_goal, budget_goal_source = ads_text_env(ADS_BUDGET_GOAL_ENV)
-    target_roas, target_roas_source = ads_float_env(ADS_TARGET_ROAS_ENV)
-    target_cpa_micros, target_cpa_source = ads_int_env(ADS_TARGET_CPA_MICROS_ENV)
+    (
+        target_roas,
+        target_roas_source,
+        target_cpa_micros,
+        target_cpa_source,
+        target_confirmation,
+    ) = ads_target_guardrail_values()
     configured_sources = [
         source
         for source in [
@@ -101,6 +109,9 @@ def ads_target_confirmation_payload(
             "target_roas": target_roas,
             "target_cpa_micros": target_cpa_micros,
             "configured_sources": configured_sources,
+            "target_confirmation_id": target_confirmation.id
+            if target_confirmation is not None
+            else None,
         },
         "target_env_options": {
             "target_roas_or_cpa": list(ADS_BUSINESS_CONTEXT_TARGET_ENV_OPTIONS),
@@ -112,8 +123,8 @@ def ads_target_confirmation_payload(
                 "czy target CPA."
             ),
             (
-                "Edytuj repo-local .env i ustaw WILQ_ADS_TARGET_ROAS albo "
-                "WILQ_ADS_TARGET_CPA_MICROS."
+                "Potwierdź target przez ActionObject confirm albo ustaw repo-local "
+                ".env: WILQ_ADS_TARGET_ROAS albo WILQ_ADS_TARGET_CPA_MICROS."
             ),
             "scripts/local_stack.sh restart",
             (
@@ -149,8 +160,9 @@ def ads_business_context_missing_read_contracts() -> list[str]:
     profit_margin, _profit_margin_source = ads_profit_margin_env()
     business_goal, _business_goal_source = ads_text_env(ADS_BUSINESS_GOAL_ENV)
     budget_goal, _budget_goal_source = ads_text_env(ADS_BUDGET_GOAL_ENV)
-    target_roas, _target_roas_source = ads_float_env(ADS_TARGET_ROAS_ENV)
-    target_cpa_micros, _target_cpa_source = ads_int_env(ADS_TARGET_CPA_MICROS_ENV)
+    target_roas, _target_roas_source, target_cpa_micros, _target_cpa_source, _ = (
+        ads_target_guardrail_values()
+    )
     missing_read_contracts: list[str] = []
     if profit_margin is None:
         missing_read_contracts.append("profit_margin")
@@ -209,6 +221,28 @@ def ads_int_env(name: str) -> tuple[int | None, str | None]:
         return int(value), name
     except ValueError:
         return None, None
+
+
+def ads_target_guardrail_values() -> tuple[
+    float | None,
+    str | None,
+    int | None,
+    str | None,
+    AdsTargetGuardrailConfirmation | None,
+]:
+    target_roas, target_roas_source = ads_float_env(ADS_TARGET_ROAS_ENV)
+    target_cpa_micros, target_cpa_source = ads_int_env(ADS_TARGET_CPA_MICROS_ENV)
+    if target_roas is not None or target_cpa_micros is not None:
+        return target_roas, target_roas_source, target_cpa_micros, target_cpa_source, None
+
+    target_confirmation = local_state_store().latest_ads_target_guardrail_confirmation()
+    if target_confirmation is None:
+        return None, None, None, None, None
+
+    target_source = f"local_state:{target_confirmation.action_id}"
+    if target_confirmation.target_roas is not None:
+        return target_confirmation.target_roas, target_source, None, None, target_confirmation
+    return None, None, target_confirmation.target_cpa_micros, target_source, target_confirmation
 
 
 def validate_ads_business_context_payload(payload: dict[str, Any]) -> list[str]:
