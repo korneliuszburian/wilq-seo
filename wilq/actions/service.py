@@ -11,9 +11,11 @@ from wilq.actions.content_refresh import (
 from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_payload_from_metric_facts
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ADS_TARGET_CONFIRMATION_ACTION_ID,
     ads_business_context_configured,
     ads_business_context_missing_read_contracts,
     ads_business_context_payload,
+    ads_target_confirmation_payload,
 )
 from wilq.actions.google_ads.campaign_review import (
     CAMPAIGN_REVIEW_ACTION_ID,
@@ -315,6 +317,9 @@ def list_actions() -> list[ActionObject]:
         business_context_action = _google_ads_business_context_action()
         if business_context_action is not None:
             actions[business_context_action.id] = business_context_action
+        target_confirmation_action = _google_ads_target_confirmation_action()
+        if target_confirmation_action is not None:
+            actions[target_confirmation_action.id] = target_confirmation_action
         keyword_planner_action = _google_ads_keyword_planner_access_action()
         if keyword_planner_action is not None:
             actions[keyword_planner_action.id] = keyword_planner_action
@@ -326,6 +331,9 @@ def get_action(action_id: str) -> ActionObject | None:
     business_context_action = _google_ads_business_context_action()
     if business_context_action is not None:
         actions[business_context_action.id] = business_context_action
+    target_confirmation_action = _google_ads_target_confirmation_action()
+    if target_confirmation_action is not None:
+        actions[target_confirmation_action.id] = target_confirmation_action
     keyword_planner_action = _google_ads_keyword_planner_access_action()
     if keyword_planner_action is not None:
         actions[keyword_planner_action.id] = keyword_planner_action
@@ -395,6 +403,47 @@ def _google_ads_business_context_action() -> ActionObject | None:
         payload=ads_business_context_payload(missing_read_contracts),
         validation_status="not_validated",
         created_by="system_business_context_seed",
+    )
+
+
+def _google_ads_target_confirmation_action() -> ActionObject | None:
+    latest_run = _latest_google_ads_vendor_read()
+    missing_read_contracts = ads_business_context_missing_read_contracts()
+    if (
+        latest_run is None
+        or latest_run.status != ConnectorRefreshStatus.completed
+        or not latest_run.vendor_data_collected
+        or not ads_business_context_configured()
+        or missing_read_contracts != ["target_roas_or_cpa"]
+    ):
+        return None
+    return ActionObject(
+        id=ADS_TARGET_CONFIRMATION_ACTION_ID,
+        title="Potwierdź target ROAS albo CPA dla Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=_unique(
+            [
+                connector_evidence_id("google_ads"),
+                *latest_run.evidence_ids,
+            ]
+        ),
+        human_diagnosis=(
+            "Google Ads ma live metryki oraz lokalny kontekst biznesowy, ale brakuje "
+            "potwierdzonego targetu ROAS albo CPA. WILQ może robić review kampanii, "
+            "ale nie może wydać target KPI verdict ani uruchamiać budget/recommendation apply."
+        ),
+        recommended_reason=(
+            "Potwierdź jeden guardrail targetu w repo-local .env. To nadal jest "
+            "prepare-only krok: bez mutacji Google Ads, bez automatycznego skalowania "
+            "i bez werdyktu rentowności."
+        ),
+        payload=ads_target_confirmation_payload(missing_read_contracts),
+        validation_status="not_validated",
+        created_by="system_ads_target_confirmation_seed",
     )
 
 

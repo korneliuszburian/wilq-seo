@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 14:11 CEST.
+Last updated: 2026-06-21 14:31 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -87,15 +87,35 @@ targeting apply support. Campaign budgets now have review-only
 `CampaignBudgetOperation` payload previews from budget facts plus typed
 `campaign_budget_apply_safety_v1` safety reviews that keep budget apply
 blocked until missing requirements are satisfied. There is still no budget
-apply support.
+apply support. Missing target ROAS/CPA now has a dedicated review-only
+`act_confirm_ads_target_guardrails` ActionObject, but target confirmation is
+not yet completed and does not unlock apply or profitability verdicts.
 Full BDOS-class parity still requires optimizer contracts such as
-human-confirmed business target values for live decisions, recorded human
-strategy review outcome, pre/post change-impact windows, approved Keyword
-Planner access/idea rows in live data, forecast or audience-size checks, custom
-segment targeting/apply previews, budget apply safety, apply confirmation and
-mutation audit paths, plus real Localo ranking/GBP/competitor/review read
-contracts.
+recorded target confirmation values for live decisions, recorded human strategy
+review outcome, pre/post change-impact windows, approved Keyword Planner
+access/idea rows in live data, forecast or audience-size checks, custom segment
+targeting/apply previews, apply confirmation and mutation audit paths, plus
+real Localo ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads target guardrail confirmation truth, live proof 2026-06-21
+14:31 CEST: missing `target_roas_or_cpa` is now an operational ActionObject,
+not just prose in the Ads business context. `/api/ads/diagnostics.action_ids`,
+`business_context_read_contract.target_interpretation.action_ids`,
+`sections[id=ads_business_context].action_ids` and
+`decision_queue[id=ads_review_business_context].action_ids` include
+`act_confirm_ads_target_guardrails`. `/api/actions/act_confirm_ads_target_guardrails`
+returns a review-only payload with `action_type=confirm_ads_target_guardrails`,
+current non-secret business context, target env options
+`WILQ_ADS_TARGET_ROAS` and `WILQ_ADS_TARGET_CPA_MICROS`,
+`missing_read_contracts=[target_roas_or_cpa]`, `apply_allowed=false` and
+`destructive=false`. Its validation endpoint returns `valid=true`. This still
+does not confirm target KPI, profitability, budget apply or recommendation
+apply. Scoped `wilq-ads-doctor` context-pack preserves
+`credential_source=repo_env` and `created_by=system_ads_target_confirmation_seed`
+without `[REDACTED]` on this ActionObject. Full `scripts/verify.sh` passed for
+this slice: backend `144 passed`, dashboard unit `17 passed`, Playwright
+`14 passed`, skill smokes and dashboard build.
 
 Latest Ads business target interpretation truth, live proof 2026-06-21
 14:11 CEST: `business_context_read_contract.target_interpretation` now carries

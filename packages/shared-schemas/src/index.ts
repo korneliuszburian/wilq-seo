@@ -445,6 +445,7 @@ export const AdsBusinessTargetInterpretationSchema = z.object({
   required_validation: z.array(z.string()),
   policy_ids: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()).optional().default([]),
   apply_allowed: z.boolean(),
   destructive: z.boolean()
 });

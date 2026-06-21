@@ -2576,6 +2576,12 @@ function AdsBusinessTargetInterpretationPanel({
           values={interpretation.policy_ids}
           empty="brak"
         />
+        <LinkedTraceLine
+          label="ActionObjecty"
+          values={interpretation.action_ids}
+          kind="actions"
+          empty="brak"
+        />
       </div>
     </div>
   );

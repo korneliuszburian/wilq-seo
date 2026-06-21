@@ -6,6 +6,8 @@ from typing import Any
 
 ADS_BUSINESS_CONTEXT_ACTION_ID = "act_configure_ads_business_context"
 ADS_BUSINESS_CONTEXT_ACTION_TYPE = "configure_ads_business_context"
+ADS_TARGET_CONFIRMATION_ACTION_ID = "act_confirm_ads_target_guardrails"
+ADS_TARGET_CONFIRMATION_ACTION_TYPE = "confirm_ads_target_guardrails"
 ADS_PROFIT_MARGIN_ENV = "WILQ_ADS_PROFIT_MARGIN"
 ADS_PROFIT_MARGIN_PCT_ENV = "WILQ_ADS_PROFIT_MARGIN_PCT"
 ADS_BUSINESS_GOAL_ENV = "WILQ_ADS_BUSINESS_GOAL"
@@ -62,6 +64,81 @@ def ads_business_context_payload(
             "budget scaling",
             "budget apply",
             "wasted budget",
+        ],
+        "apply_allowed": False,
+        "destructive": False,
+    }
+
+
+def ads_target_confirmation_payload(
+    missing_read_contracts: Iterable[str],
+) -> dict[str, Any]:
+    profit_margin, profit_margin_source = ads_profit_margin_env()
+    business_goal, business_goal_source = ads_text_env(ADS_BUSINESS_GOAL_ENV)
+    budget_goal, budget_goal_source = ads_text_env(ADS_BUDGET_GOAL_ENV)
+    target_roas, target_roas_source = ads_float_env(ADS_TARGET_ROAS_ENV)
+    target_cpa_micros, target_cpa_source = ads_int_env(ADS_TARGET_CPA_MICROS_ENV)
+    configured_sources = [
+        source
+        for source in [
+            profit_margin_source,
+            business_goal_source,
+            budget_goal_source,
+            target_roas_source,
+            target_cpa_source,
+        ]
+        if source
+    ]
+    return {
+        "action_type": ADS_TARGET_CONFIRMATION_ACTION_TYPE,
+        "connector": "google_ads",
+        "mode": "prepare_only",
+        "credential_source": "repo_env",
+        "current_context": {
+            "profit_margin": profit_margin,
+            "business_goal": business_goal,
+            "budget_goal": budget_goal,
+            "target_roas": target_roas,
+            "target_cpa_micros": target_cpa_micros,
+            "configured_sources": configured_sources,
+        },
+        "target_env_options": {
+            "target_roas_or_cpa": list(ADS_BUSINESS_CONTEXT_TARGET_ENV_OPTIONS),
+        },
+        "missing_read_contracts": list(missing_read_contracts),
+        "helper_commands": [
+            (
+                "Ustal z operatorem czy guardrail Ads ma być target ROAS "
+                "czy target CPA."
+            ),
+            (
+                "Edytuj repo-local .env i ustaw WILQ_ADS_TARGET_ROAS albo "
+                "WILQ_ADS_TARGET_CPA_MICROS."
+            ),
+            "scripts/local_stack.sh restart",
+            (
+                "curl -sS http://127.0.0.1:8000/api/ads/diagnostics "
+                "| jq '.business_context_read_contract.target_interpretation'"
+            ),
+        ],
+        "required_validation": [
+            "review_profit_margin_model",
+            "review_business_goal",
+            "review_human_budget_goal",
+            "confirm_target_roas_or_cpa",
+            "human_strategy_review",
+        ],
+        "allowed_uses_after_confirmation": [
+            "target_kpi_review",
+            "campaign_review_context",
+            "budget_review_context",
+        ],
+        "blocked_claims": [
+            "target KPI verdict before confirmation",
+            "profitability verdict",
+            "budget scaling",
+            "budget apply",
+            "recommendation apply",
         ],
         "apply_allowed": False,
         "destructive": False,
@@ -157,4 +234,42 @@ def validate_ads_business_context_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("configure_ads_business_context must be non-destructive.")
     if not isinstance(payload.get("helper_commands"), list):
         errors.append("configure_ads_business_context requires helper_commands list.")
+    return errors
+
+
+def validate_ads_target_confirmation_payload(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("connector") != "google_ads":
+        errors.append("confirm_ads_target_guardrails requires connector=google_ads.")
+    if payload.get("mode") != "prepare_only":
+        errors.append("confirm_ads_target_guardrails requires mode=prepare_only.")
+    current_context = payload.get("current_context")
+    if not isinstance(current_context, dict):
+        errors.append("confirm_ads_target_guardrails requires current_context.")
+    else:
+        for key in ("profit_margin", "business_goal", "budget_goal"):
+            if key not in current_context:
+                errors.append(f"confirm_ads_target_guardrails missing current_context.{key}.")
+    target_env_options = payload.get("target_env_options")
+    if not isinstance(target_env_options, dict):
+        errors.append("confirm_ads_target_guardrails requires target_env_options.")
+    elif set(target_env_options.get("target_roas_or_cpa", [])) != set(
+        ADS_BUSINESS_CONTEXT_TARGET_ENV_OPTIONS
+    ):
+        errors.append("confirm_ads_target_guardrails requires target ROAS/CPA env options.")
+    missing_read_contracts = payload.get("missing_read_contracts")
+    if missing_read_contracts != ["target_roas_or_cpa"]:
+        errors.append("confirm_ads_target_guardrails requires only target_roas_or_cpa missing.")
+    required_validation = payload.get("required_validation")
+    if (
+        not isinstance(required_validation, list)
+        or "confirm_target_roas_or_cpa" not in required_validation
+    ):
+        errors.append("confirm_ads_target_guardrails requires target confirmation validation.")
+    if payload.get("apply_allowed") is not False:
+        errors.append("confirm_ads_target_guardrails must keep apply_allowed=false.")
+    if payload.get("destructive") is not False:
+        errors.append("confirm_ads_target_guardrails must be non-destructive.")
+    if not isinstance(payload.get("helper_commands"), list):
+        errors.append("confirm_ads_target_guardrails requires helper_commands list.")
     return errors

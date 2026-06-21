@@ -37,6 +37,27 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads target guardrail confirmation ActionObject, 2026-06-21 14:31 CEST.
+  Brak `target_roas_or_cpa` nie jest już tylko opisowym blockerem w Ads
+  business context. WILQ wystawia review-only
+  `act_confirm_ads_target_guardrails` z payload
+  `action_type=confirm_ads_target_guardrails`, aktualnym
+  `current_context` (profit margin, business goal, budget goal, brak target
+  ROAS/CPA), `target_env_options=[WILQ_ADS_TARGET_ROAS,
+  WILQ_ADS_TARGET_CPA_MICROS]`, `missing_read_contracts=[target_roas_or_cpa]`,
+  hard `apply_allowed=false` i `destructive=false`. Live
+  `/api/ads/diagnostics.business_context_read_contract.target_interpretation.action_ids`
+  oraz decision `ads_review_business_context.action_ids` pokazują
+  `act_confirm_ads_target_guardrails`. Walidacja
+  `/api/actions/act_confirm_ads_target_guardrails/validate` zwraca
+  `valid=true`. Nadal zablokowane: target KPI verdict, profitability verdict,
+  budget/recommendation apply i realna mutacja Ads, dopóki operator nie
+  potwierdzi target ROAS albo CPA oraz apply gates. Scoped `wilq-ads-doctor`
+  context-pack zachowuje `credential_source=repo_env` i
+  `created_by=system_ads_target_confirmation_seed` bez `[REDACTED]` na tym
+  ActionObject. Full `scripts/verify.sh` passed po tym slice: backend
+  `144 passed`, dashboard unit `17 passed`, Playwright `14 passed`, skill
+  smokes i dashboard build.
 - Ads business target interpretation gate, 2026-06-21 14:11 CEST.
   `business_context_read_contract` ma teraz typed
   `target_interpretation.interpretation_contract=ads_business_target_interpretation_v1`.

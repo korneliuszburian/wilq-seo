@@ -8,7 +8,9 @@ from wilq.actions.ga4.tracking_quality import (
 )
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_TYPE,
+    ADS_TARGET_CONFIRMATION_ACTION_TYPE,
     validate_ads_business_context_payload,
+    validate_ads_target_confirmation_payload,
 )
 from wilq.actions.google_ads.campaign_review import validate_campaign_review_payload
 from wilq.actions.google_ads.custom_segments import validate_custom_segment_payload
@@ -28,6 +30,7 @@ INTERNAL_ACTION_TYPES = {
     "configure_connector",
     "repair_google_ads_oauth",
     ADS_BUSINESS_CONTEXT_ACTION_TYPE,
+    ADS_TARGET_CONFIRMATION_ACTION_TYPE,
     KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
 }
 
@@ -62,6 +65,10 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
             if connector_id != "google_ads":
                 errors.append("configure_ads_business_context is only valid for google_ads.")
             errors.extend(validate_ads_business_context_payload(payload))
+        if action_type == ADS_TARGET_CONFIRMATION_ACTION_TYPE:
+            if connector_id != "google_ads":
+                errors.append("confirm_ads_target_guardrails is only valid for google_ads.")
+            errors.extend(validate_ads_target_confirmation_payload(payload))
         if action_type == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
             if connector_id != "google_ads":
                 errors.append(

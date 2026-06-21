@@ -716,6 +716,7 @@ class AdsBusinessTargetInterpretation(BaseModel):
     required_validation: list[str] = Field(default_factory=list)
     policy_ids: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
     apply_allowed: bool = False
     destructive: bool = False
 

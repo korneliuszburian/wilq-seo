@@ -12,7 +12,10 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
-from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
+from wilq.actions.google_ads.business_context import (
+    ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ADS_TARGET_CONFIRMATION_ACTION_ID,
+)
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import apply_action
@@ -574,6 +577,8 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "error": "failure with sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "api_key": "sk-testsecretvalue1234567890",  # pragma: allowlist secret
             "decision_type": "merge_create_after_inventory_check",
+            "credential_source": "repo_env",
+            "created_by": "system_ads_target_confirmation_seed",
             "knowledge_card_ids": ["card_google_ads_budget_review_playbook"],
             "expert_rule_ids": ["ads_scaling_candidates_v1"],
             "business_policy_ids": [
@@ -647,6 +652,8 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["error"] == "[REDACTED]"
     assert redacted["api_key"] == "[REDACTED]"
     assert redacted["decision_type"] == "merge_create_after_inventory_check"
+    assert redacted["credential_source"] == "repo_env"
+    assert redacted["created_by"] == "system_ads_target_confirmation_seed"
     assert redacted["knowledge_card_ids"] == ["card_google_ads_budget_review_playbook"]
     assert redacted["expert_rule_ids"] == ["ads_scaling_candidates_v1"]
     assert redacted["business_policy_ids"] == [
@@ -1559,6 +1566,9 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert business_context_contract["target_interpretation"]["missing_requirements"] == [
         "target_roas_or_cpa"
     ]
+    assert business_context_contract["target_interpretation"]["action_ids"] == [
+        ADS_TARGET_CONFIRMATION_ACTION_ID
+    ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert business_context_contract["target_interpretation"]["destructive"] is False
     assert business_context_contract["operator_review_gates"] == [
@@ -1578,7 +1588,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
     )
     assert business_context_section["status"] == "ready"
-    assert business_context_section["action_ids"] == []
+    assert business_context_section["action_ids"] == [ADS_TARGET_CONFIRMATION_ACTION_ID]
 
     business_context_decision = next(
         decision
@@ -1597,12 +1607,37 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert business_context_decision["operator_review_gates"] == (
         business_context_contract["operator_review_gates"]
     )
-    assert business_context_decision["action_ids"] == []
+    assert business_context_decision["action_ids"] == [ADS_TARGET_CONFIRMATION_ACTION_ID]
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
     actions = {action["id"]: action for action in actions_response.json()}
     assert ADS_BUSINESS_CONTEXT_ACTION_ID not in actions
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID in actions
+
+    action_response = client.get(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    assert action["title"] == "Potwierdź target ROAS albo CPA dla Ads"
+    assert action["mode"] == "prepare"
+    assert action["payload"]["action_type"] == "confirm_ads_target_guardrails"
+    assert action["payload"]["mode"] == "prepare_only"
+    assert action["payload"]["missing_read_contracts"] == ["target_roas_or_cpa"]
+    assert action["payload"]["current_context"]["profit_margin"] == 0.35
+    assert action["payload"]["current_context"]["business_goal"] == "lead quality review"
+    assert action["payload"]["current_context"]["budget_goal"] == "protect current monthly budget"
+    assert action["payload"]["current_context"]["target_roas"] is None
+    assert action["payload"]["current_context"]["target_cpa_micros"] is None
+    assert action["payload"]["target_env_options"]["target_roas_or_cpa"] == [
+        "WILQ_ADS_TARGET_ROAS",
+        "WILQ_ADS_TARGET_CPA_MICROS",
+    ]
+    assert action["payload"]["apply_allowed"] is False
+    assert action["payload"]["destructive"] is False
+
+    validate_response = client.post(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/validate")
+    assert validate_response.status_code == 200
+    assert validate_response.json()["valid"] is True
 
 
 def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
@@ -3372,6 +3407,7 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
         "act_prepare_ads_campaign_review_queue",
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
         "act_prepare_google_ads_recommendation_review_queue",
         "act_prepare_custom_segments_from_search_terms",
         "act_prepare_negative_keyword_review_queue",
@@ -5142,6 +5178,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "human_budget_goal",
         "target_roas_or_cpa",
     ]
+    assert business_context_contract["target_interpretation"]["action_ids"] == [
+        ADS_BUSINESS_CONTEXT_ACTION_ID
+    ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert "budget scaling" in business_context_contract["blocked_claims"]
     assert business_context_contract["metric_tiles"]["marża"] == "brak"
@@ -6489,6 +6528,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "target_interpretation"
     ]["missing_requirements"]
     assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
+    assert business_ready_contract["target_interpretation"]["action_ids"] == []
     assert business_ready_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_profit_margin_model",
@@ -6538,6 +6578,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_ready_decision["operator_review_gates"] == (
         business_ready_contract["operator_review_gates"]
     )
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID not in business_ready_decision["action_ids"]
     business_ready_campaign_decision = next(
         decision
         for decision in business_ready_payload["decision_queue"]

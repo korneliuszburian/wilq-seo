@@ -7,6 +7,7 @@ from typing import Literal
 from wilq.actions.google_ads.budget_safety import budget_apply_safety_review
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ADS_TARGET_CONFIRMATION_ACTION_ID,
     ads_float_env,
     ads_int_env,
     ads_profit_margin_env,
@@ -500,6 +501,10 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         actions if actions is not None else list_actions(),
         live_data_available=live_data_available,
     )
+    business_context_read_contract = _business_context_with_action_ids(
+        business_context_read_contract,
+        action_ids,
+    )
     custom_segments_read_contract = _custom_segments_read_contract(
         search_terms_read_contract,
         keyword_planner_read_contract,
@@ -519,7 +524,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
             action_ids,
             campaign_read_contract,
         ),
-        _business_context_section(business_context_read_contract, action_ids),
+        _business_context_section(business_context_read_contract),
         _derived_kpi_section(derived_kpi_read_contract),
         _budget_pacing_section(budget_pacing_read_contract),
         _recommendations_section(recommendations_read_contract),
@@ -747,7 +752,6 @@ def _derived_kpi_section(
 
 def _business_context_section(
     business_context_read_contract: AdsBusinessContextReadContract,
-    action_ids: list[str],
 ) -> AdsDiagnosticSection:
     return AdsDiagnosticSection(
         id="ads_business_context",
@@ -762,9 +766,22 @@ def _business_context_section(
         next_step=business_context_read_contract.next_step,
         source_connectors=business_context_read_contract.source_connectors,
         evidence_ids=business_context_read_contract.evidence_ids,
-        action_ids=_business_context_action_ids(action_ids),
+        action_ids=business_context_read_contract.target_interpretation.action_ids,
         blocked_claims=business_context_read_contract.blocked_claims,
         risk=ActionRisk.medium,
+    )
+
+
+def _business_context_with_action_ids(
+    business_context_read_contract: AdsBusinessContextReadContract,
+    action_ids: list[str],
+) -> AdsBusinessContextReadContract:
+    business_context_action_ids = _business_context_action_ids(action_ids)
+    target_interpretation = business_context_read_contract.target_interpretation.model_copy(
+        update={"action_ids": business_context_action_ids}
+    )
+    return business_context_read_contract.model_copy(
+        update={"target_interpretation": target_interpretation}
     )
 
 
@@ -4683,7 +4700,7 @@ def _ads_decision_queue(
             operator_review_gates=business_context_read_contract.operator_review_gates,
             source_connectors=business_context_read_contract.source_connectors,
             evidence_ids=business_context_read_contract.evidence_ids,
-            action_ids=_business_context_action_ids(action_ids),
+            action_ids=business_context_read_contract.target_interpretation.action_ids,
             blocked_claims=business_context_read_contract.blocked_claims,
             risk=ActionRisk.medium,
         )
@@ -5132,8 +5149,9 @@ def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
 
 
 def _business_context_action_ids(action_ids: list[str]) -> list[str]:
+    allowed_ids = {ADS_BUSINESS_CONTEXT_ACTION_ID, ADS_TARGET_CONFIRMATION_ACTION_ID}
     return [
-        action_id for action_id in action_ids if action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
+        action_id for action_id in action_ids if action_id in allowed_ids
     ]
 
 
