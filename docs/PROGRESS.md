@@ -37,6 +37,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo visibility review ActionObject, 2026-06-21 12:22 CEST.
+  Localo nie jest już tylko readiness/blocker card, gdy WILQ ma live aggregate
+  facts. `/api/localo/diagnostics` pokazuje
+  `action_ids=[act_review_localo_visibility_facts]`, decyzję
+  `localo_review_visibility_facts` jako `ready` oraz jawny blocked item dla
+  claimów bez kontraktów. ActionObject
+  `act_review_localo_visibility_facts` ma connector `localo`, mode `prepare`,
+  risk `low`, evidence `ev_refresh_refresh_localo_9e9ff67eadad`, payload
+  `local_visibility_task`, `allowed_contracts=[place_inventory,
+  local_rankings, reviews]`, `missing_read_contracts=[gbp_visibility,
+  competitor_visibility, local_tasks]`, `apply_allowed=false` i
+  `destructive=false`. Walidacja
+  `/api/actions/act_review_localo_visibility_facts/validate` zwraca
+  `valid=true`. Command Center decision
+  `decision_review_localo_visibility_facts` pokazuje tę akcję, a scoped
+  `wilq-localo-operator` context-pack ma
+  `localo_diagnostics.action_ids=[act_review_localo_visibility_facts]`.
+  Nadal zablokowane: `GBP performance`, `competitor visibility`, `GBP write`,
+  `local visibility uplift`.
 - Ads section ActionObject ownership, 2026-06-21 12:05 CEST.
   Keyword Planner access blocker nie rozlewa się już w Ads Doctor na ogólne
   sekcje. Live `/api/ads/diagnostics` po restarcie stacka: top-level

@@ -14,6 +14,10 @@ from wilq.actions.google_ads.keyword_planner import (
 )
 from wilq.actions.google_ads.negative_keywords import validate_negative_keyword_payload
 from wilq.actions.google_ads.recommendations import validate_recommendation_review_payload
+from wilq.actions.localo.visibility import (
+    LOCALO_VISIBILITY_REVIEW_ACTION_TYPE,
+    validate_localo_visibility_review_payload,
+)
 from wilq.connectors.registry import get_connector_status
 
 INTERNAL_ACTION_TYPES = {
@@ -79,5 +83,7 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         errors.extend(validate_campaign_review_payload(payload))
     if connector_id == "google_ads" and action_type == "google_ads_recommendation_review":
         errors.extend(validate_recommendation_review_payload(payload))
+    if connector_id == "localo" and action_type == LOCALO_VISIBILITY_REVIEW_ACTION_TYPE:
+        errors.extend(validate_localo_visibility_review_payload(payload))
 
     return errors

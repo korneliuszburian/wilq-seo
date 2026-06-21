@@ -6,6 +6,7 @@ from typing import Any, Literal
 
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
+from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
@@ -813,7 +814,7 @@ def _localo_item(
         next_step=next_step,
         source_connectors=["localo"],
         evidence_ids=_limited_ids(evidence_ids),
-        action_ids=[],
+        action_ids=[LOCALO_VISIBILITY_REVIEW_ACTION_ID] if has_value_facts else [],
         metric_tiles=_localo_metric_tiles(value_facts, oauth_access_ready),
         blocked_claims=blocked_claims,
         risk=ActionRisk.low if oauth_access_ready or has_value_facts else ActionRisk.medium,

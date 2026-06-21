@@ -34,6 +34,10 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_ACTION_ID,
     recommendation_review_payload_from_metric_facts,
 )
+from wilq.actions.localo.visibility import (
+    LOCALO_VISIBILITY_REVIEW_ACTION_ID,
+    localo_visibility_review_payload_from_metric_facts,
+)
 from wilq.actions.payloads import validate_action_payload
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -252,12 +256,14 @@ ACTION_METRIC_CONNECTORS = (
     "google_search_console",
     "wordpress_ekologus",
     "ahrefs",
+    "localo",
 )
 ACTION_METRIC_FACT_LIMIT = 120
 ACTION_METRIC_FACT_LIMITS = {
     "google_ads": 2000,
     "google_analytics_4": 2000,
     "google_merchant_center": 2000,
+    "localo": 2000,
 }
 
 
@@ -715,6 +721,45 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         )
         actions[action.id] = action
 
+    localo_facts = _localo_action_metric_facts(by_connector.get("localo", []))
+    localo_visibility_payload = localo_visibility_review_payload_from_metric_facts(
+        localo_facts
+    )
+    if localo_visibility_payload is not None:
+        localo_metrics = _prioritize_action_metrics(
+            localo_facts,
+            required_names={
+                "localo_active_place_count",
+                "localo_tracked_keyword_count",
+                "localo_avg_visibility_current",
+                "localo_reviews_count",
+            },
+        )[:10]
+        action = ActionObject(
+            id=LOCALO_VISIBILITY_REVIEW_ACTION_ID,
+            title="Przygotuj review widoczności lokalnej Localo",
+            domain=OpportunityDomain.localo,
+            connector="localo",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.low,
+            status=ActionStatus.needs_validation,
+            evidence_ids=_unique(fact.evidence_id for fact in localo_metrics),
+            metrics=localo_metrics,
+            human_diagnosis=(
+                "Localo ma read-only agregaty miejsc, fraz, widoczności i recenzji. "
+                f"{_metric_sentence(localo_metrics)}. To wystarcza do review lokalnej "
+                "widoczności, ale nie do claimów o GBP, konkurencji ani poprawie wyniku."
+            ),
+            recommended_reason=(
+                "Na /localo przygotuj review agregatów i zostaw GBP/write/uplift "
+                "zablokowane do czasu osobnych kontraktów Localo."
+            ),
+            payload=localo_visibility_payload,
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
     social_facts = [
         *by_connector.get("google_search_console", []),
         *by_connector.get("google_merchant_center", []),
@@ -725,6 +770,24 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         actions.update(_social_draft_actions(social_facts))
 
     return actions
+
+
+def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
+    value_facts = [fact for fact in facts if not _is_probe_only_fact(fact)]
+    if value_facts:
+        return value_facts
+    for run in list_connector_refresh_runs(connector_id="localo"):
+        if run.status != ConnectorRefreshStatus.completed or not run.vendor_data_collected:
+            continue
+        facts_by_evidence = metric_store().list_metric_facts_by_evidence_ids(run.evidence_ids)
+        value_facts = [
+            fact
+            for fact in facts_by_evidence
+            if fact.source_connector == "localo" and not _is_probe_only_fact(fact)
+        ]
+        if value_facts:
+            return value_facts
+    return []
 
 
 def _action_metric_facts() -> list[MetricFact]:

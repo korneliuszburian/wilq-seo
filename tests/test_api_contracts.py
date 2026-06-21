@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from apps.api.wilq_api.main import app
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
+from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import apply_action
 from wilq.briefing.ads_diagnostics import (
     _custom_segment_review_reason,
@@ -2686,9 +2687,11 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     payload = response.json()
     assert payload["live_data_available"] is True
     assert payload["visibility_fact_count"] == 4
+    assert payload["action_ids"] == [LOCALO_VISIBILITY_REVIEW_ACTION_ID]
     decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
     review_decision = decision_by_id["localo_review_visibility_facts"]
     assert review_decision["status"] == "ready"
+    assert review_decision["action_ids"] == [LOCALO_VISIBILITY_REVIEW_ACTION_ID]
     assert review_decision["allowed_evidence"] == [
         "place_inventory",
         "local_rankings",
@@ -2708,10 +2711,34 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert "competitor visibility" in review_decision["blocked_claims"]
     blocked_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
     assert blocked_decision["metric_tiles"]["braki kontraktu"] == 3
+    section_by_id = {section["id"]: section for section in payload["sections"]}
+    assert section_by_id["localo_visibility_contract"]["action_ids"] == [
+        LOCALO_VISIBILITY_REVIEW_ACTION_ID
+    ]
     assert all(fact["source_connector"] == "localo" for fact in review_decision["metric_facts"])
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "localo-access-test" not in serialized
     assert "localo-token-test" not in serialized
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    actions_by_id = {action["id"]: action for action in actions_response.json()}
+    localo_action = actions_by_id[LOCALO_VISIBILITY_REVIEW_ACTION_ID]
+    assert localo_action["connector"] == "localo"
+    assert localo_action["mode"] == "prepare"
+    assert localo_action["risk"] == "low"
+    assert localo_action["payload"]["action_type"] == "local_visibility_task"
+    assert localo_action["payload"]["apply_allowed"] is False
+    assert localo_action["payload"]["destructive"] is False
+    assert "gbp_visibility" in localo_action["payload"]["missing_read_contracts"]
+    assert "local_visibility_task" in json.dumps(localo_action, ensure_ascii=False)
+    assert "localo-access-test" not in json.dumps(localo_action, ensure_ascii=False)
+
+    validate_response = client.post(
+        f"/api/actions/{LOCALO_VISIBILITY_REVIEW_ACTION_ID}/validate"
+    )
+    assert validate_response.status_code == 200
+    assert validate_response.json()["valid"] is True
 
     command_response = client.get("/api/dashboard/command-center")
 
@@ -2727,7 +2754,18 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert "plan_localo_access_ready_wait_for_visibility_facts" not in plan_by_id
     localo_plan = plan_by_id["plan_review_localo_visibility_facts"]
     assert localo_plan["status"] == "ready"
+    assert localo_plan["action_ids"] == [LOCALO_VISIBILITY_REVIEW_ACTION_ID]
     assert "GBP performance" in localo_plan["blocked_claims"]
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-localo-operator"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+    assert context_payload["localo_diagnostics"]["action_ids"] == [
+        LOCALO_VISIBILITY_REVIEW_ACTION_ID
+    ]
 
 
 def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
@@ -3275,6 +3313,7 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
         "opp_decision_prepare_content_refresh_queue",
         "opp_decision_review_ga4_landing_quality",
         "opp_decision_review_ads_campaign_metrics",
+        "opp_decision_review_localo_visibility_facts",
     }
     google_ads = next(
         item for item in opportunities if item["id"] == "opp_decision_review_ads_campaign_metrics"
@@ -3289,6 +3328,15 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
         "act_prepare_negative_keyword_review_queue",
     ]
     assert google_ads["is_fixture"] is False
+    localo = next(
+        item
+        for item in opportunities
+        if item["id"] == "opp_decision_review_localo_visibility_facts"
+    )
+    assert localo["type"] == "localo_visibility_drop"
+    assert localo["domain"] == "localo"
+    assert localo["action_ids"] == ["act_review_localo_visibility_facts"]
+    assert localo["is_fixture"] is False
     serialized = json.dumps(opportunities, ensure_ascii=False)
     assert "opp_connector_" not in serialized
     assert "rejestr reguł i playbooków" not in serialized

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 12:05 CEST.
+Last updated: 2026-06-21 12:22 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -93,6 +93,22 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Localo visibility ActionObject truth, live proof 2026-06-21
+12:22 CEST: Localo aggregate evidence is now connected to a review-safe
+ActionObject instead of being shown only as readiness text. `/api/localo/diagnostics`
+returns `live_data_available=true`,
+`action_ids=[act_review_localo_visibility_facts]`, a ready decision
+`localo_review_visibility_facts` and a separate blocked decision for claims
+without read contracts. `act_review_localo_visibility_facts` is a prepare-only
+Localo ActionObject with payload type `local_visibility_task`, evidence
+`ev_refresh_refresh_localo_9e9ff67eadad`, `allowed_contracts=[place_inventory,
+local_rankings, reviews]`, `missing_read_contracts=[gbp_visibility,
+competitor_visibility, local_tasks]`, `apply_allowed=false` and
+`destructive=false`. Its validation endpoint returns `valid=true`. Command
+Center and scoped `wilq-localo-operator` context-pack expose the same action ID.
+Still blocked: GBP performance, competitor visibility, local tasks, GBP writes
+and local visibility uplift until typed Localo read/write contracts exist.
 
 Latest Google Ads Keyword Planner approval truth, live proof 2026-06-21
 11:40 CEST: Google Ads live reads can work while Keyword Planner enrichment is

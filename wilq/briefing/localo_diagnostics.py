@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
 from wilq.connectors.registry import get_connector_status
@@ -91,6 +92,9 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
     live_data_available = bool(visibility_facts)
     sections = _localo_sections(access_probe, latest_refresh, visibility_facts)
     decision_queue = _localo_decision_queue(access_probe, visibility_facts)
+    action_ids = _unique(
+        action_id for decision in decision_queue for action_id in decision.action_ids
+    )
 
     return LocaloDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
@@ -104,7 +108,7 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
         evidence_ids=_unique(
             evidence_id for section in sections for evidence_id in section.evidence_ids
         ),
-        action_ids=[],
+        action_ids=action_ids,
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
 
@@ -249,6 +253,7 @@ def _localo_sections(
     present_contracts = _present_contracts(visibility_facts)
     missing_contracts = _missing_visibility_contracts(present_contracts)
     blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
+    visibility_action_ids = _localo_visibility_action_ids(visibility_facts)
     visibility_section = LocaloDiagnosticSection(
         id="localo_visibility_contract",
         title="Localo: ranking/GBP evidence",
@@ -282,7 +287,7 @@ def _localo_sections(
             [*(fact.evidence_id for fact in visibility_facts), *access_probe.evidence_ids]
         ),
         metric_facts=visibility_facts[:12],
-        action_ids=[],
+        action_ids=visibility_action_ids,
         blocked_claims=blocked_claims if visibility_facts else LOCALO_BLOCKED_CLAIMS,
         risk=ActionRisk.low if visibility_facts else ActionRisk.medium,
     )
@@ -321,6 +326,7 @@ def _localo_decision_queue(
         present_contracts = _present_contracts(visibility_facts)
         missing_contracts = _missing_visibility_contracts(present_contracts)
         blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
+        action_ids = _localo_visibility_action_ids(visibility_facts)
         decisions = [
             LocaloDecisionItem(
                 id="localo_review_visibility_facts",
@@ -350,7 +356,7 @@ def _localo_decision_queue(
                     [*(fact.evidence_id for fact in visibility_facts), *access_probe.evidence_ids]
                 ),
                 metric_facts=visibility_facts[:12],
-                action_ids=[],
+                action_ids=action_ids,
                 blocked_claims=blocked_claims,
                 risk=ActionRisk.low,
             )
@@ -504,6 +510,12 @@ def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[
     ]
     claims.extend(["GBP write", "local visibility uplift"])
     return _unique(claims)
+
+
+def _localo_visibility_action_ids(visibility_facts: list[MetricFact]) -> list[str]:
+    if not visibility_facts:
+        return []
+    return [LOCALO_VISIBILITY_REVIEW_ACTION_ID]
 
 
 def _localo_visibility_tiles(
