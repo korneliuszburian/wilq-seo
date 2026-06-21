@@ -13,7 +13,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from wilq.actions.google_ads.business_context import ADS_TARGET_CONFIRMATION_ACTION_ID
+from wilq.actions.google_ads.business_context import (
+    ADS_STRATEGY_REVIEW_ACTION_ID,
+    ADS_TARGET_CONFIRMATION_ACTION_ID,
+)
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import (
@@ -76,6 +79,7 @@ from wilq.schemas import (
     ActionReviewRequest,
     AdsCampaignMetricRow,
     AdsDiagnosticsResponse,
+    AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
     AhrefsDiagnosticsResponse,
     AuditEvent,
@@ -2436,6 +2440,20 @@ def review_action_endpoint(
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = record_action_review(action, request)
     local_state_store().save_audit_event(result.audit_event)
+    if action.id == ADS_STRATEGY_REVIEW_ACTION_ID:
+        local_state_store().save_ads_strategy_review(
+            AdsStrategyReviewRecord(
+                id=f"ads_strategy_review_{uuid4().hex[:12]}",
+                action_id=action.id,
+                outcome=request.outcome,
+                reviewed_by=request.reviewed_by,
+                notes=request.notes,
+                checked_items=request.checked_items,
+                blockers=request.blockers,
+                audit_event_id=result.audit_event.id,
+                evidence_ids=action.evidence_ids,
+            )
+        )
     clear_daily_runtime_cache()
     clear_skill_context_cache()
     return result.model_dump(mode="json")

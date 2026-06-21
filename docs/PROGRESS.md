@@ -37,6 +37,26 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads human strategy review outcome state, 2026-06-21 16:51 CEST.
+  WILQ ma teraz osobny typed guardrail dla decyzji Ads: local-state
+  `AdsStrategyReviewRecord` i review-only `act_record_ads_strategy_review`.
+  Wynik review jest zapisywany przez standardowy `/api/actions/{id}/review`
+  path razem z audit eventem. `/api/ads/diagnostics` pokazuje
+  `strategy_review_status`, `strategy_reviewed_by`,
+  `strategy_reviewed_at`, `strategy_review_summary`, brakujący kontrakt
+  `human_strategy_review` albo `approved_human_strategy_review`, oraz polityki
+  `block_target_verdict_until_strategy_review_approved` /
+  `use_approved_strategy_review_before_target_verdict`. Sam target ROAS/CPA nie
+  wystarcza już do target verdict: dopiero target + `approved_for_prepare`
+  zmienia `target_interpretation.status` na `ready`; wcześniej pozostaje
+  `preliminary`. Live proof po `scripts/local_stack.sh restart`: obecny lokalny
+  operator state ma `missing_read_contracts=["target_roas_or_cpa",
+  "human_strategy_review"]`, `strategy_review_status=missing`,
+  `target_interpretation.status=preliminary`, action IDs
+  `act_confirm_ads_target_guardrails` i `act_record_ads_strategy_review`.
+  `POST /api/actions/act_record_ads_strategy_review/validate` zwraca
+  `valid=true`. Wąski proof: `tests/test_api_contracts.py` zielony, ruff,
+  mypy i `@wilq/shared-schemas` typecheck zielone.
 - Ads target guardrail confirmation state, 2026-06-21 16:05 CEST.
   `act_confirm_ads_target_guardrails` nie jest już tylko instrukcją ustawienia
   `.env`. `ActionConfirmRequest` przyjmuje opcjonalnie `target_roas` albo
@@ -47,10 +67,11 @@ Aktualny proof produktowy:
   eventem `ads_target_guardrail_confirmed`. Ads diagnostics czyta najpierw
   `.env`, a jeśli targetu tam nie ma, używa najnowszego local-state
   confirmation jako `local_state:act_confirm_ads_target_guardrails`.
-  Po potwierdzeniu `business_context_read_contract.missing_read_contracts=[]`,
-  `target_interpretation.status=ready`, a resolved ActionObject znika z
-  aktywnych `action_ids`. Nadal zablokowane: profitability verdict,
-  budget/recommendation apply, automatic scaling i realne mutacje Ads.
+  Po potwierdzeniu znika tylko `target_roas_or_cpa`; human strategy review jest
+  nadal osobnym guardrailem. `target_interpretation.status=ready` jest poprawne
+  dopiero po zatwierdzonym `act_record_ads_strategy_review`. Nadal zablokowane:
+  profitability verdict, budget/recommendation apply, automatic scaling i realne
+  mutacje Ads.
 - Ads search-term n-gram review ActionObject, 2026-06-21 15:38 CEST.
   `ads_review_search_term_ngrams` nie jest już tylko tabelą tematów bez
   workflow. Gdy WILQ ma search-term evidence, `/api/ads/diagnostics` wystawia

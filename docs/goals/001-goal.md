@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 16:05 CEST.
+Last updated: 2026-06-21 16:51 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -92,16 +92,41 @@ targeting apply support. Campaign budgets now have review-only
 blocked until missing requirements are satisfied. There is still no budget
 apply support. Missing target ROAS/CPA now has a dedicated review-only
 `act_confirm_ads_target_guardrails` ActionObject, and successful confirmations
-are persisted as local `AdsTargetGuardrailConfirmation` state. Target
-confirmation still does not unlock apply or profitability verdicts.
+are persisted as local `AdsTargetGuardrailConfirmation` state. Human Ads
+strategy review now also has a typed review-only `act_record_ads_strategy_review`
+ActionObject and persisted `AdsStrategyReviewRecord` local state. Target
+confirmation alone does not unlock target verdict, apply or profitability
+verdicts; target verdict remains preliminary until the latest strategy review is
+`approved_for_prepare`.
 Full BDOS-class parity still requires optimizer contracts such as
-recorded human strategy review outcome, live change-event rows plus pre/post
-change-impact windows, approved Keyword Planner access/idea rows in live data,
-forecast or
-audience-size checks, custom segment targeting/apply previews, apply
+live change-event rows plus pre/post change-impact windows, approved Keyword
+Planner access/idea rows in live data, forecast or audience-size checks,
+custom segment targeting/apply previews, apply
 confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads human strategy review state truth, contract proof
+2026-06-21 16:51 CEST: `act_record_ads_strategy_review` records operator review
+outcomes through the standard ActionObject review path and persists
+`AdsStrategyReviewRecord` in SQLite local state with action ID, outcome,
+reviewer, notes, checked items, blockers, audit event ID and evidence IDs.
+`/api/ads/diagnostics.business_context_read_contract` now exposes
+`strategy_review_status`, `strategy_reviewed_by`, `strategy_reviewed_at` and
+`strategy_review_summary`. If no strategy review exists, WILQ shows missing
+contract `human_strategy_review`; if review exists but is not
+`approved_for_prepare`, WILQ shows `approved_human_strategy_review`. Target
+ROAS/CPA can be used only as review context until strategy review is approved;
+then `target_interpretation.status=ready` and the active strategy ActionObject is
+removed. This still does not unlock profitability verdicts, budget apply,
+recommendation apply, automatic scaling or Google Ads mutations. Current live
+operator state after `scripts/local_stack.sh restart`: no target and no strategy
+review are recorded yet, so Ads diagnostics correctly shows
+`missing_read_contracts=["target_roas_or_cpa", "human_strategy_review"]`,
+`strategy_review_status=missing`, `target_interpretation.status=preliminary`,
+and action IDs `act_confirm_ads_target_guardrails` plus
+`act_record_ads_strategy_review`; validating the strategy review ActionObject
+returns `valid=true`.
 
 Latest Ads target guardrail confirmation state truth, contract proof
 2026-06-21 16:05 CEST: target ROAS/CPA confirmation is now an API/local-state
@@ -111,10 +136,12 @@ confirm path requires exactly one target, records audit event
 `ads_target_guardrail_confirmed`, and persists `AdsTargetGuardrailConfirmation`
 in SQLite local state. Ads diagnostics reads `.env` first and then local state,
 so a confirmed target removes `target_roas_or_cpa` from
-`business_context_read_contract.missing_read_contracts`, changes
-`target_interpretation.status` from `preliminary` to `ready`, and removes
-`act_confirm_ads_target_guardrails` from active `action_ids`. This still does
-not unlock profitability verdicts, budget apply, recommendation apply,
+`business_context_read_contract.missing_read_contracts`, removes the target
+portion of `target_interpretation.missing_requirements`, and removes
+`act_confirm_ads_target_guardrails` from active `action_ids`. After the
+2026-06-21 strategy-review slice, `target_interpretation.status=ready` requires
+both target confirmation and `approved_for_prepare` strategy review. This still
+does not unlock profitability verdicts, budget apply, recommendation apply,
 automatic scaling or Google Ads mutations.
 
 Latest Ads search-term n-gram review truth, live proof 2026-06-21 15:38 CEST:

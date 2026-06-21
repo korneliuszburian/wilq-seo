@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from apps.api.wilq_api.main import app
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
 )
 from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
@@ -1499,6 +1500,7 @@ def test_google_ads_business_context_action_is_review_only(
         "business_goal",
         "human_budget_goal",
         "target_roas_or_cpa",
+        "human_strategy_review",
     ]
     assert "WILQ_ADS_PROFIT_MARGIN" in action["payload"]["required_env"]
     assert "WILQ_ADS_TARGET_ROAS" in action["payload"]["alternative_env"][
@@ -1554,6 +1556,7 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "align_campaign_review_to_business_goal",
         "honor_human_budget_goal_before_budget_changes",
         "block_target_verdict_until_roas_or_cpa_confirmed",
+        "block_target_verdict_until_strategy_review_approved",
     ]
     assert business_context_contract["target_interpretation"][
         "interpretation_contract"
@@ -1566,10 +1569,12 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "blocked_uses"
     ]
     assert business_context_contract["target_interpretation"]["missing_requirements"] == [
-        "target_roas_or_cpa"
+        "target_roas_or_cpa",
+        "human_strategy_review",
     ]
     assert business_context_contract["target_interpretation"]["action_ids"] == [
-        ADS_TARGET_CONFIRMATION_ACTION_ID
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert business_context_contract["target_interpretation"]["destructive"] is False
@@ -1581,7 +1586,8 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "confirm_target_roas_or_cpa",
     ]
     assert business_context_contract["missing_read_contracts"] == [
-        "target_roas_or_cpa"
+        "target_roas_or_cpa",
+        "human_strategy_review",
     ]
     assert "wstępny lokalny kontekst" in business_context_contract["summary"]
     assert "target verdict zostaje zablokowany" in business_context_contract["next_step"]
@@ -1590,7 +1596,10 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
     )
     assert business_context_section["status"] == "ready"
-    assert business_context_section["action_ids"] == [ADS_TARGET_CONFIRMATION_ACTION_ID]
+    assert business_context_section["action_ids"] == [
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
 
     business_context_decision = next(
         decision
@@ -1598,24 +1607,31 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         if decision["id"] == "ads_review_business_context"
     )
     assert business_context_decision["status"] == "ready"
-    assert business_context_decision["missing_read_contracts"] == ["target_roas_or_cpa"]
+    assert business_context_decision["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
     assert business_context_decision["metric_tiles"] == {
-        "braki": 1,
+        "braki": 2,
         "blokady": 6,
         "ustawione pola": 3,
         "review gates": 5,
-        "polityki": 4,
+        "polityki": 5,
     }
     assert business_context_decision["operator_review_gates"] == (
         business_context_contract["operator_review_gates"]
     )
-    assert business_context_decision["action_ids"] == [ADS_TARGET_CONFIRMATION_ACTION_ID]
+    assert business_context_decision["action_ids"] == [
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
     actions = {action["id"]: action for action in actions_response.json()}
     assert ADS_BUSINESS_CONTEXT_ACTION_ID not in actions
     assert ADS_TARGET_CONFIRMATION_ACTION_ID in actions
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in actions
 
     action_response = client.get(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}")
     assert action_response.status_code == 200
@@ -1624,7 +1640,10 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert action["mode"] == "prepare"
     assert action["payload"]["action_type"] == "confirm_ads_target_guardrails"
     assert action["payload"]["mode"] == "prepare_only"
-    assert action["payload"]["missing_read_contracts"] == ["target_roas_or_cpa"]
+    assert action["payload"]["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
     assert action["payload"]["current_context"]["profit_margin"] == 0.35
     assert action["payload"]["current_context"]["business_goal"] == "lead quality review"
     assert action["payload"]["current_context"]["budget_goal"] == "protect current monthly budget"
@@ -1640,6 +1659,18 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     validate_response = client.post(f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/validate")
     assert validate_response.status_code == 200
     assert validate_response.json()["valid"] is True
+
+    strategy_response = client.get(f"/api/actions/{ADS_STRATEGY_REVIEW_ACTION_ID}")
+    assert strategy_response.status_code == 200
+    strategy_action = strategy_response.json()
+    assert strategy_action["payload"]["action_type"] == "record_ads_strategy_review"
+    assert strategy_action["payload"]["apply_allowed"] is False
+    assert strategy_action["payload"]["destructive"] is False
+    strategy_validate_response = client.post(
+        f"/api/actions/{ADS_STRATEGY_REVIEW_ACTION_ID}/validate"
+    )
+    assert strategy_validate_response.status_code == 200
+    assert strategy_validate_response.json()["valid"] is True
 
 
 def test_google_ads_target_guardrail_confirmation_persists_local_target(
@@ -1658,9 +1689,11 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
     assert before_response.status_code == 200
     before_payload = before_response.json()
     assert before_payload["business_context_read_contract"]["missing_read_contracts"] == [
-        "target_roas_or_cpa"
+        "target_roas_or_cpa",
+        "human_strategy_review",
     ]
     assert ADS_TARGET_CONFIRMATION_ACTION_ID in before_payload["action_ids"]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in before_payload["action_ids"]
 
     confirm_response = client.post(
         f"/api/actions/{ADS_TARGET_CONFIRMATION_ACTION_ID}/confirm",
@@ -1686,25 +1719,64 @@ def test_google_ads_target_guardrail_confirmation_persists_local_target(
     business_context = after_payload["business_context_read_contract"]
     assert business_context["target_roas"] == 4.2
     assert business_context["target_cpa_micros"] is None
-    assert business_context["missing_read_contracts"] == []
+    assert business_context["missing_read_contracts"] == ["human_strategy_review"]
     assert f"local_state:{ADS_TARGET_CONFIRMATION_ACTION_ID}" in business_context[
         "configured_sources"
     ]
-    assert business_context["target_interpretation"]["status"] == "ready"
-    assert "target_roas_review" in business_context["target_interpretation"]["allowed_uses"]
+    assert business_context["target_interpretation"]["status"] == "preliminary"
+    assert "target_roas_review_context" in business_context["target_interpretation"][
+        "allowed_uses"
+    ]
     assert "budget_apply" in business_context["target_interpretation"]["blocked_uses"]
     assert ADS_TARGET_CONFIRMATION_ACTION_ID not in after_payload["action_ids"]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in after_payload["action_ids"]
 
     actions_response = client.get("/api/actions")
     assert actions_response.status_code == 200
     action_ids = {action["id"] for action in actions_response.json()}
     assert ADS_TARGET_CONFIRMATION_ACTION_ID not in action_ids
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in action_ids
 
     audit_response = client.get(
         f"/api/audit/events?action_id={ADS_TARGET_CONFIRMATION_ACTION_ID}"
     )
     assert audit_response.status_code == 200
     assert audit_response.json()[0]["event_type"] == "ads_target_guardrail_confirmed"
+
+    strategy_review_response = client.post(
+        f"/api/actions/{ADS_STRATEGY_REVIEW_ACTION_ID}/review",
+        json={
+            "outcome": "approved_for_prepare",
+            "reviewed_by": "operator_test",
+            "notes": "Strategia Ads zatwierdzona do dalszego review bez apply.",
+            "checked_items": [
+                "review_profit_margin_model",
+                "review_business_goal",
+                "review_target_fit",
+            ],
+            "blockers": ["apply nadal zablokowany"],
+        },
+    )
+    assert strategy_review_response.status_code == 200
+    strategy_review = strategy_review_response.json()
+    assert strategy_review["status"] == "recorded"
+    assert strategy_review["audit_event"]["event_type"] == "human_review_approved_for_prepare"
+
+    final_response = client.get("/api/ads/diagnostics")
+    assert final_response.status_code == 200
+    final_payload = final_response.json()
+    final_business_context = final_payload["business_context_read_contract"]
+    assert final_business_context["missing_read_contracts"] == []
+    assert final_business_context["strategy_review_status"] == "approved_for_prepare"
+    assert final_business_context["strategy_reviewed_by"] == "operator_test"
+    assert f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}" in final_business_context[
+        "configured_sources"
+    ]
+    assert final_business_context["target_interpretation"]["status"] == "ready"
+    assert "target_roas_review" in final_business_context["target_interpretation"][
+        "allowed_uses"
+    ]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID not in final_payload["action_ids"]
 
 
 def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
@@ -2488,7 +2560,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_business_item["status"] == "blocked"
     assert ads_business_item["priority"] == 18
     assert "kontekstu biznesowego" in ads_business_item["title"]
-    assert ads_business_item["metric_tiles"]["braki"] == 4
+    assert ads_business_item["metric_tiles"]["braki"] == 5
     assert ads_business_item["metric_tiles"]["marża"] == "brak"
     assert ads_business_item["metric_tiles"]["cel biznesowy"] == "brak"
     assert "profitability" in ads_business_item["blocked_claims"]
@@ -2527,7 +2599,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
         "decision_ads_business_context_before_budget_decisions"
     ]
     assert ads_business_decision["status"] == "blocked"
-    assert ads_business_decision["metric_tiles"]["braki"] == 4
+    assert ads_business_decision["metric_tiles"]["braki"] == 5
     assert "Bez tego KPI są tylko triage" in ads_business_decision["co_widzimy"]
     assert ads_business_decision["blocked_claims"] == ads_business_item["blocked_claims"]
     assert ads_business_decision["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
@@ -3474,12 +3546,13 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
         "act_prepare_ads_campaign_review_queue",
-            ADS_TARGET_CONFIRMATION_ACTION_ID,
-            "act_prepare_google_ads_recommendation_review_queue",
-            "act_prepare_custom_segments_from_search_terms",
-            "act_prepare_negative_keyword_review_queue",
-            SEARCH_TERM_NGRAM_ACTION_ID,
-        ]
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+        "act_prepare_google_ads_recommendation_review_queue",
+        "act_prepare_custom_segments_from_search_terms",
+        "act_prepare_negative_keyword_review_queue",
+        SEARCH_TERM_NGRAM_ACTION_ID,
+    ]
     assert google_ads["is_fixture"] is False
     localo = next(
         item
@@ -5224,6 +5297,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_context_contract["business_policy_ids"] == [
         "complete_business_context_before_ads_verdicts",
         "block_target_verdict_until_roas_or_cpa_confirmed",
+        "block_target_verdict_until_strategy_review_approved",
     ]
     assert business_context_contract["operator_review_gates"] == [
         "human_strategy_review",
@@ -5238,6 +5312,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "business_goal",
         "human_budget_goal",
         "target_roas_or_cpa",
+        "human_strategy_review",
     ]
     assert business_context_contract["target_interpretation"]["status"] == "blocked"
     assert business_context_contract["target_interpretation"]["allowed_uses"] == []
@@ -5246,6 +5321,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "business_goal",
         "human_budget_goal",
         "target_roas_or_cpa",
+        "human_strategy_review",
     ]
     assert business_context_contract["target_interpretation"]["action_ids"] == [
         ADS_BUSINESS_CONTEXT_ACTION_ID
@@ -5270,13 +5346,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "business_goal",
         "human_budget_goal",
         "target_roas_or_cpa",
+        "human_strategy_review",
     ]
     assert business_context_decision["metric_tiles"] == {
-        "braki": 4,
+        "braki": 5,
         "blokady": 6,
         "ustawione pola": 0,
         "review gates": 5,
-        "polityki": 2,
+        "polityki": 3,
     }
     assert business_context_decision["operator_review_gates"] == (
         business_context_contract["operator_review_gates"]
@@ -6626,7 +6703,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_ready_contract["business_goal"] == "lead quality review"
     assert business_ready_contract["budget_goal"] == "protect current monthly budget"
     assert business_ready_contract["target_roas"] == 5.0
-    assert business_ready_contract["missing_read_contracts"] == []
+    assert business_ready_contract["missing_read_contracts"] == [
+        "human_strategy_review"
+    ]
     assert business_ready_contract["allowed_metrics"] == [
         "profit_margin",
         "business_goal",
@@ -6638,16 +6717,22 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "align_campaign_review_to_business_goal",
         "honor_human_budget_goal_before_budget_changes",
         "compare_kpis_to_confirmed_target_in_review",
+        "block_target_verdict_until_strategy_review_approved",
     ]
-    assert business_ready_contract["target_interpretation"]["status"] == "ready"
-    assert "target_roas_review" in business_ready_contract["target_interpretation"][
-        "allowed_uses"
-    ]
+    assert business_ready_contract["target_interpretation"]["status"] == "preliminary"
+    assert "target_roas_review_context" in business_ready_contract[
+        "target_interpretation"
+    ]["allowed_uses"]
     assert "target_roas_or_cpa" not in business_ready_contract[
         "target_interpretation"
     ]["missing_requirements"]
+    assert "human_strategy_review" in business_ready_contract["target_interpretation"][
+        "missing_requirements"
+    ]
     assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
-    assert business_ready_contract["target_interpretation"]["action_ids"] == []
+    assert business_ready_contract["target_interpretation"]["action_ids"] == [
+        ADS_STRATEGY_REVIEW_ACTION_ID
+    ]
     assert business_ready_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_profit_margin_model",
@@ -6688,16 +6773,17 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert business_ready_decision["status"] == "ready"
     assert business_ready_decision["metric_tiles"] == {
-        "braki": 0,
+        "braki": 1,
         "blokady": 6,
         "ustawione pola": 4,
         "review gates": 5,
-        "polityki": 4,
+        "polityki": 5,
     }
     assert business_ready_decision["operator_review_gates"] == (
         business_ready_contract["operator_review_gates"]
     )
     assert ADS_TARGET_CONFIRMATION_ACTION_ID not in business_ready_decision["action_ids"]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID in business_ready_decision["action_ids"]
     business_ready_campaign_decision = next(
         decision
         for decision in business_ready_payload["decision_queue"]

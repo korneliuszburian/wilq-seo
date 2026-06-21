@@ -462,6 +462,13 @@ export const AdsBusinessContextReadContractSchema = z.object({
   budget_goal: z.string().nullable().optional(),
   target_roas: z.number().nullable().optional(),
   target_cpa_micros: z.number().nullable().optional(),
+  strategy_review_status: z
+    .enum(["missing", "approved_for_prepare", "needs_changes", "rejected", "deferred"])
+    .optional()
+    .default("missing"),
+  strategy_reviewed_by: z.string().nullable().optional(),
+  strategy_reviewed_at: z.string().nullable().optional(),
+  strategy_review_summary: z.string().nullable().optional(),
   configured_sources: z.array(z.string()),
   business_policy_ids: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),

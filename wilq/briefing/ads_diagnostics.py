@@ -7,10 +7,12 @@ from typing import Literal
 from wilq.actions.google_ads.budget_safety import budget_apply_safety_review
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
     ads_float_env,
     ads_int_env,
     ads_profit_margin_env,
+    ads_strategy_review_state,
     ads_target_guardrail_values,
     ads_text_env,
 )
@@ -933,6 +935,11 @@ def _business_context_read_contract(
         target_cpa_source,
         target_confirmation,
     ) = ads_target_guardrail_values()
+    strategy_review = ads_strategy_review_state()
+    strategy_review_status = (
+        strategy_review.outcome if strategy_review is not None else "missing"
+    )
+    strategy_review_approved = strategy_review_status == "approved_for_prepare"
     configured_sources = _unique(
         source
         for source in [
@@ -941,6 +948,9 @@ def _business_context_read_contract(
             budget_goal_source,
             target_roas_source,
             target_cpa_source,
+            f"local_state:{ADS_STRATEGY_REVIEW_ACTION_ID}"
+            if strategy_review is not None
+            else None,
         ]
         if source
     )
@@ -953,6 +963,10 @@ def _business_context_read_contract(
         missing_read_contracts.append("human_budget_goal")
     if target_roas is None and target_cpa_micros is None:
         missing_read_contracts.append("target_roas_or_cpa")
+    if strategy_review is None:
+        missing_read_contracts.append("human_strategy_review")
+    elif not strategy_review_approved:
+        missing_read_contracts.append("approved_human_strategy_review")
 
     allowed_metrics = [
         name
@@ -968,7 +982,7 @@ def _business_context_read_contract(
     blocking_missing_contracts = [
         contract
         for contract in missing_read_contracts
-        if contract != "target_roas_or_cpa"
+        if contract not in {"target_roas_or_cpa", "human_strategy_review"}
     ]
     target_missing = "target_roas_or_cpa" in missing_read_contracts
     status: Literal["ready", "blocked"] = (
@@ -979,6 +993,7 @@ def _business_context_read_contract(
         business_goal=business_goal,
         budget_goal=budget_goal,
         target_missing=target_missing,
+        strategy_review_approved=strategy_review_approved,
         status=status,
     )
     operator_review_gates = _business_context_review_gates(
@@ -986,6 +1001,7 @@ def _business_context_read_contract(
         business_goal=business_goal,
         budget_goal=budget_goal,
         target_missing=target_missing,
+        strategy_review_approved=strategy_review_approved,
     )
     metric_tiles = _clean_metric_tiles(
         {
@@ -999,6 +1015,7 @@ def _business_context_read_contract(
             "target source": "potwierdzony"
             if target_confirmation is not None
             else None,
+            "strategy review": _strategy_review_label(strategy_review_status),
         }
     )
     blocked_claims = [
@@ -1055,6 +1072,16 @@ def _business_context_read_contract(
         budget_goal=budget_goal,
         target_roas=target_roas,
         target_cpa_micros=target_cpa_micros,
+        strategy_review_status=strategy_review_status,
+        strategy_reviewed_by=strategy_review.reviewed_by
+        if strategy_review is not None
+        else None,
+        strategy_reviewed_at=strategy_review.created_at
+        if strategy_review is not None
+        else None,
+        strategy_review_summary=strategy_review.notes
+        if strategy_review is not None
+        else None,
         configured_sources=configured_sources,
         business_policy_ids=business_policy_ids,
         operator_review_gates=operator_review_gates,
@@ -1066,6 +1093,8 @@ def _business_context_read_contract(
             target_roas=target_roas,
             target_cpa_micros=target_cpa_micros,
             target_missing=target_missing,
+            strategy_review_status=strategy_review_status,
+            strategy_review_approved=strategy_review_approved,
             business_policy_ids=business_policy_ids,
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         ),
@@ -1088,6 +1117,8 @@ def _business_target_interpretation(
     target_roas: float | None,
     target_cpa_micros: int | None,
     target_missing: bool,
+    strategy_review_status: str,
+    strategy_review_approved: bool,
     business_policy_ids: list[str],
     evidence_ids: list[str],
 ) -> AdsBusinessTargetInterpretation:
@@ -1118,6 +1149,8 @@ def _business_target_interpretation(
                 business_goal=business_goal,
                 budget_goal=budget_goal,
                 target_missing=target_missing,
+                strategy_review_status=strategy_review_status,
+                strategy_review_approved=strategy_review_approved,
             ),
             required_validation=required_validation,
             policy_ids=business_policy_ids,
@@ -1148,10 +1181,28 @@ def _business_target_interpretation(
             "recommendation_apply",
         ]
         interpretation_status: Literal["ready", "preliminary", "blocked"] = "preliminary"
+    elif not strategy_review_approved:
+        summary = (
+            "WILQ ma potwierdzony target ROAS albo CPA, ale blokuje target KPI "
+            "verdict i apply, dopóki human strategy review nie będzie zatwierdzone."
+        )
+        blocked_uses = [
+            "target_kpi_verdict",
+            "profitability_verdict",
+            "budget_scaling",
+            "budget_apply",
+            "recommendation_apply",
+        ]
+        interpretation_status = "preliminary"
+        if target_roas is not None:
+            allowed_uses.append("target_roas_review_context")
+        if target_cpa_micros is not None:
+            allowed_uses.append("target_cpa_review_context")
     else:
         summary = (
             "WILQ ma potwierdzony target ROAS albo CPA i może porównywać KPI do "
-            "targetu w review. Apply nadal wymaga ActionObject, preview, confirm i audit."
+            "targetu w zatwierdzonym review. Apply nadal wymaga ActionObject, "
+            "preview, confirm i audit."
         )
         blocked_uses = [
             "budget_apply",
@@ -1174,6 +1225,8 @@ def _business_target_interpretation(
             business_goal=business_goal,
             budget_goal=budget_goal,
             target_missing=target_missing,
+            strategy_review_status=strategy_review_status,
+            strategy_review_approved=strategy_review_approved,
         ),
         required_validation=required_validation,
         policy_ids=business_policy_ids,
@@ -1187,6 +1240,8 @@ def _business_target_missing_requirements(
     business_goal: str | None,
     budget_goal: str | None,
     target_missing: bool,
+    strategy_review_status: str,
+    strategy_review_approved: bool,
 ) -> list[str]:
     missing: list[str] = []
     if profit_margin is None:
@@ -1197,6 +1252,10 @@ def _business_target_missing_requirements(
         missing.append("human_budget_goal")
     if target_missing:
         missing.append("target_roas_or_cpa")
+    if strategy_review_status == "missing":
+        missing.append("human_strategy_review")
+    elif not strategy_review_approved:
+        missing.append("approved_human_strategy_review")
     return missing
 
 
@@ -1206,6 +1265,7 @@ def _business_policy_ids(
     business_goal: str | None,
     budget_goal: str | None,
     target_missing: bool,
+    strategy_review_approved: bool,
     status: Literal["ready", "blocked"],
 ) -> list[str]:
     policy_ids: list[str] = []
@@ -1221,6 +1281,10 @@ def _business_policy_ids(
         policy_ids.append("block_target_verdict_until_roas_or_cpa_confirmed")
     else:
         policy_ids.append("compare_kpis_to_confirmed_target_in_review")
+    if strategy_review_approved:
+        policy_ids.append("use_approved_strategy_review_before_target_verdict")
+    else:
+        policy_ids.append("block_target_verdict_until_strategy_review_approved")
     return _unique(policy_ids)
 
 
@@ -1230,8 +1294,9 @@ def _business_context_review_gates(
     business_goal: str | None,
     budget_goal: str | None,
     target_missing: bool,
+    strategy_review_approved: bool,
 ) -> list[str]:
-    gates = ["human_strategy_review"]
+    gates = ["strategy_review_approved" if strategy_review_approved else "human_strategy_review"]
     gates.append(
         "review_profit_margin_model"
         if profit_margin is not None
@@ -5182,7 +5247,11 @@ def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
 
 
 def _business_context_action_ids(action_ids: list[str]) -> list[str]:
-    allowed_ids = {ADS_BUSINESS_CONTEXT_ACTION_ID, ADS_TARGET_CONFIRMATION_ACTION_ID}
+    allowed_ids = {
+        ADS_BUSINESS_CONTEXT_ACTION_ID,
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    }
     return [
         action_id for action_id in action_ids if action_id in allowed_ids
     ]
@@ -5578,6 +5647,17 @@ def _format_ratio_percent(value: float | None) -> str | None:
     if value is None:
         return None
     return f"{_round_metric(value * 100)}%"
+
+
+def _strategy_review_label(status: str) -> str:
+    labels = {
+        "missing": "brak",
+        "approved_for_prepare": "zatwierdzone",
+        "needs_changes": "wymaga poprawek",
+        "rejected": "odrzucone",
+        "deferred": "odłożone",
+    }
+    return labels.get(status, status)
 
 
 def _clean_metric_tiles(

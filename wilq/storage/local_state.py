@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from wilq.jobs.models import JobRun
 from wilq.schemas import (
     ActionMutationAuditRecord,
+    AdsStrategyReviewRecord,
     AdsTargetGuardrailConfirmation,
     AuditEvent,
     CodexRun,
@@ -59,6 +60,9 @@ class LocalStateStore:
             "job_runs": self._count_with_query("SELECT COUNT(*) AS count FROM job_runs"),
             "ads_target_guardrail_confirmations": self._count_with_query(
                 "SELECT COUNT(*) AS count FROM ads_target_guardrail_confirmations"
+            ),
+            "ads_strategy_reviews": self._count_with_query(
+                "SELECT COUNT(*) AS count FROM ads_strategy_reviews"
             ),
         }
 
@@ -368,6 +372,46 @@ class LocalStateStore:
             cast(str, row["payload_json"]),
         )
 
+    def save_ads_strategy_review(
+        self,
+        review: AdsStrategyReviewRecord,
+    ) -> AdsStrategyReviewRecord:
+        payload_json = _model_json(review)
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO ads_strategy_reviews (
+                  id, connector_id, created_at, payload_json
+                )
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                  connector_id = excluded.connector_id,
+                  created_at = excluded.created_at,
+                  payload_json = excluded.payload_json
+                """,
+                (
+                    review.id,
+                    review.connector_id,
+                    review.created_at.isoformat(),
+                    payload_json,
+                ),
+            )
+        return review
+
+    def latest_ads_strategy_review(self) -> AdsStrategyReviewRecord | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json FROM ads_strategy_reviews
+                WHERE connector_id = 'google_ads'
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        if row is None:
+            return None
+        return _model_from_json(AdsStrategyReviewRecord, cast(str, row["payload_json"]))
+
     def _count_with_query(self, query: str) -> int:
         with self._connect() as connection:
             row = connection.execute(query).fetchone()
@@ -429,6 +473,13 @@ class LocalStateStore:
             );
 
             CREATE TABLE IF NOT EXISTS ads_target_guardrail_confirmations (
+              id TEXT PRIMARY KEY,
+              connector_id TEXT NOT NULL,
+              created_at TEXT NOT NULL,
+              payload_json TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS ads_strategy_reviews (
               id TEXT PRIMARY KEY,
               connector_id TEXT NOT NULL,
               created_at TEXT NOT NULL,

@@ -381,6 +381,20 @@ class AdsTargetGuardrailConfirmation(BaseModel):
         return self
 
 
+class AdsStrategyReviewRecord(BaseModel):
+    id: str
+    connector_id: Literal["google_ads"] = "google_ads"
+    action_id: str
+    outcome: ActionReviewOutcome
+    reviewed_by: str = Field(min_length=1)
+    notes: str = Field(min_length=1, max_length=2000)
+    checked_items: list[str] = Field(default_factory=list)
+    blockers: list[str] = Field(default_factory=list)
+    audit_event_id: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+
+
 class ActionImpactCheckRequest(BaseModel):
     checked_by: str = Field(min_length=1)
     notes: str = Field(min_length=1, max_length=2000)
@@ -755,6 +769,16 @@ class AdsBusinessContextReadContract(BaseModel):
     budget_goal: str | None = None
     target_roas: float | None = None
     target_cpa_micros: int | None = None
+    strategy_review_status: Literal[
+        "missing",
+        "approved_for_prepare",
+        "needs_changes",
+        "rejected",
+        "deferred",
+    ] = "missing"
+    strategy_reviewed_by: str | None = None
+    strategy_reviewed_at: datetime | None = None
+    strategy_review_summary: str | None = None
     configured_sources: list[str] = Field(default_factory=list)
     business_policy_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
