@@ -34,6 +34,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs relevance/off-topic scoring in Content Planner, 2026-06-21 06:07 CEST.
+  `content_decision_ahrefs_gap_records_review` nie pokazuje już off-topic
+  query jako przykładowych tematów contentowych. Live proof z
+  `/api/content/diagnostics`: Ahrefs decision ma `pasujące=5`, `do review=10`,
+  `off-topic=17`, `GSC overlap=0`, `WP overlap=6`; przykładowe query to
+  `beczka, denios`, a nie `prawo jazdy` / `OC`. Scoring jest typed backend
+  logicą opartą o domain terms, competitor domains, GSC/WP token overlap oraz
+  broad/off-topic backlink checks. Nadal review-only: wynik nie jest briefem,
+  ranking promise ani traffic uplift claimem.
 - Ahrefs gap records in Content Planner, 2026-06-21 05:50 CEST.
   `/api/content/diagnostics.decision_queue` łączy teraz realne Ahrefs gap facts
   z kolejką contentową jako typed decision

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
@@ -50,6 +52,71 @@ AHREFS_GAP_FACT_NAMES = {
     "ahrefs_referring_domain_gap_count",
     "ahrefs_backlink_gap_count",
 }
+AHREFS_EKOLOGUS_RELEVANCE_TERMS = (
+    "bdo",
+    "odpady",
+    "odpad",
+    "srodowisko",
+    "srodowiskowy",
+    "remediacja",
+    "operat",
+    "wodnoprawny",
+    "pozwolenie",
+    "zintegrowane",
+    "zielony lad",
+    "ppwr",
+    "recykling",
+    "emisja",
+    "esg",
+    "beczka",
+    "sorbent",
+    "wanna wychwytowa",
+    "magazynowanie",
+    "substancje",
+    "chemiczne",
+    "denios",
+)
+AHREFS_RELEVANT_COMPETITOR_DOMAINS = {
+    "denios.pl",
+    "dla-przemyslu.pl",
+    "manutan.pl",
+}
+AHREFS_OFF_TOPIC_TERMS = (
+    "prawo jazdy",
+    "kalkulator oc",
+    "ubezpieczenie samochodu",
+    "samochod",
+    "samochodu",
+    "ubezpieczenie",
+    "oc",
+    "ac",
+)
+AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS = {
+    "cuk.pl",
+    "ltesty.pl",
+}
+AHREFS_BROAD_BACKLINK_DOMAINS = {
+    "apple.com",
+    "google.com",
+    "waze.com",
+    "wikipedia.org",
+    "youtube.com",
+    "businessinsider.com.pl",
+    "wykop.pl",
+}
+AHREFS_RELEVANCE_STOPWORDS = {
+    "https",
+    "http",
+    "www",
+    "com",
+    "pl",
+    "dla",
+    "oraz",
+    "jest",
+    "jak",
+    "czy",
+    "the",
+}
 
 
 @dataclass(frozen=True)
@@ -59,6 +126,14 @@ class ContentDecisionMetrics:
     total_impressions: int | None
     aggregate_ctr: float | None
     best_average_position: float | None
+
+
+@dataclass(frozen=True)
+class AhrefsGapFactScore:
+    fact: MetricFact
+    score: int
+    status: Literal["relevant", "review", "off_topic"]
+    reasons: tuple[str, ...]
 
 
 def build_content_diagnostics(
@@ -597,7 +672,14 @@ def _ahrefs_gap_record_decisions(
 
     gap_counts = _ahrefs_gap_fact_counts(gap_facts)
     evidence_ids = _unique(fact.evidence_id for fact in gap_facts)
-    sample_keywords = _ahrefs_gap_sample_keywords(gap_facts)
+    scored_facts = _score_ahrefs_gap_facts(gap_facts, metric_facts)
+    relevant_scores = [score for score in scored_facts if score.status == "relevant"]
+    review_scores = [score for score in scored_facts if score.status == "review"]
+    off_topic_scores = [score for score in scored_facts if score.status == "off_topic"]
+    candidate_scores = [*relevant_scores, *review_scores]
+    display_scores = candidate_scores or scored_facts
+    display_facts = [score.fact for score in display_scores[:8]]
+    sample_keywords = _ahrefs_gap_sample_keywords([score.fact for score in candidate_scores])
     competitor_domains = _unique(
         fact.dimensions.get("competitor_domain")
         for fact in gap_facts
@@ -609,26 +691,46 @@ def _ahrefs_gap_record_decisions(
     content_action_ids = [
         action_id for action_id in action_ids if action_id == "act_prepare_content_refresh_queue"
     ]
+    gsc_overlap_count = _ahrefs_relevance_reason_count(scored_facts, "gsc_overlap")
+    wordpress_overlap_count = _ahrefs_relevance_reason_count(
+        scored_facts,
+        "wordpress_inventory_overlap",
+    )
+    decision_status: Literal["ready", "blocked"] = "ready" if candidate_scores else "blocked"
+    relevant_label = _polish_count_word(len(relevant_scores), "pasujący", "pasujące", "pasujących")
+    review_label = _polish_count_word(len(review_scores), "rekord", "rekordy", "rekordów")
+    off_topic_label = _polish_count_word(
+        len(off_topic_scores),
+        "rekord",
+        "rekordy",
+        "rekordów",
+    )
     return [
         ContentDecisionItem(
             id="content_decision_ahrefs_gap_records_review",
             decision_type="review_ahrefs_gap_records",
-            status="ready",
+            status=decision_status,
             title="Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
             summary=(
                 f"WILQ ma {len(gap_facts)} Ahrefs gap facts: "
                 f"content gaps={gap_counts['content_gap']}, "
                 f"organic keywords={gap_counts['organic_keyword_gap']}, "
                 f"top pages={gap_counts['top_page_gap']}, "
-                f"backlink gaps={gap_counts['backlink_gap']}. "
+                f"backlink gaps={gap_counts['backlink_gap']}. Scoring jakości wskazuje "
+                f"{len(relevant_scores)} {relevant_label}, "
+                f"{len(review_scores)} {review_label} do ręcznej oceny i "
+                f"{len(off_topic_scores)} {off_topic_label} off-topic/broad. "
                 "To jest materiał do review z GSC/WordPress, nie obietnica wzrostu ruchu."
             ),
-            priority=18,
+            priority=18 if relevant_scores else 32 if review_scores else 45,
             metric_tiles={
                 "rekordy Ahrefs": len(gap_facts),
+                "pasujące": len(relevant_scores),
+                "do review": len(review_scores),
+                "off-topic": len(off_topic_scores),
+                "GSC overlap": gsc_overlap_count,
+                "WP overlap": wordpress_overlap_count,
                 "content gaps": gap_counts["content_gap"],
-                "organic keywords": gap_counts["organic_keyword_gap"],
-                "top pages": gap_counts["top_page_gap"],
                 "backlink gaps": gap_counts["backlink_gap"],
             },
             queries=sample_keywords,
@@ -636,25 +738,29 @@ def _ahrefs_gap_record_decisions(
             primary_query=sample_keywords[0] if sample_keywords else None,
             source_connectors=["ahrefs"],
             evidence_ids=evidence_ids,
-            metric_facts=gap_facts[:8],
+            metric_facts=display_facts,
             action_ids=content_action_ids,
             blocked_claims=[
+                "off-topic content recommendation",
+                "content brief without relevance review",
                 "traffic uplift",
                 "authority improvement",
                 "ranking guarantee",
                 "lead uplift",
             ],
             rationale=(
-                "Ahrefs wskazuje luki względem konkurencji, ale rekordy mogą zawierać "
-                "szerokie lub off-topic domeny. WILQ nie może z tego zrobić briefu bez "
-                "filtrowania i połączenia z GSC oraz WordPress inventory."
+                "Ahrefs wskazuje luki względem konkurencji, ale scoring rozdziela "
+                "rekordy pasujące do zakresu Ekologus od tematów szerokich i off-topic. "
+                "WILQ nie może zrobić briefu z rekordu bez filtrowania, GSC demand "
+                "i WordPress inventory match."
             ),
             next_step=(
-                "Odrzuć szerokie/off-topic rekordy Ahrefs, wybierz tematy zgodne z "
-                "Ekologus i dopiero potem połącz je z GSC/WordPress jako refresh, "
-                "merge, create albo block."
+                f"Najpierw przejrzyj pasujące rekordy: {topic_hint}. Odrzuć "
+                f"{len(off_topic_scores)} off-topic/broad rekordów i dopiero potem "
+                "połącz sensowne tematy z GSC/WordPress jako refresh, merge, create "
+                "albo block."
             ),
-            risk=ActionRisk.medium,
+            risk=ActionRisk.medium if candidate_scores else ActionRisk.high,
         )
     ]
 
@@ -696,6 +802,177 @@ def _is_ahrefs_record_gap_fact(fact: MetricFact) -> bool:
             "competitor_domain",
         )
     )
+
+
+def _score_ahrefs_gap_facts(
+    gap_facts: list[MetricFact],
+    all_content_facts: list[MetricFact],
+) -> list[AhrefsGapFactScore]:
+    gsc_tokens = _content_signal_tokens(
+        all_content_facts,
+        source_connector="google_search_console",
+        dimension_keys=("query", "page"),
+    )
+    wordpress_tokens = _content_signal_tokens(
+        all_content_facts,
+        source_connector_prefix="wordpress",
+        dimension_keys=("content_url", "title", "slug", "path"),
+    )
+    scored = [
+        _score_ahrefs_gap_fact(
+            fact,
+            gsc_tokens=gsc_tokens,
+            wordpress_tokens=wordpress_tokens,
+        )
+        for fact in gap_facts
+    ]
+    return sorted(
+        scored,
+        key=lambda item: (
+            {"relevant": 0, "review": 1, "off_topic": 2}[item.status],
+            -item.score,
+            item.fact.name,
+            item.fact.dimensions.get("keyword", ""),
+            item.fact.dimensions.get("source_url", ""),
+        ),
+    )
+
+
+def _score_ahrefs_gap_fact(
+    fact: MetricFact,
+    *,
+    gsc_tokens: set[str],
+    wordpress_tokens: set[str],
+) -> AhrefsGapFactScore:
+    dimensions = fact.dimensions
+    keyword = dimensions.get("keyword", "")
+    source_url = dimensions.get("source_url", "")
+    target_url = dimensions.get("target_url", "")
+    competitor_domain = _normalized_domain(dimensions.get("competitor_domain"))
+    source_domain = _normalized_domain(dimensions.get("referring_domain") or source_url)
+    text = " ".join(
+        value
+        for value in (
+            keyword,
+            source_url,
+            target_url,
+            competitor_domain or "",
+            dimensions.get("best_position_url", ""),
+        )
+        if value
+    )
+    normalized_text = _normalize_text(text)
+    tokens = _tokens_from_text(text)
+    score = 0
+    reasons: list[str] = []
+
+    if any(
+        _matches_normalized_term(normalized_text, tokens, term)
+        for term in AHREFS_EKOLOGUS_RELEVANCE_TERMS
+    ):
+        score += 4
+        reasons.append("ekologus_domain_term")
+    if competitor_domain in AHREFS_RELEVANT_COMPETITOR_DOMAINS:
+        score += 3
+        reasons.append("relevant_competitor_domain")
+    if tokens & gsc_tokens:
+        score += 2
+        reasons.append("gsc_overlap")
+    if tokens & wordpress_tokens:
+        score += 2
+        reasons.append("wordpress_inventory_overlap")
+
+    gap_type = dimensions.get("gap_type", "")
+    if gap_type in {"content_gap", "organic_keyword_gap", "top_page_gap"}:
+        score += 1
+        reasons.append("content_candidate")
+    elif gap_type == "backlink_gap":
+        score -= 1
+        reasons.append("backlink_review_only")
+
+    hard_off_topic = False
+    if any(
+        _matches_normalized_term(normalized_text, tokens, term)
+        for term in AHREFS_OFF_TOPIC_TERMS
+    ):
+        score -= 6
+        hard_off_topic = True
+        reasons.append("off_topic_phrase")
+    if competitor_domain in AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS:
+        score -= 4
+        hard_off_topic = True
+        reasons.append("off_topic_competitor_domain")
+    if source_domain in AHREFS_BROAD_BACKLINK_DOMAINS:
+        score -= 3
+        reasons.append("broad_backlink_domain")
+
+    if hard_off_topic or score < 0:
+        status: Literal["relevant", "review", "off_topic"] = "off_topic"
+    elif score >= 4:
+        status = "relevant"
+    else:
+        status = "review"
+    return AhrefsGapFactScore(
+        fact=fact,
+        score=score,
+        status=status,
+        reasons=tuple(reasons),
+    )
+
+
+def _content_signal_tokens(
+    facts: list[MetricFact],
+    *,
+    dimension_keys: tuple[str, ...],
+    source_connector: str | None = None,
+    source_connector_prefix: str | None = None,
+) -> set[str]:
+    tokens: set[str] = set()
+    for fact in facts:
+        if source_connector is not None and fact.source_connector != source_connector:
+            continue
+        if source_connector_prefix is not None and not fact.source_connector.startswith(
+            source_connector_prefix
+        ):
+            continue
+        for key in dimension_keys:
+            tokens.update(_tokens_from_text(fact.dimensions.get(key, "")))
+    return tokens
+
+
+def _ahrefs_relevance_reason_count(
+    scores: list[AhrefsGapFactScore],
+    reason: str,
+) -> int:
+    return sum(1 for score in scores if reason in score.reasons)
+
+
+def _tokens_from_text(text: str) -> set[str]:
+    return {
+        token
+        for token in re.split(r"[^a-z0-9]+", _normalize_text(text))
+        if len(token) > 2 and token not in AHREFS_RELEVANCE_STOPWORDS
+    }
+
+
+def _matches_normalized_term(normalized_text: str, tokens: set[str], term: str) -> bool:
+    normalized_term = _normalize_text(term)
+    if " " in normalized_term:
+        return normalized_term in normalized_text
+    return normalized_term in tokens
+
+
+def _normalize_text(text: str) -> str:
+    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    return ascii_text.lower()
+
+
+def _normalized_domain(value: str | None) -> str | None:
+    if not value:
+        return None
+    normalized = _normalize_text(value).replace("https://", "").replace("http://", "")
+    normalized = normalized.split("/", maxsplit=1)[0].removeprefix("www.")
+    return normalized or None
 
 
 def _ahrefs_gap_sample_keywords(metric_facts: list[MetricFact]) -> list[str]:

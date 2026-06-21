@@ -6407,15 +6407,20 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert ahrefs_decision["metric_tiles"] == {
         "rekordy Ahrefs": 3,
+        "pasujące": 2,
+        "do review": 0,
+        "off-topic": 1,
+        "GSC overlap": 0,
+        "WP overlap": 0,
         "content gaps": 1,
-        "organic keywords": 1,
-        "top pages": 0,
         "backlink gaps": 1,
     }
     assert ahrefs_decision["queries"] == ["audyt środowiskowy", "pozwolenie zintegrowane"]
+    assert "branża.example" not in json.dumps(ahrefs_decision["queries"])
     assert ahrefs_decision["source_connectors"] == ["ahrefs"]
     assert ahrefs_decision["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
     assert "act_prepare_content_refresh_queue" in ahrefs_decision["action_ids"]
+    assert "off-topic content recommendation" in ahrefs_decision["blocked_claims"]
     assert "traffic uplift" in ahrefs_decision["blocked_claims"]
     assert "ev_refresh_ahrefs_gap_records" in payload["evidence_ids"]
 

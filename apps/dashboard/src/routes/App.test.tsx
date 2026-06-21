@@ -3134,13 +3134,16 @@ const contentDiagnostics = {
       status: "ready",
       title: "Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
       summary:
-        "WILQ ma 1 Ahrefs gap facts: content gaps=1, organic keywords=0, top pages=0, backlink gaps=0. To jest materiał do review z GSC/WordPress, nie obietnica wzrostu ruchu.",
+        "WILQ ma 1 Ahrefs gap facts: content gaps=1, organic keywords=0, top pages=0, backlink gaps=0. Scoring jakości wskazuje 1 pasujący, 0 rekordów do ręcznej oceny i 0 rekordów off-topic/broad. To jest materiał do review z GSC/WordPress, nie obietnica wzrostu ruchu.",
       priority: 18,
       metric_tiles: {
         "rekordy Ahrefs": 1,
+        pasujące: 1,
+        "do review": 0,
+        "off-topic": 0,
+        "GSC overlap": 0,
+        "WP overlap": 0,
         "content gaps": 1,
-        "organic keywords": 0,
-        "top pages": 0,
         "backlink gaps": 0
       },
       page: null,
@@ -3159,11 +3162,17 @@ const contentDiagnostics = {
       evidence_ids: ["ev_refresh_ahrefs_gap_records"],
       metric_facts: [metricFacts[6]],
       action_ids: ["act_prepare_content_refresh_queue"],
-      blocked_claims: ["traffic uplift", "authority improvement", "ranking guarantee"],
+      blocked_claims: [
+        "off-topic content recommendation",
+        "content brief without relevance review",
+        "traffic uplift",
+        "authority improvement",
+        "ranking guarantee"
+      ],
       rationale:
-        "Ahrefs wskazuje luki względem konkurencji, ale rekordy mogą zawierać szerokie lub off-topic domeny.",
+        "Ahrefs wskazuje luki względem konkurencji, ale scoring rozdziela rekordy pasujące do zakresu Ekologus od tematów szerokich i off-topic.",
       next_step:
-        "Odrzuć szerokie/off-topic rekordy Ahrefs i połącz sensowne tematy z GSC/WordPress.",
+        "Najpierw przejrzyj pasujące rekordy: audyt środowiskowy. Odrzuć 0 off-topic/broad rekordów i dopiero potem połącz sensowne tematy z GSC/WordPress.",
       risk: "medium"
     }
   ],

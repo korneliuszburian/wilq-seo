@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 05:50 CEST.
+Last updated: 2026-06-21 06:07 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -126,9 +126,21 @@ source connector `ahrefs`, evidence count `2` and action
 Content Planner without dumping raw technical facts. It is still review-only:
 operator must reject broad/off-topic records and cross-check with GSC and
 WordPress inventory before choosing `refresh`, `merge`, `create` or `block`.
-Next product gap: score Ahrefs records by business relevance, GSC demand,
-WordPress inventory match and off-topic risk before turning them into content
-briefs.
+Next Ahrefs product gap after scoring: turn the surviving relevant/review
+records into per-topic candidate rows with explicit GSC demand, WordPress
+inventory match and business-relevance reasons before any content brief exists.
+
+Latest Ahrefs relevance scoring truth, live proof 2026-06-21 06:07 CEST:
+`content_decision_ahrefs_gap_records_review` now scores Ahrefs gap facts before
+showing examples in Content Planner. Current live `/api/content/diagnostics`
+tiles: `rekordy Ahrefs=32`, `pasujące=5`, `do review=10`, `off-topic=17`,
+`GSC overlap=0`, `WP overlap=6`, `content gaps=4`, `backlink gaps=9`.
+Displayed example queries are now `beczka, denios`; off-topic insurance/driving
+queries such as `prawo jazdy` and `OC` are counted as rejected/off-topic
+instead of being shown as content candidates. This is backend scoring logic, not
+a prompt workaround. It still does not produce a content brief, ranking promise,
+traffic uplift or authority improvement claim; it only narrows what the marketer
+should review before cross-checking GSC and WordPress inventory.
 
 Latest Ads custom segment missing-metric truth, live proof 2026-06-21 01:40
 CEST: custom segment review no longer shows absent search-term impressions or
@@ -2561,7 +2573,7 @@ Commit rules:
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
    regression. Next product work should add missing value contracts:
-   Ahrefs gap relevance/off-topic scoring inside Content Planner, deeper
+   deeper
    search-term/custom-segment evidence, remaining campaign optimization
    contracts and Demand Gen diagnostics. Ads
    target-aware KPI triage is started, but remains review-only. Campaign
