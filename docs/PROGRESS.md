@@ -129,6 +129,24 @@ Aktualny proof produktowy:
   `scripts/verify.sh` passed after this slice: backend `141 passed`, dashboard
   unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
   production build passed.
+- Ads Doctor strict non-interactive eval, 2026-06-21 07:07 CEST.
+  `wilq-ads-doctor` now passes the stricter live Ads eval after the empty
+  change-history fix. The first rerun failed because the smoke script still
+  expected stale `missing_read_contracts=["change_history"]`; the live API and
+  context-pack already exposed the correct state: `status=blocked`,
+  `change_history_rows=[]`, missing `change_event_rows` plus pre/post review
+  contracts. The smoke script was updated to accept the read-attempted-but-empty
+  state, and the eval harness now treats structural blocked state
+  (`blocked_reason` or blocked action candidate) as satisfying the `blocked
+  claims` marker without forcing English text into Polish operator output.
+  Passing artifact:
+  `.local-lab/evals/codex-skill/20260621T050542Z/wilq-ads-doctor/result.json`.
+  Result summary: `api_used=true`, `language=pl-PL`, source `google_ads`,
+  evidence IDs from the live Ads refresh, top-level budget knowledge/rules,
+  four Ads ActionObject IDs and `operator_usefulness_score=5`. Full
+  `scripts/verify.sh` passed after this fix: backend `141 passed`, dashboard
+  unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
+  production build passed.
 - Ahrefs typed gap read contract, 2026-06-21 01:21 CEST, superseded by the
   03:38 target fix above. The important surviving contract is still valid:
   `/api/ahrefs/diagnostics` exposes `gap_read_contract` as typed API state and

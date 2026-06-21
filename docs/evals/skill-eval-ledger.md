@@ -2745,6 +2745,9 @@ Result:
   `validation_state=validated`.
 - `operator_usefulness_score=5`
 - `safety_findings=[]`
+- Full `scripts/verify.sh` passed after this fix: backend `141 passed`,
+  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+  dashboard production build passed.
 
 Product finding:
 
@@ -2804,3 +2807,59 @@ Product finding:
   keyword candidates. This gives the marketer a ranked review queue, but it
   still does not unlock audience size, targeting apply, ROAS, conversion uplift
   or campaign-performance claims.
+
+## 2026-06-21 - wilq-ads-doctor strict live Ads eval after empty change-history fix
+
+Purpose:
+
+- Prove that `wilq-ads-doctor` can use the current live Ads Doctor contract
+  after the empty change-history read fix: campaign review, recommendations
+  review, impression share, 90-day search-term safety, keyword match context,
+  custom segments and negative keyword safety must be visible, while CPA, ROAS,
+  waste, targeting/apply, recommendation apply and negative keyword apply stay
+  blocked.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260621T050542Z/wilq-ads-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `source_connectors=["google_ads"]`
+- Evidence IDs:
+  `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_0477a745f098`.
+- Top-level lineage includes
+  `card_google_ads_budget_review_playbook`,
+  `ads_scaling_candidates_v1`, `ads_recommendations_v1` and
+  `ads_principles_v1`.
+- Action candidates include:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms`,
+  `act_prepare_negative_keyword_review_queue`.
+- Smoke script now accepts the correct blocked-empty state:
+  `change_history_read_contract.status=blocked`,
+  `change_history_rows=[]` and missing `change_event_rows` plus pre/post
+  review contracts. It no longer requires stale placeholder
+  `missing_read_contracts=["change_history"]` when the read was attempted and
+  returned no rows.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- The current Ads Doctor path is good enough for a Polish operator review of
+  live Ads evidence and prepare-only queues. It still does not unlock CPA/ROAS
+  verdicts, wasted-budget claims, mutation apply, targeting apply or negative
+  keyword apply without human review, validation and audit/apply contracts.

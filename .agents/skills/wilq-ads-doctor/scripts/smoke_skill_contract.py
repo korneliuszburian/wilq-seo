@@ -299,11 +299,19 @@ def main() -> int:
             raise SystemExit("Context pack change history contract differs")
         if "change impact" not in change_history_read_contract.get("blocked_claims", []):
             raise SystemExit("Change history contract must keep change impact blocked")
-    elif "change_history" not in change_history_read_contract.get(
-        "missing_read_contracts",
-        [],
-    ):
-        raise SystemExit("Blocked change history contract must list missing change_history")
+    else:
+        missing_change_history_contracts = set(
+            change_history_read_contract.get("missing_read_contracts") or []
+        )
+        change_history_rows = change_history_read_contract.get("change_history_rows") or []
+        if "change_history" not in missing_change_history_contracts and not (
+            "change_event_rows" in missing_change_history_contracts
+            and len(change_history_rows) == 0
+        ):
+            raise SystemExit(
+                "Blocked change history contract must list missing change_history "
+                "or empty change_event_rows"
+            )
     if search_term_safety_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose search_term_safety_read_contract")
     if not search_term_safety_read_contract.get("blocked_claims"):

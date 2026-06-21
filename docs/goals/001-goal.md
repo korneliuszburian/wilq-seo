@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 06:48 CEST.
+Last updated: 2026-06-21 07:07 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -177,6 +177,26 @@ apply or campaign mutation claims without concrete change_event rows and
 pre/post performance windows. Full `scripts/verify.sh` passed after this
 slice: backend `141 passed`, dashboard unit `17 passed`, Playwright e2e
 `14 passed`, skill/API smokes and dashboard production build passed.
+
+Latest Ads Doctor strict Codex eval truth, live proof 2026-06-21 07:07 CEST:
+`wilq-ads-doctor` passes the stricter non-interactive eval against the current
+live Ads Doctor surface. Passing artifact:
+`.local-lab/evals/codex-skill/20260621T050542Z/wilq-ads-doctor/result.json`.
+The eval result has `language=pl-PL`, `api_used=true`, source `google_ads`,
+live Ads evidence IDs, top-level `card_google_ads_budget_review_playbook`,
+`ads_scaling_candidates_v1`, `ads_recommendations_v1`,
+`ads_principles_v1`, and all four Ads prepare/review ActionObject IDs:
+`act_prepare_ads_campaign_review_queue`,
+`act_prepare_google_ads_recommendation_review_queue`,
+`act_prepare_custom_segments_from_search_terms`,
+`act_prepare_negative_keyword_review_queue`. The fix was not a prompt/reference
+workaround: the WILQ API already exposed the correct action/lineage state. The
+skill smoke was aligned with the current empty-read semantics for change
+history, and the eval harness now treats structural blocked state as satisfying
+blocked-claim discipline without forcing English UI copy into Polish operator
+output. Full `scripts/verify.sh` passed after this fix: backend `141 passed`,
+dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+dashboard production build passed.
 
 Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
 `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and

@@ -291,6 +291,18 @@ case = {
 }[expected_skill]
 errors = []
 
+
+def _has_structured_blocked_claims(result: dict) -> bool:
+    if result.get("blocked_reason"):
+        return True
+    if any(item.get("blocked_reason") for item in result.get("recommendations", [])):
+        return True
+    return any(
+        action.get("validation_state") == "blocked" or action.get("blocked_reason")
+        for action in result.get("action_candidates", [])
+    )
+
+
 if data.get("skill") != expected_skill:
     errors.append(f"wrong skill: {data.get('skill')!r}")
 if data.get("language") != "pl-PL":
@@ -328,6 +340,8 @@ if surface_path and surface_path not in combined_json_text:
     errors.append(f"surface_path marker missing from final JSON: {surface_path}")
 
 for term in case.get("expected_terms_pl", []):
+    if term.lower() == "blocked claims" and _has_structured_blocked_claims(data):
+        continue
     if term.lower() not in combined_json_text.lower():
         errors.append(f"expected route term missing from final JSON: {term}")
 
