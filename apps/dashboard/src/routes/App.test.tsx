@@ -3202,8 +3202,8 @@ const contentDiagnostics = {
         pasujące: 1,
         "do review": 0,
         "off-topic": 0,
-        "GSC overlap": 0,
-        "WP overlap": 0,
+        "GSC overlap": 1,
+        "WP overlap": 1,
         "content gaps": 1,
         "backlink gaps": 0
       },
@@ -3228,10 +3228,17 @@ const contentDiagnostics = {
           topic: "audyt środowiskowy",
           gap_type: "content_gap",
           relevance_status: "relevant",
-          relevance_score: 5,
-          business_relevance_reasons: ["ekologus_domain_term", "content_candidate"],
-          gsc_demand: "missing",
-          wordpress_inventory_match: "missing",
+          relevance_score: 9,
+          business_relevance_reasons: [
+            "ekologus_domain_term",
+            "gsc_overlap",
+            "wordpress_inventory_overlap",
+            "content_candidate"
+          ],
+          gsc_demand: "present",
+          wordpress_inventory_match: "present",
+          gsc_overlap_terms: ["audyt środowiskowy"],
+          wordpress_overlap_urls: ["https://www.ekologus.pl/audyt-srodowiskowy/"],
           keyword: "audyt środowiskowy",
           competitor_domain: "konkurent.example",
           source_url: null,
@@ -3240,7 +3247,7 @@ const contentDiagnostics = {
           metric_value: 1,
           evidence_ids: ["ev_refresh_ahrefs_gap_records"],
           next_step:
-            "Zweryfikuj `audyt środowiskowy` z GSC i WordPress inventory, potem zdecyduj: refresh, merge, create albo block."
+            "Zweryfikuj `audyt środowiskowy` z GSC i WordPress inventory, potem zdecyduj: refresh, merge, create albo block. Overlap: GSC: audyt środowiskowy; WP: 1 URL."
         }
       ],
       action_ids: ["act_prepare_content_refresh_queue"],
@@ -4986,8 +4993,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("GSC query/page / refresh")).toBeInTheDocument();
     expect(screen.getByText("Ahrefs review / review")).toBeInTheDocument();
     expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("GSC: brak")).toBeInTheDocument();
-    expect(screen.getByText("WP: brak")).toBeInTheDocument();
+    expect(screen.getByText("GSC: jest")).toBeInTheDocument();
+    expect(screen.getByText("WP: jest")).toBeInTheDocument();
+    expect(screen.getByText("Overlap GSC: audyt środowiskowy")).toBeInTheDocument();
+    expect(screen.getByText("Overlap WP: /audyt-srodowiskowy/")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Zapisz review briefu" })[0]);
     await waitFor(() =>
       expect(

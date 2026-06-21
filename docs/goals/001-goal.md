@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 10:16 CEST.
+Last updated: 2026-06-21 10:44 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -29,7 +29,11 @@ verification state or next tasks change.
 ## Product Bar
 
 WILQ is an API-first marketing operating system for Ekologus, operated by a
-Polish marketer through dashboard + Codex Desktop/CLI + WILQ skills.
+Polish marketer through dashboard + Codex Desktop/CLI + WILQ skills. Ekologus
+is the depth-first reference client. The long-term product direction is
+agency/multi-client operation, but do not add broad multi-client abstractions
+until Ekologus works deeply with real evidence, dashboard decisions, Codex
+skills and safe ActionObjects.
 
 WILQ is not:
 
@@ -110,13 +114,30 @@ candidate through the existing `/api/actions/{action_id}/review` path. The
 saved audit preserves non-secret trace IDs such as
 `candidate:content_brief_*`, while token-like values are still redacted. This
 is not a publish path, not a final article, and not a
-ranking/traffic/lead/revenue promise. Remaining content work: strengthen GSC/WP
-overlap for Ahrefs candidates and only later create WordPress draft payload
-previews behind explicit review. Ads scoped context-pack is still kept below
+ranking/traffic/lead/revenue promise. Remaining content work: use the
+strengthened GSC/WP overlap to improve brief selection, then create WordPress
+draft payload previews behind explicit review. Ads scoped context-pack is still kept below
 200 KB after trace redaction (`197559` bytes in focused proof). Full
 `scripts/verify.sh` passed after this slice: backend `143 passed`, dashboard
 unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
 production build passed.
+
+Latest Ahrefs overlap evidence truth, live proof 2026-06-21 10:44 CEST:
+Ahrefs candidate rows in `/api/content/diagnostics` now expose exact overlap
+signals instead of only `present/missing`: `gsc_overlap_terms` and
+`wordpress_overlap_urls`. Polish text normalization now preserves Polish
+matching semantics such as `zielony ład` -> `zielony lad`, so domain relevance
+does not disappear because of `ł`. Context-pack redaction preserves these
+public overlap fields while still redacting token-like values. Current live
+TestClient proof for `review_ahrefs_gap_records`: tiles
+`rekordy Ahrefs=32`, `pasujące=5`, `do review=10`, `off-topic=17`,
+`GSC overlap=0`, `WP overlap=6`; candidate `beczka` has `gsc_demand=missing`
+and four `wordpress_overlap_urls`, so the marketer can see it as a WP/feed
+review signal rather than a GSC-backed content brief. Dashboard
+`/content-planner` renders `Overlap GSC` and `Overlap WP` rows under Ahrefs
+candidates. Full `scripts/verify.sh` passed after this slice: backend
+`143 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+skill/API smokes and dashboard production build passed.
 
 Latest Ahrefs content-gap truth, live proof 2026-06-21 05:05 CEST:
 `refresh_ahrefs_cb31460610d3` used real read-only Ahrefs API for authority,

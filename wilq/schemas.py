@@ -1461,6 +1461,8 @@ class ContentAhrefsCandidateRow(BaseModel):
     business_relevance_reasons: list[str] = Field(default_factory=list)
     gsc_demand: Literal["present", "missing"]
     wordpress_inventory_match: Literal["present", "missing"]
+    gsc_overlap_terms: list[str] = Field(default_factory=list)
+    wordpress_overlap_urls: list[str] = Field(default_factory=list)
     keyword: str | None = None
     competitor_domain: str | None = None
     source_url: str | None = None

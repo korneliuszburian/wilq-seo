@@ -627,6 +627,10 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "target_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
             "competitor_domain": "example.pl",
             "keyword": "zielony ład obowiązki",
+            "gsc_overlap_terms": ["zielony ład"],
+            "wordpress_overlap_urls": [
+                "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+            ],
         }
     )
 
@@ -704,6 +708,10 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     )
     assert redacted["competitor_domain"] == "example.pl"
     assert redacted["keyword"] == "zielony ład obowiązki"
+    assert redacted["gsc_overlap_terms"] == ["zielony ład"]
+    assert redacted["wordpress_overlap_urls"] == [
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    ]
     assert redact_mapping(
         {
             "summary": (
@@ -6556,6 +6564,15 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
                 1,
                 {
                     "gap_type": "content_gap",
+                    "keyword": "zielony ład",
+                    "competitor_domain": "konkurent.example",
+                },
+            ),
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                1,
+                {
+                    "gap_type": "content_gap",
                     "keyword": "audyt środowiskowy",
                     "competitor_domain": "konkurent.example",
                 },
@@ -6653,26 +6670,40 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "Ahrefs: zweryfikuj luki SEO przed briefem contentowym"
     )
     assert ahrefs_decision["metric_tiles"] == {
-        "rekordy Ahrefs": 3,
-        "pasujące": 2,
+        "rekordy Ahrefs": 4,
+        "pasujące": 3,
         "do review": 0,
         "off-topic": 1,
-        "GSC overlap": 0,
-        "WP overlap": 0,
-        "content gaps": 1,
+        "GSC overlap": 1,
+        "WP overlap": 1,
+        "content gaps": 2,
         "backlink gaps": 1,
     }
-    assert ahrefs_decision["queries"] == ["audyt środowiskowy", "pozwolenie zintegrowane"]
+    assert {"zielony ład", "audyt środowiskowy", "pozwolenie zintegrowane"}.issubset(
+        set(ahrefs_decision["queries"])
+    )
     assert "branża.example" not in json.dumps(ahrefs_decision["queries"])
-    assert len(ahrefs_decision["ahrefs_candidate_rows"]) == 2
-    first_ahrefs_candidate = ahrefs_decision["ahrefs_candidate_rows"][0]
-    assert first_ahrefs_candidate["topic"] == "audyt środowiskowy"
-    assert first_ahrefs_candidate["relevance_status"] == "relevant"
-    assert first_ahrefs_candidate["gsc_demand"] == "missing"
-    assert first_ahrefs_candidate["wordpress_inventory_match"] == "missing"
-    assert "ekologus_domain_term" in first_ahrefs_candidate["business_relevance_reasons"]
-    assert "content_candidate" in first_ahrefs_candidate["business_relevance_reasons"]
-    assert first_ahrefs_candidate["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
+    assert len(ahrefs_decision["ahrefs_candidate_rows"]) == 3
+    zielony_lad_candidate = next(
+        candidate
+        for candidate in ahrefs_decision["ahrefs_candidate_rows"]
+        if candidate["topic"] == "zielony ład"
+    )
+    assert zielony_lad_candidate["relevance_status"] == "relevant"
+    assert zielony_lad_candidate["gsc_demand"] == "present"
+    assert zielony_lad_candidate["wordpress_inventory_match"] == "present"
+    assert zielony_lad_candidate["gsc_overlap_terms"] == ["zielony ład"]
+    assert zielony_lad_candidate["wordpress_overlap_urls"] == [
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    ]
+    assert "ekologus_domain_term" in zielony_lad_candidate["business_relevance_reasons"]
+    assert "gsc_overlap" in zielony_lad_candidate["business_relevance_reasons"]
+    assert "wordpress_inventory_overlap" in zielony_lad_candidate[
+        "business_relevance_reasons"
+    ]
+    assert "content_candidate" in zielony_lad_candidate["business_relevance_reasons"]
+    assert zielony_lad_candidate["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
+    assert "Overlap: GSC: zielony ład" in zielony_lad_candidate["next_step"]
     assert "branża.example" not in json.dumps(ahrefs_decision["ahrefs_candidate_rows"])
     assert ahrefs_decision["source_connectors"] == ["ahrefs"]
     assert ahrefs_decision["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]

@@ -1225,6 +1225,8 @@ export const ContentDecisionItemSchema = z.object({
         business_relevance_reasons: z.array(z.string()).default([]),
         gsc_demand: z.enum(["present", "missing"]),
         wordpress_inventory_match: z.enum(["present", "missing"]),
+        gsc_overlap_terms: z.array(z.string()).default([]),
+        wordpress_overlap_urls: z.array(z.string()).default([]),
         keyword: z.string().nullable().optional(),
         competitor_domain: z.string().nullable().optional(),
         source_url: z.string().nullable().optional(),

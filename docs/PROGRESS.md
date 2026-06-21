@@ -31,9 +31,27 @@ Stan produktu:
 - Nie wolno naprawiać błędów reasoning przez dopisywanie edge-case'ów do skill
   references. Naprawa ma iść przez typed API state, knowledge cards, expert
   rules, context-packi, evale i dashboard.
+- Ekologus jest depth-first reference client. Docelowy kierunek produktu to
+  agency/multi-client, ale multi-client abstraction dopiero po tym, jak Ekologus
+  działa głęboko na realnych danych i ActionObjectach.
 
 Aktualny proof produktowy:
 
+- Ahrefs overlap evidence in Content Planner, 2026-06-21 10:44 CEST.
+  `content_decision_ahrefs_gap_records_review.ahrefs_candidate_rows` ma teraz
+  `gsc_overlap_terms` i `wordpress_overlap_urls`, więc marketer i Codex widzą
+  dokładnie, które GSC query i które WordPress/sklep URL-e wspierają albo
+  blokują kandydata Ahrefs. Naprawiono normalizację polskich znaków w scoringu
+  (`zielony ład` trafia w `zielony lad`), a redaction allowlist zachowuje
+  publiczne overlap URL-e w context-packu bez odsłaniania sekretów. Live
+  TestClient proof: Ahrefs tiles `rekordy Ahrefs=32`, `pasujące=5`,
+  `do review=10`, `off-topic=17`, `GSC overlap=0`, `WP overlap=6`; kandydat
+  `beczka` ma `gsc_demand=missing` i cztery `wordpress_overlap_urls`, więc jest
+  WP/feed review signal, nie GSC-backed content brief. Dashboard
+  `/content-planner` renderuje `Overlap GSC` i `Overlap WP`. Full
+  `scripts/verify.sh` passed: backend `143 passed`, dashboard unit `17 passed`,
+  Playwright e2e `14 passed`, skill/API smokes and dashboard production build
+  passed.
 - Content brief preview + review persistence, 2026-06-21 10:16 CEST.
   `act_prepare_content_refresh_queue` ma teraz review-only
   `content_brief_preview_v1` w ActionObject payloadzie, a `/content-planner`

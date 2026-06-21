@@ -5571,6 +5571,14 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
                   label="Powody"
                   values={candidate.business_relevance_reasons.map(contentAhrefsReasonLabel)}
                 />
+                <TraceLine
+                  label="Overlap GSC"
+                  values={candidate.gsc_overlap_terms.slice(0, 3)}
+                />
+                <TraceLine
+                  label="Overlap WP"
+                  values={candidate.wordpress_overlap_urls.map(shortPath).slice(0, 3)}
+                />
               </div>
             ))}
           </div>

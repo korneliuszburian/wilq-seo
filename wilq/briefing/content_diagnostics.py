@@ -118,6 +118,28 @@ AHREFS_RELEVANCE_STOPWORDS = {
     "czy",
     "the",
 }
+POLISH_ASCII_TRANSLATION = str.maketrans(
+    {
+        "ą": "a",
+        "ć": "c",
+        "ę": "e",
+        "ł": "l",
+        "ń": "n",
+        "ó": "o",
+        "ś": "s",
+        "ż": "z",
+        "ź": "z",
+        "Ą": "A",
+        "Ć": "C",
+        "Ę": "E",
+        "Ł": "L",
+        "Ń": "N",
+        "Ó": "O",
+        "Ś": "S",
+        "Ż": "Z",
+        "Ź": "Z",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -135,6 +157,14 @@ class AhrefsGapFactScore:
     score: int
     status: Literal["relevant", "review", "off_topic"]
     reasons: tuple[str, ...]
+    gsc_overlap_terms: tuple[str, ...] = ()
+    wordpress_overlap_urls: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ContentSignal:
+    label: str
+    tokens: frozenset[str]
 
 
 def build_content_diagnostics(
@@ -788,6 +818,8 @@ def _ahrefs_candidate_row(score: AhrefsGapFactScore) -> ContentAhrefsCandidateRo
         business_relevance_reasons=list(score.reasons),
         gsc_demand="present" if gsc_overlap else "missing",
         wordpress_inventory_match="present" if wordpress_overlap else "missing",
+        gsc_overlap_terms=list(score.gsc_overlap_terms),
+        wordpress_overlap_urls=list(score.wordpress_overlap_urls),
         keyword=dimensions.get("keyword") or None,
         competitor_domain=dimensions.get("competitor_domain") or None,
         source_url=dimensions.get("source_url") or None,
@@ -809,10 +841,16 @@ def _ahrefs_candidate_topic(fact: MetricFact) -> str:
 
 
 def _ahrefs_candidate_next_step(score: AhrefsGapFactScore, topic: str) -> str:
+    overlap_labels = []
+    if score.gsc_overlap_terms:
+        overlap_labels.append(f"GSC: {', '.join(score.gsc_overlap_terms[:2])}")
+    if score.wordpress_overlap_urls:
+        overlap_labels.append(f"WP: {len(score.wordpress_overlap_urls)} URL")
+    overlap_context = f" Overlap: {'; '.join(overlap_labels)}." if overlap_labels else ""
     if score.status == "relevant":
         return (
             f"Zweryfikuj `{topic}` z GSC i WordPress inventory, potem zdecyduj: "
-            "refresh, merge, create albo block."
+            f"refresh, merge, create albo block.{overlap_context}"
         )
     if score.status == "review":
         return (
@@ -865,21 +903,23 @@ def _score_ahrefs_gap_facts(
     gap_facts: list[MetricFact],
     all_content_facts: list[MetricFact],
 ) -> list[AhrefsGapFactScore]:
-    gsc_tokens = _content_signal_tokens(
+    gsc_signals = _content_signals(
         all_content_facts,
         source_connector="google_search_console",
         dimension_keys=("query", "page"),
+        label_keys=("query", "page"),
     )
-    wordpress_tokens = _content_signal_tokens(
+    wordpress_signals = _content_signals(
         all_content_facts,
         source_connector_prefix="wordpress",
         dimension_keys=("content_url", "title", "slug", "path"),
+        label_keys=("content_url", "title", "slug", "path"),
     )
     scored = [
         _score_ahrefs_gap_fact(
             fact,
-            gsc_tokens=gsc_tokens,
-            wordpress_tokens=wordpress_tokens,
+            gsc_signals=gsc_signals,
+            wordpress_signals=wordpress_signals,
         )
         for fact in gap_facts
     ]
@@ -898,8 +938,8 @@ def _score_ahrefs_gap_facts(
 def _score_ahrefs_gap_fact(
     fact: MetricFact,
     *,
-    gsc_tokens: set[str],
-    wordpress_tokens: set[str],
+    gsc_signals: tuple[ContentSignal, ...],
+    wordpress_signals: tuple[ContentSignal, ...],
 ) -> AhrefsGapFactScore:
     dimensions = fact.dimensions
     keyword = dimensions.get("keyword", "")
@@ -920,6 +960,8 @@ def _score_ahrefs_gap_fact(
     )
     normalized_text = _normalize_text(text)
     tokens = _tokens_from_text(text)
+    gsc_overlap_terms = _matching_content_signal_labels(tokens, gsc_signals)
+    wordpress_overlap_urls = _matching_content_signal_labels(tokens, wordpress_signals)
     score = 0
     reasons: list[str] = []
 
@@ -932,10 +974,10 @@ def _score_ahrefs_gap_fact(
     if competitor_domain in AHREFS_RELEVANT_COMPETITOR_DOMAINS:
         score += 3
         reasons.append("relevant_competitor_domain")
-    if tokens & gsc_tokens:
+    if gsc_overlap_terms:
         score += 2
         reasons.append("gsc_overlap")
-    if tokens & wordpress_tokens:
+    if wordpress_overlap_urls:
         score += 2
         reasons.append("wordpress_inventory_overlap")
 
@@ -974,17 +1016,20 @@ def _score_ahrefs_gap_fact(
         score=score,
         status=status,
         reasons=tuple(reasons),
+        gsc_overlap_terms=gsc_overlap_terms,
+        wordpress_overlap_urls=wordpress_overlap_urls,
     )
 
 
-def _content_signal_tokens(
+def _content_signals(
     facts: list[MetricFact],
     *,
     dimension_keys: tuple[str, ...],
+    label_keys: tuple[str, ...],
     source_connector: str | None = None,
     source_connector_prefix: str | None = None,
-) -> set[str]:
-    tokens: set[str] = set()
+) -> tuple[ContentSignal, ...]:
+    signal_tokens: dict[str, set[str]] = {}
     for fact in facts:
         if source_connector is not None and fact.source_connector != source_connector:
             continue
@@ -992,9 +1037,37 @@ def _content_signal_tokens(
             source_connector_prefix
         ):
             continue
+        label = _first_dimension_value(fact, label_keys)
+        if not label:
+            continue
+        tokens: set[str] = set()
         for key in dimension_keys:
             tokens.update(_tokens_from_text(fact.dimensions.get(key, "")))
-    return tokens
+        if tokens:
+            signal_tokens.setdefault(label, set()).update(tokens)
+    return tuple(
+        ContentSignal(label=label, tokens=frozenset(tokens))
+        for label, tokens in signal_tokens.items()
+    )
+
+
+def _first_dimension_value(fact: MetricFact, keys: tuple[str, ...]) -> str | None:
+    for key in keys:
+        value = fact.dimensions.get(key)
+        if value:
+            return value
+    return None
+
+
+def _matching_content_signal_labels(
+    tokens: set[str],
+    signals: tuple[ContentSignal, ...],
+    *,
+    limit: int = 4,
+) -> tuple[str, ...]:
+    return tuple(
+        _unique(signal.label for signal in signals if tokens & signal.tokens)[:limit]
+    )
 
 
 def _ahrefs_relevance_reason_count(
@@ -1020,7 +1093,8 @@ def _matches_normalized_term(normalized_text: str, tokens: set[str], term: str) 
 
 
 def _normalize_text(text: str) -> str:
-    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    translated = text.translate(POLISH_ASCII_TRANSLATION)
+    ascii_text = unicodedata.normalize("NFKD", translated).encode("ascii", "ignore").decode("ascii")
     return ascii_text.lower()
 
 
