@@ -37,6 +37,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads shared-budget distribution contract, 2026-06-22 01:25 CEST.
+  `/api/ads/diagnostics.budget_pacing_read_contract` ma teraz typed
+  `shared_budget_distribution_rows`. WILQ grupuje kampanie po Google Ads
+  `budget_id`, pokazuje podział kosztu wspólnego budżetu per kampania i usuwa
+  `shared_budget_distribution` z `missing_read_contracts`, gdy live budget rows
+  mają `budget_id`. Live proof po `scripts/local_stack.sh restart`:
+  `budget_rows=18`, `shared_rows=0`, `missing=[]`; decyzja
+  `ads_review_budget_context` ma `missing_read_contracts=[]`, a metric tiles
+  nie pokazują bezsensownego zera `wspólne budżety`, gdy nie ma shared-budget
+  groups. Dashboard `/ads-doctor` ma panel `Podział wspólnych budżetów` i
+  uczciwy empty-state, a `wilq-ads-doctor` smoke wymaga tego samego kontraktu w
+  scoped context-packu. Non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T232046Z/wilq-ads-doctor/result.json`
+  z `language=pl-PL`, `api_used=true`, source `google_ads` i Google Ads
+  evidence IDs. Final proof: `scripts/verify.sh` green, w tym 150 backend
+  tests, 17 dashboard unit tests, Skill API smoke, 14 Playwright e2e tests i
+  dashboard production build. Next gap: scoped `wilq-ads-doctor` context-pack
+  jest nadal blisko limitu 200 KB (`context_pack_bytes=198997`), więc kolejne
+  Ads value contracts wymagają ostrożnej kompaktacji.
 - Ads change-history empty-read semantics + Ads Doctor context budget,
   2026-06-22 00:56 CEST. WILQ rozróżnia teraz "change history read wykonany,
   ale Google Ads zwrócił 0 change_event rows" od "brak kontraktu
@@ -47,8 +66,9 @@ Aktualny proof produktowy:
   `change_history_rows=[]`. Decyzje `ads_review_campaign_activity`,
   `ads_review_derived_kpis`, `ads_review_recommendations` i
   `ads_review_impression_share` nie pokazują już ogólnego `change_history` jako
-  missing contract; `ads_review_budget_context` zostawia tylko
-  `shared_budget_distribution`. Sama decyzja `ads_review_change_history`
+  missing contract. W tym historycznym slice'u `ads_review_budget_context`
+  zostawiał jeszcze `shared_budget_distribution`; późniejszy shared-budget
+  slice usunął tę lukę. Sama decyzja `ads_review_change_history`
   pozostaje `blocked` z `zmiany=0`, co jest właściwym blockerem. Scoped
   `wilq-ads-doctor` context-pack został skompaktowany: common Ads row limit w
   context-packu to 3, pełny `/api/ads/diagnostics` pozostaje bez tego cięcia.

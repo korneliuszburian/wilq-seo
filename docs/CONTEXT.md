@@ -29,6 +29,24 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads shared-budget distribution contract, 2026-06-22 01:25 CEST:
+   `/api/ads/diagnostics.budget_pacing_read_contract` now exposes typed
+   `shared_budget_distribution_rows`. If all Google Ads budget rows expose
+   `budget_id`, WILQ must not keep `shared_budget_distribution` in
+   `missing_read_contracts`. Live proof after `scripts/local_stack.sh restart`:
+   `budget_rows=18`, `shared_rows=0`, `missing=[]`; decision
+   `ads_review_budget_context.missing_read_contracts=[]`. Dashboard
+   `/ads-doctor` renders `Podział wspólnych budżetów`; when no campaigns share
+   a budget it shows an empty-state instead of a fake zero-value decision.
+   `wilq-ads-doctor` smoke verifies the same field in the scoped context-pack.
+   Eval artifact:
+   `.local-lab/evals/codex-skill/20260621T232046Z/wilq-ads-doctor/result.json`
+   with `language=pl-PL`, `api_used=true` and Google Ads evidence IDs. Full
+   `scripts/verify.sh` passed after this slice: backend `150 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
+   and dashboard production build. Watch the scoped Ads context-pack budget:
+   smoke reported `context_pack_bytes=198997`, close to 200 KB.
+
 0. Ads change-history empty-read semantics and Ads Doctor context budget,
    2026-06-22 00:56 CEST: if Google Ads `vendor_read` attempted
    `change_event` and returned 0 rows, WILQ must not show generic
@@ -38,7 +56,9 @@ Audit `docs/audits/001-output.md` is now folded into
    `change_event_rows`, `pre_change_performance_window`,
    `post_change_performance_window`, `human_change_impact_review` and
    `apply_preview`; only `ads_review_change_history` stays blocked with
-   `zmiany=0`. Scoped `wilq-ads-doctor` context-pack keeps common Ads samples
+   `zmiany=0`. At the time this slice ran, `ads_review_budget_context` still
+   exposed `shared_budget_distribution` as missing; the later shared-budget
+   distribution slice fixes that. Scoped `wilq-ads-doctor` context-pack keeps common Ads samples
    at 3 rows and preserves total/included counts, while the full
    `/api/ads/diagnostics` endpoint remains richer. Eval artifact:
    `.local-lab/evals/codex-skill/20260621T223847Z/wilq-ads-doctor/result.json`

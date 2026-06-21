@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 00:56 CEST.
+Last updated: 2026-06-22 01:25 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -89,11 +89,12 @@ search terms, and a typed nested
 `missing_forecast` rows instead of hiding `forecast_or_audience_size` as only a
 string. Their review reason preserves missing search-term impressions/cost as
 `brak danych` instead of fake zeroes, but no custom segment targeting apply
-support. Campaign budgets now have review-only
-`CampaignBudgetOperation` payload previews from budget facts plus typed
-`campaign_budget_apply_safety_v1` safety reviews that keep budget apply
-blocked until missing requirements are satisfied. There is still no budget
-apply support. Missing target ROAS/CPA now has a dedicated review-only
+support. Campaign budgets now have read-only budget pacing, typed
+`shared_budget_distribution_rows` for campaigns sharing a Google Ads
+`budget_id`, review-only `CampaignBudgetOperation` payload previews from
+budget facts and typed `campaign_budget_apply_safety_v1` safety reviews that
+keep budget apply blocked until missing requirements are satisfied. There is
+still no budget apply support. Missing target ROAS/CPA now has a dedicated review-only
 `act_confirm_ads_target_guardrails` ActionObject, and successful confirmations
 are persisted as local `AdsTargetGuardrailConfirmation` state. Human Ads
 strategy review now also has a typed review-only `act_record_ads_strategy_review`
@@ -123,7 +124,29 @@ creative-quality verdicts, campaign apply and performance uplift claims remain
 blocked.
 Missing contracts must be shown as blockers, not hidden with prompt language.
 
-Latest Ads change-history empty-read + context-pack budget proof, 2026-06-22
+Latest Ads shared-budget distribution proof, 2026-06-22 01:25 CEST:
+`/api/ads/diagnostics.budget_pacing_read_contract` exposes typed
+`shared_budget_distribution_rows`. WILQ now groups campaign budget rows by
+Google Ads `budget_id`, computes shared-budget campaign shares and removes
+`shared_budget_distribution` from `missing_read_contracts` when all live budget
+rows expose `budget_id`. Live proof after `scripts/local_stack.sh restart`:
+`budget_rows=18`, `shared_rows=0`, `missing=[]`; decision
+`ads_review_budget_context` has `missing_read_contracts=[]` and metric tiles
+`budżety=18`, `podgląd budżetu=18`, `koszt 7 dni=154`, without a useless
+zero-value shared-budget tile. Dashboard `/ads-doctor` renders
+`Podział wspólnych budżetów` with an honest empty-state when no campaigns share
+a budget. `wilq-ads-doctor` smoke now fails if the typed field is absent or if
+the context-pack omits it. Non-interactive Codex eval passed at
+`.local-lab/evals/codex-skill/20260621T232046Z/wilq-ads-doctor/result.json`
+with `language=pl-PL`, `api_used=true`, source connector `google_ads` and
+Google Ads evidence IDs. Final verification passed: `scripts/verify.sh` green,
+including 150 backend tests, 17 dashboard unit tests, API/skill smokes,
+14 Playwright e2e tests and dashboard production build. Remaining risk:
+scoped `wilq-ads-doctor` context-pack is still close to the 200 KB smoke budget
+at `context_pack_bytes=198997`, so future Ads contracts must preserve
+compaction discipline.
+
+Previous Ads change-history empty-read + context-pack budget proof, 2026-06-22
 00:56 CEST: WILQ no longer treats an attempted read-only Google Ads
 change-history read with 0 `change_event` rows as a generic missing
 `change_history` contract on every Ads decision. Live `/api/ads/diagnostics`
@@ -134,8 +157,9 @@ missing contracts `change_event_rows`, `pre_change_performance_window`,
 `apply_preview`. Decisions `ads_review_campaign_activity`,
 `ads_review_derived_kpis`, `ads_review_recommendations` and
 `ads_review_impression_share` no longer list `change_history` as missing;
-`ads_review_budget_context` only lists `shared_budget_distribution`, while
-`ads_review_change_history` stays blocked with `zmiany=0`. Scoped
+`ads_review_budget_context` still listed `shared_budget_distribution`; that
+specific missing contract is fixed by the later shared-budget distribution
+slice. `ads_review_change_history` stays blocked with `zmiany=0`. Scoped
 `wilq-ads-doctor` context-pack compaction now keeps common Ads row samples at
 3 rows and preserves total/included counts in `context_pack_compaction`; the
 full `/api/ads/diagnostics` endpoint is not cut by this limit. Live context

@@ -589,6 +589,29 @@ export const AdsBudgetPacingRowSchema = z.object({
   blocked_claims: z.array(z.string())
 });
 
+export const AdsSharedBudgetCampaignShareSchema = z.object({
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string(),
+  campaign_status: z.string().nullable().optional(),
+  advertising_channel_type: z.string().nullable().optional(),
+  cost_micros_7d: z.number().nullable().optional(),
+  spend_share_7d: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string())
+});
+
+export const AdsSharedBudgetDistributionRowSchema = z.object({
+  budget_id: z.string(),
+  budget_name: z.string().nullable().optional(),
+  campaign_count: z.number(),
+  budget_amount_micros: z.number().nullable().optional(),
+  seven_day_budget_micros: z.number().nullable().optional(),
+  total_cost_micros_7d: z.number().nullable().optional(),
+  spend_to_budget_ratio_7d: z.number().nullable().optional(),
+  campaign_shares: z.array(AdsSharedBudgetCampaignShareSchema),
+  evidence_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const AdsBudgetPacingReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
@@ -600,6 +623,9 @@ export const AdsBudgetPacingReadContractSchema = z.object({
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   budget_rows: z.array(AdsBudgetPacingRowSchema),
+  shared_budget_distribution_rows: z.array(AdsSharedBudgetDistributionRowSchema)
+    .optional()
+    .default([]),
   payload_preview: z.array(AdsBudgetApplyPreviewSchema),
   action_ids: z.array(z.string()),
   next_step: z.string()
@@ -1119,6 +1145,9 @@ export const AdsDecisionItemSchema = z.object({
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
   derived_kpi_rows: z.array(AdsDerivedKpiRowSchema),
   budget_rows: z.array(AdsBudgetPacingRowSchema),
+  shared_budget_distribution_rows: z.array(AdsSharedBudgetDistributionRowSchema)
+    .optional()
+    .default([]),
   budget_apply_preview: z.array(AdsBudgetApplyPreviewSchema).optional().default([]),
   recommendation_rows: z.array(AdsRecommendationRowSchema),
   recommendation_apply_preview: z.array(AdsRecommendationApplyPreviewSchema)
@@ -1937,6 +1966,9 @@ export type AdsAccountCurrencyReadContract = z.infer<
   typeof AdsAccountCurrencyReadContractSchema
 >;
 export type AdsBudgetPacingRow = z.infer<typeof AdsBudgetPacingRowSchema>;
+export type AdsSharedBudgetDistributionRow = z.infer<
+  typeof AdsSharedBudgetDistributionRowSchema
+>;
 export type AdsBudgetPacingReadContract = z.infer<
   typeof AdsBudgetPacingReadContractSchema
 >;

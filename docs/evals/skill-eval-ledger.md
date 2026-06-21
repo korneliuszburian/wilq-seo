@@ -25,6 +25,69 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-22 - wilq-ads-doctor shared-budget distribution eval
+
+Purpose:
+
+- Prove that `wilq-ads-doctor` sees typed Google Ads shared-budget
+  distribution rows through WILQ API/context-pack instead of treating
+  `shared_budget_distribution` as an unresolved prompt-level gap.
+- Prove that `ads_review_budget_context` does not show a fake zero-value shared
+  budget decision when the live account has no shared budget groups.
+
+API proof:
+
+- `/api/ads/diagnostics.budget_pacing_read_contract.shared_budget_distribution_rows`
+  exists.
+- Live proof after stack restart:
+  `budget_rows=18`, `shared_rows=0`, `missing_read_contracts=[]`.
+- `ads_review_budget_context.missing_read_contracts=[]`.
+- Decision metric tiles are `budżety=18`, `podgląd budżetu=18`,
+  `koszt 7 dni=154`; there is no useless zero tile for shared budgets.
+
+Dashboard proof:
+
+- `/ads-doctor` renders `Podział wspólnych budżetów`.
+- Empty state explains that there are no shared budget groups in the current
+  read, instead of implying a blocker or optimization decision.
+
+Smoke proof:
+
+```text
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+passed
+context_pack_bytes=198997
+```
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T232046Z/wilq-ads-doctor/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- Source connector: `google_ads`.
+- Evidence IDs include `ev_connector_google_ads_status` and
+  `ev_refresh_refresh_google_ads_dc9e77806e9c`.
+
+Product finding:
+
+- Ads Doctor no longer treats shared-budget distribution as missing when Google
+  Ads exposes campaign `budget_id`. The marketer still gets budget review
+  context, but no budget scaling/apply claim.
+- Remaining risk: the scoped `wilq-ads-doctor` context-pack is close to the
+  200 KB smoke budget, so the next Ads contracts must compact intentionally.
+
 ## 2026-06-22 - wilq-ads-doctor empty change-history + context-budget eval
 
 Purpose:
@@ -46,8 +109,9 @@ API proof:
 - Decisions `ads_review_campaign_activity`, `ads_review_derived_kpis`,
   `ads_review_recommendations` and `ads_review_impression_share` no longer
   list generic `change_history` as missing.
-- `ads_review_budget_context` keeps `shared_budget_distribution` as the only
-  missing read contract in the live proof.
+- At the time of this eval, `ads_review_budget_context` kept
+  `shared_budget_distribution` as the only missing read contract. The later
+  shared-budget distribution slice fixed that specific gap.
 - `ads_review_change_history` remains blocked with metric tiles `zmiany=0`,
   `kampanie=0`.
 - `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` keeps compact Ads

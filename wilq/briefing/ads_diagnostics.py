@@ -95,6 +95,8 @@ from wilq.schemas import (
     AdsSearchTermSafetyReadContract,
     AdsSearchTermSafetyRow,
     AdsSearchTermsReadContract,
+    AdsSharedBudgetCampaignShare,
+    AdsSharedBudgetDistributionRow,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -1648,6 +1650,7 @@ def _budget_pacing_read_contract(
     latest_refresh: ConnectorRefreshRun | None,
 ) -> AdsBudgetPacingReadContract:
     rows = _budget_pacing_rows(metric_facts)
+    shared_budget_distribution_rows = _shared_budget_distribution_rows(rows)
     payload_preview = [
         row.payload_preview for row in rows if row.payload_preview is not None
     ]
@@ -1667,6 +1670,11 @@ def _budget_pacing_read_contract(
         "recommendation apply",
     ]
     if rows:
+        if all(row.budget_id for row in rows):
+            missing_read_contracts = _remove_missing_contract_names(
+                missing_read_contracts,
+                "shared_budget_distribution",
+            )
         daily_rows = [row for row in rows if row.spend_to_budget_ratio_7d is not None]
         recommended_rows = [row for row in rows if row.has_recommended_budget]
         return AdsBudgetPacingReadContract(
@@ -1676,13 +1684,15 @@ def _budget_pacing_read_contract(
                 f"WILQ ma budżetowy kontekst dla {len(rows)} kampanii; "
                 f"{len(daily_rows)} ma policzalny stosunek kosztu z 7 dni do "
                 f"budżetu dziennego, a {len(recommended_rows)} ma sygnał "
-                "recommended budget z Google Ads."
+                "recommended budget z Google Ads. "
+                f"Wspólne budżety: {len(shared_budget_distribution_rows)}."
             ),
             allowed_metrics=[
                 "budget_amount_micros",
                 "cost_micros_7d",
                 "seven_day_budget_micros",
                 "spend_to_budget_ratio_7d",
+                "shared_budget_distribution",
                 "budget_has_recommended_budget",
                 "budget_recommended_amount_micros",
             ],
@@ -1691,13 +1701,14 @@ def _budget_pacing_read_contract(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
             budget_rows=rows,
+            shared_budget_distribution_rows=shared_budget_distribution_rows,
             payload_preview=payload_preview,
             action_ids=[CAMPAIGN_REVIEW_ACTION_ID] if payload_preview else [],
             next_step=(
                 "Użyj tego jako kontekstu review: które kampanie mają koszt względem "
-                "budżetu dziennego i czy Google pokazuje recommended budget. Nie "
-                "skaluj budżetu bez historii zmian, impression share, celu biznesowego "
-                "i walidowanego ActionObject."
+                "budżetu dziennego, czy dzielą wspólny budżet i czy Google pokazuje "
+                "recommended budget. Nie skaluj budżetu bez historii zmian, impression "
+                "share, celu biznesowego i walidowanego ActionObject."
             ),
         )
 
@@ -1712,6 +1723,7 @@ def _budget_pacing_read_contract(
         evidence_ids=campaign_read_contract.evidence_ids
         or _refresh_or_connector_evidence_ids(latest_refresh),
         budget_rows=[],
+        shared_budget_distribution_rows=[],
         payload_preview=[],
         action_ids=[],
         next_step=(
@@ -1719,6 +1731,78 @@ def _budget_pacing_read_contract(
             "Nie oceniaj tempa budżetu bez budget_amount_micros."
         ),
     )
+
+
+def _shared_budget_distribution_rows(
+    budget_rows: list[AdsBudgetPacingRow],
+) -> list[AdsSharedBudgetDistributionRow]:
+    grouped_rows: dict[str, list[AdsBudgetPacingRow]] = {}
+    for row in budget_rows:
+        if row.budget_id is None:
+            continue
+        grouped_rows.setdefault(row.budget_id, []).append(row)
+
+    shared_rows: list[AdsSharedBudgetDistributionRow] = []
+    for budget_id, rows in grouped_rows.items():
+        if len(rows) < 2:
+            continue
+        total_cost_micros_7d = _sum_optional_int(
+            row.cost_micros_7d for row in rows
+        )
+        budget_amount_micros = _first_present(row.budget_amount_micros for row in rows)
+        seven_day_budget_micros = _first_present(
+            row.seven_day_budget_micros for row in rows
+        )
+        campaign_shares = [
+            AdsSharedBudgetCampaignShare(
+                campaign_id=row.campaign_id,
+                campaign_name=row.campaign_name,
+                campaign_status=row.campaign_status,
+                advertising_channel_type=row.advertising_channel_type,
+                cost_micros_7d=row.cost_micros_7d,
+                spend_share_7d=_ratio(row.cost_micros_7d, total_cost_micros_7d),
+                evidence_ids=row.evidence_ids,
+            )
+            for row in sorted(rows, key=_shared_budget_campaign_sort_key)
+        ]
+        shared_rows.append(
+            AdsSharedBudgetDistributionRow(
+                budget_id=budget_id,
+                budget_name=_first_present(row.budget_name for row in rows),
+                campaign_count=len(rows),
+                budget_amount_micros=budget_amount_micros,
+                seven_day_budget_micros=seven_day_budget_micros,
+                total_cost_micros_7d=total_cost_micros_7d,
+                spend_to_budget_ratio_7d=_ratio(
+                    total_cost_micros_7d,
+                    seven_day_budget_micros,
+                ),
+                campaign_shares=campaign_shares,
+                evidence_ids=_unique(
+                    evidence_id for row in rows for evidence_id in row.evidence_ids
+                ),
+                blocked_claims=CAMPAIGN_REVIEW_BLOCKED_CLAIMS,
+            )
+        )
+    return sorted(
+        shared_rows,
+        key=lambda row: (-(row.total_cost_micros_7d or 0), row.budget_name or row.budget_id),
+    )
+
+
+def _shared_budget_campaign_sort_key(row: AdsBudgetPacingRow) -> tuple[int, str]:
+    return (-(row.cost_micros_7d or 0), row.campaign_name)
+
+
+def _sum_optional_int(values: Iterable[int | None]) -> int | None:
+    present_values = [value for value in values if value is not None]
+    if not present_values:
+        return None
+    return sum(present_values)
+
+
+def _first_present[T](values: Iterable[T | None]) -> T | None:
+    return next((value for value in values if value is not None), None)
 
 
 def _budget_pacing_rows(metric_facts: list[MetricFact]) -> list[AdsBudgetPacingRow]:
@@ -4917,6 +5001,9 @@ def _ads_decision_queue(
                 evidence_ids=budget_pacing_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 budget_rows=budget_pacing_read_contract.budget_rows,
+                shared_budget_distribution_rows=(
+                    budget_pacing_read_contract.shared_budget_distribution_rows
+                ),
                 budget_apply_preview=budget_pacing_read_contract.payload_preview,
                 action_ids=campaign_review_action_ids,
                 blocked_claims=budget_pacing_read_contract.blocked_claims,
@@ -5547,15 +5634,18 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
             tiles["koszt bez konw."] = rows_with_spend_without_conversions
         return _clean_metric_tiles(tiles)
     if decision.decision_type == "review_budget_context":
-        return _clean_metric_tiles(
-            {
-                "budżety": len(decision.budget_rows),
-                "podgląd budżetu": len(decision.budget_apply_preview),
-                "koszt 7 dni": _format_micros(
-                    _sum_attr(decision.budget_rows, "cost_micros_7d")
-                ),
-            }
-        )
+        budget_tiles: dict[str, int | float | str | None] = {
+            "budżety": len(decision.budget_rows),
+            "podgląd budżetu": len(decision.budget_apply_preview),
+            "koszt 7 dni": _format_micros(
+                _sum_attr(decision.budget_rows, "cost_micros_7d")
+            ),
+        }
+        if decision.shared_budget_distribution_rows:
+            budget_tiles["wspólne budżety"] = len(
+                decision.shared_budget_distribution_rows
+            )
+        return _clean_metric_tiles(budget_tiles)
     if decision.decision_type == "review_recommendations":
         rows_with_impact = sum(1 for row in decision.recommendation_rows if row.impact_available)
         urgent_rows = sum(

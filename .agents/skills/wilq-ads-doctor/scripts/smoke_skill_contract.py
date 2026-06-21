@@ -164,6 +164,22 @@ def main() -> int:
         )
         if not pack_budget_contract.get("budget_rows"):
             raise SystemExit("Context pack must include ready budget pacing rows")
+        shared_budget_rows = budget_pacing_read_contract.get(
+            "shared_budget_distribution_rows"
+        )
+        if shared_budget_rows is None:
+            raise SystemExit("Budget pacing contract must expose shared budget rows")
+        budget_rows = budget_pacing_read_contract.get("budget_rows") or []
+        if all(row.get("budget_id") for row in budget_rows) and (
+            "shared_budget_distribution"
+            in (budget_pacing_read_contract.get("missing_read_contracts") or [])
+        ):
+            raise SystemExit(
+                "Budget pacing contract must not miss shared budget distribution "
+                "when all budget rows expose budget_id"
+            )
+        if pack_budget_contract.get("shared_budget_distribution_rows") is None:
+            raise SystemExit("Context pack must include shared budget distribution rows")
         if "budget apply" not in budget_pacing_read_contract.get("blocked_claims", []):
             raise SystemExit("Budget pacing contract must keep budget apply blocked")
         expected_budget_card = "card_google_ads_budget_review_playbook"

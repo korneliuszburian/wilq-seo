@@ -1958,6 +1958,8 @@ type AdsCampaignMetricRow = AdsDiagnosticsResponse["campaign_read_contract"]["ca
 type AdsDerivedKpiRow = AdsDiagnosticsResponse["derived_kpi_read_contract"]["kpi_rows"][number];
 type AdsBudgetPacingRow =
   AdsDiagnosticsResponse["budget_pacing_read_contract"]["budget_rows"][number];
+type AdsSharedBudgetDistributionRow =
+  AdsDiagnosticsResponse["budget_pacing_read_contract"]["shared_budget_distribution_rows"][number];
 type AdsRecommendationRow =
   AdsDiagnosticsResponse["recommendations_read_contract"]["recommendation_rows"][number];
 type AdsImpressionShareRow =
@@ -2271,6 +2273,8 @@ function AdsMetricEvidencePanel({
   const campaignRows = data.campaign_read_contract.campaign_rows;
   const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
   const budgetRows = data.budget_pacing_read_contract.budget_rows;
+  const sharedBudgetRows =
+    data.budget_pacing_read_contract.shared_budget_distribution_rows;
   const recommendationRows = data.recommendations_read_contract.recommendation_rows;
   const impressionShareRows = data.impression_share_read_contract.impression_share_rows;
   const changeHistoryRows = data.change_history_read_contract.change_history_rows;
@@ -2343,6 +2347,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Kampanie" value={campaignRows.length} />
           <MetricTile label="KPI" value={derivedKpiRows.length} />
           <MetricTile label="Budżety" value={budgetRows.length} />
+          <MetricTile label="Wspólne budżety" value={sharedBudgetRows.length} />
           <MetricTile label="Rekom." value={recommendationRows.length} />
           <MetricTile label="Udział" value={impressionShareRows.length} />
           <MetricTile label="Zmiany" value={changeHistoryRows.length} />
@@ -2367,6 +2372,10 @@ function AdsMetricEvidencePanel({
         <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
         <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
         <AdsBudgetPacingRowsTable rows={budgetRows} currencyCode={currencyCode} />
+        <AdsSharedBudgetDistributionPanel
+          rows={sharedBudgetRows}
+          currencyCode={currencyCode}
+        />
         <AdsRecommendationRowsPanel
           rows={recommendationRows}
           currencyCode={currencyCode}
@@ -2675,6 +2684,106 @@ function AdsBudgetPacingRowsTable({
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function AdsSharedBudgetDistributionPanel({
+  rows,
+  currencyCode
+}: {
+  rows: AdsSharedBudgetDistributionRow[];
+  currencyCode?: string;
+}) {
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-600">
+        Brak wspólnych budżetów w bieżącym odczycie albo każda kampania ma osobny
+        budżet. To oznacza, że WILQ nie musi rozdzielać kosztu shared budget między
+        kilka kampanii przed review.
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Podział wspólnych budżetów</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            Wspólne budget_id z Google Ads rozbite po kampaniach. To jest kontekst
+            review, nie rekomendacja skalowania ani zmiany budżetu.
+          </p>
+        </div>
+        <MetricTile label="Wspólne budżety" value={rows.length} />
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {rows.slice(0, 6).map((row) => (
+          <article key={row.budget_id} className="rounded-md border border-line bg-white p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h4 className="text-sm font-semibold text-ink">
+                  {row.budget_name ?? row.budget_id}
+                </h4>
+                <p className="mt-1 text-xs text-slate-500">
+                  budget_id={row.budget_id} / kampanie={row.campaign_count}
+                </p>
+              </div>
+              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                wydanie: {adsPercent(row.spend_to_budget_ratio_7d)}
+              </span>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              <MetricTile
+                label="Budżet dzień"
+                value={adsCost(row.budget_amount_micros, currencyCode)}
+              />
+              <MetricTile
+                label="Budżet 7 dni"
+                value={adsCost(row.seven_day_budget_micros, currencyCode)}
+              />
+              <MetricTile
+                label="Koszt 7 dni"
+                value={adsCost(row.total_cost_micros_7d, currencyCode)}
+              />
+            </div>
+            <div className="mt-3 grid gap-2">
+              {row.campaign_shares.slice(0, 8).map((share) => (
+                <div
+                  key={`${row.budget_id}-${share.campaign_id ?? share.campaign_name}`}
+                  className="rounded-md border border-line bg-slate-50 p-2 text-xs"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div className="font-semibold text-ink">{share.campaign_name}</div>
+                      <div className="mt-1 text-slate-500">
+                        {share.advertising_channel_type ?? "kanał: brak"} /{" "}
+                        {share.campaign_status ?? "status: brak"}
+                      </div>
+                    </div>
+                    <div className="text-right text-slate-700">
+                      <div>{adsCost(share.cost_micros_7d, currencyCode)}</div>
+                      <div className="text-slate-500">
+                        udział: {adsPercent(share.spend_share_7d)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-1 text-xs text-slate-600">
+              <LinkedTraceLine
+                label="Dowody"
+                values={row.evidence_ids.slice(0, 3)}
+                kind="evidence"
+              />
+              <TraceLine
+                label="Nie wolno twierdzić"
+                values={row.blocked_claims.map(adsBlockedClaimLabel)}
+              />
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

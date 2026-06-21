@@ -890,6 +890,48 @@ const adsDiagnostics = {
         ]
       }
     ],
+    shared_budget_distribution_rows: [
+      {
+        budget_id: "777",
+        budget_name: "Ekologus Search budget",
+        campaign_count: 2,
+        budget_amount_micros: 30000000,
+        seven_day_budget_micros: 210000000,
+        total_cost_micros_7d: 164591174,
+        spend_to_budget_ratio_7d: 0.781863,
+        campaign_shares: [
+          {
+            campaign_id: "123",
+            campaign_name: "Ekologus Search",
+            campaign_status: "ENABLED",
+            advertising_channel_type: "SEARCH",
+            cost_micros_7d: 120000000,
+            spend_share_7d: 0.729079,
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"]
+          },
+          {
+            campaign_id: "124",
+            campaign_name: "Ekologus Generic Search",
+            campaign_status: "ENABLED",
+            advertising_channel_type: "SEARCH",
+            cost_micros_7d: 44591174,
+            spend_share_7d: 0.270921,
+            evidence_ids: ["ev_refresh_refresh_google_ads_test"]
+          }
+        ],
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        blocked_claims: [
+          "budget scaling",
+          "budget apply",
+          "campaign pause",
+          "wasted budget",
+          "profitability",
+          "CPA verdict",
+          "ROAS verdict",
+          "recommendation apply"
+        ]
+      }
+    ],
     payload_preview: [
       {
         id: "budget_apply_preview_123_777",
@@ -1957,6 +1999,7 @@ const adsDiagnostics = {
       campaign_rows: [],
       derived_kpi_rows: [],
       budget_rows: [],
+      shared_budget_distribution_rows: [],
       budget_apply_preview: [],
       recommendation_rows: [],
       recommendation_apply_preview: [],
@@ -5111,9 +5154,14 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("koszt").length).toBeGreaterThan(0);
     expect(screen.getAllByText("164.6").length).toBeGreaterThan(0);
     expect(screen.getAllByText("podgląd wpływu").length).toBeGreaterThan(0);
-    expect(screen.getByText("Koszt 7 dni")).toBeInTheDocument();
+    expect(screen.getAllByText("Koszt 7 dni").length).toBeGreaterThan(0);
     expect(screen.getByText("7-dniowy budżet")).toBeInTheDocument();
     expect(screen.getByText("78,38%")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Podział wspólnych budżetów" })
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Ekologus Generic Search").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/72,91%/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("CAMPAIGN_BUDGET").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/automatyczne przyjęcie rekomendacji/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Karty wiedzy:/).length).toBeGreaterThan(0);

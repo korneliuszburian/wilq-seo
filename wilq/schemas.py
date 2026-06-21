@@ -899,6 +899,29 @@ class AdsBudgetPacingRow(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
 
+class AdsSharedBudgetCampaignShare(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    campaign_status: str | None = None
+    advertising_channel_type: str | None = None
+    cost_micros_7d: int | None = None
+    spend_share_7d: float | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class AdsSharedBudgetDistributionRow(BaseModel):
+    budget_id: str
+    budget_name: str | None = None
+    campaign_count: int
+    budget_amount_micros: int | None = None
+    seven_day_budget_micros: int | None = None
+    total_cost_micros_7d: int | None = None
+    spend_to_budget_ratio_7d: float | None = None
+    campaign_shares: list[AdsSharedBudgetCampaignShare] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class AdsBudgetPacingReadContract(BaseModel):
     id: str = "ads_budget_pacing_read_contract"
     status: Literal["ready", "blocked"]
@@ -910,6 +933,9 @@ class AdsBudgetPacingReadContract(BaseModel):
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
+    shared_budget_distribution_rows: list[AdsSharedBudgetDistributionRow] = Field(
+        default_factory=list
+    )
     payload_preview: list[AdsBudgetApplyPreview] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     next_step: str
@@ -1454,6 +1480,9 @@ class AdsDecisionItem(BaseModel):
     campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     derived_kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
+    shared_budget_distribution_rows: list[AdsSharedBudgetDistributionRow] = Field(
+        default_factory=list
+    )
     budget_apply_preview: list[AdsBudgetApplyPreview] = Field(default_factory=list)
     recommendation_rows: list[AdsRecommendationRow] = Field(default_factory=list)
     recommendation_apply_preview: list[AdsRecommendationApplyPreview] = Field(

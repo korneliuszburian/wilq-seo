@@ -4963,6 +4963,143 @@ def test_ads_change_history_blocks_empty_read_attempt(
         assert "change_history" not in decision["missing_read_contracts"]
 
 
+def test_ads_budget_context_exposes_shared_budget_distribution(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ads_shared_budget.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ads_shared_budget.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_ads_env(monkeypatch)
+    for key in GOOGLE_ADS_TEST_ENV:
+        monkeypatch.setenv(key, "configured")
+
+    shared_budget_dimensions = {
+        "campaign_status": "ENABLED",
+        "advertising_channel_type": "SEARCH",
+        "budget_id": "701",
+        "budget_name": "Shared search budget",
+        "budget_period": "DAILY",
+        "budget_status": "ENABLED",
+    }
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Google Ads vendor read completed with shared budget rows.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={
+                "row_count": 2,
+                "cost_micros": 18000000,
+                "customer_currency_code": "PLN",
+                "change_event_query": "change_event_last_14_days",
+                "change_event_row_count": 0,
+            },
+            metric_facts=[
+                VendorMetricFact("account_currency_code", "PLN", period="account_context"),
+                VendorMetricFact(
+                    "budget_amount_micros",
+                    30000000,
+                    {
+                        **shared_budget_dimensions,
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                    },
+                ),
+                VendorMetricFact(
+                    "budget_amount_micros",
+                    30000000,
+                    {
+                        **shared_budget_dimensions,
+                        "campaign_id": "102",
+                        "campaign_name": "Generic Search",
+                    },
+                ),
+                VendorMetricFact(
+                    "cost_micros",
+                    12000000,
+                    {
+                        **shared_budget_dimensions,
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                    },
+                ),
+                VendorMetricFact(
+                    "cost_micros",
+                    6000000,
+                    {
+                        **shared_budget_dimensions,
+                        "campaign_id": "102",
+                        "campaign_name": "Generic Search",
+                    },
+                ),
+            ],
+        ),
+    )
+
+    refresh_response = client.post(
+        "/api/connectors/google_ads/refresh",
+        json={"mode": "vendor_read", "reason": "shared budget distribution test"},
+    )
+    assert refresh_response.status_code == 200
+
+    response = client.get("/api/ads/diagnostics")
+    assert response.status_code == 200
+    payload = response.json()
+    budget_contract = payload["budget_pacing_read_contract"]
+    assert budget_contract["status"] == "ready"
+    assert "shared_budget_distribution" not in budget_contract["missing_read_contracts"]
+    assert budget_contract["shared_budget_distribution_rows"] == [
+        {
+            "budget_id": "701",
+            "budget_name": "Shared search budget",
+            "campaign_count": 2,
+            "budget_amount_micros": 30000000,
+            "seven_day_budget_micros": 210000000,
+            "total_cost_micros_7d": 18000000,
+            "spend_to_budget_ratio_7d": 0.085714,
+            "campaign_shares": [
+                {
+                    "campaign_id": "101",
+                    "campaign_name": "Brand Search",
+                    "campaign_status": "ENABLED",
+                    "advertising_channel_type": "SEARCH",
+                    "cost_micros_7d": 12000000,
+                    "spend_share_7d": 0.666667,
+                    "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+                },
+                {
+                    "campaign_id": "102",
+                    "campaign_name": "Generic Search",
+                    "campaign_status": "ENABLED",
+                    "advertising_channel_type": "SEARCH",
+                    "cost_micros_7d": 6000000,
+                    "spend_share_7d": 0.333333,
+                    "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+                },
+            ],
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "blocked_claims": [
+                "budget scaling",
+                "budget apply",
+                "campaign pause",
+                "wasted budget",
+                "profitability",
+                "CPA verdict",
+                "ROAS verdict",
+                "recommendation apply",
+            ],
+        }
+    ]
+    decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
+    budget_decision = decisions_by_id["ads_review_budget_context"]
+    assert "shared_budget_distribution" not in budget_decision["missing_read_contracts"]
+    assert budget_decision["shared_budget_distribution_rows"] == budget_contract[
+        "shared_budget_distribution_rows"
+    ]
+
+
 def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -5872,6 +6009,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "cost_micros_7d",
         "seven_day_budget_micros",
         "spend_to_budget_ratio_7d",
+        "shared_budget_distribution",
         "budget_has_recommended_budget",
         "budget_recommended_amount_micros",
     ]
@@ -5881,6 +6019,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "impression_share" not in budget_contract["missing_read_contracts"]
     assert "change_history" not in budget_contract["missing_read_contracts"]
     assert "budget_apply_preview" not in budget_contract["missing_read_contracts"]
+    assert "shared_budget_distribution" not in budget_contract["missing_read_contracts"]
     assert budget_contract["action_ids"] == ["act_prepare_ads_campaign_review_queue"]
     assert budget_contract["payload_preview"] == [
         {
@@ -5969,6 +6108,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
         }
     ]
+    assert budget_contract["shared_budget_distribution_rows"] == []
     budget_section = next(
         section for section in payload["sections"] if section["id"] == "ads_budget_pacing"
     )
