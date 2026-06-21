@@ -37,6 +37,30 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor context-pack impact-row consistency, 2026-06-21 20:59 CEST.
+  Naprawiono rozjazd między `/api/ads/diagnostics` i scoped
+  `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}`: generic
+  compaction obcinał `recommendation_rows` do pierwszych 3 rekordów i gubił
+  jeden z dwóch `impact_available=true` rows. To blokowało non-interactive
+  `wilq-ads-doctor`, bo smoke wykrywał, że Codex dostałby słabszy obraz niż
+  pełny endpoint. Nowa compaction zachowuje wszystkie impact rows i dopiero
+  obcina mniej ważne rows. Live proof po `scripts/local_stack.sh restart`:
+  endpoint ma `recommendation_rows=4`, `impact_rows=2`, context-pack ma
+  `recommendation_rows=3`, `impact_rows=2`, `payload_preview=4`,
+  `context_pack_bytes=198755`. Regression test:
+  `test_ads_doctor_context_pack_preserves_recommendation_impact_rows`.
+  `wilq-ads-doctor` smoke passed. Non-interactive eval passed z artefaktem
+  `.local-lab/evals/codex-skill/20260621T185704Z/wilq-ads-doctor/result.json`,
+  `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`,
+  source `google_ads`, evidence IDs, Ads knowledge cards i expert rules. Nadal
+  zablokowane: CPA/ROAS verdicts, wasted/search-term waste claims, budget/
+  recommendation/negative-keyword/targeting apply bez human review,
+  walidowanego ActionObject i audit/apply contracts. Final proof
+  2026-06-21 21:18 CEST: `scripts/verify.sh` green, w tym 147 backend tests,
+  17 dashboard unit tests, API/skill smokes, 14 Playwright e2e tests i
+  dashboard production build. Pierwszy full verify miał transient Playwright
+  `ERR_NETWORK_CHANGED` na `/workflows`; wąski rerun `/workflows` + `/knowledge`
+  przeszedł, a pełny rerun verify był zielony.
 - Ads search-term visibility over large refreshes, 2026-06-21 20:30 CEST.
   Naprawiono root cause, przez który duży Google Ads refresh mógł pokazywać
   campaign facts, ale ukrywać `search_term_*` facts przed Ads diagnostics,

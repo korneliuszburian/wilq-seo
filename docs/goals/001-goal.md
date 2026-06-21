@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 20:45 CEST.
+Last updated: 2026-06-21 21:18 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -112,6 +112,33 @@ Merchant now has a typed review-only
 the first Command Center decision can move from generic feed review to a
 cluster-level review queue with evidence and safety gates.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads Doctor context-pack consistency proof, 2026-06-21 20:59 CEST:
+scoped `wilq-ads-doctor` context-pack now preserves all
+`recommendations_read_contract.recommendation_rows` with
+`impact_available=true` instead of blindly taking the first three rows. This
+fixes the failed non-interactive eval at
+`.local-lab/evals/codex-skill/20260621T184838Z/wilq-ads-doctor/result.json`,
+where the smoke correctly blocked because Codex would have received only one
+of two recommendation impact rows from live Ads evidence. Live proof after
+`scripts/local_stack.sh restart`: `/api/ads/diagnostics` has
+`recommendation_rows=4`, `impact_rows=2`; scoped
+`POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` has compacted
+`recommendation_rows=3`, `impact_rows=2`, `payload_preview=4`, and
+`context_pack_bytes=198755`. Regression test:
+`tests/test_api_contracts.py::test_ads_doctor_context_pack_preserves_recommendation_impact_rows`.
+`wilq-ads-doctor` smoke passed, and non-interactive Codex eval passed at
+`.local-lab/evals/codex-skill/20260621T185704Z/wilq-ads-doctor/result.json`
+with `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`,
+Google Ads evidence IDs, required Ads knowledge cards and expert rules.
+Read-only diagnosis is usable again; CPA/ROAS, wasted budget, search-term
+waste and every write/apply path remain blocked without human review,
+validated ActionObject and audit/apply contracts. Final verification passed on
+2026-06-21 21:18 CEST: `scripts/verify.sh` green, including 147 backend tests,
+17 dashboard unit tests, API/skill smokes, 14 Playwright e2e tests and dashboard
+production build. The first full verify attempt hit a transient Playwright
+`ERR_NETWORK_CHANGED` on `/workflows`; the narrow rerun of `/workflows` and
+`/knowledge` passed, then the full verify rerun passed.
 
 Latest Ads search-term visibility proof, 2026-06-21 20:30 CEST:
 large Google Ads refreshes must not hide search-term evidence from diagnostics,

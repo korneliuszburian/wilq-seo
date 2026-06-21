@@ -1252,11 +1252,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ("recommendations_read_contract", "payload_preview"),
         ADS_CONTEXT_ROW_LIMIT,
     )
-    _limit_contract_rows(
-        compact,
-        ("recommendations_read_contract", "recommendation_rows"),
-        ADS_CONTEXT_DECISION_ROW_LIMIT,
-    )
+    _limit_recommendation_rows_for_context(compact)
     _limit_contract_rows(
         compact,
         ("custom_segments_read_contract", "payload_preview"),
@@ -2014,6 +2010,28 @@ def _limit_contract_rows(
     contract = data.get(path[0])
     if isinstance(contract, dict) and isinstance(contract.get(path[1]), list):
         contract[path[1]] = contract[path[1]][:limit]
+
+
+def _limit_recommendation_rows_for_context(data: dict[str, Any]) -> None:
+    contract = data.get("recommendations_read_contract")
+    if not isinstance(contract, dict) or not isinstance(
+        contract.get("recommendation_rows"),
+        list,
+    ):
+        return
+    rows = contract["recommendation_rows"]
+    selected_indexes = {
+        index
+        for index, row in enumerate(rows)
+        if isinstance(row, dict) and row.get("impact_available")
+    }
+    for index, _row in enumerate(rows):
+        if len(selected_indexes) >= ADS_CONTEXT_DECISION_ROW_LIMIT:
+            break
+        selected_indexes.add(index)
+    contract["recommendation_rows"] = [
+        row for index, row in enumerate(rows) if index in selected_indexes
+    ]
 
 
 def _limit_candidate_rows(

@@ -459,6 +459,74 @@ def seed_google_ads_live_review_metric_facts(
     )
 
 
+def save_google_ads_recommendation_rows_for_context_pack() -> None:
+    completed_at = datetime.now(UTC) + timedelta(minutes=1)
+    run = ConnectorRefreshRun(
+        id="refresh_google_ads_recommendation_context_pack_seed",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=completed_at,
+        evidence_ids=["ev_refresh_refresh_google_ads_recommendation_context_pack_seed"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "recommendation_query": "active_recommendations",
+            "recommendation_row_count": 4,
+            "recommendation_impact_row_count": 2,
+        },
+        summary="Google Ads recommendation context-pack seed.",
+    )
+    facts: list[VendorMetricFact] = []
+    for recommendation_id, impact_available in (
+        ("rec-a", True),
+        ("rec-b", False),
+        ("rec-c", False),
+        ("rec-d", True),
+    ):
+        dimensions = {
+            "recommendation_id": recommendation_id,
+            "recommendation_resource_name": (
+                f"customers/123/recommendations/{recommendation_id}"
+            ),
+            "recommendation_type": "CAMPAIGN_BUDGET",
+            "campaign_id": "101",
+            "campaign_budget_id": "701",
+            "dismissed": "false",
+        }
+        facts.extend(
+            [
+                VendorMetricFact(
+                    name="recommendation_available",
+                    value=1,
+                    dimensions=dimensions,
+                ),
+                VendorMetricFact(
+                    name="recommendation_campaign_count",
+                    value=1,
+                    dimensions=dimensions,
+                ),
+            ]
+        )
+        if impact_available:
+            facts.extend(
+                [
+                    VendorMetricFact(
+                        name="recommendation_impact_base_clicks",
+                        value=20,
+                        dimensions=dimensions,
+                    ),
+                    VendorMetricFact(
+                        name="recommendation_impact_potential_clicks",
+                        value=25,
+                        dimensions=dimensions,
+                    ),
+                ]
+            )
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(run, detailed_facts=facts)
+
+
 def save_localo_visibility_metric_facts() -> None:
     localo_run = ConnectorRefreshRun(
         id="refresh_localo_opportunity_seed",
@@ -9553,6 +9621,41 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         if action["id"] == SEARCH_TERM_NGRAM_ACTION_ID
     )
     assert ngram_context_action["payload"]["ngram_preview_included"] <= 4
+
+
+def test_ads_doctor_context_pack_preserves_recommendation_impact_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    save_google_ads_recommendation_rows_for_context_pack()
+
+    ads_response = client.get("/api/ads/diagnostics")
+    assert ads_response.status_code == 200
+    ads_recommendations = ads_response.json()["recommendations_read_contract"]
+    endpoint_impact_ids = [
+        row["recommendation_id"]
+        for row in ads_recommendations["recommendation_rows"]
+        if row["impact_available"]
+    ]
+
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-ads-doctor"},
+    )
+
+    assert response.status_code == 200
+    pack_recommendations = response.json()["ads_diagnostics"][
+        "recommendations_read_contract"
+    ]
+    pack_impact_ids = [
+        row["recommendation_id"]
+        for row in pack_recommendations["recommendation_rows"]
+        if row["impact_available"]
+    ]
+    assert len(ads_recommendations["recommendation_rows"]) > 3
+    assert endpoint_impact_ids == ["rec-a", "rec-d"]
+    assert pack_impact_ids == endpoint_impact_ids
 
 
 def test_codex_context_pack_scopes_custom_segments_payload(

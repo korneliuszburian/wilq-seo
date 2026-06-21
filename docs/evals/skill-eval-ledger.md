@@ -25,6 +25,64 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-21 - wilq-ads-doctor context-pack impact-row eval
+
+Purpose:
+
+- Prove that `wilq-ads-doctor` receives the same Ads recommendation impact
+  evidence in its scoped context-pack as `/api/ads/diagnostics`. Previous
+  failed eval artifact
+  `.local-lab/evals/codex-skill/20260621T184838Z/wilq-ads-doctor/result.json`
+  blocked correctly because the smoke detected that generic compaction kept
+  only one of two recommendation impact rows.
+
+Fix proof:
+
+- `/api/ads/diagnostics.recommendations_read_contract` currently has 4
+  recommendation rows and 2 impact rows.
+- `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now keeps 3
+  compacted recommendation rows while preserving both impact rows; payload
+  preview count remains 4 and scoped context-pack size is 198755 bytes.
+- Regression test:
+  `tests/test_api_contracts.py::test_ads_doctor_context_pack_preserves_recommendation_impact_rows`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T185704Z/wilq-ads-doctor/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`.
+- Source connector: `google_ads`.
+- Evidence IDs include `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_0477a745f098` and
+  `ev_refresh_refresh_google_ads_631f03912b4c`.
+- Knowledge cards include `card_google_ads_budget_review_playbook`.
+- Expert rules include `ads_scaling_candidates_v1`,
+  `ads_recommendations_v1`, `ads_principles_v1`,
+  `ads_search_terms_v1`, `ads_negative_keywords_v1`,
+  `ads_custom_segments_v1` and `ads_keyword_planner_v1`.
+- Output is unblocked for read-only Ads diagnosis, but still blocks CPA, ROAS,
+  search-term waste, wasted budget, budget scaling, recommendation apply,
+  targeting/apply and negative keyword apply without human review, validated
+  ActionObject and audit/apply contracts.
+
+Product finding:
+
+- Ads Doctor is again safe for non-interactive Codex reasoning over live Ads
+  evidence because the scoped context-pack no longer drops recommendation
+  impact evidence that the canonical endpoint exposes.
+
 ## 2026-06-21 - wilq-merchant-feed-operator issue preview eval
 
 Prompt source:
