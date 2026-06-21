@@ -17,7 +17,7 @@ Pełne archiwum sprzed kompaktowania:
 
 ## Current Snapshot
 
-Data: 2026-06-21
+Data: 2026-06-22
 
 Stan produktu:
 
@@ -37,6 +37,29 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads change-history empty-read semantics + Ads Doctor context budget,
+  2026-06-22 00:56 CEST. WILQ rozróżnia teraz "change history read wykonany,
+  ale Google Ads zwrócił 0 change_event rows" od "brak kontraktu
+  change_history". Live `/api/ads/diagnostics` po `scripts/local_stack.sh
+  restart`: `change_history_read_contract.status=blocked`,
+  `missing_read_contracts=[change_event_rows, pre_change_performance_window,
+  post_change_performance_window, human_change_impact_review, apply_preview]`,
+  `change_history_rows=[]`. Decyzje `ads_review_campaign_activity`,
+  `ads_review_derived_kpis`, `ads_review_recommendations` i
+  `ads_review_impression_share` nie pokazują już ogólnego `change_history` jako
+  missing contract; `ads_review_budget_context` zostawia tylko
+  `shared_budget_distribution`. Sama decyzja `ads_review_change_history`
+  pozostaje `blocked` z `zmiany=0`, co jest właściwym blockerem. Scoped
+  `wilq-ads-doctor` context-pack został skompaktowany: common Ads row limit w
+  context-packu to 3, pełny `/api/ads/diagnostics` pozostaje bez tego cięcia.
+  Live context-pack proof: około 188 KB przez HTTP/JQ, smoke script raportuje
+  `context_pack_bytes=198343`, czyli poniżej limitu 200 KB. `wilq-ads-doctor`
+  smoke passed i non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T223847Z/wilq-ads-doctor/result.json`
+  z `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`, source
+  connector `google_ads` i Google Ads evidence IDs. Final proof:
+  `scripts/verify.sh` green, w tym 149 backend tests, 17 dashboard unit tests,
+  Skill API smoke, 14 Playwright e2e tests i dashboard production build.
 - Custom segments audience forecast readiness contract, 2026-06-22 00:21 CEST.
   `ads_diagnostics.custom_segments_read_contract` ma teraz nested
   `audience_forecast_read_contract` zamiast samej tekstowej luki

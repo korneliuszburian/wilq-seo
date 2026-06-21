@@ -4813,14 +4813,118 @@ def test_ads_change_history_blocks_empty_read_attempt(
         "wilq.connectors.refresh.refresh_google_ads_campaign_summary",
         lambda request: VendorReadResult(
             status=ConnectorRefreshStatus.completed,
-            summary="Google Ads vendor read completed without change_event rows.",
+            summary=(
+                "Google Ads vendor read completed with campaign rows and without "
+                "change_event rows."
+            ),
             external_call_attempted=True,
             vendor_data_collected=True,
             metric_summary={
-                "row_count": 0,
+                "row_count": 1,
+                "clicks": 9,
+                "impressions": 90,
+                "cost_micros": 12000000,
+                "conversions": 2.5,
+                "conversion_value": 450.75,
+                "customer_currency_code": "PLN",
+                "recommendation_query": "active_recommendations",
+                "recommendation_row_count": 1,
+                "recommendation_campaign_count": 1,
                 "change_event_query": "change_event_last_14_days",
                 "change_event_row_count": 0,
             },
+            metric_facts=[
+                VendorMetricFact(
+                    "account_currency_code",
+                    "PLN",
+                    period="account_context",
+                ),
+                VendorMetricFact(
+                    "clicks",
+                    9,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "impressions",
+                    90,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "cost_micros",
+                    12000000,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "conversions",
+                    2.5,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "conversion_value",
+                    450.75,
+                    {"campaign_id": "101", "campaign_name": "Brand Search"},
+                ),
+                VendorMetricFact(
+                    "budget_amount_micros",
+                    30000000,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                        "budget_id": "701",
+                        "budget_name": "Brand budget",
+                        "budget_period": "DAILY",
+                        "budget_status": "ENABLED",
+                    },
+                ),
+                VendorMetricFact(
+                    "budget_has_recommended_budget",
+                    0,
+                    {
+                        "campaign_id": "101",
+                        "campaign_name": "Brand Search",
+                        "campaign_status": "ENABLED",
+                        "advertising_channel_type": "SEARCH",
+                        "budget_id": "701",
+                        "budget_name": "Brand budget",
+                        "budget_period": "DAILY",
+                        "budget_status": "ENABLED",
+                    },
+                ),
+                VendorMetricFact(
+                    "recommendation_available",
+                    1,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_resource_name": (
+                            "customers/test/recommendations/rec-1"
+                        ),
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation",
+                ),
+                VendorMetricFact(
+                    "recommendation_campaign_count",
+                    1,
+                    {
+                        "recommendation_id": "rec-1",
+                        "recommendation_resource_name": (
+                            "customers/test/recommendations/rec-1"
+                        ),
+                        "recommendation_type": "CAMPAIGN_BUDGET",
+                        "dismissed": "false",
+                        "campaign_id": "101",
+                        "campaign_budget_id": "701",
+                        "recommendation_campaign_count": "1",
+                    },
+                    period="recommendation",
+                ),
+            ],
         ),
     )
 
@@ -4847,6 +4951,16 @@ def test_ads_change_history_blocks_empty_read_attempt(
     assert "change_event_rows" in change_history_decision["missing_read_contracts"]
     assert change_history_decision["action_ids"] == []
     assert "impact review zablokowany" in change_history_decision["next_step"]
+
+    for decision_id in (
+        "ads_review_campaign_activity",
+        "ads_review_derived_kpis",
+        "ads_review_budget_context",
+        "ads_review_recommendations",
+    ):
+        decision = decisions_by_id[decision_id]
+        assert decision["status"] == "ready"
+        assert "change_history" not in decision["missing_read_contracts"]
 
 
 def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(

@@ -29,6 +29,24 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads change-history empty-read semantics and Ads Doctor context budget,
+   2026-06-22 00:56 CEST: if Google Ads `vendor_read` attempted
+   `change_event` and returned 0 rows, WILQ must not show generic
+   `change_history` as a missing read contract on campaign, KPI,
+   recommendation or impression-share decisions. The correct state is:
+   `change_history_read_contract.status=blocked`, missing
+   `change_event_rows`, `pre_change_performance_window`,
+   `post_change_performance_window`, `human_change_impact_review` and
+   `apply_preview`; only `ads_review_change_history` stays blocked with
+   `zmiany=0`. Scoped `wilq-ads-doctor` context-pack keeps common Ads samples
+   at 3 rows and preserves total/included counts, while the full
+   `/api/ads/diagnostics` endpoint remains richer. Eval artifact:
+   `.local-lab/evals/codex-skill/20260621T223847Z/wilq-ads-doctor/result.json`
+   with `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`.
+   Full `scripts/verify.sh` passed after this slice: backend `149 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
+   and dashboard production build.
+
 0. Custom segments audience forecast readiness contract, 2026-06-22 00:21 CEST:
    `/api/ads/diagnostics.custom_segments_read_contract` exposes nested
    `audience_forecast_read_contract`. Live state after

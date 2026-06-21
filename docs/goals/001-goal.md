@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 00:21 CEST.
+Last updated: 2026-06-22 00:56 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -122,6 +122,32 @@ blocker; it is an evidence/no-candidate blocker. Demand Gen launch, migration,
 creative-quality verdicts, campaign apply and performance uplift claims remain
 blocked.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads change-history empty-read + context-pack budget proof, 2026-06-22
+00:56 CEST: WILQ no longer treats an attempted read-only Google Ads
+change-history read with 0 `change_event` rows as a generic missing
+`change_history` contract on every Ads decision. Live `/api/ads/diagnostics`
+after `scripts/local_stack.sh restart` reports
+`change_history_read_contract.status=blocked`, `change_history_rows=[]` and
+missing contracts `change_event_rows`, `pre_change_performance_window`,
+`post_change_performance_window`, `human_change_impact_review` and
+`apply_preview`. Decisions `ads_review_campaign_activity`,
+`ads_review_derived_kpis`, `ads_review_recommendations` and
+`ads_review_impression_share` no longer list `change_history` as missing;
+`ads_review_budget_context` only lists `shared_budget_distribution`, while
+`ads_review_change_history` stays blocked with `zmiany=0`. Scoped
+`wilq-ads-doctor` context-pack compaction now keeps common Ads row samples at
+3 rows and preserves total/included counts in `context_pack_compaction`; the
+full `/api/ads/diagnostics` endpoint is not cut by this limit. Live context
+proof: HTTP/JQ size about 188 KB, smoke `context_pack_bytes=198343`, below the
+200 KB skill budget. `wilq-ads-doctor` smoke passed. Non-interactive Codex eval
+passed at
+`.local-lab/evals/codex-skill/20260621T223847Z/wilq-ads-doctor/result.json`
+with `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`, source
+connector `google_ads` and Google Ads evidence IDs. Final verification passed:
+`scripts/verify.sh` green, including 149 backend tests, 17 dashboard unit
+tests, API/skill smokes, 14 Playwright e2e tests and dashboard production
+build.
 
 Latest Custom Segments forecast/audience-size proof, 2026-06-22 00:21 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract` now exposes nested

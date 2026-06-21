@@ -25,6 +25,74 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-22 - wilq-ads-doctor empty change-history + context-budget eval
+
+Purpose:
+
+- Prove that `wilq-ads-doctor` sees attempted empty Google Ads change-history
+  reads as a typed blocker, not as a vague missing `change_history` contract on
+  every Ads decision.
+- Prove that scoped Ads Doctor context-pack stays below the 200 KB smoke budget
+  after live Ads data grew.
+
+API proof:
+
+- `/api/ads/diagnostics.change_history_read_contract.status=blocked`.
+- `change_history_rows=[]`.
+- Missing contracts:
+  `change_event_rows`, `pre_change_performance_window`,
+  `post_change_performance_window`, `human_change_impact_review`,
+  `apply_preview`.
+- Decisions `ads_review_campaign_activity`, `ads_review_derived_kpis`,
+  `ads_review_recommendations` and `ads_review_impression_share` no longer
+  list generic `change_history` as missing.
+- `ads_review_budget_context` keeps `shared_budget_distribution` as the only
+  missing read contract in the live proof.
+- `ads_review_change_history` remains blocked with metric tiles `zmiany=0`,
+  `kampanie=0`.
+- `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` keeps compact Ads
+  samples at 3 rows and reports total/included counts in
+  `context_pack_compaction`.
+
+Smoke proof:
+
+```text
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+passed
+context_pack_bytes=198343
+```
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T223847Z/wilq-ads-doctor/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`,
+  `blocked=true`.
+- Source connector: `google_ads`.
+- Evidence IDs include `ev_connector_google_ads_status` and
+  `ev_refresh_refresh_google_ads_dc9e77806e9c`.
+
+Product finding:
+
+- Ads Doctor is more useful for the marketer because campaign, KPI,
+  recommendation and impression-share decisions no longer look blocked by a
+  missing implementation when WILQ actually performed a change-history read and
+  found no change rows. The real remaining blockers are pre/post impact
+  windows, human impact review, apply previews, Keyword Planner approval,
+  forecast/audience-size and actual vendor mutation adapters.
+
 ## 2026-06-22 - wilq-custom-segments audience forecast blocker eval
 
 Purpose:

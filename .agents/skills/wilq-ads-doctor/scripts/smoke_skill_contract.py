@@ -249,6 +249,15 @@ def main() -> int:
             "recommendation_rows",
         ) or []
         pack_payload_preview = pack_recommendations_contract.get("payload_preview") or []
+        pack_compaction = pack.get("ads_diagnostics", {}).get(
+            "context_pack_compaction"
+        ) or {}
+        pack_payload_preview_total = pack_compaction.get(
+            "recommendation_apply_preview_total"
+        )
+        pack_payload_preview_included = pack_compaction.get(
+            "recommendation_apply_preview_included"
+        )
         pack_impact_row_count = sum(
             1 for row in pack_recommendation_rows if row.get("impact_available")
         )
@@ -259,8 +268,12 @@ def main() -> int:
             for row in pack_recommendation_rows
         ):
             raise SystemExit("Context pack recommendation rows must preserve review triage")
-        if len(pack_payload_preview) != min(len(payload_preview), 8):
-            raise SystemExit("Context pack recommendation payload preview count differs")
+        if pack_payload_preview_total != len(payload_preview):
+            raise SystemExit("Context pack recommendation payload preview total differs")
+        if pack_payload_preview_included != len(pack_payload_preview):
+            raise SystemExit("Context pack recommendation payload preview included differs")
+        if len(pack_payload_preview) > len(payload_preview):
+            raise SystemExit("Context pack recommendation payload preview over-includes")
     elif "recommendations" not in recommendations_read_contract.get(
         "missing_read_contracts",
         [],

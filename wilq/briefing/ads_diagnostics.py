@@ -382,7 +382,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
                 )
             }
         )
-    if change_history_read_contract.status == "ready":
+    if "change_history" not in change_history_read_contract.missing_read_contracts:
         campaign_read_contract = campaign_read_contract.model_copy(
             update={
                 "missing_read_contracts": _remove_missing_contract_names(
@@ -5378,7 +5378,7 @@ def _remove_available_contracts(
         ]
     if (
         change_history_read_contract is not None
-        and change_history_read_contract.status == "ready"
+        and "change_history" not in change_history_read_contract.missing_read_contracts
     ):
         unavailable = [
             contract for contract in unavailable if contract != "change_history"
