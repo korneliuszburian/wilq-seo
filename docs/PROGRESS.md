@@ -37,6 +37,14 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard trace line extraction, 2026-06-21 18:36 CEST.
+  Czwarty mały code-quality slice: `TraceLine` i `LinkedTraceLine` zostały
+  przeniesione z `App.tsx` do `apps/dashboard/src/components/TraceLine.tsx`.
+  To współdzielona warstwa evidence/action traceability używana przez wiele
+  tras. File-size proof: `App.tsx` spadł do 7101 linii; `TraceLine.tsx` ma
+  49 linii. Focused proof: `pnpm --filter @wilq/dashboard lint`, typecheck i
+  `pnpm --filter @wilq/dashboard test -- --run App.test.tsx` zielone
+  (`17 passed`).
 - Dashboard metric fact chips extraction, 2026-06-21 18:25 CEST.
   Trzeci mały code-quality slice: `MetricFactChips` i jego formattery zostały
   przeniesione z `App.tsx` do

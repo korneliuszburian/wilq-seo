@@ -83,6 +83,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { Shell } from "../components/Shell";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { MetricFactChips } from "../components/MetricFactChips";
+import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { queryClient } from "../lib/queryClient";
 
 export { createWilqQueryClient } from "../lib/queryClient";
@@ -1007,54 +1008,6 @@ function ActionImpactCheckResultPanel({
       <div>
         Apply nadal: {result.review_gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
       </div>
-    </div>
-  );
-}
-
-function TraceLine({
-  label,
-  values,
-  empty = "brak"
-}: {
-  label: string;
-  values: string[];
-  empty?: string;
-}) {
-  return (
-    <div className="break-words">
-      {label}: {values.length > 0 ? values.join(", ") : empty}
-    </div>
-  );
-}
-
-function LinkedTraceLine({
-  label,
-  values,
-  kind,
-  empty = "brak"
-}: {
-  label: string;
-  values: string[];
-  kind: "actions" | "evidence";
-  empty?: string;
-}) {
-  return (
-    <div className="break-words">
-      {label}:{" "}
-      {values.length > 0
-        ? values.map((value, index) => (
-            <span key={value}>
-              {index > 0 ? ", " : ""}
-              <Link
-                to={kind === "actions" ? "/actions/$actionId" : "/evidence/$evidenceId"}
-                params={kind === "actions" ? { actionId: value } : { evidenceId: value }}
-                className="font-medium text-action underline-offset-2 hover:underline"
-              >
-                {value}
-              </Link>
-            </span>
-          ))
-        : empty}
     </div>
   );
 }
