@@ -9992,8 +9992,10 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
         assert "demand_gen_creative_asset_rows" not in data["missing_read_contracts"]
     else:
         assert "demand_gen_creative_asset_rows" in data["missing_read_contracts"]
-    assert "demand_gen_landing_quality_by_campaign" in data["missing_read_contracts"]
-    assert "demand_gen_migration_constraints" in data["missing_read_contracts"]
+    assert isinstance(data["demand_gen_landing_quality_rows"], list)
+    assert isinstance(data["demand_gen_migration_constraint_rows"], list)
+    assert "demand_gen_landing_quality_by_campaign" not in data["missing_read_contracts"]
+    assert "demand_gen_migration_constraints" not in data["missing_read_contracts"]
     assert "demand_gen_readiness_review_action_object" in data["available_read_contracts"]
     assert "demand_gen_action_object" not in data["missing_read_contracts"]
     assert "Demand Gen launch recommendation" in data["blocked_claims"]
@@ -10023,7 +10025,18 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
         },
         summary="Google Ads Demand Gen empty-read proof seed.",
     )
+    ga4_run = ConnectorRefreshRun(
+        id="refresh_google_analytics_4_demand_gen_landing_read",
+        connector_id="google_analytics_4",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_google_analytics_4_demand_gen_landing_read"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        summary="GA4 Demand Gen landing quality seed.",
+    )
     local_state_store().save_connector_refresh_run(run)
+    local_state_store().save_connector_refresh_run(ga4_run)
     metric_store().save_connector_refresh_metrics(
         run,
         detailed_facts=[
@@ -10081,6 +10094,41 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
             ),
         ],
     )
+    metric_store().save_connector_refresh_metrics(
+        ga4_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="active_users",
+                value=18,
+                dimensions={
+                    "landing_page": "/dg-test/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Demand Gen Test",
+                },
+                period="ga4_landing_source_campaign",
+            ),
+            VendorMetricFact(
+                name="sessions",
+                value=24,
+                dimensions={
+                    "landing_page": "/dg-test/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Demand Gen Test",
+                },
+                period="ga4_landing_source_campaign",
+            ),
+            VendorMetricFact(
+                name="engagement_rate",
+                value=0.75,
+                dimensions={
+                    "landing_page": "/dg-test/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Demand Gen Test",
+                },
+                period="ga4_landing_source_campaign",
+            ),
+        ],
+    )
 
     response = client.get("/api/demand-gen/diagnostics")
 
@@ -10092,19 +10140,37 @@ def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(
     assert "demand_gen_ad_group_ad_rows" not in data["missing_read_contracts"]
     assert "demand_gen_asset_group_rows" not in data["missing_read_contracts"]
     assert "demand_gen_creative_asset_rows" not in data["missing_read_contracts"]
-    assert "demand_gen_landing_quality_by_campaign" in data["missing_read_contracts"]
-    assert "demand_gen_migration_constraints" in data["missing_read_contracts"]
+    assert "demand_gen_landing_quality_by_campaign" in data["available_read_contracts"]
+    assert "demand_gen_migration_constraints" in data["available_read_contracts"]
+    assert "demand_gen_landing_quality_by_campaign" not in data["missing_read_contracts"]
+    assert "demand_gen_migration_constraints" not in data["missing_read_contracts"]
     assert data["metric_tiles"]["reklamy DG"] == 1
     assert data["metric_tiles"]["assety DG"] == 1
+    assert data["metric_tiles"]["landingi DG"] == 1
+    assert data["metric_tiles"]["ograniczenia"] == 1
     assert len(data["demand_gen_ad_group_ad_rows"]) == 1
     assert len(data["demand_gen_creative_asset_rows"]) == 1
+    assert len(data["demand_gen_landing_quality_rows"]) == 1
+    assert len(data["demand_gen_migration_constraint_rows"]) == 1
     assert data["demand_gen_ad_group_ad_rows"][0]["ad_id"] == "803"
     assert data["demand_gen_ad_group_ad_rows"][0]["asset_reference_count"] == 4
     assert data["demand_gen_creative_asset_rows"][0]["asset_id"] == "901"
     assert data["demand_gen_creative_asset_rows"][0]["impressions"] == 44
+    assert data["demand_gen_landing_quality_rows"][0]["campaign_name"] == "Demand Gen Test"
+    assert data["demand_gen_landing_quality_rows"][0]["landing_page"] == "/dg-test/"
+    assert data["demand_gen_landing_quality_rows"][0]["active_users"] == 18
+    assert data["demand_gen_landing_quality_rows"][0]["sessions"] == 24
+    assert data["demand_gen_landing_quality_rows"][0]["engagement_rate"] == 0.75
+    assert data["demand_gen_migration_constraint_rows"][0]["campaign_name"] == (
+        "Demand Gen Test"
+    )
+    assert data["demand_gen_migration_constraint_rows"][0]["migration_candidate"] is False
+    assert "already_demand_gen" in data["demand_gen_migration_constraint_rows"][0]["reason"]
     preview = data["payload_preview"][0]
     assert preview["demand_gen_ad_group_ad_row_count"] == 1
     assert preview["demand_gen_creative_asset_row_count"] == 1
+    assert preview["demand_gen_landing_quality_row_count"] == 1
+    assert preview["demand_gen_migration_constraint_row_count"] == 1
     assert preview["apply_allowed"] is False
     assert "Demand Gen launch recommendation" in data["blocked_claims"]
 

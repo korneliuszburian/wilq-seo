@@ -100,14 +100,24 @@ def main() -> int:
     if not isinstance(title, str) or not title.startswith("Demand Gen:"):
         raise SystemExit("Demand Gen readiness must expose a marketer-facing title")
     missing_read_contracts = readiness.get("missing_read_contracts")
-    if not isinstance(missing_read_contracts, list) or not missing_read_contracts:
-        raise SystemExit("Demand Gen readiness must expose missing read contracts")
+    if not isinstance(missing_read_contracts, list):
+        raise SystemExit("Demand Gen readiness must expose missing read contracts list")
     available_read_contracts = readiness.get("available_read_contracts")
     if not isinstance(available_read_contracts, list):
         raise SystemExit("Demand Gen readiness must expose available read contracts")
     if "demand_gen_asset_group_rows" in missing_read_contracts:
         raise SystemExit("Demand Gen readiness must not use obsolete asset group rows contract")
     for contract in ("demand_gen_ad_group_ad_rows", "demand_gen_creative_asset_rows"):
+        in_available = contract in available_read_contracts
+        in_missing = contract in missing_read_contracts
+        if in_available and in_missing:
+            raise SystemExit(f"Demand Gen contract {contract} cannot be both available and missing")
+        if not in_available and not in_missing:
+            raise SystemExit(f"Demand Gen contract {contract} must be either available or missing")
+    for contract in (
+        "demand_gen_landing_quality_by_campaign",
+        "demand_gen_migration_constraints",
+    ):
         in_available = contract in available_read_contracts
         in_missing = contract in missing_read_contracts
         if in_available and in_missing:
@@ -142,6 +152,16 @@ def main() -> int:
     demand_gen_creative_asset_rows = readiness.get("demand_gen_creative_asset_rows")
     if not isinstance(demand_gen_creative_asset_rows, list):
         raise SystemExit("Demand Gen readiness must expose demand_gen_creative_asset_rows list")
+    demand_gen_landing_quality_rows = readiness.get("demand_gen_landing_quality_rows")
+    if not isinstance(demand_gen_landing_quality_rows, list):
+        raise SystemExit("Demand Gen readiness must expose demand_gen_landing_quality_rows list")
+    demand_gen_migration_constraint_rows = readiness.get(
+        "demand_gen_migration_constraint_rows"
+    )
+    if not isinstance(demand_gen_migration_constraint_rows, list):
+        raise SystemExit(
+            "Demand Gen readiness must expose demand_gen_migration_constraint_rows list"
+        )
     action_ids = readiness.get("action_ids")
     if action_ids != [EXPECTED_ACTION_ID]:
         raise SystemExit("Demand Gen readiness must expose the review-only ActionObject")
@@ -185,6 +205,12 @@ def main() -> int:
                     ),
                     "demand_gen_creative_asset_row_count": len(
                         demand_gen_creative_asset_rows
+                    ),
+                    "demand_gen_landing_quality_row_count": len(
+                        demand_gen_landing_quality_rows
+                    ),
+                    "demand_gen_migration_constraint_row_count": len(
+                        demand_gen_migration_constraint_rows
                     ),
                     "available_read_contracts": available_read_contracts,
                     "missing_read_contracts": missing_read_contracts,

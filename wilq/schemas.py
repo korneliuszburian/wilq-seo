@@ -1486,6 +1486,27 @@ class DemandGenCreativeAssetRow(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
 
 
+class DemandGenLandingQualityRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    landing_page: str
+    source_medium: str | None = None
+    active_users: int | None = None
+    sessions: int | None = None
+    engagement_rate: float | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+class DemandGenMigrationConstraintRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    campaign_status: str | None = None
+    advertising_channel_type: str | None = None
+    migration_candidate: bool = False
+    reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
 class MerchantDiagnosticSection(BaseModel):
     id: str
     title: str
@@ -2008,6 +2029,12 @@ class DemandGenReadinessContract(BaseModel):
     demand_gen_campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
     demand_gen_ad_group_ad_rows: list[DemandGenAdGroupAdRow] = Field(default_factory=list)
     demand_gen_creative_asset_rows: list[DemandGenCreativeAssetRow] = Field(
+        default_factory=list
+    )
+    demand_gen_landing_quality_rows: list[DemandGenLandingQualityRow] = Field(
+        default_factory=list
+    )
+    demand_gen_migration_constraint_rows: list[DemandGenMigrationConstraintRow] = Field(
         default_factory=list
     )
     next_step: str

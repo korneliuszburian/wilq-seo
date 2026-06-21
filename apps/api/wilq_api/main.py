@@ -33,6 +33,8 @@ from wilq.actions.google_ads.demand_gen import (
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
     demand_gen_creative_asset_rows_from_facts,
+    demand_gen_landing_quality_rows_from_facts,
+    demand_gen_migration_constraint_rows_from_campaigns,
     demand_gen_readiness_review_payload,
 )
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
@@ -884,6 +886,7 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
         ads_diagnostics = ads_future.result().model_dump(mode="json")
         ga4_diagnostics = ga4_future.result().model_dump(mode="json")
     demand_gen_metric_facts = _demand_gen_google_ads_metric_facts()
+    ga4_metric_facts = _demand_gen_ga4_metric_facts()
     return {
         "ads_diagnostics": _compact_ads_diagnostics_for_lite_context(
             ads_diagnostics,
@@ -899,6 +902,7 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
             ads_diagnostics,
             ga4_diagnostics,
             demand_gen_metric_facts,
+            ga4_metric_facts,
         ).model_dump(mode="json"),
     }
 
@@ -913,6 +917,7 @@ def _build_demand_gen_readiness_contract() -> DemandGenReadinessContract:
         ads_diagnostics,
         ga4_diagnostics,
         _demand_gen_google_ads_metric_facts(),
+        _demand_gen_ga4_metric_facts(),
     )
 
 
@@ -920,6 +925,7 @@ def _demand_gen_readiness_contract(
     ads_diagnostics: dict[str, Any],
     ga4_diagnostics: dict[str, Any],
     demand_gen_metric_facts: list[MetricFact],
+    ga4_metric_facts: list[MetricFact],
 ) -> DemandGenReadinessContract:
     campaign_rows = [
         row
@@ -940,6 +946,18 @@ def _demand_gen_readiness_contract(
     )
     demand_gen_creative_asset_rows = demand_gen_creative_asset_rows_from_facts(
         demand_gen_metric_facts,
+    )
+    demand_gen_campaign_row_dicts = [
+        row.model_dump(mode="json") for row in demand_gen_campaign_rows
+    ]
+    demand_gen_landing_quality_rows = demand_gen_landing_quality_rows_from_facts(
+        ga4_metric_facts,
+        demand_gen_campaign_row_dicts,
+    )
+    demand_gen_migration_constraint_rows = (
+        demand_gen_migration_constraint_rows_from_campaigns(
+            demand_gen_campaign_row_dicts,
+        )
     )
     demand_gen_ad_read_available = demand_gen_contract_has_ready_fact(
         demand_gen_metric_facts,
@@ -976,8 +994,6 @@ def _demand_gen_readiness_contract(
     missing_read_contracts = [
         DEMAND_GEN_AD_GROUP_AD_ROWS_CONTRACT,
         DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT,
-        DEMAND_GEN_LANDING_QUALITY_CONTRACT,
-        DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
     ]
     if campaign_channel_read_available:
         available_read_contracts.append(DEMAND_GEN_CAMPAIGN_ROWS_CONTRACT)
@@ -1005,6 +1021,12 @@ def _demand_gen_readiness_contract(
             for contract in missing_read_contracts
             if contract != DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT
         ]
+    available_read_contracts.extend(
+        [
+            DEMAND_GEN_LANDING_QUALITY_CONTRACT,
+            DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
+        ]
+    )
     missing_contract_summary = ", ".join(missing_read_contracts) or "brak"
     title = (
         "Demand Gen: sprawdź istniejące kampanie bez launch/apply"
@@ -1022,6 +1044,12 @@ def _demand_gen_readiness_contract(
         ],
         demand_gen_creative_asset_rows=[
             row.model_dump(mode="json") for row in demand_gen_creative_asset_rows
+        ],
+        demand_gen_landing_quality_rows=[
+            row.model_dump(mode="json") for row in demand_gen_landing_quality_rows
+        ],
+        demand_gen_migration_constraint_rows=[
+            row.model_dump(mode="json") for row in demand_gen_migration_constraint_rows
         ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
@@ -1046,6 +1074,8 @@ def _demand_gen_readiness_contract(
             "wiersze DG": len(demand_gen_campaign_rows),
             "reklamy DG": len(demand_gen_ad_group_ad_rows),
             "assety DG": len(demand_gen_creative_asset_rows),
+            "landingi DG": len(demand_gen_landing_quality_rows),
+            "ograniczenia": len(demand_gen_migration_constraint_rows),
             "braki": len(missing_read_contracts),
         },
         available_read_contracts=available_read_contracts,
@@ -1065,16 +1095,22 @@ def _demand_gen_readiness_contract(
         demand_gen_campaign_rows=demand_gen_campaign_rows,
         demand_gen_ad_group_ad_rows=demand_gen_ad_group_ad_rows,
         demand_gen_creative_asset_rows=demand_gen_creative_asset_rows,
+        demand_gen_landing_quality_rows=demand_gen_landing_quality_rows,
+        demand_gen_migration_constraint_rows=demand_gen_migration_constraint_rows,
         next_step=(
             "Zwaliduj act_review_demand_gen_readiness jako review-only. Zanim skill "
-            "pokaże kandydatów Demand Gen lub migracji, domknij brakujące "
-            "landing quality by campaign i migration constraints."
+            "pokaże kandydatów launchu albo migracji, sprawdź puste/niepuste "
+            "read contracts landing quality i migration constraints."
         ),
     )
 
 
 def _demand_gen_google_ads_metric_facts() -> list[MetricFact]:
     return metric_store().list_metric_facts(connector_id="google_ads", limit=5000)
+
+
+def _demand_gen_ga4_metric_facts() -> list[MetricFact]:
+    return metric_store().list_metric_facts(connector_id="google_analytics_4", limit=5000)
 
 
 def _campaign_channel_counts(campaign_rows: list[dict[str, Any]]) -> dict[str, int]:

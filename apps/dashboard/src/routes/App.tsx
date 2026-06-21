@@ -4417,6 +4417,8 @@ function DemandGenDiagnosticSurface() {
   const data = diagnostics.data;
   const channelEntries = Object.entries(data.campaign_channel_counts);
   const demandGenRowCount = data.demand_gen_campaign_rows.length;
+  const landingQualityRows = data.demand_gen_landing_quality_rows;
+  const migrationConstraintRows = data.demand_gen_migration_constraint_rows;
   const metricTileEntries = Object.entries(data.metric_tiles);
   const demandGenPreview = data.payload_preview[0] as Record<string, unknown> | undefined;
   const previewMissingContracts = Array.isArray(demandGenPreview?.missing_read_contracts)
@@ -4547,6 +4549,16 @@ function DemandGenDiagnosticSurface() {
                 label="Assety"
                 value={String(demandGenPreview.demand_gen_creative_asset_row_count ?? "0")}
               />
+              <MetricTile
+                label="Landingi"
+                value={String(demandGenPreview.demand_gen_landing_quality_row_count ?? "0")}
+              />
+              <MetricTile
+                label="Migracje"
+                value={String(
+                  demandGenPreview.demand_gen_migration_constraint_row_count ?? "0"
+                )}
+              />
               <MetricTile label="Braki" value={previewMissingContracts.length} />
               <MetricTile
                 label="Apply"
@@ -4565,6 +4577,63 @@ function DemandGenDiagnosticSurface() {
               <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
             </div>
           </article>
+        ) : null}
+
+        {landingQualityRows.length > 0 ? (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {landingQualityRows.slice(0, 4).map((row) => (
+              <article
+                key={`${row.campaign_name}-${row.landing_page}-${row.source_medium ?? "source"}`}
+                className="rounded-md border border-line bg-white p-3"
+              >
+                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  Odczyt jakości landingów
+                </div>
+                <h3 className="mt-1 text-sm font-semibold text-ink">{row.campaign_name}</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  {row.landing_page} / {row.source_medium ?? "brak źródła"}
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <MetricTile label="Aktywni" value={row.active_users ?? "brak"} />
+                  <MetricTile label="Sesje" value={row.sessions ?? "brak"} />
+                  <MetricTile label="Engagement" value={adsPercent(row.engagement_rate)} />
+                </div>
+                <div className="mt-3 text-xs text-slate-600">
+                  <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" />
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : null}
+
+        {migrationConstraintRows.length > 0 ? (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {migrationConstraintRows.slice(0, 4).map((row) => (
+              <article
+                key={`${row.campaign_id ?? row.campaign_name}-${row.reason}`}
+                className="rounded-md border border-line bg-white p-3"
+              >
+                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  Odczyt ograniczeń migracji
+                </div>
+                <h3 className="mt-1 text-sm font-semibold text-ink">{row.campaign_name}</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  {row.advertising_channel_type ?? "brak kanału"} /{" "}
+                  {row.campaign_status ?? "brak statusu"}
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <MetricTile
+                    label="Migracja"
+                    value={row.migration_candidate ? "kandydat" : "nie dotyczy"}
+                  />
+                  <MetricTile label="Powód" value={demandGenContractLabel(row.reason)} />
+                </div>
+                <div className="mt-3 text-xs text-slate-600">
+                  <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" />
+                </div>
+              </article>
+            ))}
+          </div>
         ) : null}
       </section>
 
@@ -4631,6 +4700,8 @@ function demandGenContractLabel(contract: string) {
     demand_gen_migration_constraints: "ograniczenia migracji",
     demand_gen_readiness_review_action_object: "review-only ActionObject",
     demand_gen_specific_evidence_required: "wymagane konkretne evidence Demand Gen",
+    already_demand_gen_review_only: "już Demand Gen, tylko review",
+    discovery_to_demand_gen_requires_human_review: "Discovery wymaga ręcznego review",
     ga4_landing_source_campaign_quality: "GA4 landing/source/campaign quality",
     google_ads_budget_context: "kontekst budżetowy Google Ads",
     google_ads_campaign_activity: "aktywność kampanii Google Ads",

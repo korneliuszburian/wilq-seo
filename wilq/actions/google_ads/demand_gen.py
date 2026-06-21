@@ -3,7 +3,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any
 
-from wilq.schemas import DemandGenAdGroupAdRow, DemandGenCreativeAssetRow, MetricFact
+from wilq.schemas import (
+    DemandGenAdGroupAdRow,
+    DemandGenCreativeAssetRow,
+    DemandGenLandingQualityRow,
+    DemandGenMigrationConstraintRow,
+    MetricFact,
+)
 
 DEMAND_GEN_READINESS_REVIEW_ACTION_ID = "act_review_demand_gen_readiness"
 DEMAND_GEN_READINESS_REVIEW_ACTION_TYPE = "google_ads_demand_gen_readiness_review"
@@ -43,6 +49,8 @@ def demand_gen_readiness_review_payload(
     demand_gen_campaign_rows: list[dict[str, Any]],
     demand_gen_ad_group_ad_rows: list[dict[str, Any]],
     demand_gen_creative_asset_rows: list[dict[str, Any]],
+    demand_gen_landing_quality_rows: list[dict[str, Any]],
+    demand_gen_migration_constraint_rows: list[dict[str, Any]],
     available_read_contracts: list[str],
     missing_read_contracts: list[str],
     source_connectors: list[str],
@@ -62,6 +70,12 @@ def demand_gen_readiness_review_payload(
         "demand_gen_ad_group_ad_rows": demand_gen_ad_group_ad_rows[:4],
         "demand_gen_creative_asset_row_count": len(demand_gen_creative_asset_rows),
         "demand_gen_creative_asset_rows": demand_gen_creative_asset_rows[:4],
+        "demand_gen_landing_quality_row_count": len(demand_gen_landing_quality_rows),
+        "demand_gen_landing_quality_rows": demand_gen_landing_quality_rows[:4],
+        "demand_gen_migration_constraint_row_count": len(
+            demand_gen_migration_constraint_rows
+        ),
+        "demand_gen_migration_constraint_rows": demand_gen_migration_constraint_rows[:4],
         "available_read_contracts": available_read_contracts,
         "missing_read_contracts": missing_read_contracts,
         "reason": (
@@ -149,6 +163,14 @@ def validate_demand_gen_readiness_review_payload(payload: dict[str, Any]) -> lis
             errors.append(f"Demand Gen readiness preview item {index} requires ad rows.")
         if not isinstance(preview.get("demand_gen_creative_asset_rows"), list):
             errors.append(f"Demand Gen readiness preview item {index} requires asset rows.")
+        if not isinstance(preview.get("demand_gen_landing_quality_rows"), list):
+            errors.append(
+                f"Demand Gen readiness preview item {index} requires landing rows."
+            )
+        if not isinstance(preview.get("demand_gen_migration_constraint_rows"), list):
+            errors.append(
+                f"Demand Gen readiness preview item {index} requires migration rows."
+            )
         if not isinstance(preview.get("missing_read_contracts"), list):
             errors.append(
                 f"Demand Gen readiness preview item {index} requires missing contracts."
@@ -223,6 +245,72 @@ def demand_gen_creative_asset_rows_from_facts(
     )
 
 
+def demand_gen_landing_quality_rows_from_facts(
+    facts: Iterable[MetricFact],
+    demand_gen_campaign_rows: Iterable[dict[str, Any]],
+) -> list[DemandGenLandingQualityRow]:
+    demand_gen_campaigns = _campaigns_by_name(demand_gen_campaign_rows)
+    if not demand_gen_campaigns:
+        return []
+    grouped: dict[tuple[str, str, str], list[MetricFact]] = {}
+    for fact in facts:
+        if fact.source_connector != "google_analytics_4":
+            continue
+        if fact.name not in {"active_users", "sessions", "engagement_rate"}:
+            continue
+        campaign_name = fact.dimensions.get("campaign_name")
+        landing_page = fact.dimensions.get("landing_page")
+        source_medium = fact.dimensions.get("source_medium", "")
+        if not campaign_name or not landing_page:
+            continue
+        if _normalize_name(campaign_name) not in demand_gen_campaigns:
+            continue
+        grouped.setdefault((campaign_name, landing_page, source_medium), []).append(fact)
+    rows = [
+        _demand_gen_landing_quality_row(group_facts, demand_gen_campaigns)
+        for group_facts in grouped.values()
+    ]
+    return sorted(
+        rows,
+        key=lambda row: (
+            row.campaign_name,
+            row.landing_page,
+            row.source_medium or "",
+        ),
+    )
+
+
+def demand_gen_migration_constraint_rows_from_campaigns(
+    demand_gen_campaign_rows: Iterable[dict[str, Any]],
+) -> list[DemandGenMigrationConstraintRow]:
+    rows: list[DemandGenMigrationConstraintRow] = []
+    for campaign in demand_gen_campaign_rows:
+        campaign_name = str(campaign.get("campaign_name") or "campaign").strip()
+        channel = str(campaign.get("advertising_channel_type") or "").strip().upper()
+        if channel == "DISCOVERY":
+            migration_candidate = True
+            reason = "discovery_to_demand_gen_requires_human_review"
+        else:
+            migration_candidate = False
+            reason = "already_demand_gen_review_only"
+        rows.append(
+            DemandGenMigrationConstraintRow(
+                campaign_id=campaign.get("campaign_id"),
+                campaign_name=campaign_name,
+                campaign_status=campaign.get("campaign_status"),
+                advertising_channel_type=campaign.get("advertising_channel_type"),
+                migration_candidate=migration_candidate,
+                reason=reason,
+                evidence_ids=unique_items(campaign.get("evidence_ids") or []),
+            )
+        )
+    return sorted(
+        rows,
+        key=lambda row: (row.migration_candidate, row.campaign_name),
+        reverse=True,
+    )
+
+
 def demand_gen_contract_has_ready_fact(
     facts: Iterable[MetricFact],
     *,
@@ -283,11 +371,53 @@ def _demand_gen_creative_asset_row(facts: list[MetricFact]) -> DemandGenCreative
     )
 
 
+def _demand_gen_landing_quality_row(
+    facts: list[MetricFact],
+    demand_gen_campaigns: dict[str, dict[str, Any]],
+) -> DemandGenLandingQualityRow:
+    first = facts[0]
+    campaign_name = first.dimensions.get("campaign_name", "campaign")
+    campaign = demand_gen_campaigns.get(_normalize_name(campaign_name), {})
+    engagement_rate = _float_fact_value(facts, "engagement_rate")
+    return DemandGenLandingQualityRow(
+        campaign_id=campaign.get("campaign_id"),
+        campaign_name=campaign_name,
+        landing_page=first.dimensions.get("landing_page", ""),
+        source_medium=first.dimensions.get("source_medium"),
+        active_users=_int_fact_value(facts, "active_users"),
+        sessions=_int_fact_value(facts, "sessions"),
+        engagement_rate=engagement_rate,
+        evidence_ids=unique_items(fact.evidence_id for fact in facts if fact.evidence_id),
+    )
+
+
+def _campaigns_by_name(
+    demand_gen_campaign_rows: Iterable[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    campaigns: dict[str, dict[str, Any]] = {}
+    for campaign in demand_gen_campaign_rows:
+        campaign_name = str(campaign.get("campaign_name") or "").strip()
+        if campaign_name:
+            campaigns[_normalize_name(campaign_name)] = campaign
+    return campaigns
+
+
+def _normalize_name(value: str) -> str:
+    return " ".join(value.casefold().split())
+
+
 def _int_fact_value(facts: list[MetricFact], name: str) -> int:
     fact = next((candidate for candidate in facts if candidate.name == name), None)
     if fact is None:
         return 0
     return _int_value(fact.value)
+
+
+def _float_fact_value(facts: list[MetricFact], name: str) -> float | None:
+    fact = next((candidate for candidate in facts if candidate.name == name), None)
+    if fact is None:
+        return None
+    return _float_value(fact.value)
 
 
 def _int_value(value: Any) -> int:
@@ -300,3 +430,16 @@ def _int_value(value: Any) -> int:
     if isinstance(value, str) and value.isdigit():
         return int(value)
     return 0
+
+
+def _float_value(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None

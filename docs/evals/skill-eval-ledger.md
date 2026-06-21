@@ -25,6 +25,62 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-21 - wilq-demand-gen-operator landing/migration empty-read eval
+
+Purpose:
+
+- Prove that `wilq-demand-gen-operator` sees Demand Gen landing quality and
+  migration constraints as typed read contracts, not as missing implementation.
+  The route must stay blocked when live evidence has no Demand Gen/Discovery
+  campaigns, but the blocker should mean "no candidate/evidence", not "API
+  contract absent".
+
+API proof:
+
+- `/api/demand-gen/diagnostics.status=blocked`.
+- `available_read_contracts` includes `demand_gen_campaign_rows`,
+  `demand_gen_ad_group_ad_rows`, `demand_gen_creative_asset_rows`,
+  `demand_gen_landing_quality_by_campaign`,
+  `demand_gen_migration_constraints` and
+  `demand_gen_readiness_review_action_object`.
+- `missing_read_contracts=[]`.
+- Live metric tiles: `kampanie Ads=18`, `kanały=2`, `wiersze DG=0`,
+  `reklamy DG=0`, `assety DG=0`, `landingi DG=0`, `ograniczenia=0`,
+  `braki=0`.
+- Payload preview keeps `apply_allowed=false`,
+  `api_mutation_ready=false`, `destructive=false`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T212918Z/wilq-demand-gen-operator/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`, `operator_usefulness_score=4`,
+  `blocked=true`.
+- Source connectors: `google_ads`, `google_analytics_4`.
+- Evidence IDs include `ev_connector_google_ads_status`,
+  `ev_connector_google_analytics_4_status`,
+  `ev_refresh_refresh_google_ads_dc9e77806e9c` and GA4 evidence.
+- Action candidate: `act_review_demand_gen_readiness`.
+
+Product finding:
+
+- Demand Gen is now blocked for the right reason: WILQ checked Ads/GA4 plus
+  Demand Gen landing/migration contracts and found no live DG/Discovery rows.
+  It must still block launch, migration, creative quality verdicts, campaign
+  apply and performance uplift claims.
+
 ## 2026-06-21 - wilq-ads-doctor context-pack impact-row eval
 
 Purpose:

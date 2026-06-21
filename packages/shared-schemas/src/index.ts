@@ -1805,6 +1805,25 @@ export const DemandGenReadinessContractSchema = z.object({
     impressions: z.number().nullable().optional(),
     evidence_ids: z.array(z.string()).default([])
   })).default([]),
+  demand_gen_landing_quality_rows: z.array(z.object({
+    campaign_id: z.string().nullable().optional(),
+    campaign_name: z.string(),
+    landing_page: z.string(),
+    source_medium: z.string().nullable().optional(),
+    active_users: z.number().nullable().optional(),
+    sessions: z.number().nullable().optional(),
+    engagement_rate: z.number().nullable().optional(),
+    evidence_ids: z.array(z.string()).default([])
+  })).default([]),
+  demand_gen_migration_constraint_rows: z.array(z.object({
+    campaign_id: z.string().nullable().optional(),
+    campaign_name: z.string(),
+    campaign_status: z.string().nullable().optional(),
+    advertising_channel_type: z.string().nullable().optional(),
+    migration_candidate: z.boolean().default(false),
+    reason: z.string(),
+    evidence_ids: z.array(z.string()).default([])
+  })).default([]),
   next_step: z.string(),
   risk: z.enum(["low", "medium", "high"])
 });

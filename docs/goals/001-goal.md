@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 23:13 CEST.
+Last updated: 2026-06-21 23:40 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -111,7 +111,38 @@ Merchant now has a typed review-only
 `merchant_feed_issue_review_preview_v1` payload preview for issue clusters, so
 the first Command Center decision can move from generic feed review to a
 cluster-level review queue with evidence and safety gates.
+Demand Gen now has typed empty-read contracts for ad inventory, creative
+assets, landing quality by campaign and migration constraints. Current live
+Ekologus evidence has no Demand Gen/Discovery campaign rows, so
+`/api/demand-gen/diagnostics` correctly stays `status=blocked`, but
+`missing_read_contracts=[]` means this is no longer a missing-implementation
+blocker; it is an evidence/no-candidate blocker. Demand Gen launch, migration,
+creative-quality verdicts, campaign apply and performance uplift claims remain
+blocked.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Demand Gen landing/migration empty-read proof, 2026-06-21 23:40 CEST:
+`/api/demand-gen/diagnostics` exposes available read contracts
+`demand_gen_campaign_rows`, `demand_gen_ad_group_ad_rows`,
+`demand_gen_creative_asset_rows`, `demand_gen_landing_quality_by_campaign`,
+`demand_gen_migration_constraints` and
+`demand_gen_readiness_review_action_object`. Live HTTP proof after
+`scripts/local_stack.sh restart`: `status=blocked`, `kampanie Ads=18`,
+`kanały=2`, `wiersze DG=0`, `reklamy DG=0`, `assety DG=0`, `landingi DG=0`,
+`ograniczenia=0`, `braki=0`, `missing_read_contracts=[]`. Payload preview
+keeps `apply_allowed=false`, `api_mutation_ready=false` and
+`destructive=false`. Regression test
+`tests/test_api_contracts.py::test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts`
+now seeds one Demand Gen campaign plus matching GA4 landing facts and requires
+1 landing-quality row plus 1 migration-constraint row. `wilq-demand-gen-operator`
+smoke passed, non-interactive Codex eval passed at
+`.local-lab/evals/codex-skill/20260621T212918Z/wilq-demand-gen-operator/result.json`
+with `language=pl-PL`, `api_used=true`, source connectors Google Ads + GA4,
+`operator_usefulness_score=4`, `blocked=true` and ActionObject candidate
+`act_review_demand_gen_readiness`. Final verification passed:
+`scripts/verify.sh` green, including 149 backend tests, 17 dashboard unit
+tests, API/skill smokes, 14 Playwright e2e tests and dashboard production
+build.
 
 Latest Ads Doctor context-pack consistency proof, 2026-06-21 20:59 CEST:
 scoped `wilq-ads-doctor` context-pack now preserves all

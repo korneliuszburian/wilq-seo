@@ -47,6 +47,8 @@ from wilq.actions.google_ads.demand_gen import (
     demand_gen_ad_group_ad_rows_from_facts,
     demand_gen_contract_has_ready_fact,
     demand_gen_creative_asset_rows_from_facts,
+    demand_gen_landing_quality_rows_from_facts,
+    demand_gen_migration_constraint_rows_from_campaigns,
     demand_gen_readiness_review_payload,
 )
 from wilq.actions.google_ads.keyword_planner import (
@@ -1084,6 +1086,13 @@ def _demand_gen_readiness_review_action(
     demand_gen_creative_asset_rows = demand_gen_creative_asset_rows_from_facts(
         google_ads_facts,
     )
+    demand_gen_landing_quality_rows = demand_gen_landing_quality_rows_from_facts(
+        ga4_facts,
+        demand_gen_rows,
+    )
+    demand_gen_migration_constraint_rows = (
+        demand_gen_migration_constraint_rows_from_campaigns(demand_gen_rows)
+    )
     if demand_gen_contract_has_ready_fact(
         google_ads_facts,
         status_fact_name=DEMAND_GEN_AD_READ_STATUS_FACT,
@@ -1106,6 +1115,12 @@ def _demand_gen_readiness_review_action(
             for contract in missing_read_contracts
             if contract != DEMAND_GEN_CREATIVE_ASSET_ROWS_CONTRACT
         ]
+    available_read_contracts.extend(
+        [
+            DEMAND_GEN_LANDING_QUALITY_CONTRACT,
+            DEMAND_GEN_MIGRATION_CONSTRAINTS_CONTRACT,
+        ]
+    )
     payload = demand_gen_readiness_review_payload(
         campaign_rows_evaluated=len(campaign_rows),
         campaign_channel_counts=channel_counts,
@@ -1115,6 +1130,12 @@ def _demand_gen_readiness_review_action(
         ],
         demand_gen_creative_asset_rows=[
             row.model_dump(mode="json") for row in demand_gen_creative_asset_rows
+        ],
+        demand_gen_landing_quality_rows=[
+            row.model_dump(mode="json") for row in demand_gen_landing_quality_rows
+        ],
+        demand_gen_migration_constraint_rows=[
+            row.model_dump(mode="json") for row in demand_gen_migration_constraint_rows
         ],
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,

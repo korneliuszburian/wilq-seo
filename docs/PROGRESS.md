@@ -37,32 +37,29 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Demand Gen ad/creative empty-read contracts, 2026-06-21 22:53 CEST.
-  `/api/demand-gen/diagnostics` nadal uczciwie zwraca `status=blocked`, ale
-  ma teraz realny proof, że Google Ads Demand Gen ad-level i creative
-  asset-level reads działają. Live read-only refresh
-  `refresh_google_ads_dc9e77806e9c` zakończył się `status=completed`; metric
-  summary ma `demand_gen_ad_group_ad_status=ready`,
-  `demand_gen_ad_group_ad_row_count=0`,
-  `demand_gen_creative_asset_status=ready` i
-  `demand_gen_creative_asset_row_count=0`. Readiness contract pokazuje
-  `demand_gen_ad_group_ad_rows` i `demand_gen_creative_asset_rows` jako
-  available read contracts, a `demand_gen_asset_group_rows` nie jest już
-  używany. Po live proof: `kampanie Ads=18`, `kanały=2`, `wiersze DG=0`,
-  `reklamy DG=0`, `assety DG=0`, `braki=2`; missing pozostają tylko
+- Demand Gen landing/migration empty-read contracts, 2026-06-21 23:40 CEST.
+  `/api/demand-gen/diagnostics` nadal uczciwie zwraca `status=blocked`, bo w
+  bieżącym evidence nie ma kampanii Demand Gen/Discovery do rekomendacji, ale
+  missing implementation blocker zniknął. Readiness contract ma teraz
+  `demand_gen_ad_group_ad_rows`, `demand_gen_creative_asset_rows`,
   `demand_gen_landing_quality_by_campaign` i
-  `demand_gen_migration_constraints`. `act_review_demand_gen_readiness` nadal
-  jest review-only: `apply_allowed=false`, `api_mutation_ready=false`,
-  `destructive=false`. Naprawiono też redaction false-positive: lowercase
-  contract IDs w summary nie są już zamieniane na `[REDACTED]`, ale tokeny
-  nadal są redagowane. Live skill smoke passed, a non-interactive eval passed:
-  `.local-lab/evals/codex-skill/20260621T205115Z/wilq-demand-gen-operator/result.json`
-  z `language=pl-PL`, `api_used=true`, evidence IDs Google Ads + GA4,
+  `demand_gen_migration_constraints` jako available read contracts.
+  `demand_gen_asset_group_rows` nie jest używany. Live HTTP proof po
+  `scripts/local_stack.sh restart`: `kampanie Ads=18`, `kanały=2`,
+  `wiersze DG=0`, `reklamy DG=0`, `assety DG=0`, `landingi DG=0`,
+  `ograniczenia=0`, `braki=0`, `missing_read_contracts=[]`. Payload preview
+  pokazuje `demand_gen_landing_quality_row_count=0`,
+  `demand_gen_migration_constraint_row_count=0`, `apply_allowed=false`,
+  `api_mutation_ready=false`, `destructive=false`. Izolowany regression test
+  seeduje kampanię Demand Gen + matching GA4 landing facts i wymaga 1 landing
+  row oraz 1 migration constraint row. `wilq-demand-gen-operator` smoke passed,
+  a non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T212918Z/wilq-demand-gen-operator/result.json`
+  z `language=pl-PL`, `api_used=true`, source connectors Google Ads + GA4,
   `action_candidates=[act_review_demand_gen_readiness]`,
-  `operator_usefulness_score=4`, `blocked=true`. Final proof
-  2026-06-21 23:13 CEST: `scripts/verify.sh` green, w tym 149 backend tests,
-  17 dashboard unit tests, Skill API smoke, 14 Playwright e2e tests i dashboard
-  production build.
+  `operator_usefulness_score=4`, `blocked=true`. Final proof:
+  `scripts/verify.sh` green, w tym 149 backend tests, 17 dashboard unit tests,
+  Skill API smoke, 14 Playwright e2e tests i dashboard production build.
 - Ads Doctor context-pack impact-row consistency, 2026-06-21 20:59 CEST.
   Naprawiono rozjazd między `/api/ads/diagnostics` i scoped
   `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}`: generic

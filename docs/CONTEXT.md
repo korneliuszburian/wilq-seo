@@ -29,6 +29,22 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Demand Gen landing/migration empty-read contracts, 2026-06-21 23:40 CEST:
+   `/api/demand-gen/diagnostics` now treats
+   `demand_gen_landing_quality_by_campaign` and
+   `demand_gen_migration_constraints` as typed available read contracts, not
+   missing implementation. Current live state is still `status=blocked` because
+   Google Ads evidence has 18 campaigns but 0 Demand Gen/Discovery rows:
+   `wiersze DG=0`, `reklamy DG=0`, `assety DG=0`, `landingi DG=0`,
+   `ograniczenia=0`, `braki=0`, `missing_read_contracts=[]`. The review-only
+   `act_review_demand_gen_readiness` payload keeps `apply_allowed=false`,
+   `api_mutation_ready=false`, `destructive=false`. Eval artifact:
+   `.local-lab/evals/codex-skill/20260621T212918Z/wilq-demand-gen-operator/result.json`
+   with `language=pl-PL`, `api_used=true`, source connectors Google Ads + GA4,
+   `operator_usefulness_score=4`, `blocked=true`. Full `scripts/verify.sh`
+   passed after this slice: backend `149 passed`, dashboard unit `17 passed`,
+   Playwright e2e `14 passed`, skill/API smokes and dashboard production build.
+
 0. Ahrefs content/backlink gap candidates, 2026-06-21 05:05 CEST:
    `refresh_ahrefs_cb31460610d3` performed read-only Ahrefs `organic-keywords`
    for the target sample and `refdomains` for backlink gap candidates. Content
