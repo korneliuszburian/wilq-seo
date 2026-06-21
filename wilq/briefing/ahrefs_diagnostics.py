@@ -31,12 +31,18 @@ AhrefsGapType = Literal[
 AHREFS_CONNECTOR_ID = "ahrefs"
 AHREFS_METRIC_FACT_LIMIT = 120
 AHREFS_AUTHORITY_FACT_NAMES = {"domain_rating", "ahrefs_rank"}
+AHREFS_COMPETITOR_READ_FACT_NAMES = {
+    "organic_competitor_read_status",
+    "organic_competitor_rows",
+    "organic_competitor_country",
+}
 AHREFS_GAP_FACT_NAMES = {
     "ahrefs_competitor_page_count",
     "ahrefs_content_gap_count",
     "ahrefs_backlink_gap_count",
     "ahrefs_referring_domain_gap_count",
     "ahrefs_organic_keyword_gap_count",
+    "ahrefs_top_page_gap_count",
 }
 AHREFS_GAP_READ_CONTRACTS = [
     "ahrefs_competitor_pages",
@@ -73,23 +79,32 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
 
     refresh_runs = list_connector_refresh_runs(connector_id=AHREFS_CONNECTOR_ID)
     latest_refresh = _latest_relevant_ahrefs_refresh(refresh_runs)
-    metric_facts = metric_store().list_metric_facts(
-        connector_id=AHREFS_CONNECTOR_ID,
-        limit=AHREFS_METRIC_FACT_LIMIT,
+    metric_facts = _facts_for_known_refresh_runs(
+        metric_store().list_metric_facts(
+            connector_id=AHREFS_CONNECTOR_ID,
+            limit=AHREFS_METRIC_FACT_LIMIT,
+        ),
+        refresh_runs,
     )
     authority_facts = _latest_facts_by_name(metric_facts, AHREFS_AUTHORITY_FACT_NAMES)
+    competitor_read_facts = _latest_facts_by_name(
+        metric_facts,
+        AHREFS_COMPETITOR_READ_FACT_NAMES,
+    )
     gap_facts = _gap_facts(metric_facts)
-    live_data_available = bool(authority_facts or gap_facts)
+    live_data_available = bool(authority_facts or competitor_read_facts or gap_facts)
     sections = _ahrefs_sections(
         connector_missing=connector.missing_credentials,
         latest_refresh=latest_refresh,
         authority_facts=authority_facts,
+        competitor_read_facts=competitor_read_facts,
         gap_facts=gap_facts,
     )
     decision_queue = _ahrefs_decision_queue(
         connector_missing=connector.missing_credentials,
         latest_refresh=latest_refresh,
         authority_facts=authority_facts,
+        competitor_read_facts=competitor_read_facts,
         gap_facts=gap_facts,
     )
 
@@ -120,6 +135,21 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         action_ids=[],
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
+
+
+def _facts_for_known_refresh_runs(
+    metric_facts: list[MetricFact],
+    refresh_runs: list[ConnectorRefreshRun],
+) -> list[MetricFact]:
+    known_evidence_ids = {
+        evidence_id
+        for run in refresh_runs
+        for evidence_id in run.evidence_ids
+        if evidence_id.startswith("ev_refresh_")
+    }
+    if not known_evidence_ids:
+        return metric_facts
+    return [fact for fact in metric_facts if fact.evidence_id in known_evidence_ids]
 
 
 def _ahrefs_gap_read_contract(
@@ -304,6 +334,8 @@ def _gap_type_for_fact(fact: MetricFact) -> AhrefsGapType:
         return "backlink_gap"
     if fact.name == "ahrefs_organic_keyword_gap_count":
         return "organic_keyword_gap"
+    if fact.name == "ahrefs_top_page_gap_count":
+        return "top_page_gap"
     return "content_gap"
 
 
@@ -421,6 +453,7 @@ def _ahrefs_sections(
     connector_missing: list[str],
     latest_refresh: ConnectorRefreshRun | None,
     authority_facts: list[MetricFact],
+    competitor_read_facts: list[MetricFact],
     gap_facts: list[MetricFact],
 ) -> list[AhrefsDiagnosticSection]:
     authority_section = AhrefsDiagnosticSection(
@@ -429,7 +462,8 @@ def _ahrefs_sections(
         status="ready" if authority_facts else ("blocked" if connector_missing else "missing"),
         summary=(
             f"WILQ ma {len(authority_facts)} świeże fakty autorytetu z Ahrefs: "
-            f"{_authority_summary(authority_facts)}."
+            f"{_authority_summary(authority_facts)}. "
+            f"{_competitor_read_summary(competitor_read_facts)}"
             if authority_facts
             else _missing_authority_summary(connector_missing, latest_refresh)
         ),
@@ -449,8 +483,11 @@ def _ahrefs_sections(
             else "Uruchom read-only Ahrefs vendor_read dla domain-rating, potem wróć do /ahrefs."
         ),
         source_connectors=[AHREFS_CONNECTOR_ID],
-        evidence_ids=_evidence_ids_for_facts_or_refresh(authority_facts, latest_refresh),
-        metric_facts=authority_facts,
+        evidence_ids=_evidence_ids_for_facts_or_refresh(
+            [*authority_facts, *competitor_read_facts],
+            latest_refresh,
+        ),
+        metric_facts=[*authority_facts, *competitor_read_facts],
         blocked_claims=[] if authority_facts else AHREFS_GAP_BLOCKED_CLAIMS,
         risk=ActionRisk.low if authority_facts else ActionRisk.medium,
     )
@@ -520,6 +557,7 @@ def _ahrefs_decision_queue(
     connector_missing: list[str],
     latest_refresh: ConnectorRefreshRun | None,
     authority_facts: list[MetricFact],
+    competitor_read_facts: list[MetricFact],
     gap_facts: list[MetricFact],
 ) -> list[AhrefsDecisionItem]:
     decisions: list[AhrefsDecisionItem] = []
@@ -531,7 +569,10 @@ def _ahrefs_decision_queue(
                 decision_type="review_authority_context",
                 status="ready",
                 title="Użyj Ahrefs tylko jako kontekstu autorytetu",
-                summary=_authority_summary(authority_facts),
+                summary=(
+                    f"{_authority_summary(authority_facts)} "
+                    f"{_competitor_read_summary(competitor_read_facts)}"
+                ),
                 rationale=(
                     "WILQ ma Ahrefs DR/rank z evidence, więc może dodać kontekst "
                     "autorytetu do SEO/content review. To nadal nie jest analiza luk."
@@ -541,12 +582,24 @@ def _ahrefs_decision_queue(
                     "Ahrefs wykrył lukę treści/backlinków, dopóki nie ma rekordów luk."
                 ),
                 priority=25,
-                metric_tiles=_authority_tiles(authority_facts, gap_facts),
-                allowed_evidence=["domain_rating", "ahrefs_rank", "authority_summary"],
+                metric_tiles=_authority_tiles(
+                    authority_facts,
+                    gap_facts,
+                    competitor_read_facts,
+                ),
+                allowed_evidence=[
+                    "domain_rating",
+                    "ahrefs_rank",
+                    "authority_summary",
+                    *(fact.name for fact in competitor_read_facts),
+                ],
                 missing_read_contracts=_missing_gap_contracts(gap_facts),
                 source_connectors=[AHREFS_CONNECTOR_ID],
-                evidence_ids=_evidence_ids_for_facts_or_refresh(authority_facts, latest_refresh),
-                metric_facts=authority_facts,
+                evidence_ids=_evidence_ids_for_facts_or_refresh(
+                    [*authority_facts, *competitor_read_facts],
+                    latest_refresh,
+                ),
+                metric_facts=[*authority_facts, *competitor_read_facts],
                 action_ids=[],
                 blocked_claims=_blocked_claims_for_missing_contracts(
                     _missing_gap_contracts(gap_facts)
@@ -669,6 +722,19 @@ def _authority_summary(authority_facts: list[MetricFact]) -> str:
     return ", ".join(parts) if parts else "brak faktów autorytetu"
 
 
+def _competitor_read_summary(competitor_read_facts: list[MetricFact]) -> str:
+    if not competitor_read_facts:
+        return "Odczyt konkurencji organicznej nie ma jeszcze statusu."
+    status = _fact_value(competitor_read_facts, "organic_competitor_read_status")
+    rows = _fact_value(competitor_read_facts, "organic_competitor_rows")
+    country = _fact_value(competitor_read_facts, "organic_competitor_country")
+    return (
+        "Odczyt konkurencji organicznej: "
+        f"status={status or 'unknown'}, rows={rows if rows is not None else 0}, "
+        f"country={country or 'unknown'}."
+    )
+
+
 def _missing_authority_summary(
     connector_missing: list[str],
     latest_refresh: ConnectorRefreshRun | None,
@@ -686,11 +752,20 @@ def _missing_authority_summary(
 def _authority_tiles(
     authority_facts: list[MetricFact],
     gap_facts: list[MetricFact],
+    competitor_read_facts: list[MetricFact],
 ) -> dict[str, int | float | str]:
     return _clean_metric_tiles(
         {
             "DR": _fact_value(authority_facts, "domain_rating"),
             "Ahrefs Rank": _fact_value(authority_facts, "ahrefs_rank"),
+            "konkurenci organiczni": _fact_value(
+                competitor_read_facts,
+                "organic_competitor_rows",
+            ),
+            "odczyt konkurencji": _fact_value(
+                competitor_read_facts,
+                "organic_competitor_read_status",
+            ),
             "fakty luk": len(gap_facts),
             "braki kontraktu": len(_missing_gap_contracts(gap_facts)),
         }
@@ -732,7 +807,7 @@ def _missing_gap_contracts(gap_facts: list[MetricFact]) -> list[str]:
             "ahrefs_referring_domain_gap_count",
         },
         "ahrefs_organic_keywords_by_url": {"ahrefs_organic_keyword_gap_count"},
-        "ahrefs_top_pages_by_competitor": {"ahrefs_competitor_page_count"},
+        "ahrefs_top_pages_by_competitor": {"ahrefs_top_page_gap_count"},
     }
     return [
         contract

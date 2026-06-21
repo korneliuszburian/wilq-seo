@@ -114,6 +114,69 @@ Eval output facts:
   `recommendation apply`, `negative_keyword_payload_preview` and
   `90_day_safety_check`.
 
+## 2026-06-21 - wilq-ahrefs-gap-finder organic competitors read eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-ahrefs-gap-finder`.
+
+Why this eval matters:
+
+Ahrefs now performs a real read-only organic competitors source read in addition
+to authority metrics. The live read completed but returned zero competitor rows,
+so the skill must preserve the useful authority/readiness proof while still
+blocking competitor/content/backlink gap claims.
+
+Pre-eval API proof:
+
+- Live refresh: `refresh_ahrefs_af84b2e89221`.
+- Evidence: `ev_refresh_refresh_ahrefs_af84b2e89221`.
+- `/api/ahrefs/diagnostics` live facts: DR=24, Ahrefs Rank=6459608,
+  `organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
+  `organic_competitor_country=pl`.
+- Diagnostics filters orphan DuckDB facts whose evidence IDs are not attached
+  to known local-state refresh runs, so stale/test Ahrefs rows do not override
+  current live evidence.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- `blocked=true`.
+- Source connectors include `ahrefs`, `google_search_console`,
+  `wordpress_ekologus`.
+- Evidence IDs include `ev_connector_ahrefs_status`,
+  `ev_refresh_refresh_ahrefs_af84b2e89221`.
+- `operator_usefulness_score=4`.
+- No safety findings.
+
+Product gaps found:
+
+1. This is now a real Ahrefs source-read proof, but not a gap-analysis proof:
+   live organic competitors returned `rows=0`.
+2. Next Ahrefs value work should collect live nonzero record-level facts from
+   competitor/top-page/content/backlink/organic-keyword reads or adjust source
+   strategy. The skill must not infer gaps from DR/rank or a zero-row read.
+
+Verdict:
+
+Correct guardrail/value boundary. WILQ exposes the new organic competitor read
+status to the marketer and still blocks unsupported gap recommendations.
+
 ## 2026-06-20 - wilq-ahrefs-gap-finder strict blocker eval
 
 Prompt source:

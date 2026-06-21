@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 02:04 CEST.
+Last updated: 2026-06-21 02:33 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -90,21 +90,27 @@ mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
 
-Latest Ahrefs gap-record parser truth, live proof 2026-06-21 02:04 CEST:
-`/api/ahrefs/diagnostics` can now build typed `AhrefsGapRecord` rows from
-record-level Ahrefs metric facts and expose a ready `ahrefs_review_gap_records`
-decision when those facts exist. Synthetic API coverage proves competitor page,
-content gap, backlink gap and organic keyword gap records, preserved
-`allowed_evidence`, gap dimensions, source URLs, target URLs, competitor domains
-and keywords through scoped `wilq-ahrefs-gap-finder` context-pack redaction.
-Current live truth remains blocked, not hidden: DR=90, Ahrefs Rank=1450,
-`gap_records=[]`, `gap_read_contract.status=blocked`, available contract
-`ahrefs_authority_summary`, missing contracts `ahrefs_competitor_pages`,
+Latest Ahrefs source-read truth, live proof 2026-06-21 02:33 CEST:
+`refresh_ahrefs_af84b2e89221` used the real Ahrefs API for authority and
+organic competitors. Current live facts: DR=24, Ahrefs Rank=6459608,
+`organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
+`organic_competitor_country=pl`. `/api/ahrefs/diagnostics` now filters orphan
+DuckDB metric facts that do not belong to known local-state refresh runs, so
+stale/test DR=90 rows no longer override current live Ahrefs evidence. The API
+can build typed `AhrefsGapRecord` rows from record-level Ahrefs metric facts
+when they exist, but current live truth remains blocked, not hidden:
+`gap_records=[]`, `gap_read_contract.status=blocked`,
+`active_action_ids=[]`, and missing contracts `ahrefs_competitor_pages`,
 `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
-`ahrefs_organic_keywords_by_url` and `ahrefs_top_pages_by_competitor`. Dashboard
-`/ahrefs` still renders `Kontrakt luk Ahrefs`; it must not claim competitor,
-content, backlink, ranking opportunity, traffic uplift or authority improvement
-until live record-level facts exist.
+`ahrefs_organic_keywords_by_url` and `ahrefs_top_pages_by_competitor`.
+Scoped `wilq-ahrefs-gap-finder` context-pack is about `25336` bytes and carries
+this blocked state. Latest strict eval:
+`.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
+Dashboard `/ahrefs` must not claim competitor, content, backlink, ranking
+opportunity, traffic uplift or authority improvement until live record-level
+gap facts exist. Full `scripts/verify.sh` passed after this slice: backend
+`138 passed`, dashboard unit tests `17 passed`, Playwright e2e `14 passed`,
+skill/API smokes and dashboard production build passed.
 
 Latest Ads custom segment missing-metric truth, live proof 2026-06-21 01:40
 CEST: custom segment review no longer shows absent search-term impressions or
@@ -477,25 +483,23 @@ authority evidence separately from true gap evidence. Current live proof after
 `scripts/local_stack.sh restart`: `/api/ahrefs/diagnostics` has
 `live_data_available=true`, `authority_fact_count=2`, `gap_fact_count=0`,
 `blocker_count=1`, ready decision `ahrefs_review_authority_context` with
-`DR=90`, `Ahrefs Rank=1450`, `fakty luk=0`, and blocked decision
+`DR=24`, `Ahrefs Rank=6459608`, `konkurenci organiczni=0`,
+`odczyt konkurencji=completed`, `fakty luk=0`, and blocked decision
 `ahrefs_block_gap_claims_without_records` with missing read contracts:
 `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
 `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
 `ahrefs_top_pages_by_competitor`. Scoped
-`POST /api/codex/context-pack {"skill":"wilq-ahrefs-gap-finder"}` is
-`32244 bytes`, includes `ahrefs_diagnostics`, omits `marketing_brief` and
-`content_diagnostics`, and has `active_action_ids=[]`. This prevents the skill
-from inheriting content ActionObjects when Ahrefs diagnostics has no actions.
-Do not claim competitor/content/backlink gaps from DR/rank alone. Strict
-non-interactive eval now enforces this: case `wilq-ahrefs-gap-finder` targets
-`/ahrefs`, requires `blocked=true`, no non-null `action_id`, missing gap read
-contracts and blocked claim terms. Latest eval artifact:
-`.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`;
+`POST /api/codex/context-pack {"skill":"wilq-ahrefs-gap-finder"}` is about
+`25336 bytes`, includes `ahrefs_diagnostics`, omits broad unrelated context,
+and has `active_action_ids=[]`. Diagnostics also ignore orphan/test DuckDB
+facts not attached to known refresh-run evidence IDs. Do not claim
+competitor/content/backlink gaps from DR/rank or zero-row competitor reads.
+Strict non-interactive eval now enforces this: case `wilq-ahrefs-gap-finder`
+targets `/ahrefs`, requires `blocked=true`, no non-null `action_id`, missing
+gap read contracts and blocked claim terms. Latest eval artifact:
+`.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`;
 result has `api_used=true`, `blocked=true`, Ahrefs evidence IDs,
-`action_id=null` and `operator_usefulness_score=4`. Full `scripts/verify.sh`
-passed after the diagnostics slice: backend `123 passed`, dashboard unit
-`15 passed`, Playwright e2e `12 passed`, skill/API smokes and dashboard
-production build passed.
+`action_id=null` and `operator_usefulness_score=4`.
 
 Ads dedicated route and `wilq-ads-doctor` context-pack must expose decision
 metadata directly, not rely on frontend inference. Current live proof after
@@ -1150,17 +1154,19 @@ These are the current reasons Goal 001 is not complete:
    Playwright e2e `12 passed`, security, skill/API smokes and dashboard
    production build passed. Keep this file current after every future slice.
 
-8. **Ahrefs is authority-context-ready and gap-contract-ready, not gap-analysis-ready.**
+8. **Ahrefs is source-read-ready for authority and organic competitors, not gap-analysis-ready.**
    `/api/ahrefs/diagnostics`, `/ahrefs` and scoped `wilq-ahrefs-gap-finder`
-   context-pack now prove DR/rank authority facts and explicitly block
-   competitor/content/backlink gap claims. Current live proof: DR=90,
-   Ahrefs Rank=1450, `gap_fact_count=0`, typed
-   `gap_read_contract.status=blocked`, `gap_records=[]`,
-   `active_action_ids=[]`, and 5 missing gap read contracts. Next Ahrefs value
-   work is to implement actual typed gap records from source reads, not to make
-   the skill infer gaps from aggregate rank metrics. Strict eval coverage now
-   exists for this blocker guardrail:
-   `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+   context-pack now prove DR/rank authority facts, a real organic competitors
+   source read, and explicit blocking of competitor/content/backlink gap claims.
+   Current live proof: DR=24, Ahrefs Rank=6459608,
+   `organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
+   `gap_fact_count=0`, typed `gap_read_contract.status=blocked`,
+   `gap_records=[]`, `active_action_ids=[]`, and 5 missing gap read contracts.
+   Next Ahrefs value work is to collect live nonzero record-level gap facts
+   through competitor/top-page/content/backlink/organic-keyword reads or adjust
+   source strategy, not to make the skill infer gaps from aggregate rank metrics.
+   Strict eval coverage now exists for this blocker guardrail:
+   `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
 
 ## What WILQ Must Give The Marketer
 
@@ -1668,10 +1674,10 @@ Work in this order:
      `act_prepare_custom_segments_from_search_terms`; keep rerunning when
      Keyword Planner enrichment, forecast/audience-size or targeting/apply
      contracts are added;
-   - done for `wilq-ahrefs-gap-finder` as an authority-only blocker workflow
-     after `/api/ahrefs/diagnostics` and scoped context-pack were added. Fresh
-     strict eval passed on 2026-06-20:
-     `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+   - done for `wilq-ahrefs-gap-finder` as an authority plus organic-competitor
+     read blocker workflow after `/api/ahrefs/diagnostics` and scoped
+     context-pack were added. Fresh strict eval passed on 2026-06-21:
+     `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
      Rerun after typed competitor/content/backlink gap records exist;
    - `wilq-campaign-builder`, `wilq-demand-gen-operator` and
      `wilq-social-publisher` only after their required read contracts or
@@ -2151,8 +2157,9 @@ Current eval progress:
 Current eval coverage: 12/12 WILQ skills have recorded non-interactive Codex
 evals. GA4 has a fresh strict decision_queue rerun, Ads has multiple strengthened
 read-contract reruns, and Ahrefs now has a strict blocker eval proving that
-authority metrics cannot be promoted into gap recommendations:
-`.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+authority metrics plus a zero-row organic competitor read cannot be promoted
+into gap recommendations:
+`.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
 This proves API integration and guardrails, not Goal 001 completion. The next
 product work must convert eval findings into fixes: Ahrefs gap records,
 source-term/custom-segment evidence, campaign ActionObjects, Demand Gen

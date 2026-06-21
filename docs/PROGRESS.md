@@ -34,18 +34,22 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Ahrefs typed gap record parser, 2026-06-21 02:04 CEST.
-  `/api/ahrefs/diagnostics` potrafi teraz zbudować typed `AhrefsGapRecord`
-  z record-level Ahrefs metric facts i dodać ready decyzję
-  `ahrefs_review_gap_records`, kiedy takie fakty istnieją. Test API pokrywa
-  rekordy competitor page, content gap, backlink gap i organic keyword gap,
-  zachowanie `allowed_evidence`, wymiarów gapów, URL-i, domen konkurencji i
-  keywords w scoped `wilq-ahrefs-gap-finder` context-packu po redakcji. Live
-  proof po `scripts/local_stack.sh restart`: obecny Ahrefs nadal ma tylko
-  authority facts (`authority_fact_count=2`) i nie ma live gap records
-  (`gap_fact_count=0`, `gap_records=[]`, `gap_read_contract.status=blocked`).
-  To jest właściwy stan: API nie udaje luk konkurencji, ale ma już kontrakt do
-  ich wyświetlania, gdy pojawią się record-level facts.
+- Ahrefs organic competitors source read, 2026-06-21 02:33 CEST.
+  `refresh_ahrefs_af84b2e89221` wykonał realny read-only Ahrefs API dla
+  authority i organic competitors. Live facts: DR=24, Ahrefs Rank=6459608,
+  `organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
+  `organic_competitor_country=pl`. `/api/ahrefs/diagnostics` filtruje teraz
+  orphan/test metric facts z DuckDB, które nie mają evidence ID znanego
+  refresh runa w `local_state`, więc stare DR=90 nie nadpisuje live DR=24.
+  API dalej potrafi zbudować typed `AhrefsGapRecord` z record-level facts, ale
+  bieżący live gap contract jest poprawnie zablokowany:
+  `gap_fact_count=0`, `gap_records=[]`, `gap_read_contract.status=blocked`,
+  `active_action_ids=[]`. Scoped `wilq-ahrefs-gap-finder` context-pack ma około
+  `25336` bytes i pokazuje ten sam blocker. Non-interactive eval przeszedł:
+  `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
+  Full `scripts/verify.sh` passed after this slice: backend `138 passed`,
+  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+  dashboard production build passed.
 - Ads custom segment missing-metric truth, 2026-06-21 01:40 CEST.
   Custom segment review reason no longer renders missing search-term
   impressions or cost as `0`. Current live proof after
@@ -62,9 +66,9 @@ Aktualny proof produktowy:
   skill/API smokes and dashboard production build passed.
 - Ahrefs typed gap read contract, 2026-06-21 01:21 CEST.
   `/api/ahrefs/diagnostics` exposes `gap_read_contract` as typed API state,
-  not only prose in sections. Live proof after `scripts/local_stack.sh restart`:
-  DR=90, Ahrefs Rank=1450, `gap_fact_count=0`,
-  `gap_read_contract.status=blocked`, `gap_records=[]`,
+  not only prose in sections. Current live proof after the organic competitors
+  read slice: DR=24, Ahrefs Rank=6459608, `organic_competitor_rows=0`,
+  `gap_fact_count=0`, `gap_read_contract.status=blocked`, `gap_records=[]`,
   `available_read_contracts=["ahrefs_authority_summary"]`, 5 missing contracts
   (`ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
@@ -72,7 +76,7 @@ Aktualny proof produktowy:
   backlink gaps, ranking opportunity, traffic uplift and authority improvement.
   Review gates: `ahrefs_gap_records_required`,
   `content_planner_review_required`, `human_strategy_review`. Scoped
-  `wilq-ahrefs-gap-finder` context-pack is about `22181` bytes, includes the
+  `wilq-ahrefs-gap-finder` context-pack is about `25336` bytes, includes the
   same `gap_read_contract`, and still has `active_action_objects=[]`.
   Dashboard `/ahrefs` renders `Kontrakt luk Ahrefs`. This still does not mean
   Ahrefs gap analysis is ready; actual competitor/content/backlink gap records
@@ -452,14 +456,15 @@ Aktualny proof produktowy:
   `scripts/local_stack.sh restart`: `/api/ahrefs/diagnostics` ma
   `live_data_available=true`, `authority_fact_count=2`, `gap_fact_count=0`,
   `blocker_count=1`, decyzję ready `ahrefs_review_authority_context` z
-  `DR=90`, `Ahrefs Rank=1450`, `fakty luk=0`, oraz blocked
+  `DR=24`, `Ahrefs Rank=6459608`, `konkurenci organiczni=0`,
+  `odczyt konkurencji=completed`, `fakty luk=0`, oraz blocked
   `ahrefs_block_gap_claims_without_records` z 5 brakującymi read contracts.
-  `wilq-ahrefs-gap-finder` context-pack ma `32244 bytes`,
+  `wilq-ahrefs-gap-finder` context-pack ma około `25336 bytes`,
   `active_action_ids=[]`, zawiera `ahrefs_diagnostics` i nie zawiera
   `marketing_brief` ani `content_diagnostics`. Skill smoke przeszedł z
   `action_count=0`; route `/ahrefs` ma unit i Playwright smoke. Strict
   non-interactive eval przeszedł:
-  `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+  `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
   Wynik ma `blocked=true`, `api_used=true`, `operator_usefulness_score=4`,
   `action_id=null` i blokuje `content gap`, `backlink gap`, `competitor gap`,
   `ranking opportunity`, `traffic uplift` oraz `authority improvement`.
@@ -705,14 +710,14 @@ Aktualny maintenance:
    `expected_no_action_ids`, `blocked_claim_terms` and
    `forbidden_action_ids`, so Ahrefs cannot pass by recommending adjacent
    content/Ads/Merchant/GA4 actions. Non-interactive eval passed at
-   `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`
+   `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`
    with `api_used=true`, `blocked=true`, evidence from Ahrefs,
    `action_id=null` and `operator_usefulness_score=4`.
 
 3. Ahrefs diagnostics contract, 2026-06-20 12:41 CEST.
    `/api/ahrefs/diagnostics`, dashboard `/ahrefs`, shared schemas and scoped
    `wilq-ahrefs-gap-finder` context-pack now expose Ahrefs as authority
-   context only. Current live proof: DR=90, Ahrefs Rank=1450,
+   context only. Current live proof: DR=24, Ahrefs Rank=6459608,
    `gap_fact_count=0`, blocker `ahrefs_block_gap_claims_without_records`,
    missing read contracts `ahrefs_competitor_pages`,
    `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,

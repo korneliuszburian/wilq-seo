@@ -2485,6 +2485,9 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
             "api": "ahrefs_site_explorer_domain_rating",
             "domain_rating": 90,
             "ahrefs_rank": 1450,
+            "organic_competitor_read_status": "completed",
+            "organic_competitor_rows": 0,
+            "organic_competitor_country": "pl",
         },
         summary="Ahrefs domain rating completed through test adapter.",
     )
@@ -2506,6 +2509,18 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
             ),
         ],
     )
+    orphan_run = ConnectorRefreshRun(
+        id="refresh_ahrefs_orphan_diag_test",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_ahrefs_orphan_diag_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"domain_rating": 99, "ahrefs_rank": 999},
+        summary="Orphan Ahrefs fixture that is not in local_state.",
+    )
+    metric_store().save_connector_refresh_metrics(orphan_run)
 
     response = client.get("/api/ahrefs/diagnostics")
 
@@ -2532,7 +2547,11 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert authority_decision["status"] == "ready"
     assert authority_decision["metric_tiles"]["DR"] == 90
     assert authority_decision["metric_tiles"]["Ahrefs Rank"] == 1450
+    assert authority_decision["metric_tiles"]["konkurenci organiczni"] == 0
+    assert authority_decision["metric_tiles"]["odczyt konkurencji"] == "completed"
     assert authority_decision["metric_tiles"]["fakty luk"] == 0
+    assert "organic_competitor_rows" in authority_decision["allowed_evidence"]
+    assert "rows=0" in authority_decision["summary"]
     assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
     assert "content gap" in authority_decision["blocked_claims"]
     block_decision = decision_by_id["ahrefs_block_gap_claims_without_records"]
@@ -2630,6 +2649,16 @@ def test_ahrefs_diagnostics_builds_typed_gap_records_from_metric_facts(
                 },
                 period="ahrefs_gap",
             ),
+            VendorMetricFact(
+                "ahrefs_top_page_gap_count",
+                1,
+                {
+                    "competitor_domain": "example.pl",
+                    "source_url": "https://example.pl/top-bdo/",
+                    "target_url": "https://www.ekologus.pl/bdo/",
+                },
+                period="ahrefs_gap",
+            ),
         ],
     )
 
@@ -2638,7 +2667,7 @@ def test_ahrefs_diagnostics_builds_typed_gap_records_from_metric_facts(
     assert response.status_code == 200
     payload = response.json()
     assert payload["live_data_available"] is True
-    assert payload["gap_fact_count"] == 8
+    assert payload["gap_fact_count"] == 9
     assert payload["blocker_count"] == 0
     gap_contract = payload["gap_read_contract"]
     assert gap_contract["status"] == "ready"
@@ -2659,12 +2688,14 @@ def test_ahrefs_diagnostics_builds_typed_gap_records_from_metric_facts(
         "ahrefs_content_gap_count",
         "ahrefs_backlink_gap_count",
         "ahrefs_organic_keyword_gap_count",
+        "ahrefs_top_page_gap_count",
     }
     assert {record["gap_type"] for record in gap_contract["gap_records"]} == {
         "competitor_page",
         "content_gap",
         "backlink_gap",
         "organic_keyword_gap",
+        "top_page_gap",
     }
     content_record = next(
         record
@@ -2680,11 +2711,12 @@ def test_ahrefs_diagnostics_builds_typed_gap_records_from_metric_facts(
     gap_decision = decision_by_id["ahrefs_review_gap_records"]
     assert gap_decision["status"] == "ready"
     assert gap_decision["metric_tiles"] == {
-        "rekordy luk": 4,
+        "rekordy luk": 5,
         "content gaps": 1,
         "backlink gaps": 1,
         "strony konkurencji": 1,
         "organic keywords": 1,
+        "top pages": 1,
         "braki kontraktu": 0,
     }
     assert gap_decision["missing_read_contracts"] == []
@@ -6935,15 +6967,35 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "api.ahrefs.com"
-        assert request.url.path == "/v3/site-explorer/domain-rating"
         assert request.headers["authorization"] == "Bearer ahrefs-token-test"
         assert request.headers["accept"] == "application/json"
         assert request.url.params["target"] == "ekologus.pl"
         assert len(request.url.params["date"]) == 10
         assert request.url.params["output"] == "json"
+        if request.url.path == "/v3/site-explorer/domain-rating":
+            return httpx.Response(
+                200,
+                json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
+            )
+        assert request.url.path == "/v3/site-explorer/organic-competitors"
+        assert request.url.params["country"] == "pl"
+        assert request.url.params["limit"] == "10"
+        assert "competitor_domain" in request.url.params["select"]
         return httpx.Response(
             200,
-            json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
+            json={
+                "organic_competitors": [
+                    {
+                        "competitor_domain": "konkurent.pl",
+                        "competitor_url": "https://konkurent.pl/bdo/",
+                        "keywords_common": 8,
+                        "keywords_competitor": 42,
+                        "keywords_target": 12,
+                        "pages": 7,
+                        "share": 0.17,
+                    }
+                ]
+            },
         )
 
     result = refresh_ahrefs_domain_rating(
@@ -6960,7 +7012,27 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "target_source": "process_env",
         "domain_rating": 90.0,
         "ahrefs_rank": 1450,
+        "organic_competitor_read_status": "completed",
+        "organic_competitor_rows": 1,
+        "organic_competitor_country": "pl",
     }
+    assert result.metric_facts == [
+        VendorMetricFact(
+            "ahrefs_competitor_page_count",
+            7,
+            {
+                "gap_type": "competitor_page",
+                "competitor_domain": "konkurent.pl",
+                "source_url": "https://konkurent.pl/bdo/",
+                "country": "pl",
+                "keywords_common": "8",
+                "keywords_competitor": "42",
+                "keywords_target": "12",
+                "share": "0.17",
+            },
+            period="ahrefs_organic_competitors",
+        )
+    ]
     serialized = json.dumps(result.metric_summary)
     assert "ahrefs-token-test" not in serialized
     assert "ekologus.pl" not in serialized

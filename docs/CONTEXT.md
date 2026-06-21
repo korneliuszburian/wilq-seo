@@ -29,21 +29,29 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
-0. Ahrefs typed gap record parser, 2026-06-21 02:04 CEST:
-   `/api/ahrefs/diagnostics` can build typed `AhrefsGapRecord` rows from
-   record-level Ahrefs metric facts and expose ready decision
-   `ahrefs_review_gap_records` when competitor page, content gap, backlink gap
-   or organic keyword gap facts exist. Scoped `wilq-ahrefs-gap-finder`
-   context-pack redaction preserves safe evidence fields such as
-   `allowed_evidence`, `gap_type`, `source_url`, `target_url`,
-   `competitor_domain` and `keyword`. Live state is still honestly blocked:
-   `authority_fact_count=2`, `gap_fact_count=0`, `gap_records=[]`,
-   `gap_read_contract.status=blocked`. This parser is an API/view-model fix,
-   not a skill-reference workaround.
+0. Ahrefs organic competitors source read, 2026-06-21 02:33 CEST:
+   `refresh_ahrefs_af84b2e89221` performed a real read-only Ahrefs API refresh.
+   Live facts: DR=24, Ahrefs Rank=6459608,
+   `organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
+   `organic_competitor_country=pl`. `/api/ahrefs/diagnostics` now filters
+   orphan/test DuckDB facts whose evidence IDs do not belong to known
+   local-state refresh runs, so stale DR=90 rows no longer override current
+   Ahrefs evidence. The diagnostics API can still build typed `AhrefsGapRecord`
+   rows from record-level facts when they exist, but the live gap contract is
+   correctly blocked: `gap_fact_count=0`, `gap_records=[]`,
+   `gap_read_contract.status=blocked`, `active_action_ids=[]`. Scoped
+   `wilq-ahrefs-gap-finder` context-pack is about `25336` bytes and the latest
+   eval is
+   `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
+   This is an API/view-model fix, not a skill-reference workaround.
+   Full `scripts/verify.sh` passed after this slice: backend `138 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+   dashboard production build passed.
 
 0. Ahrefs typed gap read contract, 2026-06-21 01:21 CEST:
-   `/api/ahrefs/diagnostics` now includes `gap_read_contract`. Live state after
-   restart: DR=90, Ahrefs Rank=1450, `gap_records=[]`,
+   `/api/ahrefs/diagnostics` now includes `gap_read_contract`. Current live
+   state after the organic competitors read slice: DR=24,
+   Ahrefs Rank=6459608, `organic_competitor_rows=0`, `gap_records=[]`,
    `gap_read_contract.status=blocked`, available contract
    `ahrefs_authority_summary`, and missing contracts
    `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
@@ -51,7 +59,7 @@ Audit `docs/audits/001-output.md` is now folded into
    `ahrefs_top_pages_by_competitor`. Review gates are
    `ahrefs_gap_records_required`, `content_planner_review_required`,
    `human_strategy_review`. Scoped `wilq-ahrefs-gap-finder` context-pack is
-   about `22181` bytes and carries the same gap contract with
+   about `25336` bytes and carries the same gap contract with
    `active_action_objects=[]`. Dashboard `/ahrefs` renders
    `Kontrakt luk Ahrefs`. This is still a blocker, not gap analysis; next
    Ahrefs value work is actual competitor/content/backlink gap records.
@@ -1350,15 +1358,16 @@ Current live proof after `scripts/local_stack.sh restart`:
 
 - `/api/ahrefs/diagnostics.live_data_available=true`.
 - `authority_fact_count=2`, `gap_fact_count=0`, `blocker_count=1`.
-- Ready decision `ahrefs_review_authority_context`: `DR=90`,
-  `Ahrefs Rank=1450`, `fakty luk=0`.
+- Ready decision `ahrefs_review_authority_context`: `DR=24`,
+  `Ahrefs Rank=6459608`, `konkurenci organiczni=0`,
+  `odczyt konkurencji=completed`, `fakty luk=0`.
 - Blocked decision `ahrefs_block_gap_claims_without_records` lists missing
   contracts: `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
   `ahrefs_top_pages_by_competitor`.
-- Context-pack size: `32244 bytes`; active action IDs: none.
+- Context-pack size: about `25336 bytes`; active action IDs: none.
 - Eval artifact:
-  `.local-lab/evals/codex-skill/20260620T110348Z/wilq-ahrefs-gap-finder/result.json`.
+  `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
   Result: `api_used=true`, `blocked=true`, Ahrefs evidence IDs present,
   `action_id=null`, `operator_usefulness_score=4`.
 
