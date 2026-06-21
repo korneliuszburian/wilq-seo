@@ -209,6 +209,11 @@ Oczekiwane connector surfaces: {connectors}
 - Nie wymyślaj metryk, kampanii, rankingów, produktów, query ani stawek.
 - Każda rekomendacja musi mieć evidence_ids i source_connectors z WILQ API.
 - Jeżeli danych brakuje, zwróć blocker zamiast rekomendacji.
+- Jeżeli `expected_blocker` podaje claimy zablokowane, nie umieszczaj tych
+  claimów w `recommendations[].label_pl` ani w nieblokowanych action labels.
+  Jeżeli musisz wymienić zablokowany claim przy konkretnej rekomendacji, ustaw
+  dla niej niepusty `blocked_reason`; preferuj jednak top-level
+  `blocked_reason`, `notes` albo action candidate ze stanem `blocked`.
 - Nie proponuj write/apply bez validated ActionObject i jawnej zgody użytkownika.
 - Wszystkie wartości opisowe dla operatora zwróć po polsku z polskimi znakami.
 - ID endpointów, connectorów, evidence, opportunity i ActionObject zostaw bez tłumaczenia.

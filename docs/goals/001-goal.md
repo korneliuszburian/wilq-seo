@@ -480,28 +480,28 @@ slice: backend `117 passed`, dashboard unit `14 passed`, Playwright e2e
 
 Ahrefs dedicated route and `wilq-ahrefs-gap-finder` context-pack must expose
 authority evidence separately from true gap evidence. Current live proof after
-the 2026-06-21 target fix: `/api/ahrefs/diagnostics` has
-`live_data_available=true`, `authority_fact_count=2`, `gap_fact_count=10`,
-`blocker_count=1`, authority facts `DR=40`, `Ahrefs Rank=1541946`, and
-organic-competitor read facts `organic_competitor_read_status=completed`,
-`organic_competitor_rows=10`, `organic_competitor_country=pl`,
-`organic_competitor_mode=subdomains`. The target is the real marketing target
-`ekologus.pl`, not staging `ekologus.dev.proudsite.pl`; priority is
-`AHREFS_TARGET`, then `MIS_PRIMARY_SITE_URL`, then `WORDPRESS_EKOLOGUS_URL`.
-Ready decision `ahrefs_review_gap_records` now exposes 10 competitor-page
-records through available contract `ahrefs_competitor_pages`, while blocked
-decision `ahrefs_block_gap_claims_without_records` still blocks missing read
-contracts: `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
-`ahrefs_organic_keywords_by_url`, `ahrefs_top_pages_by_competitor`. Scoped
+the 2026-06-21 top-pages slice: `/api/ahrefs/diagnostics` has
+`live_data_available=true`, `authority_fact_count=2`, `gap_fact_count=24`,
+`blocker_count=1`, authority facts `DR=40`, `Ahrefs Rank=1541946`,
+`organic_competitor_rows=10`, and `top_pages_by_competitor_rows=4` from
+2 competitors. The target is the real marketing target `ekologus.pl`, not
+staging `ekologus.dev.proudsite.pl`; priority is `AHREFS_TARGET`, then
+`MIS_PRIMARY_SITE_URL`, then `WORDPRESS_EKOLOGUS_URL`. Ready decision
+`ahrefs_review_gap_records` now exposes 14 records: 10 competitor-page records
+through `ahrefs_competitor_pages` and 4 competitor top-page records through
+`ahrefs_top_pages_by_competitor`. Blocked decision
+`ahrefs_block_gap_claims_without_records` still blocks missing read contracts:
+`ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
+`ahrefs_organic_keywords_by_url`. Scoped
 `POST /api/codex/context-pack {"skill":"wilq-ahrefs-gap-finder"}` is about
-`53100 bytes`, includes `ahrefs_diagnostics`, omits broad unrelated context,
+`68651 bytes`, includes `ahrefs_diagnostics`, omits broad unrelated context,
 and has `active_action_objects=0`. Diagnostics also ignore orphan/test DuckDB
 facts not attached to known refresh-run evidence IDs. Do not claim
-content/backlink/ranking/traffic/authority gaps from DR/rank or competitor-page
-records alone. Strict non-interactive eval now enforces this: case
+content/backlink/ranking/traffic/authority gaps from DR/rank, competitor-page
+or top-page records alone. Strict non-interactive eval now enforces this: case
 `wilq-ahrefs-gap-finder` targets `/ahrefs`, requires `blocked=true`, no unsafe
 action IDs, read-contract gaps and blocked claim terms. Latest eval artifact:
-`.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`;
+`.local-lab/evals/codex-skill/20260621T020523Z/wilq-ahrefs-gap-finder/result.json`;
 result has `api_used=true`, `blocked=true`, Ahrefs evidence IDs and
 `operator_usefulness_score=4`. Full `scripts/verify.sh` passed after this
 slice: backend `139 passed`, dashboard unit `17 passed`, Playwright e2e
@@ -1155,25 +1155,27 @@ These are the current reasons Goal 001 is not complete:
    drafting can be prepare-only and evidence-backed.
 
 7. **Full verification after the latest changes passed.**
-   `scripts/verify.sh` passed after the 2026-06-20 Ahrefs diagnostics slice:
-   backend API contracts `123 passed`, dashboard route tests `15 passed`,
-   Playwright e2e `12 passed`, security, skill/API smokes and dashboard
+   `scripts/verify.sh` passed after the 2026-06-21 Ahrefs top-pages slice:
+   backend API contracts `139 passed`, dashboard unit tests `17 passed`,
+   Playwright e2e `14 passed`, security, skill/API smokes and dashboard
    production build passed. Keep this file current after every future slice.
 
-8. **Ahrefs is source-read-ready for authority and organic competitors, not gap-analysis-ready.**
+8. **Ahrefs is source-read-ready for authority, organic competitors and competitor top pages, not gap-analysis-ready.**
    `/api/ahrefs/diagnostics`, `/ahrefs` and scoped `wilq-ahrefs-gap-finder`
    context-pack now prove DR/rank authority facts, real organic competitor
-   records and explicit blocking of unsupported content/backlink/keyword/top-page
+   records, competitor top-page records and explicit blocking of unsupported content/backlink/keyword
    gap claims. Current live proof: DR=40, Ahrefs Rank=1541946,
    `organic_competitor_read_status=completed`, `organic_competitor_rows=10`,
-   `organic_competitor_mode=subdomains`, `gap_fact_count=10`,
-   `gap_read_contract.status=blocked`, `gap_records=10`, `active_action_ids=[]`,
-   available read contract `ahrefs_competitor_pages`, and 4 missing gap read
-   contracts. Next Ahrefs value work is to collect content/backlink/
-   organic-keyword/top-page records, not to make the skill infer them from
-   competitor page records.
+   `organic_competitor_mode=subdomains`,
+   `top_pages_by_competitor_read_status=completed`,
+   `top_pages_by_competitor_rows=4`, `gap_fact_count=24`,
+   `gap_read_contract.status=blocked`, `gap_records=14`, `active_action_ids=[]`,
+   available read contracts `ahrefs_competitor_pages` and
+   `ahrefs_top_pages_by_competitor`, and 3 missing gap read contracts. Next
+   Ahrefs value work is to collect content/backlink/organic-keyword records,
+   not to make the skill infer them from competitor page or top-page records.
    Strict eval coverage now exists for this blocker guardrail:
-   `.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`.
+   `.local-lab/evals/codex-skill/20260621T020523Z/wilq-ahrefs-gap-finder/result.json`.
 
 ## What WILQ Must Give The Marketer
 
@@ -2166,14 +2168,15 @@ Current eval progress:
 Current eval coverage: 12/12 WILQ skills have recorded non-interactive Codex
 evals. GA4 has a fresh strict decision_queue rerun, Ads has multiple strengthened
 read-contract reruns, and Ahrefs now has a strict eval with 10 real
-competitor-page records proving that authority plus competitor pages still
-cannot be promoted into unsupported content/backlink/ranking/traffic claims:
-`.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`.
+competitor-page records plus 4 competitor top-page records proving that
+authority plus competitor pages still cannot be promoted into unsupported
+content/backlink/ranking/traffic claims:
+`.local-lab/evals/codex-skill/20260621T020523Z/wilq-ahrefs-gap-finder/result.json`.
 This proves API integration and guardrails, not Goal 001 completion. The next
 product work must convert eval findings into fixes: Ahrefs content/backlink/
-organic-keyword/top-page read contracts, source-term/custom-segment evidence,
-campaign ActionObjects, Demand Gen diagnostics and the final plug-and-play
-Codex acceptance session.
+organic-keyword read contracts, source-term/custom-segment evidence, campaign
+ActionObjects, Demand Gen diagnostics and the final plug-and-play Codex
+acceptance session.
 
 ### 4. Performance Slice
 

@@ -6967,36 +6967,62 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
     clear_ahrefs_env(monkeypatch)
     monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
     monkeypatch.setenv("AHREFS_TARGET", "https://www.ekologus.pl/oferta")
+    requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
         assert request.url.host == "api.ahrefs.com"
         assert request.headers["authorization"] == "Bearer ahrefs-token-test"
         assert request.headers["accept"] == "application/json"
-        assert request.url.params["target"] == "ekologus.pl"
         assert len(request.url.params["date"]) == 10
         assert request.url.params["output"] == "json"
         if request.url.path == "/v3/site-explorer/domain-rating":
+            assert request.url.params["target"] == "ekologus.pl"
             return httpx.Response(
                 200,
                 json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
             )
-        assert request.url.path == "/v3/site-explorer/organic-competitors"
+        if request.url.path == "/v3/site-explorer/organic-competitors":
+            assert request.url.params["target"] == "ekologus.pl"
+            assert request.url.params["mode"] == "subdomains"
+            assert request.url.params["country"] == "pl"
+            assert request.url.params["limit"] == "10"
+            assert "competitor_domain" in request.url.params["select"]
+            return httpx.Response(
+                200,
+                json={
+                    "competitors": [
+                        {
+                            "competitor_domain": None,
+                            "competitor_url": "https://konkurent.pl/bdo/",
+                            "keywords_common": 8,
+                            "keywords_competitor": 42,
+                            "keywords_target": 12,
+                            "pages": 7,
+                            "share": 0.17,
+                        }
+                    ]
+                },
+            )
+        assert request.url.path == "/v3/site-explorer/top-pages"
+        assert request.url.params["target"] == "konkurent.pl"
         assert request.url.params["mode"] == "subdomains"
         assert request.url.params["country"] == "pl"
-        assert request.url.params["limit"] == "10"
-        assert "competitor_domain" in request.url.params["select"]
+        assert request.url.params["limit"] == "3"
+        assert request.url.params["order_by"] == "sum_traffic:desc"
+        assert "top_keyword" in request.url.params["select"]
         return httpx.Response(
             200,
             json={
-                "competitors": [
+                "pages": [
                     {
-                        "competitor_domain": None,
-                        "competitor_url": "https://konkurent.pl/bdo/",
-                        "keywords_common": 8,
-                        "keywords_competitor": 42,
-                        "keywords_target": 12,
-                        "pages": 7,
-                        "share": 0.17,
+                        "raw_url": "https://konkurent.pl/top-bdo/",
+                        "top_keyword": "bdo szkolenie",
+                        "sum_traffic": 121,
+                        "keywords": 31,
+                        "referring_domains": 4,
+                        "top_keyword_best_position": 2,
+                        "top_keyword_country": "pl",
                     }
                 ]
             },
@@ -7020,6 +7046,11 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "organic_competitor_rows": 1,
         "organic_competitor_country": "pl",
         "organic_competitor_mode": "subdomains",
+        "top_pages_by_competitor_read_status": "completed",
+        "top_pages_by_competitor_rows": 1,
+        "top_pages_by_competitor_competitors": 1,
+        "top_pages_by_competitor_country": "pl",
+        "top_pages_by_competitor_mode": "subdomains",
     }
     assert result.metric_facts == [
         VendorMetricFact(
@@ -7037,7 +7068,30 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 "share": "0.17",
             },
             period="ahrefs_organic_competitors",
+        ),
+        VendorMetricFact(
+            "ahrefs_top_page_gap_count",
+            1,
+            {
+                "gap_type": "top_page_gap",
+                "competitor_domain": "konkurent.pl",
+                "source_url": "https://konkurent.pl/top-bdo/",
+                "keyword": "bdo szkolenie",
+                "country": "pl",
+                "target_mode": "subdomains",
+                "sum_traffic": "121",
+                "keywords": "31",
+                "referring_domains": "4",
+                "top_keyword_best_position": "2",
+                "top_keyword_country": "pl",
+            },
+            period="ahrefs_top_pages",
         )
+    ]
+    assert [request.url.path for request in requests] == [
+        "/v3/site-explorer/domain-rating",
+        "/v3/site-explorer/organic-competitors",
+        "/v3/site-explorer/top-pages",
     ]
     serialized = json.dumps(result.metric_summary)
     assert "ahrefs-token-test" not in serialized

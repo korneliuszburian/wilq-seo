@@ -15,6 +15,11 @@ AHREFS_ORGANIC_COMPETITOR_LIMIT_DEFAULT = 10
 AHREFS_ORGANIC_COMPETITOR_LIMIT_MAX = 25
 AHREFS_ORGANIC_COMPETITOR_MODE_DEFAULT = "subdomains"
 AHREFS_ORGANIC_COMPETITOR_MODES = {"exact", "prefix", "domain", "subdomains"}
+AHREFS_TOP_PAGES_COMPETITOR_LIMIT_DEFAULT = 3
+AHREFS_TOP_PAGES_COMPETITOR_LIMIT_MAX = 5
+AHREFS_TOP_PAGES_PER_COMPETITOR_DEFAULT = 3
+AHREFS_TOP_PAGES_PER_COMPETITOR_MAX = 10
+AHREFS_TOP_PAGES_MODE_DEFAULT = "subdomains"
 
 
 def refresh_ahrefs_domain_rating(
@@ -35,7 +40,7 @@ def refresh_ahrefs_domain_rating(
             status=ConnectorRefreshStatus.blocked,
             summary=(
                 "Ahrefs vendor read blocked by missing config names: "
-                "AHREFS_TARGET or WORDPRESS_EKOLOGUS_URL."
+                "AHREFS_TARGET, MIS_PRIMARY_SITE_URL or WORDPRESS_EKOLOGUS_URL."
             ),
             errors=["Ahrefs target URL/domain is missing."],
         )
@@ -59,6 +64,31 @@ def refresh_ahrefs_domain_rating(
             )
             metric_summary.update(competitor_summary)
             metric_facts.extend(competitor_facts)
+            try:
+                top_pages_summary, top_page_facts = _fetch_top_pages_by_competitors(
+                    client,
+                    token,
+                    competitor_facts,
+                )
+                metric_summary.update(top_pages_summary)
+                metric_facts.extend(top_page_facts)
+            except httpx.HTTPStatusError as exc:
+                status_code = exc.response.status_code
+                metric_summary.update(
+                    {
+                        "top_pages_by_competitor_read_status": f"http_{status_code}",
+                        "top_pages_by_competitor_rows": 0,
+                    }
+                )
+                errors.append(f"Ahrefs Site Explorer top-pages HTTP {status_code}.")
+            except httpx.HTTPError as exc:
+                metric_summary.update(
+                    {
+                        "top_pages_by_competitor_read_status": type(exc).__name__,
+                        "top_pages_by_competitor_rows": 0,
+                    }
+                )
+                errors.append(f"Ahrefs Site Explorer top-pages {type(exc).__name__}.")
         except httpx.HTTPStatusError as exc:
             status_code = exc.response.status_code
             metric_summary.update(
@@ -87,7 +117,8 @@ def refresh_ahrefs_domain_rating(
         summary=(
             "Ahrefs vendor read completed through Site Explorer domain-rating. "
             f"Domain rating: {metric_summary['domain_rating']}. "
-            f"Organic competitor rows: {metric_summary['organic_competitor_rows']}."
+            f"Organic competitor rows: {metric_summary['organic_competitor_rows']}. "
+            f"Top page rows: {metric_summary.get('top_pages_by_competitor_rows', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -197,6 +228,81 @@ def _fetch_organic_competitors(
     )
 
 
+def _fetch_top_pages_by_competitors(
+    client: httpx.Client,
+    token: str,
+    competitor_facts: list[VendorMetricFact],
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    report_date = _report_date()
+    country = _organic_competitor_country()
+    mode = _top_pages_mode()
+    competitor_domains = _top_page_competitor_domains(competitor_facts)
+    if not competitor_domains:
+        return (
+            {
+                "top_pages_by_competitor_read_status": "skipped_no_competitors",
+                "top_pages_by_competitor_rows": 0,
+                "top_pages_by_competitor_competitors": 0,
+                "top_pages_by_competitor_country": country,
+                "top_pages_by_competitor_mode": mode,
+            },
+            [],
+        )
+
+    page_limit = _top_pages_per_competitor_limit()
+    facts: list[VendorMetricFact] = []
+    for competitor_domain in competitor_domains:
+        response = client.get(
+            f"{AHREFS_API_BASE}/site-explorer/top-pages",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+            params={
+                "target": competitor_domain,
+                "mode": mode,
+                "country": country,
+                "date": report_date,
+                "limit": page_limit,
+                "output": "json",
+                "order_by": "sum_traffic:desc",
+                "select": ",".join(
+                    [
+                        "raw_url",
+                        "top_keyword",
+                        "sum_traffic",
+                        "keywords",
+                        "referring_domains",
+                        "top_keyword_best_position",
+                        "top_keyword_country",
+                    ]
+                ),
+            },
+        )
+        response.raise_for_status()
+        rows = _response_rows(response.json(), "pages")[:page_limit]
+        facts.extend(
+            fact
+            for row in rows
+            if (
+                fact := _top_page_gap_fact(
+                    row,
+                    competitor_domain=competitor_domain,
+                    country=country,
+                    mode=mode,
+                )
+            )
+            is not None
+        )
+    return (
+        {
+            "top_pages_by_competitor_read_status": "completed",
+            "top_pages_by_competitor_rows": len(facts),
+            "top_pages_by_competitor_competitors": len(competitor_domains),
+            "top_pages_by_competitor_country": country,
+            "top_pages_by_competitor_mode": mode,
+        },
+        facts,
+    )
+
+
 def _report_date() -> str:
     return (datetime.now(UTC).date() - timedelta(days=1)).isoformat()
 
@@ -227,6 +333,27 @@ def _organic_competitor_limit() -> int:
     if configured and configured.isdigit():
         return max(1, min(int(configured), AHREFS_ORGANIC_COMPETITOR_LIMIT_MAX))
     return AHREFS_ORGANIC_COMPETITOR_LIMIT_DEFAULT
+
+
+def _top_pages_mode() -> str:
+    mode = variable_value("AHREFS_TOP_PAGES_MODE")
+    if mode and mode.strip().lower() in AHREFS_ORGANIC_COMPETITOR_MODES:
+        return mode.strip().lower()
+    return AHREFS_TOP_PAGES_MODE_DEFAULT
+
+
+def _top_pages_competitor_limit() -> int:
+    configured = variable_value("AHREFS_TOP_PAGES_COMPETITOR_LIMIT")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_TOP_PAGES_COMPETITOR_LIMIT_MAX))
+    return AHREFS_TOP_PAGES_COMPETITOR_LIMIT_DEFAULT
+
+
+def _top_pages_per_competitor_limit() -> int:
+    configured = variable_value("AHREFS_TOP_PAGES_PER_COMPETITOR")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_TOP_PAGES_PER_COMPETITOR_MAX))
+    return AHREFS_TOP_PAGES_PER_COMPETITOR_DEFAULT
 
 
 def _response_rows(payload: Any, preferred_key: str) -> list[dict[str, Any]]:
@@ -285,6 +412,48 @@ def _organic_competitor_fact(
         pages,
         dimensions,
         period="ahrefs_organic_competitors",
+    )
+
+
+def _top_page_competitor_domains(competitor_facts: list[VendorMetricFact]) -> list[str]:
+    domains: list[str] = []
+    for fact in competitor_facts:
+        competitor_domain = fact.dimensions.get("competitor_domain")
+        if competitor_domain and competitor_domain not in domains:
+            domains.append(competitor_domain)
+    return domains[: _top_pages_competitor_limit()]
+
+
+def _top_page_gap_fact(
+    row: dict[str, Any],
+    *,
+    competitor_domain: str,
+    country: str,
+    mode: str,
+) -> VendorMetricFact | None:
+    source_url = _first_text(row, "raw_url", "url", "page_url")
+    if source_url is None:
+        return None
+    dimensions = _clean_dimensions(
+        {
+            "gap_type": "top_page_gap",
+            "competitor_domain": competitor_domain,
+            "source_url": source_url,
+            "keyword": _first_text(row, "top_keyword", "keyword"),
+            "country": country,
+            "target_mode": mode,
+            "sum_traffic": _first_text(row, "sum_traffic"),
+            "keywords": _first_text(row, "keywords"),
+            "referring_domains": _first_text(row, "referring_domains"),
+            "top_keyword_best_position": _first_text(row, "top_keyword_best_position"),
+            "top_keyword_country": _first_text(row, "top_keyword_country"),
+        }
+    )
+    return VendorMetricFact(
+        "ahrefs_top_page_gap_count",
+        1,
+        dimensions,
+        period="ahrefs_top_pages",
     )
 
 

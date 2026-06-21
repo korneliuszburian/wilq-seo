@@ -116,31 +116,33 @@
   {
     "skill": "wilq-ahrefs-gap-finder",
     "surface_path": "/ahrefs",
-    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. Jeżeli WILQ ma tylko authority facts bez rekordów luk, zwróć blocker: wolno użyć Ahrefs jako kontekstu autorytetu, ale nie wolno rekomendować content gap, backlink gap ani przewagi konkurencji.",
+    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. WILQ ma authority facts, strony konkurencji i top pages konkurentów, ale nadal brakuje content gap records, backlink gap records i organic keywords by URL. Pokaż, co wolno przejrzeć, i zablokuj unsupported content/backlink/ranking/uplift claims.",
     "expected_connectors": ["ahrefs"],
     "expected_terms_pl": [
       "Ahrefs",
       "ahrefs_diagnostics",
       "decision_queue",
       "ahrefs_review_authority_context",
+      "ahrefs_review_gap_records",
       "ahrefs_block_gap_claims_without_records",
       "missing_read_contracts",
       "ahrefs_content_gap_records",
       "ahrefs_backlink_gap_records",
+      "ahrefs_organic_keywords_by_url",
       "ahrefs_competitor_pages",
+      "ahrefs_top_pages_by_competitor",
       "domain_rating",
       "ahrefs_rank",
+      "top pages",
       "content gap",
       "backlink gap",
-      "competitor gap",
-      "blocked claims"
+      "Zablokowane claims"
     ],
     "expected_blocked": true,
     "expected_no_action_ids": true,
     "blocked_claim_terms": [
       "content gap",
       "backlink gap",
-      "competitor gap",
       "ranking opportunity",
       "traffic uplift",
       "authority improvement"

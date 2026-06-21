@@ -29,6 +29,26 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ahrefs top pages by competitor, 2026-06-21 04:05 CEST:
+   `refresh_ahrefs_41eef6aa90ef` performed read-only Ahrefs `top-pages` reads
+   for 2 organic competitors, 2 pages each. Live facts: DR=40, Ahrefs
+   Rank=1541946, `organic_competitor_rows=10`,
+   `top_pages_by_competitor_read_status=completed`,
+   `top_pages_by_competitor_competitors=2`,
+   `top_pages_by_competitor_rows=4`,
+   `top_pages_by_competitor_mode=subdomains`. `/api/ahrefs/diagnostics` now has
+   `gap_fact_count=24`, `gap_records=14`, `top_page_records=4`, available
+   contracts `ahrefs_competitor_pages` and `ahrefs_top_pages_by_competitor`.
+   Missing contracts are now only `ahrefs_content_gap_records`,
+   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`. Scoped
+   `wilq-ahrefs-gap-finder` context-pack is about `68651` bytes,
+   `active_action_objects=0`, and latest eval is
+   `.local-lab/evals/codex-skill/20260621T020523Z/wilq-ahrefs-gap-finder/result.json`.
+   Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+   dashboard production build passed. This still blocks content/backlink/
+   ranking/uplift claims; it only makes competitor top-page review real.
+
 0. Ahrefs competitor page records, 2026-06-21 03:38 CEST:
    `refresh_ahrefs_a106dd4ab417` performed a real read-only Ahrefs API refresh
    against the real marketing target `ekologus.pl`, not
@@ -1350,7 +1370,8 @@ What changed:
   `blocked=true`, no non-null `action_id`, and forbids adjacent content/Ads/
   Merchant/GA4 ActionObjects.
 
-Current live proof after the 2026-06-21 Ahrefs target fix:
+Historical live proof after the 2026-06-21 Ahrefs target fix, superseded by the
+04:05 top-pages proof near the top of this file:
 
 - `/api/ahrefs/diagnostics.live_data_available=true`.
 - `authority_fact_count=2`, `gap_fact_count=10`, `blocker_count=1`.
@@ -1360,7 +1381,7 @@ Current live proof after the 2026-06-21 Ahrefs target fix:
   `organic_competitor_mode=subdomains`.
 - Ready decision `ahrefs_review_gap_records` exposes 10 competitor-page records
   through available contract `ahrefs_competitor_pages`.
-- Blocked decision `ahrefs_block_gap_claims_without_records` lists missing
+- Blocked decision `ahrefs_block_gap_claims_without_records` listed missing
   contracts: `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
   `ahrefs_organic_keywords_by_url`, `ahrefs_top_pages_by_competitor`.
 - Context-pack size: about `53100 bytes`; active action IDs: none.

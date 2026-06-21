@@ -34,6 +34,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs top pages by competitor, 2026-06-21 04:05 CEST.
+  `refresh_ahrefs_41eef6aa90ef` wykonał read-only Ahrefs `top-pages` dla 2
+  organicznych konkurentów po 2 strony. Live facts: DR=40, Ahrefs Rank=1541946,
+  `organic_competitor_rows=10`, `top_pages_by_competitor_read_status=completed`,
+  `top_pages_by_competitor_competitors=2`, `top_pages_by_competitor_rows=4`,
+  `top_pages_by_competitor_mode=subdomains`. `/api/ahrefs/diagnostics` ma teraz
+  `gap_fact_count=24`, `gap_records=14`, `top_page_records=4`,
+  available contracts `ahrefs_competitor_pages` oraz
+  `ahrefs_top_pages_by_competitor`; missing contracts spadły do 3:
+  `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
+  `ahrefs_organic_keywords_by_url`. Scoped `wilq-ahrefs-gap-finder`
+  context-pack ma około `68651` bytes, `active_action_objects=0` i niesie te
+  same 14 records do Codex. Non-interactive eval przeszedł:
+  `.local-lab/evals/codex-skill/20260621T020523Z/wilq-ahrefs-gap-finder/result.json`;
+  wynik ma `api_used=true`, `blocked=true`, `operator_usefulness_score=4`,
+  Ahrefs/GSC/WordPress connectors, brak ActionObject IDs i brak safety findings.
+  Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
+  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+  dashboard production build passed.
 - Ahrefs competitor page records, 2026-06-21 03:38 CEST.
   `refresh_ahrefs_a106dd4ab417` wykonał realny read-only Ahrefs API dla
   authority i organic competitors na prawdziwym targetcie `ekologus.pl`, nie
@@ -47,13 +66,13 @@ Aktualny proof produktowy:
   nadal blocked `ahrefs_block_gap_claims_without_records` dla
   `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
   `ahrefs_organic_keywords_by_url` oraz `ahrefs_top_pages_by_competitor`.
-	  Scoped `wilq-ahrefs-gap-finder` context-pack ma około `53100` bytes,
-	  `active_action_objects=0` i przenosi te rekordy do Codex bez write path.
-	  Non-interactive eval przeszedł:
-	  `.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`.
-	  Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
-	  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
-	  and dashboard production build passed.
+  Scoped `wilq-ahrefs-gap-finder` context-pack ma około `53100` bytes,
+  `active_action_objects=0` i przenosi te rekordy do Codex bez write path.
+  Non-interactive eval przeszedł:
+  `.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`.
+  Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
+  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
+  and dashboard production build passed.
 - Ads custom segment missing-metric truth, 2026-06-21 01:40 CEST.
   Custom segment review reason no longer renders missing search-term
   impressions or cost as `0`. Current live proof after
@@ -705,15 +724,15 @@ Aktualny maintenance:
    and `operator_usefulness_score=4`.
 
 3. Ahrefs diagnostics contract, 2026-06-20 12:41 CEST, superseded by the
-   2026-06-21 03:38 competitor-record proof.
+   2026-06-21 04:05 competitor top-pages proof.
    `/api/ahrefs/diagnostics`, dashboard `/ahrefs`, shared schemas and scoped
    `wilq-ahrefs-gap-finder` context-pack now expose Ahrefs as authority
-   context plus explicit competitor-page records. Current live proof: DR=40,
+   context plus explicit competitor-page records. Historical live proof: DR=40,
    Ahrefs Rank=1541946, `gap_fact_count=10`, available contract
    `ahrefs_competitor_pages`, blocker `ahrefs_block_gap_claims_without_records`,
-   missing read contracts
-   `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
-   `ahrefs_organic_keywords_by_url`,
+   missing read contracts then included `ahrefs_content_gap_records`,
+   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
+   `ahrefs_top_pages_by_competitor`. Current proof now also has
    `ahrefs_top_pages_by_competitor`. The scoped context-pack has
    `active_action_objects=0`, so the skill no longer inherits content ActionObjects
    when Ahrefs diagnostics has no actions. Focused proof passed:
