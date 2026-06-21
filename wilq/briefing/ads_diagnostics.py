@@ -59,6 +59,7 @@ from wilq.schemas import (
     AdsCustomSegmentPayloadPreview,
     AdsCustomSegmentSourceQuality,
     AdsCustomSegmentsReadContract,
+    AdsCustomSegmentTargetingPreview,
     AdsDecisionItem,
     AdsDerivedKpiReadContract,
     AdsDerivedKpiRow,
@@ -3917,8 +3918,9 @@ def _custom_segment_payload_preview(
         fact.name for fact in metric_facts if fact.name.startswith("search_term_")
     )
     row_terms = _unique(row.search_term for row in rows)
+    preview_id = f"preview_{candidate_id}"
     return AdsCustomSegmentPayloadPreview(
-        id=f"preview_{candidate_id}",
+        id=preview_id,
         custom_segment_name=name,
         member_type="KEYWORD",
         source_terms=[term for term in source_terms if term in row_terms],
@@ -3938,6 +3940,28 @@ def _custom_segment_payload_preview(
             "human_confirm_before_apply",
         ],
         blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        targeting_preview=[
+            AdsCustomSegmentTargetingPreview(
+                id=f"targeting_{preview_id}",
+                custom_segment_preview_id=preview_id,
+                campaign_id=campaign_id,
+                campaign_name=campaign_name,
+                reason=(
+                    "Review-only podgląd kampanii, do której można wrócić po "
+                    "walidacji segmentu. To nie jest targetowanie ani mutacja Ads."
+                ),
+                required_validation=[
+                    "keyword_planner_enrichment",
+                    "forecast_or_audience_size",
+                    "human_confirm_before_apply",
+                    "mutation_audit_required",
+                ],
+                blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+                api_mutation_ready=False,
+                apply_allowed=False,
+                destructive=False,
+            )
+        ],
         api_mutation_ready=False,
         apply_allowed=False,
         destructive=False,

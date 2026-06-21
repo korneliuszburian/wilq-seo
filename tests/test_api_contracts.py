@@ -598,6 +598,8 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "supported_actions": ["custom_segment_candidate"],
             "required_validation": ["google_ads_rmf_compliance_review"],
             "preview_contract": "custom_segment_payload_preview_v1",
+            "custom_segment_preview_id": "preview_ads_custom_segment_23848569273",
+            "operation_type": "custom_segment_targeting_review",
             "recommended_actions": ["prepare_custom_segment_review"],
             "source_metric_names": ["search_term_clicks"],
             "available_read_contracts": ["ga4_landing_source_campaign_quality"],
@@ -669,6 +671,10 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["supported_actions"] == ["custom_segment_candidate"]
     assert redacted["required_validation"] == ["google_ads_rmf_compliance_review"]
     assert redacted["preview_contract"] == "custom_segment_payload_preview_v1"
+    assert redacted["custom_segment_preview_id"] == (
+        "preview_ads_custom_segment_23848569273"
+    )
+    assert redacted["operation_type"] == "custom_segment_targeting_review"
     assert redacted["recommended_actions"] == ["prepare_custom_segment_review"]
     assert redacted["source_metric_names"] == ["search_term_clicks"]
     assert redacted["available_read_contracts"] == [
@@ -5793,6 +5799,17 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_contract["payload_preview"][0]["apply_allowed"] is False
     assert custom_segments_contract["payload_preview"][0]["api_mutation_ready"] is False
     assert custom_segments_contract["payload_preview"][0]["destructive"] is False
+    targeting_preview = custom_segments_contract["payload_preview"][0][
+        "targeting_preview"
+    ][0]
+    assert targeting_preview["operation_type"] == "custom_segment_targeting_review"
+    assert targeting_preview["target_scope"] == "campaign_context_review"
+    assert targeting_preview["campaign_id"] == "101"
+    assert targeting_preview["campaign_name"] == "Brand Search"
+    assert targeting_preview["apply_allowed"] is False
+    assert targeting_preview["api_mutation_ready"] is False
+    assert targeting_preview["destructive"] is False
+    assert "forecast_or_audience_size" in targeting_preview["required_validation"]
     assert custom_segments_contract["candidates"][0]["confidence"] == "low"
     assert custom_segments_contract["candidates"][0]["validation_status"] == (
         "pending_validation"
@@ -6135,6 +6152,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_decision["custom_segment_payload_preview"][0][
         "apply_allowed"
     ] is False
+    assert custom_segments_decision["custom_segment_payload_preview"][0][
+        "targeting_preview"
+    ][0]["apply_allowed"] is False
     assert custom_segments_decision["action_ids"] == [
         "act_prepare_custom_segments_from_search_terms"
     ]
@@ -6313,6 +6333,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert custom_segment_action["payload"]["payload_preview"][0]["member_type"] == "KEYWORD"
     assert custom_segment_action["payload"]["payload_preview"][0]["apply_allowed"] is False
+    custom_segment_targeting_preview = custom_segment_action["payload"][
+        "payload_preview"
+    ][0]["targeting_preview"][0]
+    assert custom_segment_targeting_preview["operation_type"] == (
+        "custom_segment_targeting_review"
+    )
+    assert custom_segment_targeting_preview["apply_allowed"] is False
+    assert custom_segment_targeting_preview["api_mutation_ready"] is False
     assert custom_segment_action["payload"]["destructive"] is False
     validation_response = client.post(
         "/api/actions/act_prepare_custom_segments_from_search_terms/validate",

@@ -28,6 +28,30 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
         errors.append("Custom segment payload requires review-only payload_preview.")
     elif any(item.get("apply_allowed") is not False for item in preview if isinstance(item, dict)):
         errors.append("Custom segment payload preview must keep apply_allowed=false.")
+    else:
+        for item in preview:
+            if not isinstance(item, dict):
+                continue
+            targeting_preview = item.get("targeting_preview")
+            if not isinstance(targeting_preview, list) or not targeting_preview:
+                errors.append(
+                    "Custom segment payload preview requires targeting_preview."
+                )
+                continue
+            if any(
+                target.get("apply_allowed") is not False
+                for target in targeting_preview
+                if isinstance(target, dict)
+            ):
+                errors.append("Custom segment targeting preview must keep apply_allowed=false.")
+            if any(
+                target.get("api_mutation_ready") is not False
+                for target in targeting_preview
+                if isinstance(target, dict)
+            ):
+                errors.append(
+                    "Custom segment targeting preview must keep api_mutation_ready=false."
+                )
     return errors
 
 
@@ -72,6 +96,13 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
                     "human_confirm_before_apply",
                 ],
                 "blocked_claims": CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+                "targeting_preview": [
+                    _custom_segment_targeting_preview(
+                        preview_id="custom_segment_preview_google_ads_search_terms",
+                        campaign_id=_first_dimension(eligible_facts, "campaign_id"),
+                        campaign_name=_first_dimension(eligible_facts, "campaign_name"),
+                    )
+                ],
                 "api_mutation_ready": False,
                 "apply_allowed": False,
                 "destructive": False,
@@ -127,6 +158,43 @@ def _fact_has_positive_signal(fact: MetricFact) -> bool:
         return False
     value = fact.value
     return isinstance(value, int | float) and value > 0
+
+
+def _custom_segment_targeting_preview(
+    preview_id: str,
+    campaign_id: str | None,
+    campaign_name: str | None,
+) -> dict[str, Any]:
+    return {
+        "id": f"targeting_{preview_id}",
+        "custom_segment_preview_id": preview_id,
+        "target_scope": "campaign_context_review",
+        "campaign_id": campaign_id,
+        "campaign_name": campaign_name,
+        "operation_type": "custom_segment_targeting_review",
+        "reason": (
+            "Review-only podgląd, do której kampanii można wrócić po walidacji "
+            "segmentu. To nie jest targetowanie ani Google Ads mutation."
+        ),
+        "required_validation": [
+            "keyword_planner_enrichment",
+            "forecast_or_audience_size",
+            "human_confirm_before_apply",
+            "mutation_audit_required",
+        ],
+        "blocked_claims": CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        "api_mutation_ready": False,
+        "apply_allowed": False,
+        "destructive": False,
+    }
+
+
+def _first_dimension(facts: list[MetricFact], key: str) -> str | None:
+    for fact in facts:
+        value = fact.dimensions.get(key)
+        if value:
+            return value
+    return None
 
 
 def _unique(values: Iterable[str]) -> list[str]:

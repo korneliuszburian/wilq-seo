@@ -3375,6 +3375,20 @@ function AdsCustomSegmentCandidatesPanel({
                     : "zablokowany"}
                   .
                 </div>
+                {candidate.payload_preview.targeting_preview.length > 0 ? (
+                  <div className="mt-1 text-slate-600">
+                    Targeting preview:{" "}
+                    {candidate.payload_preview.targeting_preview
+                      .slice(0, 2)
+                      .map((target) =>
+                        [
+                          target.campaign_name || target.campaign_id || "kampania do review",
+                          target.apply_allowed ? "apply możliwy" : "apply zablokowany"
+                        ].join(" / ")
+                      )
+                      .join(", ")}
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {candidate.keyword_planner_ideas.length > 0 ? (

@@ -37,6 +37,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads custom segment targeting preview, 2026-06-21 12:46 CEST.
+  `AdsCustomSegmentPayloadPreview` ma teraz typed `targeting_preview`, który
+  wiąże kandydat segmentu z campaign context bez odblokowania mutacji.
+  Live `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]`
+  i decision `ads_prepare_custom_segments_from_search_terms` pokazują
+  `target_scope=campaign_context_review`,
+  `operation_type=custom_segment_targeting_review`, kampanię
+  `Kompendium PPWR`, required validation `keyword_planner_enrichment`,
+  `forecast_or_audience_size`, `human_confirm_before_apply`,
+  `mutation_audit_required`, oraz `apply_allowed=false`,
+  `api_mutation_ready=false`, `destructive=false`. ActionObject
+  `act_prepare_custom_segments_from_search_terms` waliduje się z tym samym
+  targeting preview. Scoped `wilq-custom-segments` context-pack ma około
+  `50087` bytes i zachowuje `custom_segment_preview_id`, więc Codex widzi
+  trace preview -> targeting preview bez utraty redakcji sekretów. Nadal
+  zablokowane: audience size, conversion uplift, ROAS, targeting applied,
+  campaign performance.
 - Localo visibility review ActionObject, 2026-06-21 12:22 CEST.
   Localo nie jest już tylko readiness/blocker card, gdy WILQ ma live aggregate
   facts. `/api/localo/diagnostics` pokazuje

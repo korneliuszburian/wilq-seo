@@ -1448,6 +1448,33 @@ const adsDiagnostics = {
             "targeting applied",
             "campaign performance"
           ],
+          targeting_preview: [
+            {
+              id: "targeting_preview_ads_custom_segment_123",
+              custom_segment_preview_id: "preview_ads_custom_segment_123",
+              target_scope: "campaign_context_review",
+              campaign_id: "123",
+              campaign_name: "Ekologus Search",
+              operation_type: "custom_segment_targeting_review",
+              reason: "Review-only targeting context; apply stays blocked.",
+              required_validation: [
+                "keyword_planner_enrichment",
+                "forecast_or_audience_size",
+                "human_confirm_before_apply",
+                "mutation_audit_required"
+              ],
+              blocked_claims: [
+                "audience size",
+                "conversion uplift",
+                "ROAS",
+                "targeting applied",
+                "campaign performance"
+              ],
+              api_mutation_ready: false,
+              apply_allowed: false,
+              destructive: false
+            }
+          ],
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -2514,6 +2541,33 @@ const adsDiagnostics = {
             "conversion uplift",
             "ROAS",
             "targeting applied"
+          ],
+          targeting_preview: [
+            {
+              id: "targeting_preview_ads_custom_segment_123",
+              custom_segment_preview_id: "preview_ads_custom_segment_123",
+              target_scope: "campaign_context_review",
+              campaign_id: "123",
+              campaign_name: "Ekologus Search",
+              operation_type: "custom_segment_targeting_review",
+              reason: "Review-only targeting context; apply stays blocked.",
+              required_validation: [
+                "keyword_planner_enrichment",
+                "forecast_or_audience_size",
+                "human_confirm_before_apply",
+                "mutation_audit_required"
+              ],
+              blocked_claims: [
+                "audience size",
+                "conversion uplift",
+                "ROAS",
+                "targeting applied",
+                "campaign performance"
+              ],
+              api_mutation_ready: false,
+              apply_allowed: false,
+              destructive: false
+            }
           ],
           api_mutation_ready: false,
           apply_allowed: false,

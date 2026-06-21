@@ -33,6 +33,7 @@ SAFE_IDENTIFIER_KEYS = {
     "country",
     "credential_runtime",
     "credential_sources",
+    "custom_segment_preview_id",
     "decision_id",
     "decision_ids",
     "decision_type",

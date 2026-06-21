@@ -816,6 +816,21 @@ export const AdsKeywordMatchContextReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsCustomSegmentTargetingPreviewSchema = z.object({
+  id: z.string(),
+  custom_segment_preview_id: z.string(),
+  target_scope: z.literal("campaign_context_review"),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  operation_type: z.literal("custom_segment_targeting_review"),
+  reason: z.string(),
+  required_validation: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   id: z.string(),
   custom_segment_name: z.string(),
@@ -828,6 +843,7 @@ export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   source_metric_names: z.array(z.string()),
   required_validation: z.array(z.string()),
   blocked_claims: z.array(z.string()),
+  targeting_preview: z.array(AdsCustomSegmentTargetingPreviewSchema).optional().default([]),
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
   destructive: z.boolean()

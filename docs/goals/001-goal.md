@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 12:22 CEST.
+Last updated: 2026-06-21 12:46 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -80,9 +80,10 @@ contract and a review-only negative keyword payload preview plus read-only
 keyword match context for negative keyword review, a read-only search-term
 n-gram contract for grouping repeated query themes, plus a read-only Keyword
 Planner enrichment contract for custom segment review. Custom segments now
-have a review-only payload preview from real search terms, and their review
-reason preserves missing search-term impressions/cost as `brak danych` instead
-of fake zeroes, but no targeting/apply support. Campaign budgets now have review-only
+have a review-only payload preview and a review-only targeting preview from
+real search terms, and their review reason preserves missing search-term
+impressions/cost as `brak danych` instead of fake zeroes, but no custom segment
+targeting apply support. Campaign budgets now have review-only
 `CampaignBudgetOperation` payload previews from budget facts, but no budget
 apply support.
 Full BDOS-class parity still requires optimizer contracts such as
@@ -93,6 +94,22 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads custom segment targeting preview truth, live proof 2026-06-21
+12:46 CEST: custom segments now expose a typed review-only targeting preview,
+not just keyword member preview. `/api/ads/diagnostics.custom_segments_read_contract`
+and decision `ads_prepare_custom_segments_from_search_terms` include
+`payload_preview[0].targeting_preview[0]` with
+`target_scope=campaign_context_review`,
+`operation_type=custom_segment_targeting_review`, campaign context
+`Kompendium PPWR`, required validation `keyword_planner_enrichment`,
+`forecast_or_audience_size`, `human_confirm_before_apply` and
+`mutation_audit_required`. The same preview is present in
+`act_prepare_custom_segments_from_search_terms`, whose validation endpoint
+returns `valid=true`. Scoped `wilq-custom-segments` context-pack is about
+`50087` bytes and preserves `custom_segment_preview_id` so Codex can trace the
+segment preview to targeting preview. This still does not unlock audience size,
+forecast, targeting applied, ROAS, campaign performance or vendor mutation.
 
 Latest Localo visibility ActionObject truth, live proof 2026-06-21
 12:22 CEST: Localo aggregate evidence is now connected to a review-safe

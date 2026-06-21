@@ -1083,6 +1083,23 @@ class AdsKeywordMatchContextReadContract(BaseModel):
     next_step: str
 
 
+class AdsCustomSegmentTargetingPreview(BaseModel):
+    id: str
+    custom_segment_preview_id: str
+    target_scope: Literal["campaign_context_review"] = "campaign_context_review"
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    operation_type: Literal["custom_segment_targeting_review"] = (
+        "custom_segment_targeting_review"
+    )
+    reason: str
+    required_validation: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class AdsCustomSegmentPayloadPreview(BaseModel):
     id: str
     custom_segment_name: str
@@ -1095,6 +1112,9 @@ class AdsCustomSegmentPayloadPreview(BaseModel):
     source_metric_names: list[str] = Field(default_factory=list)
     required_validation: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
+    targeting_preview: list[AdsCustomSegmentTargetingPreview] = Field(
+        default_factory=list
+    )
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False

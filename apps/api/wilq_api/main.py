@@ -1249,6 +1249,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ("custom_segments_read_contract", "payload_preview"),
         ADS_CONTEXT_ROW_LIMIT,
     )
+    _compact_custom_segment_payload_preview_for_context(compact)
     _limit_contract_rows(
         compact,
         ("negative_keywords_read_contract", "payload_preview"),
@@ -1698,6 +1699,74 @@ def _drop_candidate_nested_payload_preview(
     for candidate in _list_at(data, *candidates_path):
         if isinstance(candidate, dict):
             candidate.pop("payload_preview", None)
+
+
+def _compact_custom_segment_payload_preview_for_context(data: dict[str, Any]) -> None:
+    contract = data.get("custom_segments_read_contract")
+    if not isinstance(contract, dict):
+        return
+    payload_preview = contract.get("payload_preview")
+    if not isinstance(payload_preview, list):
+        return
+    compact_items: list[dict[str, Any]] = []
+    for item in payload_preview:
+        if not isinstance(item, dict):
+            continue
+        compact_items.append(
+            {
+                key: item.get(key)
+                for key in (
+                    "id",
+                    "custom_segment_name",
+                    "member_type",
+                    "source_terms",
+                    "campaign_id",
+                    "campaign_name",
+                    "evidence_ids",
+                    "required_validation",
+                    "blocked_claims",
+                    "api_mutation_ready",
+                    "apply_allowed",
+                    "destructive",
+                )
+                if key in item
+            }
+        )
+        compact_items[-1]["targeting_preview"] = (
+            _compact_custom_segment_targeting_preview_for_context(
+                item.get("targeting_preview")
+            )
+        )
+    contract["payload_preview"] = compact_items
+
+
+def _compact_custom_segment_targeting_preview_for_context(value: Any) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    compact_targets: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        compact_targets.append(
+            {
+                key: item.get(key)
+                for key in (
+                    "id",
+                    "custom_segment_preview_id",
+                    "target_scope",
+                    "campaign_id",
+                    "campaign_name",
+                    "operation_type",
+                    "required_validation",
+                    "blocked_claims",
+                    "api_mutation_ready",
+                    "apply_allowed",
+                    "destructive",
+                )
+                if key in item
+            }
+        )
+    return compact_targets
 
 
 def _drop_candidate_keys(
