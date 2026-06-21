@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 06:07 CEST.
+Last updated: 2026-06-21 06:27 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -142,22 +142,25 @@ a prompt workaround. It still does not produce a content brief, ranking promise,
 traffic uplift or authority improvement claim; it only narrows what the marketer
 should review before cross-checking GSC and WordPress inventory.
 
-Latest Ads custom segment missing-metric truth, live proof 2026-06-21 01:40
-CEST: custom segment review no longer shows absent search-term impressions or
-cost as zero. Current live `/api/ads/diagnostics` candidate says
-`Source terms=6, kliknięcia=7, wyświetlenia=brak danych, koszt=brak danych,
-konwersje=0, odrzucone terminy=44`. Both the
-`custom_segments_read_contract` and decision
-`ads_prepare_custom_segments_from_search_terms` expose operator gates
+Latest Ads custom segment source-quality truth, live proof 2026-06-21 06:27
+CEST: custom segment review now exposes typed `source_quality` instead of only
+a raw rejected-term list. Current live `/api/ads/diagnostics` candidate
+`ads_custom_segment_23848569273` says `accepted_terms=6`,
+`rejected_terms=44`, `total_terms=50`, `missing_metric_terms=6` and
+`rejection_reasons={"termin nie ma aktywności w dostępnych metrykach": 44}`.
+The decision `ads_prepare_custom_segments_from_search_terms` carries the same
+quality object inside `custom_segment_candidates`, so dashboard and Codex
+context see the same evidence. Missing search-term impressions/cost are still
+rendered as `brak danych`, not fake zeroes. Operator gates remain
 `review_source_terms`, `reject_brand_or_low_intent_terms`,
 `keyword_planner_enrichment`, `forecast_or_audience_size` and
-`human_confirm_before_apply`; dashboard labels them in Polish. This is still
-prepare/review-only. Do not claim Keyword Planner enrichment, forecast,
-audience size, targeting applied, CPA, ROAS or campaign performance from this
-contract until the corresponding read/safety/apply contracts exist and are
-fresh. Full `scripts/verify.sh` passed after this slice: backend API contracts
-`137 passed`, dashboard unit tests `17 passed`, Playwright e2e `14 passed`,
-skill/API smokes and dashboard production build passed.
+`human_confirm_before_apply`. This is still prepare/review-only. Do not claim
+Keyword Planner enrichment, forecast, audience size, targeting applied, CPA,
+ROAS or campaign performance from this contract until the corresponding
+read/safety/apply contracts exist and are fresh. Full `scripts/verify.sh`
+passed after this slice: backend `140 passed`, dashboard unit `17 passed`,
+Playwright e2e `14 passed`, skill/API smokes and dashboard production build
+passed.
 
 Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
 `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and

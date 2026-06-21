@@ -56,6 +56,7 @@ from wilq.schemas import (
     AdsChangeHistoryRow,
     AdsCustomSegmentCandidate,
     AdsCustomSegmentPayloadPreview,
+    AdsCustomSegmentSourceQuality,
     AdsCustomSegmentsReadContract,
     AdsDecisionItem,
     AdsDerivedKpiReadContract,
@@ -3658,15 +3659,16 @@ def _custom_segment_candidates(
     keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow],
 ) -> list[AdsCustomSegmentCandidate]:
     grouped: dict[tuple[str | None, str | None], list[AdsSearchTermMetricRow]] = {}
-    rejected_terms: list[str] = []
-    rejection_reasons: list[str] = []
+    rejected_by_group: dict[tuple[str | None, str | None], list[tuple[str, str]]] = {}
     for row in rows:
+        group_key = (row.campaign_id, row.campaign_name)
         rejection_reason = _custom_segment_rejection_reason(row)
         if rejection_reason is not None:
-            rejected_terms.append(row.search_term)
-            rejection_reasons.append(f"{row.search_term}: {rejection_reason}")
+            rejected_by_group.setdefault(group_key, []).append(
+                (row.search_term, rejection_reason)
+            )
             continue
-        grouped.setdefault((row.campaign_id, row.campaign_name), []).append(row)
+        grouped.setdefault(group_key, []).append(row)
 
     candidates: list[AdsCustomSegmentCandidate] = []
     for index, ((campaign_id, campaign_name), group_rows) in enumerate(
@@ -3678,6 +3680,11 @@ def _custom_segment_candidates(
         if not source_terms:
             continue
         name = _custom_segment_name(campaign_name, index)
+        rejected_pairs = rejected_by_group.get((campaign_id, campaign_name), [])
+        rejected_terms = _unique(term for term, _reason in rejected_pairs)
+        rejection_reasons = _unique(
+            f"{term}: {reason}" for term, reason in rejected_pairs
+        )
         matched_keyword_planner_ideas = _matching_keyword_planner_ideas(
             source_terms,
             keyword_planner_ideas,
@@ -3743,6 +3750,11 @@ def _custom_segment_candidates(
                 source_terms=source_terms,
                 rejected_terms=_unique(rejected_terms)[:12],
                 rejection_reasons=_unique(rejection_reasons)[:12],
+                source_quality=_custom_segment_source_quality(
+                    source_terms=source_terms,
+                    rows=sorted_rows,
+                    rejected_pairs=rejected_pairs,
+                ),
                 search_term_rows=sorted_rows,
                 keyword_planner_ideas=matched_keyword_planner_ideas,
                 source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
@@ -3826,6 +3838,28 @@ def _custom_segment_review_reason(
         f"odrzucone terminy={len(_unique(rejected_terms))}. "
         "To jest kolejność review segmentu, nie dowód audience size, targetowania "
         "ani wpływu na kampanię."
+    )
+
+
+def _custom_segment_source_quality(
+    source_terms: list[str],
+    rows: list[AdsSearchTermMetricRow],
+    rejected_pairs: list[tuple[str, str]],
+) -> AdsCustomSegmentSourceQuality:
+    accepted_terms = len(_unique(source_terms))
+    rejected_terms = len(_unique(term for term, _reason in rejected_pairs))
+    reason_counts: dict[str, int] = {}
+    for _term, reason in rejected_pairs:
+        reason_counts[reason] = reason_counts.get(reason, 0) + 1
+    missing_metric_terms = sum(1 for row in rows if row.missing_metrics)
+    return AdsCustomSegmentSourceQuality(
+        total_terms=accepted_terms + rejected_terms,
+        accepted_terms=accepted_terms,
+        rejected_terms=rejected_terms,
+        missing_metric_terms=missing_metric_terms,
+        rejection_reasons=dict(
+            sorted(reason_counts.items(), key=lambda item: (-item[1], item[0]))
+        ),
     )
 
 

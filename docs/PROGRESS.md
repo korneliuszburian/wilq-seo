@@ -99,19 +99,21 @@ Aktualny proof produktowy:
   Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
   and dashboard production build passed.
-- Ads custom segment missing-metric truth, 2026-06-21 01:40 CEST.
-  Custom segment review reason no longer renders missing search-term
-  impressions or cost as `0`. Current live proof after
-  `scripts/local_stack.sh restart`: `/api/ads/diagnostics` custom segment
-  candidate says `wyświetlenia=brak danych` and `koszt=brak danych` while
-  keeping `kliknięcia=7`, `konwersje=0` and `odrzucone terminy=44`. Operator
-  review gates now explicitly include `keyword_planner_enrichment` and
-  `forecast_or_audience_size` alongside source-term review, low-intent rejection
-  and human confirmation. Dashboard labels those gates in Polish. This is still
-  prepare/review-only: Keyword Planner live access remains blocked and no
-  forecast, audience-size, targeting or apply claim is allowed. Full
-  `scripts/verify.sh` passed after this slice: backend API contracts
-  `137 passed`, dashboard unit tests `17 passed`, Playwright e2e `14 passed`,
+- Ads custom segment source-quality truth, 2026-06-21 06:27 CEST.
+  Custom segment review now exposes typed `source_quality`, so marketer and
+  Codex can see why source terms are only a review queue. Current live proof
+  after `scripts/local_stack.sh restart`: `/api/ads/diagnostics`
+  `ads_custom_segment_23848569273` has `accepted_terms=6`,
+  `rejected_terms=44`, `total_terms=50`, `missing_metric_terms=6` and
+  rejection reason count
+  `termin nie ma aktywności w dostępnych metrykach=44`. The same object is
+  present in decision `ads_prepare_custom_segments_from_search_terms`.
+  Missing search-term impressions/cost still render as `brak danych`, not fake
+  zeroes. Operator gates remain `keyword_planner_enrichment`,
+  `forecast_or_audience_size` and human confirmation, so this is still
+  prepare/review-only: no forecast, audience-size, targeting, CPA/ROAS or apply
+  claim is allowed. Full `scripts/verify.sh` passed after this slice: backend
+  `140 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
   skill/API smokes and dashboard production build passed.
 - Ahrefs typed gap read contract, 2026-06-21 01:21 CEST, superseded by the
   03:38 target fix above. The important surviving contract is still valid:

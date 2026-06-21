@@ -3318,7 +3318,9 @@ function AdsCustomSegmentCandidatesPanel({
         </div>
       ) : null}
       <div className={compact ? "grid gap-2" : "grid gap-3 md:grid-cols-2"}>
-        {candidates.slice(0, compact ? 2 : 6).map((candidate) => (
+        {candidates.slice(0, compact ? 2 : 6).map((candidate) => {
+          const rejectionEntries = Object.entries(candidate.source_quality.rejection_reasons);
+          return (
           <article key={candidate.id} className="rounded-md border border-line bg-white p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
@@ -3334,6 +3336,25 @@ function AdsCustomSegmentCandidatesPanel({
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {candidate.review_reason}
             </p>
+            <div className="mt-2 rounded-md border border-amber-100 bg-amber-50 p-2 text-xs leading-5 text-slate-700">
+              <div className="font-semibold uppercase tracking-normal text-amber-700">
+                Jakość źródeł
+              </div>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <span>przyjęte: {candidate.source_quality.accepted_terms}</span>
+                <span>odrzucone: {candidate.source_quality.rejected_terms}</span>
+                <span>braki metryk: {candidate.source_quality.missing_metric_terms}</span>
+              </div>
+              {rejectionEntries.length > 0 ? (
+                <div className="mt-1 text-slate-600">
+                  Powody:{" "}
+                  {rejectionEntries
+                    .slice(0, 3)
+                    .map(([reason, count]) => `${reason} (${count})`)
+                    .join(", ")}
+                </div>
+              ) : null}
+            </div>
             <p className="mt-1 text-xs leading-5 text-slate-600">
               Walidacja:{" "}
               {candidate.validation_status === "pending_validation"
@@ -3393,7 +3414,8 @@ function AdsCustomSegmentCandidatesPanel({
               />
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

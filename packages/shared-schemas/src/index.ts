@@ -875,6 +875,21 @@ export const AdsCustomSegmentCandidateSchema = z.object({
   source_terms: z.array(z.string()),
   rejected_terms: z.array(z.string()),
   rejection_reasons: z.array(z.string()),
+  source_quality: z
+    .object({
+      total_terms: z.number().int().nonnegative().default(0),
+      accepted_terms: z.number().int().nonnegative().default(0),
+      rejected_terms: z.number().int().nonnegative().default(0),
+      missing_metric_terms: z.number().int().nonnegative().default(0),
+      rejection_reasons: z.record(z.string(), z.number().int().nonnegative()).default({})
+    })
+    .default({
+      total_terms: 0,
+      accepted_terms: 0,
+      rejected_terms: 0,
+      missing_metric_terms: 0,
+      rejection_reasons: {}
+    }),
   search_term_rows: z.array(AdsSearchTermMetricRowSchema),
   keyword_planner_ideas: z.array(AdsKeywordPlannerIdeaRowSchema).optional().default([]),
   source_connectors: z.array(z.string()),

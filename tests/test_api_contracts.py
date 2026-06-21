@@ -14,7 +14,10 @@ from pydantic import ValidationError
 from apps.api.wilq_api.main import app
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
 from wilq.actions.service import apply_action
-from wilq.briefing.ads_diagnostics import _custom_segment_review_reason
+from wilq.briefing.ads_diagnostics import (
+    _custom_segment_review_reason,
+    _custom_segment_source_quality,
+)
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
@@ -5366,6 +5369,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "bdo rejestracja",
         "odpady cena",
     ]
+    assert custom_segments_contract["candidates"][0]["source_quality"] == {
+        "total_terms": 2,
+        "accepted_terms": 2,
+        "rejected_terms": 0,
+        "missing_metric_terms": 0,
+        "rejection_reasons": {},
+    }
     assert custom_segments_contract["candidates"][0]["review_priority"] == "pilne"
     assert custom_segments_contract["candidates"][0]["review_score"] == 85
     assert "kolejność review segmentu" in custom_segments_contract["candidates"][0][
@@ -5721,6 +5731,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "bdo rejestracja",
         "odpady cena",
     ]
+    assert custom_segments_decision["custom_segment_candidates"][0][
+        "source_quality"
+    ]["accepted_terms"] == 2
     assert custom_segments_decision["keyword_planner_idea_rows"][0]["idea_text"] == (
         "bdo szkolenie"
     )
@@ -6073,6 +6086,36 @@ def test_ads_custom_segment_review_reason_keeps_missing_metrics_unknown() -> Non
     assert "koszt=brak danych" in reason
     assert "wyświetlenia=0" not in reason
     assert "koszt=0.00" not in reason
+
+
+def test_ads_custom_segment_source_quality_counts_rejections() -> None:
+    quality = _custom_segment_source_quality(
+        source_terms=["bdo szkolenie"],
+        rows=[
+            AdsSearchTermMetricRow(
+                search_term="bdo szkolenie",
+                campaign_id="101",
+                campaign_name="Brand Search",
+                clicks=7,
+                evidence_ids=["ev_test"],
+                missing_metrics=["search_term_cost_micros"],
+            )
+        ],
+        rejected_pairs=[
+            ("ekologus kontakt", "termin wygląda na własny brand albo zapytanie nawigacyjne"),
+            ("19115 odpady", "termin nie ma aktywności w dostępnych metrykach"),
+            ("bdo katowice", "termin nie ma aktywności w dostępnych metrykach"),
+        ],
+    )
+
+    assert quality.total_terms == 4
+    assert quality.accepted_terms == 1
+    assert quality.rejected_terms == 3
+    assert quality.missing_metric_terms == 1
+    assert quality.rejection_reasons == {
+        "termin nie ma aktywności w dostępnych metrykach": 2,
+        "termin wygląda na własny brand albo zapytanie nawigacyjne": 1,
+    }
 
 
 def test_merchant_diagnostics_exposes_feed_issue_queue(
@@ -8416,6 +8459,9 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     assert ads_context["context_pack_compaction"]["decision_row_payloads_omitted"] is True
     assert ads_context["context_pack_compaction"]["full_endpoint"] == "/api/ads/diagnostics"
     assert "sections" not in ads_context
+    custom_segment_candidate = ads_context["custom_segments_read_contract"]["candidates"][0]
+    assert "source_quality" in custom_segment_candidate
+    assert "rejection_reasons" not in custom_segment_candidate
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
     assert len(data["connector_refresh_runs"]) <= 3
     for action in data["active_action_objects"]:

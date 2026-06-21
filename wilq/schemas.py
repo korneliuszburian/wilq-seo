@@ -1129,6 +1129,14 @@ class AdsKeywordPlannerReadContract(BaseModel):
     next_step: str
 
 
+class AdsCustomSegmentSourceQuality(BaseModel):
+    total_terms: int = 0
+    accepted_terms: int = 0
+    rejected_terms: int = 0
+    missing_metric_terms: int = 0
+    rejection_reasons: dict[str, int] = Field(default_factory=dict)
+
+
 class AdsCustomSegmentCandidate(BaseModel):
     id: str
     name: str
@@ -1142,6 +1150,9 @@ class AdsCustomSegmentCandidate(BaseModel):
     source_terms: list[str] = Field(default_factory=list)
     rejected_terms: list[str] = Field(default_factory=list)
     rejection_reasons: list[str] = Field(default_factory=list)
+    source_quality: AdsCustomSegmentSourceQuality = Field(
+        default_factory=AdsCustomSegmentSourceQuality
+    )
     search_term_rows: list[AdsSearchTermMetricRow] = Field(default_factory=list)
     keyword_planner_ideas: list[AdsKeywordPlannerIdeaRow] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)

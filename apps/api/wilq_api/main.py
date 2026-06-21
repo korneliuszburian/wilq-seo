@@ -1261,6 +1261,11 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         compact,
         ("custom_segments_read_contract", "candidates"),
     )
+    _drop_candidate_keys(
+        compact,
+        ("custom_segments_read_contract", "candidates"),
+        ("rejection_reasons",),
+    )
     _drop_candidate_nested_payload_preview(
         compact,
         ("negative_keywords_read_contract", "candidates"),
@@ -1613,6 +1618,18 @@ def _drop_candidate_nested_payload_preview(
     for candidate in _list_at(data, *candidates_path):
         if isinstance(candidate, dict):
             candidate.pop("payload_preview", None)
+
+
+def _drop_candidate_keys(
+    data: dict[str, Any],
+    candidates_path: tuple[str, str],
+    keys: tuple[str, ...],
+) -> None:
+    for candidate in _list_at(data, *candidates_path):
+        if not isinstance(candidate, dict):
+            continue
+        for key in keys:
+            candidate.pop(key, None)
 
 
 def _limit_decision_rows(data: dict[str, Any]) -> None:
