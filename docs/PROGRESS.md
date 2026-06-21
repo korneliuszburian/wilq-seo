@@ -34,25 +34,27 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Ahrefs top pages by competitor, 2026-06-21 04:05 CEST.
-  `refresh_ahrefs_41eef6aa90ef` wykonał read-only Ahrefs `top-pages` dla 2
-  organicznych konkurentów po 2 strony. Live facts: DR=40, Ahrefs Rank=1541946,
-  `organic_competitor_rows=10`, `top_pages_by_competitor_read_status=completed`,
-  `top_pages_by_competitor_competitors=2`, `top_pages_by_competitor_rows=4`,
-  `top_pages_by_competitor_mode=subdomains`. `/api/ahrefs/diagnostics` ma teraz
-  `gap_fact_count=24`, `gap_records=14`, `top_page_records=4`,
-  available contracts `ahrefs_competitor_pages` oraz
-  `ahrefs_top_pages_by_competitor`; missing contracts spadły do 3:
-  `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`,
-  `ahrefs_organic_keywords_by_url`. Scoped `wilq-ahrefs-gap-finder`
-  context-pack ma około `68651` bytes, `active_action_objects=0` i niesie te
-  same 14 records do Codex. Non-interactive eval przeszedł:
-  `.local-lab/evals/codex-skill/20260621T020523Z/wilq-ahrefs-gap-finder/result.json`;
-  wynik ma `api_used=true`, `blocked=true`, `operator_usefulness_score=4`,
-  Ahrefs/GSC/WordPress connectors, brak ActionObject IDs i brak safety findings.
-  Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
-  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
-  dashboard production build passed.
+- Ahrefs organic keywords by top page, 2026-06-21 04:27 CEST.
+  `refresh_ahrefs_a1ef481d6950` wykonał read-only Ahrefs `organic-keywords` dla
+  2 top-page URL-i konkurentów, po 2 keywords na URL. Live facts: DR=40,
+  Ahrefs Rank=1541946, `organic_competitor_rows=10`,
+  `top_pages_by_competitor_read_status=completed`,
+  `top_pages_by_competitor_rows=4`,
+  `organic_keywords_by_url_read_status=completed`,
+  `organic_keywords_by_url_rows=4`, `organic_keywords_by_url_urls=2`,
+  `organic_keywords_by_url_mode=exact`. `/api/ahrefs/diagnostics` ma teraz
+  `gap_records=18`, `organic_keyword_records=4`, available contracts
+  `ahrefs_competitor_pages`, `ahrefs_top_pages_by_competitor` oraz
+  `ahrefs_organic_keywords_by_url`; missing contracts spadły do 2:
+  `ahrefs_content_gap_records`, `ahrefs_backlink_gap_records`. Scoped
+  `wilq-ahrefs-gap-finder` context-pack ma około `86209` bytes,
+  `active_action_objects=0` i niesie te same organic keyword records do Codex.
+  Non-interactive eval przeszedł:
+  `.local-lab/evals/codex-skill/20260621T022618Z/wilq-ahrefs-gap-finder/result.json`;
+  wynik ma `api_used=true`, `language=pl-PL`, `blocked=true`, brak ActionObject
+  IDs i brak safety findings. Full `scripts/verify.sh` passed after this
+  slice: backend `139 passed`, dashboard unit `17 passed`, Playwright e2e
+  `14 passed`, skill/API smokes and dashboard production build passed.
 - Ahrefs competitor page records, 2026-06-21 03:38 CEST.
   `refresh_ahrefs_a106dd4ab417` wykonał realny read-only Ahrefs API dla
   authority i organic competitors na prawdziwym targetcie `ekologus.pl`, nie
@@ -464,18 +466,18 @@ Aktualny proof produktowy:
   `metric_tiles` i `status`, bez duplikowania starych content metric chips.
   Full `scripts/verify.sh` passed after this slice: backend `123 passed`,
   dashboard unit `15 passed`, Playwright e2e `12 passed`, dashboard build OK.
-- Ahrefs ma dedicated diagnostics, route i scoped context-pack. Current proof
-  after the target fix: `/api/ahrefs/diagnostics` has
-  `live_data_available=true`, `authority_fact_count=2`, `gap_fact_count=10`,
-  `blocker_count=1`, authority facts `DR=40`, `Ahrefs Rank=1541946`, and ready
-  decision `ahrefs_review_gap_records` with `rekordy luk=10` from
-  `ahrefs_competitor_pages`. `wilq-ahrefs-gap-finder` context-pack has about
-  `53100 bytes`, `active_action_objects=0`, contains `ahrefs_diagnostics` and
-  omits broad unrelated context. Strict non-interactive eval passed:
-  `.local-lab/evals/codex-skill/20260621T013710Z/wilq-ahrefs-gap-finder/result.json`.
-  Result has `blocked=true`, `api_used=true`, `operator_usefulness_score=4`,
-  Ahrefs evidence IDs and no unsafe action IDs. Remaining blocks are content
-  gap, backlink gap, organic keywords by URL and top pages by competitor.
+- Ahrefs ma dedicated diagnostics, route i scoped context-pack. Current proof:
+  `/api/ahrefs/diagnostics` has `live_data_available=true`, authority facts
+  `DR=40`, `Ahrefs Rank=1541946`, `gap_records=18`, ready decision
+  `ahrefs_review_gap_records` with competitor pages, top pages and organic
+  keywords by URL, and blocked decision for the remaining content/backlink
+  contracts. `wilq-ahrefs-gap-finder` context-pack has about `86209 bytes`,
+  `active_action_objects=0`, contains `ahrefs_diagnostics` and omits broad
+  unrelated context. Strict non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T022618Z/wilq-ahrefs-gap-finder/result.json`.
+  Result has `blocked=true`, `api_used=true`, `language=pl-PL`, Ahrefs evidence
+  IDs and no unsafe action IDs. Remaining blocks are content gap, backlink gap,
+  traffic uplift and authority improvement.
 - Command Center ma teraz 30-sekundowy operator snapshot cache po stronie WILQ
   API i dashboardu. Live proof po `scripts/local_stack.sh restart`:
   `/api/dashboard/command-center` `27856 bytes`, cold `1.777s`, potem

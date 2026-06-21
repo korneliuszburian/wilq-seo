@@ -29,25 +29,27 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
-0. Ahrefs top pages by competitor, 2026-06-21 04:05 CEST:
-   `refresh_ahrefs_41eef6aa90ef` performed read-only Ahrefs `top-pages` reads
-   for 2 organic competitors, 2 pages each. Live facts: DR=40, Ahrefs
-   Rank=1541946, `organic_competitor_rows=10`,
+0. Ahrefs organic keywords by top page, 2026-06-21 04:27 CEST:
+   `refresh_ahrefs_a1ef481d6950` performed read-only Ahrefs
+   `organic-keywords` reads for 2 competitor top-page URLs, 2 keywords each.
+   Live facts: DR=40, Ahrefs Rank=1541946, `organic_competitor_rows=10`,
    `top_pages_by_competitor_read_status=completed`,
-   `top_pages_by_competitor_competitors=2`,
    `top_pages_by_competitor_rows=4`,
-   `top_pages_by_competitor_mode=subdomains`. `/api/ahrefs/diagnostics` now has
-   `gap_fact_count=24`, `gap_records=14`, `top_page_records=4`, available
-   contracts `ahrefs_competitor_pages` and `ahrefs_top_pages_by_competitor`.
-   Missing contracts are now only `ahrefs_content_gap_records`,
-   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`. Scoped
-   `wilq-ahrefs-gap-finder` context-pack is about `68651` bytes,
+   `organic_keywords_by_url_read_status=completed`,
+   `organic_keywords_by_url_rows=4`, `organic_keywords_by_url_urls=2`,
+   `organic_keywords_by_url_mode=exact`. `/api/ahrefs/diagnostics` now has
+   `gap_records=18`, `organic_keyword_records=4`, available contracts
+   `ahrefs_competitor_pages`, `ahrefs_top_pages_by_competitor` and
+   `ahrefs_organic_keywords_by_url`. Missing contracts are now only
+   `ahrefs_content_gap_records` and `ahrefs_backlink_gap_records`. Scoped
+   `wilq-ahrefs-gap-finder` context-pack is about `86209` bytes,
    `active_action_objects=0`, and latest eval is
-   `.local-lab/evals/codex-skill/20260621T020523Z/wilq-ahrefs-gap-finder/result.json`.
+   `.local-lab/evals/codex-skill/20260621T022618Z/wilq-ahrefs-gap-finder/result.json`.
    Full `scripts/verify.sh` passed after this slice: backend `139 passed`,
    dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
-   dashboard production build passed. This still blocks content/backlink/
-   ranking/uplift claims; it only makes competitor top-page review real.
+   dashboard production build passed. This still blocks content/backlink/uplift
+   impact claims; it only makes competitor top-page and organic-keyword review
+   real.
 
 0. Ahrefs competitor page records, 2026-06-21 03:38 CEST:
    `refresh_ahrefs_a106dd4ab417` performed a real read-only Ahrefs API refresh
@@ -1371,7 +1373,7 @@ What changed:
   Merchant/GA4 ActionObjects.
 
 Historical live proof after the 2026-06-21 Ahrefs target fix, superseded by the
-04:05 top-pages proof near the top of this file:
+04:27 organic-keywords proof near the top of this file:
 
 - `/api/ahrefs/diagnostics.live_data_available=true`.
 - `authority_fact_count=2`, `gap_fact_count=10`, `blocker_count=1`.
@@ -1392,10 +1394,12 @@ Historical live proof after the 2026-06-21 Ahrefs target fix, superseded by the
 
 Still blocked by design:
 
-- Do not claim competitor gap, content gap, backlink gap, ranking opportunity,
-  traffic uplift or authority improvement from DR/rank alone.
-- Next Ahrefs value work is the four missing read contracts, not prompt-language
-  polish.
+- Current Ahrefs can support review of competitor pages, top pages and organic
+  keywords by URL. Do not claim content gap, backlink gap, traffic uplift or
+  authority improvement until those specific contracts exist.
+- Next Ahrefs value work is the two missing read contracts,
+  `ahrefs_content_gap_records` and `ahrefs_backlink_gap_records`, not
+  prompt-language polish.
 
 Final proof:
 

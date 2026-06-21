@@ -7004,25 +7004,53 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                     ]
                 },
             )
-        assert request.url.path == "/v3/site-explorer/top-pages"
-        assert request.url.params["target"] == "konkurent.pl"
-        assert request.url.params["mode"] == "subdomains"
+        if request.url.path == "/v3/site-explorer/top-pages":
+            assert request.url.params["target"] == "konkurent.pl"
+            assert request.url.params["mode"] == "subdomains"
+            assert request.url.params["country"] == "pl"
+            assert request.url.params["limit"] == "3"
+            assert request.url.params["order_by"] == "sum_traffic:desc"
+            assert "top_keyword" in request.url.params["select"]
+            return httpx.Response(
+                200,
+                json={
+                    "pages": [
+                        {
+                            "raw_url": "https://konkurent.pl/top-bdo/",
+                            "top_keyword": "bdo szkolenie",
+                            "sum_traffic": 121,
+                            "keywords": 31,
+                            "referring_domains": 4,
+                            "top_keyword_best_position": 2,
+                            "top_keyword_country": "pl",
+                        }
+                    ]
+                },
+            )
+        assert request.url.path == "/v3/site-explorer/organic-keywords"
+        assert request.url.params["target"] == "https://konkurent.pl/top-bdo/"
+        assert request.url.params["mode"] == "exact"
         assert request.url.params["country"] == "pl"
         assert request.url.params["limit"] == "3"
         assert request.url.params["order_by"] == "sum_traffic:desc"
-        assert "top_keyword" in request.url.params["select"]
+        assert "keyword" in request.url.params["select"]
         return httpx.Response(
             200,
             json={
-                "pages": [
+                "keywords": [
                     {
-                        "raw_url": "https://konkurent.pl/top-bdo/",
-                        "top_keyword": "bdo szkolenie",
-                        "sum_traffic": 121,
-                        "keywords": 31,
-                        "referring_domains": 4,
-                        "top_keyword_best_position": 2,
-                        "top_keyword_country": "pl",
+                        "keyword": "bdo szkolenie online",
+                        "best_position": 3,
+                        "best_position_url": "https://konkurent.pl/top-bdo/",
+                        "volume": 150,
+                        "sum_traffic": 24,
+                        "keyword_difficulty": 8,
+                        "cpc": 1.21,
+                        "is_branded": False,
+                        "is_commercial": True,
+                        "is_informational": False,
+                        "is_local": False,
+                        "is_transactional": True,
                     }
                 ]
             },
@@ -7051,6 +7079,12 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "top_pages_by_competitor_competitors": 1,
         "top_pages_by_competitor_country": "pl",
         "top_pages_by_competitor_mode": "subdomains",
+        "organic_keywords_by_url_read_status": "completed",
+        "organic_keywords_by_url_rows": 1,
+        "organic_keywords_by_url_urls": 1,
+        "organic_keywords_by_url_country": "pl",
+        "organic_keywords_by_url_mode": "exact",
+        "organic_keywords_by_url_keyword_limit": 3,
     }
     assert result.metric_facts == [
         VendorMetricFact(
@@ -7086,12 +7120,37 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 "top_keyword_country": "pl",
             },
             period="ahrefs_top_pages",
-        )
+        ),
+        VendorMetricFact(
+            "ahrefs_organic_keyword_gap_count",
+            1,
+            {
+                "gap_type": "organic_keyword_gap",
+                "competitor_domain": "konkurent.pl",
+                "source_url": "https://konkurent.pl/top-bdo/",
+                "keyword": "bdo szkolenie online",
+                "country": "pl",
+                "target_mode": "exact",
+                "best_position": "3",
+                "best_position_url": "https://konkurent.pl/top-bdo/",
+                "volume": "150",
+                "sum_traffic": "24",
+                "keyword_difficulty": "8",
+                "cpc": "1.21",
+                "is_branded": "False",
+                "is_commercial": "True",
+                "is_informational": "False",
+                "is_local": "False",
+                "is_transactional": "True",
+            },
+            period="ahrefs_organic_keywords",
+        ),
     ]
     assert [request.url.path for request in requests] == [
         "/v3/site-explorer/domain-rating",
         "/v3/site-explorer/organic-competitors",
         "/v3/site-explorer/top-pages",
+        "/v3/site-explorer/organic-keywords",
     ]
     serialized = json.dumps(result.metric_summary)
     assert "ahrefs-token-test" not in serialized

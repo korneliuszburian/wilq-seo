@@ -20,6 +20,11 @@ AHREFS_TOP_PAGES_COMPETITOR_LIMIT_MAX = 5
 AHREFS_TOP_PAGES_PER_COMPETITOR_DEFAULT = 3
 AHREFS_TOP_PAGES_PER_COMPETITOR_MAX = 10
 AHREFS_TOP_PAGES_MODE_DEFAULT = "subdomains"
+AHREFS_ORGANIC_KEYWORDS_TOP_PAGE_LIMIT_DEFAULT = 4
+AHREFS_ORGANIC_KEYWORDS_TOP_PAGE_LIMIT_MAX = 8
+AHREFS_ORGANIC_KEYWORDS_PER_URL_DEFAULT = 3
+AHREFS_ORGANIC_KEYWORDS_PER_URL_MAX = 10
+AHREFS_ORGANIC_KEYWORDS_MODE_DEFAULT = "exact"
 
 
 def refresh_ahrefs_domain_rating(
@@ -72,6 +77,35 @@ def refresh_ahrefs_domain_rating(
                 )
                 metric_summary.update(top_pages_summary)
                 metric_facts.extend(top_page_facts)
+                try:
+                    keyword_summary, keyword_facts = _fetch_organic_keywords_by_top_pages(
+                        client,
+                        token,
+                        top_page_facts,
+                    )
+                    metric_summary.update(keyword_summary)
+                    metric_facts.extend(keyword_facts)
+                except httpx.HTTPStatusError as exc:
+                    status_code = exc.response.status_code
+                    metric_summary.update(
+                        {
+                            "organic_keywords_by_url_read_status": f"http_{status_code}",
+                            "organic_keywords_by_url_rows": 0,
+                        }
+                    )
+                    errors.append(
+                        f"Ahrefs Site Explorer organic-keywords HTTP {status_code}."
+                    )
+                except httpx.HTTPError as exc:
+                    metric_summary.update(
+                        {
+                            "organic_keywords_by_url_read_status": type(exc).__name__,
+                            "organic_keywords_by_url_rows": 0,
+                        }
+                    )
+                    errors.append(
+                        f"Ahrefs Site Explorer organic-keywords {type(exc).__name__}."
+                    )
             except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code
                 metric_summary.update(
@@ -118,7 +152,9 @@ def refresh_ahrefs_domain_rating(
             "Ahrefs vendor read completed through Site Explorer domain-rating. "
             f"Domain rating: {metric_summary['domain_rating']}. "
             f"Organic competitor rows: {metric_summary['organic_competitor_rows']}. "
-            f"Top page rows: {metric_summary.get('top_pages_by_competitor_rows', 0)}."
+            f"Top page rows: {metric_summary.get('top_pages_by_competitor_rows', 0)}. "
+            "Organic keyword rows by top page: "
+            f"{metric_summary.get('organic_keywords_by_url_rows', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -303,6 +339,88 @@ def _fetch_top_pages_by_competitors(
     )
 
 
+def _fetch_organic_keywords_by_top_pages(
+    client: httpx.Client,
+    token: str,
+    top_page_facts: list[VendorMetricFact],
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    report_date = _report_date()
+    country = _organic_competitor_country()
+    mode = _organic_keywords_mode()
+    top_pages = _organic_keyword_top_pages(top_page_facts)
+    if not top_pages:
+        return (
+            {
+                "organic_keywords_by_url_read_status": "skipped_no_top_pages",
+                "organic_keywords_by_url_rows": 0,
+                "organic_keywords_by_url_urls": 0,
+                "organic_keywords_by_url_country": country,
+                "organic_keywords_by_url_mode": mode,
+            },
+            [],
+        )
+
+    keyword_limit = _organic_keywords_per_url_limit()
+    facts: list[VendorMetricFact] = []
+    for top_page in top_pages:
+        response = client.get(
+            f"{AHREFS_API_BASE}/site-explorer/organic-keywords",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+            params={
+                "target": top_page["source_url"],
+                "mode": mode,
+                "country": country,
+                "date": report_date,
+                "limit": keyword_limit,
+                "output": "json",
+                "order_by": "sum_traffic:desc",
+                "select": ",".join(
+                    [
+                        "keyword",
+                        "best_position",
+                        "best_position_url",
+                        "volume",
+                        "sum_traffic",
+                        "keyword_difficulty",
+                        "cpc",
+                        "is_branded",
+                        "is_commercial",
+                        "is_informational",
+                        "is_local",
+                        "is_transactional",
+                    ]
+                ),
+            },
+        )
+        response.raise_for_status()
+        rows = _response_rows(response.json(), "keywords")[:keyword_limit]
+        facts.extend(
+            fact
+            for row in rows
+            if (
+                fact := _organic_keyword_gap_fact(
+                    row,
+                    competitor_domain=top_page["competitor_domain"],
+                    source_url=top_page["source_url"],
+                    country=country,
+                    mode=mode,
+                )
+            )
+            is not None
+        )
+    return (
+        {
+            "organic_keywords_by_url_read_status": "completed",
+            "organic_keywords_by_url_rows": len(facts),
+            "organic_keywords_by_url_urls": len(top_pages),
+            "organic_keywords_by_url_country": country,
+            "organic_keywords_by_url_mode": mode,
+            "organic_keywords_by_url_keyword_limit": keyword_limit,
+        },
+        facts,
+    )
+
+
 def _report_date() -> str:
     return (datetime.now(UTC).date() - timedelta(days=1)).isoformat()
 
@@ -354,6 +472,27 @@ def _top_pages_per_competitor_limit() -> int:
     if configured and configured.isdigit():
         return max(1, min(int(configured), AHREFS_TOP_PAGES_PER_COMPETITOR_MAX))
     return AHREFS_TOP_PAGES_PER_COMPETITOR_DEFAULT
+
+
+def _organic_keywords_mode() -> str:
+    mode = variable_value("AHREFS_ORGANIC_KEYWORDS_MODE")
+    if mode and mode.strip().lower() in AHREFS_ORGANIC_COMPETITOR_MODES:
+        return mode.strip().lower()
+    return AHREFS_ORGANIC_KEYWORDS_MODE_DEFAULT
+
+
+def _organic_keywords_top_page_limit() -> int:
+    configured = variable_value("AHREFS_ORGANIC_KEYWORDS_TOP_PAGE_LIMIT")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_ORGANIC_KEYWORDS_TOP_PAGE_LIMIT_MAX))
+    return AHREFS_ORGANIC_KEYWORDS_TOP_PAGE_LIMIT_DEFAULT
+
+
+def _organic_keywords_per_url_limit() -> int:
+    configured = variable_value("AHREFS_ORGANIC_KEYWORDS_PER_URL")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_ORGANIC_KEYWORDS_PER_URL_MAX))
+    return AHREFS_ORGANIC_KEYWORDS_PER_URL_DEFAULT
 
 
 def _response_rows(payload: Any, preferred_key: str) -> list[dict[str, Any]]:
@@ -424,6 +563,26 @@ def _top_page_competitor_domains(competitor_facts: list[VendorMetricFact]) -> li
     return domains[: _top_pages_competitor_limit()]
 
 
+def _organic_keyword_top_pages(
+    top_page_facts: list[VendorMetricFact],
+) -> list[dict[str, str]]:
+    top_pages: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+    for fact in top_page_facts:
+        source_url = fact.dimensions.get("source_url")
+        competitor_domain = fact.dimensions.get("competitor_domain")
+        if not source_url or not competitor_domain or source_url in seen_urls:
+            continue
+        seen_urls.add(source_url)
+        top_pages.append(
+            {
+                "source_url": source_url,
+                "competitor_domain": competitor_domain,
+            }
+        )
+    return top_pages[: _organic_keywords_top_page_limit()]
+
+
 def _top_page_gap_fact(
     row: dict[str, Any],
     *,
@@ -454,6 +613,46 @@ def _top_page_gap_fact(
         1,
         dimensions,
         period="ahrefs_top_pages",
+    )
+
+
+def _organic_keyword_gap_fact(
+    row: dict[str, Any],
+    *,
+    competitor_domain: str,
+    source_url: str,
+    country: str,
+    mode: str,
+) -> VendorMetricFact | None:
+    keyword = _first_text(row, "keyword", "keyword_merged", "organic_keyword")
+    if keyword is None:
+        return None
+    dimensions = _clean_dimensions(
+        {
+            "gap_type": "organic_keyword_gap",
+            "competitor_domain": competitor_domain,
+            "source_url": source_url,
+            "keyword": keyword,
+            "country": country,
+            "target_mode": mode,
+            "best_position": _first_text(row, "best_position"),
+            "best_position_url": _first_text(row, "best_position_url"),
+            "volume": _first_text(row, "volume"),
+            "sum_traffic": _first_text(row, "sum_traffic"),
+            "keyword_difficulty": _first_text(row, "keyword_difficulty"),
+            "cpc": _first_text(row, "cpc"),
+            "is_branded": _first_text(row, "is_branded"),
+            "is_commercial": _first_text(row, "is_commercial"),
+            "is_informational": _first_text(row, "is_informational"),
+            "is_local": _first_text(row, "is_local"),
+            "is_transactional": _first_text(row, "is_transactional"),
+        }
+    )
+    return VendorMetricFact(
+        "ahrefs_organic_keyword_gap_count",
+        1,
+        dimensions,
+        period="ahrefs_organic_keywords",
     )
 
 

@@ -25,6 +25,68 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-21 - wilq-ahrefs-gap-finder organic-keywords-by-url eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-ahrefs-gap-finder`.
+
+Why this eval matters:
+
+Ahrefs now reads real competitor top pages and organic keywords for selected
+top-page URLs. The skill may discuss reviewable competitor/top-page/keyword
+records, but must still block unsupported content gap, backlink gap, traffic
+uplift and authority improvement claims.
+
+Pre-eval API proof:
+
+- Live refresh: `refresh_ahrefs_a1ef481d6950`.
+- Evidence: `ev_refresh_refresh_ahrefs_a1ef481d6950`.
+- `/api/ahrefs/diagnostics` live facts: DR=40, Ahrefs Rank=1541946,
+  `organic_competitor_rows=10`,
+  `top_pages_by_competitor_read_status=completed`,
+  `top_pages_by_competitor_rows=4`,
+  `organic_keywords_by_url_read_status=completed`,
+  `organic_keywords_by_url_rows=4`,
+  `organic_keywords_by_url_mode=exact`.
+- `gap_records=18`, `organic_keyword_records=4`.
+- `available_read_contracts` includes `ahrefs_competitor_pages`,
+  `ahrefs_top_pages_by_competitor` and `ahrefs_organic_keywords_by_url`.
+- Missing read contracts are now only `ahrefs_content_gap_records` and
+  `ahrefs_backlink_gap_records`.
+- Scoped `wilq-ahrefs-gap-finder` context-pack is about `86209` bytes and has
+  `active_action_objects=0`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T022618Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- `blocked=true`.
+- Source connectors include `ahrefs`.
+- No ActionObject IDs were promoted.
+- No safety findings.
+
+Product finding:
+
+- This is now useful source-read evidence for competitor top pages and their
+  organic keywords. It is still not content gap or backlink gap analysis.
+  WILQ must keep those two contracts explicit and blocked until their own live
+  reads exist.
+
 ## 2026-06-20 - wilq-ads-doctor Keyword Planner blocker eval
 
 Prompt source:
