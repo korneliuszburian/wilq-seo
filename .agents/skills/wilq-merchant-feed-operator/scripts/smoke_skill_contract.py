@@ -9,6 +9,8 @@ import urllib.request
 from typing import Any
 
 SKILL_NAME = "wilq-merchant-feed-operator"
+MERCHANT_FEED_ACTION_ID = "act_review_merchant_feed_issues"
+MERCHANT_FEED_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
 REQUIRED_CONNECTORS = ["google_merchant_center"]
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
@@ -70,6 +72,32 @@ def main() -> int:
         and not issue_clusters
     ):
         raise SystemExit("Live Merchant diagnostics with issue_count must expose issue_clusters")
+    merchant_action = next(
+        (
+            action
+            for action in pack.get("active_action_objects", [])
+            if action.get("id") == MERCHANT_FEED_ACTION_ID
+        ),
+        None,
+    )
+    merchant_payload = merchant_action.get("payload", {}) if merchant_action else {}
+    merchant_preview = merchant_payload.get("payload_preview") or []
+    if issue_clusters and merchant_action is None:
+        raise SystemExit("Merchant issue clusters must expose review ActionObject")
+    if (
+        issue_clusters
+        and merchant_payload.get("preview_contract") != MERCHANT_FEED_PREVIEW_CONTRACT
+    ):
+        raise SystemExit("Merchant review ActionObject must expose typed preview contract")
+    if issue_clusters and not merchant_preview:
+        raise SystemExit("Merchant review ActionObject must keep compact payload preview")
+    if (
+        issue_clusters
+        and merchant_preview[0].get("preview_contract") != MERCHANT_FEED_PREVIEW_CONTRACT
+    ):
+        raise SystemExit("Merchant payload preview contract mismatch")
+    if issue_clusters and merchant_preview[0].get("apply_allowed") is not False:
+        raise SystemExit("Merchant payload preview must keep apply_allowed=false")
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -143,6 +171,12 @@ def main() -> int:
                     "latest_refresh_status": (
                         merchant_diagnostics.get("latest_refresh") or {}
                     ).get("status"),
+                    "action_preview_contract": merchant_payload.get("preview_contract"),
+                    "preview_cluster_ids": [
+                        item.get("cluster_id")
+                        for item in merchant_preview
+                        if item.get("cluster_id")
+                    ],
                 },
                 "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),

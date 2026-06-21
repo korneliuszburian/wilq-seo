@@ -459,6 +459,60 @@ def seed_google_ads_live_review_metric_facts(
     )
 
 
+def save_localo_visibility_metric_facts() -> None:
+    localo_run = ConnectorRefreshRun(
+        id="refresh_localo_opportunity_seed",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_localo_opportunity_seed"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "api": "localo_mcp_oauth_probe",
+            "mcp_initialize_status": 200,
+            "authorization_code_supported": 1,
+            "pkce_s256_supported": 1,
+            "access_token_present": 1,
+            "localo_active_place_count": 4,
+            "localo_tracked_keyword_count": 23,
+            "localo_avg_visibility_current": 52.8261,
+            "localo_reviews_count": 793,
+        },
+        summary="Localo MCP read completed with aggregate facts.",
+    )
+    local_state_store().save_connector_refresh_run(localo_run)
+    metric_store().save_connector_refresh_metrics(
+        localo_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "localo_active_place_count",
+                4,
+                {"contract": "place_inventory", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_tracked_keyword_count",
+                23,
+                {"contract": "local_rankings", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_avg_visibility_current",
+                52.8261,
+                {"contract": "local_rankings", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_reviews_count",
+                793,
+                {"contract": "reviews", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+        ],
+    )
+
+
 def test_health_endpoint() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -3572,7 +3626,18 @@ def test_evidence_registry_exposes_connector_status_without_secret_values(
     assert "gho_supersecretvalue1234567890" not in serialized
 
 
-def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
+def test_opportunities_are_derived_from_evidence_and_rule_mappings(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+    monkeypatch.setenv("LOCALO_ACCESS_TOKEN", "localo-access-test")
+    save_localo_visibility_metric_facts()
+
     response = client.get("/api/opportunities")
     assert response.status_code == 200
     opportunities = response.json()
@@ -7030,6 +7095,30 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "availability_updated"
     )
     assert merchant_action["payload"]["issue_clusters"][0]["product_count"] == 23
+    assert merchant_action["payload"]["preview_contract"] == (
+        "merchant_feed_issue_review_preview_v1"
+    )
+    assert merchant_action["payload"]["payload_preview"][0]["preview_contract"] == (
+        "merchant_feed_issue_review_preview_v1"
+    )
+    merchant_preview = merchant_action["payload"]["payload_preview"][0]
+    assert merchant_preview["operation_type"] == "MerchantIssueClusterReview"
+    assert merchant_preview["cluster_id"] == cluster["id"]
+    assert merchant_preview["issue_type"] == "availability_updated"
+    assert merchant_preview["affected_attribute"] == "n:availability"
+    assert merchant_preview["metric_snapshot"] == {"issue_product_count": 23}
+    assert merchant_preview["sample_products_available"] is False
+    assert merchant_preview["apply_allowed"] is False
+    assert merchant_preview["api_mutation_ready"] is False
+    assert merchant_preview["destructive"] is False
+    preview_response = client.post(
+        "/api/actions/act_review_merchant_feed_issues/preview",
+        json={"requested_by": "operator_test", "max_items": 1},
+    )
+    assert preview_response.status_code == 200
+    preview_payload = preview_response.json()
+    assert preview_payload["preview_contract"] == "merchant_feed_issue_review_preview_v1"
+    assert "payload_preview_missing" not in preview_payload["blockers"]
     serialized = json.dumps(payload)
     assert "5519957373" not in serialized
     assert "adc.json" not in serialized
@@ -9269,7 +9358,52 @@ def test_codex_context_pack_scopes_content_strategist_payload() -> None:
     }
 
 
-def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
+def test_codex_context_pack_scopes_merchant_payload_preview(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-merchant-feed-operator"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-merchant-feed-operator"
+    assert data["context_scope"]["source_connectors"] == ["google_merchant_center"]
+    assert "merchant_diagnostics" in data
+    assert "ads_diagnostics" not in data
+    assert "command_center" not in data
+    assert data["merchant_diagnostics"]["action_ids"] == [
+        "act_review_merchant_feed_issues"
+    ]
+    actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
+    merchant_action = actions_by_id["act_review_merchant_feed_issues"]
+    payload = merchant_action["payload"]
+    assert payload["preview_contract"] == "merchant_feed_issue_review_preview_v1"
+    assert payload["payload_preview_total"] == 1
+    assert payload["payload_preview_included"] == 1
+    preview = payload["payload_preview"][0]
+    assert preview["preview_contract"] == "merchant_feed_issue_review_preview_v1"
+    assert preview["operation_type"] == "MerchantIssueClusterReview"
+    assert preview["issue_type"] == "missing_image"
+    assert preview["metric_snapshot"] == {"issue_product_count": 3}
+    assert preview["apply_allowed"] is False
+    assert preview["api_mutation_ready"] is False
+    assert preview["destructive"] is False
+    assert "feed write" in preview["blocked_claims"]
+    assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
+
+
+def test_codex_context_pack_scopes_ads_doctor_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+
     ads_response = client.get("/api/ads/diagnostics")
     assert ads_response.status_code == 200
     ads_diagnostics = ads_response.json()
@@ -9404,7 +9538,12 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     assert ngram_context_action["payload"]["ngram_preview_included"] <= 4
 
 
-def test_codex_context_pack_scopes_custom_segments_payload() -> None:
+def test_codex_context_pack_scopes_custom_segments_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+
     response = client.post(
         "/api/codex/context-pack",
         json={"skill": "wilq-custom-segments"},

@@ -37,6 +37,31 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Merchant feed issue review payload preview, 2026-06-21 19:35 CEST.
+  `act_review_merchant_feed_issues` ma teraz typed
+  `merchant_feed_issue_review_preview_v1` w `payload.payload_preview`: top
+  issue clusters z Merchant, `cluster_id` zgodny z `/api/merchant/diagnostics`,
+  `metric_snapshot`, required validation, blocked claims i twarde
+  `apply_allowed=false`, `api_mutation_ready=false`, `destructive=false`.
+  Skill-scoped context-pack dla `wilq-merchant-feed-operator` zachowuje
+  kompaktowany preview, więc Codex widzi ten sam ActionObject contract co
+  `/api/actions` i `/merchant`. Live smoke zwraca
+  `action_preview_contract=merchant_feed_issue_review_preview_v1`, a
+  `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300
+  scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base
+  http://127.0.0.1:8000` passed z artefaktem
+  `.local-lab/evals/codex-skill/20260621T173358Z/wilq-merchant-feed-operator/result.json`.
+  Eval ma `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`,
+  source `google_merchant_center`, evidence IDs i ActionObject
+  `act_review_merchant_feed_issues`. Nadal zablokowane: automatyczna edycja
+  feedu, approval/revenue recovery, primary feed overwrite i mutacje produktu.
+  Final proof 2026-06-21 20:15 CEST: `scripts/verify.sh` green, w tym
+  146 backend tests, 17 dashboard unit tests, skill smokes, 14 Playwright e2e
+  i dashboard production build. Po drodze usunięto niestabilność testów:
+  Ads/custom-segments API tests seedują własne search-term facts zamiast czytać
+  prywatny `.local-lab`, a Playwright smoke dla Ads/Custom Segments/Ahrefs
+  akceptuje obecny evidence-backed blocker state zamiast wymagać starych
+  ready-only tekstów.
 - Localo visibility review payload preview, 2026-06-21 18:59 CEST.
   `/api/actions/act_review_localo_visibility_facts` ma teraz typed
   `local_visibility_review_preview_v1` w `payload.payload_preview`: skrócony

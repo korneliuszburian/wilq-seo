@@ -110,6 +110,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "merchant_diagnostics",
                 "issue",
                 "act_review_merchant_feed_issues",
+                "merchant_feed_issue_review_preview_v1",
             },
             "action_ids": {"act_review_merchant_feed_issues"},
         },

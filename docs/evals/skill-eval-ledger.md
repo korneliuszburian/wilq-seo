@@ -25,6 +25,64 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-21 - wilq-merchant-feed-operator issue preview eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-merchant-feed-operator`.
+
+Why this eval matters:
+
+Merchant is the first Command Center decision and currently one of the strongest
+Ekologus demo surfaces. Before this slice, `/api/merchant/diagnostics` exposed
+issue clusters, but `act_review_merchant_feed_issues` did not expose a typed
+payload preview. That meant dashboard diagnostics had cluster-level value while
+Codex ActionObject context still looked like a generic review queue.
+
+Pre-eval API proof:
+
+- `/api/actions/act_review_merchant_feed_issues.payload.preview_contract` is
+  `merchant_feed_issue_review_preview_v1`.
+- `payload.payload_preview[*]` contains Merchant issue cluster ID, issue type,
+  affected attribute, reporting context, severity/resolution, metric snapshot,
+  sample-unavailable reason, required validation and evidence IDs.
+- Every preview item keeps `apply_allowed=false`,
+  `api_mutation_ready=false` and `destructive=false`.
+- `POST /api/codex/context-pack {"skill":"wilq-merchant-feed-operator"}`
+  keeps compacted Merchant preview items for the skill.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T173358Z/wilq-merchant-feed-operator/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- `operator_usefulness_score=5`, `safety_findings=[]`.
+- Source connectors: `google_merchant_center`.
+- Evidence IDs include `ev_connector_google_merchant_center_status` and
+  `ev_refresh_refresh_google_merchant_center_a3ef2f66703f`.
+- Action candidate: `act_review_merchant_feed_issues`.
+- Recommendations mention `merchant_feed_issue_review_preview_v1` and issue
+  clusters as review/preview, not automatic feed edits.
+
+Product finding:
+
+- Merchant now has a real review-only issue-cluster ActionObject preview for
+  dashboard and Codex. It still must not claim approval recovery, revenue
+  recovery, automatic feed edits, primary feed overwrite or product mutations.
+
 ## 2026-06-21 - wilq-localo-operator value preview eval
 
 Prompt source:

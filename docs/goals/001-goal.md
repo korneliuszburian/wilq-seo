@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 19:21 CEST.
+Last updated: 2026-06-21 20:15 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -107,7 +107,38 @@ review facts for place inventory, local rankings and reviews plus a
 `local_visibility_review_preview_v1` ActionObject preview; full Localo parity
 still requires GBP visibility, competitor visibility, local task/write
 contracts and proof that these facts are fresh enough for recommendations.
+Merchant now has a typed review-only
+`merchant_feed_issue_review_preview_v1` payload preview for issue clusters, so
+the first Command Center decision can move from generic feed review to a
+cluster-level review queue with evidence and safety gates.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Merchant issue review contract proof, 2026-06-21 19:35 CEST:
+`act_review_merchant_feed_issues` now exposes
+`merchant_feed_issue_review_preview_v1` in `payload.preview_contract` and
+`payload.payload_preview`: Merchant issue cluster IDs aligned with
+`/api/merchant/diagnostics`, issue type/attribute/country/context/severity,
+`metric_snapshot`, sample-unavailable reason, required validation, blocked
+claims and hard `apply_allowed=false` / `api_mutation_ready=false` /
+`destructive=false`. `POST /api/codex/context-pack
+{"skill":"wilq-merchant-feed-operator"}` keeps a compact payload preview for
+the Merchant skill. Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260621T173358Z/wilq-merchant-feed-operator/result.json`
+with `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`,
+source connector `google_merchant_center`, evidence IDs
+`ev_connector_google_merchant_center_status` and
+`ev_refresh_refresh_google_merchant_center_a3ef2f66703f`, action candidate
+`act_review_merchant_feed_issues`, and recommendations that mention
+`merchant_feed_issue_review_preview_v1`. This still does not unlock automatic
+feed edits, product mutation, approval restored or revenue recovered claims.
+Final verification for this slice passed on 2026-06-21 20:15 CEST:
+`scripts/verify.sh` green, including 146 backend tests, 17 dashboard unit tests,
+skill structure/API smokes, 14 Playwright e2e tests and dashboard production
+build. Test stability fix from this verification: Ads/custom-segments API tests
+now seed their own search-term facts instead of relying on private `.local-lab`
+state, and dashboard e2e smoke accepts either ready or evidence-backed blocker
+state for Ads/Custom Segments/Ahrefs while still rejecting generic registry
+junk.
 
 Latest Localo value contract proof, 2026-06-21 18:59 CEST:
 `act_review_localo_visibility_facts` now exposes a typed

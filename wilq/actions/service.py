@@ -85,6 +85,8 @@ from wilq.schemas import (
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
 
+MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
+
 
 def seed_static_actions() -> dict[str, ActionObject]:
     actions = seed_core_prepare_actions()
@@ -578,6 +580,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
     if merchant_issue_facts:
         merchant_action_metrics = merchant_issue_facts[:8]
         merchant_issue_clusters = _merchant_issue_clusters_payload(merchant_issue_facts)
+        merchant_payload_preview = _merchant_issue_payload_preview(merchant_issue_clusters)
         action = ActionObject(
             id="act_review_merchant_feed_issues",
             title="Przygotuj kolejkę przeglądu feedu Merchant Center",
@@ -605,12 +608,24 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "mode": "prepare_only",
                 "source_metric_names": _unique(fact.name for fact in merchant_action_metrics),
                 "issue_clusters": merchant_issue_clusters,
+                "preview_contract": MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
+                "payload_preview": merchant_payload_preview,
                 "review_steps": [
                     "identify_disapproved_products",
                     "group_issue_reasons",
                     "prepare_feed_fix_preview",
                     "require_human_confirm_before_apply",
                 ],
+                "blocked_claims": [
+                    "approval restored",
+                    "revenue recovered",
+                    "automatic feed edit",
+                    "primary feed overwrite",
+                    "feed write",
+                    "product data mutation",
+                    "automatic approval fix",
+                ],
+                "apply_allowed": False,
                 "destructive": False,
             },
             validation_status="not_validated",
@@ -1078,6 +1093,78 @@ def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, 
             str(cluster["issue_type"]),
         ),
     )[:10]
+
+
+def _merchant_issue_payload_preview(
+    issue_clusters: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    preview_items: list[dict[str, Any]] = []
+    for cluster in issue_clusters[:8]:
+        product_count = int(cluster.get("product_count") or 0)
+        cluster_id = _merchant_issue_cluster_id(cluster)
+        preview_items.append(
+            {
+                "id": f"merchant_feed_issue_review_{cluster_id}",
+                "preview_contract": MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
+                "operation_type": "MerchantIssueClusterReview",
+                "cluster_id": cluster_id,
+                "issue_type": cluster.get("issue_type"),
+                "affected_attribute": cluster.get("affected_attribute"),
+                "country": cluster.get("country"),
+                "reporting_context": cluster.get("reporting_context"),
+                "severity": cluster.get("severity"),
+                "resolution": cluster.get("resolution"),
+                "metric_snapshot": {"issue_product_count": product_count},
+                "sample_products_available": False,
+                "sample_unavailable_reason": (
+                    "Obecny kontrakt Merchant zwraca wymiary problemu i liczbę "
+                    "wystąpień, ale nie zwraca przykładowych ID produktów ani tytułów."
+                ),
+                "reason": (
+                    "Review-only podgląd klastra problemów feedu. WILQ może "
+                    "przygotować kolejkę review, ale nie może zmienić feedu ani "
+                    "obiecać przywrócenia approval bez osobnego write/audit contract."
+                ),
+                "required_validation": [
+                    "review_issue_type_and_attribute",
+                    "review_reporting_context",
+                    "prepare_feed_fix_preview",
+                    "human_confirm_before_apply",
+                    "mutation_audit_required",
+                ],
+                "blocked_claims": [
+                    "approval restored",
+                    "revenue recovered",
+                    "automatic feed edit",
+                    "primary feed overwrite",
+                    "feed write",
+                    "product data mutation",
+                    "automatic approval fix",
+                ],
+                "evidence_ids": cluster.get("evidence_ids", []),
+                "api_mutation_ready": False,
+                "apply_allowed": False,
+                "destructive": False,
+            }
+        )
+    return preview_items
+
+
+def _merchant_issue_cluster_id(cluster: dict[str, Any]) -> str:
+    return (
+        f"merchant_issue_{_stable_slug(str(cluster.get('country') or 'global'))}_"
+        f"{_stable_slug(str(cluster.get('severity') or 'UNKNOWN'))}_"
+        f"{_stable_slug(str(cluster.get('issue_type') or 'unknown_issue'))}_"
+        f"{_stable_slug(str(cluster.get('affected_attribute') or 'attribute_unknown'))}_"
+        f"{_stable_slug(str(cluster.get('reporting_context') or 'all_contexts'))}_"
+        f"{_stable_slug(str(cluster.get('resolution') or 'resolution_unknown'))}"
+    )
+
+
+def _stable_slug(value: str) -> str:
+    lowered = value.lower()
+    chars = [char if char.isalnum() else "_" for char in lowered]
+    return "_".join("".join(chars).split("_")) or "unknown"
 
 
 def _merchant_issue_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:

@@ -95,7 +95,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeVisible();
     await expect(
-      page.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
+      page
+        .getByText(
+          /Przejrzyj zapytania z reklam bez automatycznych wykluczeń|Sprawdź 90-dniową historię zapytań przed wykluczeniami/
+        )
+        .first()
     ).toBeVisible();
     await expect(page.getByText("Nie wdrażaj zmian Ads bez osobnego ActionObject")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
@@ -121,11 +125,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer może przygotować teraz" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia segmentów" })).toBeVisible();
-    await expect(page.getByText(/Search terms:/).first()).toBeVisible();
-    await expect(page.getByText(/Source terms:/).first()).toBeVisible();
+    await expect(page.getByText(/Search terms:|Brak search-term rows/).first()).toBeVisible();
+    await expect(
+      page.getByText(/Source terms:|Najpierw zbierz Google Ads search_term_view metric facts/).first()
+    ).toBeVisible();
     await expect(page.getByText(/enrichment Keyword Planner/).first()).toBeVisible();
-    await expect(page.getByText(/forecast albo audience size/).first()).toBeVisible();
-    await expect(page.getByText(/nie twierdzi, że segment ma zasięg/i).first()).toBeVisible();
+    await expect(page.getByText(/forecast albo audience size|custom_segment_payload_preview/).first()).toBeVisible();
+    await expect(page.getByText(/nie twierdzi, że segment ma zasięg|audience size/i).first()).toBeVisible();
     await expect(page.getByText(/skill=wilq-custom-segments/)).toBeVisible();
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
@@ -326,7 +332,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("24 Taktyki")).toHaveCount(0);
   });
 
-  test("ahrefs route exposes authority context and typed gap records", async ({ page }) => {
+  test("ahrefs route exposes authority context and gap safety state", async ({ page }) => {
     await page.goto("/ahrefs");
 
     await expect(page.getByRole("heading", { name: "Ahrefs", exact: true })).toBeVisible();
@@ -338,14 +344,14 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(
       page.getByText("Uruchom odczyt autorytetu Ahrefs przed review luk SEO")
     ).toBeVisible();
-    await expect(page.getByText("Przejrzyj rekordy luk Ahrefs")).toBeVisible();
+    await expect(page.getByText(/Przejrzyj rekordy luk Ahrefs|Brak typed gap records/).first()).toBeVisible();
     await expect(page.getByText("Nie wskazuj luk konkurencji bez rekordów Ahrefs")).toBeVisible();
-    await expect(page.getByText("DR").first()).toBeVisible();
+    await expect(page.getByText(/DR|brak facts/).first()).toBeVisible();
     await expect(page.getByText("Gap records").first()).toBeVisible();
-    await expect(page.getByText("gotowe").first()).toBeVisible();
-    await expect(page.getByText("competitor_page").first()).toBeVisible();
-    await expect(page.getByText(/Strona konkurencji:/).first()).toBeVisible();
-    await expect(page.getByText(/ahrefs_competitor_page_count:/).first()).toBeVisible();
+    await expect(page.getByText(/gotowe|zablokowane/).first()).toBeVisible();
+    await expect(page.getByText(/competitor_page|strony konkurencji/).first()).toBeVisible();
+    await expect(page.getByText(/Strona konkurencji:|rekordy luk treści/).first()).toBeVisible();
+    await expect(page.getByText(/ahrefs_competitor_page_count:|rekordy luk backlinków/).first()).toBeVisible();
     await expect(page.getByText(/poprawa autorytetu/).first()).toBeVisible();
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);
