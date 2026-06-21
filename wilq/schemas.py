@@ -1211,6 +1211,55 @@ class AdsCustomSegmentPayloadPreview(BaseModel):
     destructive: bool = False
 
 
+class AdsCustomSegmentAudienceForecastRow(BaseModel):
+    id: str
+    candidate_id: str
+    custom_segment_name: str
+    status: Literal["ready", "missing_forecast"] = "missing_forecast"
+    forecast_available: bool = False
+    audience_size: int | None = None
+    source_terms: list[str] = Field(default_factory=list)
+    reason: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsCustomSegmentAudienceForecastReadContract(BaseModel):
+    id: str = "ads_custom_segment_audience_forecast_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    checked_candidate_count: int = 0
+    forecast_row_count: int = 0
+    forecast_rows: list[AdsCustomSegmentAudienceForecastRow] = Field(
+        default_factory=list
+    )
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    next_step: str
+
+
+def default_ads_custom_segment_audience_forecast_contract() -> (
+    AdsCustomSegmentAudienceForecastReadContract
+):
+    return AdsCustomSegmentAudienceForecastReadContract(
+        status="blocked",
+        title="Forecast i audience size custom segments",
+        summary=(
+            "Brak kandydatów custom segments do sprawdzenia forecastu albo audience size."
+        ),
+        missing_read_contracts=["custom_segment_candidates", "forecast_or_audience_size"],
+        operator_review_gates=["forecast_or_audience_size", "human_confirm_before_apply"],
+        blocked_claims=["audience size", "conversion uplift", "ROAS", "targeting applied"],
+        next_step=(
+            "Najpierw zbuduj kandydatów custom segments z realnych source terms."
+        ),
+    )
+
+
 class AdsKeywordPlannerIdeaRow(BaseModel):
     idea_text: str
     avg_monthly_searches: int | None = None
@@ -1283,6 +1332,9 @@ class AdsCustomSegmentsReadContract(BaseModel):
     summary: str
     candidates: list[AdsCustomSegmentCandidate] = Field(default_factory=list)
     payload_preview: list[AdsCustomSegmentPayloadPreview] = Field(default_factory=list)
+    audience_forecast_read_contract: AdsCustomSegmentAudienceForecastReadContract = (
+        Field(default_factory=default_ads_custom_segment_audience_forecast_contract)
+    )
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
@@ -1422,6 +1474,9 @@ class AdsDecisionItem(BaseModel):
     custom_segment_payload_preview: list[AdsCustomSegmentPayloadPreview] = Field(
         default_factory=list
     )
+    custom_segment_audience_forecast_rows: list[
+        AdsCustomSegmentAudienceForecastRow
+    ] = Field(default_factory=list)
     negative_keyword_candidates: list[AdsNegativeKeywordCandidate] = Field(default_factory=list)
     negative_keyword_payload_preview: list[AdsNegativeKeywordPayloadPreview] = Field(
         default_factory=list

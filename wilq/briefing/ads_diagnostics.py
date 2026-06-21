@@ -65,6 +65,8 @@ from wilq.schemas import (
     AdsCampaignReadContract,
     AdsChangeHistoryReadContract,
     AdsChangeHistoryRow,
+    AdsCustomSegmentAudienceForecastReadContract,
+    AdsCustomSegmentAudienceForecastRow,
     AdsCustomSegmentCandidate,
     AdsCustomSegmentPayloadPreview,
     AdsCustomSegmentSourceQuality,
@@ -3913,6 +3915,9 @@ def _custom_segments_read_contract(
         for candidate in candidates
         if candidate.payload_preview is not None
     ]
+    audience_forecast_read_contract = _custom_segment_audience_forecast_read_contract(
+        candidates
+    )
     missing_read_contracts = ["forecast_or_audience_size"]
     if keyword_planner_read_contract.status != "ready":
         missing_read_contracts.insert(0, "keyword_planner_enrichment")
@@ -3927,6 +3932,7 @@ def _custom_segments_read_contract(
         ),
         candidates=candidates,
         payload_preview=payload_preview,
+        audience_forecast_read_contract=audience_forecast_read_contract,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_unique(
             evidence_id
@@ -3941,6 +3947,54 @@ def _custom_segments_read_contract(
             "Przejrzyj source terms i payload preview, odrzuć nietrafione frazy, "
             "użyj Keyword Planner enrichment, jeśli jest dostępny, i waliduj "
             "ActionObject przed apply."
+        ),
+    )
+
+
+def _custom_segment_audience_forecast_read_contract(
+    candidates: list[AdsCustomSegmentCandidate],
+) -> AdsCustomSegmentAudienceForecastReadContract:
+    forecast_rows = [
+        AdsCustomSegmentAudienceForecastRow(
+            id=f"forecast_{_slug(candidate.id)}",
+            candidate_id=candidate.id,
+            custom_segment_name=candidate.name,
+            status="missing_forecast",
+            forecast_available=False,
+            audience_size=None,
+            source_terms=candidate.source_terms,
+            reason=(
+                "Brak WILQ evidence dla forecast albo audience size tego custom "
+                "segmentu. Kandydat zostaje prepare-only do review."
+            ),
+            evidence_ids=candidate.evidence_ids,
+            blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        )
+        for candidate in candidates
+    ]
+    return AdsCustomSegmentAudienceForecastReadContract(
+        status="blocked",
+        title="Forecast i audience size custom segments",
+        summary=(
+            f"WILQ sprawdził {len(candidates)} kandydatów custom segments, ale "
+            "nie ma evidence forecastu ani audience size. Segmenty można tylko "
+            "przygotować do review."
+        ),
+        checked_candidate_count=len(candidates),
+        forecast_row_count=len(forecast_rows),
+        forecast_rows=forecast_rows,
+        missing_read_contracts=["forecast_or_audience_size"],
+        operator_review_gates=["forecast_or_audience_size", "human_confirm_before_apply"],
+        blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_unique(
+            evidence_id
+            for candidate in candidates
+            for evidence_id in candidate.evidence_ids
+        ),
+        next_step=(
+            "Nie oceniaj zasięgu ani skuteczności segmentu. Najpierw dostarcz "
+            "forecast/audience-size evidence i dopiero potem wróć do targetowania."
         ),
     )
 
@@ -5213,6 +5267,9 @@ def _ads_decision_queue(
                 keyword_planner_idea_rows=keyword_planner_idea_rows[:12],
                 custom_segment_candidates=custom_segments_read_contract.candidates,
                 custom_segment_payload_preview=custom_segments_read_contract.payload_preview,
+                custom_segment_audience_forecast_rows=(
+                    custom_segments_read_contract.audience_forecast_read_contract.forecast_rows
+                ),
                 action_ids=custom_segments_read_contract.action_ids,
                 blocked_claims=custom_segments_read_contract.blocked_claims,
                 risk=ActionRisk.medium,

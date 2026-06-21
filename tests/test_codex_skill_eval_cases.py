@@ -126,11 +126,14 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "custom segments",
                 "ads_diagnostics",
                 "custom_segments_read_contract",
+                "audience_forecast_read_contract",
                 "custom_segment_payload_preview",
+                "forecast_or_audience_size",
+                "missing_forecast",
                 "review_priority",
                 "review_score",
                 "review_reason",
-                "kolejność review segmentu",
+                "review segmentu",
                 "source_terms",
                 "blocked claims",
                 "audience size",
@@ -199,6 +202,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert demand_gen_case["expected_connectors"] == ["google_ads", "google_analytics_4"]
     assert "act_review_demand_gen_readiness" in demand_gen_case["expected_action_ids"]
     assert "google_merchant_center" not in demand_gen_case["expected_connectors"]
+    custom_segments_case = cases["wilq-custom-segments"]
+    assert "audience size" in custom_segments_case["blocked_claim_terms"]
+    assert "targeting applied" in custom_segments_case["blocked_claim_terms"]
     daily_case = cases["wilq-daily-command"]
     assert "localo" in daily_case["expected_connectors"]
     assert "localo" not in daily_case["required_source_connectors"]

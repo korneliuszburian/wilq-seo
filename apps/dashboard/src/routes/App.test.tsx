@@ -1672,6 +1672,48 @@ const adsDiagnostics = {
         destructive: false
       }
     ],
+    audience_forecast_read_contract: {
+      id: "ads_custom_segment_audience_forecast_read_contract",
+      status: "blocked",
+      title: "Forecast i audience size custom segments",
+      summary:
+        "WILQ sprawdził 1 kandydatów custom segments, ale nie ma evidence forecastu ani audience size.",
+      checked_candidate_count: 1,
+      forecast_row_count: 1,
+      forecast_rows: [
+        {
+          id: "forecast_ads_custom_segment_123",
+          candidate_id: "ads_custom_segment_123",
+          custom_segment_name: "Search terms: Ekologus Search",
+          status: "missing_forecast",
+          forecast_available: false,
+          audience_size: null,
+          source_terms: ["bdo rejestracja"],
+          reason:
+            "Brak WILQ evidence dla forecast albo audience size tego custom segmentu.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          blocked_claims: [
+            "audience size",
+            "conversion uplift",
+            "ROAS",
+            "targeting applied",
+            "campaign performance"
+          ]
+        }
+      ],
+      missing_read_contracts: ["forecast_or_audience_size"],
+      operator_review_gates: ["forecast_or_audience_size", "human_confirm_before_apply"],
+      blocked_claims: [
+        "audience size",
+        "conversion uplift",
+        "ROAS",
+        "targeting applied",
+        "campaign performance"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      next_step: "Nie oceniaj zasięgu ani skuteczności segmentu bez forecastu."
+    },
     source_connectors: ["google_ads"],
     evidence_ids: ["ev_refresh_refresh_google_ads_test"],
     missing_read_contracts: ["forecast_or_audience_size"],
@@ -2725,6 +2767,27 @@ const adsDiagnostics = {
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
+        }
+      ],
+      custom_segment_audience_forecast_rows: [
+        {
+          id: "forecast_ads_custom_segment_123",
+          candidate_id: "ads_custom_segment_123",
+          custom_segment_name: "Search terms: Ekologus Search",
+          status: "missing_forecast",
+          forecast_available: false,
+          audience_size: null,
+          source_terms: ["bdo rejestracja"],
+          reason:
+            "Brak WILQ evidence dla forecast albo audience size tego custom segmentu.",
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          blocked_claims: [
+            "audience size",
+            "conversion uplift",
+            "ROAS",
+            "targeting applied",
+            "campaign performance"
+          ]
         }
       ],
       negative_keyword_candidates: [],

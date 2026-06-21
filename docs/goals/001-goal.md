@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 23:40 CEST.
+Last updated: 2026-06-22 00:21 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -83,10 +83,13 @@ keyword match context for negative keyword review, a read-only search-term
 n-gram contract for grouping repeated query themes plus a review-only
 `search_term_ngram_review_v1` ActionObject path, plus a read-only Keyword
 Planner enrichment contract for custom segment review. Custom segments now
-have a review-only payload preview and a review-only targeting preview from
-real search terms, and their review reason preserves missing search-term
-impressions/cost as `brak danych` instead of fake zeroes, but no custom segment
-targeting apply support. Campaign budgets now have review-only
+have a review-only payload preview, a review-only targeting preview from real
+search terms, and a typed nested
+`ads_custom_segment_audience_forecast_read_contract` that produces
+`missing_forecast` rows instead of hiding `forecast_or_audience_size` as only a
+string. Their review reason preserves missing search-term impressions/cost as
+`brak danych` instead of fake zeroes, but no custom segment targeting apply
+support. Campaign budgets now have review-only
 `CampaignBudgetOperation` payload previews from budget facts plus typed
 `campaign_budget_apply_safety_v1` safety reviews that keep budget apply
 blocked until missing requirements are satisfied. There is still no budget
@@ -100,9 +103,8 @@ verdicts; target verdict remains preliminary until the latest strategy review is
 `approved_for_prepare`.
 Full BDOS-class parity still requires optimizer contracts such as
 live change-event rows plus pre/post change-impact windows, approved Keyword
-Planner access/idea rows in live data, forecast or audience-size checks,
-custom segment targeting/apply previews, apply
-confirmation and mutation audit paths. Localo now has read-only aggregate
+Planner access/idea rows in live data, live forecast or audience-size data,
+custom segment apply confirmation and mutation audit paths. Localo now has read-only aggregate
 review facts for place inventory, local rankings and reviews plus a
 `local_visibility_review_preview_v1` ActionObject preview; full Localo parity
 still requires GBP visibility, competitor visibility, local task/write
@@ -120,6 +122,33 @@ blocker; it is an evidence/no-candidate blocker. Demand Gen launch, migration,
 creative-quality verdicts, campaign apply and performance uplift claims remain
 blocked.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Custom Segments forecast/audience-size proof, 2026-06-22 00:21 CEST:
+`/api/ads/diagnostics.custom_segments_read_contract` now exposes nested
+`audience_forecast_read_contract`, not only a loose
+`forecast_or_audience_size` missing string. Live HTTP proof after
+`scripts/local_stack.sh restart`: `custom_segments_read_contract.status=ready`,
+`candidates=1`, `payload_preview=1`, missing contracts
+`keyword_planner_enrichment` and `forecast_or_audience_size`,
+`audience_forecast_read_contract.status=blocked`,
+`checked_candidate_count=1`, `forecast_row_count=1`; the first row has
+`status=missing_forecast`, `forecast_available=false`,
+`audience_size=null`, source terms and Google Ads evidence IDs. Decision
+`ads_prepare_custom_segments_from_search_terms` carries
+`custom_segment_audience_forecast_rows`, so dashboard, API and
+`wilq-custom-segments` see the same blocker. `/custom-segments` and Ads Doctor
+render the forecast/audience-size panel. `wilq-custom-segments` smoke passed.
+Non-interactive Codex eval passed at
+`.local-lab/evals/codex-skill/20260621T221018Z/wilq-custom-segments/result.json`
+with `language=pl-PL`, `api_used=true`, `operator_usefulness_score=4`, source
+connectors `google_ads` and `google_search_console`, Google Ads evidence IDs,
+ActionObject `act_prepare_custom_segments_from_search_terms`, blocked action
+candidate for `audience_forecast_read_contract.status=blocked`,
+`missing_forecast` and blocked claims `audience size`, `ROAS`,
+`targeting applied`, `campaign performance`. Final verification passed:
+`scripts/verify.sh` green, including 149 backend tests, 17 dashboard unit
+tests, API/skill smokes, 14 Playwright e2e tests and dashboard production
+build.
 
 Latest Demand Gen landing/migration empty-read proof, 2026-06-21 23:40 CEST:
 `/api/demand-gen/diagnostics` exposes available read contracts
@@ -3171,13 +3200,17 @@ Commit rules:
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
    regression. Next product work should add missing value contracts:
-   deeper
-   search-term/custom-segment evidence, remaining campaign optimization
-   contracts and Demand Gen landing/migration read contracts.
+   deeper search-term evidence, live Keyword Planner access/enrichment,
+   live forecast/audience-size data, custom segment apply/audit contracts
+   and remaining campaign optimization contracts.
    Demand Gen readiness now has review-only
    `act_review_demand_gen_readiness` plus available empty-read contracts for
-   `demand_gen_ad_group_ad_rows` and `demand_gen_creative_asset_rows`; do not
-   count that as launch/migration readiness. Ads
+   `demand_gen_ad_group_ad_rows`, `demand_gen_creative_asset_rows`,
+   `demand_gen_landing_quality_by_campaign` and
+   `demand_gen_migration_constraints`; do not count that as launch/migration
+   readiness. Custom segments now have typed
+   `audience_forecast_read_contract` blocker rows, but no live forecast/
+   audience-size data and no apply support. Ads
    target-aware KPI triage is started, but remains review-only. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget
@@ -3229,6 +3262,58 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-22 Custom Segments audience forecast readiness slice:
+
+```bash
+uv run ruff check wilq/schemas.py wilq/briefing/ads_diagnostics.py .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/briefing/ads_diagnostics.py .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py
+uv run pytest tests/test_api_contracts.py -q -k 'custom_segments or codex_context_pack_scopes_custom_segments_payload'
+uv run pytest tests/test_api_contracts.py -q -k 'live_campaign_metric_facts or custom_segment_review_reason or custom_segment_source_quality or codex_context_pack_scopes_custom_segments_payload'
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx
+uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+scripts/verify.sh
+```
+
+Live `:8000` proof after `scripts/local_stack.sh restart`:
+
+- `/api/ads/diagnostics.custom_segments_read_contract.status=ready`;
+- `candidate_count=1`, `payload_preview_count=1`;
+- remaining missing contracts:
+  `keyword_planner_enrichment`, `forecast_or_audience_size`;
+- nested
+  `custom_segments_read_contract.audience_forecast_read_contract.status=blocked`;
+- `checked_candidate_count=1`, `forecast_row_count=1`;
+- forecast row has `status=missing_forecast`,
+  `forecast_available=false`, `audience_size=null`, source terms and evidence
+  IDs from Google Ads;
+- decision `ads_prepare_custom_segments_from_search_terms` carries
+  `custom_segment_audience_forecast_rows`;
+- `/custom-segments` and Ads Doctor render the forecast/audience-size blocker;
+- non-interactive `wilq-custom-segments` eval passed:
+  `.local-lab/evals/codex-skill/20260621T221018Z/wilq-custom-segments/result.json`
+  with `operator_usefulness_score=4`, `api_used=true`, Polish output,
+  `act_prepare_custom_segments_from_search_terms`, and a blocked action
+  candidate for `audience_forecast_read_contract.status=blocked`;
+- full `scripts/verify.sh` passed:
+  - backend API contracts `149 passed`;
+  - dashboard route tests `17 passed`;
+  - Playwright e2e `14 passed`;
+  - API smoke, skill structure smoke, skill API smoke and dashboard production
+    build passed.
+
+Still blocked:
+
+- live Keyword Planner approval/enrichment in current Ads data;
+- live forecast/audience-size data;
+- custom segment apply confirmation and mutation audit;
+- audience-size, conversion-uplift, ROAS, targeting-applied and
+  campaign-performance claims.
 
 Passed after the 2026-06-19 Custom Segments review-only payload preview slice:
 

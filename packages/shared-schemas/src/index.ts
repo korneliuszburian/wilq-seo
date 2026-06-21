@@ -897,6 +897,35 @@ export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   destructive: z.boolean()
 });
 
+export const AdsCustomSegmentAudienceForecastRowSchema = z.object({
+  id: z.string(),
+  candidate_id: z.string(),
+  custom_segment_name: z.string(),
+  status: z.enum(["ready", "missing_forecast"]),
+  forecast_available: z.boolean(),
+  audience_size: z.number().int().nonnegative().nullable().optional(),
+  source_terms: z.array(z.string()),
+  reason: z.string(),
+  evidence_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsCustomSegmentAudienceForecastReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  checked_candidate_count: z.number().int().nonnegative(),
+  forecast_row_count: z.number().int().nonnegative(),
+  forecast_rows: z.array(AdsCustomSegmentAudienceForecastRowSchema),
+  missing_read_contracts: z.array(z.string()),
+  operator_review_gates: z.array(z.string()).optional().default([]),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  next_step: z.string()
+});
+
 export const AdsKeywordPlannerIdeaRowSchema = z.object({
   idea_text: z.string(),
   avg_monthly_searches: z.number().nullable().optional(),
@@ -973,6 +1002,8 @@ export const AdsCustomSegmentsReadContractSchema = z.object({
   summary: z.string(),
   candidates: z.array(AdsCustomSegmentCandidateSchema),
   payload_preview: z.array(AdsCustomSegmentPayloadPreviewSchema),
+  audience_forecast_read_contract:
+    AdsCustomSegmentAudienceForecastReadContractSchema,
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
@@ -1108,6 +1139,10 @@ export const AdsDecisionItemSchema = z.object({
     .default([]),
   custom_segment_candidates: z.array(AdsCustomSegmentCandidateSchema),
   custom_segment_payload_preview: z.array(AdsCustomSegmentPayloadPreviewSchema)
+    .optional()
+    .default([]),
+  custom_segment_audience_forecast_rows: z
+    .array(AdsCustomSegmentAudienceForecastRowSchema)
     .optional()
     .default([]),
   negative_keyword_candidates: z.array(AdsNegativeKeywordCandidateSchema),

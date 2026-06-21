@@ -6346,6 +6346,33 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "missing_read_contracts"
     ]
     assert "audience size" in custom_segments_contract["blocked_claims"]
+    audience_forecast_contract = custom_segments_contract[
+        "audience_forecast_read_contract"
+    ]
+    assert audience_forecast_contract["status"] == "blocked"
+    assert audience_forecast_contract["checked_candidate_count"] == 1
+    assert audience_forecast_contract["forecast_row_count"] == 1
+    assert audience_forecast_contract["missing_read_contracts"] == [
+        "forecast_or_audience_size",
+    ]
+    assert audience_forecast_contract["operator_review_gates"] == [
+        "forecast_or_audience_size",
+        "human_confirm_before_apply",
+    ]
+    assert "audience size" in audience_forecast_contract["blocked_claims"]
+    forecast_row = audience_forecast_contract["forecast_rows"][0]
+    assert forecast_row["candidate_id"] == custom_segments_contract["candidates"][0]["id"]
+    assert forecast_row["custom_segment_name"] == (
+        custom_segments_contract["candidates"][0]["name"]
+    )
+    assert forecast_row["status"] == "missing_forecast"
+    assert forecast_row["forecast_available"] is False
+    assert forecast_row["audience_size"] is None
+    assert forecast_row["source_terms"] == ["bdo rejestracja", "odpady cena"]
+    assert "forecast albo audience size" in forecast_row["reason"]
+    assert forecast_row["evidence_ids"] == [
+        refresh_response.json()["evidence_ids"][-1]
+    ]
     assert custom_segments_contract["candidates"][0]["source_terms"] == [
         "bdo rejestracja",
         "odpady cena",
@@ -6755,6 +6782,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_decision["missing_read_contracts"] == [
         "forecast_or_audience_size",
     ]
+    assert custom_segments_decision["custom_segment_audience_forecast_rows"][0][
+        "status"
+    ] == "missing_forecast"
+    assert custom_segments_decision["custom_segment_audience_forecast_rows"][0][
+        "candidate_id"
+    ] == custom_segments_decision["custom_segment_candidates"][0]["id"]
+    assert custom_segments_decision["custom_segment_audience_forecast_rows"][0][
+        "audience_size"
+    ] is None
     assert custom_segments_decision["operator_review_gates"] == [
         "review_source_terms",
         "reject_brand_or_low_intent_terms",
@@ -9817,6 +9853,9 @@ def test_codex_context_pack_scopes_custom_segments_payload(
         "ads_prepare_custom_segments_from_search_terms"
     ]
     assert ads_context["custom_segments_read_contract"]["payload_preview"]
+    assert ads_context["custom_segments_read_contract"][
+        "audience_forecast_read_contract"
+    ]["forecast_rows"]
     assert "custom_segment_payload_preview" not in ads_context[
         "custom_segments_read_contract"
     ]["missing_read_contracts"]

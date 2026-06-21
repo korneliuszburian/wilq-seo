@@ -37,6 +37,31 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Custom segments audience forecast readiness contract, 2026-06-22 00:21 CEST.
+  `ads_diagnostics.custom_segments_read_contract` ma teraz nested
+  `audience_forecast_read_contract` zamiast samej tekstowej luki
+  `forecast_or_audience_size`. Live HTTP proof po `scripts/local_stack.sh restart`:
+  `custom_segments_read_contract.status=ready`, `candidates=1`,
+  `payload_preview=1`, missing contracts `keyword_planner_enrichment` i
+  `forecast_or_audience_size`, a
+  `audience_forecast_read_contract.status=blocked`,
+  `checked_candidate_count=1`, `forecast_row_count=1`. Forecast row pokazuje
+  `status=missing_forecast`, `forecast_available=false`, `audience_size=null`,
+  source terms i evidence IDs z Google Ads. Decision
+  `ads_prepare_custom_segments_from_search_terms` niesie
+  `custom_segment_audience_forecast_rows`, więc dashboard, API i Codex skill
+  widzą tę samą blokadę. `/custom-segments` i Ads Doctor pokazują osobny panel
+  forecast/audience-size. `wilq-custom-segments` smoke passed, a
+  non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T221018Z/wilq-custom-segments/result.json`
+  z `language=pl-PL`, `api_used=true`, `operator_usefulness_score=4`,
+  source connectors `google_ads`, `google_search_console`, evidence IDs,
+  ActionObject `act_prepare_custom_segments_from_search_terms`, blocked action
+  candidate dla `audience_forecast_read_contract.status=blocked`,
+  `missing_forecast` i zablokowanych claimów `audience size`, `ROAS`,
+  `targeting applied`, `campaign performance`. Final proof:
+  `scripts/verify.sh` green, w tym 149 backend tests, 17 dashboard unit tests,
+  Skill API smoke, 14 Playwright e2e tests i dashboard production build.
 - Demand Gen landing/migration empty-read contracts, 2026-06-21 23:40 CEST.
   `/api/demand-gen/diagnostics` nadal uczciwie zwraca `status=blocked`, bo w
   bieżącym evidence nie ma kampanii Demand Gen/Discovery do rekomendacji, ale

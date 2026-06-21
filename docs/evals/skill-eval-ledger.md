@@ -25,6 +25,66 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-22 - wilq-custom-segments audience forecast blocker eval
+
+Purpose:
+
+- Prove that `wilq-custom-segments` sees the typed
+  `audience_forecast_read_contract`, not only a loose
+  `forecast_or_audience_size` missing label. The skill may recommend
+  review-only custom segment candidates from real source terms, but must block
+  forecast, audience size, ROAS, targeting applied and campaign performance
+  claims.
+
+API proof:
+
+- `/api/ads/diagnostics.custom_segments_read_contract.status=ready`.
+- Candidate count: 1. Payload preview count: 1.
+- Missing contracts: `keyword_planner_enrichment`,
+  `forecast_or_audience_size`.
+- Nested
+  `custom_segments_read_contract.audience_forecast_read_contract.status=blocked`.
+- `checked_candidate_count=1`, `forecast_row_count=1`.
+- First forecast row: `status=missing_forecast`,
+  `forecast_available=false`, `audience_size=null`, source terms and Google
+  Ads evidence IDs preserved.
+- Decision `ads_prepare_custom_segments_from_search_terms` carries
+  `custom_segment_audience_forecast_rows`, so dashboard and Codex context-pack
+  share the same blocker.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T221018Z/wilq-custom-segments/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`, `operator_usefulness_score=4`.
+- Source connectors: `google_ads`, `google_search_console`.
+- Evidence IDs: `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_dc9e77806e9c`.
+- Validated ActionObject candidate:
+  `act_prepare_custom_segments_from_search_terms`.
+- Blocked action candidate with no `action_id` for
+  `audience_forecast_read_contract.status=blocked`, `missing_forecast` and
+  blocked claims `audience size`, `ROAS`, `targeting applied`,
+  `campaign performance`.
+
+Product finding:
+
+- Custom segment review can now be useful without implying targeting readiness.
+  The next BDOS-class gap is live forecast/audience-size data plus apply/audit
+  paths, not merely detecting that the forecast contract is missing.
+
 ## 2026-06-21 - wilq-demand-gen-operator landing/migration empty-read eval
 
 Purpose:

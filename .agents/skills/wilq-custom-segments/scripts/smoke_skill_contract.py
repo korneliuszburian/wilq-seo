@@ -99,10 +99,32 @@ def main() -> int:
         raise SystemExit("Custom segments read contract must be ready or blocked")
     if not custom_segments_read_contract.get("blocked_claims"):
         raise SystemExit("Custom segments read contract must expose blocked claims")
+    audience_forecast_contract = (
+        custom_segments_read_contract.get("audience_forecast_read_contract") or {}
+    )
+    if audience_forecast_contract.get("id") != (
+        "ads_custom_segment_audience_forecast_read_contract"
+    ):
+        raise SystemExit("Custom segments must expose audience forecast read contract")
+    if audience_forecast_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Audience forecast read contract must be ready or blocked")
+    if "audience size" not in (audience_forecast_contract.get("blocked_claims") or []):
+        raise SystemExit("Audience forecast contract must block audience-size claims")
 
     custom_segment_candidates = custom_segments_read_contract.get("candidates") or []
     custom_segment_action_validation: dict[str, Any] | None = None
     if custom_segment_candidates:
+        if not audience_forecast_contract.get("forecast_rows"):
+            raise SystemExit(
+                "Ready custom segments contract must expose forecast blocker rows"
+            )
+        first_forecast_row = audience_forecast_contract["forecast_rows"][0]
+        if first_forecast_row.get("status") != "missing_forecast":
+            raise SystemExit("Audience forecast row must show missing forecast state")
+        if first_forecast_row.get("forecast_available") is not False:
+            raise SystemExit("Audience forecast row must keep forecast_available=false")
+        if first_forecast_row.get("audience_size") is not None:
+            raise SystemExit("Audience forecast row must not invent audience_size")
         first_candidate = custom_segment_candidates[0]
         if not first_candidate.get("source_terms"):
             raise SystemExit("Custom segment candidate must expose source_terms")
@@ -221,6 +243,18 @@ def main() -> int:
                         "missing_read_contracts": custom_segments_read_contract.get(
                             "missing_read_contracts", []
                         ),
+                        "audience_forecast_read_contract": {
+                            "status": audience_forecast_contract.get("status"),
+                            "forecast_row_count": audience_forecast_contract.get(
+                                "forecast_row_count"
+                            ),
+                            "missing_read_contracts": audience_forecast_contract.get(
+                                "missing_read_contracts", []
+                            ),
+                            "blocked_claims": audience_forecast_contract.get(
+                                "blocked_claims", []
+                            ),
+                        },
                         "blocked_claims": custom_segments_read_contract.get(
                             "blocked_claims", []
                         ),

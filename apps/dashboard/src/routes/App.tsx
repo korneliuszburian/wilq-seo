@@ -1974,6 +1974,8 @@ type AdsKeywordMatchContextRow =
   AdsDiagnosticsResponse["keyword_match_context_read_contract"]["context_rows"][number];
 type AdsCustomSegmentCandidate =
   AdsDiagnosticsResponse["custom_segments_read_contract"]["candidates"][number];
+type AdsCustomSegmentAudienceForecastRow =
+  AdsDiagnosticsResponse["custom_segments_read_contract"]["audience_forecast_read_contract"]["forecast_rows"][number];
 type AdsNegativeKeywordCandidate =
   AdsDiagnosticsResponse["negative_keywords_read_contract"]["candidates"][number];
 
@@ -2277,6 +2279,8 @@ function AdsMetricEvidencePanel({
   const searchTermSafetyRows = data.search_term_safety_read_contract.safety_rows;
   const keywordContextRows = data.keyword_match_context_read_contract.context_rows;
   const customSegmentCandidates = data.custom_segments_read_contract.candidates;
+  const customSegmentForecastRows =
+    data.custom_segments_read_contract.audience_forecast_read_contract.forecast_rows;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
   const missingReadContracts = uniqueValues([
     ...data.account_currency_read_contract.missing_read_contracts,
@@ -2292,6 +2296,7 @@ function AdsMetricEvidencePanel({
     ...data.search_term_safety_read_contract.missing_read_contracts,
     ...data.keyword_match_context_read_contract.missing_read_contracts,
     ...data.custom_segments_read_contract.missing_read_contracts,
+    ...data.custom_segments_read_contract.audience_forecast_read_contract.missing_read_contracts,
     ...data.negative_keywords_read_contract.missing_read_contracts
   ]).map(adsMissingReadContractLabel);
   const operatorReviewGates = uniqueValues([
@@ -2300,6 +2305,7 @@ function AdsMetricEvidencePanel({
     ...data.search_term_safety_read_contract.operator_review_gates,
     ...data.keyword_match_context_read_contract.operator_review_gates,
     ...data.custom_segments_read_contract.operator_review_gates,
+    ...data.custom_segments_read_contract.audience_forecast_read_contract.operator_review_gates,
     ...data.decision_queue.flatMap((decision) => decision.operator_review_gates)
   ]).map(adsOperatorReviewGateLabel);
   const blockedClaims = uniqueValues([
@@ -2316,6 +2322,7 @@ function AdsMetricEvidencePanel({
     ...data.search_term_safety_read_contract.blocked_claims,
     ...data.keyword_match_context_read_contract.blocked_claims,
     ...data.custom_segments_read_contract.blocked_claims,
+    ...data.custom_segments_read_contract.audience_forecast_read_contract.blocked_claims,
     ...data.negative_keywords_read_contract.blocked_claims,
     ...data.sections.flatMap((section) => section.blocked_claims)
   ]).map(adsBlockedClaimLabel);
@@ -2381,6 +2388,7 @@ function AdsMetricEvidencePanel({
           currencyCode={currencyCode}
         />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
+        <AdsCustomSegmentAudienceForecastPanel rows={customSegmentForecastRows} />
       </div>
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
@@ -3358,6 +3366,67 @@ function AdsCustomSegmentCandidatesPanel({
   );
 }
 
+function AdsCustomSegmentAudienceForecastPanel({
+  rows,
+  compact = false
+}: {
+  rows: AdsCustomSegmentAudienceForecastRow[];
+  compact?: boolean;
+}) {
+  if (rows.length === 0) {
+    return compact ? null : (
+      <BlockerNotice message="Brak wierszy forecast/audience size. WILQ nie może ocenić zasięgu segmentów bez osobnego read contract." />
+    );
+  }
+  return (
+    <div className={compact ? "mt-3 grid gap-2" : "rounded-md border border-line bg-slate-50 p-3"}>
+      {!compact ? (
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-ink">
+            Forecast i audience size custom segments
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            To jest safety contract. Wiersz oznacza, że kandydat został
+            sprawdzony, ale WILQ nadal nie ma dowodu zasięgu ani forecastu.
+          </p>
+        </div>
+      ) : null}
+      <div className={compact ? "grid gap-2" : "grid gap-3 md:grid-cols-2"}>
+        {rows.slice(0, compact ? 2 : 6).map((row) => (
+          <article key={row.id} className="rounded-md border border-line bg-white p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h4 className="text-sm font-semibold text-ink">
+                  {row.custom_segment_name}
+                </h4>
+                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                  {row.status === "ready" ? "forecast ready" : "forecast missing"}
+                </p>
+              </div>
+              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                audience: {typeof row.audience_size === "number" ? row.audience_size : "brak"}
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{row.reason}</p>
+            <div className="mt-2 grid gap-2 text-xs text-slate-600">
+              <TraceLine label="Source terms" values={row.source_terms.slice(0, 8)} />
+              <LinkedTraceLine
+                label="Dowody"
+                values={row.evidence_ids.slice(0, 4)}
+                kind="evidence"
+              />
+              <TraceLine
+                label="Nie wolno twierdzić"
+                values={row.blocked_claims.map(adsBlockedClaimLabel)}
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -4275,6 +4344,7 @@ function CustomSegmentsDiagnosticSurface() {
 
   const data = diagnostics.data;
   const contract = data.custom_segments_read_contract;
+  const audienceForecast = contract.audience_forecast_read_contract;
   const keywordPlanner = data.keyword_planner_read_contract;
   const customDecision = data.decision_queue.find(
     (decision) => decision.id === "ads_prepare_custom_segments_from_search_terms"
@@ -4304,6 +4374,7 @@ function CustomSegmentsDiagnosticSurface() {
           <MetricTile label="Source terms" value={sourceTermCount} />
           <MetricTile label="Odrzucone" value={rejectedTermCount} />
           <MetricTile label="KP ideas" value={keywordPlanner.idea_rows.length} />
+          <MetricTile label="Forecast" value={audienceForecast.forecast_row_count} />
         </div>
       </div>
 
@@ -4321,11 +4392,17 @@ function CustomSegmentsDiagnosticSurface() {
             <StatusBadge value={contract.status === "ready" ? "gotowe" : "zablokowane"} />
             <StatusBadge value={customDecision?.status === "ready" ? "do review" : "blocked"} />
             <StatusBadge value={keywordPlanner.status === "ready" ? "KP ready" : "KP blocked"} />
+            <StatusBadge
+              value={audienceForecast.status === "ready" ? "forecast ready" : "forecast blocked"}
+            />
           </div>
         </div>
         <p className="mt-3 text-sm font-medium text-ink">{contract.next_step}</p>
         <p className="mt-2 text-xs leading-5 text-slate-600">
           Keyword Planner: {keywordPlanner.summary}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-slate-600">
+          Forecast/audience size: {audienceForecast.summary}
         </p>
       </section>
 
@@ -4356,6 +4433,12 @@ function CustomSegmentsDiagnosticSurface() {
           </div>
         </div>
         <AdsCustomSegmentCandidatesPanel candidates={contract.candidates} />
+        <div className="mt-4">
+          <AdsCustomSegmentAudienceForecastPanel
+            rows={audienceForecast.forecast_rows}
+            compact
+          />
+        </div>
       </section>
 
       <section className="rounded-md border border-line bg-white p-4">
@@ -4376,15 +4459,24 @@ function CustomSegmentsDiagnosticSurface() {
         <div className="grid gap-2 text-xs text-slate-600">
           <TraceLine
             label="Brakujące kontrakty"
-            values={contract.missing_read_contracts.map(adsMissingReadContractLabel)}
+            values={uniqueValues([
+              ...contract.missing_read_contracts,
+              ...audienceForecast.missing_read_contracts
+            ]).map(adsMissingReadContractLabel)}
           />
           <TraceLine
             label="Wymaga review"
-            values={contract.operator_review_gates.map(adsOperatorReviewGateLabel)}
+            values={uniqueValues([
+              ...contract.operator_review_gates,
+              ...audienceForecast.operator_review_gates
+            ]).map(adsOperatorReviewGateLabel)}
           />
           <TraceLine
             label="Nie wolno twierdzić"
-            values={contract.blocked_claims.map(adsBlockedClaimLabel)}
+            values={uniqueValues([
+              ...contract.blocked_claims,
+              ...audienceForecast.blocked_claims
+            ]).map(adsBlockedClaimLabel)}
           />
           <TraceLine label="Źródła" values={contract.source_connectors} />
           <LinkedTraceLine label="Dowody" values={contract.evidence_ids} kind="evidence" />

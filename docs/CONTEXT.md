@@ -29,6 +29,26 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Custom segments audience forecast readiness contract, 2026-06-22 00:21 CEST:
+   `/api/ads/diagnostics.custom_segments_read_contract` exposes nested
+   `audience_forecast_read_contract`. Live state after
+   `scripts/local_stack.sh restart`: custom segments are `ready` for review
+   with 1 candidate and 1 payload preview, but
+   `audience_forecast_read_contract.status=blocked`,
+   `checked_candidate_count=1`, `forecast_row_count=1`,
+   row status `missing_forecast`, `forecast_available=false` and
+   `audience_size=null`. Decision
+   `ads_prepare_custom_segments_from_search_terms` carries
+   `custom_segment_audience_forecast_rows`; `/custom-segments` and Ads Doctor
+   render the same blocker. `wilq-custom-segments` eval artifact:
+   `.local-lab/evals/codex-skill/20260621T221018Z/wilq-custom-segments/result.json`
+   with `language=pl-PL`, `api_used=true`, `operator_usefulness_score=4`,
+   `act_prepare_custom_segments_from_search_terms`, and a blocked action
+   candidate for `audience_forecast_read_contract.status=blocked`.
+   Full `scripts/verify.sh` passed after this slice: backend `149 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
+   and dashboard production build.
+
 0. Demand Gen landing/migration empty-read contracts, 2026-06-21 23:40 CEST:
    `/api/demand-gen/diagnostics` now treats
    `demand_gen_landing_quality_by_campaign` and
