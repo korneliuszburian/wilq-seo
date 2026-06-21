@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard query-client extraction, 2026-06-21 17:52 CEST.
+  Pierwszy mały code-quality slice po nowych zasadach goalu: konfiguracja
+  TanStack Query została wyciągnięta z `App.tsx` do
+  `apps/dashboard/src/lib/queryClient.ts`, a `App.tsx` zachowuje publiczny
+  re-export `createWilqQueryClient` dla testów i importów. File-size proof:
+  `App.tsx` spadł z ok. 7251 do 7230 linii; nowy `queryClient.ts` ma 24 linie.
+  Zachowanie dashboardu bez zmian. Proof:
+  `pnpm --filter @wilq/dashboard typecheck` i
+  `pnpm --filter @wilq/dashboard test -- --run App.test.tsx` zielone
+  (`17 passed`).
 - Code quality baseline, 2026-06-21 17:05 CEST.
   Goal 001 ma teraz jawny `Code Quality and Maintainability Slice`.
   Aktualne monolity są traktowane jako produktowy dług po szybkim discovery,
