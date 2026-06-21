@@ -27,6 +27,7 @@ from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     CUSTOM_SEGMENT_BLOCKED_CLAIMS,
 )
+from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.negative_keywords import (
     NEGATIVE_KEYWORD_ACTION_ID,
     NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
@@ -524,7 +525,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         _search_term_ngram_section(search_term_ngram_read_contract),
         _search_term_safety_section(search_term_safety_read_contract),
         _keyword_match_context_section(keyword_match_context_read_contract),
-        _keyword_planner_section(keyword_planner_read_contract),
+        _keyword_planner_section(keyword_planner_read_contract, action_ids),
         _custom_segments_section(custom_segments_read_contract),
         _negative_keywords_section(negative_keywords_read_contract),
         _safe_action_section(
@@ -3546,6 +3547,7 @@ def _keyword_planner_idea_row(
 
 def _keyword_planner_section(
     keyword_planner_read_contract: AdsKeywordPlannerReadContract,
+    action_ids: list[str],
 ) -> AdsDiagnosticSection:
     metric_facts = [
         fact
@@ -3566,10 +3568,18 @@ def _keyword_planner_section(
         source_connectors=keyword_planner_read_contract.source_connectors,
         evidence_ids=keyword_planner_read_contract.evidence_ids,
         metric_facts=metric_facts[:12],
-        action_ids=[],
+        action_ids=_keyword_planner_access_action_ids(action_ids),
         blocked_claims=keyword_planner_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
+
+
+def _keyword_planner_access_action_ids(action_ids: list[str]) -> list[str]:
+    return [
+        action_id
+        for action_id in action_ids
+        if action_id == KEYWORD_PLANNER_ACCESS_ACTION_ID
+    ]
 
 
 def _custom_segments_read_contract(

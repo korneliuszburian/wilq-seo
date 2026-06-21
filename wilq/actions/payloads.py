@@ -8,6 +8,10 @@ from wilq.actions.google_ads.business_context import (
 )
 from wilq.actions.google_ads.campaign_review import validate_campaign_review_payload
 from wilq.actions.google_ads.custom_segments import validate_custom_segment_payload
+from wilq.actions.google_ads.keyword_planner import (
+    KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
+    validate_keyword_planner_access_payload,
+)
 from wilq.actions.google_ads.negative_keywords import validate_negative_keyword_payload
 from wilq.actions.google_ads.recommendations import validate_recommendation_review_payload
 from wilq.connectors.registry import get_connector_status
@@ -16,6 +20,7 @@ INTERNAL_ACTION_TYPES = {
     "configure_connector",
     "repair_google_ads_oauth",
     ADS_BUSINESS_CONTEXT_ACTION_TYPE,
+    KEYWORD_PLANNER_ACCESS_ACTION_TYPE,
 }
 
 
@@ -49,6 +54,12 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
             if connector_id != "google_ads":
                 errors.append("configure_ads_business_context is only valid for google_ads.")
             errors.extend(validate_ads_business_context_payload(payload))
+        if action_type == KEYWORD_PLANNER_ACCESS_ACTION_TYPE:
+            if connector_id != "google_ads":
+                errors.append(
+                    "configure_google_ads_keyword_planner_access is only valid for google_ads."
+                )
+            errors.extend(validate_keyword_planner_access_payload(payload))
         return errors
 
     if connector is None:

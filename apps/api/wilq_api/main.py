@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.service import (
     apply_action,
     confirm_action,
@@ -1502,6 +1503,26 @@ def _custom_segments_diagnostics_for_context(
 
 def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     compact = dict(action)
+    if compact.get("id") == KEYWORD_PLANNER_ACCESS_ACTION_ID:
+        compact["human_diagnosis"] = (
+            "Keyword Planner enrichment jest zablokowany przez Google Ads API."
+        )
+        compact["recommended_reason"] = (
+            "Odblokuj developer token przed forecast, audience size i Keyword Planner claims."
+        )
+        review_gate = compact.get("review_gate")
+        if isinstance(review_gate, dict):
+            apply_blockers = review_gate.get("apply_blockers")
+            if not isinstance(apply_blockers, list):
+                apply_blockers = []
+            compact["review_gate"] = {
+                "status": review_gate.get("status"),
+                "apply_allowed": review_gate.get("apply_allowed"),
+                "confirmation_required": review_gate.get("confirmation_required"),
+                "apply_blockers_total": len(apply_blockers),
+                "apply_blockers": apply_blockers[:4],
+                "apply_blockers_included": min(len(apply_blockers), 4),
+            }
     metrics = compact.get("metrics")
     if isinstance(metrics, list):
         compact["metrics_total"] = len(metrics)
@@ -1511,6 +1532,13 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return compact
     compact_payload = dict(payload)
+    if compact.get("id") == KEYWORD_PLANNER_ACCESS_ACTION_ID:
+        compact_payload["blocked_reason"] = "PERMISSION_DENIED: DEVELOPER_TOKEN_NOT_APPROVED"
+        helper_steps = compact_payload.get("helper_steps")
+        if isinstance(helper_steps, list):
+            compact_payload["helper_steps_total"] = len(helper_steps)
+            compact_payload["helper_steps"] = helper_steps[:1]
+            compact_payload["helper_steps_included"] = len(compact_payload["helper_steps"])
     campaign_candidates = compact_payload.get("campaign_candidates")
     if isinstance(campaign_candidates, list):
         compact_payload["campaign_candidates_total"] = len(campaign_candidates)

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 11:07 CEST.
+Last updated: 2026-06-21 11:40 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -93,6 +93,24 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Google Ads Keyword Planner approval truth, live proof 2026-06-21
+11:40 CEST: Google Ads live reads can work while Keyword Planner enrichment is
+blocked by Google Ads API approval state. WILQ now exposes that state as
+review-only ActionObject `act_configure_google_ads_keyword_planner_access`
+instead of hiding it inside prose or treating it as a missing prompt. The
+payload type is `configure_google_ads_keyword_planner_access`; it carries
+evidence IDs, `blocked_api=Keyword Planner`, sanitized
+`PERMISSION_DENIED: DEVELOPER_TOKEN_NOT_APPROVED`, required validation,
+blocked claims, `apply_allowed=false` and `destructive=false`. The action is
+available in `/api/actions` and scoped `wilq-ads-doctor` context-pack, but it
+is filtered out of the general Command Center Ads daily item so the marketer
+does not see access repair as a campaign optimization task. Focused proof:
+ruff, mypy and targeted API tests passed; scoped `wilq-ads-doctor`
+context-pack is `199512` bytes, under the 200 KB limit. Full
+`scripts/verify.sh` passed after this slice: backend `144 passed`, dashboard
+unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
+production build passed.
 
 Latest Content brief preview/review truth, live proof 2026-06-21 10:16 CEST:
 `act_prepare_content_refresh_queue` now exposes review-only

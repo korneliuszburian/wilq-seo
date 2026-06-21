@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Google Ads Keyword Planner approval blocker, 2026-06-21 11:40 CEST.
+  Keyword Planner 403/`DEVELOPER_TOKEN_NOT_APPROVED` nie jest już ukrytym
+  tekstem w Ads diagnostics. WILQ wystawia review-only ActionObject
+  `act_configure_google_ads_keyword_planner_access` z payloadem
+  `configure_google_ads_keyword_planner_access`, evidence IDs, walidacją,
+  `apply_allowed=false` i `destructive=false`. ActionObject jest dostępny w
+  `/api/actions` i w `wilq-ads-doctor` context-packu, ale nie rozlewa się do
+  ogólnego Command Center jako marketerowa akcja kampanii. To jest zewnętrzny
+  access blocker Google Ads API, nie brak promptu ani brak `.env`. Focused
+  proof: ruff/mypy/test dla Ads diagnostics, action payloadów, Command Center
+  i context-packa passed; `wilq-ads-doctor` context-pack ma `199512` bytes,
+  czyli mieści się poniżej limitu 200 KB. Full `scripts/verify.sh` passed:
+  backend `144 passed`, dashboard unit `17 passed`, Playwright e2e
+  `14 passed`, skill/API smokes and dashboard production build passed.
 - Review-gated WordPress draft payload preview, 2026-06-21 11:07 CEST.
   Po zapisanym human review dla `candidate:content_brief_*`,
   `act_prepare_content_refresh_queue` wzbogaca payload o

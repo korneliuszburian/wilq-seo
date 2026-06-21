@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
+from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
@@ -282,7 +283,11 @@ def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
         action_ids=[
             action_id
             for action_id in data.action_ids
-            if action_id != ADS_BUSINESS_CONTEXT_ACTION_ID
+            if action_id
+            not in {
+                ADS_BUSINESS_CONTEXT_ACTION_ID,
+                KEYWORD_PLANNER_ACCESS_ACTION_ID,
+            }
         ],
         metric_tiles=metric_tiles if data.live_data_available else {"blockery": data.blocker_count},
         blocked_claims=(

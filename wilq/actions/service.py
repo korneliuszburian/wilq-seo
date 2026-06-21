@@ -22,6 +22,10 @@ from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     custom_segment_payload_from_metric_facts,
 )
+from wilq.actions.google_ads.keyword_planner import (
+    KEYWORD_PLANNER_ACCESS_ACTION_ID,
+    keyword_planner_access_payload,
+)
 from wilq.actions.google_ads.negative_keywords import (
     NEGATIVE_KEYWORD_ACTION_ID,
     negative_keyword_payload_from_metric_facts,
@@ -264,6 +268,9 @@ def list_actions() -> list[ActionObject]:
         business_context_action = _google_ads_business_context_action()
         if business_context_action is not None:
             actions[business_context_action.id] = business_context_action
+        keyword_planner_action = _google_ads_keyword_planner_access_action()
+        if keyword_planner_action is not None:
+            actions[keyword_planner_action.id] = keyword_planner_action
     return _with_persisted_review_gates(actions.values())
 
 
@@ -272,6 +279,9 @@ def get_action(action_id: str) -> ActionObject | None:
     business_context_action = _google_ads_business_context_action()
     if business_context_action is not None:
         actions[business_context_action.id] = business_context_action
+    keyword_planner_action = _google_ads_keyword_planner_access_action()
+    if keyword_planner_action is not None:
+        actions[keyword_planner_action.id] = keyword_planner_action
     action = actions.get(action_id)
     if action is None:
         return None
@@ -339,6 +349,66 @@ def _google_ads_business_context_action() -> ActionObject | None:
         validation_status="not_validated",
         created_by="system_business_context_seed",
     )
+
+
+def _google_ads_keyword_planner_access_action() -> ActionObject | None:
+    latest_run = _latest_google_ads_vendor_read()
+    if (
+        latest_run is None
+        or latest_run.status != ConnectorRefreshStatus.completed
+        or not latest_run.vendor_data_collected
+    ):
+        return None
+    blocker = _keyword_planner_access_blocker(latest_run)
+    if blocker is None:
+        return None
+    return ActionObject(
+        id=KEYWORD_PLANNER_ACCESS_ACTION_ID,
+        title="Odblokuj Keyword Planner dla Google Ads",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=_unique(
+            [
+                connector_evidence_id("google_ads"),
+                *latest_run.evidence_ids,
+            ]
+        ),
+        human_diagnosis=(
+            "Google Ads live read działa, ale Keyword Planner enrichment jest "
+            f"zablokowany przez Google Ads API: {blocker}. WILQ może używać "
+            "source-term review, ale nie może claimować forecastu ani audience size."
+        ),
+        recommended_reason=(
+            "Dopóki developer token nie ma zatwierdzonego dostępu Keyword Planner, "
+            "custom segments zostają bez forecast/enrichment. To jest zewnętrzny "
+            "access blocker, nie brak promptu."
+        ),
+        payload=keyword_planner_access_payload(blocker),
+        validation_status="not_validated",
+        created_by="system_keyword_planner_access_seed",
+    )
+
+
+def _keyword_planner_access_blocker(run: ConnectorRefreshRun) -> str | None:
+    status = str(run.metric_summary.get("keyword_planner_status") or "").lower()
+    blocker = str(run.metric_summary.get("keyword_planner_blocker") or "").strip()
+    http_status = str(run.metric_summary.get("keyword_planner_http_status") or "").strip()
+    if status != "blocked":
+        return None
+    blocker_text = " ".join(part for part in (blocker, http_status) if part)
+    if not blocker_text:
+        return None
+    normalized = blocker_text.lower()
+    if (
+        "developer_token_not_approved" not in normalized
+        and "permission_denied" not in normalized
+        and http_status != "403"
+    ):
+        return None
+    return blocker_text
 
 
 def seed_metric_action_candidates() -> dict[str, ActionObject]:

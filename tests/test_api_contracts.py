@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from apps.api.wilq_api.main import app
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
+from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.service import apply_action
 from wilq.briefing.ads_diagnostics import (
     _custom_segment_review_reason,
@@ -1580,6 +1581,81 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     assert actions_response.status_code == 200
     actions = {action["id"]: action for action in actions_response.json()}
     assert ADS_BUSINESS_CONTEXT_ACTION_ID not in actions
+
+
+def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    blocked_run = ConnectorRefreshRun(
+        id="refresh_google_ads_keyword_planner_blocked",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=datetime.now(UTC) + timedelta(seconds=1),
+        evidence_ids=["ev_refresh_refresh_google_ads_keyword_planner_blocked"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "campaign_row_count": 1,
+            "search_term_row_count": 1,
+            "keyword_planner_status": "blocked",
+            "keyword_planner_http_status": 403,
+            "keyword_planner_blocker": (
+                "api_code=403, api_status=PERMISSION_DENIED, "
+                "ads_error=authorizationError.DEVELOPER_TOKEN_NOT_APPROVED"
+            ),
+            "keyword_planner_seed_term_count": 1,
+            "keyword_planner_idea_count": 0,
+        },
+        summary="Google Ads Keyword Planner access blocked seed.",
+    )
+    local_state_store().save_connector_refresh_run(blocked_run)
+
+    actions_response = client.get("/api/actions")
+    assert actions_response.status_code == 200
+    actions = {action["id"]: action for action in actions_response.json()}
+    assert KEYWORD_PLANNER_ACCESS_ACTION_ID in actions
+    action = actions[KEYWORD_PLANNER_ACCESS_ACTION_ID]
+    serialized = json.dumps(action)
+
+    assert action["title"] == "Odblokuj Keyword Planner dla Google Ads"
+    assert action["mode"] == "prepare"
+    assert action["risk"] == "low"
+    assert action["payload"]["action_type"] == "configure_google_ads_keyword_planner_access"
+    assert action["payload"]["blocked_api"] == "Keyword Planner"
+    assert "DEVELOPER_TOKEN_NOT_APPROVED" in action["payload"]["blocked_reason"]
+    assert action["payload"]["apply_allowed"] is False
+    assert action["payload"]["destructive"] is False
+    assert "audience size" in action["payload"]["blocked_claims"]
+    assert "GOOGLE_ADS_REFRESH_TOKEN" not in serialized
+    assert "client_secret" not in serialized
+
+    validate_response = client.post(f"/api/actions/{KEYWORD_PLANNER_ACCESS_ACTION_ID}/validate")
+    assert validate_response.status_code == 200
+    validation = validate_response.json()
+    assert validation["valid"] is True
+    assert validation["errors"] == []
+
+    diagnostics_response = client.get("/api/ads/diagnostics")
+    assert diagnostics_response.status_code == 200
+    diagnostics = diagnostics_response.json()
+    keyword_planner_contract = diagnostics["keyword_planner_read_contract"]
+    assert keyword_planner_contract["status"] == "blocked"
+    assert "keyword_planner_enrichment" in keyword_planner_contract[
+        "missing_read_contracts"
+    ]
+    keyword_planner_section = next(
+        section
+        for section in diagnostics["sections"]
+        if section["id"] == "ads_keyword_planner"
+    )
+    assert keyword_planner_section["status"] == "blocked"
+    assert keyword_planner_section["action_ids"] == [
+        KEYWORD_PLANNER_ACCESS_ACTION_ID
+    ]
+    assert KEYWORD_PLANNER_ACCESS_ACTION_ID in diagnostics["action_ids"]
 
 
 def test_metric_backed_prepare_actions_are_evidence_grounded(
