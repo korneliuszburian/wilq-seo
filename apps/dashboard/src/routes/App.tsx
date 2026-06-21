@@ -2495,6 +2495,9 @@ function AdsMetricEvidencePanel({
       </div>
 
       <div className="grid gap-4">
+        <AdsBusinessTargetInterpretationPanel
+          contract={data.business_context_read_contract}
+        />
         <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
         <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
         <AdsBudgetPacingRowsTable rows={budgetRows} currencyCode={currencyCode} />
@@ -2532,6 +2535,49 @@ function AdsMetricEvidencePanel({
         />
       </div>
     </section>
+  );
+}
+
+function AdsBusinessTargetInterpretationPanel({
+  contract
+}: {
+  contract: AdsDiagnosticsResponse["business_context_read_contract"];
+}) {
+  const interpretation = contract.target_interpretation;
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3 text-sm">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="font-semibold text-ink">Interpretacja celu biznesowego Ads</h3>
+          <p className="mt-1 text-slate-700">{interpretation.summary}</p>
+        </div>
+        <span className="rounded-md border border-line bg-white px-2 py-1 text-xs text-slate-600">
+          {interpretation.interpretation_contract} / {interpretation.status}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine
+          label="Wolno użyć jako"
+          values={interpretation.allowed_uses.map(adsBusinessUseLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Zablokowane użycia"
+          values={interpretation.blocked_uses.map(adsBusinessUseLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Braki"
+          values={interpretation.missing_requirements.map(adsMissingReadContractLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Polityki"
+          values={interpretation.policy_ids}
+          empty="brak"
+        />
+      </div>
+    </div>
   );
 }
 
@@ -3578,6 +3624,29 @@ function adsBusinessContextStatusValue(
   if (contract.status === "blocked") return "blokada";
   if (contract.missing_read_contracts.includes("target_roas_or_cpa")) return "wstępny";
   return "gotowe";
+}
+
+function adsBusinessUseLabel(value: string) {
+  const labels: Record<string, string> = {
+    campaign_review_context: "kontekst review kampanii",
+    budget_review_context: "kontekst review budżetu",
+    human_strategy_review_context: "kontekst strategii człowieka",
+    margin_context: "kontekst marży",
+    business_goal_alignment: "dopasowanie do celu biznesowego",
+    budget_goal_guardrail: "guardrail celu budżetu",
+    target_roas_review: "review target ROAS",
+    target_cpa_review: "review target CPA",
+    profitability_verdict: "werdykt rentowności",
+    target_kpi_verdict: "werdykt KPI targetu",
+    budget_scaling: "skalowanie budżetu",
+    budget_apply: "zmiana budżetu",
+    recommendation_apply: "wdrożenie rekomendacji",
+    wasted_budget_claim: "claim wasted budget",
+    automatic_scaling: "automatyczne skalowanie",
+    profitability_verdict_without_value_model_review:
+      "werdykt rentowności bez review modelu wartości"
+  };
+  return labels[value] ?? value;
 }
 
 function adsAllowedMetricLabel(value: string) {

@@ -53,6 +53,7 @@ from wilq.schemas import (
     AdsBudgetPacingReadContract,
     AdsBudgetPacingRow,
     AdsBusinessContextReadContract,
+    AdsBusinessTargetInterpretation,
     AdsCampaignMetricRow,
     AdsCampaignReadContract,
     AdsChangeHistoryReadContract,
@@ -1019,6 +1020,17 @@ def _business_context_read_contract(
         configured_sources=configured_sources,
         business_policy_ids=business_policy_ids,
         operator_review_gates=operator_review_gates,
+        target_interpretation=_business_target_interpretation(
+            status=status,
+            profit_margin=profit_margin,
+            business_goal=business_goal,
+            budget_goal=budget_goal,
+            target_roas=target_roas,
+            target_cpa_micros=target_cpa_micros,
+            target_missing=target_missing,
+            business_policy_ids=business_policy_ids,
+            evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        ),
         allowed_metrics=allowed_metrics,
         missing_read_contracts=missing_read_contracts,
         blocked_claims=blocked_claims,
@@ -1027,6 +1039,127 @@ def _business_context_read_contract(
         metric_tiles=metric_tiles,
         next_step=next_step,
     )
+
+
+def _business_target_interpretation(
+    *,
+    status: Literal["ready", "blocked"],
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_roas: float | None,
+    target_cpa_micros: int | None,
+    target_missing: bool,
+    business_policy_ids: list[str],
+    evidence_ids: list[str],
+) -> AdsBusinessTargetInterpretation:
+    required_validation = [
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    if status == "blocked":
+        return AdsBusinessTargetInterpretation(
+            status="blocked",
+            summary=(
+                "WILQ nie interpretuje KPI biznesowo, dopóki brakuje marży, celu "
+                "biznesowego albo celu budżetu."
+            ),
+            allowed_uses=[],
+            blocked_uses=[
+                "profitability_verdict",
+                "target_kpi_verdict",
+                "budget_scaling",
+                "budget_apply",
+                "wasted_budget_claim",
+            ],
+            missing_requirements=_business_target_missing_requirements(
+                profit_margin=profit_margin,
+                business_goal=business_goal,
+                budget_goal=budget_goal,
+                target_missing=target_missing,
+            ),
+            required_validation=required_validation,
+            policy_ids=business_policy_ids,
+            evidence_ids=evidence_ids,
+        )
+    allowed_uses = [
+        "campaign_review_context",
+        "budget_review_context",
+        "human_strategy_review_context",
+    ]
+    if profit_margin is not None:
+        allowed_uses.append("margin_context")
+    if business_goal:
+        allowed_uses.append("business_goal_alignment")
+    if budget_goal:
+        allowed_uses.append("budget_goal_guardrail")
+    if target_missing:
+        summary = (
+            "WILQ może używać marży, celu biznesowego i celu budżetu jako kontekstu "
+            "review, ale blokuje target KPI verdict, profitability verdict i apply "
+            "do czasu potwierdzenia target ROAS albo CPA."
+        )
+        blocked_uses = [
+            "target_kpi_verdict",
+            "profitability_verdict",
+            "budget_scaling",
+            "budget_apply",
+            "recommendation_apply",
+        ]
+        interpretation_status: Literal["ready", "preliminary", "blocked"] = "preliminary"
+    else:
+        summary = (
+            "WILQ ma potwierdzony target ROAS albo CPA i może porównywać KPI do "
+            "targetu w review. Apply nadal wymaga ActionObject, preview, confirm i audit."
+        )
+        blocked_uses = [
+            "budget_apply",
+            "recommendation_apply",
+            "automatic_scaling",
+            "profitability_verdict_without_value_model_review",
+        ]
+        interpretation_status = "ready"
+        if target_roas is not None:
+            allowed_uses.append("target_roas_review")
+        if target_cpa_micros is not None:
+            allowed_uses.append("target_cpa_review")
+    return AdsBusinessTargetInterpretation(
+        status=interpretation_status,
+        summary=summary,
+        allowed_uses=allowed_uses,
+        blocked_uses=blocked_uses,
+        missing_requirements=_business_target_missing_requirements(
+            profit_margin=profit_margin,
+            business_goal=business_goal,
+            budget_goal=budget_goal,
+            target_missing=target_missing,
+        ),
+        required_validation=required_validation,
+        policy_ids=business_policy_ids,
+        evidence_ids=evidence_ids,
+    )
+
+
+def _business_target_missing_requirements(
+    *,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_missing: bool,
+) -> list[str]:
+    missing: list[str] = []
+    if profit_margin is None:
+        missing.append("profit_margin")
+    if not business_goal:
+        missing.append("business_goal")
+    if not budget_goal:
+        missing.append("human_budget_goal")
+    if target_missing:
+        missing.append("target_roas_or_cpa")
+    return missing
 
 
 def _business_policy_ids(

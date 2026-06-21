@@ -630,6 +630,46 @@ const adsDiagnostics = {
     target_roas: null,
     target_cpa_micros: null,
     configured_sources: [],
+    business_policy_ids: ["complete_business_context_before_ads_verdicts"],
+    operator_review_gates: [
+      "human_strategy_review",
+      "configure_profit_margin_or_value_model",
+      "configure_business_goal",
+      "configure_human_budget_goal",
+      "confirm_target_roas_or_cpa"
+    ],
+    target_interpretation: {
+      id: "ads_business_target_interpretation",
+      interpretation_contract: "ads_business_target_interpretation_v1",
+      status: "blocked",
+      summary:
+        "WILQ nie interpretuje KPI biznesowo, dopóki brakuje marży, celu biznesowego albo celu budżetu.",
+      allowed_uses: [],
+      blocked_uses: [
+        "profitability_verdict",
+        "target_kpi_verdict",
+        "budget_scaling",
+        "budget_apply",
+        "wasted_budget_claim"
+      ],
+      missing_requirements: [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa"
+      ],
+      required_validation: [
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+        "human_strategy_review"
+      ],
+      policy_ids: ["complete_business_context_before_ads_verdicts"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      apply_allowed: false,
+      destructive: false
+    },
     allowed_metrics: [],
     missing_read_contracts: [
       "profit_margin",

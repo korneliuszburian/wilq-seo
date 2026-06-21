@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 13:50 CEST.
+Last updated: 2026-06-21 14:11 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -73,7 +73,7 @@ contract for campaign daily budgets versus 7-day cost, a read-only Google Ads
 recommendations contract, a read-only Google Ads impression-share contract, a
 read-only Google Ads change-history contract, a typed Ads business context
 contract for profit margin, business goal, budget goal and target ROAS/CPA
-inputs, a read-only recommendation impact
+inputs plus typed `ads_business_target_interpretation_v1`, a read-only recommendation impact
 preview for recommendation types that expose impact metrics, a review-only
 recommendation apply payload preview, a read-only 90-day search-term safety
 contract and a review-only negative keyword payload preview plus read-only
@@ -96,6 +96,19 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads business target interpretation truth, live proof 2026-06-21
+14:11 CEST: `business_context_read_contract.target_interpretation` now carries
+`interpretation_contract=ads_business_target_interpretation_v1`. Current
+Ekologus state is `status=preliminary`: WILQ can use profit margin, business
+goal and human budget goal as campaign/budget review context, but blocks
+`target_kpi_verdict`, `profitability_verdict`, `budget_scaling`,
+`budget_apply` and `recommendation_apply` until `target_roas_or_cpa` and apply
+gates are confirmed. Scoped `wilq-ads-doctor` context-pack preserves this
+contract without `[REDACTED]` (`redacted=false`, about `185814` bytes).
+Dashboard `/ads-doctor` shows `Interpretacja celu biznesowego Ads`. Full
+`scripts/verify.sh` passed for this slice: backend `144 passed`, dashboard
+unit `17 passed`, Playwright `14 passed`, skill smokes and dashboard build.
 
 Latest Ads budget apply safety truth, live proof 2026-06-21 13:50 CEST:
 `/api/ads/diagnostics.budget_pacing_read_contract.payload_preview[*]` and
@@ -2989,11 +3002,11 @@ Live `:8000` proof after API restart:
 Remaining Ads optimizer blockers:
 
 - budget apply preview exists as review-only `CampaignBudgetOperation` with
-  typed `campaign_budget_apply_safety_v1`, but human budget-goal
-  interpretation, apply confirmation and actual vendor budget-apply adapter are
-  still missing,
+  typed `campaign_budget_apply_safety_v1`, but target ROAS/CPA confirmation,
+  apply confirmation and actual vendor budget-apply adapter are still missing,
 - no recommendation apply support or vendor recommendation-apply adapter,
-- no profit-margin/business-goal interpretation contract,
+- no target KPI verdict or profitability verdict until target ROAS/CPA and value
+  model review are confirmed,
 - no campaign pause/budget apply vendor adapter.
 
 Superseded safety note, 2026-06-20 21:58 CEST: local

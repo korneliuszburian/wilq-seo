@@ -434,6 +434,21 @@ export const AdsAccountCurrencyReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsBusinessTargetInterpretationSchema = z.object({
+  id: z.string(),
+  interpretation_contract: z.literal("ads_business_target_interpretation_v1"),
+  status: z.enum(["ready", "preliminary", "blocked"]),
+  summary: z.string(),
+  allowed_uses: z.array(z.string()),
+  blocked_uses: z.array(z.string()),
+  missing_requirements: z.array(z.string()),
+  required_validation: z.array(z.string()),
+  policy_ids: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsBusinessContextReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
@@ -447,6 +462,7 @@ export const AdsBusinessContextReadContractSchema = z.object({
   configured_sources: z.array(z.string()),
   business_policy_ids: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
+  target_interpretation: AdsBusinessTargetInterpretationSchema,
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   blocked_claims: z.array(z.string()),

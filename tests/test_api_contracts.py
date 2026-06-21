@@ -1546,6 +1546,21 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
         "honor_human_budget_goal_before_budget_changes",
         "block_target_verdict_until_roas_or_cpa_confirmed",
     ]
+    assert business_context_contract["target_interpretation"][
+        "interpretation_contract"
+    ] == "ads_business_target_interpretation_v1"
+    assert business_context_contract["target_interpretation"]["status"] == "preliminary"
+    assert "campaign_review_context" in business_context_contract[
+        "target_interpretation"
+    ]["allowed_uses"]
+    assert "target_kpi_verdict" in business_context_contract["target_interpretation"][
+        "blocked_uses"
+    ]
+    assert business_context_contract["target_interpretation"]["missing_requirements"] == [
+        "target_roas_or_cpa"
+    ]
+    assert business_context_contract["target_interpretation"]["apply_allowed"] is False
+    assert business_context_contract["target_interpretation"]["destructive"] is False
     assert business_context_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_profit_margin_model",
@@ -5119,6 +5134,15 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "human_budget_goal",
         "target_roas_or_cpa",
     ]
+    assert business_context_contract["target_interpretation"]["status"] == "blocked"
+    assert business_context_contract["target_interpretation"]["allowed_uses"] == []
+    assert business_context_contract["target_interpretation"]["missing_requirements"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+    ]
+    assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert "budget scaling" in business_context_contract["blocked_claims"]
     assert business_context_contract["metric_tiles"]["marża"] == "brak"
     business_context_section = next(
@@ -6457,6 +6481,14 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "honor_human_budget_goal_before_budget_changes",
         "compare_kpis_to_confirmed_target_in_review",
     ]
+    assert business_ready_contract["target_interpretation"]["status"] == "ready"
+    assert "target_roas_review" in business_ready_contract["target_interpretation"][
+        "allowed_uses"
+    ]
+    assert "target_roas_or_cpa" not in business_ready_contract[
+        "target_interpretation"
+    ]["missing_requirements"]
+    assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
     assert business_ready_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_profit_margin_model",
@@ -8975,6 +9007,13 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     assert "source_quality" in custom_segment_candidate
     assert "rejection_reasons" not in custom_segment_candidate
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
+    target_interpretation = ads_context["business_context_read_contract"][
+        "target_interpretation"
+    ]
+    assert target_interpretation["interpretation_contract"] == (
+        "ads_business_target_interpretation_v1"
+    )
+    assert "[REDACTED]" not in json.dumps(target_interpretation, ensure_ascii=False)
     assert len(data["connector_refresh_runs"]) <= 3
     for action in data["active_action_objects"]:
         payload = action.get("payload") or {}

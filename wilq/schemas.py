@@ -703,6 +703,23 @@ class AdsAccountCurrencyReadContract(BaseModel):
     next_step: str
 
 
+class AdsBusinessTargetInterpretation(BaseModel):
+    id: str = "ads_business_target_interpretation"
+    interpretation_contract: Literal["ads_business_target_interpretation_v1"] = (
+        "ads_business_target_interpretation_v1"
+    )
+    status: Literal["ready", "preliminary", "blocked"]
+    summary: str
+    allowed_uses: list[str] = Field(default_factory=list)
+    blocked_uses: list[str] = Field(default_factory=list)
+    missing_requirements: list[str] = Field(default_factory=list)
+    required_validation: list[str] = Field(default_factory=list)
+    policy_ids: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class AdsBusinessContextReadContract(BaseModel):
     id: str = "ads_business_context_read_contract"
     status: Literal["ready", "blocked"]
@@ -716,6 +733,7 @@ class AdsBusinessContextReadContract(BaseModel):
     configured_sources: list[str] = Field(default_factory=list)
     business_policy_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
+    target_interpretation: AdsBusinessTargetInterpretation
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)

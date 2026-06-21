@@ -37,6 +37,22 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads business target interpretation gate, 2026-06-21 14:11 CEST.
+  `business_context_read_contract` ma teraz typed
+  `target_interpretation.interpretation_contract=ads_business_target_interpretation_v1`.
+  Live stan Ekologus: `status=preliminary`, bo WILQ ma marżę, cel biznesowy i
+  cel budżetu jako context review, ale nadal brakuje `target_roas_or_cpa`.
+  Kontrakt jawnie rozdziela `allowed_uses` (`campaign_review_context`,
+  `budget_review_context`, `margin_context`, `business_goal_alignment`) od
+  `blocked_uses` (`target_kpi_verdict`, `profitability_verdict`,
+  `budget_scaling`, `budget_apply`, `recommendation_apply`). Scoped
+  `wilq-ads-doctor` context-pack zachowuje ten kontrakt bez `[REDACTED]`
+  (`redacted=false`, około `185814` bytes), a `/ads-doctor` pokazuje panel
+  `Interpretacja celu biznesowego Ads`. Nadal zablokowane: target KPI verdict,
+  profitability verdict i apply, dopóki operator nie potwierdzi target ROAS/CPA
+  oraz apply gates. Full `scripts/verify.sh` passed po tym slice: backend
+  `144 passed`, dashboard unit `17 passed`, Playwright `14 passed`, skill
+  smokes i dashboard build.
 - Ads budget apply safety review, 2026-06-21 13:50 CEST.
   Budget preview nie jest już tylko `CampaignBudgetOperation` z tekstową
   blokadą. Każdy Ads budget apply preview ma typed
