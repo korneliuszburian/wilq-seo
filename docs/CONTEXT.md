@@ -29,24 +29,25 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
-0. Ahrefs organic competitors source read, 2026-06-21 02:33 CEST:
-   `refresh_ahrefs_af84b2e89221` performed a real read-only Ahrefs API refresh.
-   Live facts: DR=24, Ahrefs Rank=6459608,
+0. Ahrefs organic competitors source read, 2026-06-21 02:59 CEST:
+   `refresh_ahrefs_21a12047ec6a` performed a real read-only Ahrefs API refresh
+   with explicit `mode=domain` and parser coverage for the official
+   `competitors[]` response shape. Live facts: DR=24, Ahrefs Rank=6459608,
    `organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
-   `organic_competitor_country=pl`. `/api/ahrefs/diagnostics` now filters
-   orphan/test DuckDB facts whose evidence IDs do not belong to known
-   local-state refresh runs, so stale DR=90 rows no longer override current
-   Ahrefs evidence. The diagnostics API can still build typed `AhrefsGapRecord`
-   rows from record-level facts when they exist, but the live gap contract is
-   correctly blocked: `gap_fact_count=0`, `gap_records=[]`,
-   `gap_read_contract.status=blocked`, `active_action_ids=[]`. Scoped
-   `wilq-ahrefs-gap-finder` context-pack is about `25336` bytes and the latest
-   eval is
-   `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
+   `organic_competitor_country=pl`, `organic_competitor_mode=domain`.
+   `/api/ahrefs/diagnostics` filters orphan/test DuckDB facts whose evidence
+   IDs do not belong to known local-state refresh runs, so stale DR=90 rows no
+   longer override current Ahrefs evidence. The diagnostics API can still build
+   typed `AhrefsGapRecord` rows from record-level facts when they exist, but
+   the live gap contract is correctly blocked: `gap_fact_count=0`,
+   `gap_records=[]`, `gap_read_contract.status=blocked`,
+   `active_action_ids=[]`. Scoped `wilq-ahrefs-gap-finder` context-pack is about
+   `27084` bytes and the latest eval is
+   `.local-lab/evals/codex-skill/20260621T005750Z/wilq-ahrefs-gap-finder/result.json`.
    This is an API/view-model fix, not a skill-reference workaround.
-   Full `scripts/verify.sh` passed after this slice: backend `138 passed`,
-   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
-   dashboard production build passed.
+   Full `scripts/verify.sh` passed after the domain-mode patch: backend
+   `138 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+   skill/API smokes and dashboard production build passed.
 
 0. Ahrefs typed gap read contract, 2026-06-21 01:21 CEST:
    `/api/ahrefs/diagnostics` now includes `gap_read_contract`. Current live
@@ -59,7 +60,7 @@ Audit `docs/audits/001-output.md` is now folded into
    `ahrefs_top_pages_by_competitor`. Review gates are
    `ahrefs_gap_records_required`, `content_planner_review_required`,
    `human_strategy_review`. Scoped `wilq-ahrefs-gap-finder` context-pack is
-   about `25336` bytes and carries the same gap contract with
+   about `27084` bytes and carries the same gap contract with
    `active_action_objects=[]`. Dashboard `/ahrefs` renders
    `Kontrakt luk Ahrefs`. This is still a blocker, not gap analysis; next
    Ahrefs value work is actual competitor/content/backlink gap records.
@@ -1365,11 +1366,11 @@ Current live proof after `scripts/local_stack.sh restart`:
   contracts: `ahrefs_competitor_pages`, `ahrefs_content_gap_records`,
   `ahrefs_backlink_gap_records`, `ahrefs_organic_keywords_by_url`,
   `ahrefs_top_pages_by_competitor`.
-- Context-pack size: about `25336 bytes`; active action IDs: none.
+- Context-pack size: about `27084 bytes`; active action IDs: none.
 - Eval artifact:
-  `.local-lab/evals/codex-skill/20260621T003005Z/wilq-ahrefs-gap-finder/result.json`.
+  `.local-lab/evals/codex-skill/20260621T005750Z/wilq-ahrefs-gap-finder/result.json`.
   Result: `api_used=true`, `blocked=true`, Ahrefs evidence IDs present,
-  `action_id=null`, `operator_usefulness_score=4`.
+  `action_id=null`, `operator_usefulness_score=5`.
 
 Still blocked by design:
 

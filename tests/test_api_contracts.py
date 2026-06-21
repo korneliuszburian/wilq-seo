@@ -2488,6 +2488,7 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
             "organic_competitor_read_status": "completed",
             "organic_competitor_rows": 0,
             "organic_competitor_country": "pl",
+            "organic_competitor_mode": "domain",
         },
         summary="Ahrefs domain rating completed through test adapter.",
     )
@@ -2549,8 +2550,10 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert authority_decision["metric_tiles"]["Ahrefs Rank"] == 1450
     assert authority_decision["metric_tiles"]["konkurenci organiczni"] == 0
     assert authority_decision["metric_tiles"]["odczyt konkurencji"] == "completed"
+    assert authority_decision["metric_tiles"]["tryb konkurencji"] == "domain"
     assert authority_decision["metric_tiles"]["fakty luk"] == 0
     assert "organic_competitor_rows" in authority_decision["allowed_evidence"]
+    assert "organic_competitor_mode" in authority_decision["allowed_evidence"]
     assert "rows=0" in authority_decision["summary"]
     assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
     assert "content gap" in authority_decision["blocked_claims"]
@@ -6978,13 +6981,14 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
             )
         assert request.url.path == "/v3/site-explorer/organic-competitors"
+        assert request.url.params["mode"] == "domain"
         assert request.url.params["country"] == "pl"
         assert request.url.params["limit"] == "10"
         assert "competitor_domain" in request.url.params["select"]
         return httpx.Response(
             200,
             json={
-                "organic_competitors": [
+                "competitors": [
                     {
                         "competitor_domain": "konkurent.pl",
                         "competitor_url": "https://konkurent.pl/bdo/",
@@ -7015,6 +7019,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "organic_competitor_read_status": "completed",
         "organic_competitor_rows": 1,
         "organic_competitor_country": "pl",
+        "organic_competitor_mode": "domain",
     }
     assert result.metric_facts == [
         VendorMetricFact(
@@ -7025,6 +7030,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 "competitor_domain": "konkurent.pl",
                 "source_url": "https://konkurent.pl/bdo/",
                 "country": "pl",
+                "target_mode": "domain",
                 "keywords_common": "8",
                 "keywords_competitor": "42",
                 "keywords_target": "12",

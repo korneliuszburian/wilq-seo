@@ -13,6 +13,8 @@ from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 AHREFS_API_BASE = "https://api.ahrefs.com/v3"
 AHREFS_ORGANIC_COMPETITOR_LIMIT_DEFAULT = 10
 AHREFS_ORGANIC_COMPETITOR_LIMIT_MAX = 25
+AHREFS_ORGANIC_COMPETITOR_MODE_DEFAULT = "domain"
+AHREFS_ORGANIC_COMPETITOR_MODES = {"exact", "prefix", "domain", "subdomains"}
 
 
 def refresh_ahrefs_domain_rating(
@@ -152,12 +154,14 @@ def _fetch_organic_competitors(
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     report_date = _report_date()
     country = _organic_competitor_country()
+    mode = _organic_competitor_mode()
     limit = _organic_competitor_limit()
     response = client.get(
         f"{AHREFS_API_BASE}/site-explorer/organic-competitors",
         headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
         params={
             "target": target,
+            "mode": mode,
             "country": country,
             "date": report_date,
             "limit": limit,
@@ -176,17 +180,18 @@ def _fetch_organic_competitors(
         },
     )
     response.raise_for_status()
-    rows = _response_rows(response.json(), "organic_competitors")[:limit]
+    rows = _response_rows(response.json(), "competitors")[:limit]
     facts = [
         fact
         for row in rows
-        if (fact := _organic_competitor_fact(row, country=country)) is not None
+        if (fact := _organic_competitor_fact(row, country=country, mode=mode)) is not None
     ]
     return (
         {
             "organic_competitor_read_status": "completed",
             "organic_competitor_rows": len(facts),
             "organic_competitor_country": country,
+            "organic_competitor_mode": mode,
         },
         facts,
     )
@@ -208,6 +213,13 @@ def _organic_competitor_country() -> str:
     if country and country.strip():
         return country.strip().lower()
     return "pl"
+
+
+def _organic_competitor_mode() -> str:
+    mode = variable_value("AHREFS_ORGANIC_COMPETITOR_MODE")
+    if mode and mode.strip().lower() in AHREFS_ORGANIC_COMPETITOR_MODES:
+        return mode.strip().lower()
+    return AHREFS_ORGANIC_COMPETITOR_MODE_DEFAULT
 
 
 def _organic_competitor_limit() -> int:
@@ -239,6 +251,7 @@ def _organic_competitor_fact(
     row: dict[str, Any],
     *,
     country: str,
+    mode: str,
 ) -> VendorMetricFact | None:
     competitor_domain = _competitor_domain(row)
     if competitor_domain is None:
@@ -260,6 +273,7 @@ def _organic_competitor_fact(
             "competitor_domain": competitor_domain,
             "source_url": _first_text(row, "competitor_url", "url", "page_url"),
             "country": country,
+            "target_mode": mode,
             "keywords_common": _first_text(row, "keywords_common"),
             "keywords_competitor": _first_text(row, "keywords_competitor"),
             "keywords_target": _first_text(row, "keywords_target"),

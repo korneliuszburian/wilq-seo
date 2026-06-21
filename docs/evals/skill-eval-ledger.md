@@ -114,6 +114,69 @@ Eval output facts:
   `recommendation apply`, `negative_keyword_payload_preview` and
   `90_day_safety_check`.
 
+## 2026-06-21 - wilq-ahrefs-gap-finder organic competitors domain-mode eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-ahrefs-gap-finder`.
+
+Why this eval matters:
+
+The Ahrefs organic competitors adapter now follows the official endpoint shape
+more closely: it sends explicit `mode=domain` and parses `competitors[]`.
+The live read still returns zero competitor rows, so WILQ must show the stronger
+read proof while keeping gap claims blocked.
+
+Pre-eval API proof:
+
+- Live refresh: `refresh_ahrefs_21a12047ec6a`.
+- Evidence: `ev_refresh_refresh_ahrefs_21a12047ec6a`.
+- `/api/ahrefs/diagnostics` live facts: DR=24, Ahrefs Rank=6459608,
+  `organic_competitor_read_status=completed`, `organic_competitor_rows=0`,
+  `organic_competitor_country=pl`, `organic_competitor_mode=domain`.
+- Scoped `wilq-ahrefs-gap-finder` context-pack is about `27084` bytes and
+  includes the same blocked `gap_read_contract`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T005750Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- `blocked=true`.
+- Source connectors include `ahrefs`, `google_search_console`,
+  `wordpress_ekologus`.
+- Evidence IDs include `ev_connector_ahrefs_status`,
+  `ev_refresh_refresh_ahrefs_21a12047ec6a`.
+- `operator_usefulness_score=5`.
+- No safety findings.
+
+Product gaps found:
+
+1. Domain-mode organic competitor read still returns `rows=0`, so this is not
+   gap analysis yet.
+2. Next Ahrefs value work must move to nonzero record-level gap facts through
+   top pages, content gap, backlink gap or organic-keyword reads, or a better
+   target/country strategy.
+
+Verdict:
+
+Stronger than the earlier organic competitors read eval because the API call is
+now mode-explicit and response-shape aligned. WILQ still correctly blocks gap
+claims.
+
 ## 2026-06-21 - wilq-ahrefs-gap-finder organic competitors read eval
 
 Prompt source:

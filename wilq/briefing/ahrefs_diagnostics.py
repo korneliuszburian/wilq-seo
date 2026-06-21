@@ -35,6 +35,7 @@ AHREFS_COMPETITOR_READ_FACT_NAMES = {
     "organic_competitor_read_status",
     "organic_competitor_rows",
     "organic_competitor_country",
+    "organic_competitor_mode",
 }
 AHREFS_GAP_FACT_NAMES = {
     "ahrefs_competitor_page_count",
@@ -728,10 +729,11 @@ def _competitor_read_summary(competitor_read_facts: list[MetricFact]) -> str:
     status = _fact_value(competitor_read_facts, "organic_competitor_read_status")
     rows = _fact_value(competitor_read_facts, "organic_competitor_rows")
     country = _fact_value(competitor_read_facts, "organic_competitor_country")
+    mode = _fact_value(competitor_read_facts, "organic_competitor_mode")
     return (
         "Odczyt konkurencji organicznej: "
         f"status={status or 'unknown'}, rows={rows if rows is not None else 0}, "
-        f"country={country or 'unknown'}."
+        f"country={country or 'unknown'}, mode={mode or 'unknown'}."
     )
 
 
@@ -765,6 +767,10 @@ def _authority_tiles(
             "odczyt konkurencji": _fact_value(
                 competitor_read_facts,
                 "organic_competitor_read_status",
+            ),
+            "tryb konkurencji": _fact_value(
+                competitor_read_facts,
+                "organic_competitor_mode",
             ),
             "fakty luk": len(gap_facts),
             "braki kontraktu": len(_missing_gap_contracts(gap_facts)),
