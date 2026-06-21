@@ -2863,3 +2863,49 @@ Product finding:
   live Ads evidence and prepare-only queues. It still does not unlock CPA/ROAS
   verdicts, wasted-budget claims, mutation apply, targeting apply or negative
   keyword apply without human review, validation and audit/apply contracts.
+
+## 2026-06-21 - wilq-demand-gen-operator scoped blocker eval
+
+Purpose:
+
+- Prove that Demand Gen stays blocked on the dedicated route while still giving
+  the marketer a useful typed readiness title and metric tiles from Ads + GA4
+  evidence. The eval must not require Merchant Center, and it must not promote
+  adjacent GA4/Ads ActionObjects as Demand Gen actions.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260621T062101Z/wilq-demand-gen-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=true`
+- `source_connectors=["google_ads","google_analytics_4"]`
+- Evidence count: `14`
+- `action_candidates` contain only blocked/null `action_id` entries.
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- `/api/demand-gen/diagnostics` and the scoped context-pack now carry
+  marketer-facing `title` and `metric_tiles`: current live title is
+  `Demand Gen: brak kampanii do rekomendacji`, tiles are `kampanie Ads=18`,
+  `kanały=2`, `wiersze DG=0`, `braki=5`. This is useful as a blocker/readiness
+  surface, not as a launch recommendation. Missing contracts remain:
+  `demand_gen_asset_group_rows`, `demand_gen_creative_asset_rows`,
+  `demand_gen_landing_quality_by_campaign`,
+  `demand_gen_migration_constraints` and `demand_gen_action_object`.
+- Full `scripts/verify.sh` passed after this slice: backend `141 passed`,
+  dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+  dashboard production build passed.

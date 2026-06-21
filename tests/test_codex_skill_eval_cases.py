@@ -137,6 +137,21 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             },
             "action_ids": {"act_prepare_custom_segments_from_search_terms"},
         },
+        "wilq-demand-gen-operator": {
+            "surface_path": "/ads-doctor/demand-gen",
+            "terms": {
+                "Demand Gen",
+                "demand_gen_readiness",
+                "demand_gen_campaign_rows",
+                "demand_gen_asset_group_rows",
+                "demand_gen_creative_asset_rows",
+                "demand_gen_landing_quality_by_campaign",
+                "demand_gen_migration_constraints",
+                "demand_gen_action_object",
+                "blocked claims",
+            },
+            "action_ids": set(),
+        },
         "wilq-localo-operator": {
             "surface_path": "/localo",
             "terms": {
@@ -178,6 +193,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert set(content_case["required_source_connectors"]) <= set(
         content_case["expected_connectors"]
     )
+
+    demand_gen_case = cases["wilq-demand-gen-operator"]
+    assert demand_gen_case["expected_connectors"] == ["google_ads", "google_analytics_4"]
+    assert demand_gen_case["expected_no_action_ids"] is True
+    assert "google_merchant_center" not in demand_gen_case["expected_connectors"]
     daily_case = cases["wilq-daily-command"]
     assert "localo" in daily_case["expected_connectors"]
     assert "localo" not in daily_case["required_source_connectors"]

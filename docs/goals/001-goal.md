@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 07:07 CEST.
+Last updated: 2026-06-21 08:51 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -197,6 +197,24 @@ blocked-claim discipline without forcing English UI copy into Polish operator
 output. Full `scripts/verify.sh` passed after this fix: backend `141 passed`,
 dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
 dashboard production build passed.
+
+Latest Demand Gen typed blocker truth, live proof 2026-06-21 08:22 CEST:
+`/api/demand-gen/diagnostics` and scoped
+`POST /api/codex/context-pack {"skill":"wilq-demand-gen-operator"}` now expose
+the same marketer-facing title and metric tiles. Current live title is
+`Demand Gen: brak kampanii do rekomendacji`; current tiles are
+`kampanie Ads=18`, `kanały=2`, `wiersze DG=0`, `braki=5`. This keeps the route
+useful as a decision/blocker surface without pretending there is a Demand Gen
+launch or migration recommendation. The skill smoke asserts title and tiles.
+Strict eval passed:
+`.local-lab/evals/codex-skill/20260621T062101Z/wilq-demand-gen-operator/result.json`.
+Result: `blocked=true`, `language=pl-PL`, `api_used=true`, source connectors
+`google_ads` and `google_analytics_4`, evidence count `14`, no non-null Demand
+Gen ActionObject IDs. The eval case no longer requires
+`google_merchant_center` and now forbids adjacent GA4/Ads ActionObject IDs for
+this scoped workflow. Full `scripts/verify.sh` passed after this slice:
+backend `141 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
+skill/API smokes and dashboard production build passed.
 
 Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
 `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and

@@ -1816,7 +1816,9 @@ class CommandCenterResponse(BaseModel):
 
 class DemandGenReadinessContract(BaseModel):
     status: Literal["ready", "blocked"]
+    title: str
     summary: str
+    metric_tiles: dict[str, str | int | float] = Field(default_factory=dict)
     available_read_contracts: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)

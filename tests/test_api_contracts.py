@@ -8713,6 +8713,9 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert data["ads_diagnostics"]["action_ids"] == []
     readiness = data["demand_gen_readiness"]
     assert readiness["status"] == "blocked"
+    assert readiness["title"].startswith("Demand Gen:")
+    assert readiness["metric_tiles"]["kampanie Ads"] == readiness["campaign_rows_evaluated"]
+    assert readiness["metric_tiles"]["braki"] == len(readiness["missing_read_contracts"])
     assert readiness["action_ids"] == []
     assert readiness["source_connectors"] == ["google_ads", "google_analytics_4"]
     assert isinstance(readiness["campaign_rows_evaluated"], int)
@@ -8745,6 +8748,9 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "blocked"
+    assert data["title"].startswith("Demand Gen:")
+    assert data["metric_tiles"]["kampanie Ads"] == data["campaign_rows_evaluated"]
+    assert data["metric_tiles"]["braki"] == len(data["missing_read_contracts"])
     assert data["source_connectors"] == ["google_ads", "google_analytics_4"]
     assert data["action_ids"] == []
     assert isinstance(data["campaign_rows_evaluated"], int)

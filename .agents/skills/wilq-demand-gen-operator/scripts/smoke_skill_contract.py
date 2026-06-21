@@ -94,6 +94,9 @@ def main() -> int:
         raise SystemExit("Context pack demand_gen_readiness must be an object")
     if readiness.get("status") != "blocked":
         raise SystemExit("Demand Gen must stay blocked until specific evidence exists")
+    title = readiness.get("title")
+    if not isinstance(title, str) or not title.startswith("Demand Gen:"):
+        raise SystemExit("Demand Gen readiness must expose a marketer-facing title")
     missing_read_contracts = readiness.get("missing_read_contracts")
     if not isinstance(missing_read_contracts, list) or not missing_read_contracts:
         raise SystemExit("Demand Gen readiness must expose missing read contracts")
@@ -103,6 +106,13 @@ def main() -> int:
     campaign_channel_counts = readiness.get("campaign_channel_counts")
     if not isinstance(campaign_channel_counts, dict):
         raise SystemExit("Demand Gen readiness must expose campaign_channel_counts")
+    metric_tiles = readiness.get("metric_tiles")
+    if not isinstance(metric_tiles, dict):
+        raise SystemExit("Demand Gen readiness must expose metric_tiles")
+    if metric_tiles.get("kampanie Ads") != campaign_rows_evaluated:
+        raise SystemExit("Demand Gen metric tiles must include evaluated campaign count")
+    if metric_tiles.get("braki") != len(missing_read_contracts):
+        raise SystemExit("Demand Gen metric tiles must include missing contract count")
     if campaign_rows_evaluated > 0 and not campaign_channel_counts:
         raise SystemExit("Demand Gen readiness must count campaign channels when rows exist")
     if campaign_rows_evaluated > 0 and "demand_gen_campaign_rows" in missing_read_contracts:
@@ -129,6 +139,8 @@ def main() -> int:
                 "health": health.get("status"),
                 "demand_gen_readiness": {
                     "status": readiness.get("status"),
+                    "title": title,
+                    "metric_tiles": metric_tiles,
                     "campaign_rows_evaluated": campaign_rows_evaluated,
                     "campaign_channel_counts": campaign_channel_counts,
                     "demand_gen_campaign_row_count": len(demand_gen_campaign_rows),

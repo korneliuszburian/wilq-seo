@@ -229,8 +229,28 @@
   },
   {
     "skill": "wilq-demand-gen-operator",
+    "surface_path": "/ads-doctor/demand-gen",
     "task_pl": "Oceń Demand Gen readiness i asset/traffic-quality blockers tylko z WILQ evidence oraz action validation gates.",
-    "expected_connectors": ["google_ads", "google_analytics_4", "google_merchant_center"]
+    "expected_connectors": ["google_ads", "google_analytics_4"],
+    "expected_terms_pl": [
+      "Demand Gen",
+      "demand_gen_readiness",
+      "demand_gen_campaign_rows",
+      "demand_gen_asset_group_rows",
+      "demand_gen_creative_asset_rows",
+      "demand_gen_landing_quality_by_campaign",
+      "demand_gen_migration_constraints",
+      "demand_gen_action_object",
+      "blocked claims"
+    ],
+    "expected_no_action_ids": true,
+    "forbidden_action_ids": [
+      "act_review_ga4_tracking_quality",
+      "act_prepare_ads_campaign_review_queue",
+      "act_prepare_google_ads_recommendation_review_queue",
+      "act_prepare_custom_segments_from_search_terms",
+      "act_prepare_negative_keyword_review_queue"
+    ]
   },
   {
     "skill": "wilq-ga4-analyst",

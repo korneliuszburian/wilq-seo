@@ -3753,8 +3753,15 @@ const ahrefsDiagnostics = {
 
 const demandGenDiagnostics = {
   status: "blocked",
+  title: "Demand Gen: brak kampanii do rekomendacji",
   summary:
     "WILQ ocenił 18 kampanii Ads z typami kanałów (PERFORMANCE_MAX=8, SEARCH=10); Demand Gen/Discovery rows=0. WILQ ma Ads i GA4 evidence do oceny ruchu, ale nadal nie ma Demand Gen-specific read contractów dla assetów, kreacji, landing quality per campaign, migracji i ActionObject.",
+  metric_tiles: {
+    "kampanie Ads": 18,
+    kanały: 2,
+    "wiersze DG": 0,
+    braki: 5
+  },
   available_read_contracts: [
     "google_ads_campaign_activity",
     "google_ads_budget_context",
@@ -4933,10 +4940,10 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Demand Gen" })).toBeInTheDocument()
     );
 
-    expect(screen.getByText("Status Demand Gen / Ads + GA4 evidence")).toBeInTheDocument();
+    expect(screen.getByText("Demand Gen: brak kampanii do rekomendacji")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć przed planem Demand Gen")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Demand Gen")).toBeInTheDocument();
-    expect(screen.getByText("Kampanie Ads")).toBeInTheDocument();
+    expect(screen.getByText("kampanie Ads")).toBeInTheDocument();
     expect(screen.getByText("PMax")).toBeInTheDocument();
     expect(screen.getByText("Search")).toBeInTheDocument();
     expect(

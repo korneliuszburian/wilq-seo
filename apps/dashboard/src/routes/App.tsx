@@ -4304,6 +4304,7 @@ function DemandGenDiagnosticSurface() {
   const data = diagnostics.data;
   const channelEntries = Object.entries(data.campaign_channel_counts);
   const demandGenRowCount = data.demand_gen_campaign_rows.length;
+  const metricTileEntries = Object.entries(data.metric_tiles);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -4316,19 +4317,20 @@ function DemandGenDiagnosticSurface() {
             jakości landingów per kampania, ograniczeń migracji i ActionObject.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
-          <MetricTile label="Kampanie Ads" value={data.campaign_rows_evaluated} />
-          <MetricTile label="Kanały" value={channelEntries.length} />
-          <MetricTile label="Demand Gen rows" value={demandGenRowCount} />
-          <MetricTile label="Braki" value={data.missing_read_contracts.length} />
-        </div>
+        {metricTileEntries.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+            {metricTileEntries.slice(0, 4).map(([label, value]) => (
+              <MetricTile key={label} label={label} value={value} />
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <section className="mb-6 rounded-md border border-line bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status Demand Gen / Ads + GA4 evidence
+              {data.title}
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
               {data.summary}

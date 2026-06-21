@@ -1682,7 +1682,9 @@ export const WorkflowSchema = z.object({
 
 export const DemandGenReadinessContractSchema = z.object({
   status: z.enum(["ready", "blocked"]),
+  title: z.string(),
   summary: z.string(),
+  metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   available_read_contracts: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   blocked_claims: z.array(z.string()),

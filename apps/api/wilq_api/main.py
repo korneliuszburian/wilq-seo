@@ -927,14 +927,26 @@ def _demand_gen_readiness_contract(
         campaign_context = (
             "WILQ nie ma jeszcze pewnego odczytu typów kanałów kampanii Ads."
         )
+    title = (
+        "Demand Gen: sprawdź istniejące kampanie bez launch/apply"
+        if demand_gen_campaign_rows
+        else "Demand Gen: brak kampanii do rekomendacji"
+    )
     return DemandGenReadinessContract(
         status="blocked",
+        title=title,
         summary=(
             f"{campaign_context} WILQ ma Ads i GA4 evidence do oceny ruchu, "
             "ale nadal nie ma Demand Gen-specific read contractów dla assetów, "
             "kreacji, landing quality per campaign, migracji i ActionObject. "
             "To jest blocker użytecznej rekomendacji, nie brak promptu."
         ),
+        metric_tiles={
+            "kampanie Ads": len(campaign_rows),
+            "kanały": len(channel_counts),
+            "wiersze DG": len(demand_gen_campaign_rows),
+            "braki": len(missing_read_contracts),
+        },
         available_read_contracts=available_read_contracts,
         missing_read_contracts=missing_read_contracts,
         blocked_claims=[

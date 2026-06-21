@@ -147,6 +147,21 @@ Aktualny proof produktowy:
   `scripts/verify.sh` passed after this fix: backend `141 passed`, dashboard
   unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
   production build passed.
+- Demand Gen typed blocker title/tiles, 2026-06-21 08:22 CEST.
+  `/api/demand-gen/diagnostics` and the scoped
+  `wilq-demand-gen-operator` context-pack now expose a marketer-facing title
+  and metric tiles instead of forcing the dashboard to assemble the decision
+  locally. Current live title: `Demand Gen: brak kampanii do rekomendacji`.
+  Current tiles: `kampanie Ads=18`, `kanały=2`, `wiersze DG=0`, `braki=5`.
+  The skill smoke asserts these fields, and the non-interactive eval passed:
+  `.local-lab/evals/codex-skill/20260621T062101Z/wilq-demand-gen-operator/result.json`.
+  The eval result has `blocked=true`, `api_used=true`, `language=pl-PL`,
+  source connectors `google_ads` and `google_analytics_4`, evidence count `14`
+  and no non-null Demand Gen ActionObject IDs. The eval case was corrected to
+  stop requiring `google_merchant_center` and to forbid adjacent GA4/Ads action
+  IDs for this workflow. Full `scripts/verify.sh` passed after this slice:
+  backend `141 passed`, dashboard unit `17 passed`, Playwright e2e
+  `14 passed`, skill/API smokes and dashboard production build passed.
 - Ahrefs typed gap read contract, 2026-06-21 01:21 CEST, superseded by the
   03:38 target fix above. The important surviving contract is still valid:
   `/api/ahrefs/diagnostics` exposes `gap_read_contract` as typed API state and
@@ -853,10 +868,10 @@ Aktualny maintenance:
 
 ## Active Gaps
 
-- Ahrefs now has a dedicated diagnostics surface, but true competitor/content/
-  backlink gap work is still blocked until WILQ stores typed Ahrefs gap
-  records. DR/rank must stay authority context only; strict eval now enforces
-  that no adjacent ActionObject can be used as an Ahrefs gap recommendation.
+- Ahrefs now stores typed competitor/content/backlink gap records and bridges
+  relevant/review records into Content Planner. Remaining work is per-topic
+  candidate rows with explicit GSC demand, WordPress inventory match and
+  business-relevance reasons before any content brief/ranking/traffic claim.
 - Demand Gen is honest-blocked, not useful yet. Campaign channel rows are now
   available from Google Ads evidence, and current live state has no
   Demand Gen/Discovery campaigns. It still needs real Demand Gen read
