@@ -1546,6 +1546,26 @@ class ContentDiagnosticsResponse(BaseModel):
     blocker_count: int = 0
 
 
+class Ga4TrackingQualityPayloadPreview(BaseModel):
+    id: str
+    preview_contract: Literal["ga4_tracking_quality_review_v1"]
+    operation_type: Literal["tracking_quality_review"]
+    landing_page: str | None = None
+    source_medium: str | None = None
+    campaign_name: str | None = None
+    tracking_dimension_gaps: list[
+        Literal["landing_page", "source_medium", "campaign_name"]
+    ] = Field(default_factory=list)
+    metric_snapshot: dict[str, float | int | str] = Field(default_factory=dict)
+    reason: str
+    required_validation: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class Ga4DiagnosticSection(BaseModel):
     id: str
     title: str

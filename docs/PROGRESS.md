@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- GA4 tracking-quality payload preview, 2026-06-21 13:17 CEST.
+  `act_review_ga4_tracking_quality` ma teraz typed review-only
+  `ga4_tracking_quality_review_v1` payload preview. Preview grupuje
+  landing/source/campaign facts, pokazuje braki wymiarów takich jak
+  `(not set)`, metric snapshot, evidence IDs i required validation:
+  `review_landing_page_dimension`, `review_source_medium_dimension`,
+  `review_campaign_name_dimension`, `review_conversion_or_key_event_mapping`,
+  `human_confirm_before_tracking_change`. Walidacja ActionObject zwraca
+  `valid=true`. Scoped `wilq-ga4-analyst` context-pack zachowuje kompaktowy
+  preview (`4` rows, około `57758` bytes), a `/ga4` renderuje panel
+  `Podgląd review GA4`. Nadal zablokowane: conversion rate, ROAS, revenue,
+  profitability, funnel diagnosis, attribution verdict, tracking fixed i GA4
+  write.
 - Ads custom segment targeting preview, 2026-06-21 12:46 CEST.
   `AdsCustomSegmentPayloadPreview` ma teraz typed `targeting_preview`, który
   wiąże kandydat segmentu z campaign context bez odblokowania mutacji.

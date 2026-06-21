@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from wilq.actions.ga4.tracking_quality import (
+    GA4_TRACKING_QUALITY_ACTION_TYPE,
+    validate_ga4_tracking_quality_payload,
+)
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_TYPE,
     validate_ads_business_context_payload,
@@ -83,6 +87,8 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         errors.extend(validate_campaign_review_payload(payload))
     if connector_id == "google_ads" and action_type == "google_ads_recommendation_review":
         errors.extend(validate_recommendation_review_payload(payload))
+    if connector_id == "google_analytics_4" and action_type == GA4_TRACKING_QUALITY_ACTION_TYPE:
+        errors.extend(validate_ga4_tracking_quality_payload(payload))
     if connector_id == "localo" and action_type == LOCALO_VISIBILITY_REVIEW_ACTION_TYPE:
         errors.extend(validate_localo_visibility_review_payload(payload))
 

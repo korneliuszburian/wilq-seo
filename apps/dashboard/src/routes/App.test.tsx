@@ -152,6 +152,36 @@ const actions = [
       action_type: "ga4_tracking_gap",
       connector: "google_analytics_4",
       mode: "prepare_only",
+      preview_contract: "ga4_tracking_quality_review_v1",
+      payload_preview: [
+        {
+          id: "ga4_tracking_review_fixture",
+          preview_contract: "ga4_tracking_quality_review_v1",
+          operation_type: "tracking_quality_review",
+          landing_page: "/oferta/",
+          source_medium: "google / cpc",
+          campaign_name: "(2026) Ekologus Ogólna",
+          tracking_dimension_gaps: [],
+          metric_snapshot: {
+            active_users: 20,
+            sessions: 30
+          },
+          reason:
+            "Review-only checklist dla landing/source/campaign quality. To nie odblokowuje ROAS ani revenue.",
+          required_validation: [
+            "review_landing_page_dimension",
+            "review_source_medium_dimension",
+            "review_campaign_name_dimension",
+            "review_conversion_or_key_event_mapping",
+            "human_confirm_before_tracking_change"
+          ],
+          blocked_claims: ["conversion rate", "ROAS", "revenue"],
+          evidence_ids: ["ev_refresh_ga4"],
+          api_mutation_ready: false,
+          apply_allowed: false,
+          destructive: false
+        }
+      ],
       destructive: false
     },
     audit_events: []
@@ -4990,6 +5020,9 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
+    expect(screen.getByText("Podgląd review GA4")).toBeInTheDocument();
+    expect(screen.getByText(/Review-only kolejka z ActionObject/)).toBeInTheDocument();
+    expect(screen.getByText(/apply zablokowany/)).toBeInTheDocument();
     expect(screen.queryByText("Analytics Safety Gate")).not.toBeInTheDocument();
     expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
     expect(screen.getAllByText(/active_users: 20/).length).toBeGreaterThan(0);

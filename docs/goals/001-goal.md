@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 12:46 CEST.
+Last updated: 2026-06-21 13:17 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -94,6 +94,23 @@ segment targeting/apply previews, budget apply safety, apply confirmation and
 mutation audit paths, plus real Localo ranking/GBP/competitor/review read
 contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest GA4 tracking-quality preview truth, live proof 2026-06-21 13:17 CEST:
+`act_review_ga4_tracking_quality` now exposes typed review-only
+`ga4_tracking_quality_review_v1` payload preview rows instead of only generic
+GA4 metrics. The preview groups landing/source/campaign facts, marks missing
+reporting dimensions such as `(not set)`, carries metric snapshots, evidence
+IDs, required validation `review_landing_page_dimension`,
+`review_source_medium_dimension`, `review_campaign_name_dimension`,
+`review_conversion_or_key_event_mapping` and
+`human_confirm_before_tracking_change`, and keeps `apply_allowed=false`,
+`api_mutation_ready=false` and `destructive=false`. Its validation endpoint
+returns `valid=true`. Scoped `wilq-ga4-analyst` context-pack now preserves a
+compacted version of the same preview (`4` rows, about `57758` bytes), so Codex
+and dashboard use the same ActionObject state. Dashboard `/ga4` renders
+`Podgląd review GA4`. This still does not unlock conversion rate, ROAS, revenue,
+profitability, funnel diagnosis, attribution verdict, tracking fixed or GA4
+write claims.
 
 Latest Ads custom segment targeting preview truth, live proof 2026-06-21
 12:46 CEST: custom segments now expose a typed review-only targeting preview,

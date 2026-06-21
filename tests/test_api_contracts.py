@@ -2145,14 +2145,42 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "conversion drop" in sections["ga4_tracking_readiness"]["blocked_claims"]
     assert sections["ga4_action_safety"]["status"] == "ready"
 
+    action_response = client.get("/api/actions/act_review_ga4_tracking_quality")
+    assert action_response.status_code == 200
+    ga4_action = action_response.json()
+    assert ga4_action["payload"]["preview_contract"] == "ga4_tracking_quality_review_v1"
+    preview = ga4_action["payload"]["payload_preview"][0]
+    assert preview["preview_contract"] == "ga4_tracking_quality_review_v1"
+    assert preview["operation_type"] == "tracking_quality_review"
+    assert "review_conversion_or_key_event_mapping" in preview["required_validation"]
+    assert preview["apply_allowed"] is False
+    assert preview["api_mutation_ready"] is False
+    assert preview["destructive"] is False
+
+    validation_response = client.post(
+        "/api/actions/act_review_ga4_tracking_quality/validate",
+        json={},
+    )
+    assert validation_response.status_code == 200
+    assert validation_response.json()["valid"] is True
+
     context_response = client.post("/api/codex/context-pack", json={"skill": "wilq-ga4-analyst"})
     assert context_response.status_code == 200
-    context_ga4 = context_response.json()["ga4_diagnostics"]
+    context_payload = context_response.json()
+    context_ga4 = context_payload["ga4_diagnostics"]
     assert context_ga4["evidence_ids"] == payload["evidence_ids"]
     assert context_ga4["action_ids"] == payload["action_ids"]
     assert ga4_decision_trace(context_ga4["decision_queue"]) == ga4_decision_trace(
         payload["decision_queue"]
     )
+    context_action_by_id = {
+        action["id"]: action for action in context_payload["active_action_objects"]
+    }
+    context_preview = context_action_by_id["act_review_ga4_tracking_quality"]["payload"][
+        "payload_preview"
+    ][0]
+    assert context_preview["preview_contract"] == "ga4_tracking_quality_review_v1"
+    assert context_preview["apply_allowed"] is False
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
 

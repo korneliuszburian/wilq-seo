@@ -3795,6 +3795,25 @@ type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
 
 type Ga4DecisionItem = Ga4DiagnosticsResponse["decision_queue"][number];
 
+type Ga4TrackingQualityPreviewItem = {
+  action_id: string;
+  id: string;
+  preview_contract: string;
+  operation_type: string;
+  landing_page?: string | null;
+  source_medium?: string | null;
+  campaign_name?: string | null;
+  tracking_dimension_gaps: string[];
+  metric_snapshot: Record<string, string | number>;
+  reason: string;
+  required_validation: string[];
+  blocked_claims: string[];
+  evidence_ids: string[];
+  apply_allowed: boolean;
+  api_mutation_ready: boolean;
+  destructive: boolean;
+};
+
 type LocaloDecisionItem = LocaloDiagnosticsResponse["decision_queue"][number];
 
 type AhrefsDecisionItem = AhrefsDiagnosticsResponse["decision_queue"][number];
@@ -3829,6 +3848,7 @@ function Ga4DiagnosticSurface() {
 
   const data = diagnostics.data;
   const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const trackingPreviewItems = ga4TrackingQualityPreviewItemsFromActions(routeActions);
   const latestRefresh = data.latest_refresh;
 
   return (
@@ -3886,6 +3906,28 @@ function Ga4DiagnosticSurface() {
         <div className="mt-6">
           <ActionObjectFocus actions={routeActions} />
         </div>
+      ) : null}
+
+      {trackingPreviewItems.length > 0 ? (
+        <section className="mt-6 rounded-md border border-line bg-white p-4">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+                Podgląd review GA4
+              </h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+                Review-only kolejka z ActionObject. Pokazuje co sprawdzić w
+                landing/source/campaign i nie wykonuje zmian w GA4.
+              </p>
+            </div>
+            <MetricTile label="Pozycje" value={trackingPreviewItems.length} />
+          </div>
+          <div className="grid gap-3 xl:grid-cols-2">
+            {trackingPreviewItems.slice(0, 4).map((preview) => (
+              <Ga4TrackingQualityPreviewCard key={preview.id} preview={preview} />
+            ))}
+          </div>
+        </section>
       ) : null}
 
       <section className="mt-6 rounded-md border border-line bg-white p-4">
@@ -4055,6 +4097,97 @@ function Ga4DecisionCard({ decision }: { decision: Ga4DecisionItem }) {
   );
 }
 
+function Ga4TrackingQualityPreviewCard({
+  preview
+}: {
+  preview: Ga4TrackingQualityPreviewItem;
+}) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">
+            {preview.landing_page ? `Landing ${preview.landing_page}` : "Brak landing page"}
+          </h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {preview.operation_type} / {preview.apply_allowed ? "apply możliwy" : "apply zablokowany"}
+          </p>
+        </div>
+        <StatusBadge value={preview.tracking_dimension_gaps.length ? "blocked" : "review"} />
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{preview.reason}</p>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine label="Źródło" values={[preview.source_medium ?? "brak source/medium"]} />
+        <TraceLine label="Kampania" values={[preview.campaign_name ?? "brak kampanii"]} />
+        <TraceLine
+          label="Braki wymiarów"
+          values={preview.tracking_dimension_gaps.map(ga4TrackingDimensionLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Walidacje"
+          values={preview.required_validation.map(ga4ValidationLabel).slice(0, 4)}
+        />
+        <TraceLine
+          label="Nie wolno twierdzić"
+          values={ga4BlockedClaimLabels(preview.blocked_claims).slice(0, 5)}
+        />
+        <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
+        <LinkedTraceLine label="ActionObject" values={[preview.action_id]} kind="actions" />
+      </div>
+      {Object.keys(preview.metric_snapshot).length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {Object.entries(preview.metric_snapshot)
+            .slice(0, 4)
+            .map(([label, value]) => (
+              <MetricTile key={`${preview.id}-${label}`} label={label} value={value} />
+            ))}
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function ga4TrackingQualityPreviewItemsFromActions(
+  actions: ActionObject[]
+): Ga4TrackingQualityPreviewItem[] {
+  return actions.flatMap((action) => {
+    const rows = action.payload.payload_preview;
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .filter(isGa4TrackingQualityPreviewItem)
+      .map((row) => ({ ...row, action_id: action.id }));
+  });
+}
+
+function isGa4TrackingQualityPreviewItem(
+  value: unknown
+): value is Omit<Ga4TrackingQualityPreviewItem, "action_id"> {
+  if (!isPlainObject(value)) return false;
+  return (
+    typeof value.id === "string" &&
+    value.preview_contract === "ga4_tracking_quality_review_v1" &&
+    typeof value.operation_type === "string" &&
+    Array.isArray(value.tracking_dimension_gaps) &&
+    value.tracking_dimension_gaps.every((item) => typeof item === "string") &&
+    isMetricSnapshot(value.metric_snapshot) &&
+    typeof value.reason === "string" &&
+    Array.isArray(value.required_validation) &&
+    Array.isArray(value.blocked_claims) &&
+    Array.isArray(value.evidence_ids) &&
+    typeof value.apply_allowed === "boolean" &&
+    typeof value.api_mutation_ready === "boolean" &&
+    typeof value.destructive === "boolean"
+  );
+}
+
+function isMetricSnapshot(value: unknown): value is Record<string, string | number> {
+  if (!isPlainObject(value)) return false;
+  return Object.values(value).every(
+    (item) => typeof item === "string" || typeof item === "number"
+  );
+}
+
 function Ga4DiagnosticProof({ data }: { data: Ga4DiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
   const sourceConnectors = uniqueValues([
@@ -4121,6 +4254,26 @@ function ga4SectionStatusLabel(status: string) {
   if (status === "blocked") return "zablokowane";
   if (status === "missing") return "brak metryk konwersji";
   return status;
+}
+
+function ga4TrackingDimensionLabel(value: string) {
+  const labels: Record<string, string> = {
+    landing_page: "landing page",
+    source_medium: "source / medium",
+    campaign_name: "kampania"
+  };
+  return labels[value] ?? value;
+}
+
+function ga4ValidationLabel(value: string) {
+  const labels: Record<string, string> = {
+    review_landing_page_dimension: "sprawdź landing page",
+    review_source_medium_dimension: "sprawdź source / medium",
+    review_campaign_name_dimension: "sprawdź kampanię",
+    review_conversion_or_key_event_mapping: "sprawdź konwersje / key events",
+    human_confirm_before_tracking_change: "potwierdź review człowieka"
+  };
+  return labels[value] ?? value;
 }
 
 function ga4ConnectorStatusLabel(status: string) {

@@ -1558,6 +1558,20 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         compact_payload["content_brief_preview_included"] = len(
             compact_payload["content_brief_preview"]
         )
+    payload_preview_kept = False
+    payload_preview = compact_payload.get("payload_preview")
+    if (
+        compact_payload.get("preview_contract") == "ga4_tracking_quality_review_v1"
+        and isinstance(payload_preview, list)
+    ):
+        compact_payload["payload_preview_total"] = len(payload_preview)
+        compact_payload["payload_preview"] = _compact_ga4_tracking_preview_for_context(
+            payload_preview
+        )
+        compact_payload["payload_preview_included"] = len(
+            compact_payload["payload_preview"]
+        )
+        payload_preview_kept = True
     for key in (
         "budget_payload_preview",
         "recommendations",
@@ -1566,6 +1580,8 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         "payload_preview",
         "keyword_match_context",
     ):
+        if key == "payload_preview" and payload_preview_kept:
+            continue
         rows = compact_payload.get(key)
         if isinstance(rows, list):
             compact_payload[f"{key}_total"] = len(rows)
@@ -1573,6 +1589,31 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload[f"{key}_included"] = len(compact_payload[key])
     compact["payload"] = compact_payload
     return compact
+
+
+def _compact_ga4_tracking_preview_for_context(preview_items: list[Any]) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    keep_keys = {
+        "id",
+        "preview_contract",
+        "operation_type",
+        "landing_page",
+        "source_medium",
+        "campaign_name",
+        "tracking_dimension_gaps",
+        "metric_snapshot",
+        "reason",
+        "required_validation",
+        "blocked_claims",
+        "evidence_ids",
+        "api_mutation_ready",
+        "apply_allowed",
+        "destructive",
+    }
+    for item in preview_items[:4]:
+        if isinstance(item, dict):
+            compact_items.append({key: item[key] for key in keep_keys if key in item})
+    return compact_items
 
 
 def _compact_content_brief_preview_for_context(

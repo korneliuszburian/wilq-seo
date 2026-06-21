@@ -8,6 +8,7 @@ from wilq.actions.content_refresh import (
     content_payload_with_reviewed_wordpress_draft_previews,
     content_refresh_payload_from_metric_facts,
 )
+from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_payload_from_metric_facts
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ads_business_context_configured,
@@ -197,9 +198,49 @@ def seed_core_prepare_actions() -> dict[str, ActionObject]:
                 "action_type": "ga4_tracking_gap",
                 "connector": "google_analytics_4",
                 "mode": "prepare_only",
+                "preview_contract": "ga4_tracking_quality_review_v1",
                 "source_metric_names": [],
                 "required_breakdowns": ["landing_page", "source_medium", "campaign"],
+                "required_validation": [
+                    "review_landing_page_dimension",
+                    "review_source_medium_dimension",
+                    "review_campaign_name_dimension",
+                    "review_conversion_or_key_event_mapping",
+                    "human_confirm_before_tracking_change",
+                ],
                 "blocked_claims": ["conversion_rate", "revenue", "roas"],
+                "payload_preview": [
+                    {
+                        "id": "ga4_tracking_review_connector_status",
+                        "preview_contract": "ga4_tracking_quality_review_v1",
+                        "operation_type": "tracking_quality_review",
+                        "landing_page": None,
+                        "source_medium": None,
+                        "campaign_name": None,
+                        "tracking_dimension_gaps": [
+                            "landing_page",
+                            "source_medium",
+                            "campaign_name",
+                        ],
+                        "metric_snapshot": {},
+                        "reason": (
+                            "Brak wymiarowych GA4 facts. Najpierw zbierz "
+                            "read-only landing/source/campaign breakdown."
+                        ),
+                        "required_validation": [
+                            "review_landing_page_dimension",
+                            "review_source_medium_dimension",
+                            "review_campaign_name_dimension",
+                            "review_conversion_or_key_event_mapping",
+                            "human_confirm_before_tracking_change",
+                        ],
+                        "blocked_claims": ["conversion_rate", "revenue", "roas"],
+                        "evidence_ids": [connector_evidence_id("google_analytics_4")],
+                        "api_mutation_ready": False,
+                        "apply_allowed": False,
+                        "destructive": False,
+                    }
+                ],
                 "destructive": False,
             },
             validation_status="not_validated",
@@ -491,15 +532,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "landing/source/campaign breakdown, waliduj ActionObject i nie "
                 "oceniaj kampanii bez kontraktu konwersji."
             ),
-            payload={
-                "action_type": "ga4_tracking_gap",
-                "connector": "google_analytics_4",
-                "mode": "prepare_only",
-                "source_metric_names": _unique(fact.name for fact in ga4_action_metrics),
-                "required_breakdowns": ["landing_page", "source_medium", "campaign"],
-                "blocked_claims": ["conversion_rate", "revenue", "roas"],
-                "destructive": False,
-            },
+            payload=ga4_tracking_quality_payload_from_metric_facts(ga4_action_metrics),
             validation_status="not_validated",
             created_by="system_metric_seed",
         )
