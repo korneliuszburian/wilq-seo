@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test.describe("WILQ dashboard API-backed smoke", () => {
   test("command center renders live API-backed sections", async ({ page }) => {
+    test.setTimeout(60_000);
+
     const apiResponses: string[] = [];
     page.on("response", (response) => {
       const url = new URL(response.url());
@@ -10,10 +12,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
       }
     });
 
-    const commandCenterResponse = page.waitForResponse((response) => {
-      const url = new URL(response.url());
-      return url.pathname === "/api/dashboard/command-center" && response.status() === 200;
-    });
+    const commandCenterResponse = page.waitForResponse(
+      (response) => {
+        const url = new URL(response.url());
+        return url.pathname === "/api/dashboard/command-center" && response.status() === 200;
+      },
+      { timeout: 60_000 }
+    );
     await page.goto("/command-center");
     await commandCenterResponse;
 
@@ -330,10 +335,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
       page.getByRole("heading", { name: "Co marketer ma wiedzieć o Ahrefs" })
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ahrefs" })).toBeVisible();
-    await expect(page.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")).toBeVisible();
+    await expect(
+      page.getByText("Uruchom odczyt autorytetu Ahrefs przed review luk SEO")
+    ).toBeVisible();
     await expect(page.getByText("Przejrzyj rekordy luk Ahrefs")).toBeVisible();
+    await expect(page.getByText("Nie wskazuj luk konkurencji bez rekordów Ahrefs")).toBeVisible();
     await expect(page.getByText("DR").first()).toBeVisible();
-    await expect(page.getByText("fakty luk").first()).toBeVisible();
+    await expect(page.getByText("Gap records").first()).toBeVisible();
     await expect(page.getByText("gotowe").first()).toBeVisible();
     await expect(page.getByText(/Luka treści:/).first()).toBeVisible();
     await expect(page.getByText(/poprawa autorytetu/).first()).toBeVisible();

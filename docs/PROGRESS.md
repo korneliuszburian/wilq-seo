@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard operator primitives extraction, 2026-06-21 18:04 CEST.
+  Drugi mały code-quality slice: `LoadingBand`, `BlockerNotice` i `MetricTile`
+  zostały przeniesione z `App.tsx` do
+  `apps/dashboard/src/components/OperatorPrimitives.tsx`. To są czyste UI
+  primitives używane przez wiele tras, więc ekstrakcja idzie po realnej granicy
+  komponentowej, bez zmiany API i bez osłabiania traceability. File-size proof:
+  `App.tsx` spadł do 7203 linii; `OperatorPrimitives.tsx` ma 34 linie.
+  Focused proof: `pnpm --filter @wilq/dashboard lint`, typecheck i
+  `pnpm --filter @wilq/dashboard test -- --run App.test.tsx` zielone
+  (`17 passed`).
 - Dashboard query-client extraction, 2026-06-21 17:52 CEST.
   Pierwszy mały code-quality slice po nowych zasadach goalu: konfiguracja
   TanStack Query została wyciągnięta z `App.tsx` do

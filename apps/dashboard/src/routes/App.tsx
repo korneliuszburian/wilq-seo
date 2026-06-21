@@ -17,7 +17,6 @@ import {
 import { useState } from "react";
 import {
   AlertCircle,
-  AlertTriangle,
   CheckCircle2,
   ClipboardCheck,
   Copy,
@@ -82,6 +81,7 @@ import {
 } from "../lib/api";
 import { StatusBadge } from "../components/StatusBadge";
 import { Shell } from "../components/Shell";
+import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { queryClient } from "../lib/queryClient";
 
 export { createWilqQueryClient } from "../lib/queryClient";
@@ -108,15 +108,6 @@ const operatingRoutes = [
   "/security",
   "/settings"
 ];
-
-function LoadingBand() {
-  return (
-    <div className="flex h-32 items-center gap-3 px-6 text-sm text-slate-600">
-      <RefreshCw aria-hidden="true" className="animate-spin" size={18} />
-      Ładowanie stanu WILQ API
-    </div>
-  );
-}
 
 function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] }) {
   return (
@@ -1145,15 +1136,6 @@ function marketerBlockedClaimLabel(value: string) {
     "wasted budget": "zmarnowany budżet"
   };
   return labels[value] ?? value;
-}
-
-function BlockerNotice({ message }: { message: string }) {
-  return (
-    <div className="flex items-start gap-2 rounded-md border border-wait/30 bg-wait/10 p-4 text-sm leading-6 text-wait">
-      <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={16} />
-      <span>{message}</span>
-    </div>
-  );
 }
 
 function formatMetricFactValue(fact: MetricFact) {
@@ -7071,15 +7053,6 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
 
 function SectionHeading({ title }: { title: string }) {
   return <h2 className="mb-3 text-sm font-semibold uppercase tracking-normal text-slate-600">{title}</h2>;
-}
-
-function MetricTile({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="min-w-24 rounded-md border border-line bg-white px-3 py-2">
-      <div className="text-lg font-semibold">{value}</div>
-      <div className="text-slate-500">{label}</div>
-    </div>
-  );
 }
 
 function ErrorState() {
