@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 06:27 CEST.
+Last updated: 2026-06-21 06:48 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -161,6 +161,22 @@ read/safety/apply contracts exist and are fresh. Full `scripts/verify.sh`
 passed after this slice: backend `140 passed`, dashboard unit `17 passed`,
 Playwright e2e `14 passed`, skill/API smokes and dashboard production build
 passed.
+
+Latest Ads change-history empty-read truth, live proof 2026-06-21 06:48 CEST:
+`/api/ads/diagnostics.change_history_read_contract` no longer exposes a
+read-attempted-but-empty change history surface as a ready review task. Current
+live API has `status=blocked`, title `Google Ads: brak zmian do review`,
+`change_history_rows=[]` and missing contracts `change_event_rows`,
+`pre_change_performance_window`, `post_change_performance_window`,
+`human_change_impact_review`, `apply_preview`. Decision
+`ads_review_change_history` is also `blocked` with metric tiles `zmiany=0`,
+`kampanie=0` and title `Historia zmian: brak zdarzeń do impact review`. This is
+the intended behavior: WILQ can say the read found no change events, but must
+not invent change-impact analysis, performance uplift, budget scaling, budget
+apply or campaign mutation claims without concrete change_event rows and
+pre/post performance windows. Full `scripts/verify.sh` passed after this
+slice: backend `141 passed`, dashboard unit `17 passed`, Playwright e2e
+`14 passed`, skill/API smokes and dashboard production build passed.
 
 Latest Ads business policy truth, live proof 2026-06-21 01:01 CEST:
 `AdsBusinessContextReadContract` now exposes typed `business_policy_ids` and

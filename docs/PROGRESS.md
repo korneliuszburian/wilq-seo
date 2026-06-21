@@ -115,6 +115,20 @@ Aktualny proof produktowy:
   claim is allowed. Full `scripts/verify.sh` passed after this slice: backend
   `140 passed`, dashboard unit `17 passed`, Playwright e2e `14 passed`,
   skill/API smokes and dashboard production build passed.
+- Ads change-history empty-read truth, 2026-06-21 06:48 CEST.
+  Read-attempted-but-empty Google Ads change history no longer becomes a ready
+  review task. Current live `/api/ads/diagnostics` has
+  `change_history_read_contract.status=blocked`, title
+  `Google Ads: brak zmian do review`, `change_history_rows=[]` and missing
+  contracts `change_event_rows`, `pre_change_performance_window`,
+  `post_change_performance_window`, `human_change_impact_review`,
+  `apply_preview`. Decision `ads_review_change_history` is also blocked with
+  tiles `zmiany=0`, `kampanie=0`. This keeps WILQ from showing an empty ready
+  card or claiming change impact/performance uplift/budget apply without
+  concrete change_event rows and pre/post performance windows. Full
+  `scripts/verify.sh` passed after this slice: backend `141 passed`, dashboard
+  unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
+  production build passed.
 - Ahrefs typed gap read contract, 2026-06-21 01:21 CEST, superseded by the
   03:38 target fix above. The important surviving contract is still valid:
   `/api/ahrefs/diagnostics` exposes `gap_read_contract` as typed API state and

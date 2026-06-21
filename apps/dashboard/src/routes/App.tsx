@@ -3635,6 +3635,7 @@ function adsMissingReadContractLabel(value: string) {
     post_change_performance_window: "okno wyników po zmianie",
     human_change_impact_review: "ręczny review wpływu zmian",
     apply_preview: "podgląd wdrożenia",
+    change_event_rows: "zdarzenia historii zmian",
     impression_share: "udział w wyświetleniach",
     "keyword match context": "kontekst dopasowania słów kluczowych",
     keyword_match_context_read: "odczyt istniejących keywords i match types",

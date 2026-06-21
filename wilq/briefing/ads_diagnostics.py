@@ -2326,28 +2326,22 @@ def _change_history_read_contract(
         "budget apply",
         "campaign mutation",
     ]
-    if rows or read_attempted:
-        if rows:
-            resource_types = _unique(
-                row.change_resource_type
-                for row in rows
-                if row.change_resource_type is not None
-            )
-            operations = _unique(
-                row.resource_change_operation
-                for row in rows
-                if row.resource_change_operation is not None
-            )
-            summary = (
-                f"WILQ ma {len(rows)} zdarzeń historii zmian Google Ads z ostatnich "
-                f"14 dni. Typy zasobów: {', '.join(resource_types[:5])}; "
-                f"operacje: {', '.join(operations[:5])}."
-            )
-        else:
-            summary = (
-                "WILQ wykonał read-only change history read; Google Ads nie zwrócił "
-                "zdarzeń zmian w ostatnich 14 dniach."
-            )
+    if rows:
+        resource_types = _unique(
+            row.change_resource_type
+            for row in rows
+            if row.change_resource_type is not None
+        )
+        operations = _unique(
+            row.resource_change_operation
+            for row in rows
+            if row.resource_change_operation is not None
+        )
+        summary = (
+            f"WILQ ma {len(rows)} zdarzeń historii zmian Google Ads z ostatnich "
+            f"14 dni. Typy zasobów: {', '.join(resource_types[:5])}; "
+            f"operacje: {', '.join(operations[:5])}."
+        )
         return AdsChangeHistoryReadContract(
             status="ready",
             title="Google Ads: historia zmian",
@@ -2368,6 +2362,30 @@ def _change_history_read_contract(
                 "Użyj historii zmian jako kontekstu audytu: co zmieniono, kiedy i na "
                 "jakim typie zasobu. Nie claimuj wpływu zmiany bez okna przed/po, "
                 "celu biznesowego i ręcznego review."
+            ),
+        )
+    if read_attempted:
+        return AdsChangeHistoryReadContract(
+            status="blocked",
+            title="Google Ads: brak zmian do review",
+            summary=(
+                "WILQ wykonał read-only change history read; Google Ads nie zwrócił "
+                "zdarzeń zmian w ostatnich 14 dniach. Nie ma czego wiązać z "
+                "wynikami kampanii."
+            ),
+            allowed_metrics=[
+                "change_event_available",
+                "change_event_changed_field_count",
+            ],
+            missing_read_contracts=["change_event_rows", *missing_read_contracts],
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+            change_history_rows=[],
+            next_step=(
+                "Zostaw impact review zablokowany. Wróć do tego kontraktu dopiero, "
+                "gdy Google Ads zwróci konkretne change_event rows oraz WILQ będzie "
+                "miał okno wyników przed/po."
             ),
         )
     return AdsChangeHistoryReadContract(
@@ -4623,23 +4641,33 @@ def _ads_decision_queue(
             )
         )
 
-    if change_history_read_contract.status == "ready":
+    if (
+        change_history_read_contract.status == "ready"
+        or change_history_read_contract.evidence_ids
+    ):
         metric_facts = [
             fact
             for row in change_history_read_contract.change_history_rows
             for fact in row.metric_facts
         ]
+        has_change_rows = bool(change_history_read_contract.change_history_rows)
         decisions.append(
             AdsDecisionItem(
                 id="ads_review_change_history",
                 decision_type="review_change_history",
-                status="ready",
-                title="Sprawdź historię zmian Google Ads",
+                status="ready" if has_change_rows else "blocked",
+                title=(
+                    "Sprawdź historię zmian Google Ads"
+                    if has_change_rows
+                    else "Historia zmian: brak zdarzeń do impact review"
+                ),
                 summary=change_history_read_contract.summary,
                 rationale=(
-                    "Historia zmian mówi, co ostatnio zmieniano w koncie. WILQ może "
-                    "ją pokazać jako kontekst audytu, ale blokuje claimy o wpływie "
-                    "zmian na wynik bez porównania przed/po i ręcznego review."
+                    "Historia zmian mówi, co ostatnio zmieniano w koncie. Jeśli "
+                    "Google Ads nie zwrócił żadnych zdarzeń, WILQ blokuje impact "
+                    "review zamiast pokazywać pusty task. Jeśli zdarzenia istnieją, "
+                    "WILQ nadal blokuje claimy o wpływie zmian na wynik bez "
+                    "porównania przed/po i ręcznego review."
                 ),
                 next_step=change_history_read_contract.next_step,
                 allowed_metrics=change_history_read_contract.allowed_metrics,
