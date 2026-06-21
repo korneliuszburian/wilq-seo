@@ -34,6 +34,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs gap records in Content Planner, 2026-06-21 05:50 CEST.
+  `/api/content/diagnostics.decision_queue` łączy teraz realne Ahrefs gap facts
+  z kolejką contentową jako typed decision
+  `content_decision_ahrefs_gap_records_review`. Live proof po restarcie API:
+  `decision_count=5`, Ahrefs decision priority `18`, title
+  `Ahrefs: zweryfikuj luki SEO przed briefem contentowym`, tiles:
+  `rekordy Ahrefs=32`, `content gaps=4`, `organic keywords=4`,
+  `top pages=4`, `backlink gaps=9`, source `ahrefs`, evidence count `2`,
+  action `act_prepare_content_refresh_queue`. To jest review-only: WILQ każe
+  odrzucić szerokie/off-topic rekordy Ahrefs i połączyć sensowne tematy z
+  GSC/WordPress przed `refresh`, `merge`, `create` albo `block`. Narrow proof:
+  ruff/mypy for content schemas, `pytest -k content_diagnostics`,
+  dashboard unit tests and dashboard production build passed. Next product gap:
+  jakościowe filtrowanie Ahrefs off-topic/broad records oraz scoring z GSC,
+  WordPress inventory i business relevance.
 - Ahrefs content/backlink gap candidates, 2026-06-21 05:05 CEST.
   `refresh_ahrefs_cb31460610d3` wykonał read-only Ahrefs `organic-keywords`
   dla targetu jako próbkę content gap oraz `refdomains` dla backlink gap.

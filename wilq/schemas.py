@@ -1448,6 +1448,7 @@ class ContentDecisionItem(BaseModel):
         "merge_create_after_inventory_check",
         "inventory_check_before_create",
         "block_as_tracking_not_content",
+        "review_ahrefs_gap_records",
     ]
     status: Literal["ready", "blocked"] = "ready"
     title: str

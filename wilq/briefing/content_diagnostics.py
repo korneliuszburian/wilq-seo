@@ -40,7 +40,16 @@ ContentDecisionType = Literal[
     "merge_create_after_inventory_check",
     "inventory_check_before_create",
     "block_as_tracking_not_content",
+    "review_ahrefs_gap_records",
 ]
+AHREFS_GAP_FACT_NAMES = {
+    "ahrefs_content_gap_count",
+    "ahrefs_organic_keyword_gap_count",
+    "ahrefs_top_page_gap_count",
+    "ahrefs_competitor_page_count",
+    "ahrefs_referring_domain_gap_count",
+    "ahrefs_backlink_gap_count",
+}
 
 
 @dataclass(frozen=True)
@@ -79,8 +88,8 @@ def build_content_diagnostics(
         if item.domain == OpportunityDomain.gsc_seo
         or item.source_connectors.count("wordpress_ekologus") > 0
     ]
-    decision_queue = _content_decision_queue(all_tactical_items)
     action_ids = _content_action_ids(actions if actions is not None else list_actions())
+    decision_queue = _content_decision_queue(all_tactical_items, trusted_facts, action_ids)
     sections = [
         _query_page_section(latest_refreshes, trusted_facts, content_tactical_items, action_ids),
         _inventory_match_section(
@@ -106,9 +115,21 @@ def build_content_diagnostics(
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
-            evidence_id for section in sections for evidence_id in section.evidence_ids
+            [
+                *(evidence_id for section in sections for evidence_id in section.evidence_ids),
+                *(
+                    evidence_id
+                    for decision in decision_queue
+                    for evidence_id in decision.evidence_ids
+                ),
+            ]
         ),
-        action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
+        action_ids=_unique(
+            [
+                *(action_id for section in sections for action_id in section.action_ids),
+                *(action_id for decision in decision_queue for action_id in decision.action_ids),
+            ]
+        ),
         blocker_count=sum(1 for section in sections if section.status == "blocked"),
     )
 
@@ -386,10 +407,15 @@ def _unique(values: Iterable[object]) -> list[str]:
     return unique_values
 
 
-def _content_decision_queue(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
+def _content_decision_queue(
+    items: list[TacticalQueueItem],
+    metric_facts: list[MetricFact],
+    action_ids: list[str],
+) -> list[ContentDecisionItem]:
     decisions = [
         *_gsc_content_decisions(items),
         *_ga4_tracking_gap_decisions(items),
+        *_ahrefs_gap_record_decisions(metric_facts, action_ids),
     ]
     return sorted(decisions, key=_content_decision_sort_key)[:5]
 
@@ -553,6 +579,131 @@ def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentD
             risk=ActionRisk.medium,
         )
     ]
+
+
+def _ahrefs_gap_record_decisions(
+    metric_facts: list[MetricFact],
+    action_ids: list[str],
+) -> list[ContentDecisionItem]:
+    all_gap_facts = _unique_metric_facts(
+        fact
+        for fact in metric_facts
+        if fact.source_connector == "ahrefs" and fact.name in AHREFS_GAP_FACT_NAMES
+    )
+    record_gap_facts = [fact for fact in all_gap_facts if _is_ahrefs_record_gap_fact(fact)]
+    gap_facts = record_gap_facts or all_gap_facts
+    if not gap_facts:
+        return []
+
+    gap_counts = _ahrefs_gap_fact_counts(gap_facts)
+    evidence_ids = _unique(fact.evidence_id for fact in gap_facts)
+    sample_keywords = _ahrefs_gap_sample_keywords(gap_facts)
+    competitor_domains = _unique(
+        fact.dimensions.get("competitor_domain")
+        for fact in gap_facts
+        if fact.dimensions.get("competitor_domain")
+    )
+    topic_hint = ", ".join(sample_keywords[:4])
+    if not topic_hint:
+        topic_hint = ", ".join(competitor_domains[:4]) if competitor_domains else "brak próbek"
+    content_action_ids = [
+        action_id for action_id in action_ids if action_id == "act_prepare_content_refresh_queue"
+    ]
+    return [
+        ContentDecisionItem(
+            id="content_decision_ahrefs_gap_records_review",
+            decision_type="review_ahrefs_gap_records",
+            status="ready",
+            title="Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
+            summary=(
+                f"WILQ ma {len(gap_facts)} Ahrefs gap facts: "
+                f"content gaps={gap_counts['content_gap']}, "
+                f"organic keywords={gap_counts['organic_keyword_gap']}, "
+                f"top pages={gap_counts['top_page_gap']}, "
+                f"backlink gaps={gap_counts['backlink_gap']}. "
+                "To jest materiał do review z GSC/WordPress, nie obietnica wzrostu ruchu."
+            ),
+            priority=18,
+            metric_tiles={
+                "rekordy Ahrefs": len(gap_facts),
+                "content gaps": gap_counts["content_gap"],
+                "organic keywords": gap_counts["organic_keyword_gap"],
+                "top pages": gap_counts["top_page_gap"],
+                "backlink gaps": gap_counts["backlink_gap"],
+            },
+            queries=sample_keywords,
+            query_count=len(sample_keywords),
+            primary_query=sample_keywords[0] if sample_keywords else None,
+            source_connectors=["ahrefs"],
+            evidence_ids=evidence_ids,
+            metric_facts=gap_facts[:8],
+            action_ids=content_action_ids,
+            blocked_claims=[
+                "traffic uplift",
+                "authority improvement",
+                "ranking guarantee",
+                "lead uplift",
+            ],
+            rationale=(
+                "Ahrefs wskazuje luki względem konkurencji, ale rekordy mogą zawierać "
+                "szerokie lub off-topic domeny. WILQ nie może z tego zrobić briefu bez "
+                "filtrowania i połączenia z GSC oraz WordPress inventory."
+            ),
+            next_step=(
+                "Odrzuć szerokie/off-topic rekordy Ahrefs, wybierz tematy zgodne z "
+                "Ekologus i dopiero potem połącz je z GSC/WordPress jako refresh, "
+                "merge, create albo block."
+            ),
+            risk=ActionRisk.medium,
+        )
+    ]
+
+
+def _ahrefs_gap_fact_counts(metric_facts: list[MetricFact]) -> dict[str, int]:
+    counts = {
+        "content_gap": 0,
+        "organic_keyword_gap": 0,
+        "top_page_gap": 0,
+        "competitor_page": 0,
+        "backlink_gap": 0,
+    }
+    for fact in metric_facts:
+        gap_type = fact.dimensions.get("gap_type")
+        if gap_type in counts:
+            counts[gap_type] += 1
+            continue
+        if fact.name == "ahrefs_content_gap_count":
+            counts["content_gap"] += 1
+        elif fact.name == "ahrefs_organic_keyword_gap_count":
+            counts["organic_keyword_gap"] += 1
+        elif fact.name == "ahrefs_top_page_gap_count":
+            counts["top_page_gap"] += 1
+        elif fact.name == "ahrefs_competitor_page_count":
+            counts["competitor_page"] += 1
+        elif fact.name in {"ahrefs_referring_domain_gap_count", "ahrefs_backlink_gap_count"}:
+            counts["backlink_gap"] += 1
+    return counts
+
+
+def _is_ahrefs_record_gap_fact(fact: MetricFact) -> bool:
+    return any(
+        fact.dimensions.get(key)
+        for key in (
+            "gap_type",
+            "keyword",
+            "source_url",
+            "target_url",
+            "competitor_domain",
+        )
+    )
+
+
+def _ahrefs_gap_sample_keywords(metric_facts: list[MetricFact]) -> list[str]:
+    return _unique(
+        fact.dimensions.get("keyword")
+        for fact in metric_facts
+        if fact.dimensions.get("keyword")
+    )[:6]
 
 
 def _unique_tactical_items(items: Iterable[TacticalQueueItem]) -> list[TacticalQueueItem]:

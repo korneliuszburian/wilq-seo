@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 05:33 CEST.
+Last updated: 2026-06-21 05:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -114,6 +114,21 @@ authority improvement claims until impact/change-window contracts exist. Full
 `scripts/verify.sh` passed after this slice: backend `139 passed`, dashboard
 unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
 production build passed.
+
+Latest Ahrefs -> Content Planner bridge, live proof 2026-06-21 05:50 CEST:
+`/api/content/diagnostics.decision_queue` now includes typed decision
+`content_decision_ahrefs_gap_records_review` with title
+`Ahrefs: zweryfikuj luki SEO przed briefem contentowym`, priority `18`,
+source connector `ahrefs`, evidence count `2` and action
+`act_prepare_content_refresh_queue`. Current live tiles are
+`rekordy Ahrefs=32`, `content gaps=4`, `organic keywords=4`, `top pages=4`,
+`backlink gaps=9`. This connects real Ahrefs gap records to the marketer's
+Content Planner without dumping raw technical facts. It is still review-only:
+operator must reject broad/off-topic records and cross-check with GSC and
+WordPress inventory before choosing `refresh`, `merge`, `create` or `block`.
+Next product gap: score Ahrefs records by business relevance, GSC demand,
+WordPress inventory match and off-topic risk before turning them into content
+briefs.
 
 Latest Ads custom segment missing-metric truth, live proof 2026-06-21 01:40
 CEST: custom segment review no longer shows absent search-term impressions or
@@ -2546,7 +2561,7 @@ Commit rules:
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
    regression. Next product work should add missing value contracts:
-   actual Ahrefs content gap records, deeper
+   Ahrefs gap relevance/off-topic scoring inside Content Planner, deeper
    search-term/custom-segment evidence, remaining campaign optimization
    contracts and Demand Gen diagnostics. Ads
    target-aware KPI triage is started, but remains review-only. Campaign

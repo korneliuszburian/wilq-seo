@@ -1176,7 +1176,8 @@ export const ContentDecisionItemSchema = z.object({
     "refresh_or_merge",
     "merge_create_after_inventory_check",
     "inventory_check_before_create",
-    "block_as_tracking_not_content"
+    "block_as_tracking_not_content",
+    "review_ahrefs_gap_records"
   ]),
   status: z.enum(["ready", "blocked"]),
   title: z.string(),

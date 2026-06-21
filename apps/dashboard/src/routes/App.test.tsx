@@ -2611,6 +2611,26 @@ const metricFacts = [
     trend: "flat",
     freshness_state: "fresh",
     freshness_label: "odświeżone mniej niż godzinę temu"
+  },
+  {
+    name: "ahrefs_content_gap_count",
+    value: 1,
+    period: "connector_refresh",
+    source_connector: "ahrefs",
+    evidence_id: "ev_refresh_ahrefs_gap_records",
+    dimensions: {
+      gap_type: "content_gap",
+      keyword: "audyt środowiskowy",
+      competitor_domain: "konkurent.example"
+    },
+    unit: null,
+    collected_at: "2026-06-17T10:00:00Z",
+    previous_value: 1,
+    delta: 0,
+    delta_percent: 0,
+    trend: "flat",
+    freshness_state: "fresh",
+    freshness_label: "odświeżone mniej niż godzinę temu"
   }
 ];
 
@@ -3000,6 +3020,16 @@ const contentDiagnostics = {
       available_credential_sources: ["repo_env"],
       freshness: { state: "fresh" },
       supported_actions: ["content_refresh"]
+    },
+    {
+      id: "ahrefs",
+      label: "Ahrefs",
+      status: "configured",
+      configured: true,
+      missing_credentials: [],
+      available_credential_sources: ["repo_env"],
+      freshness: { state: "fresh" },
+      supported_actions: ["content_gap_review"]
     }
   ],
   latest_refreshes: [
@@ -3034,6 +3064,23 @@ const contentDiagnostics = {
       vendor_data_collected: true,
       metric_summary: { content_object_count: 16 },
       summary: "WordPress inventory completed.",
+      errors: [],
+      redacted: true
+    },
+    {
+      id: "refresh_ahrefs_gap_records_test",
+      connector_id: "ahrefs",
+      mode: "vendor_read",
+      status: "completed",
+      started_at: "2026-06-17T10:00:00Z",
+      completed_at: "2026-06-17T10:00:01Z",
+      evidence_ids: ["ev_refresh_ahrefs_gap_records"],
+      missing_credentials: [],
+      checked_credentials: ["AHREFS_API_TOKEN"],
+      external_call_attempted: true,
+      vendor_data_collected: true,
+      metric_summary: { ahrefs_content_gap_count: 1 },
+      summary: "Ahrefs gap records completed.",
       errors: [],
       redacted: true
     }
@@ -3080,6 +3127,44 @@ const contentDiagnostics = {
       next_step:
         "Przygotuj brief refresh/merge: title, H1/H2, sekcje brakujące wobec zapytania i CTA. Nie obiecuj leadów ani wzrostów pozycji.",
       risk: "low"
+    },
+    {
+      id: "content_decision_ahrefs_gap_records_review",
+      decision_type: "review_ahrefs_gap_records",
+      status: "ready",
+      title: "Ahrefs: zweryfikuj luki SEO przed briefem contentowym",
+      summary:
+        "WILQ ma 1 Ahrefs gap facts: content gaps=1, organic keywords=0, top pages=0, backlink gaps=0. To jest materiał do review z GSC/WordPress, nie obietnica wzrostu ruchu.",
+      priority: 18,
+      metric_tiles: {
+        "rekordy Ahrefs": 1,
+        "content gaps": 1,
+        "organic keywords": 0,
+        "top pages": 0,
+        "backlink gaps": 0
+      },
+      page: null,
+      normalized_page_path: null,
+      queries: ["audyt środowiskowy"],
+      query_count: 1,
+      primary_query: "audyt środowiskowy",
+      total_clicks: null,
+      total_impressions: null,
+      aggregate_ctr: null,
+      best_average_position: null,
+      wordpress_match: null,
+      wordpress_match_confidence: null,
+      wordpress_content_url: null,
+      source_connectors: ["ahrefs"],
+      evidence_ids: ["ev_refresh_ahrefs_gap_records"],
+      metric_facts: [metricFacts[6]],
+      action_ids: ["act_prepare_content_refresh_queue"],
+      blocked_claims: ["traffic uplift", "authority improvement", "ranking guarantee"],
+      rationale:
+        "Ahrefs wskazuje luki względem konkurencji, ale rekordy mogą zawierać szerokie lub off-topic domeny.",
+      next_step:
+        "Odrzuć szerokie/off-topic rekordy Ahrefs i połącz sensowne tematy z GSC/WordPress.",
+      risk: "medium"
     }
   ],
   sections: [
@@ -3114,7 +3199,7 @@ const contentDiagnostics = {
       risk: "low"
     }
   ],
-  evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
+  evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory", "ev_refresh_ahrefs_gap_records"],
   action_ids: ["act_prepare_content_refresh_queue"],
   blocker_count: 0
 };
@@ -4793,6 +4878,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Ahrefs: zweryfikuj luki SEO przed briefem contentowym")
+    ).toBeInTheDocument();
+    expect(screen.getByText("review luk Ahrefs")).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
     ).toBeInTheDocument();

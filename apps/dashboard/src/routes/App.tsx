@@ -5423,6 +5423,7 @@ function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_ty
     return "scalenie lub utworzenie po kontroli inventory";
   }
   if (decisionType === "inventory_check_before_create") return "kontrola inventory przed briefem";
+  if (decisionType === "review_ahrefs_gap_records") return "review luk Ahrefs";
   return "blokada zadania contentowego";
 }
 

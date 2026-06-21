@@ -6288,6 +6288,51 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert gsc_response.status_code == 200
     assert wordpress_response.status_code == 200
+    ahrefs_collected_at = datetime(2026, 6, 18, 9, 0, tzinfo=UTC)
+    ahrefs_run = ConnectorRefreshRun(
+        id="refresh_ahrefs_gap_records",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=ahrefs_collected_at,
+        completed_at=ahrefs_collected_at,
+        evidence_ids=["ev_refresh_ahrefs_gap_records"],
+        metric_summary={"ahrefs_content_gap_count": 2, "ahrefs_backlink_gap_count": 1},
+        vendor_data_collected=True,
+        summary="Ahrefs gap records completed through test adapter.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        ahrefs_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                1,
+                {
+                    "gap_type": "content_gap",
+                    "keyword": "audyt środowiskowy",
+                    "competitor_domain": "konkurent.example",
+                },
+            ),
+            VendorMetricFact(
+                "ahrefs_organic_keyword_gap_count",
+                1,
+                {
+                    "gap_type": "organic_keyword_gap",
+                    "keyword": "pozwolenie zintegrowane",
+                    "competitor_domain": "konkurent.example",
+                },
+            ),
+            VendorMetricFact(
+                "ahrefs_backlink_gap_count",
+                1,
+                {
+                    "gap_type": "backlink_gap",
+                    "competitor_domain": "konkurent.example",
+                    "source_url": "branża.example",
+                },
+            ),
+        ],
+    )
 
     response = client.get("/api/content/diagnostics")
 
@@ -6316,7 +6361,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         for item in inventory_section["tactical_items"]
     )
     assert payload["decision_queue"]
-    first_decision = payload["decision_queue"][0]
+    first_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["decision_type"] == "refresh_or_merge"
+    )
     assert first_decision["decision_type"] == "refresh_or_merge"
     assert first_decision["status"] == "ready"
     assert first_decision["priority"] == 23
@@ -6347,6 +6396,28 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert first_decision["evidence_ids"]
     assert "act_prepare_content_refresh_queue" in first_decision["action_ids"]
+    ahrefs_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["decision_type"] == "review_ahrefs_gap_records"
+    )
+    assert ahrefs_decision["status"] == "ready"
+    assert ahrefs_decision["title"] == (
+        "Ahrefs: zweryfikuj luki SEO przed briefem contentowym"
+    )
+    assert ahrefs_decision["metric_tiles"] == {
+        "rekordy Ahrefs": 3,
+        "content gaps": 1,
+        "organic keywords": 1,
+        "top pages": 0,
+        "backlink gaps": 1,
+    }
+    assert ahrefs_decision["queries"] == ["audyt środowiskowy", "pozwolenie zintegrowane"]
+    assert ahrefs_decision["source_connectors"] == ["ahrefs"]
+    assert ahrefs_decision["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
+    assert "act_prepare_content_refresh_queue" in ahrefs_decision["action_ids"]
+    assert "traffic uplift" in ahrefs_decision["blocked_claims"]
+    assert "ev_refresh_ahrefs_gap_records" in payload["evidence_ids"]
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -6356,7 +6427,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     context_payload = context_response.json()
     assert context_payload["content_diagnostics"]["evidence_ids"] == payload["evidence_ids"]
     assert context_payload["content_diagnostics"]["action_ids"] == payload["action_ids"]
-    context_decision = context_payload["content_diagnostics"]["decision_queue"][0]
+    context_decision = next(
+        decision
+        for decision in context_payload["content_diagnostics"]["decision_queue"]
+        if decision["id"] == first_decision["id"]
+    )
     assert context_decision["decision_type"] == first_decision["decision_type"]
     assert context_decision["status"] == first_decision["status"]
     assert context_decision["priority"] == first_decision["priority"]
@@ -6371,6 +6446,10 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_decision["source_connectors"] == first_decision["source_connectors"]
     assert context_decision["evidence_ids"] == first_decision["evidence_ids"]
     assert context_decision["action_ids"] == first_decision["action_ids"]
+    assert any(
+        decision["decision_type"] == "review_ahrefs_gap_records"
+        for decision in context_payload["content_diagnostics"]["decision_queue"]
+    )
     serialized = json.dumps(payload)
     assert "google_adc.json" not in serialized
     assert "app-password" not in serialized
