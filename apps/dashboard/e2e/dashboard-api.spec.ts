@@ -343,7 +343,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("DR").first()).toBeVisible();
     await expect(page.getByText("Gap records").first()).toBeVisible();
     await expect(page.getByText("gotowe").first()).toBeVisible();
-    await expect(page.getByText(/Luka treści:/).first()).toBeVisible();
+    await expect(page.getByText("competitor_page").first()).toBeVisible();
+    await expect(page.getByText(/Strona konkurencji:/).first()).toBeVisible();
+    await expect(page.getByText(/ahrefs_competitor_page_count:/).first()).toBeVisible();
     await expect(page.getByText(/poprawa autorytetu/).first()).toBeVisible();
     await expect(page.getByText("Evidence Registry")).toHaveCount(0);
     await expect(page.getByText("Connector Refresh Runs")).toHaveCount(0);

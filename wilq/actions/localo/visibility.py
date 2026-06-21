@@ -7,6 +7,7 @@ from wilq.schemas import MetricFact
 
 LOCALO_VISIBILITY_REVIEW_ACTION_ID = "act_review_localo_visibility_facts"
 LOCALO_VISIBILITY_REVIEW_ACTION_TYPE = "local_visibility_task"
+LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT = "local_visibility_review_preview_v1"
 LOCALO_VISIBILITY_BLOCKED_CLAIMS = [
     "GBP performance",
     "competitor visibility",
@@ -21,6 +22,13 @@ LOCALO_VISIBILITY_CONTRACTS = [
     "competitor_visibility",
     "reviews",
     "local_tasks",
+]
+LOCALO_VISIBILITY_REVIEW_STEPS = [
+    "review_place_inventory",
+    "review_local_rankings_aggregate",
+    "review_reviews_aggregate",
+    "block_gbp_and_competitor_claims_without_contract",
+    "require_human_confirm_before_any_write",
 ]
 
 
@@ -40,22 +48,41 @@ def localo_visibility_review_payload_from_metric_facts(
         for contract in LOCALO_VISIBILITY_CONTRACTS
         if contract not in set(present_contracts)
     ]
+    source_metric_names = _unique(fact.name for fact in visibility_facts)
+    evidence_ids = _unique(fact.evidence_id for fact in visibility_facts)
     return {
         "action_type": LOCALO_VISIBILITY_REVIEW_ACTION_TYPE,
         "connector": "localo",
         "mode": "prepare_only",
-        "source_metric_names": _unique(fact.name for fact in visibility_facts),
+        "source_metric_names": source_metric_names,
         "source_connectors": ["localo"],
         "allowed_contracts": present_contracts,
         "missing_read_contracts": missing_contracts,
-        "review_steps": [
-            "review_place_inventory",
-            "review_local_rankings_aggregate",
-            "review_reviews_aggregate",
-            "block_gbp_and_competitor_claims_without_contract",
-            "require_human_confirm_before_any_write",
-        ],
+        "review_steps": LOCALO_VISIBILITY_REVIEW_STEPS,
         "blocked_claims": LOCALO_VISIBILITY_BLOCKED_CLAIMS,
+        "preview_contract": LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT,
+        "payload_preview": [
+            {
+                "id": "localo_visibility_review",
+                "preview_contract": LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT,
+                "operation_type": "local_visibility_review",
+                "source_metric_names": source_metric_names,
+                "metric_snapshot": _metric_snapshot(visibility_facts),
+                "allowed_contracts": present_contracts,
+                "missing_read_contracts": missing_contracts,
+                "reason": (
+                    "Review-only podgląd Localo aggregate facts. WILQ może "
+                    "sprawdzić wskazane kontrakty, ale blokuje GBP, konkurencję, "
+                    "lokalne taski i uplift bez osobnych read contracts."
+                ),
+                "required_validation": LOCALO_VISIBILITY_REVIEW_STEPS,
+                "blocked_claims": LOCALO_VISIBILITY_BLOCKED_CLAIMS,
+                "evidence_ids": evidence_ids,
+                "api_mutation_ready": False,
+                "apply_allowed": False,
+                "destructive": False,
+            }
+        ],
         "apply_allowed": False,
         "destructive": False,
     }
@@ -77,11 +104,50 @@ def validate_localo_visibility_review_payload(payload: dict[str, Any]) -> list[s
         errors.append("local_visibility_task requires review_steps list.")
     if not isinstance(payload.get("blocked_claims"), list):
         errors.append("local_visibility_task requires blocked_claims list.")
+    preview_items = payload.get("payload_preview")
+    if not isinstance(preview_items, list) or not preview_items:
+        errors.append("local_visibility_task requires payload_preview list.")
+    elif not all(isinstance(item, dict) for item in preview_items):
+        errors.append("local_visibility_task payload_preview items must be objects.")
+    else:
+        for preview in preview_items:
+            if preview.get("preview_contract") != LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT:
+                errors.append(
+                    "local_visibility_task payload_preview requires "
+                    f"{LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT}."
+                )
+            if not isinstance(preview.get("metric_snapshot"), dict):
+                errors.append("local_visibility_task payload_preview requires metric_snapshot.")
+            if not isinstance(preview.get("required_validation"), list):
+                errors.append(
+                    "local_visibility_task payload_preview requires required_validation list."
+                )
+            if not isinstance(preview.get("evidence_ids"), list):
+                errors.append("local_visibility_task payload_preview requires evidence_ids list.")
+            if preview.get("api_mutation_ready") is not False:
+                errors.append(
+                    "local_visibility_task payload_preview must keep "
+                    "api_mutation_ready=false."
+                )
+            if preview.get("apply_allowed") is not False:
+                errors.append(
+                    "local_visibility_task payload_preview must keep apply_allowed=false."
+                )
+            if preview.get("destructive") is not False:
+                errors.append("local_visibility_task payload_preview must be non-destructive.")
     if payload.get("apply_allowed") is not False:
         errors.append("local_visibility_task must keep apply_allowed=false.")
     if payload.get("destructive") is not False:
         errors.append("local_visibility_task must be non-destructive.")
     return errors
+
+
+def _metric_snapshot(facts: list[MetricFact]) -> dict[str, int | float | str]:
+    snapshot: dict[str, int | float | str] = {}
+    for fact in facts:
+        if fact.name not in snapshot:
+            snapshot[fact.name] = fact.value
+    return snapshot
 
 
 def _unique(items: Iterable[str]) -> list[str]:

@@ -2953,6 +2953,29 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert localo_action["payload"]["action_type"] == "local_visibility_task"
     assert localo_action["payload"]["apply_allowed"] is False
     assert localo_action["payload"]["destructive"] is False
+    assert localo_action["payload"]["preview_contract"] == (
+        "local_visibility_review_preview_v1"
+    )
+    assert localo_action["payload"]["payload_preview"][0]["preview_contract"] == (
+        "local_visibility_review_preview_v1"
+    )
+    localo_preview = localo_action["payload"]["payload_preview"][0]
+    assert localo_preview["operation_type"] == "local_visibility_review"
+    assert localo_preview["metric_snapshot"]["localo_active_place_count"] == 4
+    assert localo_preview["metric_snapshot"]["localo_tracked_keyword_count"] == 23
+    assert localo_preview["allowed_contracts"] == [
+        "place_inventory",
+        "local_rankings",
+        "reviews",
+    ]
+    assert localo_preview["missing_read_contracts"] == [
+        "gbp_visibility",
+        "competitor_visibility",
+        "local_tasks",
+    ]
+    assert localo_preview["apply_allowed"] is False
+    assert localo_preview["api_mutation_ready"] is False
+    assert localo_preview["destructive"] is False
     assert "gbp_visibility" in localo_action["payload"]["missing_read_contracts"]
     assert "local_visibility_task" in json.dumps(localo_action, ensure_ascii=False)
     assert "localo-access-test" not in json.dumps(localo_action, ensure_ascii=False)
@@ -2962,6 +2985,17 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     )
     assert validate_response.status_code == 200
     assert validate_response.json()["valid"] is True
+    preview_response = client.post(
+        f"/api/actions/{LOCALO_VISIBILITY_REVIEW_ACTION_ID}/preview"
+    )
+    assert preview_response.status_code == 200
+    preview_payload = preview_response.json()
+    assert preview_payload["preview_contract"] == "local_visibility_review_preview_v1"
+    assert preview_payload["preview_items_total"] == 1
+    assert preview_payload["preview_items"][0]["metric_snapshot"][
+        "localo_reviews_count"
+    ] == 793
+    assert "payload_preview_missing" not in preview_payload["blockers"]
 
     command_response = client.get("/api/dashboard/command-center")
 
@@ -2989,6 +3023,18 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert context_payload["localo_diagnostics"]["action_ids"] == [
         LOCALO_VISIBILITY_REVIEW_ACTION_ID
     ]
+    context_actions_by_id = {
+        action["id"]: action for action in context_payload["active_action_objects"]
+    }
+    localo_context_action = context_actions_by_id[LOCALO_VISIBILITY_REVIEW_ACTION_ID]
+    assert localo_context_action["payload"]["payload_preview_included"] == 1
+    assert localo_context_action["payload"]["payload_preview_total"] == 1
+    assert localo_context_action["payload"]["payload_preview"][0]["preview_contract"] == (
+        "local_visibility_review_preview_v1"
+    )
+    assert localo_context_action["payload"]["payload_preview"][0]["metric_snapshot"][
+        "localo_active_place_count"
+    ] == 4
 
 
 def test_localo_diagnostics_blocks_visibility_when_access_is_missing(

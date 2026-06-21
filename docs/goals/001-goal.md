@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 17:05 CEST.
+Last updated: 2026-06-21 19:21 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -102,9 +102,36 @@ Full BDOS-class parity still requires optimizer contracts such as
 live change-event rows plus pre/post change-impact windows, approved Keyword
 Planner access/idea rows in live data, forecast or audience-size checks,
 custom segment targeting/apply previews, apply
-confirmation and mutation audit paths, plus real Localo
-ranking/GBP/competitor/review read contracts.
+confirmation and mutation audit paths. Localo now has read-only aggregate
+review facts for place inventory, local rankings and reviews plus a
+`local_visibility_review_preview_v1` ActionObject preview; full Localo parity
+still requires GBP visibility, competitor visibility, local task/write
+contracts and proof that these facts are fresh enough for recommendations.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Localo value contract proof, 2026-06-21 18:59 CEST:
+`act_review_localo_visibility_facts` now exposes a typed
+`local_visibility_review_preview_v1` payload preview with Localo metric
+snapshot, allowed contracts (`place_inventory`, `local_rankings`, `reviews`),
+missing contracts (`gbp_visibility`, `competitor_visibility`, `local_tasks`),
+blocked claims and `apply_allowed=false` / `api_mutation_ready=false`.
+`POST /api/codex/context-pack {"skill":"wilq-localo-operator"}` keeps one
+compacted preview item, so Codex and dashboard/actions API see the same
+ActionObject. `wilq-localo-operator` non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260621T165825Z/wilq-localo-operator/result.json`
+with `language=pl-PL`, `api_used=true`, `source_connectors=["localo"]`,
+evidence IDs including `ev_connector_localo_status` and
+`ev_refresh_refresh_localo_9928e881eef7`, action candidate
+`act_review_localo_visibility_facts`, and blocked claims for ranking/GBP/
+competitor/local visibility uplift beyond current evidence.
+Final verification for this slice passed on 2026-06-21 19:21 CEST:
+`scripts/verify.sh` green, including 145 backend tests, 17 dashboard unit tests,
+skill structure/API smokes, 14 Playwright e2e tests and dashboard production
+build. The only verify blocker found during this slice was an outdated Ahrefs
+e2e expectation: Ahrefs currently exposes typed `competitor_page` records while
+content/backlink gap contracts are intentionally still missing. The test now
+checks the current typed gap record contract instead of expecting the old
+`Luka treści:` marker.
 
 Latest Ads human strategy review state truth, contract proof
 2026-06-21 16:51 CEST: `act_record_ads_strategy_review` records operator review

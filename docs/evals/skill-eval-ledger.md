@@ -25,6 +25,71 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-21 - wilq-localo-operator value preview eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-localo-operator`.
+
+Why this eval matters:
+
+Localo is no longer only an access-readiness surface. WILQ now has Localo
+aggregate facts for place inventory, local rankings and reviews, and the
+`act_review_localo_visibility_facts` ActionObject exposes a typed
+`local_visibility_review_preview_v1` payload preview. The skill must use that
+review path while still blocking unsupported ranking/GBP/competitor/uplift
+claims.
+
+Pre-eval API proof:
+
+- `/api/localo/diagnostics` exposes `localo_review_visibility_facts`,
+  `visibility_fact_count>0`, allowed evidence contracts
+  `place_inventory`, `local_rankings`, `reviews`, and missing contracts
+  `gbp_visibility`, `competitor_visibility`, `local_tasks`.
+- `/api/actions/act_review_localo_visibility_facts.payload.payload_preview[0]`
+  has `preview_contract=local_visibility_review_preview_v1`,
+  a Localo metric snapshot, `apply_allowed=false`,
+  `api_mutation_ready=false` and `destructive=false`.
+- `POST /api/codex/context-pack {"skill":"wilq-localo-operator"}` keeps one
+  compacted preview item with `payload_preview_included=1`.
+- Updated smoke output includes
+  `localo_action_preview_contract=local_visibility_review_preview_v1` and
+  compact Localo preview metric names.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T165825Z/wilq-localo-operator/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors: `localo`.
+- Evidence IDs include `ev_connector_localo_status` and
+  `ev_refresh_refresh_localo_9928e881eef7`.
+- Opportunity IDs include `opp_decision_review_localo_visibility_facts`.
+- Action candidate: `act_review_localo_visibility_facts`.
+- `blocked=true` because ranking/GBP/competitor/local visibility uplift beyond
+  current aggregate facts remain unsupported.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- Localo is now useful as a review-only aggregate visibility surface, not just
+  an OAuth/access status. It still must not produce GBP performance,
+  competitor visibility, local tasks, write actions or uplift claims until WILQ
+  adds those read contracts and evidence.
+
 ## 2026-06-21 - wilq-ahrefs-gap-finder content-gap eval
 
 Prompt source:

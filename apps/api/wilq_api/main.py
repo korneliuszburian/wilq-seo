@@ -1679,6 +1679,18 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload["payload_preview"]
         )
         payload_preview_kept = True
+    if (
+        compact_payload.get("preview_contract") == "local_visibility_review_preview_v1"
+        and isinstance(payload_preview, list)
+    ):
+        compact_payload["payload_preview_total"] = len(payload_preview)
+        compact_payload["payload_preview"] = _compact_localo_visibility_preview_for_context(
+            payload_preview
+        )
+        compact_payload["payload_preview_included"] = len(
+            compact_payload["payload_preview"]
+        )
+        payload_preview_kept = True
     ngram_preview = compact_payload.get("ngram_preview")
     if (
         compact_payload.get("preview_contract") == "search_term_ngram_review_v1"
@@ -1800,6 +1812,46 @@ def _compact_ga4_tracking_preview_for_context(preview_items: list[Any]) -> list[
     for item in preview_items[:4]:
         if isinstance(item, dict):
             compact_items.append({key: item[key] for key in keep_keys if key in item})
+    return compact_items
+
+
+def _compact_localo_visibility_preview_for_context(
+    preview_items: list[Any],
+) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    keep_keys = {
+        "id",
+        "preview_contract",
+        "operation_type",
+        "metric_snapshot",
+        "allowed_contracts",
+        "missing_read_contracts",
+        "reason",
+        "required_validation",
+        "blocked_claims",
+        "evidence_ids",
+        "api_mutation_ready",
+        "apply_allowed",
+        "destructive",
+    }
+    for item in preview_items[:1]:
+        if not isinstance(item, dict):
+            continue
+        compact_item = {key: item[key] for key in keep_keys if key in item}
+        metric_snapshot = compact_item.get("metric_snapshot")
+        if isinstance(metric_snapshot, dict):
+            compact_item["metric_snapshot"] = dict(list(metric_snapshot.items())[:12])
+        required_validation = compact_item.get("required_validation")
+        if isinstance(required_validation, list):
+            compact_item["required_validation_total"] = len(required_validation)
+            compact_item["required_validation"] = required_validation[:4]
+        blocked_claims = compact_item.get("blocked_claims")
+        if isinstance(blocked_claims, list):
+            compact_item["blocked_claims"] = blocked_claims[:5]
+        evidence_ids = compact_item.get("evidence_ids")
+        if isinstance(evidence_ids, list):
+            compact_item["evidence_ids"] = evidence_ids[:3]
+        compact_items.append(compact_item)
     return compact_items
 
 

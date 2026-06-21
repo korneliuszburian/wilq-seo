@@ -162,7 +162,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "local visibility",
                 "blocked claims",
             },
-            "action_ids": set(),
+            "action_ids": {"act_review_localo_visibility_facts"},
         },
     }
 

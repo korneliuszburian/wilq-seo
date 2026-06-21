@@ -37,6 +37,27 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo visibility review payload preview, 2026-06-21 18:59 CEST.
+  `/api/actions/act_review_localo_visibility_facts` ma teraz typed
+  `local_visibility_review_preview_v1` w `payload.payload_preview`: skrócony
+  metric snapshot Localo, allowed contracts (`place_inventory`,
+  `local_rankings`, `reviews`), missing contracts (`gbp_visibility`,
+  `competitor_visibility`, `local_tasks`), required validation i twarde
+  `apply_allowed=false`, `api_mutation_ready=false`, `destructive=false`.
+  Context-pack dla `wilq-localo-operator` zachowuje 1 mały Localo preview
+  zamiast zerować `payload_preview`, więc Codex widzi ten sam kontrakt co
+  dashboard/actions API. Live proof: context-pack pokazuje
+  `payload_preview_included=1`, smoke skilla zwraca
+  `localo_action_preview_contract=local_visibility_review_preview_v1`, a
+  `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300
+  scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base
+  http://127.0.0.1:8000` passed z artefaktem
+  `.local-lab/evals/codex-skill/20260621T165825Z/wilq-localo-operator/result.json`.
+  Finalny proof slice'a: `scripts/verify.sh` passed o 2026-06-21 19:21 CEST,
+  w tym 145 backend tests, 17 dashboard unit tests, skill smokes, 14 Playwright
+  e2e i dashboard build. Po drodze naprawiono tylko outdated Ahrefs e2e smoke:
+  widok `/ahrefs` pokazuje obecnie typed `competitor_page` records, a nie dawny
+  marker `Luka treści:`, bo content/backlink gap contracts nadal są brakujące.
 - Dashboard trace line extraction, 2026-06-21 18:36 CEST.
   Czwarty mały code-quality slice: `TraceLine` i `LinkedTraceLine` zostały
   przeniesione z `App.tsx` do `apps/dashboard/src/components/TraceLine.tsx`.
