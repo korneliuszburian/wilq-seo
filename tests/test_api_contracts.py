@@ -1656,6 +1656,24 @@ def test_google_ads_keyword_planner_access_blocker_action_is_review_only(
         KEYWORD_PLANNER_ACCESS_ACTION_ID
     ]
     assert KEYWORD_PLANNER_ACCESS_ACTION_ID in diagnostics["action_ids"]
+    sections_by_id = {section["id"]: section for section in diagnostics["sections"]}
+    assert sections_by_id["ads_live_data_status"]["action_ids"] == []
+    assert sections_by_id["ads_campaign_overview"]["action_ids"] == [
+        "act_prepare_ads_campaign_review_queue"
+    ]
+    assert sections_by_id["ads_search_terms"]["action_ids"] == [
+        "act_prepare_custom_segments_from_search_terms",
+        "act_prepare_negative_keyword_review_queue",
+    ]
+    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id[
+        "ads_live_data_status"
+    ]["action_ids"]
+    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id[
+        "ads_campaign_overview"
+    ]["action_ids"]
+    assert KEYWORD_PLANNER_ACCESS_ACTION_ID not in sections_by_id["ads_search_terms"][
+        "action_ids"
+    ]
 
 
 def test_metric_backed_prepare_actions_are_evidence_grounded(

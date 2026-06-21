@@ -636,7 +636,7 @@ def _oauth_or_live_section(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=evidence_ids,
             metric_facts=metric_facts[:8],
-            action_ids=action_ids,
+            action_ids=[],
             blocked_claims=["negative keyword apply", "budget mutation", "campaign mutation"],
             risk=ActionRisk.medium,
         )
@@ -695,7 +695,7 @@ def _campaign_overview_section(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=campaign_read_contract.evidence_ids,
             metric_facts=campaign_facts[:12],
-            action_ids=action_ids,
+            action_ids=_campaign_review_action_ids(action_ids),
             blocked_claims=campaign_read_contract.blocked_claims,
             risk=ActionRisk.low,
         )
@@ -713,7 +713,7 @@ def _campaign_overview_section(
         next_step="Napraw OAuth i wykonaj read-only Google Ads vendor_read.",
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=evidence_ids,
-        action_ids=action_ids,
+        action_ids=[],
         blocked_claims=["spend", "clicks", "impressions", "campaign trend"],
         risk=ActionRisk.medium,
     )
@@ -3271,7 +3271,7 @@ def _search_terms_section(
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=search_terms_read_contract.evidence_ids,
             metric_facts=metric_facts[:12],
-            action_ids=action_ids,
+            action_ids=_search_term_action_ids(action_ids),
             blocked_claims=search_terms_read_contract.blocked_claims,
             risk=ActionRisk.medium,
         )
@@ -3289,7 +3289,7 @@ def _search_terms_section(
         next_step=search_terms_read_contract.next_step,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=search_terms_read_contract.evidence_ids,
-        action_ids=action_ids,
+        action_ids=_search_term_action_ids(action_ids),
         blocked_claims=search_terms_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )

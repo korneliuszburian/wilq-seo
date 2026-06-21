@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads section ActionObject ownership, 2026-06-21 12:05 CEST.
+  Keyword Planner access blocker nie rozlewa się już w Ads Doctor na ogólne
+  sekcje. Live `/api/ads/diagnostics` po restarcie stacka: top-level
+  `action_ids` nadal zawiera
+  `act_configure_google_ads_keyword_planner_access`, ale
+  `ads_live_data_status.action_ids=[]`,
+  `ads_campaign_overview.action_ids=[act_prepare_ads_campaign_review_queue]`,
+  `ads_search_terms.action_ids=[act_prepare_custom_segments_from_search_terms,
+  act_prepare_negative_keyword_review_queue]`, a
+  `ads_keyword_planner.action_ids=[act_configure_google_ads_keyword_planner_access]`.
+  Command Center Ads decision nadal pokazuje tylko cztery właściwe kolejki Ads,
+  bez Keyword Planner access repair. Scoped `wilq-ads-doctor` context-pack ma
+  `190224` bytes po tej separacji.
 - Google Ads Keyword Planner approval blocker, 2026-06-21 11:40 CEST.
   Keyword Planner 403/`DEVELOPER_TOKEN_NOT_APPROVED` nie jest już ukrytym
   tekstem w Ads diagnostics. WILQ wystawia review-only ActionObject

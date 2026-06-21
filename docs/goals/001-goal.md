@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 11:40 CEST.
+Last updated: 2026-06-21 12:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -111,6 +111,20 @@ context-pack is `199512` bytes, under the 200 KB limit. Full
 `scripts/verify.sh` passed after this slice: backend `144 passed`, dashboard
 unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes and dashboard
 production build passed.
+
+Latest Ads section ActionObject ownership truth, live proof 2026-06-21
+12:05 CEST: `act_configure_google_ads_keyword_planner_access` is no longer
+shown as a generic Ads campaign/search-term action. Top-level
+`/api/ads/diagnostics.action_ids` still includes it for scoped Ads Doctor and
+safety context, but section ownership is explicit:
+`ads_live_data_status.action_ids=[]`,
+`ads_campaign_overview.action_ids=[act_prepare_ads_campaign_review_queue]`,
+`ads_search_terms.action_ids=[act_prepare_custom_segments_from_search_terms,
+act_prepare_negative_keyword_review_queue]`, and
+`ads_keyword_planner.action_ids=[act_configure_google_ads_keyword_planner_access]`.
+Command Center Ads decision continues to show only the four real Ads review
+queues, not Keyword Planner access repair. Scoped `wilq-ads-doctor`
+context-pack is `190224` bytes after this separation.
 
 Latest Content brief preview/review truth, live proof 2026-06-21 10:16 CEST:
 `act_prepare_content_refresh_queue` now exposes review-only
