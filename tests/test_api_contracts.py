@@ -18,6 +18,7 @@ from wilq.actions.google_ads.business_context import (
 )
 from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
+from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import apply_action
 from wilq.briefing.ads_diagnostics import (
@@ -3408,11 +3409,12 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings() -> None:
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
         "act_prepare_ads_campaign_review_queue",
-        ADS_TARGET_CONFIRMATION_ACTION_ID,
-        "act_prepare_google_ads_recommendation_review_queue",
-        "act_prepare_custom_segments_from_search_terms",
-        "act_prepare_negative_keyword_review_queue",
-    ]
+            ADS_TARGET_CONFIRMATION_ACTION_ID,
+            "act_prepare_google_ads_recommendation_review_queue",
+            "act_prepare_custom_segments_from_search_terms",
+            "act_prepare_negative_keyword_review_queue",
+            SEARCH_TERM_NGRAM_ACTION_ID,
+        ]
     assert google_ads["is_fixture"] is False
     localo = next(
         item
@@ -5723,6 +5725,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "human_intent_review",
         "negative_keyword_action_validation",
     ]
+    assert ngram_contract["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
     assert "search-term waste" in ngram_contract["blocked_claims"]
     assert "negative keyword apply" in ngram_contract["blocked_claims"]
     assert ngram_contract["ngram_rows"]
@@ -5738,6 +5741,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert ngram_section["status"] == "ready"
     assert ngram_section["title"] == "N-gramy zapytań Google Ads"
+    assert ngram_section["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
     ngram_decision = next(
         decision
         for decision in payload["decision_queue"]
@@ -5753,6 +5757,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert ngram_decision["metric_tiles"]["top kliknięcia"] >= 4
     assert "top koszt" in ngram_decision["metric_tiles"]
     assert ngram_decision["search_term_ngram_rows"]
+    assert ngram_decision["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
     assert "negative_keyword_payload_preview" in ngram_decision["missing_read_contracts"]
     assert "card_google_ads_search_playbook" in ngram_decision["knowledge_card_ids"]
     search_term_safety_contract = payload["search_term_safety_read_contract"]
@@ -6182,6 +6187,25 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     validate_response = client.post(f"/api/actions/{CHANGE_HISTORY_IMPACT_ACTION_ID}/validate")
     assert validate_response.status_code == 200
     assert validate_response.json()["valid"] is True
+    assert SEARCH_TERM_NGRAM_ACTION_ID in actions
+    ngram_action = actions[SEARCH_TERM_NGRAM_ACTION_ID]
+    assert ngram_action["payload"]["action_type"] == (
+        "google_ads_search_term_ngram_review"
+    )
+    assert ngram_action["payload"]["preview_contract"] == "search_term_ngram_review_v1"
+    assert ngram_action["payload"]["ngram_preview"][0]["ngram"]
+    assert ngram_action["payload"]["ngram_preview"][0]["sample_search_terms"]
+    assert ngram_action["payload"]["ngram_preview"][0]["apply_allowed"] is False
+    assert ngram_action["payload"]["ngram_preview"][0]["destructive"] is False
+    assert ngram_action["payload"]["ngram_preview"][0]["api_mutation_ready"] is False
+    assert ngram_action["payload"]["apply_allowed"] is False
+    assert ngram_action["payload"]["destructive"] is False
+    assert ngram_action["payload"]["api_mutation_ready"] is False
+    ngram_validate_response = client.post(
+        f"/api/actions/{SEARCH_TERM_NGRAM_ACTION_ID}/validate"
+    )
+    assert ngram_validate_response.status_code == 200
+    assert ngram_validate_response.json()["valid"] is True
     search_terms_decision = decisions_by_id["ads_review_search_terms"]
     assert search_terms_decision["status"] == "ready"
     assert search_terms_decision["priority"] == 40
@@ -6294,7 +6318,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert safety_decision["priority"] == 10
-    assert safety_decision["metric_tiles"] == {"ActionObjecty": 6, "blokady": 3}
+    assert safety_decision["metric_tiles"] == {"ActionObjecty": 7, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
     assert payload["blocker_count"] == 2
 
@@ -6352,6 +6376,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "act_configure_google_ads_env" not in action_ids
     assert "act_prepare_ads_campaign_review_queue" in action_ids
     assert CHANGE_HISTORY_IMPACT_ACTION_ID in action_ids
+    assert SEARCH_TERM_NGRAM_ACTION_ID in action_ids
     assert "act_prepare_google_ads_recommendation_review_queue" in action_ids
     assert "act_prepare_custom_segments_from_search_terms" in action_ids
     assert "act_prepare_negative_keyword_review_queue" in action_ids
@@ -9133,6 +9158,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     assert "review_campaign_goal" in campaign_candidate["human_review_gates"]
     assert campaign_candidate["apply_allowed"] is False
     assert len(ads_context["search_terms_read_contract"]["search_term_rows"]) <= 8
+    assert len(ads_context["search_term_ngram_read_contract"]["ngram_rows"]) <= 8
     assert len(ads_context["search_term_safety_read_contract"]["safety_rows"]) <= 8
     assert len(ads_context["keyword_match_context_read_contract"]["context_rows"]) <= 8
     assert len(ads_context["budget_pacing_read_contract"]["payload_preview"]) <= 4
@@ -9173,6 +9199,12 @@ def test_codex_context_pack_scopes_ads_doctor_payload() -> None:
     )
     assert '"metric_facts":' not in json.dumps(ads_context)
     assert "safety_metric_facts" not in json.dumps(ads_context)
+    ngram_context_action = next(
+        action
+        for action in data["active_action_objects"]
+        if action["id"] == SEARCH_TERM_NGRAM_ACTION_ID
+    )
+    assert ngram_context_action["payload"]["ngram_preview_included"] <= 4
 
 
 def test_codex_context_pack_scopes_custom_segments_payload() -> None:

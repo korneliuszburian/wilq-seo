@@ -787,6 +787,7 @@ export const AdsSearchTermNgramReadContractSchema = z.object({
   blocked_claims: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()).optional().default([]),
   ngram_rows: z.array(AdsSearchTermNgramRowSchema),
   next_step: z.string()
 });

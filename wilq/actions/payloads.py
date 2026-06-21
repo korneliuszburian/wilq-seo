@@ -21,6 +21,7 @@ from wilq.actions.google_ads.keyword_planner import (
 )
 from wilq.actions.google_ads.negative_keywords import validate_negative_keyword_payload
 from wilq.actions.google_ads.recommendations import validate_recommendation_review_payload
+from wilq.actions.google_ads.search_term_ngrams import validate_search_term_ngram_payload
 from wilq.actions.localo.visibility import (
     LOCALO_VISIBILITY_REVIEW_ACTION_TYPE,
     validate_localo_visibility_review_payload,
@@ -97,6 +98,8 @@ def validate_action_payload(connector_id: str, payload: dict[str, Any]) -> list[
         errors.extend(validate_recommendation_review_payload(payload))
     if connector_id == "google_ads" and action_type == "google_ads_change_history_impact_review":
         errors.extend(validate_change_history_impact_payload(payload))
+    if connector_id == "google_ads" and action_type == "google_ads_search_term_ngram_review":
+        errors.extend(validate_search_term_ngram_payload(payload))
     if connector_id == "google_analytics_4" and action_type == GA4_TRACKING_QUALITY_ACTION_TYPE:
         errors.extend(validate_ga4_tracking_quality_payload(payload))
     if connector_id == "localo" and action_type == LOCALO_VISIBILITY_REVIEW_ACTION_TYPE:

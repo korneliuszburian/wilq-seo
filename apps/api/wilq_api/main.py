@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
+from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import (
     apply_action,
     confirm_action,
@@ -139,7 +140,7 @@ ADS_CONTEXT_ROW_LIMIT = 6
 ADS_CONTEXT_NGRAM_ROW_LIMIT = 3
 DEMAND_GEN_CHANNEL_TYPES = {"DEMAND_GEN", "DISCOVERY"}
 DEMAND_GEN_CAMPAIGN_ROW_LIMIT = 8
-ADS_CONTEXT_DECISION_ROW_LIMIT = 4
+ADS_CONTEXT_DECISION_ROW_LIMIT = 3
 ADS_LITE_DECISION_LIMIT = 5
 ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT = 3
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
@@ -1616,10 +1617,18 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
                 "apply_blockers": apply_blockers[:4],
                 "apply_blockers_included": min(len(apply_blockers), 4),
             }
+    if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID:
+        compact["human_diagnosis"] = (
+            "N-gram review z Google Ads search-term evidence; nie apply."
+        )
+        compact["recommended_reason"] = (
+            "Sprawdź intencję tematów i próbki zapytań przed negative keyword queue."
+        )
+        compact["evidence_ids"] = compact.get("evidence_ids", [])[:1]
     metrics = compact.get("metrics")
     if isinstance(metrics, list):
         compact["metrics_total"] = len(metrics)
-        compact["metrics"] = metrics[:1]
+        compact["metrics"] = [] if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID else metrics[:1]
         compact["metrics_included"] = len(compact["metrics"])
     payload = compact.get("payload")
     if not isinstance(payload, dict):
@@ -1664,11 +1673,24 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload["payload_preview"]
         )
         payload_preview_kept = True
+    ngram_preview = compact_payload.get("ngram_preview")
+    if (
+        compact_payload.get("preview_contract") == "search_term_ngram_review_v1"
+        and isinstance(ngram_preview, list)
+    ):
+        compact_payload["ngram_preview_total"] = len(ngram_preview)
+        compact_payload["ngram_preview"] = _compact_ngram_preview_for_context(
+            ngram_preview
+        )
+        compact_payload["ngram_preview_included"] = len(
+            compact_payload["ngram_preview"]
+        )
     for key in (
         "budget_payload_preview",
         "recommendations",
         "terms",
         "source_terms",
+        "source_search_terms",
         "payload_preview",
         "keyword_match_context",
     ):
@@ -1679,8 +1701,75 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload[f"{key}_total"] = len(rows)
             compact_payload[key] = []
             compact_payload[f"{key}_included"] = len(compact_payload[key])
+    if compact.get("id") == SEARCH_TERM_NGRAM_ACTION_ID:
+        evidence_ids = compact_payload.get("evidence_ids")
+        if isinstance(evidence_ids, list):
+            compact_payload["evidence_ids"] = evidence_ids[:1]
+        compact_payload = {
+            key: compact_payload.get(key)
+            for key in (
+                "action_type",
+                "connector",
+                "mode",
+                "preview_contract",
+                "operation_type",
+                "ngram_preview",
+                "ngram_preview_total",
+                "ngram_preview_included",
+                "evidence_ids",
+                "missing_read_contracts",
+                "required_validation",
+                "blocked_claims",
+                "api_mutation_ready",
+                "apply_allowed",
+                "destructive",
+            )
+            if key in compact_payload
+        }
     compact["payload"] = compact_payload
     return compact
+
+
+def _compact_ngram_preview_for_context(preview_items: list[Any]) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    keep_keys = {
+        "id",
+        "ngram",
+        "ngram_size",
+        "source_search_term_count",
+        "sample_search_terms",
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+        "operation_type",
+                "required_validation",
+                "blocked_claims",
+                "evidence_ids",
+                "api_mutation_ready",
+        "apply_allowed",
+        "destructive",
+    }
+    for item in preview_items[:1]:
+        if not isinstance(item, dict):
+            continue
+        compact_item = {key: item.get(key) for key in keep_keys if key in item}
+        sample_search_terms = compact_item.get("sample_search_terms")
+        if isinstance(sample_search_terms, list):
+            compact_item["sample_search_terms"] = sample_search_terms[:1]
+        evidence_ids = compact_item.get("evidence_ids")
+        if isinstance(evidence_ids, list):
+            compact_item["evidence_ids"] = evidence_ids[:1]
+        required_validation = compact_item.get("required_validation")
+        if isinstance(required_validation, list):
+            compact_item["required_validation_total"] = len(required_validation)
+            compact_item["required_validation"] = required_validation[:2]
+        blocked_claims = compact_item.get("blocked_claims")
+        if isinstance(blocked_claims, list):
+            compact_item["blocked_claims"] = blocked_claims[:2]
+        compact_items.append(compact_item)
+    return compact_items
 
 
 def _compact_ga4_tracking_preview_for_context(preview_items: list[Any]) -> list[dict[str, Any]]:

@@ -50,6 +50,7 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
             "campaign_change_review",
             "google_ads_recommendation_review",
             "google_ads_change_history_impact_review",
+            "google_ads_search_term_ngram_review",
             "demand_gen_migration_plan",
             "custom_segment_candidate",
         ),

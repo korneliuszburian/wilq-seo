@@ -15,6 +15,7 @@ SAFE_TRACE_VALUE_RE = re.compile(
 )
 SAFE_IDENTIFIER_KEYS = {
     "api",
+    "action_type",
     "affected_attribute",
     "allowed_evidence",
     "allowed_uses",
@@ -64,6 +65,7 @@ SAFE_IDENTIFIER_KEYS = {
     "normalized_page_path",
     "omitted_contracts",
     "operator_review_gates",
+    "operation_type",
     "operator_checklist",
     "operations",
     "page",

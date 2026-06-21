@@ -41,6 +41,10 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_ACTION_ID,
     recommendation_review_payload_from_metric_facts,
 )
+from wilq.actions.google_ads.search_term_ngrams import (
+    SEARCH_TERM_NGRAM_ACTION_ID,
+    search_term_ngram_payload_from_metric_facts,
+)
 from wilq.actions.localo.visibility import (
     LOCALO_VISIBILITY_REVIEW_ACTION_ID,
     localo_visibility_review_payload_from_metric_facts,
@@ -774,6 +778,51 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
                 "bez skalowania i bez performance uplift claimów."
             ),
             payload=change_history_payload,
+            validation_status="not_validated",
+            created_by="system_metric_seed",
+        )
+        actions[action.id] = action
+
+    search_term_ngram_payload = search_term_ngram_payload_from_metric_facts(
+        google_ads_facts
+    )
+    if search_term_ngram_payload is not None:
+        ngram_source_terms = {
+            term
+            for preview in search_term_ngram_payload["ngram_preview"][:8]
+            if isinstance(preview, dict)
+            for term in preview.get("sample_search_terms", [])
+            if isinstance(term, str)
+        }
+        ngram_metrics = [
+            fact
+            for fact in google_ads_facts
+            if fact.name in search_term_ngram_payload["source_metric_names"]
+            and fact.evidence_id in search_term_ngram_payload["evidence_ids"]
+            and fact.dimensions.get("search_term") in ngram_source_terms
+        ][:12]
+        action = ActionObject(
+            id=SEARCH_TERM_NGRAM_ACTION_ID,
+            title="Przygotuj review tematów z n-gramów search terms",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=search_term_ngram_payload["evidence_ids"],
+            metrics=ngram_metrics,
+            human_diagnosis=(
+                "Google Ads ma search-term facts, które tworzą powtarzające się "
+                "tematy n-gram. WILQ może przygotować kolejkę review intencji, ale "
+                "nie może traktować n-gramów jako gotowych wykluczeń ani claimować "
+                "waste bez walidacji."
+            ),
+            recommended_reason=(
+                "Na /ads-doctor przejrzyj n-gramy z kosztem, kliknięciami i "
+                "przykładowymi search terms. Dopiero po human intent review wróć "
+                "do negative keyword queue."
+            ),
+            payload=search_term_ngram_payload,
             validation_status="not_validated",
             created_by="system_metric_seed",
         )

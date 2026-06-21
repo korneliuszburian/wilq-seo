@@ -1058,6 +1058,7 @@ class AdsSearchTermNgramReadContract(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
     ngram_rows: list[AdsSearchTermNgramRow] = Field(default_factory=list)
     next_step: str
 

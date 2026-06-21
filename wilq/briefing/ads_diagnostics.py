@@ -40,6 +40,7 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_BLOCKED_CLAIMS,
     RECOMMENDATION_REVIEW_REQUIRED_VALIDATION,
 )
+from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -508,6 +509,10 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     )
     change_history_read_contract = _change_history_with_action_ids(
         change_history_read_contract,
+        action_ids,
+    )
+    search_term_ngram_read_contract = _search_term_ngram_with_action_ids(
+        search_term_ngram_read_contract,
         action_ids,
     )
     custom_segments_read_contract = _custom_segments_read_contract(
@@ -3497,7 +3502,7 @@ def _search_term_ngram_section(
         source_connectors=search_term_ngram_read_contract.source_connectors,
         evidence_ids=search_term_ngram_read_contract.evidence_ids,
         metric_facts=metric_facts[:12],
-        action_ids=[],
+        action_ids=search_term_ngram_read_contract.action_ids,
         blocked_claims=search_term_ngram_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
@@ -4968,7 +4973,7 @@ def _ads_decision_queue(
                 evidence_ids=search_term_ngram_read_contract.evidence_ids,
                 metric_facts=metric_facts[:12],
                 search_term_ngram_rows=top_rows,
-                action_ids=[],
+                action_ids=search_term_ngram_read_contract.action_ids,
                 blocked_claims=search_term_ngram_read_contract.blocked_claims,
                 risk=ActionRisk.medium,
             )
@@ -5184,6 +5189,21 @@ def _change_history_action_ids(action_ids: list[str]) -> list[str]:
     return [
         action_id for action_id in action_ids if action_id == CHANGE_HISTORY_IMPACT_ACTION_ID
     ]
+
+
+def _search_term_ngram_with_action_ids(
+    search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
+    action_ids: list[str],
+) -> AdsSearchTermNgramReadContract:
+    if not search_term_ngram_read_contract.ngram_rows:
+        return search_term_ngram_read_contract
+    return search_term_ngram_read_contract.model_copy(
+        update={"action_ids": _search_term_ngram_action_ids(action_ids)}
+    )
+
+
+def _search_term_ngram_action_ids(action_ids: list[str]) -> list[str]:
+    return [action_id for action_id in action_ids if action_id == SEARCH_TERM_NGRAM_ACTION_ID]
 
 
 def _search_term_action_ids(action_ids: list[str]) -> list[str]:

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 15:12 CEST.
+Last updated: 2026-06-21 15:38 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -80,7 +80,8 @@ preview for recommendation types that expose impact metrics, a review-only
 recommendation apply payload preview, a read-only 90-day search-term safety
 contract and a review-only negative keyword payload preview plus read-only
 keyword match context for negative keyword review, a read-only search-term
-n-gram contract for grouping repeated query themes, plus a read-only Keyword
+n-gram contract for grouping repeated query themes plus a review-only
+`search_term_ngram_review_v1` ActionObject path, plus a read-only Keyword
 Planner enrichment contract for custom segment review. Custom segments now
 have a review-only payload preview and a review-only targeting preview from
 real search terms, and their review reason preserves missing search-term
@@ -100,6 +101,23 @@ audience-size checks, custom segment targeting/apply previews, apply
 confirmation and mutation audit paths, plus real Localo
 ranking/GBP/competitor/review read contracts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads search-term n-gram review truth, live proof 2026-06-21 15:38 CEST:
+`ads_review_search_term_ngrams` now has a concrete review-only ActionObject,
+not only a table of repeated search-term themes. Live `/api/ads/diagnostics`
+shows `act_review_ads_search_term_ngrams` in top-level `action_ids`,
+`search_term_ngram_read_contract.action_ids`,
+`sections[id=ads_search_term_ngrams].action_ids` and
+`decision_queue[id=ads_review_search_term_ngrams].action_ids`. The full
+ActionObject payload uses `action_type=google_ads_search_term_ngram_review`,
+`preview_contract=search_term_ngram_review_v1`, keeps `ngram_preview` rows
+with sample search terms and metric snapshots, and stays review-only with
+`apply_allowed=false`, `api_mutation_ready=false` and `destructive=false`.
+`/api/actions/act_review_ads_search_term_ngrams/validate` returns
+`valid=true`. Scoped `wilq-ads-doctor` context-pack remains below the size
+limit at about `182599` chars, keeps the action type unredacted and includes
+only one compact n-gram preview anchor. This still does not unlock search-term
+waste, negative keyword apply, conversion loss, CPA or ROAS claims.
 
 Latest Ads change-history impact truth, live proof 2026-06-21 15:12 CEST:
 WILQ now has a typed review-only path for change history impact review, but it

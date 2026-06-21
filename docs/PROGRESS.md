@@ -37,6 +37,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads search-term n-gram review ActionObject, 2026-06-21 15:38 CEST.
+  `ads_review_search_term_ngrams` nie jest już tylko tabelą tematów bez
+  workflow. Gdy WILQ ma search-term evidence, `/api/ads/diagnostics` wystawia
+  `act_review_ads_search_term_ngrams` w top-level `action_ids`,
+  `search_term_ngram_read_contract.action_ids`, sekcji
+  `ads_search_term_ngrams` i decision `ads_review_search_term_ngrams`.
+  ActionObject ma payload `google_ads_search_term_ngram_review`,
+  `preview_contract=search_term_ngram_review_v1`, `ngram_preview` z
+  sample search terms i metric snapshot, required validation dla
+  `review_ngram_intent`, `review_source_search_terms`,
+  `compare_90_day_safety_read`, `negative_keyword_action_validation` i
+  `human_confirm_before_apply`, oraz hard `apply_allowed=false`,
+  `api_mutation_ready=false`, `destructive=false`. Live proof po restarcie:
+  n-gram contract `status=ready`, `rows=30`, action validation `valid=true`,
+  full ActionObject preview count `8`. Scoped `wilq-ads-doctor` context-pack ma
+  około `182599` chars, zachowuje jawny
+  `action_type=google_ads_search_term_ngram_review` i kompaktuje n-gram action
+  do `ngram_preview_included=1`. Nadal zablokowane: search-term waste,
+  negative keyword apply, conversion loss, CPA i ROAS.
 - Ads change history impact review ActionObject, 2026-06-21 15:12 CEST.
   Change history nie jest już martwą sekcją bez kolejnego kroku, gdy WILQ ma
   `change_event_*` evidence. Po pojawieniu się change-event metric facts WILQ
