@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Code quality baseline, 2026-06-21 17:05 CEST.
+  Goal 001 ma teraz jawny `Code Quality and Maintainability Slice`.
+  Aktualne monolity są traktowane jako produktowy dług po szybkim discovery,
+  nie jako docelowy standard: `App.tsx` ok. 7251 linii, `App.test.tsx` ok.
+  5335 linii, `ads_diagnostics.py` ok. 5690 linii, `actions/service.py` ok.
+  2076 linii, `shared-schemas/src/index.ts` ok. 1918 linii. Refaktor ma iść
+  tylko po realnych granicach produktu/API i pod `scripts/verify.sh`, bez
+  szerokiego przepisywania oraz bez osłabiania evidence IDs, ActionObject IDs,
+  blocked claims, source connectors albo polskiej kopii operatora.
 - Ads human strategy review outcome state, 2026-06-21 16:51 CEST.
   WILQ ma teraz osobny typed guardrail dla decyzji Ads: local-state
   `AdsStrategyReviewRecord` i review-only `act_record_ads_strategy_review`.

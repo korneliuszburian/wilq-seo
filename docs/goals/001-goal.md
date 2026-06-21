@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 16:51 CEST.
+Last updated: 2026-06-21 17:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -2715,6 +2715,74 @@ Remaining blocker:
   Center diagnostics/tactical joins and should be reduced by the next product
   slices: Merchant issue-level triage, URL normalization and slimmer
   `DailyDecision` data. Do not hide this in skill references.
+
+### 5. Code Quality and Maintainability Slice
+
+Goal: keep WILQ shippable as it grows into a BDOS-class operator system. The
+current product works, but several files are too large to remain healthy
+long-term: `apps/dashboard/src/routes/App.tsx` is about 7251 lines,
+`apps/dashboard/src/routes/App.test.tsx` about 5335 lines,
+`wilq/briefing/ads_diagnostics.py` about 5690 lines,
+`wilq/actions/service.py` about 2076 lines and
+`packages/shared-schemas/src/index.ts` about 1918 lines. These are acceptable
+as temporary consolidation during fast product discovery, not as the target
+architecture.
+
+This slice must be treated as product-risk reduction, not cosmetic cleanup.
+
+Rules:
+
+- Do not start with a broad rewrite.
+- First map real ownership boundaries from the current code:
+  - dashboard route shells,
+  - route-specific panels,
+  - shared cards/chips,
+  - API client hooks,
+  - Ads diagnostic contracts,
+  - ActionObject lifecycle services,
+  - shared schema modules.
+- Split only along existing API/product boundaries. A component/module split is
+  good only if it makes dashboard/API/Codex behavior easier to verify.
+- Every extraction must keep public API contracts and rendered marketer behavior
+  unchanged unless the active slice explicitly changes product behavior.
+- Keep tests close to behavior: move test helpers/fixtures only when they reduce
+  duplication or make route-specific expectations clearer.
+- Do not hide complexity in generic abstractions. Prefer concrete modules like
+  `AdsDoctorRoute`, `CommandCenterDecisionCard`, `MerchantDiagnosticsPanel`,
+  `build_ads_business_context_contract` over frameworky indirection.
+
+Initial target slices:
+
+1. Dashboard file map and route extraction:
+   - split `App.tsx` into route-level components and shared marketer cards,
+   - keep TanStack Router/TanStack Query behavior unchanged,
+   - prove with dashboard unit tests and Playwright e2e.
+2. Dashboard test split:
+   - move route groups out of one huge `App.test.tsx` into route-focused test
+     files,
+   - keep the same smoke coverage: Command Center, Ads Doctor, Merchant, GA4,
+     SEO/GSC, Localo, Ahrefs, Actions, Workflows, Knowledge.
+3. Ads diagnostics service split:
+   - split `ads_diagnostics.py` by read contracts: campaign, derived KPI,
+     budget, recommendations, change history, search terms, business context,
+     custom segments,
+   - keep one public builder response.
+4. Action service split:
+   - separate registry/listing, review, preview, confirm, impact-check, apply
+     and mutation audit helpers.
+5. Shared schema packaging:
+   - split generated/shared schema exports only if imports stay stable for the
+     dashboard and tests.
+
+Pass criteria:
+
+- Before/after file-size and module map are recorded in `docs/PROGRESS.md`.
+- No route, endpoint, skill context-pack or ActionObject behavior regresses.
+- `scripts/verify.sh` passes after each extraction slice.
+- Dashboard screenshots or Playwright checks prove the marketer-visible routes
+  still render.
+- The slice reduces cognitive load without weakening evidence IDs, ActionObject
+  IDs, source connector traceability, blocked claims or Polish operator copy.
 
 Completed 2026-06-19 follow-up, pushed as
 `ad17223 perf(api): slim command center runtime`:
