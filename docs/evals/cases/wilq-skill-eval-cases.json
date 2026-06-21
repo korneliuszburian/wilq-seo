@@ -116,7 +116,7 @@
   {
     "skill": "wilq-ahrefs-gap-finder",
     "surface_path": "/ahrefs",
-    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. WILQ ma authority facts, strony konkurencji, top pages konkurentów i organic keywords by URL, ale nadal brakuje content gap records oraz backlink gap records. Pokaż, co wolno przejrzeć, i zablokuj unsupported content/backlink/uplift claims.",
+    "task_pl": "Sprawdź, czy dostępne Ahrefs evidence pozwala wskazać SEO/backlink/content gap. WILQ ma authority facts, strony konkurencji, top pages konkurentów, organic keywords by URL i backlink gap records, ale nadal brakuje content gap records. Pokaż, co wolno przejrzeć, i zablokuj unsupported content/uplift claims.",
     "expected_connectors": ["ahrefs"],
     "expected_terms_pl": [
       "Ahrefs",
@@ -143,7 +143,6 @@
     "expected_no_action_ids": true,
     "blocked_claim_terms": [
       "content gap",
-      "backlink gap",
       "traffic uplift",
       "authority improvement"
     ],

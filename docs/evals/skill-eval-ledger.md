@@ -25,6 +25,71 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-21 - wilq-ahrefs-gap-finder backlink-gap eval
+
+Prompt source:
+
+`docs/evals/cases/wilq-skill-eval-cases.json`, case
+`wilq-ahrefs-gap-finder`.
+
+Why this eval matters:
+
+Ahrefs now reads real competitor top pages, organic keywords and refdomains
+backlink-gap candidates. The skill may discuss reviewable backlink gap records,
+but must still block unsupported content gap, traffic uplift and authority
+improvement claims.
+
+Pre-eval API proof:
+
+- Live refresh: `refresh_ahrefs_950b2a5831c2`.
+- Evidence: `ev_refresh_refresh_ahrefs_950b2a5831c2`.
+- `/api/ahrefs/diagnostics` live facts: DR=40, Ahrefs Rank=1541946,
+  `organic_competitor_rows=10`, `top_pages_by_competitor_rows=4`,
+  `organic_keywords_by_url_rows=4`,
+  `backlink_gap_read_status=completed`,
+  `backlink_gap_rows=9`, `backlink_gap_competitors=2`,
+  `backlink_gap_target_refdomains=100`.
+- `gap_records=24`, `backlink_records=9`.
+- `available_read_contracts` includes `ahrefs_competitor_pages`,
+  `ahrefs_top_pages_by_competitor`, `ahrefs_organic_keywords_by_url` and
+  `ahrefs_backlink_gap_records`.
+- Missing read contract is now only `ahrefs_content_gap_records`.
+- Scoped `wilq-ahrefs-gap-finder` context-pack is about `101728` bytes and has
+  `active_action_objects=0`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260621T024538Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `api_used=true`.
+- `blocked=true`.
+- Source connectors include `ahrefs`, `google_search_console` and
+  `wordpress_ekologus`.
+- Evidence IDs include `ev_connector_ahrefs_status`,
+  `ev_refresh_refresh_ahrefs_950b2a5831c2`,
+  `ev_refresh_refresh_ahrefs_a1ef481d6950` and
+  `ev_refresh_refresh_ahrefs_41eef6aa90ef`.
+- No ActionObject IDs were promoted.
+- No safety findings.
+
+Product finding:
+
+- This is now useful source-read evidence for backlink gap candidate review.
+  It is still not content gap analysis and it still does not justify traffic or
+  authority uplift claims.
+
 ## 2026-06-21 - wilq-ahrefs-gap-finder organic-keywords-by-url eval
 
 Prompt source:

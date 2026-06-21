@@ -25,6 +25,14 @@ AHREFS_ORGANIC_KEYWORDS_TOP_PAGE_LIMIT_MAX = 8
 AHREFS_ORGANIC_KEYWORDS_PER_URL_DEFAULT = 3
 AHREFS_ORGANIC_KEYWORDS_PER_URL_MAX = 10
 AHREFS_ORGANIC_KEYWORDS_MODE_DEFAULT = "exact"
+AHREFS_BACKLINK_GAP_COMPETITOR_LIMIT_DEFAULT = 2
+AHREFS_BACKLINK_GAP_COMPETITOR_LIMIT_MAX = 5
+AHREFS_BACKLINK_GAP_TARGET_REFDOMAIN_LIMIT_DEFAULT = 1000
+AHREFS_BACKLINK_GAP_TARGET_REFDOMAIN_LIMIT_MAX = 5000
+AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_DEFAULT = 10
+AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_MAX = 50
+AHREFS_BACKLINK_GAP_MODE_DEFAULT = "subdomains"
+AHREFS_BACKLINK_GAP_HISTORY_DEFAULT = "live"
 
 
 def refresh_ahrefs_domain_rating(
@@ -106,6 +114,34 @@ def refresh_ahrefs_domain_rating(
                     errors.append(
                         f"Ahrefs Site Explorer organic-keywords {type(exc).__name__}."
                     )
+                try:
+                    backlink_summary, backlink_facts = _fetch_backlink_gaps(
+                        client,
+                        token,
+                        target,
+                        competitor_facts,
+                    )
+                    metric_summary.update(backlink_summary)
+                    metric_facts.extend(backlink_facts)
+                except httpx.HTTPStatusError as exc:
+                    status_code = exc.response.status_code
+                    metric_summary.update(
+                        {
+                            "backlink_gap_read_status": f"http_{status_code}",
+                            "backlink_gap_rows": 0,
+                        }
+                    )
+                    errors.append(f"Ahrefs Site Explorer refdomains HTTP {status_code}.")
+                except httpx.HTTPError as exc:
+                    metric_summary.update(
+                        {
+                            "backlink_gap_read_status": type(exc).__name__,
+                            "backlink_gap_rows": 0,
+                        }
+                    )
+                    errors.append(
+                        f"Ahrefs Site Explorer refdomains {type(exc).__name__}."
+                    )
             except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code
                 metric_summary.update(
@@ -154,7 +190,8 @@ def refresh_ahrefs_domain_rating(
             f"Organic competitor rows: {metric_summary['organic_competitor_rows']}. "
             f"Top page rows: {metric_summary.get('top_pages_by_competitor_rows', 0)}. "
             "Organic keyword rows by top page: "
-            f"{metric_summary.get('organic_keywords_by_url_rows', 0)}."
+            f"{metric_summary.get('organic_keywords_by_url_rows', 0)}. "
+            f"Backlink gap rows: {metric_summary.get('backlink_gap_rows', 0)}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -421,6 +458,121 @@ def _fetch_organic_keywords_by_top_pages(
     )
 
 
+def _fetch_backlink_gaps(
+    client: httpx.Client,
+    token: str,
+    target: str,
+    competitor_facts: list[VendorMetricFact],
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    mode = _backlink_gap_mode()
+    history = _backlink_gap_history()
+    competitor_domains = _backlink_gap_competitor_domains(competitor_facts)
+    if not competitor_domains:
+        return (
+            {
+                "backlink_gap_read_status": "skipped_no_competitors",
+                "backlink_gap_rows": 0,
+                "backlink_gap_competitors": 0,
+                "backlink_gap_mode": mode,
+                "backlink_gap_history": history,
+            },
+            [],
+        )
+
+    target_limit = _backlink_gap_target_refdomain_limit()
+    target_refdomains = _fetch_refdomains(
+        client,
+        token,
+        target=target,
+        mode=mode,
+        history=history,
+        limit=target_limit,
+    )
+    target_domain_names = {
+        domain
+        for row in target_refdomains
+        if (domain := _refdomain(row)) is not None
+    }
+    competitor_limit = _backlink_gap_refdomain_limit()
+    facts: list[VendorMetricFact] = []
+    for competitor_domain in competitor_domains:
+        competitor_rows = _fetch_refdomains(
+            client,
+            token,
+            target=competitor_domain,
+            mode=mode,
+            history=history,
+            limit=competitor_limit,
+        )
+        for row in competitor_rows:
+            if (
+                fact := _backlink_gap_fact(
+                    row,
+                    competitor_domain=competitor_domain,
+                    target=target,
+                    target_refdomains=target_domain_names,
+                    target_refdomain_sample_size=len(target_domain_names),
+                    target_refdomain_limit=target_limit,
+                    mode=mode,
+                    history=history,
+                )
+            ) is not None:
+                facts.append(fact)
+    return (
+        {
+            "backlink_gap_read_status": "completed",
+            "backlink_gap_rows": len(facts),
+            "backlink_gap_competitors": len(competitor_domains),
+            "backlink_gap_target_refdomains": len(target_domain_names),
+            "backlink_gap_target_refdomain_limit": target_limit,
+            "backlink_gap_competitor_refdomain_limit": competitor_limit,
+            "backlink_gap_mode": mode,
+            "backlink_gap_history": history,
+        },
+        facts,
+    )
+
+
+def _fetch_refdomains(
+    client: httpx.Client,
+    token: str,
+    *,
+    target: str,
+    mode: str,
+    history: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    response = client.get(
+        f"{AHREFS_API_BASE}/site-explorer/refdomains",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
+        params={
+            "target": target,
+            "mode": mode,
+            "history": history,
+            "limit": limit,
+            "output": "json",
+            "order_by": "domain_rating:desc",
+            "select": ",".join(
+                [
+                    "domain",
+                    "domain_rating",
+                    "links_to_target",
+                    "dofollow_links",
+                    "dofollow_refdomains",
+                    "traffic_domain",
+                    "positions_source_domain",
+                    "first_seen",
+                    "last_seen",
+                    "is_spam",
+                    "is_root_domain",
+                ]
+            ),
+        },
+    )
+    response.raise_for_status()
+    return _response_rows(response.json(), "refdomains")[:limit]
+
+
 def _report_date() -> str:
     return (datetime.now(UTC).date() - timedelta(days=1)).isoformat()
 
@@ -495,6 +647,41 @@ def _organic_keywords_per_url_limit() -> int:
     return AHREFS_ORGANIC_KEYWORDS_PER_URL_DEFAULT
 
 
+def _backlink_gap_mode() -> str:
+    mode = variable_value("AHREFS_BACKLINK_GAP_MODE")
+    if mode and mode.strip().lower() in AHREFS_ORGANIC_COMPETITOR_MODES:
+        return mode.strip().lower()
+    return AHREFS_BACKLINK_GAP_MODE_DEFAULT
+
+
+def _backlink_gap_history() -> str:
+    history = variable_value("AHREFS_BACKLINK_GAP_HISTORY")
+    if history and history.strip():
+        return history.strip().lower()
+    return AHREFS_BACKLINK_GAP_HISTORY_DEFAULT
+
+
+def _backlink_gap_competitor_limit() -> int:
+    configured = variable_value("AHREFS_BACKLINK_GAP_COMPETITOR_LIMIT")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_BACKLINK_GAP_COMPETITOR_LIMIT_MAX))
+    return AHREFS_BACKLINK_GAP_COMPETITOR_LIMIT_DEFAULT
+
+
+def _backlink_gap_target_refdomain_limit() -> int:
+    configured = variable_value("AHREFS_BACKLINK_GAP_TARGET_REFDOMAIN_LIMIT")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_BACKLINK_GAP_TARGET_REFDOMAIN_LIMIT_MAX))
+    return AHREFS_BACKLINK_GAP_TARGET_REFDOMAIN_LIMIT_DEFAULT
+
+
+def _backlink_gap_refdomain_limit() -> int:
+    configured = variable_value("AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT")
+    if configured and configured.isdigit():
+        return max(1, min(int(configured), AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_MAX))
+    return AHREFS_BACKLINK_GAP_REFDOMAIN_LIMIT_DEFAULT
+
+
 def _response_rows(payload: Any, preferred_key: str) -> list[dict[str, Any]]:
     if isinstance(payload, list):
         return [_mapping(item) for item in payload if isinstance(item, dict)]
@@ -561,6 +748,17 @@ def _top_page_competitor_domains(competitor_facts: list[VendorMetricFact]) -> li
         if competitor_domain and competitor_domain not in domains:
             domains.append(competitor_domain)
     return domains[: _top_pages_competitor_limit()]
+
+
+def _backlink_gap_competitor_domains(
+    competitor_facts: list[VendorMetricFact],
+) -> list[str]:
+    domains: list[str] = []
+    for fact in competitor_facts:
+        competitor_domain = fact.dimensions.get("competitor_domain")
+        if competitor_domain and competitor_domain not in domains:
+            domains.append(competitor_domain)
+    return domains[: _backlink_gap_competitor_limit()]
 
 
 def _organic_keyword_top_pages(
@@ -656,6 +854,51 @@ def _organic_keyword_gap_fact(
     )
 
 
+def _backlink_gap_fact(
+    row: dict[str, Any],
+    *,
+    competitor_domain: str,
+    target: str,
+    target_refdomains: set[str],
+    target_refdomain_sample_size: int,
+    target_refdomain_limit: int,
+    mode: str,
+    history: str,
+) -> VendorMetricFact | None:
+    referring_domain = _refdomain(row)
+    if referring_domain is None or referring_domain in target_refdomains:
+        return None
+    dimensions = _clean_dimensions(
+        {
+            "gap_type": "backlink_gap",
+            "competitor_domain": competitor_domain,
+            "source_url": referring_domain,
+            "referring_domain": referring_domain,
+            "target_domain": target,
+            "target_mode": mode,
+            "history": history,
+            "domain_rating": _first_text(row, "domain_rating"),
+            "links_to_target": _first_text(row, "links_to_target"),
+            "dofollow_links": _first_text(row, "dofollow_links"),
+            "dofollow_refdomains": _first_text(row, "dofollow_refdomains"),
+            "traffic_domain": _first_text(row, "traffic_domain"),
+            "positions_source_domain": _first_text(row, "positions_source_domain"),
+            "first_seen": _first_text(row, "first_seen"),
+            "last_seen": _first_text(row, "last_seen"),
+            "is_spam": _first_text(row, "is_spam"),
+            "is_root_domain": _first_text(row, "is_root_domain"),
+            "target_refdomain_sample_size": str(target_refdomain_sample_size),
+            "target_refdomain_limit": str(target_refdomain_limit),
+        }
+    )
+    return VendorMetricFact(
+        "ahrefs_referring_domain_gap_count",
+        1,
+        dimensions,
+        period="ahrefs_refdomains_gap",
+    )
+
+
 def _competitor_domain(row: dict[str, Any]) -> str | None:
     value = _first_text(
         row,
@@ -671,6 +914,13 @@ def _competitor_domain(row: dict[str, Any]) -> str | None:
     parsed = urlparse(value)
     if parsed.hostname:
         return _clean_hostname(parsed.hostname)
+    return _clean_hostname(value)
+
+
+def _refdomain(row: dict[str, Any]) -> str | None:
+    value = _first_text(row, "domain", "refdomain", "referring_domain")
+    if value is None:
+        return None
     return _clean_hostname(value)
 
 

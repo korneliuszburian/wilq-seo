@@ -189,6 +189,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert ahrefs_case["expected_blocked"] is True
     assert ahrefs_case["expected_no_action_ids"] is True
     assert "content gap" in ahrefs_case["blocked_claim_terms"]
+    assert "backlink gap" not in ahrefs_case["blocked_claim_terms"]
     assert "ranking opportunity" not in ahrefs_case["blocked_claim_terms"]
     assert "traffic uplift" in ahrefs_case["blocked_claim_terms"]
     assert "competitor gap" not in ahrefs_case["blocked_claim_terms"]

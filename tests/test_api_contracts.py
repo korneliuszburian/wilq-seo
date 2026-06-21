@@ -6974,15 +6974,16 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         assert request.url.host == "api.ahrefs.com"
         assert request.headers["authorization"] == "Bearer ahrefs-token-test"
         assert request.headers["accept"] == "application/json"
-        assert len(request.url.params["date"]) == 10
         assert request.url.params["output"] == "json"
         if request.url.path == "/v3/site-explorer/domain-rating":
+            assert len(request.url.params["date"]) == 10
             assert request.url.params["target"] == "ekologus.pl"
             return httpx.Response(
                 200,
                 json={"domain_rating": {"ahrefs_rank": 1450, "domain_rating": 90.0}},
             )
         if request.url.path == "/v3/site-explorer/organic-competitors":
+            assert len(request.url.params["date"]) == 10
             assert request.url.params["target"] == "ekologus.pl"
             assert request.url.params["mode"] == "subdomains"
             assert request.url.params["country"] == "pl"
@@ -7005,6 +7006,7 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                 },
             )
         if request.url.path == "/v3/site-explorer/top-pages":
+            assert len(request.url.params["date"]) == 10
             assert request.url.params["target"] == "konkurent.pl"
             assert request.url.params["mode"] == "subdomains"
             assert request.url.params["country"] == "pl"
@@ -7027,31 +7029,66 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
                     ]
                 },
             )
-        assert request.url.path == "/v3/site-explorer/organic-keywords"
-        assert request.url.params["target"] == "https://konkurent.pl/top-bdo/"
-        assert request.url.params["mode"] == "exact"
-        assert request.url.params["country"] == "pl"
-        assert request.url.params["limit"] == "3"
-        assert request.url.params["order_by"] == "sum_traffic:desc"
-        assert "keyword" in request.url.params["select"]
+        if request.url.path == "/v3/site-explorer/organic-keywords":
+            assert len(request.url.params["date"]) == 10
+            assert request.url.params["target"] == "https://konkurent.pl/top-bdo/"
+            assert request.url.params["mode"] == "exact"
+            assert request.url.params["country"] == "pl"
+            assert request.url.params["limit"] == "3"
+            assert request.url.params["order_by"] == "sum_traffic:desc"
+            assert "keyword" in request.url.params["select"]
+            return httpx.Response(
+                200,
+                json={
+                    "keywords": [
+                        {
+                            "keyword": "bdo szkolenie online",
+                            "best_position": 3,
+                            "best_position_url": "https://konkurent.pl/top-bdo/",
+                            "volume": 150,
+                            "sum_traffic": 24,
+                            "keyword_difficulty": 8,
+                            "cpc": 1.21,
+                            "is_branded": False,
+                            "is_commercial": True,
+                            "is_informational": False,
+                            "is_local": False,
+                            "is_transactional": True,
+                        }
+                    ]
+                },
+            )
+        assert request.url.path == "/v3/site-explorer/refdomains"
+        assert request.url.params["mode"] == "subdomains"
+        assert request.url.params["history"] == "live"
+        assert request.url.params["order_by"] == "domain_rating:desc"
+        assert "domain" in request.url.params["select"]
+        if request.url.params["target"] == "ekologus.pl":
+            assert request.url.params["limit"] == "1000"
+            return httpx.Response(
+                200,
+                json={"refdomains": [{"domain": "shared-source.pl", "domain_rating": 44}]},
+            )
+        assert request.url.params["target"] == "konkurent.pl"
+        assert request.url.params["limit"] == "10"
         return httpx.Response(
             200,
             json={
-                "keywords": [
+                "refdomains": [
+                    {"domain": "shared-source.pl", "domain_rating": 44},
                     {
-                        "keyword": "bdo szkolenie online",
-                        "best_position": 3,
-                        "best_position_url": "https://konkurent.pl/top-bdo/",
-                        "volume": 150,
-                        "sum_traffic": 24,
-                        "keyword_difficulty": 8,
-                        "cpc": 1.21,
-                        "is_branded": False,
-                        "is_commercial": True,
-                        "is_informational": False,
-                        "is_local": False,
-                        "is_transactional": True,
-                    }
+                        "domain": "gap-source.pl",
+                        "domain_rating": 66,
+                        "links_to_target": 3,
+                        "dofollow_links": 2,
+                        "dofollow_refdomains": 1,
+                        "traffic_domain": 1200,
+                        "positions_source_domain": 82,
+                        "first_seen": "2025-01-02",
+                        "last_seen": "2026-06-19",
+                        "is_spam": False,
+                        "is_root_domain": True,
+                    },
                 ]
             },
         )
@@ -7085,6 +7122,14 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
         "organic_keywords_by_url_country": "pl",
         "organic_keywords_by_url_mode": "exact",
         "organic_keywords_by_url_keyword_limit": 3,
+        "backlink_gap_read_status": "completed",
+        "backlink_gap_rows": 1,
+        "backlink_gap_competitors": 1,
+        "backlink_gap_target_refdomains": 1,
+        "backlink_gap_target_refdomain_limit": 1000,
+        "backlink_gap_competitor_refdomain_limit": 10,
+        "backlink_gap_mode": "subdomains",
+        "backlink_gap_history": "live",
     }
     assert result.metric_facts == [
         VendorMetricFact(
@@ -7145,12 +7190,40 @@ def test_ahrefs_vendor_read_uses_site_explorer_domain_rating(
             },
             period="ahrefs_organic_keywords",
         ),
+        VendorMetricFact(
+            "ahrefs_referring_domain_gap_count",
+            1,
+            {
+                "gap_type": "backlink_gap",
+                "competitor_domain": "konkurent.pl",
+                "source_url": "gap-source.pl",
+                "referring_domain": "gap-source.pl",
+                "target_domain": "ekologus.pl",
+                "target_mode": "subdomains",
+                "history": "live",
+                "domain_rating": "66",
+                "links_to_target": "3",
+                "dofollow_links": "2",
+                "dofollow_refdomains": "1",
+                "traffic_domain": "1200",
+                "positions_source_domain": "82",
+                "first_seen": "2025-01-02",
+                "last_seen": "2026-06-19",
+                "is_spam": "False",
+                "is_root_domain": "True",
+                "target_refdomain_sample_size": "1",
+                "target_refdomain_limit": "1000",
+            },
+            period="ahrefs_refdomains_gap",
+        ),
     ]
     assert [request.url.path for request in requests] == [
         "/v3/site-explorer/domain-rating",
         "/v3/site-explorer/organic-competitors",
         "/v3/site-explorer/top-pages",
         "/v3/site-explorer/organic-keywords",
+        "/v3/site-explorer/refdomains",
+        "/v3/site-explorer/refdomains",
     ]
     serialized = json.dumps(result.metric_summary)
     assert "ahrefs-token-test" not in serialized
