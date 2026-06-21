@@ -83,7 +83,7 @@ from wilq.schemas import (
     OpportunityDomain,
 )
 from wilq.storage.local_state import local_state_store
-from wilq.storage.metric_store import metric_store
+from wilq.storage.metric_store import MAX_METRIC_FACT_READ_LIMIT, metric_store
 
 MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
 
@@ -316,7 +316,7 @@ ACTION_METRIC_CONNECTORS = (
 )
 ACTION_METRIC_FACT_LIMIT = 120
 ACTION_METRIC_FACT_LIMITS = {
-    "google_ads": 2000,
+    "google_ads": MAX_METRIC_FACT_READ_LIMIT,
     "google_analytics_4": 2000,
     "google_merchant_center": 2000,
     "localo": 2000,

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-21 20:15 CEST.
+Last updated: 2026-06-21 20:45 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -112,6 +112,27 @@ Merchant now has a typed review-only
 the first Command Center decision can move from generic feed review to a
 cluster-level review queue with evidence and safety gates.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Latest Ads search-term visibility proof, 2026-06-21 20:30 CEST:
+large Google Ads refreshes must not hide search-term evidence from diagnostics,
+ActionObjects or Command Center. The root cause was two inconsistent silent
+metric-fact caps: Ads diagnostics asked for 2500 facts while DuckDB store and
+ActionObject seeding could cap Google Ads to 2000, which let large refreshes
+show campaign facts but drop `search_term_*` facts from the active view.
+`MAX_METRIC_FACT_READ_LIMIT=5000` is now the shared store cap and Google Ads
+ActionObject seeding uses the same cap. Regression fixture covers a refresh with
+more than 2000 neutral filler facts before the real search-term facts. Live HTTP
+proof after `scripts/local_stack.sh restart`: `/api/ads/diagnostics` shows
+`search_terms_read_contract.status=ready` with 50 search-term rows,
+`search_term_ngram_read_contract.status=ready` with 30 n-gram rows and
+`act_review_ads_search_term_ngrams`, `negative_keywords_read_contract.status=ready`
+with 6 candidates, and `custom_segments_read_contract.status=ready` with 1
+candidate. `/api/dashboard/command-center` now shows the Ads daily decision as
+`ready` with metric tiles `kampanie=18`, `zapytania=50`, `podgląd budżetu=18`,
+`rekomendacje=4`, `wykluczenia=6`, `segmenty=1`. Final verification passed on
+2026-06-21 20:45 CEST: `scripts/verify.sh` green, including 146 backend tests,
+17 dashboard unit tests, API/skill smokes, 14 Playwright e2e tests and
+dashboard production build.
 
 Latest Merchant issue review contract proof, 2026-06-21 19:35 CEST:
 `act_review_merchant_feed_issues` now exposes

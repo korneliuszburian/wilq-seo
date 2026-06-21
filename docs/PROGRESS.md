@@ -37,6 +37,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads search-term visibility over large refreshes, 2026-06-21 20:30 CEST.
+  Naprawiono root cause, przez który duży Google Ads refresh mógł pokazywać
+  campaign facts, ale ukrywać `search_term_*` facts przed Ads diagnostics,
+  ActionObjects i Command Center. Store miał ukryty cap 2000, diagnostics
+  prosiło o 2500, a `list_actions()` osobno ucinał Google Ads do 2000. Teraz
+  `MAX_METRIC_FACT_READ_LIMIT=5000` jest jawny w DuckDB metric store, a Google
+  Ads ActionObject seeding używa tego samego limitu. Regression test dodaje
+  ponad 2000 neutralnych filler facts przed prawdziwymi search-term facts i
+  wymaga, żeby `search_terms_read_contract`, n-gram ActionObject, negative
+  keyword review i custom segments nadal działały. Live HTTP proof po
+  `scripts/local_stack.sh restart`: `/api/ads/diagnostics` pokazuje
+  `search_terms=ready/50`, `ngrams=ready/30` z
+  `act_review_ads_search_term_ngrams`, `negative_keywords=ready/6`,
+  `custom_segments=ready/1`, a `/api/dashboard/command-center` ma Ads daily
+  decision `ready` z tiles `kampanie=18`, `zapytania=50`,
+  `podgląd budżetu=18`, `rekomendacje=4`, `wykluczenia=6`, `segmenty=1`.
+  Final proof 2026-06-21 20:45 CEST: `scripts/verify.sh` green, w tym
+  146 backend tests, 17 dashboard unit tests, API/skill smokes,
+  14 Playwright e2e i dashboard production build.
 - Merchant feed issue review payload preview, 2026-06-21 19:35 CEST.
   `act_review_merchant_feed_issues` ma teraz typed
   `merchant_feed_issue_review_preview_v1` w `payload.payload_preview`: top

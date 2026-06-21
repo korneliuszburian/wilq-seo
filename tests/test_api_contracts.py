@@ -513,6 +513,22 @@ def save_localo_visibility_metric_facts() -> None:
     )
 
 
+def large_ads_metric_fact_fillers(count: int = 2050) -> list[VendorMetricFact]:
+    return [
+        VendorMetricFact(
+            "diagnostic_filler",
+            index,
+            {
+                "campaign_id": "101",
+                "campaign_name": "Brand Search",
+                "filler_id": str(index),
+            },
+            period="ads_metric_limit_regression",
+        )
+        for index in range(count)
+    ]
+
+
 def test_health_endpoint() -> None:
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -5328,6 +5344,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
                     },
                     period="keyword_planner",
                 ),
+                *large_ads_metric_fact_fillers(),
             ],
         ),
     )

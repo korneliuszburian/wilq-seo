@@ -16,6 +16,7 @@ from wilq.schemas import ConnectorRefreshRun, MetricFact
 DEFAULT_METRIC_DB = Path(".local-lab/state/wilq.duckdb")
 DUCKDB_CONNECT_ATTEMPTS = 5
 DUCKDB_CONNECT_RETRY_SECONDS = 0.2
+MAX_METRIC_FACT_READ_LIMIT = 5000
 _DUCKDB_LOCK = RLock()
 
 
@@ -96,7 +97,7 @@ class DuckDbMetricStore:
         connector_id: str | None = None,
         limit: int = 100,
     ) -> list[MetricFact]:
-        bounded_limit = max(1, min(limit, 2000))
+        bounded_limit = max(1, min(limit, MAX_METRIC_FACT_READ_LIMIT))
         query = """
             WITH metric_facts_with_previous AS (
             SELECT
@@ -166,7 +167,7 @@ class DuckDbMetricStore:
         if not connector_ids:
             return {}
         unique_connector_ids = list(dict.fromkeys(connector_ids))
-        bounded_group_limit = max(1, min(limit_per_connector, 2000))
+        bounded_group_limit = max(1, min(limit_per_connector, MAX_METRIC_FACT_READ_LIMIT))
         query = """
             WITH metric_facts_with_previous AS (
             SELECT
