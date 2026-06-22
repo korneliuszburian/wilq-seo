@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 16:51 CEST.
+Last updated: 2026-06-22 17:25 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -216,6 +216,22 @@ Ekologus proof is intentionally blocked: no live change-event rows in the last
 14 days, no pre/post windows, no human impact review and no apply preview. Do
 not claim change impact, performance uplift, budget scaling, budget apply or
 campaign mutation from this state.
+
+Latest Ads strategy review readiness proof, 2026-06-22 17:25 CEST:
+`/api/ads/diagnostics.business_context_read_contract` now exposes nested typed
+`strategy_review_readiness_contract`. Current live Ekologus state is honest:
+profit margin, business goal and budget goal are present, but target ROAS/CPA
+and human strategy review are still missing. The nested contract is
+`status=blocked`, `latest_review_status=missing`,
+`action_ids=[act_record_ads_strategy_review]`, `apply_allowed=false`, and it
+blocks profitability verdict, target KPI verdict, budget scaling, budget apply,
+recommendation apply and automatic optimization. Ads Doctor renders this as
+`Gotowość strategy review Ads`, and the scoped `wilq-ads-doctor` context-pack
+includes the same safety gate. Context-pack compaction now also trims generic
+ActionObject `review_gate` payloads; live smoke proof reports
+`context_pack_bytes=192530`, below the 200 KB skill budget. This is not apply
+support and does not make target verdicts safe; it only makes the blocker
+typed, visible and testable for dashboard + Codex.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and

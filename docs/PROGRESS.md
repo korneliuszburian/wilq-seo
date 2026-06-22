@@ -37,6 +37,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads strategy review readiness, 2026-06-22 17:25 CEST.
+  `/api/ads/diagnostics.business_context_read_contract` ma teraz nested typed
+  `strategy_review_readiness_contract`, który pokazuje, czy human Ads strategy
+  review jest zatwierdzone do prepare. Live Ekologus state jest celowo
+  zablokowany: profit margin, business goal i budget goal są obecne, ale
+  `target_roas_or_cpa` i `human_strategy_review` nadal brakują. Kontrakt ma
+  `status=blocked`, `latest_review_status=missing`,
+  `action_ids=[act_record_ads_strategy_review]`, `apply_allowed=false` i
+  blokuje profitability verdict, target KPI verdict, budget scaling, budget
+  apply, recommendation apply oraz automatic optimization. Ads Doctor renderuje
+  panel `Gotowość strategy review Ads`; scoped `wilq-ads-doctor` context-pack
+  zawiera tę samą bramkę. Context-pack kompresuje teraz także generic
+  ActionObject `review_gate`; live smoke ma `context_pack_bytes=192530`, poniżej
+  limitu 200 KB. Wąskie proofy: ruff OK, mypy OK, API tests 3/3 OK, dashboard
+  route tests 17/17 OK, Ads skill smoke OK. Final proof: `scripts/verify.sh`
+  green, including 153 backend tests, 17 dashboard unit tests, Skill/API smokes,
+  14 Playwright e2e tests and dashboard production build.
 - Ads change-impact readiness contract, 2026-06-22 16:51 CEST.
   `/api/ads/diagnostics` ma teraz typed
   `change_impact_readiness_contract`, który siedzi między surowym

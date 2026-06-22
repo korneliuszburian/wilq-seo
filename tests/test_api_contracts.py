@@ -1981,6 +1981,26 @@ def test_google_ads_business_context_allows_empty_preliminary_targets(
     ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert business_context_contract["target_interpretation"]["destructive"] is False
+    strategy_readiness = business_context_contract["strategy_review_readiness_contract"]
+    assert strategy_readiness["id"] == "ads_strategy_review_readiness_contract"
+    assert strategy_readiness["status"] == "blocked"
+    assert strategy_readiness["latest_review_status"] == "missing"
+    assert strategy_readiness["latest_review_outcome"] is None
+    assert strategy_readiness["apply_allowed"] is False
+    assert strategy_readiness["action_ids"] == [ADS_STRATEGY_REVIEW_ACTION_ID]
+    assert strategy_readiness["current_context"]["profit_margin"] == 0.35
+    assert strategy_readiness["current_context"]["business_goal"] == "lead quality review"
+    assert strategy_readiness["current_context"]["budget_goal"] == (
+        "protect current monthly budget"
+    )
+    assert strategy_readiness["current_context"]["target_roas"] is None
+    assert strategy_readiness["current_context"]["target_cpa_micros"] is None
+    assert strategy_readiness["missing_read_contracts"] == [
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert "human_strategy_review" in strategy_readiness["required_validation"]
+    assert "profitability verdict" in strategy_readiness["blocked_claims"]
     assert business_context_contract["operator_review_gates"] == [
         "human_strategy_review",
         "review_profit_margin_model",
@@ -10551,6 +10571,13 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert target_interpretation["interpretation_contract"] == (
         "ads_business_target_interpretation_v1"
     )
+    strategy_readiness = ads_context["business_context_read_contract"][
+        "strategy_review_readiness_contract"
+    ]
+    assert strategy_readiness["id"] == "ads_strategy_review_readiness_contract"
+    assert strategy_readiness["apply_allowed"] is False
+    assert "human_strategy_review" in strategy_readiness["required_validation"]
+    assert "profitability verdict" in strategy_readiness["blocked_claims"]
     assert "[REDACTED]" not in json.dumps(target_interpretation, ensure_ascii=False)
     assert len(data["connector_refresh_runs"]) <= 3
     for action in data["active_action_objects"]:

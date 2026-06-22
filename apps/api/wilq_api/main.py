@@ -1445,6 +1445,7 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         compact,
         ("negative_keywords_read_contract", "candidates"),
     )
+    _compact_ads_strategy_review_readiness_for_context(compact)
     _compact_ads_optimizer_readiness_for_context(compact)
     _limit_decision_rows(compact)
     _omit_decision_row_payloads(compact)
@@ -1513,6 +1514,84 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         ),
     }
     return compact
+
+
+def _compact_ads_strategy_review_readiness_for_context(data: dict[str, Any]) -> None:
+    business_context = data.get("business_context_read_contract")
+    if not isinstance(business_context, dict):
+        return
+    contract = business_context.get("strategy_review_readiness_contract")
+    if not isinstance(contract, dict):
+        return
+
+    required_missing = [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+        "human_strategy_review",
+        "approved_human_strategy_review",
+    ]
+    required_validation = [
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    required_blocked = [
+        "profitability verdict",
+        "target KPI verdict",
+        "budget scaling",
+        "budget apply",
+        "recommendation apply",
+        "automatic optimization",
+    ]
+    summary = _context_pack_text(contract.get("summary"), limit=170)
+    next_step = _context_pack_text(contract.get("next_step"), limit=160)
+    compact_contract = {
+        key: contract.get(key)
+        for key in (
+            "id",
+            "status",
+            "latest_review_status",
+            "latest_review_outcome",
+            "apply_allowed",
+            "destructive",
+        )
+        if key in contract
+    }
+    if summary is not None:
+        compact_contract["summary"] = summary
+    if next_step is not None:
+        compact_contract["next_step"] = next_step
+    compact_contract["current_context"] = contract.get("current_context")
+    compact_contract["required_validation"] = _priority_limited_strings(
+        contract.get("required_validation"),
+        required_validation,
+        limit=5,
+    )
+    compact_contract["missing_read_contracts"] = _priority_limited_strings(
+        contract.get("missing_read_contracts"),
+        required_missing,
+        limit=6,
+    )
+    compact_contract["blocked_claims"] = _priority_limited_strings(
+        contract.get("blocked_claims"),
+        required_blocked,
+        limit=6,
+    )
+    compact_contract["evidence_ids"] = _priority_limited_strings(
+        contract.get("evidence_ids"),
+        [],
+        limit=4,
+    )
+    compact_contract["action_ids"] = _priority_limited_strings(
+        contract.get("action_ids"),
+        [ADS_STRATEGY_REVIEW_ACTION_ID],
+        limit=2,
+    )
+    business_context["strategy_review_readiness_contract"] = compact_contract
 
 
 def _compact_ads_optimizer_readiness_for_context(data: dict[str, Any]) -> None:
@@ -1995,6 +2074,7 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             "Sprawdź intencję tematów i próbki zapytań przed negative keyword queue."
         )
         compact["evidence_ids"] = compact.get("evidence_ids", [])[:1]
+    _compact_action_review_gate_for_context(compact)
     metrics = compact.get("metrics")
     if isinstance(metrics, list):
         compact["metrics_total"] = len(metrics)
@@ -2149,6 +2229,47 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         }
     compact["payload"] = compact_payload
     return compact
+
+
+def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
+    review_gate = action.get("review_gate")
+    if not isinstance(review_gate, dict):
+        return
+
+    apply_blockers = review_gate.get("apply_blockers")
+    if not isinstance(apply_blockers, list):
+        apply_blockers = []
+    missing_validation = review_gate.get("missing_validation")
+    if not isinstance(missing_validation, list):
+        missing_validation = []
+    blocked_claims = review_gate.get("blocked_claims")
+    if not isinstance(blocked_claims, list):
+        blocked_claims = []
+    warnings = review_gate.get("warnings")
+    if not isinstance(warnings, list):
+        warnings = []
+
+    action["review_gate"] = {
+        "status": review_gate.get("status"),
+        "risk": review_gate.get("risk"),
+        "last_review_outcome": review_gate.get("last_review_outcome"),
+        "last_reviewed_by": review_gate.get("last_reviewed_by"),
+        "last_reviewed_at": review_gate.get("last_reviewed_at"),
+        "apply_allowed": review_gate.get("apply_allowed"),
+        "confirmation_required": review_gate.get("confirmation_required"),
+        "apply_blockers_total": len(apply_blockers),
+        "apply_blockers": apply_blockers[:3],
+        "apply_blockers_included": min(len(apply_blockers), 3),
+        "missing_validation_total": len(missing_validation),
+        "missing_validation": missing_validation[:4],
+        "missing_validation_included": min(len(missing_validation), 4),
+        "blocked_claims_total": len(blocked_claims),
+        "blocked_claims": blocked_claims[:4],
+        "blocked_claims_included": min(len(blocked_claims), 4),
+        "warnings_total": len(warnings),
+        "warnings": warnings[:2],
+        "warnings_included": min(len(warnings), 2),
+    }
 
 
 def _compact_ngram_preview_for_context(preview_items: list[Any]) -> list[dict[str, Any]]:

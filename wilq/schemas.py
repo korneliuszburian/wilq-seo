@@ -759,6 +759,33 @@ class AdsBusinessTargetInterpretation(BaseModel):
     destructive: bool = False
 
 
+class AdsStrategyReviewReadinessContract(BaseModel):
+    id: str = "ads_strategy_review_readiness_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    latest_review_status: Literal[
+        "missing",
+        "approved_for_prepare",
+        "needs_changes",
+        "rejected",
+        "deferred",
+    ] = "missing"
+    latest_review_outcome: ActionReviewOutcome | None = None
+    reviewed_by: str | None = None
+    reviewed_at: datetime | None = None
+    current_context: dict[str, Any] = Field(default_factory=dict)
+    required_validation: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    apply_allowed: bool = False
+    destructive: bool = False
+    next_step: str
+
+
 class AdsBusinessContextReadContract(BaseModel):
     id: str = "ads_business_context_read_contract"
     status: Literal["ready", "blocked"]
@@ -783,6 +810,7 @@ class AdsBusinessContextReadContract(BaseModel):
     business_policy_ids: list[str] = Field(default_factory=list)
     operator_review_gates: list[str] = Field(default_factory=list)
     target_interpretation: AdsBusinessTargetInterpretation
+    strategy_review_readiness_contract: AdsStrategyReviewReadinessContract
     allowed_metrics: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)

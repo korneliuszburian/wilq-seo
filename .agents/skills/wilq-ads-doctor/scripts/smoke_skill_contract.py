@@ -237,6 +237,41 @@ def main() -> int:
         "summary"
     ):
         raise SystemExit("Context pack business context contract differs")
+    strategy_readiness_contract = (
+        business_context_read_contract.get("strategy_review_readiness_contract") or {}
+    )
+    pack_strategy_readiness_contract = (
+        pack_business_context_contract.get("strategy_review_readiness_contract") or {}
+    )
+    if strategy_readiness_contract.get("id") != "ads_strategy_review_readiness_contract":
+        raise SystemExit("Business context must expose strategy review readiness contract")
+    if strategy_readiness_contract.get("apply_allowed") is not False:
+        raise SystemExit("Strategy review readiness must keep apply_allowed=false")
+    if "profitability verdict" not in strategy_readiness_contract.get(
+        "blocked_claims",
+        [],
+    ):
+        raise SystemExit("Strategy review readiness must block profitability verdict")
+    if pack_strategy_readiness_contract.get("id") != (
+        strategy_readiness_contract.get("id")
+    ):
+        raise SystemExit("Context pack strategy review readiness ID differs")
+    if pack_strategy_readiness_contract.get("status") != (
+        strategy_readiness_contract.get("status")
+    ):
+        raise SystemExit("Context pack strategy review readiness status differs")
+    if pack_strategy_readiness_contract.get("apply_allowed") is not False:
+        raise SystemExit("Context pack strategy review readiness must keep apply blocked")
+    if "human_strategy_review" not in pack_strategy_readiness_contract.get(
+        "required_validation",
+        [],
+    ):
+        raise SystemExit("Context pack strategy review readiness must require review")
+    if "profitability verdict" not in pack_strategy_readiness_contract.get(
+        "blocked_claims",
+        [],
+    ):
+        raise SystemExit("Context pack strategy review readiness must block profitability")
     if business_context_read_contract.get("status") == "blocked" and not (
         business_context_read_contract.get("missing_read_contracts") or []
     ):
@@ -757,6 +792,21 @@ def main() -> int:
                         "configured_sources": business_context_read_contract.get(
                             "configured_sources", []
                         ),
+                        "strategy_review_readiness_contract": {
+                            "status": strategy_readiness_contract.get("status"),
+                            "latest_review_status": strategy_readiness_contract.get(
+                                "latest_review_status"
+                            ),
+                            "missing_read_contracts": strategy_readiness_contract.get(
+                                "missing_read_contracts", []
+                            ),
+                            "action_ids": strategy_readiness_contract.get(
+                                "action_ids", []
+                            ),
+                            "apply_allowed": strategy_readiness_contract.get(
+                                "apply_allowed"
+                            ),
+                        },
                         "missing_read_contracts": business_context_read_contract.get(
                             "missing_read_contracts", []
                         ),

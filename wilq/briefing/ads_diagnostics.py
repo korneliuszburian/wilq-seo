@@ -108,6 +108,7 @@ from wilq.schemas import (
     AdsSearchTermsReadContract,
     AdsSharedBudgetCampaignShare,
     AdsSharedBudgetDistributionRow,
+    AdsStrategyReviewReadinessContract,
     ConnectorRefreshMode,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -1156,12 +1157,129 @@ def _business_context_read_contract(
             business_policy_ids=business_policy_ids,
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         ),
+        strategy_review_readiness_contract=_strategy_review_readiness_contract(
+            strategy_review=strategy_review,
+            strategy_review_status=strategy_review_status,
+            strategy_review_approved=strategy_review_approved,
+            profit_margin=profit_margin,
+            business_goal=business_goal,
+            budget_goal=budget_goal,
+            target_roas=target_roas,
+            target_cpa_micros=target_cpa_micros,
+            missing_read_contracts=missing_read_contracts,
+            evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+        ),
         allowed_metrics=allowed_metrics,
         missing_read_contracts=missing_read_contracts,
         blocked_claims=blocked_claims,
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         metric_tiles=metric_tiles,
+        next_step=next_step,
+    )
+
+
+def _strategy_review_readiness_contract(
+    *,
+    strategy_review: Any | None,
+    strategy_review_status: Literal[
+        "missing",
+        "approved_for_prepare",
+        "needs_changes",
+        "rejected",
+        "deferred",
+    ],
+    strategy_review_approved: bool,
+    profit_margin: float | None,
+    business_goal: str | None,
+    budget_goal: str | None,
+    target_roas: float | None,
+    target_cpa_micros: int | None,
+    missing_read_contracts: list[str],
+    evidence_ids: list[str],
+) -> AdsStrategyReviewReadinessContract:
+    required_validation = [
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    blocked_claims = [
+        "profitability verdict",
+        "target KPI verdict",
+        "budget scaling",
+        "budget apply",
+        "recommendation apply",
+        "automatic optimization",
+    ]
+    current_context = {
+        "profit_margin": profit_margin,
+        "business_goal": business_goal,
+        "budget_goal": budget_goal,
+        "target_roas": target_roas,
+        "target_cpa_micros": target_cpa_micros,
+    }
+    if strategy_review_approved:
+        summary = (
+            "Human strategy review Ads jest zatwierdzone do prepare. To pozwala "
+            "używać targetu w review, ale nie odblokowuje apply ani automatycznej "
+            "optymalizacji."
+        )
+        next_step = (
+            "Użyj zatwierdzonego review jako kontekstu decyzji. Każdy write path "
+            "nadal wymaga osobnego ActionObject, preview, confirm i audytu."
+        )
+        status: Literal["ready", "blocked"] = "ready"
+        contract_missing: list[str] = []
+        action_ids: list[str] = []
+    else:
+        summary = (
+            "Human strategy review Ads nie jest zatwierdzone, więc WILQ może "
+            "tylko przygotować kolejki review. Target verdict, profitability "
+            "verdict, skalowanie i apply pozostają zablokowane."
+        )
+        next_step = (
+            "Otwórz ActionObject strategii, sprawdź marżę, cel biznesowy, cel "
+            "budżetu i target ROAS/CPA, a potem zapisz outcome review."
+        )
+        status = "blocked"
+        contract_missing = _unique(
+            [
+                missing
+                for missing in missing_read_contracts
+                if missing
+                in {
+                    "profit_margin",
+                    "business_goal",
+                    "human_budget_goal",
+                    "target_roas_or_cpa",
+                    "human_strategy_review",
+                    "approved_human_strategy_review",
+                }
+            ]
+        )
+        action_ids = [ADS_STRATEGY_REVIEW_ACTION_ID]
+    latest_outcome = (
+        strategy_review.outcome if strategy_review is not None else None
+    )
+    return AdsStrategyReviewReadinessContract(
+        status=status,
+        title="Google Ads: gotowość human strategy review",
+        summary=summary,
+        latest_review_status=strategy_review_status,
+        latest_review_outcome=latest_outcome,
+        reviewed_by=strategy_review.reviewed_by if strategy_review is not None else None,
+        reviewed_at=strategy_review.created_at if strategy_review is not None else None,
+        current_context=current_context,
+        required_validation=required_validation,
+        missing_read_contracts=contract_missing,
+        blocked_claims=blocked_claims,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=evidence_ids,
+        action_ids=action_ids,
+        apply_allowed=False,
+        destructive=False,
         next_step=next_step,
     )
 

@@ -666,6 +666,10 @@ const adsDiagnostics = {
     budget_goal: null,
     target_roas: null,
     target_cpa_micros: null,
+    strategy_review_status: "missing",
+    strategy_reviewed_by: null,
+    strategy_reviewed_at: null,
+    strategy_review_summary: null,
     configured_sources: [],
     business_policy_ids: ["complete_business_context_before_ads_verdicts"],
     operator_review_gates: [
@@ -693,7 +697,8 @@ const adsDiagnostics = {
         "profit_margin",
         "business_goal",
         "human_budget_goal",
-        "target_roas_or_cpa"
+        "target_roas_or_cpa",
+        "human_strategy_review"
       ],
       required_validation: [
         "review_profit_margin_model",
@@ -704,15 +709,64 @@ const adsDiagnostics = {
       ],
       policy_ids: ["complete_business_context_before_ads_verdicts"],
       evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      action_ids: ["act_configure_ads_business_context"],
       apply_allowed: false,
       destructive: false
+    },
+    strategy_review_readiness_contract: {
+      id: "ads_strategy_review_readiness_contract",
+      status: "blocked",
+      title: "Google Ads: gotowość human strategy review",
+      summary:
+        "Human strategy review Ads nie jest zatwierdzone, więc WILQ może tylko przygotować kolejki review.",
+      latest_review_status: "missing",
+      latest_review_outcome: null,
+      reviewed_by: null,
+      reviewed_at: null,
+      current_context: {
+        profit_margin: null,
+        business_goal: null,
+        budget_goal: null,
+        target_roas: null,
+        target_cpa_micros: null
+      },
+      required_validation: [
+        "review_profit_margin_model",
+        "review_business_goal",
+        "review_human_budget_goal",
+        "confirm_target_roas_or_cpa",
+        "human_strategy_review"
+      ],
+      missing_read_contracts: [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+        "human_strategy_review"
+      ],
+      blocked_claims: [
+        "profitability verdict",
+        "target KPI verdict",
+        "budget scaling",
+        "budget apply",
+        "recommendation apply",
+        "automatic optimization"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      action_ids: ["act_record_ads_strategy_review"],
+      apply_allowed: false,
+      destructive: false,
+      next_step:
+        "Otwórz ActionObject strategii, sprawdź marżę, cel biznesowy, cel budżetu i target ROAS/CPA, a potem zapisz outcome review."
     },
     allowed_metrics: [],
     missing_read_contracts: [
       "profit_margin",
       "business_goal",
       "human_budget_goal",
-      "target_roas_or_cpa"
+      "target_roas_or_cpa",
+      "human_strategy_review"
     ],
     blocked_claims: [
       "profitability",
@@ -5776,6 +5830,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Wymagany review/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/review strategii przez człowieka/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("heading", { name: "Gotowość strategy review Ads" })
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("brak review").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/target KPI verdict/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
     expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();

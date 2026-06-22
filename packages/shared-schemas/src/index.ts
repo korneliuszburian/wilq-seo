@@ -452,6 +452,35 @@ export const AdsBusinessTargetInterpretationSchema = z.object({
   destructive: z.boolean()
 });
 
+export const AdsStrategyReviewReadinessContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  latest_review_status: z
+    .enum(["missing", "approved_for_prepare", "needs_changes", "rejected", "deferred"])
+    .optional()
+    .default("missing"),
+  latest_review_outcome: z
+    .enum(["approved_for_prepare", "needs_changes", "rejected", "deferred"])
+    .nullable()
+    .optional(),
+  reviewed_by: z.string().nullable().optional(),
+  reviewed_at: z.string().nullable().optional(),
+  current_context: z.record(
+    z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])
+  ),
+  required_validation: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean(),
+  next_step: z.string()
+});
+
 export const AdsBusinessContextReadContractSchema = z.object({
   id: z.string(),
   status: z.enum(["ready", "blocked"]),
@@ -473,6 +502,7 @@ export const AdsBusinessContextReadContractSchema = z.object({
   business_policy_ids: z.array(z.string()).optional().default([]),
   operator_review_gates: z.array(z.string()).optional().default([]),
   target_interpretation: AdsBusinessTargetInterpretationSchema,
+  strategy_review_readiness_contract: AdsStrategyReviewReadinessContractSchema,
   allowed_metrics: z.array(z.string()),
   missing_read_contracts: z.array(z.string()),
   blocked_claims: z.array(z.string()),

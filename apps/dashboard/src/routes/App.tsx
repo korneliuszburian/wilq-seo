@@ -2681,6 +2681,7 @@ function AdsBusinessTargetInterpretationPanel({
   contract: AdsDiagnosticsResponse["business_context_read_contract"];
 }) {
   const interpretation = contract.target_interpretation;
+  const strategyReadiness = contract.strategy_review_readiness_contract;
   return (
     <div className="rounded-md border border-line bg-slate-50 p-3 text-sm">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -2719,6 +2720,62 @@ function AdsBusinessTargetInterpretationPanel({
           kind="actions"
           empty="brak"
         />
+      </div>
+      <div className="mt-3 rounded-md border border-line bg-white p-3">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h4 className="text-sm font-semibold text-ink">
+              Gotowość strategy review Ads
+            </h4>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              {strategyReadiness.summary}
+            </p>
+          </div>
+          <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+            {adsDecisionStatusLabel(strategyReadiness.status)} /{" "}
+            {adsStrategyReviewStatusLabel(strategyReadiness.latest_review_status)}
+          </span>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
+          <MetricTile
+            label="Marża"
+            value={adsStrategyContextValue(strategyReadiness.current_context.profit_margin)}
+          />
+          <MetricTile
+            label="Target ROAS"
+            value={adsStrategyContextValue(strategyReadiness.current_context.target_roas)}
+          />
+          <MetricTile
+            label="Target CPA"
+            value={adsStrategyContextValue(strategyReadiness.current_context.target_cpa_micros)}
+          />
+          <MetricTile label="Braki" value={strategyReadiness.missing_read_contracts.length} />
+          <MetricTile label="Review" value={adsStrategyReviewStatusLabel(strategyReadiness.latest_review_status)} />
+        </div>
+        <p className="mt-3 text-xs font-medium text-ink">{strategyReadiness.next_step}</p>
+        <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+          <TraceLine
+            label="Wymagana walidacja"
+            values={strategyReadiness.required_validation.map(adsOperatorReviewGateLabel)}
+            empty="brak"
+          />
+          <TraceLine
+            label="Braki"
+            values={strategyReadiness.missing_read_contracts.map(adsMissingReadContractLabel)}
+            empty="brak"
+          />
+          <TraceLine
+            label="Nie wolno twierdzić"
+            values={strategyReadiness.blocked_claims.map(adsBlockedClaimLabel)}
+            empty="brak"
+          />
+          <LinkedTraceLine
+            label="ActionObjecty"
+            values={strategyReadiness.action_ids}
+            kind="actions"
+            empty="brak"
+          />
+        </div>
       </div>
     </div>
   );
@@ -4411,6 +4468,23 @@ function adsOptimizerReadinessItemLabel(value: string) {
     ads_apply_safety_gate: "apply safety gate"
   };
   return labels[value] ?? value;
+}
+
+function adsStrategyReviewStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    missing: "brak review",
+    approved_for_prepare: "zatwierdzone do prepare",
+    needs_changes: "wymaga zmian",
+    rejected: "odrzucone",
+    deferred: "odroczone"
+  };
+  return labels[value] ?? value;
+}
+
+function adsStrategyContextValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "brak";
+  if (typeof value === "number") return adsNumber(value);
+  return String(value);
 }
 
 function adsOperatorReviewGateLabel(value: string) {
