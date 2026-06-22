@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Command Center route test split, 2026-06-22 19:21 CEST.
+  Pierwszy route-focused test został wyjęty z monolitycznego
+  `apps/dashboard/src/routes/App.test.tsx` do
+  `apps/dashboard/src/routes/CommandCenterRoute.test.tsx`. Test sprawdza ten
+  sam kontrakt first-screen Command Center: polski cockpit decyzji, prompt do
+  Codex, brak raw `ev_*`/`act_*`, tłumaczone blocked claims i link do
+  ustawień. File-size proof: `App.test.tsx=6149` linii,
+  `CommandCenterRoute.test.tsx=150`; `App.test.tsx` ma teraz 16 testów, nowy
+  route test 1, razem dashboard unit coverage nadal 17 testów. Finalny proof:
+  `scripts/verify.sh` OK, including backend API contracts 154/154, dashboard
+  unit tests 17/17 split across 2 files, Playwright 14/14 and dashboard
+  production build.
 - Dashboard Command Center route extraction, 2026-06-22 18:56 CEST.
   `CommandCenter` został przeniesiony z dużego
   `apps/dashboard/src/routes/App.tsx` do

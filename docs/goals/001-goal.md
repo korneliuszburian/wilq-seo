@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 18:56 CEST.
+Last updated: 2026-06-22 19:21 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -3312,6 +3312,14 @@ Initial target slices:
      files,
    - keep the same smoke coverage: Command Center, Ads Doctor, Merchant, GA4,
      SEO/GSC, Localo, Ahrefs, Actions, Workflows, Knowledge.
+   - 2026-06-22 first safe split completed:
+     `CommandCenterRoute.test.tsx` now owns the Command Center first-screen
+     assertions for Polish daily decisions, Codex prompt bridge, hidden raw
+     `ev_*`/`act_*` IDs and translated blocked claims. `App.test.tsx` now has
+     16 tests and the new route test has 1 test, preserving 17 dashboard unit
+     tests total. Final proof: `scripts/verify.sh` OK, including backend API
+     contracts 154/154, dashboard unit tests 17/17 across 2 files, Playwright
+     14/14 and dashboard production build.
 3. Ads diagnostics service split:
    - split `ads_diagnostics.py` by read contracts: campaign, derived KPI,
      budget, recommendations, change history, search terms, business context,
