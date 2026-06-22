@@ -37,6 +37,13 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard registry panels extraction, 2026-06-22 22:27 CEST.
+  `ConnectorGrid`, `OpportunityList`, `EvidenceList`, `ConnectorRefreshRunList`,
+  `ActionList` and `ExpertRuleList` were extracted from `App.tsx` into
+  `RegistryPanels.tsx`. Behavior remains the same; this removes generic
+  registry presentation from the route monolith. Current line-counts:
+  `App.tsx=6867`, `RegistryPanels.tsx=219`. Focused proof: dashboard lint OK,
+  dashboard typecheck OK.
 - Dashboard hotspot batch, 2026-06-22 22:22 CEST.
   Zasady prędkości zostały dopisane do `docs/goals/001-goal.md`: verification
   budget zamiast test-loopów, full `scripts/verify.sh` tylko na realnych gate'ach
