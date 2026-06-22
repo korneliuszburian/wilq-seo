@@ -1986,6 +1986,21 @@ class ContentDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class ContentOperatorSummary(BaseModel):
+    id: Literal["content_operator_summary"] = "content_operator_summary"
+    title: str
+    summary: str
+    next_step: str
+    top_decision_ids: list[str] = Field(default_factory=list)
+    confirmed_wordpress_count: int = 0
+    missing_wordpress_count: int = 0
+    decision_type_labels: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class ContentDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -1995,6 +2010,7 @@ class ContentDiagnosticsResponse(BaseModel):
     live_data_available: bool
     query_page_count: int = 0
     matched_inventory_count: int = 0
+    operator_summary: ContentOperatorSummary
     decision_queue: list[ContentDecisionItem] = Field(default_factory=list)
     sections: list[ContentDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

@@ -8447,6 +8447,27 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         for item in inventory_section["tactical_items"]
     )
     assert payload["decision_queue"]
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["id"] == "content_operator_summary"
+    assert operator_summary["title"] == "Co marketer ma zrobić teraz z treściami"
+    assert operator_summary["top_decision_ids"] == [
+        decision["id"] for decision in payload["decision_queue"][:4]
+    ]
+    assert operator_summary["confirmed_wordpress_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("wordpress_match") == "found"
+    )
+    assert operator_summary["missing_wordpress_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("wordpress_match") == "missing"
+    )
+    assert "refresh/merge" in operator_summary["decision_type_labels"]
+    assert "act_prepare_content_refresh_queue" in operator_summary["action_ids"]
+    assert "lead uplift" in operator_summary["blocked_claims"]
+    assert operator_summary["summary"]
+    assert operator_summary["next_step"]
     first_decision = next(
         decision
         for decision in payload["decision_queue"]

@@ -382,17 +382,14 @@ function contentBriefReviewRequest(preview: ContentBriefPreviewItem): ActionRevi
 }
 
 function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
-  const decisions = data.decision_queue;
-  const topDecisions = decisions
-    .slice()
-    .sort((left, right) => contentDecisionSortValue(left) - contentDecisionSortValue(right))
-    .slice(0, 4);
-  const matchedCount = decisions.filter((decision) => decision.wordpress_match === "found").length;
-  const missingCount = decisions.filter((decision) => decision.wordpress_match === "missing").length;
-  const decisionTypeLabels = Array.from(
-    new Set(decisions.map((decision) => contentDecisionTypeLabel(decision.decision_type)))
-  );
-  const actionIds = data.action_ids.length ? data.action_ids : ["act_prepare_content_refresh_queue"];
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const topDecisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is ContentDecisionItem => Boolean(decision));
+  const actionIds = summary.action_ids.length
+    ? summary.action_ids
+    : ["act_prepare_content_refresh_queue"];
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -402,18 +399,16 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
             Operator Content
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
-            Co marketer ma zrobić teraz z treściami
+            {summary.title}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ łączy zapytania i URL-e z GSC z inventory WordPress. Najpierw obsłuż
-            istniejące URL-e i klastry zapytań, potem dopiero twórz nowe treści. Bez
-            dowodów nie wolno twierdzić, że wzrosną leady, pozycje albo konwersje.
+            {summary.summary}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Zapytania/URL" value={data.query_page_count} />
           <MetricTile label="Dopasowania WP" value={data.matched_inventory_count} />
-          <MetricTile label="Decyzje" value={decisions.length} />
+          <MetricTile label="Decyzje" value={data.decision_queue.length} />
         </div>
       </div>
 
@@ -431,19 +426,19 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
         <div className="rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb treści</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <TraceLine label="Tryby decyzji" values={decisionTypeLabels} empty="brak" />
+            <TraceLine label="Tryby decyzji" values={summary.decision_type_labels} empty="brak" />
             <TraceLine
               label="Dopasowania WordPress"
               values={[
-                `potwierdzone: ${matchedCount}`,
-                `brak potwierdzenia: ${missingCount}`
+                `potwierdzone: ${summary.confirmed_wordpress_count}`,
+                `brak potwierdzenia: ${summary.missing_wordpress_count}`
               ]}
             />
-            <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
+            <LinkedTraceLine label="Dowody" values={summary.evidence_ids.slice(0, 6)} kind="evidence" />
             <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+              values={contentBlockedClaimLabels(summary.blocked_claims)}
             />
           </div>
           <a
@@ -740,20 +735,6 @@ function contentAhrefsReasonLabel(value: string) {
     broad_backlink_domain: "szeroki backlink"
   };
   return labels[value] ?? value;
-}
-
-function contentDecisionSortValue(decision: ContentDecisionItem) {
-  const statusRank: Record<ContentDecisionItem["status"], number> = {
-    ready: 0,
-    blocked: 1
-  };
-  const riskRank: Record<ContentDecisionItem["risk"], number> = {
-    critical: 0,
-    high: 1,
-    medium: 2,
-    low: 3
-  };
-  return statusRank[decision.status] * 1000 + decision.priority * 10 + riskRank[decision.risk];
 }
 
 function contentSectionLabel(sectionId: string) {

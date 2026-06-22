@@ -21,6 +21,7 @@ from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticSection,
     ContentDiagnosticsResponse,
+    ContentOperatorSummary,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -218,6 +219,7 @@ def build_content_diagnostics(
         live_data_available=live_data_available,
         query_page_count=_query_page_count(content_tactical_items),
         matched_inventory_count=_matched_inventory_count(content_tactical_items),
+        operator_summary=_operator_summary(decision_queue, sections, action_ids),
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
@@ -238,6 +240,64 @@ def build_content_diagnostics(
         ),
         blocker_count=sum(1 for section in sections if section.status == "blocked"),
     )
+
+
+def _operator_summary(
+    decisions: list[ContentDecisionItem],
+    sections: list[ContentDiagnosticSection],
+    action_ids: list[str],
+) -> ContentOperatorSummary:
+    top_decisions = decisions[:4]
+    return ContentOperatorSummary(
+        title="Co marketer ma zrobić teraz z treściami",
+        summary=(
+            "WILQ łączy zapytania i URL-e z GSC z inventory WordPress. "
+            "Najpierw obsłuż istniejące URL-e i klastry zapytań, potem dopiero "
+            "twórz nowe treści. Bez dowodów nie wolno twierdzić, że wzrosną "
+            "leady, pozycje albo konwersje."
+        ),
+        next_step=(
+            "Przejdź przez top decyzje contentowe, wybierz refresh, merge, create "
+            "albo block i waliduj ActionObject tylko jako review-only."
+        ),
+        top_decision_ids=[decision.id for decision in top_decisions],
+        confirmed_wordpress_count=sum(
+            1 for decision in decisions if decision.wordpress_match == "found"
+        ),
+        missing_wordpress_count=sum(
+            1 for decision in decisions if decision.wordpress_match == "missing"
+        ),
+        decision_type_labels=_unique(
+            _content_decision_type_summary_label(decision.decision_type)
+            for decision in decisions
+        ),
+        source_connectors=_unique(
+            connector
+            for decision in top_decisions
+            for connector in decision.source_connectors
+        ),
+        evidence_ids=_unique(
+            evidence_id
+            for decision in top_decisions
+            for evidence_id in decision.evidence_ids
+        ),
+        action_ids=action_ids,
+        blocked_claims=_unique(
+            claim for section in sections for claim in section.blocked_claims
+        ),
+    )
+
+
+def _content_decision_type_summary_label(decision_type: ContentDecisionType) -> str:
+    if decision_type == "refresh_or_merge":
+        return "refresh/merge"
+    if decision_type == "merge_create_after_inventory_check":
+        return "merge/create po kontroli inventory"
+    if decision_type == "inventory_check_before_create":
+        return "kontrola inventory przed create"
+    if decision_type == "review_ahrefs_gap_records":
+        return "review luk Ahrefs"
+    return "block jako tracking, nie content"
 
 
 def _content_metric_facts(connector_ids: Iterable[str]) -> list[MetricFact]:

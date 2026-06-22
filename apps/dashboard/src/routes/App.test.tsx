@@ -4104,6 +4104,34 @@ const contentDiagnostics = {
   live_data_available: true,
   query_page_count: 1,
   matched_inventory_count: 1,
+  operator_summary: {
+    id: "content_operator_summary",
+    title: "Co marketer ma zrobić teraz z treściami",
+    summary:
+      "WILQ łączy zapytania i URL-e z GSC z inventory WordPress. Najpierw obsłuż istniejące URL-e i klastry zapytań, potem dopiero twórz nowe treści. Bez dowodów nie wolno twierdzić, że wzrosną leady, pozycje albo konwersje.",
+    next_step:
+      "Przejdź przez top decyzje contentowe, wybierz refresh, merge, create albo block i waliduj ActionObject tylko jako review-only.",
+    top_decision_ids: [
+      "content_decision_ahrefs_gap_records_review",
+      "content_decision_https_www_ekologus_pl_bdo"
+    ],
+    confirmed_wordpress_count: 1,
+    missing_wordpress_count: 0,
+    decision_type_labels: ["review luk Ahrefs", "refresh/merge"],
+    source_connectors: ["ahrefs", "google_search_console", "wordpress_ekologus"],
+    evidence_ids: [
+      "ev_refresh_ahrefs_gap_records",
+      "ev_refresh_gsc",
+      "ev_refresh_wordpress_inventory"
+    ],
+    action_ids: ["act_prepare_content_refresh_queue"],
+    blocked_claims: [
+      "lead uplift",
+      "conversion uplift",
+      "ranking guarantee",
+      "traffic uplift"
+    ]
+  },
   decision_queue: [
     {
       id: "content_decision_https_www_ekologus_pl_bdo",

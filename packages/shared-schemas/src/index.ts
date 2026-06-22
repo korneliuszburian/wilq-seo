@@ -1610,6 +1610,21 @@ export const ContentDecisionItemSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const ContentOperatorSummarySchema = z.object({
+  id: z.literal("content_operator_summary"),
+  title: z.string(),
+  summary: z.string(),
+  next_step: z.string(),
+  top_decision_ids: z.array(z.string()),
+  confirmed_wordpress_count: z.number(),
+  missing_wordpress_count: z.number(),
+  decision_type_labels: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const ContentDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1619,6 +1634,7 @@ export const ContentDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   query_page_count: z.number(),
   matched_inventory_count: z.number(),
+  operator_summary: ContentOperatorSummarySchema,
   decision_queue: z.array(ContentDecisionItemSchema),
   sections: z.array(ContentDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),

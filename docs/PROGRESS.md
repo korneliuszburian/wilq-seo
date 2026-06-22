@@ -37,6 +37,22 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content operator summary contract, 2026-06-22 23:55 CEST.
+  `/api/content/diagnostics` exposes typed `operator_summary` for the marketer
+  route: title/summary/next_step, top decision IDs, confirmed/missing WordPress
+  counts, decision type labels, source connectors, evidence IDs, ActionObject
+  IDs and blocked claims. `ContentDiagnosticSurface` now renders this API
+  view-model instead of recomputing top content decisions, WordPress counts,
+  decision labels and blocked claims in React. Live proof after
+  `scripts/local_stack.sh restart`: `/api/content/diagnostics` returns
+  `operator_summary.id=content_operator_summary`, `decision_count=5`,
+  `blocker_count=0`, `action_ids=["act_prepare_content_refresh_queue"]`, and
+  real top decision IDs for Ahrefs/GSC content work. Focused proof: RED then
+  GREEN `uv run pytest tests/test_api_contracts.py -q -k content_diagnostics_exposes_query_page_inventory_queue`,
+  `uv run pytest tests/test_api_contracts.py -q -k content_diagnostics`, ruff
+  OK, mypy OK, shared schema typecheck OK, dashboard typecheck OK, dashboard
+  lint OK, and focused dashboard route test OK. Full `scripts/verify.sh`
+  intentionally not run for this narrow contract slice.
 - GA4 operator summary contract, 2026-06-22 23:45 CEST.
   `/api/ga4/diagnostics` exposes typed `operator_summary` for the marketer route:
   title/summary/next_step, top decision IDs, measurement issue count,
