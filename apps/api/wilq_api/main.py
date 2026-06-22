@@ -321,7 +321,8 @@ def _daily_command_context_pack(
             if connector.id in source_connectors
         ],
         "top_opportunities": [
-            opportunity.model_dump(mode="json") for opportunity in scoped_opportunities
+            _compact_opportunity_for_daily_context(opportunity)
+            for opportunity in scoped_opportunities
         ],
         "active_action_objects": [
             _compact_daily_action_for_context(
@@ -331,14 +332,14 @@ def _daily_command_context_pack(
             for action in active_actions
         ],
         "connector_refresh_runs": [
-            run.model_dump(mode="json")
+            _compact_refresh_run_for_daily_context(run.model_dump(mode="json"))
             for run in daily_runtime.refresh_runs[:30]
             if run.connector_id in source_connectors
-        ][:10],
+        ][:6],
         "evidence_summaries": [
             evidence.model_dump(mode="json")
             for evidence in list_evidence_by_ids(sorted(evidence_ids))
-        ][:80],
+        ][:50],
         "knowledge_card_summaries": [
             card.model_dump(mode="json") for card in compile_playbook_cards()
         ],
@@ -396,6 +397,7 @@ def _compact_daily_action_for_context(
         "payload_keys": payload_keys,
         "api_endpoint_template": "/api/actions/{action_id}",
     }
+    _compact_action_review_gate_for_context(compact)
     if decision is not None:
         compact.update(
             {
@@ -413,6 +415,39 @@ def _compact_daily_action_for_context(
             }
         )
     return compact
+
+
+def _compact_opportunity_for_daily_context(opportunity: Opportunity) -> dict[str, Any]:
+    dumped = opportunity.model_dump(mode="json")
+    return {
+        "id": dumped.get("id"),
+        "title": dumped.get("title"),
+        "domain": dumped.get("domain"),
+        "type": dumped.get("type"),
+        "severity": dumped.get("severity"),
+        "risk": dumped.get("risk"),
+        "summary": _context_pack_text(dumped.get("summary"), limit=180),
+        "next_step": _context_pack_text(dumped.get("next_step"), limit=160),
+        "source_connectors": dumped.get("source_connectors"),
+        "evidence_ids": dumped.get("evidence_ids"),
+        "action_ids": dumped.get("action_ids"),
+        "blocked_claims": dumped.get("blocked_claims"),
+    }
+
+
+def _compact_refresh_run_for_daily_context(run: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": run.get("id"),
+        "connector_id": run.get("connector_id"),
+        "mode": run.get("mode"),
+        "status": run.get("status"),
+        "started_at": run.get("started_at"),
+        "completed_at": run.get("completed_at"),
+        "summary": _context_pack_text(run.get("summary"), limit=180),
+        "evidence_ids": run.get("evidence_ids"),
+        "blocked_claims": run.get("blocked_claims"),
+        "missing_credentials": run.get("missing_credentials"),
+    }
 
 
 def _latest_audit_event_for_context(audit_events: Any) -> dict[str, Any] | None:
@@ -2248,6 +2283,9 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
     warnings = review_gate.get("warnings")
     if not isinstance(warnings, list):
         warnings = []
+    last_mutation_blockers = review_gate.get("last_mutation_blockers")
+    if not isinstance(last_mutation_blockers, list):
+        last_mutation_blockers = []
 
     action["review_gate"] = {
         "status": review_gate.get("status"),
@@ -2255,6 +2293,22 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "last_review_outcome": review_gate.get("last_review_outcome"),
         "last_reviewed_by": review_gate.get("last_reviewed_by"),
         "last_reviewed_at": review_gate.get("last_reviewed_at"),
+        "last_review_summary": review_gate.get("last_review_summary"),
+        "last_confirmation_by": review_gate.get("last_confirmation_by"),
+        "last_confirmation_at": review_gate.get("last_confirmation_at"),
+        "last_confirmation_summary": review_gate.get("last_confirmation_summary"),
+        "last_impact_check_status": review_gate.get("last_impact_check_status"),
+        "last_impact_checked_by": review_gate.get("last_impact_checked_by"),
+        "last_impact_checked_at": review_gate.get("last_impact_checked_at"),
+        "last_impact_check_summary": review_gate.get("last_impact_check_summary"),
+        "last_mutation_audit_id": review_gate.get("last_mutation_audit_id"),
+        "last_mutation_audit_status": review_gate.get("last_mutation_audit_status"),
+        "last_mutation_audit_actor": review_gate.get("last_mutation_audit_actor"),
+        "last_mutation_audit_at": review_gate.get("last_mutation_audit_at"),
+        "last_mutation_audit_summary": review_gate.get("last_mutation_audit_summary"),
+        "last_mutation_attempted": review_gate.get("last_mutation_attempted"),
+        "last_mutation_adapter": review_gate.get("last_mutation_adapter"),
+        "last_mutation_audit_event_id": review_gate.get("last_mutation_audit_event_id"),
         "apply_allowed": review_gate.get("apply_allowed"),
         "confirmation_required": review_gate.get("confirmation_required"),
         "apply_blockers_total": len(apply_blockers),
@@ -2269,6 +2323,9 @@ def _compact_action_review_gate_for_context(action: dict[str, Any]) -> None:
         "warnings_total": len(warnings),
         "warnings": warnings[:2],
         "warnings_included": min(len(warnings), 2),
+        "last_mutation_blockers_total": len(last_mutation_blockers),
+        "last_mutation_blockers": last_mutation_blockers[:3],
+        "last_mutation_blockers_included": min(len(last_mutation_blockers), 3),
     }
 
 

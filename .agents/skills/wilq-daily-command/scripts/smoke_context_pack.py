@@ -28,6 +28,7 @@ REQUIRED_BRIEF_SECTIONS = {
     "recommended_focus",
 }
 FORBIDDEN_MARKERS = ("fake_metric", "mock_metric", "seed_metric")
+MAX_CONTEXT_PACK_BYTES = 180_000
 CORE_DAILY_ACTION_IDS = {
     "act_prepare_content_refresh_queue",
     "act_review_ga4_tracking_quality",
@@ -98,6 +99,9 @@ def main() -> int:
     pack = request_json(
         args.api_base, "POST", "/api/codex/context-pack", {"skill": "wilq-daily-command"}
     )
+    pack_bytes = len(json.dumps(pack, ensure_ascii=False).encode())
+    if pack_bytes >= MAX_CONTEXT_PACK_BYTES:
+        raise SystemExit(f"Daily context-pack exceeds budget: {pack_bytes} bytes")
     missing = sorted(REQUIRED_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
@@ -207,6 +211,8 @@ def validate_command_center(command_center: Any) -> None:
     daily_decisions = command_center.get("daily_decisions") or []
     if not isinstance(daily_decisions, list) or len(daily_decisions) < 4:
         raise SystemExit("Command center daily_decisions is missing or too small")
+    if len(daily_decisions) > 4:
+        raise SystemExit("Command center daily_decisions must stay focused on core daily work")
     required_plan_ids = {
         "plan_review_merchant_feed_issues",
         "plan_prepare_content_refresh_queue",
@@ -225,6 +231,16 @@ def validate_command_center(command_center: Any) -> None:
     if missing_plan_ids:
         raise SystemExit(f"Command center missing action_plan items: {', '.join(missing_plan_ids)}")
     decision_ids = {item.get("id") for item in daily_decisions if isinstance(item, dict)}
+    forbidden_decision_ids = {
+        "decision_review_localo_visibility_facts",
+        "decision_finish_localo_access_before_local_visibility",
+    }
+    leaked_decision_ids = sorted(forbidden_decision_ids & decision_ids)
+    if leaked_decision_ids:
+        raise SystemExit(
+            "Command center promoted non-core daily decisions: "
+            + ", ".join(leaked_decision_ids)
+        )
     expected_decision_ids = {
         plan_id.replace("plan_", "decision_", 1) for plan_id in required_plan_ids
     }

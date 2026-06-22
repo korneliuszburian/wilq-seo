@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 17:25 CEST.
+Last updated: 2026-06-22 17:52 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -232,6 +232,25 @@ ActionObject `review_gate` payloads; live smoke proof reports
 `context_pack_bytes=192530`, below the 200 KB skill budget. This is not apply
 support and does not make target verdicts safe; it only makes the blocker
 typed, visible and testable for dashboard + Codex.
+
+Latest Command Center daily focus and daily context-pack proof, 2026-06-22
+17:52 CEST: `/api/dashboard/command-center.daily_decisions` is now capped to
+the four core daily decisions: Merchant feed issues, Content SEO queue, GA4
+measurement/traffic quality and Ads review queues. Localo can still appear in
+`operator_brief`, `action_plan` and source health, but it is no longer promoted
+as a primary "what to do now" card while full GBP/competitor/local task parity
+is still incomplete. `wilq-daily-command` smoke now fails if non-core Localo
+decisions leak into `daily_decisions` or if the live daily context-pack exceeds
+180 KB. Live proof after stack restart: daily decisions
+`decision_review_merchant_feed_issues`,
+`decision_prepare_content_refresh_queue`,
+`decision_review_ga4_landing_quality`,
+`decision_review_ads_campaign_metrics`; daily context-pack size 174219 bytes
+after compacting ActionObject review gates, refresh runs, evidence summaries
+and opportunity summaries. `/api/opportunities` is deliberately decoupled from
+the focused `daily_decisions`: it is derived from the broader `action_plan`, so
+`opp_decision_review_localo_visibility_facts` remains available in the
+opportunity registry while Localo stays out of the primary daily cards.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and

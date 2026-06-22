@@ -8,6 +8,7 @@ from wilq.connectors.registry import list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionRisk,
+    CommandCenterActionPlanItem,
     ConnectorRefreshStatus,
     DailyDecision,
     MetricFact,
@@ -29,6 +30,10 @@ CONNECTOR_LABELS = {
 
 EXCLUDED_DAILY_OPPORTUNITY_DECISION_IDS = {
     "decision_ads_business_context_before_budget_decisions",
+}
+EXCLUDED_DAILY_OPPORTUNITY_PLAN_IDS = {
+    decision_id.replace("decision_", "plan_", 1)
+    for decision_id in EXCLUDED_DAILY_OPPORTUNITY_DECISION_IDS
 }
 
 OPPORTUNITY_TYPES = (
@@ -183,21 +188,50 @@ def list_opportunities() -> list[Opportunity]:
 
 def _daily_decision_opportunities() -> list[Opportunity]:
     runtime = build_daily_runtime()
+    decisions_by_id = {decision.id: decision for decision in runtime.command_center.daily_decisions}
     opportunities = [
-        _opportunity_from_daily_decision(decision)
-        for decision in runtime.command_center.daily_decisions
-        if decision.evidence_ids and decision.source_connectors and decision.action_ids
-        and decision.id not in EXCLUDED_DAILY_OPPORTUNITY_DECISION_IDS
+        _opportunity_from_action_plan_item(
+            plan_item,
+            decisions_by_id.get(plan_item.id.replace("plan_", "decision_", 1)),
+        )
+        for plan_item in runtime.command_center.action_plan
+        if plan_item.evidence_ids and plan_item.source_connectors and plan_item.action_ids
+        and plan_item.id not in EXCLUDED_DAILY_OPPORTUNITY_PLAN_IDS
     ]
     return sorted(opportunities, key=lambda item: (_opportunity_sort_priority(item), item.id))
+
+
+def _opportunity_from_action_plan_item(
+    plan_item: CommandCenterActionPlanItem,
+    matching_decision: DailyDecision | None,
+) -> Opportunity:
+    metric_tiles = matching_decision.metric_tiles if matching_decision is not None else {}
+    metrics = _metric_tiles_to_facts(matching_decision) if matching_decision is not None else []
+    return Opportunity(
+        id=f"opp_{plan_item.id.replace('plan_', 'decision_', 1)}",
+        type=_route_opportunity_type(plan_item.route),
+        title=plan_item.title,
+        domain=_route_opportunity_domain(plan_item.route),
+        source_connectors=plan_item.source_connectors,
+        evidence_ids=plan_item.evidence_ids,
+        metric_tiles=metric_tiles,
+        metrics=metrics,
+        human_diagnosis=plan_item.why_it_matters,
+        recommended_action=plan_item.operator_action,
+        risk=plan_item.risk,
+        action_ids=plan_item.action_ids,
+        expert_rule_ids=[],
+        playbook_ids=[plan_item.skill_id] if plan_item.skill_id else [],
+        is_fixture=False,
+    )
 
 
 def _opportunity_from_daily_decision(decision: DailyDecision) -> Opportunity:
     return Opportunity(
         id=f"opp_{decision.id}",
-        type=_daily_decision_type(decision),
+        type=_route_opportunity_type(decision.route),
         title=decision.title,
-        domain=_daily_decision_domain(decision),
+        domain=_route_opportunity_domain(decision.route),
         source_connectors=decision.source_connectors,
         evidence_ids=decision.evidence_ids,
         metric_tiles=decision.metric_tiles,
@@ -215,29 +249,37 @@ def _opportunity_from_daily_decision(decision: DailyDecision) -> Opportunity:
 
 
 def _daily_decision_type(decision: DailyDecision) -> str:
-    if decision.route.startswith("/ads-doctor"):
+    return _route_opportunity_type(decision.route)
+
+
+def _route_opportunity_type(route: str) -> str:
+    if route.startswith("/ads-doctor"):
         return "google_ads_review_queue"
-    if decision.route.startswith("/merchant"):
+    if route.startswith("/merchant"):
         return "merchant_feed_issue"
-    if decision.route.startswith("/content-planner"):
+    if route.startswith("/content-planner"):
         return "content_brief_candidate"
-    if decision.route.startswith("/ga4"):
+    if route.startswith("/ga4"):
         return "ga4_tracking_gap"
-    if decision.route.startswith("/localo"):
+    if route.startswith("/localo"):
         return "localo_visibility_drop"
     return "daily_marketer_decision"
 
 
 def _daily_decision_domain(decision: DailyDecision) -> OpportunityDomain:
-    if decision.route.startswith("/ads-doctor"):
+    return _route_opportunity_domain(decision.route)
+
+
+def _route_opportunity_domain(route: str) -> OpportunityDomain:
+    if route.startswith("/ads-doctor"):
         return OpportunityDomain.google_ads
-    if decision.route.startswith("/merchant"):
+    if route.startswith("/merchant"):
         return OpportunityDomain.merchant
-    if decision.route.startswith("/content-planner"):
+    if route.startswith("/content-planner"):
         return OpportunityDomain.gsc_seo
-    if decision.route.startswith("/ga4"):
+    if route.startswith("/ga4"):
         return OpportunityDomain.ga4
-    if decision.route.startswith("/localo"):
+    if route.startswith("/localo"):
         return OpportunityDomain.localo
     return OpportunityDomain.codex
 

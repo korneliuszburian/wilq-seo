@@ -37,6 +37,27 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center daily focus + daily context-pack budget, 2026-06-22 17:52 CEST.
+  `daily_decisions` na `/api/dashboard/command-center` są teraz ograniczone do
+  core decyzji dnia: Merchant feed issues, Content SEO queue, GA4
+  pomiar/jakość ruchu i Ads review queues. Localo nadal zostaje w
+  `operator_brief`, `action_plan` i źródłach, ale nie jest promowane jako
+  primary "co zrobić teraz", dopóki nie ma pełniejszego GBP/competitor/local
+  task parity. `wilq-daily-command` smoke failuje, jeśli Localo przecieknie do
+  `daily_decisions` albo jeśli live daily context-pack przekroczy 180 KB. Live
+  proof po `scripts/local_stack.sh restart`: 4 decyzje
+  (`decision_review_merchant_feed_issues`,
+  `decision_prepare_content_refresh_queue`,
+  `decision_review_ga4_landing_quality`,
+  `decision_review_ads_campaign_metrics`) i context-pack 174219 B po kompakcji
+  ActionObject review gates, refresh runs, evidence summaries i opportunity
+  summaries. Regression fix: `/api/opportunities` nie jest już pochodną
+  odchudzonego `daily_decisions`, tylko pełniejszego `action_plan`, więc
+  registry nadal pokazuje Localo opportunity
+  `opp_decision_review_localo_visibility_facts`, mimo że Localo nie jest
+  primary daily card. Proofy: ruff OK, mypy OK, API contracts 153/153 OK,
+  dashboard route tests 17/17 OK, daily skill smoke OK, Playwright 14/14 OK,
+  `scripts/verify.sh` OK.
 - Ads strategy review readiness, 2026-06-22 17:25 CEST.
   `/api/ads/diagnostics.business_context_read_contract` ma teraz nested typed
   `strategy_review_readiness_contract`, który pokazuje, czy human Ads strategy

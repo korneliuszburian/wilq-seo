@@ -2896,8 +2896,18 @@ def test_command_center_exposes_polish_operator_brief(
     )
     assert "spend" in plan_by_id["plan_fix_ads_oauth_before_spend_analysis"]["blocked_claims"]
     decisions_by_id = {item["id"]: item for item in payload["daily_decisions"]}
+    assert len(decisions_by_id) <= 4
+    assert "decision_review_localo_visibility_facts" not in decisions_by_id
+    assert "decision_finish_localo_access_before_local_visibility" not in decisions_by_id
+    assert {
+        "decision_review_merchant_feed_issues",
+        "decision_prepare_content_refresh_queue",
+        "decision_review_ga4_landing_quality",
+    }.issubset(decisions_by_id)
     assert set(decisions_by_id) == {
-        item_id.replace("plan_", "decision_", 1) for item_id in plan_by_id
+        item_id.replace("plan_", "decision_", 1)
+        for item_id in plan_by_id
+        if "localo" not in item_id
     }
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
     assert merchant_decision["co_widzimy"].startswith("Merchant Center ma")
@@ -10016,6 +10026,7 @@ def test_daily_context_pack_uses_daily_decisions_for_action_summaries(
 
     assert response.status_code == 200
     payload = response.json()
+    assert len(json.dumps(payload, ensure_ascii=False).encode()) < 180_000
     actions_by_id = {action["id"]: action for action in payload["active_action_objects"]}
     merchant_action = actions_by_id["act_review_merchant_feed_issues"]
     ga4_action = actions_by_id["act_review_ga4_tracking_quality"]

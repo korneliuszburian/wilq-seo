@@ -56,6 +56,14 @@ LOCALO_PROBE_METRIC_NAMES = {
     "mcp_initialize_status",
     "pkce_s256_supported",
 }
+PRIMARY_DAILY_PLAN_IDS = {
+    "plan_review_merchant_feed_issues",
+    "plan_prepare_content_refresh_queue",
+    "plan_review_ga4_landing_quality",
+    "plan_review_ads_campaign_metrics",
+    "plan_fix_ads_oauth_before_spend_analysis",
+    "plan_ads_business_context_before_budget_decisions",
+}
 
 
 def build_command_center_response(
@@ -215,6 +223,7 @@ def build_daily_decisions(
             risk=plan_item.risk,
         )
         for plan_item in action_plan
+        if plan_item.id in PRIMARY_DAILY_PLAN_IDS
     ]
 
 
