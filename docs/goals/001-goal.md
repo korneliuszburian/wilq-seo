@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 18:48 CEST.
+Last updated: 2026-06-22 18:56 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -3261,7 +3261,8 @@ Remaining blocker:
 
 Goal: keep WILQ shippable as it grows into a BDOS-class operator system. The
 current product works, but several files are too large to remain healthy
-long-term: `apps/dashboard/src/routes/App.tsx` is about 7251 lines,
+long-term: `apps/dashboard/src/routes/App.tsx` is still about 7911 lines after
+the first Command Center route extraction,
 `apps/dashboard/src/routes/App.test.tsx` about 5335 lines,
 `wilq/briefing/ads_diagnostics.py` about 5690 lines,
 `wilq/actions/service.py` about 2076 lines and
@@ -3298,6 +3299,14 @@ Initial target slices:
    - split `App.tsx` into route-level components and shared marketer cards,
    - keep TanStack Router/TanStack Query behavior unchanged,
    - prove with dashboard unit tests and Playwright e2e.
+   - 2026-06-22 first safe extraction completed:
+     `CommandCenter` moved to `apps/dashboard/src/routes/CommandCenterRoute.tsx`;
+     shared `priorityLabel` and blocked-claim labels moved to
+     `apps/dashboard/src/routes/marketingLabels.ts`; narrow proof:
+     dashboard lint OK, dashboard typecheck OK, `App.test.tsx` 17/17 OK.
+     Final proof: `scripts/verify.sh` OK, including backend API contracts
+     154/154, dashboard unit tests 17/17, Playwright 14/14 and dashboard
+     production build.
 2. Dashboard test split:
    - move route groups out of one huge `App.test.tsx` into route-focused test
      files,

@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Command Center route extraction, 2026-06-22 18:56 CEST.
+  `CommandCenter` został przeniesiony z dużego
+  `apps/dashboard/src/routes/App.tsx` do
+  `apps/dashboard/src/routes/CommandCenterRoute.tsx`, a współdzielone etykiety
+  priorytetów i blocked claims do
+  `apps/dashboard/src/routes/marketingLabels.ts`. Zachowanie renderingu ma
+  pozostać bez zmian: to jest pierwszy mały slice redukcji ryzyka kodowego, nie
+  nowy UX. File-size proof po ekstrakcji: `App.tsx=7911` linii,
+  `CommandCenterRoute.tsx=225`, `marketingLabels.ts=72`. Wąskie proofy:
+  dashboard lint OK, dashboard typecheck OK, `App.test.tsx` 17/17 OK. Finalny
+  proof: `scripts/verify.sh` OK, including backend API contracts 154/154,
+  dashboard unit tests 17/17, Playwright 14/14 and dashboard production build.
 - Tactical queue performance cache, 2026-06-22 18:48 CEST.
   `/api/marketing/tactical-queue` był największym mierzalnym nie-debug
   bottleneckiem po odchudzeniu Command Center: przed zmianą median HTTP wynosił
