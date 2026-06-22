@@ -146,21 +146,15 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
   const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
   const searchTermReview = data.search_term_review_summary_contract;
   const optimizer = data.optimizer_readiness_contract;
-  const decisions = data.decision_queue
-    .slice()
-    .sort((left, right) => adsDecisionSortValue(left) - adsDecisionSortValue(right));
-  const allowedMetrics = uniqueValues(
-    decisions.flatMap((decision) => decision.allowed_metrics).map(adsAllowedMetricLabel)
-  );
-  const missingReadContracts = uniqueValues(
-    decisions.flatMap((decision) => decision.missing_read_contracts).map(adsMissingReadContractLabel)
-  );
-  const operatorReviewGates = uniqueValues(
-    decisions.flatMap((decision) => decision.operator_review_gates).map(adsOperatorReviewGateLabel)
-  );
-  const blockedClaims = uniqueValues(
-    decisions.flatMap((decision) => decision.blocked_claims).map(adsBlockedClaimLabel)
-  );
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const decisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is AdsDecisionItem => Boolean(decision));
+  const allowedMetrics = summary.allowed_metrics.map(adsAllowedMetricLabel);
+  const missingReadContracts = summary.missing_read_contracts.map(adsMissingReadContractLabel);
+  const operatorReviewGates = summary.operator_review_gates.map(adsOperatorReviewGateLabel);
+  const blockedClaims = summary.blocked_claims.map(adsBlockedClaimLabel);
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -169,17 +163,14 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
             Operator Ads
           </div>
-          <h2 className="mt-1 text-base font-semibold tracking-normal">
-            Co marketer ma sprawdzić teraz w Google Ads
-          </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ pokazuje tylko decyzje, które wynikają z odczytu Google Ads.
-            Kampanie i zapytania można przeglądać, ale optymalizacje CPA, ROAS,
-            budżetów i wykluczeń wymagają kolejnych kontraktów oraz ActionObject.
+          <h2 className="mt-1 text-base font-semibold tracking-normal">{summary.title}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{summary.summary}</p>
+          <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-ink">
+            {summary.next_step}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Kampanie" value={data.campaign_read_contract.campaign_rows.length} />
+          <MetricTile label="Kampanie" value={summary.campaign_count} />
           <MetricTile label="Budżety" value={data.budget_pacing_read_contract.budget_rows.length} />
           <MetricTile
             label="Rekom."
@@ -195,7 +186,7 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
           />
           <MetricTile
             label="Zapytania"
-            value={data.search_terms_read_contract.search_term_rows.length}
+            value={summary.search_term_count}
           />
           <MetricTile
             label="Zero conv."
@@ -222,8 +213,8 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             value={data.keyword_match_context_read_contract.context_rows.length}
           />
           <MetricTile label="Decyzje" value={decisions.length} />
-          <MetricTile label="Ready" value={optimizer.ready_area_count} />
-          <MetricTile label="Blocked" value={optimizer.blocked_area_count} />
+          <MetricTile label="Ready" value={summary.ready_area_count} />
+          <MetricTile label="Blocked" value={summary.blocked_area_count} />
         </div>
       </div>
 
@@ -255,8 +246,8 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             />
             <TraceLine label="Brakujące kontrakty" values={missingReadContracts} empty="brak" />
             <TraceLine label="Wymagany review" values={operatorReviewGates} empty="brak" />
-            <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
-            <LinkedTraceLine label="ActionObjecty" values={data.action_ids} kind="actions" />
+            <LinkedTraceLine label="Dowody" values={summary.evidence_ids.slice(0, 6)} kind="evidence" />
+            <LinkedTraceLine label="ActionObjecty" values={summary.action_ids} kind="actions" />
             <TraceLine label="Nie wolno twierdzić" values={blockedClaims} empty="brak" />
           </div>
         </div>
@@ -2026,14 +2017,6 @@ function adsRiskLabel(risk: AdsDecisionItem["risk"]) {
   if (risk === "high") return "wysokie";
   if (risk === "medium") return "średnie";
   return "niskie";
-}
-
-function adsDecisionSortValue(decision: AdsDecisionItem) {
-  const statusRank: Record<AdsDecisionItem["status"], number> = {
-    ready: 0,
-    blocked: 1
-  };
-  return statusRank[decision.status] * 100 + decision.priority;
 }
 
 function adsConnectorStatusLabel(status: string) {

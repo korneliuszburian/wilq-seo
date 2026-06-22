@@ -89,6 +89,7 @@ from wilq.schemas import (
     AdsNegativeKeywordCandidate,
     AdsNegativeKeywordPayloadPreview,
     AdsNegativeKeywordsReadContract,
+    AdsOperatorSummary,
     AdsOptimizerReadinessContract,
     AdsOptimizerReadinessItem,
     AdsRecommendationRow,
@@ -661,6 +662,12 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         keyword_planner_read_contract=keyword_planner_read_contract,
         custom_segments_read_contract=custom_segments_read_contract,
         negative_keywords_read_contract=negative_keywords_read_contract,
+        operator_summary=_operator_summary(
+            decision_queue,
+            campaign_read_contract,
+            search_terms_read_contract,
+            optimizer_readiness_contract,
+        ),
         decision_queue=decision_queue,
         sections=sections,
         blocked_handoff=blocked_handoff,
@@ -670,6 +677,68 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
+
+
+def _operator_summary(
+    decisions: list[AdsDecisionItem],
+    campaign_read_contract: AdsCampaignReadContract,
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    optimizer_readiness_contract: AdsOptimizerReadinessContract,
+) -> AdsOperatorSummary:
+    top_decisions = sorted(
+        decisions,
+        key=lambda item: (_ads_decision_status_rank(item), item.priority),
+    )[:5]
+    return AdsOperatorSummary(
+        title="Co marketer ma sprawdzić teraz w Google Ads",
+        summary=(
+            "WILQ pokazuje tylko decyzje wynikające z odczytu Google Ads. Kampanie, "
+            "zapytania, KPI i rekomendacje można przeglądać jako evidence-backed review, "
+            "ale apply, waste, CPA/ROAS verdict i skalowanie budżetu pozostają za "
+            "bramkami ActionObject oraz brakującymi kontraktami."
+        ),
+        next_step=(
+            "Przejrzyj top decyzje w tej kolejności. Nie wdrażaj wykluczeń, budżetów "
+            "ani rekomendacji bez payload preview, walidacji ActionObject i review "
+            "kontekstu biznesowego."
+        ),
+        top_decision_ids=[decision.id for decision in top_decisions],
+        campaign_count=len(campaign_read_contract.campaign_rows),
+        search_term_count=len(search_terms_read_contract.search_term_rows),
+        ready_area_count=optimizer_readiness_contract.ready_area_count,
+        blocked_area_count=optimizer_readiness_contract.blocked_area_count,
+        allowed_metrics=_unique(
+            metric for decision in top_decisions for metric in decision.allowed_metrics
+        ),
+        missing_read_contracts=_unique(
+            contract
+            for decision in top_decisions
+            for contract in decision.missing_read_contracts
+        ),
+        operator_review_gates=_unique(
+            gate for decision in top_decisions for gate in decision.operator_review_gates
+        ),
+        source_connectors=_unique(
+            connector
+            for decision in top_decisions
+            for connector in decision.source_connectors
+        ),
+        evidence_ids=_unique(
+            evidence_id
+            for decision in top_decisions
+            for evidence_id in decision.evidence_ids
+        ),
+        action_ids=_unique(
+            action_id for decision in top_decisions for action_id in decision.action_ids
+        ),
+        blocked_claims=_unique(
+            claim for decision in top_decisions for claim in decision.blocked_claims
+        ),
+    )
+
+
+def _ads_decision_status_rank(decision: AdsDecisionItem) -> int:
+    return 0 if decision.status == "ready" else 1
 
 
 def _latest_google_ads_refresh() -> ConnectorRefreshRun | None:

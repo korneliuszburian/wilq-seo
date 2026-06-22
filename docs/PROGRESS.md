@@ -37,6 +37,30 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads operator summary contract, 2026-06-23 00:28 CEST.
+  `/api/ads/diagnostics` exposes typed `operator_summary` for Ads Doctor:
+  title/summary/next_step, top decision IDs, campaign/search-term counts,
+  optimizer ready/blocked counts, allowed metrics, missing read contracts,
+  review gates, evidence IDs, ActionObject IDs and blocked claims.
+  `AdsDoctorSurface` now renders the API-owned top Ads decisions and safety
+  trace instead of sorting Ads decisions and owning operator summary text in
+  React. Live proof after `scripts/local_stack.sh restart`:
+  `/api/ads/diagnostics` returns `operator_summary.id=ads_operator_summary`,
+  `campaign_count=18`, `search_term_count=50`, `ready_area_count=5`,
+  `blocked_area_count=3`, `decision_count=14`, `blocker_count=2` and
+  `live_data_available=true`. Focused proof:
+  `uv run pytest tests/test_api_contracts.py -q -k ads_diagnostics_exposes_live_campaign_metric_facts`,
+  Python ruff OK, Python mypy OK, shared schema typecheck OK, dashboard
+  typecheck OK, dashboard lint OK, and focused Ads Doctor route test OK.
+  Full `scripts/verify.sh` intentionally not run for this narrow contract slice.
+- Performance scout, 2026-06-23 00:27 CEST.
+  The next real bottleneck is backend cold-build/duplicate daily view-model
+  work, not raw React rendering: `/api/dashboard/command-center` warm hits are
+  fast, but cold command-center build was measured around 3.3s, with
+  `daily_runtime` and `marketing_brief` recomputing overlapping source state.
+  Next performance slice should split daily runtime into shared base inputs plus
+  separately cached `command_center` and `marketing_brief` derivations, then
+  consider route-level code splitting for dashboard app code.
 - Localo operator summary contract, 2026-06-23 00:18 CEST.
   `/api/localo/diagnostics` exposes typed `operator_summary` for the marketer
   route: title/summary/next_step, top decision IDs, access status,

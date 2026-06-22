@@ -2371,6 +2371,32 @@ const adsDiagnostics = {
     action_ids: ["act_prepare_negative_keyword_review_queue"],
     next_step: "Przejrzyj kandydatów jako review-only i sprawdź payload preview."
   },
+  operator_summary: {
+    id: "ads_operator_summary",
+    title: "Co marketer ma sprawdzić teraz w Google Ads",
+    summary:
+      "WILQ pokazuje tylko decyzje wynikające z odczytu Google Ads. Kampanie, zapytania, KPI i rekomendacje można przeglądać jako evidence-backed review.",
+    next_step:
+      "Przejrzyj top decyzje w tej kolejności. Nie wdrażaj wykluczeń, budżetów ani rekomendacji bez payload preview i walidacji ActionObject.",
+    top_decision_ids: [
+      "ads_review_campaign_activity",
+      "ads_review_campaign_triage",
+      "ads_review_derived_kpis",
+      "ads_review_recommendations",
+      "ads_review_search_terms"
+    ],
+    campaign_count: 1,
+    search_term_count: 1,
+    ready_area_count: 5,
+    blocked_area_count: 3,
+    allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions"],
+    missing_read_contracts: ["profit_margin", "human_strategy_review"],
+    operator_review_gates: ["human_strategy_review", "review_campaign_goal"],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    action_ids: ["act_prepare_ads_campaign_review_queue"],
+    blocked_claims: ["ROAS", "budget apply", "negative keyword apply"]
+  },
   decision_queue: [
     {
       id: "ads_review_campaign_activity",
@@ -5825,7 +5851,9 @@ describe("WILQ dashboard", () => {
       screen.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
     ).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj rekomendacje Google Ads bez apply")).toBeInTheDocument();
-    expect(screen.getByText("Nie wdrażaj zmian Ads bez osobnego ActionObject")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nie wdrażaj wykluczeń, budżetów ani rekomendacji/)
+    ).toBeInTheDocument();
     expect(screen.queryByText("Handoff blockera Ads")).not.toBeInTheDocument();
     expect(screen.queryByText(/handoff blockera OAuth/i)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeInTheDocument();

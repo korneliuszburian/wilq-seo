@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 23:31 CEST.
+Last updated: 2026-06-23 00:28 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -3703,7 +3703,11 @@ Commit rules:
    target-aware KPI triage is started, but remains review-only. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget
-   optimization or apply support. Localo, Ahrefs, Merchant, GA4 and content
+   optimization or apply support. Ads Doctor now has typed
+   `/api/ads/diagnostics.operator_summary` for top decisions, summary copy,
+   campaign/search-term counts, allowed metrics, missing read contracts,
+   review gates, evidence IDs, ActionObject IDs and blocked claims. Localo,
+   Ahrefs, Merchant, GA4 and content
    routes now have typed `/api/localo/diagnostics.operator_summary`,
    `/api/ahrefs/diagnostics.operator_summary`,
    `/api/merchant/diagnostics.operator_summary`,
@@ -3712,19 +3716,28 @@ Commit rules:
    ordering/counts/labels back into React; next Localo/Ahrefs/Merchant/GA4/
    content work should add new API facts or contracts, not UI-side recomputation.
 
-2. **Keep supporting registries out of first-screen decision flow.**
+2. **Fix the measured Command Center cold-build bottleneck next.**
+   The latest performance scout found Command Center slowness is mostly backend
+   cold-build/duplicate daily view-model work: warm `/api/dashboard/command-center`
+   hits are fast, while cold build measured around 3.3s and `daily_runtime`,
+   `command_center` and `marketing_brief` recompute overlapping source state.
+   Next performance slice: split daily runtime into shared base inputs plus
+   separately cached `command_center` and `marketing_brief` derivations. After
+   that, consider route-level code splitting for dashboard app code.
+
+3. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a
    supporting registry. Do not reintroduce them as duplicated Command Center
    decision queues unless a typed API model adds a new, useful marketer
    decision.
 
-3. **Improve route usefulness, not just wording.**
+4. **Improve route usefulness, not just wording.**
    For every route cleanup, prefer typed API/view-model changes over copy-only
    patches. If a card has only connector readiness, convert it into a real
    decision, honest blocker, ActionObject validation path or remove it from the
    marketer route.
 
-4. **Use a verification budget, not test loops.**
+5. **Use a verification budget, not test loops.**
    Do not run every check after every small edit. For route/component-only
    slices, use this as a menu, not a mandatory sequence:
    ```bash
@@ -3737,7 +3750,7 @@ Commit rules:
    when Python/API/schema files changed. Do not run full `scripts/verify.sh`
    repeatedly during exploratory implementation.
 
-5. **Run full verification only at real gates.**
+6. **Run full verification only at real gates.**
    Required before push/main handoff or after a broad cross-surface change:
    ```bash
    scripts/verify.sh
@@ -3772,6 +3785,37 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-23 Ads operator summary view-model slice:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k ads_diagnostics_exposes_live_campaign_metric_facts
+uv run ruff check wilq/schemas.py wilq/briefing/ads_diagnostics.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/briefing/ads_diagnostics.py
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx -t "ads doctor route renders live metric-backed diagnostics"
+pnpm --filter @wilq/dashboard lint
+scripts/local_stack.sh restart
+curl -sS http://127.0.0.1:8000/api/ads/diagnostics | jq '{operator_summary, decision_count:(.decision_queue|length), blocker_count, live_data_available}'
+```
+
+Live proof:
+
+- `operator_summary.id=ads_operator_summary`;
+- `campaign_count=18`;
+- `search_term_count=50`;
+- `ready_area_count=5`;
+- `blocked_area_count=3`;
+- `decision_count=14`;
+- `blocker_count=2`;
+- `live_data_available=true`;
+- top Ads decision IDs, allowed metrics, missing read contracts, review gates,
+  evidence IDs, ActionObject IDs and blocked claims now come from WILQ API
+  summary, not React-side sorting/text ownership.
+
+Full `scripts/verify.sh` intentionally not run for this narrow API/dashboard
+contract slice; run it at the next broader release gate.
 
 Passed after the 2026-06-23 Localo operator summary view-model slice:
 

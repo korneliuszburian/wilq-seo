@@ -1416,6 +1416,25 @@ export const AdsDecisionItemSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const AdsOperatorSummarySchema = z.object({
+  id: z.literal("ads_operator_summary"),
+  title: z.string(),
+  summary: z.string(),
+  next_step: z.string(),
+  top_decision_ids: z.array(z.string()),
+  campaign_count: z.number(),
+  search_term_count: z.number(),
+  ready_area_count: z.number(),
+  blocked_area_count: z.number(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  operator_review_gates: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const AdsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1442,6 +1461,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   keyword_planner_read_contract: AdsKeywordPlannerReadContractSchema,
   custom_segments_read_contract: AdsCustomSegmentsReadContractSchema,
   negative_keywords_read_contract: AdsNegativeKeywordsReadContractSchema,
+  operator_summary: AdsOperatorSummarySchema,
   decision_queue: z.array(AdsDecisionItemSchema),
   sections: z.array(AdsDiagnosticSectionSchema),
   blocked_handoff: AdsBlockedHandoffSchema.nullable().optional(),

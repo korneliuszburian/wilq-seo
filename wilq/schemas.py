@@ -1750,6 +1750,25 @@ class AdsDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class AdsOperatorSummary(BaseModel):
+    id: Literal["ads_operator_summary"] = "ads_operator_summary"
+    title: str
+    summary: str
+    next_step: str
+    top_decision_ids: list[str] = Field(default_factory=list)
+    campaign_count: int = 0
+    search_term_count: int = 0
+    ready_area_count: int = 0
+    blocked_area_count: int = 0
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class AdsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -1776,6 +1795,7 @@ class AdsDiagnosticsResponse(BaseModel):
     keyword_planner_read_contract: AdsKeywordPlannerReadContract
     custom_segments_read_contract: AdsCustomSegmentsReadContract
     negative_keywords_read_contract: AdsNegativeKeywordsReadContract
+    operator_summary: AdsOperatorSummary
     decision_queue: list[AdsDecisionItem] = Field(default_factory=list)
     sections: list[AdsDiagnosticSection] = Field(default_factory=list)
     blocked_handoff: AdsBlockedHandoff | None = None

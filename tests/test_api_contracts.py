@@ -6279,6 +6279,36 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         }
     ]
     assert "Kolejność review kampanii" in read_contract["campaign_rows"][0]["review_reason"]
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["id"] == "ads_operator_summary"
+    assert operator_summary["title"] == "Co marketer ma sprawdzić teraz w Google Ads"
+    assert operator_summary["top_decision_ids"] == [
+        decision["id"]
+        for decision in sorted(
+            payload["decision_queue"],
+            key=lambda decision: (
+                0 if decision["status"] == "ready" else 1,
+                decision["priority"],
+            ),
+        )[:5]
+    ]
+    assert operator_summary["campaign_count"] == len(read_contract["campaign_rows"])
+    assert operator_summary["search_term_count"] == len(
+        payload["search_terms_read_contract"]["search_term_rows"]
+    )
+    assert operator_summary["ready_area_count"] == payload["optimizer_readiness_contract"][
+        "ready_area_count"
+    ]
+    assert operator_summary["blocked_area_count"] == payload["optimizer_readiness_contract"][
+        "blocked_area_count"
+    ]
+    assert "clicks" in operator_summary["allowed_metrics"]
+    assert "google_ads" in operator_summary["source_connectors"]
+    assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
+    assert "act_prepare_ads_campaign_review_queue" in operator_summary["action_ids"]
+    assert "ROAS" in operator_summary["blocked_claims"]
+    assert operator_summary["summary"]
+    assert operator_summary["next_step"]
     currency_contract = payload["account_currency_read_contract"]
     assert currency_contract["status"] == "ready"
     assert currency_contract["currency_code"] == "PLN"
