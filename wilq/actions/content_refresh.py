@@ -181,7 +181,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         previews.append(
             {
                 "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
-                "candidate_id": f"content_brief_gsc_{_slug(page_path or page)}",
+                "candidate_id": f"content_brief_gsc_{_candidate_slug_for_page(page)}",
                 "source_type": "gsc_query_page",
                 "mode": mode,
                 "topic": primary_query,
@@ -548,6 +548,16 @@ def _short_path(value: str) -> str:
     if parsed.netloc:
         return f"{parsed.netloc}{parsed.path}".rstrip("/") or parsed.netloc
     return value
+
+
+def _candidate_slug_for_page(value: str) -> str:
+    path = _normalized_path(value)
+    if path and path != "/":
+        return _slug(path)
+    parsed = urlparse(value)
+    if parsed.netloc:
+        return _slug(parsed.netloc)
+    return _slug(value) or "homepage"
 
 
 def _slug(value: str) -> str:

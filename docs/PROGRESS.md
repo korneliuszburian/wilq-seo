@@ -37,6 +37,24 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content brief homepage candidate ID traceability, 2026-06-22 08:41 CEST.
+  Live ActionObject preview miał regresję jakościową:
+  `target_url=https://www.ekologus.pl/` dostawał `candidate_id=content_brief_gsc_`,
+  bo generator slugował root path `/` zamiast hosta. To psuło późniejsze
+  review/audit i mogło powodować nieczytelne albo kolidujące wybory operatora.
+  RED/GREEN proof:
+  `test_content_brief_preview_homepage_candidate_id_is_traceable` najpierw
+  failował na `content_brief_gsc_`, a po poprawce generatora przechodzi z
+  `content_brief_gsc_www_ekologus_pl`. Live proof po
+  `scripts/local_stack.sh restart`: `/api/actions/act_prepare_content_refresh_queue`
+  zwraca `preview_count=8`, homepage preview z
+  `candidate_id=content_brief_gsc_www_ekologus_pl`, topic `ekologus`,
+  `apply_allowed=false`, `api_mutation_ready=false` i evidence
+  `ev_refresh_refresh_google_search_console_554550c44ec7`. Wąskie checks:
+  ruff OK, mypy OK, content/action API tests 4/4 OK. Final proof:
+  `scripts/verify.sh` green, including 152 backend tests, 17 dashboard unit
+  tests, Skill/API smokes, 14 Playwright e2e tests and dashboard production
+  build.
 - Ads knowledge/rule lineage eval, 2026-06-22 06:02 CEST. Goal 001 requires a
   source-backed chain, not a prompt-only skill. Scoped
   `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now has an

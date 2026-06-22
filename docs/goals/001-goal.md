@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 06:02 CEST.
+Last updated: 2026-06-22 08:41 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -199,6 +199,24 @@ failed on empty preview, then passed. Live proof after
 `content_preview_count=4` and `content_decisions=5`. Final proof:
 `scripts/verify.sh` green, including 151 backend tests, 17 dashboard unit
 tests, Skill API smoke, 14 Playwright e2e tests and dashboard production build.
+
+Latest Content brief homepage traceability proof, 2026-06-22 08:41 CEST:
+`act_prepare_content_refresh_queue` no longer emits the root-page candidate as
+`content_brief_gsc_`. Homepage content brief previews now slug the host when
+the normalized URL path is `/`, so the Ekologus homepage candidate becomes
+`content_brief_gsc_www_ekologus_pl`. This matters for operator review,
+audit-event summaries and later WordPress draft preview lineage. RED/GREEN
+proof: `test_content_brief_preview_homepage_candidate_id_is_traceable` failed
+on the old empty suffix and now passes. Live proof after
+`scripts/local_stack.sh restart`: `/api/actions/act_prepare_content_refresh_queue`
+returns `preview_count=8`, homepage preview
+`candidate_id=content_brief_gsc_www_ekologus_pl`, topic `ekologus`,
+`apply_allowed=false`, `api_mutation_ready=false` and evidence
+`ev_refresh_refresh_google_search_console_554550c44ec7`. Narrow checks passed:
+ruff, mypy and the content/action API contract subset. Final proof:
+`scripts/verify.sh` green, including 152 backend tests, 17 dashboard unit
+tests, Skill/API smokes, 14 Playwright e2e tests and dashboard production
+build.
 
 Latest Ads Doctor ActionObject scope compaction proof, 2026-06-22 01:40 CEST:
 `wilq-ads-doctor` now has an explicit ActionObject allowlist. It no longer
