@@ -1041,6 +1041,64 @@ class AdsImpressionShareReadContract(BaseModel):
     next_step: str
 
 
+class AdsCampaignTriageRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str
+    campaign_status: str | None = None
+    advertising_channel_type: str | None = None
+    review_priority: Literal["pilne", "wysokie", "normalne", "niski sygnał"] = (
+        "niski sygnał"
+    )
+    review_score: int = Field(default=0, ge=0, le=100)
+    review_reason: str
+    next_step: str
+    target_status: Literal[
+        "within_target",
+        "outside_target",
+        "spend_without_conversions",
+        "insufficient_data",
+        "no_target",
+    ] = "no_target"
+    target_status_label: str = "brak targetu"
+    clicks: int | None = None
+    impressions: int | None = None
+    cost_micros: int | None = None
+    conversions: float | None = None
+    conversion_value: float | None = None
+    ctr: float | None = None
+    average_cpc_micros: float | None = None
+    conversion_rate: float | None = None
+    cost_per_conversion_micros: float | None = None
+    roas: float | None = None
+    spend_to_budget_ratio_7d: float | None = None
+    search_budget_lost_impression_share: float | None = None
+    recommendation_count: int = 0
+    recommendation_types: list[str] = Field(default_factory=list)
+    has_budget_apply_preview: bool = False
+    has_recommendation_apply_preview: bool = False
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    source_metric_names: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    human_review_gates: list[str] = Field(default_factory=list)
+
+
+class AdsCampaignTriageReadContract(BaseModel):
+    id: str = "ads_campaign_triage_read_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    triage_rows: list[AdsCampaignTriageRow] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    next_step: str
+
+
 class AdsChangeHistoryRow(BaseModel):
     change_event_id: str | None = None
     change_date_time: str | None = None
@@ -1534,6 +1592,7 @@ class AdsDecisionItem(BaseModel):
         "prepare_custom_segments",
         "block_write_actions",
         "fix_ads_access",
+        "review_campaign_triage",
     ]
     status: Literal["ready", "blocked"]
     title: str
@@ -1549,6 +1608,7 @@ class AdsDecisionItem(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
     campaign_rows: list[AdsCampaignMetricRow] = Field(default_factory=list)
+    campaign_triage_rows: list[AdsCampaignTriageRow] = Field(default_factory=list)
     derived_kpi_rows: list[AdsDerivedKpiRow] = Field(default_factory=list)
     budget_rows: list[AdsBudgetPacingRow] = Field(default_factory=list)
     shared_budget_distribution_rows: list[AdsSharedBudgetDistributionRow] = Field(
@@ -1602,6 +1662,7 @@ class AdsDiagnosticsResponse(BaseModel):
     budget_pacing_read_contract: AdsBudgetPacingReadContract
     recommendations_read_contract: AdsRecommendationsReadContract
     impression_share_read_contract: AdsImpressionShareReadContract
+    campaign_triage_read_contract: AdsCampaignTriageReadContract
     change_history_read_contract: AdsChangeHistoryReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
     search_term_review_summary_contract: AdsSearchTermReviewSummaryContract

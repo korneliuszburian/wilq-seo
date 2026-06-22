@@ -217,6 +217,10 @@ export function getEvidence(): Promise<Evidence[]> {
   return apiGet("/api/evidence", z.array(EvidenceSchema));
 }
 
+export function getEvidenceById(evidenceId: string): Promise<Evidence> {
+  return apiGet(`/api/evidence/${encodeURIComponent(evidenceId)}`, EvidenceSchema);
+}
+
 export function getWorkflows(): Promise<Workflow[]> {
   return apiGet("/api/workflows", z.array(WorkflowSchema));
 }

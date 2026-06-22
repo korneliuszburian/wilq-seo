@@ -88,6 +88,9 @@ def main() -> int:
         if not {"ROAS", "search terms"} <= blocked_claims:
             raise SystemExit("Blocked Ads handoff must list blocked ROAS and search terms claims")
     campaign_read_contract = ads_diagnostics.get("campaign_read_contract") or {}
+    campaign_triage_read_contract = (
+        ads_diagnostics.get("campaign_triage_read_contract") or {}
+    )
     account_currency_read_contract = (
         ads_diagnostics.get("account_currency_read_contract") or {}
     )
@@ -134,6 +137,32 @@ def main() -> int:
         not in (ads_diagnostics.get("action_ids") or [])
     ):
         raise SystemExit("Ready campaign diagnostics must expose campaign review ActionObject")
+    if campaign_read_contract.get("status") == "ready" and campaign_read_contract.get(
+        "campaign_rows"
+    ):
+        if campaign_triage_read_contract.get("status") != "ready":
+            raise SystemExit("Ready campaign diagnostics must expose campaign triage contract")
+        triage_rows = campaign_triage_read_contract.get("triage_rows") or []
+        if not triage_rows:
+            raise SystemExit("Ready campaign triage contract must expose triage rows")
+        if "wasted budget" not in campaign_triage_read_contract.get(
+            "blocked_claims",
+            [],
+        ):
+            raise SystemExit("Campaign triage contract must keep wasted budget blocked")
+        pack_triage_contract = (
+            pack.get("ads_diagnostics", {}).get("campaign_triage_read_contract") or {}
+        )
+        if pack_triage_contract.get("summary") != campaign_triage_read_contract.get(
+            "summary"
+        ):
+            raise SystemExit("Context pack campaign triage contract differs")
+        if not pack_triage_contract.get("triage_rows"):
+            raise SystemExit("Context pack must include campaign triage rows")
+        if "act_prepare_ads_campaign_review_queue" not in (
+            campaign_triage_read_contract.get("action_ids") or []
+        ):
+            raise SystemExit("Campaign triage contract must expose campaign review ActionObject")
     if account_currency_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose account_currency_read_contract")
     pack_currency_contract = (

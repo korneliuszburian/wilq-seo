@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from typing import Literal
+from typing import Any, Literal
 
 from wilq.actions.google_ads.budget_safety import budget_apply_safety_review
 from wilq.actions.google_ads.business_context import (
@@ -64,6 +64,8 @@ from wilq.schemas import (
     AdsBusinessTargetInterpretation,
     AdsCampaignMetricRow,
     AdsCampaignReadContract,
+    AdsCampaignTriageReadContract,
+    AdsCampaignTriageRow,
     AdsChangeHistoryReadContract,
     AdsChangeHistoryRow,
     AdsCustomSegmentApplySafetyReview,
@@ -229,6 +231,10 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
         ["ads_principles_v1"],
     ),
     "ads_review_campaign_activity": (
+        [CARD_ADS_SEARCH, CARD_ADS_BUDGET_REVIEW],
+        ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
+    ),
+    "ads_review_campaign_triage": (
         [CARD_ADS_SEARCH, CARD_ADS_BUDGET_REVIEW],
         ["ads_diagnostics_v1", "ads_scaling_candidates_v1", "ads_recommendations_v1"],
     ),
@@ -543,6 +549,15 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         keyword_match_context_read_contract,
         action_ids,
     )
+    campaign_triage_read_contract = _campaign_triage_read_contract(
+        campaign_read_contract,
+        business_context_read_contract,
+        derived_kpi_read_contract,
+        budget_pacing_read_contract,
+        recommendations_read_contract,
+        impression_share_read_contract,
+        action_ids,
+    )
     sections = [
         _oauth_or_live_section(latest_refresh, trusted_metric_facts, action_ids),
         _campaign_overview_section(
@@ -579,6 +594,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         budget_pacing_read_contract,
         recommendations_read_contract,
         impression_share_read_contract,
+        campaign_triage_read_contract,
         change_history_read_contract,
         search_terms_read_contract,
         search_term_ngram_read_contract,
@@ -603,6 +619,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         budget_pacing_read_contract=budget_pacing_read_contract,
         recommendations_read_contract=recommendations_read_contract,
         impression_share_read_contract=impression_share_read_contract,
+        campaign_triage_read_contract=campaign_triage_read_contract,
         change_history_read_contract=change_history_read_contract,
         search_terms_read_contract=search_terms_read_contract,
         search_term_review_summary_contract=search_term_review_summary_contract,
@@ -2650,6 +2667,224 @@ def _impression_share_row_sort_key(
     budget_lost = row.search_budget_lost_impression_share or 0
     rank_lost = row.search_rank_lost_impression_share or 0
     return (-budget_lost, -rank_lost, row.campaign_name)
+
+
+def _campaign_triage_read_contract(
+    campaign_read_contract: AdsCampaignReadContract,
+    business_context_read_contract: AdsBusinessContextReadContract,
+    derived_kpi_read_contract: AdsDerivedKpiReadContract,
+    budget_pacing_read_contract: AdsBudgetPacingReadContract,
+    recommendations_read_contract: AdsRecommendationsReadContract,
+    impression_share_read_contract: AdsImpressionShareReadContract,
+    action_ids: list[str],
+) -> AdsCampaignTriageReadContract:
+    campaign_review_action_ids = _campaign_review_action_ids(action_ids)
+    rows = [
+        _campaign_triage_row(
+            campaign_row,
+            business_context_read_contract,
+            _row_by_campaign_id(derived_kpi_read_contract.kpi_rows, campaign_row.campaign_id),
+            _row_by_campaign_id(budget_pacing_read_contract.budget_rows, campaign_row.campaign_id),
+            _rows_by_campaign_id(
+                recommendations_read_contract.recommendation_rows,
+                campaign_row.campaign_id,
+            ),
+            _row_by_campaign_id(
+                impression_share_read_contract.impression_share_rows,
+                campaign_row.campaign_id,
+            ),
+            campaign_review_action_ids,
+        )
+        for campaign_row in campaign_read_contract.campaign_rows
+    ]
+    rows.sort(key=lambda row: (-row.review_score, row.campaign_name))
+    blocked_claims = [
+        "wasted budget",
+        "profitability",
+        "budget scaling",
+        "budget apply",
+        "recommendation apply",
+        "campaign mutation",
+    ]
+    if rows:
+        urgent_rows = sum(1 for row in rows if row.review_priority == "pilne")
+        high_rows = sum(1 for row in rows if row.review_priority == "wysokie")
+        return AdsCampaignTriageReadContract(
+            status="ready",
+            title="Kolejność review kampanii Ads",
+            summary=(
+                f"WILQ połączył campaign activity, KPI, budżet, rekomendacje i "
+                f"impression share dla {len(rows)} kampanii. Pilne={urgent_rows}, "
+                f"wysokie={high_rows}. To nie jest werdyktem wasted budget, "
+                "profitability, CPA ani ROAS; to kolejność ręcznego review."
+            ),
+            allowed_metrics=[
+                "clicks",
+                "impressions",
+                "cost_micros",
+                "conversions",
+                "conversion_value",
+                "ctr",
+                "average_cpc_micros",
+                "conversion_rate",
+                "cost_per_conversion_micros",
+                "roas",
+                "spend_to_budget_ratio_7d",
+                "search_budget_lost_impression_share",
+                "recommendation_count",
+            ],
+            missing_read_contracts=business_context_read_contract.missing_read_contracts,
+            blocked_claims=blocked_claims,
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_unique(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            triage_rows=rows,
+            action_ids=campaign_review_action_ids,
+            next_step=(
+                "Przejrzyj kampanie od góry kolejki. Najpierw sprawdź cel kampanii, "
+                "jakość konwersji, budżet, search terms i rekomendacje; apply i "
+                "skalowanie zostają zablokowane."
+            ),
+        )
+    return AdsCampaignTriageReadContract(
+        status="blocked",
+        title="Kolejność review kampanii Ads",
+        summary="WILQ nie ma campaign rows potrzebnych do kolejki review kampanii.",
+        allowed_metrics=[],
+        missing_read_contracts=["campaign activity"],
+        blocked_claims=blocked_claims,
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=campaign_read_contract.evidence_ids,
+        triage_rows=[],
+        action_ids=[],
+        next_step="Najpierw zbierz read-only Google Ads campaign facts.",
+    )
+
+
+def _campaign_triage_row(
+    campaign_row: AdsCampaignMetricRow,
+    business_context_read_contract: AdsBusinessContextReadContract,
+    kpi_row: AdsDerivedKpiRow | None,
+    budget_row: AdsBudgetPacingRow | None,
+    recommendation_rows: list[AdsRecommendationRow],
+    impression_share_row: AdsImpressionShareRow | None,
+    action_ids: list[str],
+) -> AdsCampaignTriageRow:
+    source_metric_values: list[str] = [fact.name for fact in campaign_row.metric_facts]
+    if kpi_row is not None:
+        source_metric_values.extend(kpi_row.source_metric_names)
+    if budget_row is not None:
+        source_metric_values.extend(fact.name for fact in budget_row.metric_facts)
+    for recommendation_row in recommendation_rows:
+        source_metric_values.extend(fact.name for fact in recommendation_row.metric_facts)
+    if impression_share_row is not None:
+        source_metric_values.extend(
+            fact.name for fact in impression_share_row.metric_facts
+        )
+    source_metric_names = _unique(source_metric_values)
+    evidence_ids = _unique(
+        [
+            *campaign_row.evidence_ids,
+            *(kpi_row.evidence_ids if kpi_row is not None else []),
+            *(budget_row.evidence_ids if budget_row is not None else []),
+            *(
+                evidence_id
+                for recommendation_row in recommendation_rows
+                for evidence_id in recommendation_row.evidence_ids
+            ),
+            *(impression_share_row.evidence_ids if impression_share_row is not None else []),
+        ]
+    )
+    has_budget_apply_preview = bool(
+        budget_row is not None and budget_row.payload_preview is not None
+    )
+    has_recommendation_apply_preview = any(
+        row.payload_preview is not None for row in recommendation_rows
+    )
+    return AdsCampaignTriageRow(
+        campaign_id=campaign_row.campaign_id,
+        campaign_name=campaign_row.campaign_name,
+        campaign_status=campaign_row.campaign_status,
+        advertising_channel_type=campaign_row.advertising_channel_type,
+        review_priority=campaign_row.review_priority,
+        review_score=campaign_row.review_score,
+        review_reason=(
+            f"{campaign_row.review_reason} Dodatkowy kontekst review: "
+            f"KPI={'tak' if kpi_row is not None else 'brak'}, "
+            f"budżet={'tak' if budget_row is not None else 'brak'}, "
+            f"rekomendacje={len(recommendation_rows)}, "
+            f"impression_share={'tak' if impression_share_row is not None else 'brak'}."
+        ),
+        next_step=(
+            "Otwórz kampanię w Ads Doctor, sprawdź cel, konwersje, budżet, "
+            "search terms i rekomendacje. Nie wykonuj apply bez ActionObject "
+            "validation i human confirm."
+        ),
+        target_status=campaign_row.target_status,
+        target_status_label=campaign_row.target_status_label,
+        clicks=campaign_row.clicks,
+        impressions=campaign_row.impressions,
+        cost_micros=campaign_row.cost_micros,
+        conversions=campaign_row.conversions,
+        conversion_value=campaign_row.conversion_value,
+        ctr=kpi_row.ctr if kpi_row is not None else None,
+        average_cpc_micros=kpi_row.average_cpc_micros if kpi_row is not None else None,
+        conversion_rate=kpi_row.conversion_rate if kpi_row is not None else None,
+        cost_per_conversion_micros=(
+            kpi_row.cost_per_conversion_micros if kpi_row is not None else None
+        ),
+        roas=kpi_row.roas if kpi_row is not None else None,
+        spend_to_budget_ratio_7d=(
+            budget_row.spend_to_budget_ratio_7d if budget_row is not None else None
+        ),
+        search_budget_lost_impression_share=(
+            impression_share_row.search_budget_lost_impression_share
+            if impression_share_row is not None
+            else None
+        ),
+        recommendation_count=len(recommendation_rows),
+        recommendation_types=_unique(row.recommendation_type for row in recommendation_rows),
+        has_budget_apply_preview=has_budget_apply_preview,
+        has_recommendation_apply_preview=has_recommendation_apply_preview,
+        evidence_ids=evidence_ids,
+        action_ids=action_ids,
+        source_metric_names=source_metric_names,
+        missing_read_contracts=business_context_read_contract.missing_read_contracts,
+        blocked_claims=[
+            "wasted budget",
+            "profitability",
+            "budget scaling",
+            "budget apply",
+            "recommendation apply",
+            "campaign mutation",
+        ],
+        human_review_gates=_unique(
+            [
+                *campaign_row.human_review_gates,
+                *(
+                    [
+                        "review_recommendation_type",
+                        "review_impact_metrics",
+                        "review_change_history",
+                        "review_business_goal",
+                    ]
+                    if recommendation_rows
+                    else []
+                ),
+                *(["campaign_budget_apply_safety"] if has_budget_apply_preview else []),
+            ]
+        ),
+    )
+
+
+def _row_by_campaign_id(rows: list[Any], campaign_id: str | None) -> Any | None:
+    for row in rows:
+        if getattr(row, "campaign_id", None) == campaign_id:
+            return row
+    return None
+
+
+def _rows_by_campaign_id(rows: list[Any], campaign_id: str | None) -> list[Any]:
+    return [row for row in rows if getattr(row, "campaign_id", None) == campaign_id]
 
 
 def _change_history_read_contract(
@@ -4984,6 +5219,7 @@ def _ads_decision_queue(
     budget_pacing_read_contract: AdsBudgetPacingReadContract,
     recommendations_read_contract: AdsRecommendationsReadContract,
     impression_share_read_contract: AdsImpressionShareReadContract,
+    campaign_triage_read_contract: AdsCampaignTriageReadContract,
     change_history_read_contract: AdsChangeHistoryReadContract,
     search_terms_read_contract: AdsSearchTermsReadContract,
     search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
@@ -5057,6 +5293,37 @@ def _ads_decision_queue(
                 action_ids=campaign_review_action_ids,
                 blocked_claims=campaign_read_contract.blocked_claims,
                 risk=ActionRisk.low,
+            )
+        )
+
+    if campaign_triage_read_contract.triage_rows:
+        decisions.append(
+            AdsDecisionItem(
+                id="ads_review_campaign_triage",
+                decision_type="review_campaign_triage",
+                status="ready",
+                title="Ustal kolejność review kampanii Ads",
+                summary=campaign_triage_read_contract.summary,
+                rationale=(
+                    "Ta kolejka łączy kampanie, KPI, pacing budżetu, rekomendacje "
+                    "i impression share w jeden widok decyzyjny. WILQ pokazuje, "
+                    "co sprawdzić najpierw, ale nadal blokuje waste/profitability/"
+                    "budget apply/recommendation apply."
+                ),
+                next_step=campaign_triage_read_contract.next_step,
+                allowed_metrics=campaign_triage_read_contract.allowed_metrics,
+                missing_read_contracts=campaign_triage_read_contract.missing_read_contracts,
+                source_connectors=campaign_triage_read_contract.source_connectors,
+                evidence_ids=campaign_triage_read_contract.evidence_ids,
+                campaign_triage_rows=campaign_triage_read_contract.triage_rows,
+                operator_review_gates=_unique(
+                    gate
+                    for row in campaign_triage_read_contract.triage_rows
+                    for gate in row.human_review_gates
+                ),
+                action_ids=campaign_triage_read_contract.action_ids,
+                blocked_claims=campaign_triage_read_contract.blocked_claims,
+                risk=ActionRisk.medium,
             )
         )
 
@@ -5707,6 +5974,7 @@ def _ads_decision_priority(decision: AdsDecisionItem) -> int:
     type_priority: dict[str, int] = {
         "fix_ads_access": 5,
         "block_write_actions": 10,
+        "review_campaign_triage": 18,
         "review_campaign_activity": 20,
         "review_business_context": 22,
         "review_derived_kpi": 25,
@@ -5742,6 +6010,34 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
         if target_context_rows:
             campaign_tiles["targety"] = target_context_rows
         return _clean_metric_tiles(campaign_tiles)
+    if decision.decision_type == "review_campaign_triage":
+        urgent_rows = sum(
+            1 for row in decision.campaign_triage_rows if row.review_priority == "pilne"
+        )
+        high_rows = sum(
+            1 for row in decision.campaign_triage_rows if row.review_priority == "wysokie"
+        )
+        recommendation_count = sum(
+            row.recommendation_count for row in decision.campaign_triage_rows
+        )
+        preview_count = sum(
+            1
+            for row in decision.campaign_triage_rows
+            if row.has_budget_apply_preview
+        ) + sum(
+            1
+            for row in decision.campaign_triage_rows
+            if row.has_recommendation_apply_preview
+        )
+        return _clean_metric_tiles(
+            {
+                "kampanie": len(decision.campaign_triage_rows),
+                "pilne": urgent_rows,
+                "wysokie": high_rows,
+                "rekomendacje": recommendation_count,
+                "podglądy": preview_count,
+            }
+        )
     if decision.decision_type == "review_business_context":
         return _clean_metric_tiles(
             {

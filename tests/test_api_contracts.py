@@ -6582,6 +6582,103 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "ads_scaling_candidates_v1",
         "ads_principles_v1",
     ]
+    campaign_triage_contract = payload["campaign_triage_read_contract"]
+    assert campaign_triage_contract["status"] == "ready"
+    assert campaign_triage_contract["title"] == "Kolejność review kampanii Ads"
+    assert campaign_triage_contract["allowed_metrics"] == [
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+        "ctr",
+        "average_cpc_micros",
+        "conversion_rate",
+        "cost_per_conversion_micros",
+        "roas",
+        "spend_to_budget_ratio_7d",
+        "search_budget_lost_impression_share",
+        "recommendation_count",
+    ]
+    assert campaign_triage_contract["missing_read_contracts"] == [
+        "profit_margin",
+        "business_goal",
+        "human_budget_goal",
+        "target_roas_or_cpa",
+        "human_strategy_review",
+    ]
+    assert campaign_triage_contract["action_ids"] == [
+        "act_prepare_ads_campaign_review_queue"
+    ]
+    assert "wasted budget" in campaign_triage_contract["blocked_claims"]
+    assert campaign_triage_contract["triage_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "campaign_status": "ENABLED",
+            "advertising_channel_type": "SEARCH",
+            "review_priority": "wysokie",
+            "review_score": campaign_triage_contract["triage_rows"][0]["review_score"],
+            "review_reason": campaign_triage_contract["triage_rows"][0][
+                "review_reason"
+            ],
+            "next_step": campaign_triage_contract["triage_rows"][0]["next_step"],
+            "target_status": "no_target",
+            "target_status_label": "brak targetu",
+            "clicks": 9,
+            "impressions": 90,
+            "cost_micros": 12000000,
+            "conversions": 2.5,
+            "conversion_value": 450.75,
+            "ctr": 0.1,
+            "average_cpc_micros": 1333333.333333,
+            "conversion_rate": 0.277778,
+            "cost_per_conversion_micros": 4800000,
+            "roas": 37.5625,
+            "spend_to_budget_ratio_7d": 0.057143,
+            "search_budget_lost_impression_share": 0.18,
+            "recommendation_count": 1,
+            "recommendation_types": ["CAMPAIGN_BUDGET"],
+            "has_budget_apply_preview": True,
+            "has_recommendation_apply_preview": True,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "action_ids": ["act_prepare_ads_campaign_review_queue"],
+            "source_metric_names": campaign_triage_contract["triage_rows"][0][
+                "source_metric_names"
+            ],
+            "missing_read_contracts": [
+                "profit_margin",
+                "business_goal",
+                "human_budget_goal",
+                "target_roas_or_cpa",
+                "human_strategy_review",
+            ],
+            "blocked_claims": [
+                "wasted budget",
+                "profitability",
+                "budget scaling",
+                "budget apply",
+                "recommendation apply",
+                "campaign mutation",
+            ],
+            "human_review_gates": [
+                "review_campaign_goal",
+                "review_conversion_quality",
+                "review_budget_context",
+                "review_search_terms_before_budget_decision",
+                "human_strategy_review",
+                "review_recommendation_type",
+                "review_impact_metrics",
+                "review_change_history",
+                "review_business_goal",
+                "campaign_budget_apply_safety",
+            ],
+        }
+    ]
+    assert "Kolejność review kampanii" in campaign_triage_contract["triage_rows"][0][
+        "review_reason"
+    ]
+    assert "nie jest werdyktem wasted budget" in campaign_triage_contract["summary"]
     change_history_contract = payload["change_history_read_contract"]
     assert change_history_contract["status"] == "ready"
     assert change_history_contract["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
@@ -7061,6 +7158,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert set(decisions_by_id) == {
         "ads_review_campaign_activity",
+        "ads_review_campaign_triage",
         "ads_review_business_context",
         "ads_review_derived_kpis",
         "ads_review_budget_context",
@@ -7099,6 +7197,26 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "review_search_terms_before_budget_decision",
         "human_strategy_review",
     ]
+    campaign_triage_decision = decisions_by_id["ads_review_campaign_triage"]
+    assert campaign_triage_decision["status"] == "ready"
+    assert campaign_triage_decision["priority"] == 18
+    assert campaign_triage_decision["decision_type"] == "review_campaign_triage"
+    assert campaign_triage_decision["title"] == "Ustal kolejność review kampanii Ads"
+    assert campaign_triage_decision["campaign_triage_rows"][0]["campaign_name"] == (
+        "Brand Search"
+    )
+    assert campaign_triage_decision["campaign_triage_rows"][0]["roas"] == 37.5625
+    assert campaign_triage_decision["action_ids"] == [
+        "act_prepare_ads_campaign_review_queue"
+    ]
+    assert campaign_triage_decision["metric_tiles"] == {
+        "kampanie": 1,
+        "pilne": 0,
+        "wysokie": 1,
+        "rekomendacje": 1,
+        "podglądy": 2,
+    }
+    assert "wasted budget" in campaign_triage_decision["blocked_claims"]
     derived_kpi_decision = decisions_by_id["ads_review_derived_kpis"]
     assert derived_kpi_decision["status"] == "ready"
     assert derived_kpi_decision["priority"] == 25
@@ -10284,6 +10402,18 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     assert ads_context["context_pack_compaction"]["decision_row_payloads_omitted"] is True
     assert ads_context["context_pack_compaction"]["full_endpoint"] == "/api/ads/diagnostics"
     assert "sections" not in ads_context
+    triage_contract = ads_context["campaign_triage_read_contract"]
+    assert triage_contract["status"] == "ready"
+    assert triage_contract["triage_rows"]
+    assert len(triage_contract["triage_rows"]) <= 4
+    assert triage_contract["triage_rows"][0]["action_ids"] == [
+        "act_prepare_ads_campaign_review_queue"
+    ]
+    assert "wasted budget" in triage_contract["blocked_claims"]
+    assert (
+        ads_context["context_pack_compaction"]["campaign_triage_rows_included"]
+        == len(triage_contract["triage_rows"])
+    )
     custom_segment_candidate = ads_context["custom_segments_read_contract"]["candidates"][0]
     assert "source_quality" in custom_segment_candidate
     assert "rejection_reasons" not in custom_segment_candidate

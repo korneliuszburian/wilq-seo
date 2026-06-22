@@ -1255,6 +1255,102 @@ const adsDiagnostics = {
     next_step:
       "Użyj udziału w wyświetleniach jako kontekstu review, nie jako decyzji budżetowej."
   },
+  campaign_triage_read_contract: {
+    id: "ads_campaign_triage_read_contract",
+    status: "ready",
+    title: "Kolejność review kampanii Ads",
+    summary:
+      "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii. To nie jest werdykt wasted budget, profitability, CPA ani ROAS.",
+    allowed_metrics: [
+      "clicks",
+      "impressions",
+      "cost_micros",
+      "conversions",
+      "conversion_value",
+      "ctr",
+      "average_cpc_micros",
+      "conversion_rate",
+      "cost_per_conversion_micros",
+      "roas",
+      "spend_to_budget_ratio_7d",
+      "search_budget_lost_impression_share",
+      "recommendation_count"
+    ],
+    missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
+    blocked_claims: [
+      "wasted budget",
+      "profitability",
+      "budget scaling",
+      "budget apply",
+      "recommendation apply",
+      "campaign mutation"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    triage_rows: [
+      {
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        campaign_status: "ENABLED",
+        advertising_channel_type: "SEARCH",
+        review_priority: "pilne",
+        review_score: 90,
+        review_reason:
+          "Kolejność review kampanii wynika z kosztu, kliknięć, konwersji, budżetu, rekomendacji i impression share.",
+        next_step:
+          "Sprawdź cel kampanii, jakość konwersji, budżet, search terms i rekomendacje bez apply.",
+        target_status: "no_target",
+        target_status_label: "brak targetu",
+        clicks: 107,
+        impressions: 2783,
+        cost_micros: 164591174,
+        conversions: 2.5,
+        conversion_value: 450.75,
+        ctr: 0.038448,
+        average_cpc_micros: 1538235.271028,
+        conversion_rate: 0.023364,
+        cost_per_conversion_micros: 65836469.6,
+        roas: 2.738589,
+        spend_to_budget_ratio_7d: 0.783768,
+        search_budget_lost_impression_share: 0.18,
+        recommendation_count: 1,
+        recommendation_types: ["CAMPAIGN_BUDGET"],
+        has_budget_apply_preview: true,
+        has_recommendation_apply_preview: true,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        action_ids: ["act_prepare_ads_campaign_review_queue"],
+        source_metric_names: [
+          "clicks",
+          "conversion_value",
+          "conversions",
+          "cost_micros",
+          "impressions",
+          "budget_amount_micros",
+          "recommendation_available",
+          "search_budget_lost_impression_share"
+        ],
+        missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
+        blocked_claims: [
+          "wasted budget",
+          "profitability",
+          "budget scaling",
+          "budget apply",
+          "recommendation apply",
+          "campaign mutation"
+        ],
+        human_review_gates: [
+          "review_campaign_goal",
+          "review_conversion_quality",
+          "review_budget_context",
+          "review_search_terms_before_budget_decision",
+          "human_strategy_review"
+        ]
+      }
+    ],
+    action_ids: ["act_prepare_ads_campaign_review_queue"],
+    next_step:
+      "Przejrzyj kampanie od góry kolejki. Apply i skalowanie zostają zablokowane."
+  },
   change_history_read_contract: {
     id: "ads_change_history_read_contract",
     status: "ready",
@@ -2071,6 +2167,140 @@ const adsDiagnostics = {
       ],
       blocked_claims: ["CPA", "ROAS", "search-term waste", "wasted budget"],
       risk: "low"
+    },
+    {
+      id: "ads_review_campaign_triage",
+      decision_type: "review_campaign_triage",
+      status: "ready",
+      title: "Ustal kolejność review kampanii Ads",
+      summary:
+        "WILQ połączył campaign activity, KPI, budżet, rekomendacje i impression share dla 1 kampanii.",
+      rationale:
+        "Triage pokazuje, którą kampanię sprawdzić najpierw, bez claimów o waste albo opłacalności.",
+      next_step:
+        "Sprawdź cel kampanii, jakość konwersji, budżet, search terms i rekomendacje bez apply.",
+      priority: 18,
+      metric_tiles: {
+        kampanie: 1,
+        pilne: 1,
+        wysokie: 0,
+        rekomendacje: 1,
+        podglądy: 2
+      },
+      allowed_metrics: [
+        "clicks",
+        "impressions",
+        "cost_micros",
+        "conversions",
+        "conversion_value",
+        "ctr",
+        "average_cpc_micros",
+        "conversion_rate",
+        "cost_per_conversion_micros",
+        "roas",
+        "spend_to_budget_ratio_7d",
+        "search_budget_lost_impression_share",
+        "recommendation_count"
+      ],
+      missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
+      operator_review_gates: [
+        "review_campaign_goal",
+        "review_conversion_quality",
+        "review_budget_context",
+        "review_search_terms_before_budget_decision",
+        "human_strategy_review"
+      ],
+      source_connectors: ["google_ads"],
+      evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+      metric_facts: [],
+      campaign_rows: [],
+      campaign_triage_rows: [
+        {
+          campaign_id: "123",
+          campaign_name: "Ekologus Search",
+          campaign_status: "ENABLED",
+          advertising_channel_type: "SEARCH",
+          review_priority: "pilne",
+          review_score: 90,
+          review_reason:
+            "Kolejność review kampanii wynika z kosztu, kliknięć, konwersji, budżetu, rekomendacji i impression share.",
+          next_step:
+            "Sprawdź cel kampanii, jakość konwersji, budżet, search terms i rekomendacje bez apply.",
+          target_status: "no_target",
+          target_status_label: "brak targetu",
+          clicks: 107,
+          impressions: 2783,
+          cost_micros: 164591174,
+          conversions: 2.5,
+          conversion_value: 450.75,
+          ctr: 0.038448,
+          average_cpc_micros: 1538235.271028,
+          conversion_rate: 0.023364,
+          cost_per_conversion_micros: 65836469.6,
+          roas: 2.738589,
+          spend_to_budget_ratio_7d: 0.783768,
+          search_budget_lost_impression_share: 0.18,
+          recommendation_count: 1,
+          recommendation_types: ["CAMPAIGN_BUDGET"],
+          has_budget_apply_preview: true,
+          has_recommendation_apply_preview: true,
+          evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+          action_ids: ["act_prepare_ads_campaign_review_queue"],
+          source_metric_names: [
+            "clicks",
+            "conversion_value",
+            "conversions",
+            "cost_micros",
+            "impressions",
+            "budget_amount_micros",
+            "recommendation_available",
+            "search_budget_lost_impression_share"
+          ],
+          missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
+          blocked_claims: [
+            "wasted budget",
+            "profitability",
+            "budget scaling",
+            "budget apply",
+            "recommendation apply",
+            "campaign mutation"
+          ],
+          human_review_gates: [
+            "review_campaign_goal",
+            "review_conversion_quality",
+            "review_budget_context",
+            "review_search_terms_before_budget_decision",
+            "human_strategy_review"
+          ]
+        }
+      ],
+      derived_kpi_rows: [],
+      budget_rows: [],
+      shared_budget_distribution_rows: [],
+      budget_apply_preview: [],
+      recommendation_rows: [],
+      recommendation_apply_preview: [],
+      impression_share_rows: [],
+      change_history_rows: [],
+      search_term_rows: [],
+      search_term_safety_rows: [],
+      keyword_match_context_rows: [],
+      custom_segment_candidates: [],
+      custom_segment_payload_preview: [],
+      negative_keyword_candidates: [],
+      negative_keyword_payload_preview: [],
+      action_ids: ["act_prepare_ads_campaign_review_queue"],
+      knowledge_card_ids: ["card_google_ads_budget_review_playbook"],
+      expert_rule_ids: ["ads_diagnostics_v1", "ads_scaling_candidates_v1"],
+      blocked_claims: [
+        "wasted budget",
+        "profitability",
+        "budget scaling",
+        "budget apply",
+        "recommendation apply",
+        "campaign mutation"
+      ],
+      risk: "medium"
     },
     {
       id: "ads_review_business_context",
@@ -5033,6 +5263,12 @@ function mockFetch() {
           })
         );
       }
+      if (url.includes("/api/evidence/")) {
+        const evidenceId = decodeURIComponent(url.split("/api/evidence/")[1] ?? "");
+        const evidenceItem = evidence.find((item) => item.id === evidenceId);
+        if (evidenceItem) return Promise.resolve(Response.json(evidenceItem));
+        return Promise.resolve(Response.json({ detail: "Evidence not found" }, { status: 404 }));
+      }
       if (url.endsWith("/api/evidence")) return Promise.resolve(Response.json(evidence));
       if (url.endsWith("/api/connectors/refresh-runs")) {
         return Promise.resolve(Response.json(connectorRefreshRuns));
@@ -5281,7 +5517,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("podgląd wpływu").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Koszt 7 dni").length).toBeGreaterThan(0);
     expect(screen.getByText("7-dniowy budżet")).toBeInTheDocument();
-    expect(screen.getByText("78,38%")).toBeInTheDocument();
+    expect(screen.getAllByText("78,38%").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("heading", { name: "Kolejność review kampanii" }).length
+    ).toBeGreaterThan(0);
     expect(
       screen.getByRole("heading", { name: "Podział wspólnych budżetów" })
     ).toBeInTheDocument();

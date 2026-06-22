@@ -49,6 +49,7 @@ import {
   getConnectors,
   getDemandGenDiagnostics,
   getEvidence,
+  getEvidenceById,
   getExpertRules,
   getGa4Diagnostics,
   getKnowledgeCards,
@@ -1964,6 +1965,8 @@ type AdsRecommendationRow =
   AdsDiagnosticsResponse["recommendations_read_contract"]["recommendation_rows"][number];
 type AdsImpressionShareRow =
   AdsDiagnosticsResponse["impression_share_read_contract"]["impression_share_rows"][number];
+type AdsCampaignTriageRow =
+  AdsDiagnosticsResponse["campaign_triage_read_contract"]["triage_rows"][number];
 type AdsChangeHistoryRow =
   AdsDiagnosticsResponse["change_history_read_contract"]["change_history_rows"][number];
 type AdsSearchTermMetricRow =
@@ -2246,6 +2249,15 @@ function AdsDecisionCard({
           />
         </div>
       ) : null}
+      {decision.campaign_triage_rows.length > 0 ? (
+        <div className="mt-3">
+          <AdsCampaignTriageRowsPanel
+            rows={decision.campaign_triage_rows}
+            currencyCode={currencyCode}
+            compact
+          />
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={decision.source_connectors} />
@@ -2282,6 +2294,8 @@ function AdsMetricEvidencePanel({
     data.budget_pacing_read_contract.shared_budget_distribution_rows;
   const recommendationRows = data.recommendations_read_contract.recommendation_rows;
   const impressionShareRows = data.impression_share_read_contract.impression_share_rows;
+  const campaignTriage = data.campaign_triage_read_contract;
+  const campaignTriageRows = campaignTriage.triage_rows;
   const changeHistoryRows = data.change_history_read_contract.change_history_rows;
   const searchTermReview = data.search_term_review_summary_contract;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
@@ -2300,6 +2314,7 @@ function AdsMetricEvidencePanel({
     ...data.budget_pacing_read_contract.missing_read_contracts,
     ...data.recommendations_read_contract.missing_read_contracts,
     ...data.impression_share_read_contract.missing_read_contracts,
+    ...campaignTriage.missing_read_contracts,
     ...data.change_history_read_contract.missing_read_contracts,
     ...searchTermReview.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
@@ -2328,6 +2343,7 @@ function AdsMetricEvidencePanel({
     ...data.budget_pacing_read_contract.blocked_claims,
     ...data.recommendations_read_contract.blocked_claims,
     ...data.impression_share_read_contract.blocked_claims,
+    ...campaignTriage.blocked_claims,
     ...data.change_history_read_contract.blocked_claims,
     ...searchTermReview.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
@@ -2359,6 +2375,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Wspólne budżety" value={sharedBudgetRows.length} />
           <MetricTile label="Rekom." value={recommendationRows.length} />
           <MetricTile label="Udział" value={impressionShareRows.length} />
+          <MetricTile label="Triage" value={campaignTriageRows.length} />
           <MetricTile label="Zmiany" value={changeHistoryRows.length} />
           <MetricTile label="Review zapytań" value={searchTermReview.total_search_term_count} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
@@ -2378,6 +2395,11 @@ function AdsMetricEvidencePanel({
       <div className="grid gap-4">
         <AdsBusinessTargetInterpretationPanel
           contract={data.business_context_read_contract}
+        />
+        <AdsCampaignTriageRowsPanel
+          rows={campaignTriageRows}
+          contract={campaignTriage}
+          currencyCode={currencyCode}
         />
         <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
         <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
@@ -2535,6 +2557,109 @@ function AdsCampaignRowsTable({
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function AdsCampaignTriageRowsPanel({
+  rows,
+  contract,
+  currencyCode,
+  compact = false
+}: {
+  rows: AdsCampaignTriageRow[];
+  contract?: AdsDiagnosticsResponse["campaign_triage_read_contract"];
+  currencyCode?: string;
+  compact?: boolean;
+}) {
+  if (rows.length === 0) {
+    return (
+      <BlockerNotice message="Brak kolejki triage kampanii. WILQ potrzebuje campaign activity, KPI, budżetu i kontraktów review, żeby ustalić kolejność sprawdzania." />
+    );
+  }
+
+  const visibleRows = compact ? rows.slice(0, 3) : rows.slice(0, 8);
+
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Kolejność review kampanii</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-600">
+            {contract?.summary ??
+              "Ranking kampanii do ręcznego review. To nie jest werdykt waste, CPA, ROAS ani profitability."}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Kampanie" value={rows.length} />
+          <MetricTile
+            label="Pilne"
+            value={rows.filter((row) => row.review_priority === "pilne").length}
+          />
+          <MetricTile
+            label="Wysokie"
+            value={rows.filter((row) => row.review_priority === "wysokie").length}
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-2">
+        {visibleRows.map((row) => (
+          <article
+            key={`${row.campaign_id ?? row.campaign_name}-triage`}
+            className="rounded-md border border-line bg-white p-3"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h4 className="text-sm font-semibold text-ink">{row.campaign_name}</h4>
+                <p className="mt-1 text-xs text-slate-500">
+                  {row.advertising_channel_type ?? "kanał: brak"} /{" "}
+                  {row.campaign_status ?? "status: brak"} / {row.target_status_label}
+                </p>
+              </div>
+              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                {row.review_priority} / score {row.review_score}
+              </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
+              <MetricTile label="Kliknięcia" value={adsNumber(row.clicks)} />
+              <MetricTile label="Koszt" value={adsCost(row.cost_micros, currencyCode)} />
+              <MetricTile label="Konwersje" value={adsNumber(row.conversions)} />
+              <MetricTile label="ROAS" value={adsNumber(row.roas)} />
+              <MetricTile
+                label="Wydanie 7d"
+                value={adsPercent(row.spend_to_budget_ratio_7d)}
+              />
+            </div>
+
+            <p className="mt-3 text-xs leading-5 text-slate-700">{row.review_reason}</p>
+            <p className="mt-2 text-xs font-medium text-ink">{row.next_step}</p>
+            <div className="mt-3 grid gap-1 text-xs text-slate-600 md:grid-cols-2">
+              <TraceLine
+                label="Wymagany review"
+                values={row.human_review_gates.slice(0, 4).map(adsOperatorReviewGateLabel)}
+                empty="brak"
+              />
+              <TraceLine
+                label="Braki"
+                values={row.missing_read_contracts.map(adsMissingReadContractLabel)}
+                empty="brak"
+              />
+              <LinkedTraceLine
+                label="Dowody"
+                values={row.evidence_ids.slice(0, 3)}
+                kind="evidence"
+              />
+              <LinkedTraceLine
+                label="ActionObjecty"
+                values={row.action_ids}
+                kind="actions"
+              />
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
@@ -3717,6 +3842,7 @@ function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_recommendations") return "rekomendacje do review";
   if (decisionType === "review_impression_share") return "udział w wyświetleniach";
   if (decisionType === "review_change_history") return "historia zmian";
+  if (decisionType === "review_campaign_triage") return "kolejność review kampanii";
   if (decisionType === "review_search_term_safety") return "safety 90 dni";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
   if (decisionType === "review_search_term_ngrams") return "tematy zapytań";
@@ -3981,6 +4107,7 @@ function adsBlockedClaimLabel(value: string) {
     "budget scaling": "skalowanie budżetu",
     "budget amount": "kwota budżetu",
     "budget pacing": "tempo wydawania budżetu",
+    profitability: "opłacalność",
     "conversion drop": "spadek konwersji",
     "conversion loss": "utrata konwersji",
     "search terms": "zapytania użytkowników",
@@ -7322,29 +7449,38 @@ function routeExpertDomains(routeName: string): string[] {
 function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflows" | "evidence" }) {
   const params = useParams({ strict: false }) as Record<string, string | undefined>;
   const id = params.actionId ?? params.opportunityId ?? params.workflowId ?? params.evidenceId ?? "";
-  const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
-  const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
-  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
-
-  if (actions.isLoading || opportunities.isLoading || evidence.isLoading) return <LoadingBand />;
-  if (actions.error || opportunities.error || evidence.error) return <ErrorState />;
-
-  if (kind === "actions") {
-    const action = (actions.data ?? []).find((item) => item.id === id);
-    if (action) return <ActionDetail action={action} />;
-  }
-  if (kind === "opportunities") {
-    const opportunity = (opportunities.data ?? []).find((item) => item.id === id);
-    if (opportunity) return <OpportunityDetail opportunity={opportunity} />;
-  }
-  if (kind === "evidence") {
-    const evidenceItem = (evidence.data ?? []).find((item) => item.id === id);
-    if (evidenceItem) return <EvidenceDetail evidence={evidenceItem} />;
-  }
+  if (kind === "evidence") return <EvidenceDetailSurface evidenceId={id} />;
+  if (kind === "actions") return <ActionDetailSurface actionId={id} />;
+  if (kind === "opportunities") return <OpportunityDetailSurface opportunityId={id} />;
   return <GenericSurface routeName={`/${kind}/${id}`} />;
 }
 
+function ActionDetailSurface({ actionId }: { actionId: string }) {
+  const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
+
+  if (actions.isLoading) return <LoadingBand />;
+  if (actions.error) return <ErrorState />;
+
+  const action = (actions.data ?? []).find((item) => item.id === actionId);
+  if (action) return <ActionDetail action={action} />;
+  return <GenericSurface routeName={`/actions/${actionId}`} />;
+}
+
+function OpportunityDetailSurface({ opportunityId }: { opportunityId: string }) {
+  const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
+
+  if (opportunities.isLoading) return <LoadingBand />;
+  if (opportunities.error) return <ErrorState />;
+
+  const opportunity = (opportunities.data ?? []).find((item) => item.id === opportunityId);
+  if (opportunity) return <OpportunityDetail opportunity={opportunity} />;
+  return <GenericSurface routeName={`/opportunities/${opportunityId}`} />;
+}
+
 function ActionDetail({ action }: { action: ActionObject }) {
+  const visibleAuditEvents = action.audit_events.slice(0, 6);
+  const hiddenAuditEventCount = Math.max(0, action.audit_events.length - visibleAuditEvents.length);
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">
       <h1 className="text-2xl font-semibold tracking-normal">{action.title}</h1>
@@ -7376,7 +7512,12 @@ function ActionDetail({ action }: { action: ActionObject }) {
           <p className="text-sm text-slate-600">Brak zapisanych zdarzeń audytu.</p>
         ) : (
           <div className="grid gap-3">
-            {action.audit_events.map((event) => (
+            {hiddenAuditEventCount > 0 ? (
+              <p className="text-xs text-slate-500">
+                Pokazano 6 najnowszych z {action.audit_events.length} zdarzeń audytu.
+              </p>
+            ) : null}
+            {visibleAuditEvents.map((event) => (
               <div key={event.id} className="rounded-md border border-line p-3 text-sm">
                 <div className="font-medium">{event.event_type}</div>
                 <div className="mt-1 text-slate-600">{event.summary}</div>
@@ -7387,6 +7528,18 @@ function ActionDetail({ action }: { action: ActionObject }) {
       </section>
     </main>
   );
+}
+
+function EvidenceDetailSurface({ evidenceId }: { evidenceId: string }) {
+  const evidence = useQuery({
+    queryKey: ["evidence", evidenceId],
+    queryFn: () => getEvidenceById(evidenceId),
+    enabled: evidenceId.length > 0
+  });
+
+  if (evidence.isLoading) return <LoadingBand />;
+  if (evidence.error || !evidence.data) return <ErrorState />;
+  return <EvidenceDetail evidence={evidence.data} />;
 }
 
 function EvidenceDetail({ evidence }: { evidence: Evidence }) {

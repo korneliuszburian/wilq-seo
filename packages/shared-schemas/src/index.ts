@@ -731,6 +731,66 @@ export const AdsImpressionShareReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsCampaignTriageRowSchema = z.object({
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string(),
+  campaign_status: z.string().nullable().optional(),
+  advertising_channel_type: z.string().nullable().optional(),
+  review_priority: z
+    .enum(["pilne", "wysokie", "normalne", "niski sygnał"])
+    .default("niski sygnał"),
+  review_score: z.number().min(0).max(100).default(0),
+  review_reason: z.string(),
+  next_step: z.string(),
+  target_status: z
+    .enum([
+      "within_target",
+      "outside_target",
+      "spend_without_conversions",
+      "insufficient_data",
+      "no_target"
+    ])
+    .default("no_target"),
+  target_status_label: z.string().default("brak targetu"),
+  clicks: z.number().nullable().optional(),
+  impressions: z.number().nullable().optional(),
+  cost_micros: z.number().nullable().optional(),
+  conversions: z.number().nullable().optional(),
+  conversion_value: z.number().nullable().optional(),
+  ctr: z.number().nullable().optional(),
+  average_cpc_micros: z.number().nullable().optional(),
+  conversion_rate: z.number().nullable().optional(),
+  cost_per_conversion_micros: z.number().nullable().optional(),
+  roas: z.number().nullable().optional(),
+  spend_to_budget_ratio_7d: z.number().nullable().optional(),
+  search_budget_lost_impression_share: z.number().nullable().optional(),
+  recommendation_count: z.number().int().nonnegative().default(0),
+  recommendation_types: z.array(z.string()).default([]),
+  has_budget_apply_preview: z.boolean().default(false),
+  has_recommendation_apply_preview: z.boolean().default(false),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  source_metric_names: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  human_review_gates: z.array(z.string()).default([])
+});
+
+export const AdsCampaignTriageReadContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  triage_rows: z.array(AdsCampaignTriageRowSchema),
+  action_ids: z.array(z.string()),
+  next_step: z.string()
+});
+
 export const AdsChangeHistoryRowSchema = z.object({
   change_event_id: z.string().nullable().optional(),
   change_date_time: z.string().nullable().optional(),
@@ -1188,6 +1248,7 @@ export const AdsDecisionItemSchema = z.object({
     "review_recommendations",
     "review_impression_share",
     "review_change_history",
+    "review_campaign_triage",
     "review_search_term_safety",
     "review_search_terms",
     "review_search_term_ngrams",
@@ -1210,6 +1271,7 @@ export const AdsDecisionItemSchema = z.object({
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),
   campaign_rows: z.array(AdsCampaignMetricRowSchema),
+  campaign_triage_rows: z.array(AdsCampaignTriageRowSchema).optional().default([]),
   derived_kpi_rows: z.array(AdsDerivedKpiRowSchema),
   budget_rows: z.array(AdsBudgetPacingRowSchema),
   shared_budget_distribution_rows: z.array(AdsSharedBudgetDistributionRowSchema)
@@ -1264,6 +1326,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   budget_pacing_read_contract: AdsBudgetPacingReadContractSchema,
   recommendations_read_contract: AdsRecommendationsReadContractSchema,
   impression_share_read_contract: AdsImpressionShareReadContractSchema,
+  campaign_triage_read_contract: AdsCampaignTriageReadContractSchema,
   change_history_read_contract: AdsChangeHistoryReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   search_term_review_summary_contract: AdsSearchTermReviewSummaryContractSchema,

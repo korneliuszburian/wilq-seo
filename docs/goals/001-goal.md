@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 09:58 CEST.
+Last updated: 2026-06-22 11:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -106,6 +106,13 @@ ActionObject and persisted `AdsStrategyReviewRecord` local state. Target
 confirmation alone does not unlock target verdict, apply or profitability
 verdicts; target verdict remains preliminary until the latest strategy review is
 `approved_for_prepare`.
+Ads now also has a typed `campaign_triage_read_contract` that joins campaign
+activity, derived KPI, budget pacing, recommendations, impression share and
+business-context gaps into one review queue for the marketer. It is explicitly
+review-only: it ranks what to inspect first and keeps `wasted budget`,
+`profitability`, `budget scaling`, `budget apply`, `recommendation apply` and
+`campaign mutation` blocked. The same contract is present in scoped
+`wilq-ads-doctor` context-pack and is guarded by the skill smoke.
 Full BDOS-class parity still requires optimizer contracts such as
 live change-event rows plus pre/post change-impact windows, approved Keyword
 Planner access/idea rows in live data, live forecast or audience-size data,
@@ -150,6 +157,33 @@ negative keywords. Live proof on 2026-06-22: status `ready`,
 `search-term waste`, `negative keyword apply`, `CPA`, `ROAS`; the same contract
 is present in the scoped `wilq-ads-doctor` context-pack and dashboard
 `/ads-doctor` renders `Kolejność review zapytań`.
+
+Latest Ads campaign triage proof, 2026-06-22 10:22 CEST:
+`/api/ads/diagnostics.campaign_triage_read_contract` is `ready` on live
+Ekologus evidence with `triage_rows=18`. The top row is `(2026) Ekologus
+Ogólna`, `review_priority=pilne`, `review_score=90`, `clicks=93`,
+`cost_micros=60694109`, `roas=0`, `spend_to_budget_ratio_7d=0.867059`, and
+ActionObject `act_prepare_ads_campaign_review_queue`. Scoped
+`POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` includes the same
+contract with `campaign_triage_rows_total=18`, compacted rows included for the
+skill, and `context_pack_bytes=197058`. RED/GREEN proof:
+`test_ads_diagnostics_exposes_live_campaign_metric_facts` and
+`test_codex_context_pack_scopes_ads_doctor_payload` failed on missing
+`campaign_triage_read_contract`, then passed after the typed schema/API/context
+contract. `wilq-ads-doctor` smoke now requires this contract when campaign
+rows are ready.
+
+Latest dashboard detail route stability proof, 2026-06-22 11:55 CEST:
+dashboard evidence/action detail routes no longer load broad registries when a
+single detail object is enough. `/evidence/{evidence_id}` now uses
+`GET /api/evidence/{evidence_id}` instead of waiting for the full evidence
+registry, and ActionObject detail renders a bounded latest audit history while
+preserving payload preview, evidence links, validation, preview, confirmation
+and impact-check controls. This keeps the marketer's drilldown path connected
+to live WILQ evidence without turning detail routes into registry dumps.
+Final proof: `scripts/verify.sh` green, including 153 backend tests, 17
+dashboard unit tests, Skill/API smokes, 14 Playwright e2e tests and dashboard
+production build.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and

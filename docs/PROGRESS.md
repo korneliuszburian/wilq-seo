@@ -37,6 +37,38 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard detail route performance/stability, 2026-06-22 11:55 CEST.
+  Root cause dwóch późnych failures w `scripts/verify.sh`: detail route dla
+  evidence czekał na pełne `/api/evidence` registry (~1.7 MB, ~17 s), a detail
+  ActionObject czekał na niepotrzebne registry i renderował całą narastającą
+  historię audytu. Dashboard ma teraz single-item
+  `GET /api/evidence/{evidence_id}` client path, osobne detail surfaces dla
+  evidence/actions/opportunities i limit najnowszych audit events w detalu
+  ActionObject. Targeted Playwright:
+  `action detail route shows validation, evidence and payload preview` oraz
+  `merchant route renders live Merchant Diagnostics evidence links` passed.
+  Final proof: `scripts/verify.sh` green, including 153 backend tests, 17
+  dashboard unit tests, Skill/API smokes, 14 Playwright e2e tests and
+  dashboard production build.
+- Ads campaign triage contract, 2026-06-22 10:22 CEST.
+  `/api/ads/diagnostics` ma teraz typed `campaign_triage_read_contract`,
+  który łączy campaign activity, derived KPI, budget pacing, recommendations,
+  impression share i business-context gaps w jedną kolejkę review kampanii.
+  To jest kolejność sprawdzania, nie werdykt waste/profitability/CPA/ROAS ani
+  apply. RED/GREEN proof:
+  `test_ads_diagnostics_exposes_live_campaign_metric_facts` i
+  `test_codex_context_pack_scopes_ads_doctor_payload` najpierw failowały na
+  braku `campaign_triage_read_contract`, potem przeszły. Live proof po
+  `scripts/local_stack.sh restart`: `triage_status=ready`, `triage_rows=18`,
+  top kampania `(2026) Ekologus Ogólna`, `review_priority=pilne`,
+  `review_score=90`, `clicks=93`, `cost_micros=60694109`, `roas=0`,
+  `spend_to_budget_ratio_7d=0.867059`, ActionObject
+  `act_prepare_ads_campaign_review_queue`, blocked claims:
+  `wasted budget`, `profitability`, `budget scaling`, `budget apply`,
+  `recommendation apply`, `campaign mutation`. Scoped
+  `wilq-ads-doctor` context-pack niesie ten sam kontrakt z compaction
+  `campaign_triage_rows_total=18`, `campaign_triage_rows_included=2`; smoke
+  skilla passed z `context_pack_bytes=197058`.
 - Content review -> Codex context-pack draft preview, 2026-06-22 09:58 CEST.
   Po zapisanym review kandydata content briefu scoped
   `POST /api/codex/context-pack {"skill":"wilq-content-strategist"}` ma teraz

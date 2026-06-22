@@ -171,7 +171,7 @@ ADS_CONTEXT_ROW_LIMIT = 3
 ADS_CONTEXT_NGRAM_ROW_LIMIT = 3
 DEMAND_GEN_CHANNEL_TYPES = {"DEMAND_GEN", "DISCOVERY"}
 DEMAND_GEN_CAMPAIGN_ROW_LIMIT = 8
-ADS_CONTEXT_DECISION_ROW_LIMIT = 3
+ADS_CONTEXT_DECISION_ROW_LIMIT = 2
 ADS_LITE_DECISION_LIMIT = 5
 ACTION_CONTEXT_CAMPAIGN_CANDIDATE_LIMIT = 3
 DEFAULT_SKILL_CONTEXT_CACHE_SECONDS = 5.0
@@ -1302,6 +1302,11 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
     compact = dict(_without_metric_facts(ads_diagnostics))
     _compact_latest_refresh_for_context(compact)
     campaign_rows = _list_at(compact, "campaign_read_contract", "campaign_rows")
+    campaign_triage_rows = _list_at(
+        compact,
+        "campaign_triage_read_contract",
+        "triage_rows",
+    )
     kpi_rows = _list_at(compact, "derived_kpi_read_contract", "kpi_rows")
     budget_rows = _list_at(compact, "budget_pacing_read_contract", "budget_rows")
     search_term_rows = _list_at(
@@ -1343,6 +1348,14 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         compact,
         ("campaign_read_contract", "campaign_rows"),
         ADS_CONTEXT_DECISION_ROW_LIMIT,
+    )
+    _limit_contract_rows(
+        compact,
+        ("campaign_triage_read_contract", "triage_rows"),
+        ADS_CONTEXT_DECISION_ROW_LIMIT,
+    )
+    _compact_campaign_triage_rows_for_context(
+        _list_at(compact, "campaign_triage_read_contract", "triage_rows")
     )
     _limit_contract_rows(
         compact,
@@ -1445,6 +1458,10 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "campaign_rows_included": len(
             _list_at(compact, "campaign_read_contract", "campaign_rows")
         ),
+        "campaign_triage_rows_total": len(campaign_triage_rows),
+        "campaign_triage_rows_included": len(
+            _list_at(compact, "campaign_triage_read_contract", "triage_rows")
+        ),
         "derived_kpi_rows_total": len(kpi_rows),
         "budget_rows_total": len(budget_rows),
         "budget_rows_included": len(
@@ -1510,6 +1527,38 @@ def _compact_budget_row_payload_preview_for_context(rows: list[Any]) -> None:
                 if isinstance(safety_review, dict)
                 else None,
             }
+
+
+def _compact_campaign_triage_rows_for_context(rows: list[Any]) -> None:
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        compact_row = {
+            "campaign_id": row.get("campaign_id"),
+            "campaign_name": row.get("campaign_name"),
+            "review_priority": row.get("review_priority"),
+            "review_score": row.get("review_score"),
+            "target_status": row.get("target_status"),
+            "clicks": row.get("clicks"),
+            "cost_micros": row.get("cost_micros"),
+            "conversions": row.get("conversions"),
+            "roas": row.get("roas"),
+            "spend_to_budget_ratio_7d": row.get("spend_to_budget_ratio_7d"),
+            "search_budget_lost_impression_share": row.get(
+                "search_budget_lost_impression_share"
+            ),
+            "recommendation_count": row.get("recommendation_count"),
+            "has_budget_apply_preview": row.get("has_budget_apply_preview"),
+            "has_recommendation_apply_preview": row.get(
+                "has_recommendation_apply_preview"
+            ),
+            "next_step": row.get("next_step"),
+            "evidence_ids": row.get("evidence_ids"),
+            "action_ids": row.get("action_ids"),
+            "blocked_claims": row.get("blocked_claims"),
+        }
+        row.clear()
+        row.update({key: value for key, value in compact_row.items() if value is not None})
 
 
 def _compact_budget_apply_preview_for_context(preview_items: list[Any]) -> None:
@@ -2395,6 +2444,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
             continue
         for rows_key in (
             "campaign_rows",
+            "campaign_triage_rows",
             "derived_kpi_rows",
             "budget_rows",
             "budget_apply_preview",
@@ -2443,6 +2493,7 @@ def _omit_decision_row_payloads(data: dict[str, Any]) -> None:
             continue
         for rows_key in (
             "campaign_rows",
+            "campaign_triage_rows",
             "derived_kpi_rows",
             "budget_rows",
             "budget_apply_preview",
