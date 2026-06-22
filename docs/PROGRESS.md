@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard GA4 route extraction, 2026-06-22 23:23 CEST.
+  `Ga4DiagnosticSurface`, GA4 operator summary, tracking review preview,
+  proof panel, WordPress match labels and GA4 label helpers were extracted
+  from `App.tsx` into `Ga4DiagnosticSurface.tsx`. `/ga4` still reads
+  `/api/ga4/diagnostics` plus `/api/actions`, preserves conversion/key-event
+  blockers, and keeps the same review-only ActionObject focus. Current
+  line-counts: `App.tsx=2888`, `Ga4DiagnosticSurface.tsx=581`. Focused proof:
+  dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"`
+  OK: 1/1.
 - Dashboard Demand Gen route extraction, 2026-06-22 23:20 CEST.
   `DemandGenDiagnosticSurface`, readiness contract view, review-only payload
   preview, landing quality/migration rows and Demand Gen label helpers were
