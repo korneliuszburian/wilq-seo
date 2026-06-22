@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard operating route surfaces extraction, 2026-06-22 22:45 CEST.
+  Top-level `/opportunities`, `/actions` and `/workflows` route surfaces were
+  extracted from `App.tsx` into `OperatingRouteSurfaces.tsx`. This keeps route
+  registration in `App.tsx` but moves registry-route data loading and
+  presentation to a dedicated file. Current line-counts: `App.tsx=6319`,
+  `OperatingRouteSurfaces.tsx=218`. Focused proof: dashboard lint OK,
+  dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx src/routes/OpportunitiesRoute.test.tsx`
+  OK: 15/15.
 - Dashboard generic surface extraction, 2026-06-22 22:40 CEST.
   `GenericSurface` and route-expert-domain mapping were extracted from
   `App.tsx` into `GenericSurface.tsx`. This moves broad fallback/knowledge
