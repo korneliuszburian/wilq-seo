@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Custom Segments route extraction, 2026-06-22 23:28 CEST.
+  `CustomSegmentsDiagnosticSurface`, custom segment candidates panel and
+  audience forecast panel were extracted from `App.tsx` into
+  `CustomSegmentsDiagnosticSurface.tsx`. `/ads-doctor/custom-segments` still
+  reads `/api/ads/diagnostics`, while the main Ads Doctor keeps reusing the
+  exported panels for evidence/proof. Current line-counts: `App.tsx=2507`,
+  `CustomSegmentsDiagnosticSurface.tsx=433`. Focused proof: dashboard lint OK,
+  dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "custom segments route renders dedicated review-only contract"`
+  OK: 1/1 and focused
+  `vitest run src/routes/App.test.tsx -t "ads doctor route"` OK: 1/1.
 - Dashboard GA4 route extraction, 2026-06-22 23:23 CEST.
   `Ga4DiagnosticSurface`, GA4 operator summary, tracking review preview,
   proof panel, WordPress match labels and GA4 label helpers were extracted
