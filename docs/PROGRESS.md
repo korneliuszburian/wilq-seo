@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard detail panels extraction, 2026-06-22 22:34 CEST.
+  `ActionDetailSurface`, `EvidenceDetailSurface`, `OpportunityDetailSurface`
+  and their detail renderers were extracted from `App.tsx` into
+  `DetailPanels.tsx`. Routing remains in `App.tsx`, so workflow detail fallback
+  and route registration are unchanged. The `/opportunities` route test was
+  also split out of `App.test.tsx` into `OpportunitiesRoute.test.tsx`. Current
+  line-counts: `App.tsx=6723`, `DetailPanels.tsx=177`. Focused proof:
+  dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/ActionDetailRoute.test.tsx
+  src/routes/OpportunitiesRoute.test.tsx` OK: 2/2.
 - Dashboard registry panels extraction, 2026-06-22 22:27 CEST.
   `ConnectorGrid`, `OpportunityList`, `EvidenceList`, `ConnectorRefreshRunList`,
   `ActionList` and `ExpertRuleList` were extracted from `App.tsx` into

@@ -5659,21 +5659,6 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).toBeInTheDocument();
   });
 
-  it("opportunities route renders", async () => {
-    renderApp("/opportunities");
-    await waitFor(() =>
-      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez apply")).toBeInTheDocument()
-    );
-    expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
-    expect(screen.getByText("Kolejka decyzji z WILQ API")).toBeInTheDocument();
-    expect(screen.getAllByText("kampanie").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("podgląd budżetu").length).toBeGreaterThan(0);
-    expect(screen.getByText("Aktywne")).toBeInTheDocument();
-    expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
-    expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
-    expect(screen.queryByText("Evidence użyte przez opportunities")).not.toBeInTheDocument();
-  });
-
   it("actions route starts from ActionObjects instead of registry dumps", async () => {
     renderApp("/actions");
     await waitFor(() =>
