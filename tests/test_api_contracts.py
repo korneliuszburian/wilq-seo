@@ -10117,6 +10117,24 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
     ads_context = data["ads_diagnostics"]
     assert data["context_scope"]["mode"] == "skill"
     assert data["context_scope"]["skill"] == "wilq-ads-doctor"
+    referenced_knowledge_card_ids = {
+        card_id
+        for decision in ads_context["decision_queue"]
+        for card_id in decision.get("knowledge_card_ids", [])
+    }
+    referenced_expert_rule_ids = {
+        rule_id
+        for decision in ads_context["decision_queue"]
+        for rule_id in decision.get("expert_rule_ids", [])
+    }
+    context_knowledge_card_ids = {
+        card["id"] for card in data["knowledge_card_summaries"]
+    }
+    context_expert_rule_ids = {rule["id"] for rule in data["expert_rule_summaries"]}
+    assert referenced_knowledge_card_ids
+    assert referenced_expert_rule_ids
+    assert referenced_knowledge_card_ids.issubset(context_knowledge_card_ids)
+    assert referenced_expert_rule_ids.issubset(context_expert_rule_ids)
     assert "ads_diagnostics" in data
     assert "content_diagnostics" not in data
     assert "command_center" not in data

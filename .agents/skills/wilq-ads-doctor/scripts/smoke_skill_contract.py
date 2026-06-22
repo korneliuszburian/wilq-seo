@@ -18,6 +18,8 @@ REQUIRED_CONTEXT_KEYS = {
     "top_opportunities",
     "active_action_objects",
     "ads_diagnostics",
+    "knowledge_card_summaries",
+    "expert_rule_summaries",
 }
 
 
@@ -122,6 +124,7 @@ def main() -> int:
     custom_segments_read_contract = ads_diagnostics.get("custom_segments_read_contract") or {}
     decision_queue = ads_diagnostics.get("decision_queue") or []
     pack_decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
+    validate_context_lineage(pack)
     budget_decision = _find_decision(decision_queue, "ads_review_budget_context")
     pack_budget_decision = _find_decision(pack_decision_queue, "ads_review_budget_context")
     if (
@@ -902,6 +905,48 @@ def _find_decision(decisions: list[dict[str, Any]], decision_id: str) -> dict[st
         if decision.get("id") == decision_id:
             return decision
     return {}
+
+
+def validate_context_lineage(pack: dict[str, Any]) -> None:
+    decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
+    referenced_knowledge_card_ids = {
+        card_id
+        for decision in decision_queue
+        if isinstance(decision, dict)
+        for card_id in decision.get("knowledge_card_ids", [])
+    }
+    referenced_expert_rule_ids = {
+        rule_id
+        for decision in decision_queue
+        if isinstance(decision, dict)
+        for rule_id in decision.get("expert_rule_ids", [])
+    }
+    if not referenced_knowledge_card_ids:
+        raise SystemExit("Ads context-pack decisions must expose knowledge card IDs")
+    if not referenced_expert_rule_ids:
+        raise SystemExit("Ads context-pack decisions must expose expert rule IDs")
+    context_knowledge_card_ids = {
+        card.get("id")
+        for card in pack.get("knowledge_card_summaries", [])
+        if isinstance(card, dict)
+    }
+    context_expert_rule_ids = {
+        rule.get("id")
+        for rule in pack.get("expert_rule_summaries", [])
+        if isinstance(rule, dict)
+    }
+    missing_cards = referenced_knowledge_card_ids - context_knowledge_card_ids
+    missing_rules = referenced_expert_rule_ids - context_expert_rule_ids
+    if missing_cards:
+        raise SystemExit(
+            "Ads context-pack lacks knowledge card summaries for: "
+            + ", ".join(sorted(missing_cards))
+        )
+    if missing_rules:
+        raise SystemExit(
+            "Ads context-pack lacks expert rule summaries for: "
+            + ", ".join(sorted(missing_rules))
+        )
 
 
 def _unique(values: list[str | None]) -> list[str]:

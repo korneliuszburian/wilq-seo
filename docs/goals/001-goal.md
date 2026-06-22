@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 05:54 CEST.
+Last updated: 2026-06-22 06:02 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -165,6 +165,21 @@ failed because context-pack compaction dropped it. Both now pass, and
 `wilq-custom-segments` smoke requires the safety review. Final proof:
 `scripts/verify.sh` green, including 150 backend tests, 17 dashboard unit
 tests, Skill API smoke, 14 Playwright e2e tests and dashboard production build.
+
+Latest Ads source-backed knowledge/rule lineage proof, 2026-06-22 06:02 CEST:
+`wilq-ads-doctor` now has explicit eval/smoke/API guardrails for the chain
+knowledge card / expert rule -> `/api/ads/diagnostics.decision_queue` ->
+scoped context-pack -> Polish Codex output. The scoped context-pack contains
+`knowledge_card_summaries=7` and `expert_rule_summaries=8`, and the API test
+plus skill smoke fail if a decision references a card/rule ID that is missing
+from those summaries. Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260622T040032Z/wilq-ads-doctor/result.json`
+with `language=pl-PL`, `api_used=true`, source connector `google_ads`,
+Google Ads evidence IDs, seven knowledge cards, eight expert rules, four
+review ActionObject candidates and `operator_usefulness_score=5`. This proves
+source/rule lineage for Ads review; it still does not unlock CPA/ROAS, wasted
+budget, budget scaling, recommendation apply, targeting apply or negative
+keyword apply.
 
 Latest Content ActionObject preview preservation proof, 2026-06-22 05:54 CEST:
 `/api/content/diagnostics` and `act_prepare_content_refresh_queue` now preserve

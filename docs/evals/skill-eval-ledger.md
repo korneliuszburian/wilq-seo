@@ -25,6 +25,68 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-22 - wilq-ads-doctor knowledge/rule lineage eval
+
+Purpose:
+
+- Prove that `wilq-ads-doctor` receives and returns knowledge/rule lineage,
+  not only raw Ads evidence. This is the source-backed chain required by Goal
+  001: knowledge cards / expert rules -> `/api/ads/diagnostics` decisions ->
+  scoped Codex context-pack -> Polish skill output.
+
+API/context proof:
+
+- `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` returns
+  `knowledge_card_summaries=7` and `expert_rule_summaries=8`.
+- The scoped `ads_diagnostics.decision_queue` includes decision-level
+  `knowledge_card_ids` and `expert_rule_ids`.
+- The strengthened API contract test now fails if any Ads decision references a
+  knowledge card or expert rule that is missing from the scoped context-pack
+  summaries.
+- The `wilq-ads-doctor` smoke script now validates the same lineage contract.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260622T040032Z/wilq-ads-doctor/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `google_ads`.
+- Evidence IDs include `ev_connector_google_ads_status`,
+  `ev_refresh_refresh_google_ads_0477a745f098` and
+  `ev_refresh_refresh_google_ads_dc9e77806e9c`.
+- Knowledge card IDs include `card_google_ads_search_playbook`,
+  `card_google_ads_budget_review_playbook`, `card_goal_001_rules`,
+  `card_google_ads_negative_keywords_playbook`,
+  `card_google_ads_custom_segments_playbook`,
+  `card_google_ads_demand_gen_playbook` and `card_google_ads_pmax_playbook`.
+- Expert rule IDs include `ads_diagnostics_v1`,
+  `ads_scaling_candidates_v1`, `ads_recommendations_v1`,
+  `ads_principles_v1`, `ads_search_terms_v1`,
+  `ads_negative_keywords_v1`, `ads_custom_segments_v1` and
+  `ads_keyword_planner_v1`.
+- Action candidates include campaign review, recommendation review, custom
+  segments review and negative keyword safety review; apply paths stay blocked.
+- `operator_usefulness_score=5`.
+
+Product finding:
+
+- This closes one part of the knowledge-condensation gap for Ads: the skill can
+  now be evaluated against concrete WILQ source/rule lineage, not just
+  `api_used=true`. It still does not unlock CPA/ROAS, wasted budget, budget
+  scaling, recommendation apply, targeting apply or negative keyword apply.
+
 ## 2026-06-22 - wilq-ads-doctor shared-budget distribution eval
 
 Purpose:

@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads knowledge/rule lineage eval, 2026-06-22 06:02 CEST. Goal 001 requires a
+  source-backed chain, not a prompt-only skill. Scoped
+  `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}` now has an
+  explicit guard in API tests and in
+  `.agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py`: every
+  decision-level `knowledge_card_ids` and `expert_rule_ids` referenced by
+  `ads_diagnostics.decision_queue` must be present in
+  `knowledge_card_summaries` and `expert_rule_summaries`. Live context proof:
+  `knowledge_card_summaries=7`, `expert_rule_summaries=8`. Non-interactive
+  eval passed:
+  `.local-lab/evals/codex-skill/20260622T040032Z/wilq-ads-doctor/result.json`
+  with `language=pl-PL`, `api_used=true`, source `google_ads`, Google Ads
+  evidence IDs, seven knowledge cards, eight expert rules, four review
+  ActionObject candidates and `operator_usefulness_score=5`. Apply/waste/CPA/
+  ROAS/budget scaling claims remain blocked.
 - Content ActionObject preview preserves decision evidence, 2026-06-22
   05:54 CEST. Root cause: `/api/content/diagnostics` could still build
   GSC/WordPress decisions, but `act_prepare_content_refresh_queue` used a
