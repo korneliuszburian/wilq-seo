@@ -860,6 +860,42 @@ export const AdsChangeHistoryReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsChangeImpactReadinessRowSchema = z.object({
+  change_event_id: z.string().nullable().optional(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  change_date_time: z.string().nullable().optional(),
+  changed_fields: z.array(z.string()),
+  current_campaign_metrics_available: z.boolean(),
+  pre_window_available: z.boolean(),
+  post_window_available: z.boolean(),
+  current_clicks: z.number().nullable().optional(),
+  current_impressions: z.number().nullable().optional(),
+  current_cost_micros: z.number().nullable().optional(),
+  current_conversions: z.number().nullable().optional(),
+  current_conversion_value: z.number().nullable().optional(),
+  missing_read_contracts: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsChangeImpactReadinessContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  readiness_rows: z.array(AdsChangeImpactReadinessRowSchema),
+  action_ids: z.array(z.string()).optional().default([]),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  next_step: z.string()
+});
+
 export const AdsSearchTermMetricRowSchema = z.object({
   search_term: z.string(),
   campaign_id: z.string().nullable().optional(),
@@ -1367,6 +1403,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   campaign_triage_read_contract: AdsCampaignTriageReadContractSchema,
   optimizer_readiness_contract: AdsOptimizerReadinessContractSchema,
   change_history_read_contract: AdsChangeHistoryReadContractSchema,
+  change_impact_readiness_contract: AdsChangeImpactReadinessContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
   search_term_review_summary_contract: AdsSearchTermReviewSummaryContractSchema,
   search_term_ngram_read_contract: AdsSearchTermNgramReadContractSchema,

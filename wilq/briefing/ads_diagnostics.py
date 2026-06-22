@@ -68,6 +68,8 @@ from wilq.schemas import (
     AdsCampaignTriageRow,
     AdsChangeHistoryReadContract,
     AdsChangeHistoryRow,
+    AdsChangeImpactReadinessContract,
+    AdsChangeImpactReadinessRow,
     AdsCustomSegmentApplySafetyReview,
     AdsCustomSegmentAudienceForecastReadContract,
     AdsCustomSegmentAudienceForecastRow,
@@ -536,6 +538,10 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         change_history_read_contract,
         action_ids,
     )
+    change_impact_readiness_contract = _change_impact_readiness_contract(
+        change_history_read_contract,
+        campaign_read_contract,
+    )
     search_term_ngram_read_contract = _search_term_ngram_with_action_ids(
         search_term_ngram_read_contract,
         action_ids,
@@ -566,6 +572,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         recommendations_read_contract,
         impression_share_read_contract,
         change_history_read_contract,
+        change_impact_readiness_contract,
         search_term_review_summary_contract,
         search_term_ngram_read_contract,
         search_term_safety_read_contract,
@@ -638,6 +645,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         campaign_triage_read_contract=campaign_triage_read_contract,
         optimizer_readiness_contract=optimizer_readiness_contract,
         change_history_read_contract=change_history_read_contract,
+        change_impact_readiness_contract=change_impact_readiness_contract,
         search_terms_read_contract=search_terms_read_contract,
         search_term_review_summary_contract=search_term_review_summary_contract,
         search_term_ngram_read_contract=search_term_ngram_read_contract,
@@ -2899,6 +2907,7 @@ def _optimizer_readiness_contract(
     recommendations_read_contract: AdsRecommendationsReadContract,
     impression_share_read_contract: AdsImpressionShareReadContract,
     change_history_read_contract: AdsChangeHistoryReadContract,
+    change_impact_readiness_contract: AdsChangeImpactReadinessContract,
     search_term_review_summary_contract: AdsSearchTermReviewSummaryContract,
     search_term_ngram_read_contract: AdsSearchTermNgramReadContract,
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract,
@@ -3106,16 +3115,19 @@ def _optimizer_readiness_contract(
         _optimizer_readiness_item(
             item_id="change_history_impact_review",
             title="Impact review historii zmian",
-            status="blocked",
-            summary=change_history_read_contract.summary,
-            next_step=change_history_read_contract.next_step,
-            source_contract_ids=[change_history_read_contract.id],
-            allowed_metrics=change_history_read_contract.allowed_metrics,
-            missing_read_contracts=change_history_read_contract.missing_read_contracts,
-            blocked_claims=change_history_read_contract.blocked_claims,
-            source_connectors=change_history_read_contract.source_connectors,
-            evidence_ids=change_history_read_contract.evidence_ids,
-            action_ids=change_history_read_contract.action_ids,
+            status=change_impact_readiness_contract.status,
+            summary=change_impact_readiness_contract.summary,
+            next_step=change_impact_readiness_contract.next_step,
+            source_contract_ids=[
+                change_history_read_contract.id,
+                change_impact_readiness_contract.id,
+            ],
+            allowed_metrics=change_impact_readiness_contract.allowed_metrics,
+            missing_read_contracts=change_impact_readiness_contract.missing_read_contracts,
+            blocked_claims=change_impact_readiness_contract.blocked_claims,
+            source_connectors=change_impact_readiness_contract.source_connectors,
+            evidence_ids=change_impact_readiness_contract.evidence_ids,
+            action_ids=change_impact_readiness_contract.action_ids,
             risk=ActionRisk.high,
         ),
         _optimizer_readiness_item(
@@ -3258,6 +3270,139 @@ def _row_by_campaign_id(rows: list[Any], campaign_id: str | None) -> Any | None:
 
 def _rows_by_campaign_id(rows: list[Any], campaign_id: str | None) -> list[Any]:
     return [row for row in rows if getattr(row, "campaign_id", None) == campaign_id]
+
+
+def _change_impact_readiness_contract(
+    change_history_read_contract: AdsChangeHistoryReadContract,
+    campaign_read_contract: AdsCampaignReadContract,
+) -> AdsChangeImpactReadinessContract:
+    base_missing = [
+        "pre_change_performance_window",
+        "post_change_performance_window",
+        "human_change_impact_review",
+        "apply_preview",
+    ]
+    blocked_claims = [
+        "change impact",
+        "performance uplift",
+        "budget scaling",
+        "budget apply",
+        "campaign mutation",
+    ]
+    rows = [
+        _change_impact_readiness_row(change_row, campaign_read_contract.campaign_rows)
+        for change_row in change_history_read_contract.change_history_rows
+    ]
+    row_missing = _unique(
+        missing for row in rows for missing in row.missing_read_contracts
+    )
+    missing_read_contracts = _unique(
+        [
+            *(
+                ["change_event_rows"]
+                if not change_history_read_contract.change_history_rows
+                else []
+            ),
+            *row_missing,
+            *base_missing,
+        ]
+    )
+    allowed_metrics = [
+        "change_event_available",
+        "change_event_changed_field_count",
+    ]
+    if any(row.current_campaign_metrics_available for row in rows):
+        allowed_metrics.extend(
+            [
+                "current_campaign_clicks",
+                "current_campaign_impressions",
+                "current_campaign_cost_micros",
+                "current_campaign_conversions",
+                "current_campaign_conversion_value",
+            ]
+        )
+    if rows:
+        campaign_context_count = sum(
+            1 for row in rows if row.current_campaign_metrics_available
+        )
+        summary = (
+            f"WILQ ma {len(rows)} zdarzeń zmian do impact review i "
+            f"{campaign_context_count} powiązanych snapshotów kampanii. To jest "
+            "readiness do ręcznego audytu, nie dowód wpływu zmian."
+        )
+    else:
+        summary = (
+            "WILQ nie ma change_event rows do impact review, więc nie może zbudować "
+            "okien wyników przed/po ani przypisać zmian do kampanii."
+        )
+    return AdsChangeImpactReadinessContract(
+        status="blocked",
+        title="Google Ads: gotowość impact review zmian",
+        summary=summary,
+        allowed_metrics=allowed_metrics,
+        missing_read_contracts=missing_read_contracts,
+        blocked_claims=blocked_claims,
+        source_connectors=change_history_read_contract.source_connectors,
+        evidence_ids=_unique(
+            [
+                *change_history_read_contract.evidence_ids,
+                *(evidence_id for row in rows for evidence_id in row.evidence_ids),
+            ]
+        ),
+        readiness_rows=rows,
+        action_ids=change_history_read_contract.action_ids,
+        api_mutation_ready=False,
+        apply_allowed=False,
+        next_step=(
+            "Użyj tego jako checklisty readiness: sprawdź, czy są change rows, "
+            "snapshot kampanii i okna wyników przed/po. Nie claimuj wpływu zmian "
+            "bez pre/post windows i human review."
+        ),
+    )
+
+
+def _change_impact_readiness_row(
+    change_row: AdsChangeHistoryRow,
+    campaign_rows: list[AdsCampaignMetricRow],
+) -> AdsChangeImpactReadinessRow:
+    campaign_row = _row_by_campaign_id(campaign_rows, change_row.campaign_id)
+    missing_read_contracts = [
+        "pre_change_performance_window",
+        "post_change_performance_window",
+        "human_change_impact_review",
+        "apply_preview",
+    ]
+    if campaign_row is None:
+        missing_read_contracts.insert(0, "current_campaign_snapshot")
+    return AdsChangeImpactReadinessRow(
+        change_event_id=change_row.change_event_id,
+        campaign_id=change_row.campaign_id,
+        campaign_name=getattr(campaign_row, "campaign_name", None),
+        change_date_time=change_row.change_date_time,
+        changed_fields=change_row.changed_fields,
+        current_campaign_metrics_available=campaign_row is not None,
+        pre_window_available=False,
+        post_window_available=False,
+        current_clicks=getattr(campaign_row, "clicks", None),
+        current_impressions=getattr(campaign_row, "impressions", None),
+        current_cost_micros=getattr(campaign_row, "cost_micros", None),
+        current_conversions=getattr(campaign_row, "conversions", None),
+        current_conversion_value=getattr(campaign_row, "conversion_value", None),
+        missing_read_contracts=missing_read_contracts,
+        evidence_ids=_unique(
+            [
+                *change_row.evidence_ids,
+                *(getattr(campaign_row, "evidence_ids", []) if campaign_row else []),
+            ]
+        ),
+        blocked_claims=[
+            "change impact",
+            "performance uplift",
+            "budget scaling",
+            "budget apply",
+            "campaign mutation",
+        ],
+    )
 
 
 def _change_history_read_contract(

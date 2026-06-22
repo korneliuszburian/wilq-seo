@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 16:34 CEST.
+Last updated: 2026-06-22 16:51 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -202,6 +202,20 @@ one blocker and seven sources without first-screen raw trace IDs. Final proof:
 `scripts/verify.sh` green, including 153 backend tests, 17 dashboard unit
 tests, Skill/API smokes, 14 Playwright e2e tests and dashboard production
 build.
+
+Latest Ads change-impact readiness proof, 2026-06-22 16:51 CEST:
+`/api/ads/diagnostics` exposes typed
+`change_impact_readiness_contract` as the bridge between raw
+`change_history_read_contract` and optimizer item
+`change_history_impact_review`. It reports whether change-event rows exist,
+whether current campaign snapshots can be matched, allowed current/change
+metrics, missing pre/post windows, evidence IDs and blocked claims. Ads Doctor
+renders this as `Gotowość impact review zmian`, and `wilq-ads-doctor` smoke
+requires the same contract in endpoint and scoped context-pack. Current live
+Ekologus proof is intentionally blocked: no live change-event rows in the last
+14 days, no pre/post windows, no human impact review and no apply preview. Do
+not claim change impact, performance uplift, budget scaling, budget apply or
+campaign mutation from this state.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and

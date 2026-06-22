@@ -2056,6 +2056,8 @@ type AdsOptimizerReadinessItem =
   AdsDiagnosticsResponse["optimizer_readiness_contract"]["readiness_items"][number];
 type AdsChangeHistoryRow =
   AdsDiagnosticsResponse["change_history_read_contract"]["change_history_rows"][number];
+type AdsChangeImpactReadinessRow =
+  AdsDiagnosticsResponse["change_impact_readiness_contract"]["readiness_rows"][number];
 type AdsSearchTermMetricRow =
   AdsDiagnosticsResponse["search_terms_read_contract"]["search_term_rows"][number];
 type AdsSearchTermNgramRow =
@@ -2533,6 +2535,7 @@ function AdsMetricEvidencePanel({
     ...data.impression_share_read_contract.missing_read_contracts,
     ...campaignTriage.missing_read_contracts,
     ...data.change_history_read_contract.missing_read_contracts,
+    ...data.change_impact_readiness_contract.missing_read_contracts,
     ...searchTermReview.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.search_term_ngram_read_contract.missing_read_contracts,
@@ -2562,6 +2565,7 @@ function AdsMetricEvidencePanel({
     ...data.impression_share_read_contract.blocked_claims,
     ...campaignTriage.blocked_claims,
     ...data.change_history_read_contract.blocked_claims,
+    ...data.change_impact_readiness_contract.blocked_claims,
     ...searchTermReview.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.search_term_ngram_read_contract.blocked_claims,
@@ -2631,6 +2635,10 @@ function AdsMetricEvidencePanel({
         />
         <AdsImpressionShareRowsTable rows={impressionShareRows} />
         <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
+        <AdsChangeImpactReadinessPanel
+          contract={data.change_impact_readiness_contract}
+          currencyCode={currencyCode}
+        />
         <AdsSearchTermReviewSummaryPanel
           contract={searchTermReview}
           currencyCode={currencyCode}
@@ -3340,6 +3348,125 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function AdsChangeImpactReadinessPanel({
+  contract,
+  currencyCode
+}: {
+  contract: AdsDiagnosticsResponse["change_impact_readiness_contract"];
+  currencyCode?: string;
+}) {
+  const rows = contract.readiness_rows;
+  const currentSnapshotCount = rows.filter((row) => row.current_campaign_metrics_available).length;
+
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Gotowość impact review zmian</h3>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-600">
+            {contract.summary}
+          </p>
+          <p className="mt-2 text-xs font-medium text-ink">{contract.next_step}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Zmiany" value={rows.length} />
+          <MetricTile label="Snapshoty" value={currentSnapshotCount} />
+          <MetricTile label="Status" value={adsDecisionStatusLabel(contract.status)} />
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <BlockerNotice message="Brak change_event rows do impact review. WILQ może pokazać tylko blocker, nie ocenę wpływu zmian." />
+      ) : (
+        <div className="grid gap-2">
+          {rows.slice(0, 6).map((row) => (
+            <AdsChangeImpactReadinessCard
+              key={`${row.change_event_id ?? "change"}-${row.campaign_id ?? "campaign"}`}
+              row={row}
+              currencyCode={currencyCode}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine
+          label="Metryki dostępne"
+          values={contract.allowed_metrics.map(adsAllowedMetricLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Brakujące kontrakty"
+          values={contract.missing_read_contracts.map(adsMissingReadContractLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Nie wolno twierdzić"
+          values={contract.blocked_claims.map(adsBlockedClaimLabel)}
+          empty="brak"
+        />
+        <LinkedTraceLine
+          label="Dowody"
+          values={contract.evidence_ids.slice(0, 6)}
+          kind="evidence"
+          empty="brak"
+        />
+      </div>
+    </div>
+  );
+}
+
+function AdsChangeImpactReadinessCard({
+  row,
+  currencyCode
+}: {
+  row: AdsChangeImpactReadinessRow;
+  currencyCode?: string;
+}) {
+  return (
+    <article className="rounded-md border border-line bg-white p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold text-ink">
+            {row.campaign_name ?? row.campaign_id ?? "kampania bez nazwy"}
+          </h4>
+          <p className="mt-1 text-xs text-slate-500">
+            {row.change_event_id ?? "brak change ID"} / {row.change_date_time ?? "brak daty"}
+          </p>
+        </div>
+        <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+          {row.current_campaign_metrics_available ? "snapshot kampanii" : "brak snapshotu"}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">
+        <MetricTile label="Kliknięcia" value={adsNumber(row.current_clicks)} />
+        <MetricTile label="Wyświetlenia" value={adsNumber(row.current_impressions)} />
+        <MetricTile label="Koszt" value={adsCost(row.current_cost_micros, currencyCode)} />
+        <MetricTile label="Konwersje" value={adsNumber(row.current_conversions)} />
+        <MetricTile label="Wartość konw." value={adsNumber(row.current_conversion_value)} />
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine
+          label="Zmienione pola"
+          values={row.changed_fields}
+          empty="brak pól"
+        />
+        <TraceLine
+          label="Braki"
+          values={row.missing_read_contracts.map(adsMissingReadContractLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Blokady"
+          values={row.blocked_claims.map(adsBlockedClaimLabel)}
+          empty="brak"
+        />
+        <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" empty="brak" />
+      </div>
+    </article>
   );
 }
 
@@ -4202,6 +4329,11 @@ function adsAllowedMetricLabel(value: string) {
     search_rank_lost_impression_share: "utracony udział przez ranking",
     change_event_available: "historia zmian dostępna",
     change_event_changed_field_count: "liczba zmienionych pól",
+    current_campaign_clicks: "bieżące kliknięcia kampanii",
+    current_campaign_impressions: "bieżące wyświetlenia kampanii",
+    current_campaign_cost_micros: "bieżący koszt kampanii",
+    current_campaign_conversions: "bieżące konwersje kampanii",
+    current_campaign_conversion_value: "bieżąca wartość konwersji kampanii",
     search_term: "zapytanie",
     ngram: "temat zapytania",
     ngram_size: "długość tematu",
@@ -4244,6 +4376,7 @@ function adsMissingReadContractLabel(value: string) {
     human_change_impact_review: "ręczny review wpływu zmian",
     apply_preview: "podgląd wdrożenia",
     change_event_rows: "zdarzenia historii zmian",
+    current_campaign_snapshot: "bieżący snapshot kampanii",
     impression_share: "udział w wyświetleniach",
     "keyword match context": "kontekst dopasowania słów kluczowych",
     keyword_match_context_read: "odczyt istniejących keywords i match types",

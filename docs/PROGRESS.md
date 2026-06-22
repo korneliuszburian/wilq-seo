@@ -37,6 +37,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads change-impact readiness contract, 2026-06-22 16:51 CEST.
+  `/api/ads/diagnostics` ma teraz typed
+  `change_impact_readiness_contract`, który siedzi między surowym
+  `change_history_read_contract` a optimizer item
+  `change_history_impact_review`. Kontrakt pokazuje, czy są change-event rows,
+  czy da się dopasować bieżący snapshot kampanii, jakie metryki wolno pokazać
+  i czego brakuje do oceny wpływu zmian. Apply, impact, performance uplift,
+  budget scaling i campaign mutation pozostają zablokowane. Fixture testowa
+  pokrywa ścieżkę z change row + snapshotem kampanii, ale bez pre/post windows;
+  live Ekologus proof po `scripts/local_stack.sh restart` pokazuje obecnie
+  `status=blocked`, `readiness_rows=0`, `missing_read_contracts` zawiera
+  `change_event_rows`, `pre_change_performance_window`,
+  `post_change_performance_window`, `human_change_impact_review` i
+  `apply_preview`. Ads Doctor renderuje panel `Gotowość impact review zmian`,
+  a `wilq-ads-doctor` smoke wymusza obecność kontraktu w endpointzie i scoped
+  context-packu. Wąskie proofy: ruff OK, mypy OK, API tests 2/2 OK,
+  dashboard route tests 17/17 OK, Ads skill smoke OK.
 - Ads optimizer readiness, context-pack/action performance i Command Center
   marketer cleanup, 2026-06-22 16:34 CEST. `/api/ads/diagnostics` ma teraz
   typed `optimizer_readiness_contract`, który rozdziela obszary gotowe do

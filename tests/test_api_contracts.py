@@ -5217,6 +5217,15 @@ def test_ads_change_history_blocks_empty_read_attempt(
     assert "pre_change_performance_window" in change_history_contract[
         "missing_read_contracts"
     ]
+    change_impact_contract = payload["change_impact_readiness_contract"]
+    assert change_impact_contract["status"] == "blocked"
+    assert change_impact_contract["readiness_rows"] == []
+    assert change_impact_contract["apply_allowed"] is False
+    assert "change_event_rows" in change_impact_contract["missing_read_contracts"]
+    assert "pre_change_performance_window" in change_impact_contract[
+        "missing_read_contracts"
+    ]
+    assert "change impact" in change_impact_contract["blocked_claims"]
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     change_history_decision = decisions_by_id["ads_review_change_history"]
     assert change_history_decision["status"] == "blocked"
@@ -5241,7 +5250,7 @@ def test_ads_change_history_blocks_empty_read_attempt(
     assert "change_event_rows" in readiness_items_by_id[
         "change_history_impact_review"
     ]["missing_read_contracts"]
-    assert "impact review zablokowany" in readiness_items_by_id[
+    assert "checklisty readiness" in readiness_items_by_id[
         "change_history_impact_review"
     ]["next_step"]
 
@@ -6716,9 +6725,6 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "pre_change_performance_window" in optimizer_items_by_id[
         "change_history_impact_review"
     ]["missing_read_contracts"]
-    assert optimizer_items_by_id["change_history_impact_review"]["source_contract_ids"] == [
-        "ads_change_history_read_contract"
-    ]
     change_history_contract = payload["change_history_read_contract"]
     assert change_history_contract["status"] == "ready"
     assert change_history_contract["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
@@ -6752,6 +6758,67 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
         }
     ]
+    change_impact_contract = payload["change_impact_readiness_contract"]
+    assert change_impact_contract["id"] == "ads_change_impact_readiness_contract"
+    assert change_impact_contract["status"] == "blocked"
+    assert change_impact_contract["apply_allowed"] is False
+    assert "change impact" in change_impact_contract["blocked_claims"]
+    assert "change_event_rows" not in change_impact_contract["missing_read_contracts"]
+    assert "current_campaign_snapshot" not in change_impact_contract[
+        "missing_read_contracts"
+    ]
+    assert "pre_change_performance_window" in change_impact_contract[
+        "missing_read_contracts"
+    ]
+    assert change_impact_contract["allowed_metrics"] == [
+        "change_event_available",
+        "change_event_changed_field_count",
+        "current_campaign_clicks",
+        "current_campaign_impressions",
+        "current_campaign_cost_micros",
+        "current_campaign_conversions",
+        "current_campaign_conversion_value",
+    ]
+    assert change_impact_contract["readiness_rows"] == [
+        {
+            "change_event_id": "change-1",
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "change_date_time": "2026-06-18 12:30:00.000000",
+            "changed_fields": ["campaign.status", "campaign_budget.amount_micros"],
+            "current_campaign_metrics_available": True,
+            "pre_window_available": False,
+            "post_window_available": False,
+            "current_clicks": 9,
+            "current_impressions": 90,
+            "current_cost_micros": 12000000,
+            "current_conversions": 2.5,
+            "current_conversion_value": 450.75,
+            "missing_read_contracts": [
+                "pre_change_performance_window",
+                "post_change_performance_window",
+                "human_change_impact_review",
+                "apply_preview",
+            ],
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "blocked_claims": [
+                "change impact",
+                "performance uplift",
+                "budget scaling",
+                "budget apply",
+                "campaign mutation",
+            ],
+        }
+    ]
+    assert optimizer_items_by_id["change_history_impact_review"][
+        "source_contract_ids"
+    ] == [
+        "ads_change_history_read_contract",
+        "ads_change_impact_readiness_contract",
+    ]
+    assert "current_campaign_snapshot" not in optimizer_items_by_id[
+        "change_history_impact_review"
+    ]["missing_read_contracts"]
     change_history_section = next(
         section for section in payload["sections"] if section["id"] == "ads_change_history"
     )
@@ -10462,6 +10529,18 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         item["id"] for item in optimizer_contract["readiness_items"]
     ]
     assert "campaign mutation" in optimizer_contract["blocked_claims"]
+    assert ads_context["change_impact_readiness_contract"]["status"] == "blocked"
+    assert "change impact" in ads_context["change_impact_readiness_contract"][
+        "blocked_claims"
+    ]
+    if ads_context["change_history_read_contract"]["change_history_rows"]:
+        assert ads_context["change_impact_readiness_contract"]["readiness_rows"]
+        assert (
+            "current_campaign_snapshot"
+            not in ads_context["change_impact_readiness_contract"][
+                "missing_read_contracts"
+            ]
+        )
     custom_segment_candidate = ads_context["custom_segments_read_contract"]["candidates"][0]
     assert "source_quality" in custom_segment_candidate
     assert "rejection_reasons" not in custom_segment_candidate

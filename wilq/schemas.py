@@ -1168,6 +1168,42 @@ class AdsChangeHistoryReadContract(BaseModel):
     next_step: str
 
 
+class AdsChangeImpactReadinessRow(BaseModel):
+    change_event_id: str | None = None
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    change_date_time: str | None = None
+    changed_fields: list[str] = Field(default_factory=list)
+    current_campaign_metrics_available: bool = False
+    pre_window_available: bool = False
+    post_window_available: bool = False
+    current_clicks: int | None = None
+    current_impressions: int | None = None
+    current_cost_micros: int | None = None
+    current_conversions: float | None = None
+    current_conversion_value: float | None = None
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsChangeImpactReadinessContract(BaseModel):
+    id: str = "ads_change_impact_readiness_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    readiness_rows: list[AdsChangeImpactReadinessRow] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    next_step: str
+
+
 class AdsSearchTermMetricRow(BaseModel):
     search_term: str
     campaign_id: str | None = None
@@ -1703,6 +1739,7 @@ class AdsDiagnosticsResponse(BaseModel):
     campaign_triage_read_contract: AdsCampaignTriageReadContract
     optimizer_readiness_contract: AdsOptimizerReadinessContract
     change_history_read_contract: AdsChangeHistoryReadContract
+    change_impact_readiness_contract: AdsChangeImpactReadinessContract
     search_terms_read_contract: AdsSearchTermsReadContract
     search_term_review_summary_contract: AdsSearchTermReviewSummaryContract
     search_term_ngram_read_contract: AdsSearchTermNgramReadContract

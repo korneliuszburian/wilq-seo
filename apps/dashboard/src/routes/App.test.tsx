@@ -1423,7 +1423,10 @@ const adsDiagnostics = {
           "Change events są dostępne, ale WILQ nie ma jeszcze pre/post performance windows ani review wpływu zmian.",
         next_step:
           "Zostaw impact review zablokowany do czasu kontraktu pre/post performance.",
-        source_contract_ids: ["ads_change_history_read_contract"],
+        source_contract_ids: [
+          "ads_change_history_read_contract",
+          "ads_change_impact_readiness_contract"
+        ],
         allowed_metrics: ["change_event_available", "change_event_changed_field_count"],
         missing_read_contracts: [
           "pre_change_performance_window",
@@ -1538,6 +1541,73 @@ const adsDiagnostics = {
     ],
     next_step:
       "Użyj historii zmian jako kontekstu audytu, nie jako dowodu wpływu zmiany."
+  },
+  change_impact_readiness_contract: {
+    id: "ads_change_impact_readiness_contract",
+    status: "blocked",
+    title: "Google Ads: gotowość impact review zmian",
+    summary:
+      "WILQ ma 1 zdarzeń zmian do impact review i 1 powiązanych snapshotów kampanii. To jest readiness do ręcznego audytu, nie dowód wpływu zmian.",
+    allowed_metrics: [
+      "change_event_available",
+      "change_event_changed_field_count",
+      "current_campaign_clicks",
+      "current_campaign_impressions",
+      "current_campaign_cost_micros",
+      "current_campaign_conversions",
+      "current_campaign_conversion_value"
+    ],
+    missing_read_contracts: [
+      "pre_change_performance_window",
+      "post_change_performance_window",
+      "human_change_impact_review",
+      "apply_preview"
+    ],
+    blocked_claims: [
+      "change impact",
+      "performance uplift",
+      "budget scaling",
+      "budget apply",
+      "campaign mutation"
+    ],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    readiness_rows: [
+      {
+        change_event_id: "change-1",
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        change_date_time: "2026-06-18 12:30:00.000000",
+        changed_fields: ["campaign.status", "campaign_budget.amount_micros"],
+        current_campaign_metrics_available: true,
+        pre_window_available: false,
+        post_window_available: false,
+        current_clicks: 107,
+        current_impressions: 2783,
+        current_cost_micros: 164591174,
+        current_conversions: 2.5,
+        current_conversion_value: 450.75,
+        missing_read_contracts: [
+          "pre_change_performance_window",
+          "post_change_performance_window",
+          "human_change_impact_review",
+          "apply_preview"
+        ],
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        blocked_claims: [
+          "change impact",
+          "performance uplift",
+          "budget scaling",
+          "budget apply",
+          "campaign mutation"
+        ]
+      }
+    ],
+    action_ids: ["act_review_ads_change_history_impact"],
+    api_mutation_ready: false,
+    apply_allowed: false,
+    next_step:
+      "Użyj tego jako checklisty readiness: najpierw dołóż pre/post performance windows i ręczny review wpływu zmian, potem dopiero rozważ ActionObject apply."
   },
   search_terms_read_contract: {
     id: "ads_search_terms_read_contract",
@@ -5658,6 +5728,11 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("kampanie do review")).toBeInTheDocument();
     expect(screen.getByText("historia zmian")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Gotowość impact review zmian" })
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("snapshot kampanii").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/bieżące kliknięcia kampanii/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/okno wyników przed zmianą/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/okno wyników po zmianie/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/wpływ zmian/).length).toBeGreaterThan(0);

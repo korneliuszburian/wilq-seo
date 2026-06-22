@@ -110,6 +110,9 @@ def main() -> int:
     change_history_read_contract = (
         ads_diagnostics.get("change_history_read_contract") or {}
     )
+    change_impact_readiness_contract = (
+        ads_diagnostics.get("change_impact_readiness_contract") or {}
+    )
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
     search_term_review_summary_contract = (
         ads_diagnostics.get("search_term_review_summary_contract") or {}
@@ -157,6 +160,10 @@ def main() -> int:
         change_impact_item.get("source_contract_ids") or []
     ):
         raise SystemExit("Change impact readiness item must cite change history contract")
+    if "ads_change_impact_readiness_contract" not in (
+        change_impact_item.get("source_contract_ids") or []
+    ):
+        raise SystemExit("Change impact readiness item must cite readiness contract")
     if "change impact" not in change_impact_item.get("blocked_claims", []):
         raise SystemExit("Change impact readiness item must block change impact claim")
     apply_item = _find_readiness_item(readiness_items, "ads_apply_safety_gate")
@@ -421,6 +428,33 @@ def main() -> int:
                 "Blocked change history contract must list missing change_history "
                 "or empty change_event_rows"
             )
+    if change_impact_readiness_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose change_impact_readiness_contract")
+    if change_impact_readiness_contract.get("apply_allowed") is not False:
+        raise SystemExit("Change impact readiness must keep apply_allowed=false")
+    if change_impact_readiness_contract.get("api_mutation_ready") is not False:
+        raise SystemExit("Change impact readiness must keep api_mutation_ready=false")
+    if "change impact" not in change_impact_readiness_contract.get("blocked_claims", []):
+        raise SystemExit("Change impact readiness must block change impact claim")
+    pack_change_impact_contract = (
+        pack.get("ads_diagnostics", {}).get("change_impact_readiness_contract") or {}
+    )
+    if pack_change_impact_contract.get("summary") != (
+        change_impact_readiness_contract.get("summary")
+    ):
+        raise SystemExit("Context pack change impact readiness contract differs")
+    change_history_rows = change_history_read_contract.get("change_history_rows") or []
+    change_impact_rows = change_impact_readiness_contract.get("readiness_rows") or []
+    if change_history_rows and not change_impact_rows:
+        raise SystemExit("Change impact readiness must expose rows for change events")
+    if change_impact_rows and "pre_change_performance_window" not in (
+        change_impact_readiness_contract.get("missing_read_contracts") or []
+    ):
+        raise SystemExit("Change impact readiness must keep pre-change window missing")
+    if change_impact_rows and "post_change_performance_window" not in (
+        change_impact_readiness_contract.get("missing_read_contracts") or []
+    ):
+        raise SystemExit("Change impact readiness must keep post-change window missing")
     if search_term_review_summary_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose search_term_review_summary_contract")
     if search_term_review_summary_contract.get("status") == "ready":
@@ -834,6 +868,36 @@ def main() -> int:
                             change_history_read_contract.get("change_history_rows") or []
                         ),
                         "blocked_claims": change_history_read_contract.get(
+                            "blocked_claims",
+                            [],
+                        ),
+                    },
+                    "change_impact_readiness_contract": {
+                        "status": change_impact_readiness_contract.get("status"),
+                        "summary": change_impact_readiness_contract.get("summary"),
+                        "allowed_metrics": change_impact_readiness_contract.get(
+                            "allowed_metrics",
+                            [],
+                        ),
+                        "missing_read_contracts": change_impact_readiness_contract.get(
+                            "missing_read_contracts",
+                            [],
+                        ),
+                        "row_count": len(
+                            change_impact_readiness_contract.get("readiness_rows") or []
+                        ),
+                        "current_snapshot_count": sum(
+                            1
+                            for row in change_impact_readiness_contract.get(
+                                "readiness_rows",
+                            )
+                            or []
+                            if row.get("current_campaign_metrics_available")
+                        ),
+                        "apply_allowed": change_impact_readiness_contract.get(
+                            "apply_allowed"
+                        ),
+                        "blocked_claims": change_impact_readiness_contract.get(
                             "blocked_claims",
                             [],
                         ),
