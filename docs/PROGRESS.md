@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard content diagnostics extraction, 2026-06-22 23:13 CEST.
+  `ContentDiagnosticSurface`, content operator summary, content brief preview,
+  WordPress draft payload preview, content decision cards, proof panel and
+  content label helpers were extracted from `App.tsx` into
+  `ContentDiagnosticSurface.tsx`. `/seo-gsc` and `/content-planner` still use
+  the same WILQ API route behavior, but content-specific diagnostics and review
+  UI no longer live in the route monolith. Current line-counts:
+  `App.tsx=4461`, `ContentDiagnosticSurface.tsx=821`. Focused proof:
+  dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"`
+  OK: 1/1 and focused
+  `vitest run src/routes/App.test.tsx -t "localo social and content routes render workflow-specific blockers or focus"`
+  OK: 1/1.
 - Dashboard Merchant route extraction, 2026-06-22 23:05 CEST.
   `MerchantDiagnosticSurface`, operator summary, decision cards, proof panel
   and Merchant label helpers were extracted from `App.tsx` into
