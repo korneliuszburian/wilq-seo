@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Merchant route extraction, 2026-06-22 23:05 CEST.
+  `MerchantDiagnosticSurface`, operator summary, decision cards, proof panel
+  and Merchant label helpers were extracted from `App.tsx` into
+  `MerchantDiagnosticSurface.tsx`. The route still reads
+  `/api/merchant/diagnostics` and `/api/actions`, but Merchant-specific
+  presentation no longer lives in the route monolith. Current line-counts:
+  `App.tsx=5247`, `MerchantDiagnosticSurface.tsx=479`. Focused proof:
+  dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics"`
+  OK: 1/1.
 - Dashboard brief workflow extraction, 2026-06-22 22:59 CEST.
   `BriefWorkflowSurface`, `MarketingBriefCard`, `briefSurfaceConfigs` and
   brief-surface matching were extracted from `App.tsx` into
