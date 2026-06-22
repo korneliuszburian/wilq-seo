@@ -9971,6 +9971,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
                     assert payload[f"{rows_key}_included"] == 0
                 assert payload[f"{rows_key}_total"] >= 0
     actions_by_id = {action["id"]: action for action in data["active_action_objects"]}
+    assert "act_review_demand_gen_readiness" not in actions_by_id
     campaign_review_action = actions_by_id["act_prepare_ads_campaign_review_queue"]
     campaign_candidate = campaign_review_action["payload"]["campaign_candidates"][0]
     full_action_response = client.get("/api/actions/act_prepare_ads_campaign_review_queue")

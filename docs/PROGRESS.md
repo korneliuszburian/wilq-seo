@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor ActionObject scope compaction, 2026-06-22 01:40 CEST.
+  `wilq-ads-doctor` ma teraz explicit ActionObject allowlist zamiast brać
+  każdy `google_ads` ActionObject. Demand Gen readiness zostaje w
+  `wilq-demand-gen-operator`, ale nie puchnie już Ads Doctor context-pack.
+  RED/GREEN proof:
+  `test_codex_context_pack_scopes_ads_doctor_payload` najpierw failował, bo
+  `act_review_demand_gen_readiness` był w Ads Doctor context, potem razem z
+  `test_codex_context_pack_scopes_demand_gen_payload` przeszedł. Live smoke po
+  `scripts/local_stack.sh restart`: `context_pack_bytes=191793`, active Ads
+  action IDs: campaign review, recommendation review, n-gram review, custom
+  segments, negative keywords, target guardrails, strategy review i Keyword
+  Planner access. Demand Gen action nadal jest scoped do
+  `wilq-demand-gen-operator`.
 - Ads shared-budget distribution contract, 2026-06-22 01:25 CEST.
   `/api/ads/diagnostics.budget_pacing_read_contract` ma teraz typed
   `shared_budget_distribution_rows`. WILQ grupuje kampanie po Google Ads
@@ -53,9 +66,8 @@ Aktualny proof produktowy:
   z `language=pl-PL`, `api_used=true`, source `google_ads` i Google Ads
   evidence IDs. Final proof: `scripts/verify.sh` green, w tym 150 backend
   tests, 17 dashboard unit tests, Skill API smoke, 14 Playwright e2e tests i
-  dashboard production build. Next gap: scoped `wilq-ads-doctor` context-pack
-  jest nadal blisko limitu 200 KB (`context_pack_bytes=198997`), więc kolejne
-  Ads value contracts wymagają ostrożnej kompaktacji.
+  dashboard production build. Later follow-up: Ads Doctor ActionObject scope
+  compaction reduced smoke context from `198997` to `191793` bytes.
 - Ads change-history empty-read semantics + Ads Doctor context budget,
   2026-06-22 00:56 CEST. WILQ rozróżnia teraz "change history read wykonany,
   ale Google Ads zwrócił 0 change_event rows" od "brak kontraktu

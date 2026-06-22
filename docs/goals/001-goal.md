@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 01:25 CEST.
+Last updated: 2026-06-22 01:40 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -124,6 +124,22 @@ creative-quality verdicts, campaign apply and performance uplift claims remain
 blocked.
 Missing contracts must be shown as blockers, not hidden with prompt language.
 
+Latest Ads Doctor ActionObject scope compaction proof, 2026-06-22 01:40 CEST:
+`wilq-ads-doctor` now has an explicit ActionObject allowlist. It no longer
+pulls every `google_ads` ActionObject into the scoped context-pack, so
+`act_review_demand_gen_readiness` stays in `wilq-demand-gen-operator` and is
+not duplicated in Ads Doctor. RED/GREEN proof:
+`tests/test_api_contracts.py::test_codex_context_pack_scopes_ads_doctor_payload`
+failed before the fix because Demand Gen readiness appeared in Ads Doctor
+context; after the allowlist, it passed together with
+`test_codex_context_pack_scopes_demand_gen_payload`, proving the Demand Gen
+skill still receives its own ActionObject. Live smoke after
+`scripts/local_stack.sh restart`: `wilq-ads-doctor`
+`context_pack_bytes=191793`, down from the previous `198997`, while preserving
+campaign review, recommendation review, n-gram review, custom segments,
+negative keywords, target guardrails, strategy review and Keyword Planner
+access ActionObjects.
+
 Latest Ads shared-budget distribution proof, 2026-06-22 01:25 CEST:
 `/api/ads/diagnostics.budget_pacing_read_contract` exposes typed
 `shared_budget_distribution_rows`. WILQ now groups campaign budget rows by
@@ -141,10 +157,9 @@ the context-pack omits it. Non-interactive Codex eval passed at
 with `language=pl-PL`, `api_used=true`, source connector `google_ads` and
 Google Ads evidence IDs. Final verification passed: `scripts/verify.sh` green,
 including 150 backend tests, 17 dashboard unit tests, API/skill smokes,
-14 Playwright e2e tests and dashboard production build. Remaining risk:
-scoped `wilq-ads-doctor` context-pack is still close to the 200 KB smoke budget
-at `context_pack_bytes=198997`, so future Ads contracts must preserve
-compaction discipline.
+14 Playwright e2e tests and dashboard production build. Later follow-up:
+ActionObject scope compaction reduced the scoped `wilq-ads-doctor` context-pack
+from `198997` to `191793` bytes.
 
 Previous Ads change-history empty-read + context-pack budget proof, 2026-06-22
 00:56 CEST: WILQ no longer treats an attempted read-only Google Ads

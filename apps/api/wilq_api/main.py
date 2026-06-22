@@ -619,6 +619,17 @@ SKILL_KNOWLEDGE_CARD_IDS: dict[str, list[str]] = {
 }
 
 SKILL_ACTION_ID_SCOPES: dict[str, set[str]] = {
+    "wilq-ads-doctor": {
+        "act_prepare_ads_campaign_review_queue",
+        "act_prepare_google_ads_recommendation_review_queue",
+        "act_review_ads_change_history_impact",
+        SEARCH_TERM_NGRAM_ACTION_ID,
+        "act_prepare_custom_segments_from_search_terms",
+        "act_prepare_negative_keyword_review_queue",
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+        KEYWORD_PLANNER_ACCESS_ACTION_ID,
+    },
     "wilq-ahrefs-gap-finder": set(),
     "wilq-campaign-builder": {
         "act_prepare_ads_campaign_review_queue",

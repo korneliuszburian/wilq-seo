@@ -29,6 +29,18 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads Doctor ActionObject scope compaction, 2026-06-22 01:40 CEST:
+   `wilq-ads-doctor` has an explicit ActionObject allowlist and no longer
+   inherits every `google_ads` action. `act_review_demand_gen_readiness` stays
+   in the `wilq-demand-gen-operator` context-pack, not Ads Doctor. RED/GREEN
+   proof: `test_codex_context_pack_scopes_ads_doctor_payload` failed before the
+   fix, then passed together with
+   `test_codex_context_pack_scopes_demand_gen_payload`. Live smoke after
+   `scripts/local_stack.sh restart`: `context_pack_bytes=191793`, active Ads
+   actions are campaign review, recommendation review, n-gram review, custom
+   segments, negative keywords, target guardrails, strategy review and Keyword
+   Planner access.
+
 0. Ads shared-budget distribution contract, 2026-06-22 01:25 CEST:
    `/api/ads/diagnostics.budget_pacing_read_contract` now exposes typed
    `shared_budget_distribution_rows`. If all Google Ads budget rows expose
@@ -44,8 +56,9 @@ Audit `docs/audits/001-output.md` is now folded into
    with `language=pl-PL`, `api_used=true` and Google Ads evidence IDs. Full
    `scripts/verify.sh` passed after this slice: backend `150 passed`,
    dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
-   and dashboard production build. Watch the scoped Ads context-pack budget:
-   smoke reported `context_pack_bytes=198997`, close to 200 KB.
+   and dashboard production build. Later follow-up reduced scoped Ads
+   context-pack size from `198997` to `191793` bytes by excluding Demand Gen
+   ActionObject from Ads Doctor scope.
 
 0. Ads change-history empty-read semantics and Ads Doctor context budget,
    2026-06-22 00:56 CEST: if Google Ads `vendor_read` attempted

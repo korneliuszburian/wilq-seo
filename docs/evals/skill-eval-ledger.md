@@ -85,8 +85,9 @@ Product finding:
 - Ads Doctor no longer treats shared-budget distribution as missing when Google
   Ads exposes campaign `budget_id`. The marketer still gets budget review
   context, but no budget scaling/apply claim.
-- Remaining risk: the scoped `wilq-ads-doctor` context-pack is close to the
-  200 KB smoke budget, so the next Ads contracts must compact intentionally.
+- Later scope-compaction follow-up removed Demand Gen ActionObject from
+  `wilq-ads-doctor` and reduced smoke `context_pack_bytes` from `198997` to
+  `191793`.
 
 ## 2026-06-22 - wilq-ads-doctor empty change-history + context-budget eval
 
