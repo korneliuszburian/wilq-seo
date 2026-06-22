@@ -79,6 +79,13 @@ def main() -> int:
         raise SystemExit("Context pack content_diagnostics decision_queue differs from endpoint")
     decision_queue = content_diagnostics.get("decision_queue", [])
     validate_content_decision_queue(content_diagnostics)
+    require_content_preview = bool(
+        content_diagnostics.get("live_data_available") and decision_queue
+    )
+    validate_content_action_preview(
+        pack.get("active_action_objects"),
+        require_preview=require_content_preview,
+    )
 
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
@@ -197,17 +204,66 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
     action_ids = set(content_diagnostics.get("action_ids") or [])
     if CONTENT_ACTION_ID not in action_ids:
         raise SystemExit(f"Content diagnostics missing {CONTENT_ACTION_ID}")
-    has_clustered_inventory_check = any(
-        decision.get("decision_type") == "merge_create_after_inventory_check"
-        for decision in decision_queue
-    )
-    if not has_clustered_inventory_check:
-        raise SystemExit("Content decision_queue lacks clustered merge/create inventory-check item")
     if not any(
-        decision.get("decision_type") == "block_as_tracking_not_content"
+        decision.get("decision_type")
+        in {
+            "refresh_or_merge",
+            "merge_create_after_inventory_check",
+            "inventory_check_before_create",
+            "review_ahrefs_gap_records",
+        }
         for decision in decision_queue
     ):
-        raise SystemExit("Content decision_queue lacks GA4 tracking-gap blocker decision")
+        raise SystemExit("Content decision_queue lacks review-safe content planning decision")
+    for decision in decision_queue:
+        if not isinstance(decision, dict):
+            continue
+        if not decision.get("evidence_ids"):
+            raise SystemExit("Content decision_queue item lacks evidence IDs")
+        if CONTENT_ACTION_ID not in set(decision.get("action_ids") or []):
+            raise SystemExit("Content decision_queue item lacks content ActionObject ID")
+        if not decision.get("blocked_claims"):
+            raise SystemExit("Content decision_queue item lacks blocked claims")
+
+
+def validate_content_action_preview(
+    active_actions: Any,
+    *,
+    require_preview: bool,
+) -> None:
+    if not isinstance(active_actions, list):
+        raise SystemExit("Context pack active_action_objects must be a list")
+    content_action = next(
+        (
+            action
+            for action in active_actions
+            if isinstance(action, dict) and action.get("id") == CONTENT_ACTION_ID
+        ),
+        None,
+    )
+    if not isinstance(content_action, dict):
+        raise SystemExit(f"Context pack missing active {CONTENT_ACTION_ID}")
+    payload = content_action.get("payload")
+    if not isinstance(payload, dict):
+        raise SystemExit("Content ActionObject payload must be an object")
+    previews = payload.get("content_brief_preview")
+    if not require_preview and previews is None:
+        return
+    if not isinstance(previews, list) or not previews:
+        raise SystemExit("Content ActionObject lacks content_brief_preview")
+    if int(payload.get("content_brief_preview_included") or 0) <= 0:
+        raise SystemExit("Content ActionObject context omits content_brief_preview")
+    first_preview = previews[0]
+    if not isinstance(first_preview, dict):
+        raise SystemExit("Content brief preview must be an object")
+    if first_preview.get("apply_allowed") is not False:
+        raise SystemExit("Content brief preview must keep apply_allowed=false")
+    if first_preview.get("api_mutation_ready") is not False:
+        raise SystemExit("Content brief preview must keep api_mutation_ready=false")
+    if not first_preview.get("evidence_ids"):
+        raise SystemExit("Content brief preview lacks evidence IDs")
+    if "ranking guarantee" not in set(first_preview.get("blocked_claims") or []):
+        raise SystemExit("Content brief preview must block ranking guarantee claims")
 
 
 def decision_trace(value: Any) -> list[dict[str, Any]]:

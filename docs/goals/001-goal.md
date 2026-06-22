@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 04:55 CEST.
+Last updated: 2026-06-22 05:54 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -164,6 +164,25 @@ carry `safety_review.safety_contract=custom_segment_apply_safety_v1` with
 failed because context-pack compaction dropped it. Both now pass, and
 `wilq-custom-segments` smoke requires the safety review. Final proof:
 `scripts/verify.sh` green, including 150 backend tests, 17 dashboard unit
+tests, Skill API smoke, 14 Playwright e2e tests and dashboard production build.
+
+Latest Content ActionObject preview preservation proof, 2026-06-22 05:54 CEST:
+`/api/content/diagnostics` and `act_prepare_content_refresh_queue` now preserve
+the same dimensioned GSC/WordPress evidence path. The regression was that newer
+aggregate GSC facts could push older `query/page` facts out of the ActionObject
+metric read, leaving content decisions without `content_brief_preview`.
+`wilq/actions/service.py` now gives content connectors larger ActionObject
+metric fact limits, matching the broader diagnostics path. RED/GREEN proof:
+`test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregate_runs`
+failed on empty preview, then passed. Live proof after
+`scripts/local_stack.sh restart`: `/api/content/diagnostics`
+`decision_count=5`, `/api/actions/act_prepare_content_refresh_queue`
+`content_preview_count=8`, first preview
+`content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca`,
+`apply_allowed=false`, `api_mutation_ready=false`; scoped
+`POST /api/codex/context-pack {"skill":"wilq-content-strategist"}` returns
+`content_preview_count=4` and `content_decisions=5`. Final proof:
+`scripts/verify.sh` green, including 151 backend tests, 17 dashboard unit
 tests, Skill API smoke, 14 Playwright e2e tests and dashboard production build.
 
 Latest Ads Doctor ActionObject scope compaction proof, 2026-06-22 01:40 CEST:

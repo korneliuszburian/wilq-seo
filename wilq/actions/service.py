@@ -334,10 +334,14 @@ ACTION_METRIC_CONNECTORS = (
     "localo",
 )
 ACTION_METRIC_FACT_LIMIT = 120
+CONTENT_ACTION_METRIC_FACT_LIMIT = 1200
 ACTION_METRIC_FACT_LIMITS = {
     "google_ads": MAX_METRIC_FACT_READ_LIMIT,
     "google_analytics_4": 2000,
     "google_merchant_center": 2000,
+    "google_search_console": CONTENT_ACTION_METRIC_FACT_LIMIT,
+    "wordpress_ekologus": CONTENT_ACTION_METRIC_FACT_LIMIT,
+    "ahrefs": CONTENT_ACTION_METRIC_FACT_LIMIT,
     "localo": 2000,
 }
 

@@ -37,6 +37,33 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content ActionObject preview preserves decision evidence, 2026-06-22
+  05:54 CEST. Root cause: `/api/content/diagnostics` could still build
+  GSC/WordPress decisions, but `act_prepare_content_refresh_queue` used a
+  lower per-connector metric fact limit, so newer aggregate/noisy GSC facts
+  could push older dimensioned `query/page` and WordPress inventory facts out
+  of the ActionObject preview. RED/GREEN proof:
+  `test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregate_runs`
+  first failed with empty `content_brief_preview`, then passed after raising
+  content ActionObject limits for `google_search_console`,
+  `wordpress_ekologus` and `ahrefs`. Live proof after
+  `scripts/local_stack.sh restart`: `/api/content/diagnostics` returns
+  `decision_count=5`, first decision
+  `SEO: odśwież lub scal "zielony ład co to" (7 zapytań)`;
+  `/api/actions/act_prepare_content_refresh_queue` returns
+  `content_preview_count=8`, first preview
+  `content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca`,
+  `mode=refresh`, `topic=bdo co to`, `apply_allowed=false`,
+  `api_mutation_ready=false`; scoped
+  `POST /api/codex/context-pack {"skill":"wilq-content-strategist"}` returns
+  `bytes=137994`, active actions `act_review_ga4_tracking_quality` and
+  `act_prepare_content_refresh_queue`, `content_preview_count=4` and
+  `content_decisions=5`. `wilq-content-strategist` smoke now requires the
+  content ActionObject preview when live content decisions exist, while still
+  accepting an empty clean runtime with no live decisions. Final proof:
+  `scripts/verify.sh` green, including 151 backend tests, 17 dashboard unit
+  tests, Skill API smoke, 14 Playwright e2e tests and dashboard production
+  build.
 - Custom segments apply/audit safety contract, 2026-06-22 04:55 CEST.
   `AdsCustomSegmentPayloadPreview` ma teraz typed
   `safety_review.safety_contract=custom_segment_apply_safety_v1`. Apply

@@ -1293,6 +1293,120 @@ def test_content_action_preview_exposes_review_only_brief_payload(
     assert "action_mode_prepare_only" in preview["blockers"]
 
 
+def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregate_runs(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_action_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "content_action.duckdb"))
+    older = datetime(2026, 6, 18, 8, 0, tzinfo=UTC)
+    newer = older + timedelta(hours=2)
+    page = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    gsc_dimensioned_run = ConnectorRefreshRun(
+        id="refresh_gsc_action_dimensioned_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=older,
+        completed_at=older,
+        evidence_ids=["ev_refresh_gsc_action_dimensioned_test"],
+        metric_summary={"query_page_rows": 1},
+        summary="Dimensioned GSC facts for action preview regression.",
+    )
+    wordpress_inventory_run = ConnectorRefreshRun(
+        id="refresh_wordpress_action_dimensioned_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=older,
+        completed_at=older,
+        evidence_ids=["ev_refresh_wordpress_action_dimensioned_test"],
+        metric_summary={"content_object_count": 1},
+        summary="Dimensioned WordPress inventory for action preview regression.",
+    )
+    noisy_gsc_run = ConnectorRefreshRun(
+        id="refresh_gsc_action_noisy_aggregate_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=newer,
+        completed_at=newer,
+        evidence_ids=["ev_refresh_gsc_action_noisy_aggregate_test"],
+        metric_summary={"clicks": 2, "impressions": 200},
+        summary="Newer non-query/page GSC facts should not erase action previews.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        gsc_dimensioned_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=4,
+                dimensions={"query": "bdo co to", "page": page},
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=4429,
+                dimensions={"query": "bdo co to", "page": page},
+            ),
+            VendorMetricFact(
+                name="ctr",
+                value=0.000903,
+                dimensions={"query": "bdo co to", "page": page},
+            ),
+            VendorMetricFact(
+                name="average_position",
+                value=9.44,
+                dimensions={"query": "bdo co to", "page": page},
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_inventory_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "pages",
+                    "content_url": page,
+                    "status": "publish",
+                },
+            )
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        noisy_gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=index,
+                dimensions={"date": f"2026-06-{index % 28 + 1:02d}", "row": str(index)},
+            )
+            for index in range(160)
+        ],
+    )
+
+    diagnostics_response = client.get("/api/content/diagnostics")
+    assert diagnostics_response.status_code == 200
+    diagnostics = diagnostics_response.json()
+    assert diagnostics["decision_queue"]
+    assert diagnostics["decision_queue"][0]["evidence_ids"]
+
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    previews = action["payload"].get("content_brief_preview") or []
+
+    assert previews
+    assert previews[0]["preview_contract"] == "content_brief_preview_v1"
+    assert previews[0]["candidate_id"].startswith("content_brief_gsc_")
+    assert previews[0]["evidence_ids"]
+    assert previews[0]["apply_allowed"] is False
+    assert previews[0]["api_mutation_ready"] is False
+    assert "ranking guarantee" in previews[0]["blocked_claims"]
+
+
 def test_content_brief_candidate_review_persists_audit_event(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
