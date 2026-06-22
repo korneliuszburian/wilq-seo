@@ -2298,6 +2298,23 @@ class AhrefsGapReadContract(BaseModel):
     risk: ActionRisk = ActionRisk.medium
 
 
+class AhrefsOperatorSummary(BaseModel):
+    id: Literal["ahrefs_operator_summary"] = "ahrefs_operator_summary"
+    title: str
+    summary: str
+    next_step: str
+    top_decision_ids: list[str] = Field(default_factory=list)
+    gap_read_status: Literal["ready", "blocked"]
+    authority_fact_count: int = 0
+    gap_fact_count: int = 0
+    available_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class AhrefsDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -2308,6 +2325,7 @@ class AhrefsDiagnosticsResponse(BaseModel):
     authority_fact_count: int = 0
     gap_fact_count: int = 0
     gap_read_contract: AhrefsGapReadContract
+    operator_summary: AhrefsOperatorSummary
     decision_queue: list[AhrefsDecisionItem] = Field(default_factory=list)
     sections: list[AhrefsDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

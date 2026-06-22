@@ -4751,6 +4751,34 @@ const ahrefsDiagnostics = {
     next_step: "Połącz gap records z GSC/WordPress i przygotuj kolejkę review.",
     risk: "medium"
   },
+  operator_summary: {
+    id: "ahrefs_operator_summary",
+    title: "Co marketer ma wiedzieć o Ahrefs",
+    summary:
+      "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i content. Autorytet domeny może być kontekstem, ale claimy o lukach contentowych lub backlinkowych wymagają typed gap records.",
+    next_step:
+      "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. Nie twierdź o content gap, backlink gap ani wzroście widoczności bez rekordów z gap read contract.",
+    top_decision_ids: [
+      "ahrefs_review_authority_context",
+      "ahrefs_review_gap_records"
+    ],
+    gap_read_status: "ready",
+    authority_fact_count: 2,
+    gap_fact_count: 0,
+    available_read_contracts: [
+      "ahrefs_authority_summary",
+      "ahrefs_competitor_pages",
+      "ahrefs_content_gap_records",
+      "ahrefs_backlink_gap_records",
+      "ahrefs_organic_keywords_by_url",
+      "ahrefs_top_pages_by_competitor"
+    ],
+    missing_read_contracts: [],
+    source_connectors: ["ahrefs"],
+    evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+    action_ids: [],
+    blocked_claims: ["traffic uplift", "authority improvement"]
+  },
   decision_queue: [
     {
       id: "ahrefs_review_authority_context",

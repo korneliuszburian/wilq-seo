@@ -82,7 +82,11 @@ export function AhrefsDiagnosticSurface() {
 }
 
 function AhrefsOperatorSummary({ data }: { data: AhrefsDiagnosticsResponse }) {
-  const decisions = [...data.decision_queue].sort(ahrefsDecisionSortValue);
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const decisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is AhrefsDecisionItem => Boolean(decision));
   return (
     <section className="rounded-md border border-line bg-white p-4">
       <div className="mb-4 flex items-start gap-3">
@@ -91,11 +95,10 @@ function AhrefsOperatorSummary({ data }: { data: AhrefsDiagnosticsResponse }) {
         </div>
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Co marketer ma wiedzieć o Ahrefs
+            {summary.title}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Ten widok nie jest listą connectorów. Pokazuje, czy Ahrefs może już
-            wesprzeć decyzje SEO i które claimy nadal są zablokowane.
+            {summary.summary}
           </p>
         </div>
       </div>
@@ -259,14 +262,6 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
       </div>
     </section>
   );
-}
-
-function ahrefsDecisionSortValue(decision: AhrefsDecisionItem) {
-  const statusRank: Record<AhrefsDecisionItem["status"], number> = {
-    ready: 0,
-    blocked: 1
-  };
-  return statusRank[decision.status] * 1000 + decision.priority;
 }
 
 function ahrefsDecisionStatusLabel(status: string) {

@@ -37,6 +37,22 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs operator summary contract, 2026-06-23 00:12 CEST.
+  `/api/ahrefs/diagnostics` exposes typed `operator_summary` for the marketer
+  route: title/summary/next_step, top decision IDs, gap read status,
+  authority/gap fact counts, available/missing read contracts, evidence IDs,
+  ActionObject IDs and blocked claims. `AhrefsDiagnosticSurface` now renders
+  this API view-model instead of sorting Ahrefs decisions and owning operator
+  summary text in React. Live proof after `scripts/local_stack.sh restart`:
+  `/api/ahrefs/diagnostics` returns
+  `operator_summary.id=ahrefs_operator_summary`, `decision_count=2`,
+  `blocker_count=2`, `gap_read_status=blocked`, missing Ahrefs gap read
+  contracts and blocked gap/traffic/authority claims. Focused proof: RED then
+  GREEN `uv run pytest tests/test_api_contracts.py -q -k ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims`,
+  `uv run pytest tests/test_api_contracts.py -q -k ahrefs_diagnostics`, ruff
+  OK, mypy OK, shared schema typecheck OK, dashboard typecheck OK, dashboard
+  lint OK, and focused dashboard route test OK. Full `scripts/verify.sh`
+  intentionally not run for this narrow contract slice.
 - Merchant operator summary contract, 2026-06-23 00:05 CEST.
   `/api/merchant/diagnostics` exposes typed `operator_summary` for the marketer
   route: title/summary/next_step, top decision IDs, top issue cluster IDs, top

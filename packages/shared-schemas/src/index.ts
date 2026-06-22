@@ -1902,6 +1902,23 @@ export const AhrefsGapReadContractSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const AhrefsOperatorSummarySchema = z.object({
+  id: z.literal("ahrefs_operator_summary"),
+  title: z.string(),
+  summary: z.string(),
+  next_step: z.string(),
+  top_decision_ids: z.array(z.string()),
+  gap_read_status: z.enum(["ready", "blocked"]),
+  authority_fact_count: z.number(),
+  gap_fact_count: z.number(),
+  available_read_contracts: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const AhrefsDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1912,6 +1929,7 @@ export const AhrefsDiagnosticsResponseSchema = z.object({
   authority_fact_count: z.number(),
   gap_fact_count: z.number(),
   gap_read_contract: AhrefsGapReadContractSchema,
+  operator_summary: AhrefsOperatorSummarySchema,
   decision_queue: z.array(AhrefsDecisionItemSchema),
   sections: z.array(AhrefsDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),

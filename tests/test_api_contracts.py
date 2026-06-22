@@ -3677,6 +3677,22 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert block_decision["status"] == "blocked"
     assert block_decision["metric_tiles"]["braki kontraktu"] == 5
     assert block_decision["evidence_ids"] == ["ev_refresh_refresh_ahrefs_diag_test"]
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["id"] == "ahrefs_operator_summary"
+    assert operator_summary["title"] == "Co marketer ma wiedzieć o Ahrefs"
+    assert operator_summary["top_decision_ids"] == [
+        decision["id"] for decision in payload["decision_queue"][:4]
+    ]
+    assert operator_summary["gap_read_status"] == "blocked"
+    assert operator_summary["authority_fact_count"] == 2
+    assert operator_summary["gap_fact_count"] == 0
+    assert "ahrefs_authority_summary" in operator_summary["available_read_contracts"]
+    assert "ahrefs_content_gap_records" in operator_summary["missing_read_contracts"]
+    assert "ahrefs" in operator_summary["source_connectors"]
+    assert "ev_refresh_refresh_ahrefs_diag_test" in operator_summary["evidence_ids"]
+    assert "content gap" in operator_summary["blocked_claims"]
+    assert operator_summary["summary"]
+    assert operator_summary["next_step"]
     assert all(fact["source_connector"] == "ahrefs" for fact in authority_decision["metric_facts"])
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "ahrefs-token-test" not in serialized

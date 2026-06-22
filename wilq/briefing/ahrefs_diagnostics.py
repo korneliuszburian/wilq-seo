@@ -14,6 +14,7 @@ from wilq.schemas import (
     AhrefsDiagnosticsResponse,
     AhrefsGapReadContract,
     AhrefsGapRecord,
+    AhrefsOperatorSummary,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     MetricFact,
@@ -108,6 +109,11 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         competitor_read_facts=competitor_read_facts,
         gap_facts=gap_facts,
     )
+    gap_read_contract = _ahrefs_gap_read_contract(
+        latest_refresh=latest_refresh,
+        authority_facts=authority_facts,
+        gap_facts=gap_facts,
+    )
 
     return AhrefsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
@@ -116,10 +122,12 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         live_data_available=live_data_available,
         authority_fact_count=len(authority_facts),
         gap_fact_count=len(gap_facts),
-        gap_read_contract=_ahrefs_gap_read_contract(
-            latest_refresh=latest_refresh,
-            authority_facts=authority_facts,
-            gap_facts=gap_facts,
+        gap_read_contract=gap_read_contract,
+        operator_summary=_operator_summary(
+            decision_queue,
+            gap_read_contract,
+            len(authority_facts),
+            len(gap_facts),
         ),
         decision_queue=decision_queue,
         sections=sections,
@@ -135,6 +143,63 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         ),
         action_ids=[],
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
+    )
+
+
+def _operator_summary(
+    decisions: list[AhrefsDecisionItem],
+    gap_read_contract: AhrefsGapReadContract,
+    authority_fact_count: int,
+    gap_fact_count: int,
+) -> AhrefsOperatorSummary:
+    top_decisions = decisions[:4]
+    return AhrefsOperatorSummary(
+        title="Co marketer ma wiedzieć o Ahrefs",
+        summary=(
+            "Ten widok pokazuje, czy Ahrefs może wesprzeć decyzje SEO i content. "
+            "Autorytet domeny może być kontekstem, ale claimy o lukach contentowych "
+            "lub backlinkowych wymagają typed gap records."
+        ),
+        next_step=(
+            "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. "
+            "Nie twierdź o content gap, backlink gap ani wzroście widoczności bez "
+            "rekordów z gap read contract."
+        ),
+        top_decision_ids=[decision.id for decision in top_decisions],
+        gap_read_status=gap_read_contract.status,
+        authority_fact_count=authority_fact_count,
+        gap_fact_count=gap_fact_count,
+        available_read_contracts=gap_read_contract.available_read_contracts,
+        missing_read_contracts=gap_read_contract.missing_read_contracts,
+        source_connectors=_unique(
+            [
+                *(
+                    connector
+                    for decision in top_decisions
+                    for connector in decision.source_connectors
+                ),
+                *gap_read_contract.source_connectors,
+            ]
+        ),
+        evidence_ids=_unique(
+            [
+                *(
+                    evidence_id
+                    for decision in top_decisions
+                    for evidence_id in decision.evidence_ids
+                ),
+                *gap_read_contract.evidence_ids,
+            ]
+        ),
+        action_ids=_unique(
+            action_id for decision in top_decisions for action_id in decision.action_ids
+        ),
+        blocked_claims=_unique(
+            [
+                *(claim for decision in top_decisions for claim in decision.blocked_claims),
+                *gap_read_contract.blocked_claims,
+            ]
+        ),
     )
 
 
