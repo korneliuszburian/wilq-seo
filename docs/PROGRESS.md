@@ -47,7 +47,9 @@ Aktualny proof produktowy:
   `vitest run src/routes/App.test.tsx -t "ads doctor route"` OK: 1/1 and
   focused
   `vitest run src/routes/App.test.tsx -t "custom segments route renders dedicated review-only contract"`
-  OK: 1/1.
+  OK: 1/1. Post-push dashboard route-shell proof:
+  `pnpm --filter @wilq/dashboard test -- --run App.test.tsx` OK: 17 tests in
+  4 route test files.
 - Dashboard Custom Segments route extraction, 2026-06-22 23:28 CEST.
   `CustomSegmentsDiagnosticSurface`, custom segment candidates panel and
   audience forecast panel were extracted from `App.tsx` into
