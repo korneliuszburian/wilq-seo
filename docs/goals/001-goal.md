@@ -3703,7 +3703,10 @@ Commit rules:
    target-aware KPI triage is started, but remains review-only. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget
-   optimization or apply support.
+   optimization or apply support. GA4 route now has typed
+   `/api/ga4/diagnostics.operator_summary`, so do not move GA4 top-decision
+   ordering/counts back into React; next GA4 work should add new API facts or
+   contracts, not UI-side recomputation.
 
 2. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a
@@ -3765,6 +3768,34 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-22 GA4 operator summary view-model slice:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k ga4_diagnostics_exposes_landing_quality_contract
+uv run ruff check wilq/schemas.py wilq/briefing/ga4_diagnostics.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/briefing/ga4_diagnostics.py
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"
+pnpm --filter @wilq/dashboard lint
+uv run pytest tests/test_api_contracts.py -q -k ga4
+scripts/local_stack.sh restart
+curl -sS http://127.0.0.1:8000/api/ga4/diagnostics | jq '{operator_summary, decision_count:(.decision_queue|length), blocker_count}'
+```
+
+Live proof:
+
+- `operator_summary.id=ga4_operator_summary`;
+- `decision_count=6`;
+- `blocker_count=1`;
+- `conversion_readiness_status=blocked`;
+- `action_ids=["act_review_ga4_tracking_quality"]`;
+- top GA4 decisions and measurement/WP counts now come from WILQ API, not
+  React-side sorting/counting.
+
+Full `scripts/verify.sh` intentionally not run for this narrow API/dashboard
+contract slice; run it at the next broader release gate.
 
 Passed after the 2026-06-22 Custom Segments audience forecast readiness slice:
 

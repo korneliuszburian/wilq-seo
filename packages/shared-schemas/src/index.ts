@@ -1688,6 +1688,21 @@ export const Ga4ConversionReadinessContractSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const Ga4OperatorSummarySchema = z.object({
+  id: z.literal("ga4_operator_summary"),
+  title: z.string(),
+  summary: z.string(),
+  next_step: z.string(),
+  top_decision_ids: z.array(z.string()),
+  measurement_issue_count: z.number(),
+  wordpress_missing_count: z.number(),
+  conversion_readiness_status: z.enum(["ready", "blocked"]),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const Ga4DiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1699,6 +1714,7 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   low_engagement_count: z.number(),
   wordpress_match_count: z.number(),
   conversion_readiness_contract: Ga4ConversionReadinessContractSchema,
+  operator_summary: Ga4OperatorSummarySchema,
   decision_queue: z.array(Ga4DecisionItemSchema),
   sections: z.array(Ga4DiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),

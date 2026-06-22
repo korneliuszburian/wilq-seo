@@ -18,6 +18,7 @@ from wilq.schemas import (
     Ga4DecisionItem,
     Ga4DiagnosticSection,
     Ga4DiagnosticsResponse,
+    Ga4OperatorSummary,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -107,6 +108,12 @@ def build_ga4_diagnostics(
         low_engagement_count=_low_engagement_count(tactical_items),
         wordpress_match_count=_wordpress_match_count(tactical_items),
         conversion_readiness_contract=conversion_readiness_contract,
+        operator_summary=_operator_summary(
+            decision_queue,
+            conversion_readiness_contract,
+            sections,
+            action_ids,
+        ),
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
@@ -123,6 +130,58 @@ def build_ga4_diagnostics(
         blocker_count=(
             sum(1 for section in sections if section.status == "blocked")
             + (1 if conversion_readiness_contract.status == "blocked" else 0)
+        ),
+    )
+
+
+def _operator_summary(
+    decisions: list[Ga4DecisionItem],
+    conversion_readiness_contract: Ga4ConversionReadinessContract,
+    sections: list[Ga4DiagnosticSection],
+    action_ids: list[str],
+) -> Ga4OperatorSummary:
+    top_decisions = sorted(decisions, key=lambda item: (item.priority, item.id))[:4]
+    return Ga4OperatorSummary(
+        title="Co marketer ma sprawdzić teraz w jakości ruchu",
+        summary=(
+            "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. "
+            "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, "
+            "revenue, spadku konwersji ani winie kampanii."
+        ),
+        next_step=(
+            "Przejdź przez top decyzje GA4, oddziel problem pomiaru od problemu "
+            "jakości ruchu i waliduj ActionObject tylko jako review-only."
+        ),
+        top_decision_ids=[decision.id for decision in top_decisions],
+        measurement_issue_count=sum(
+            1 for decision in decisions if decision.decision_type == "fix_measurement"
+        ),
+        wordpress_missing_count=sum(
+            1 for decision in decisions if decision.wordpress_match == "missing"
+        ),
+        conversion_readiness_status=conversion_readiness_contract.status,
+        source_connectors=_unique(
+            connector
+            for decision in top_decisions
+            for connector in decision.source_connectors
+        )
+        or [GA4_CONNECTOR_ID],
+        evidence_ids=_unique(
+            [
+                *(
+                    evidence_id
+                    for decision in top_decisions
+                    for evidence_id in decision.evidence_ids
+                ),
+                *conversion_readiness_contract.evidence_ids,
+            ]
+        ),
+        action_ids=action_ids,
+        blocked_claims=_unique(
+            [
+                *(claim for section in sections for claim in section.blocked_claims),
+                *conversion_readiness_contract.blocked_claims,
+            ]
         ),
     )
 

@@ -2780,6 +2780,32 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert all(isinstance(decision["priority"], int) for decision in decision_by_id.values())
     assert all(decision["metric_tiles"] for decision in decision_by_id.values())
     assert any("engagement" in decision["metric_tiles"] for decision in decision_by_id.values())
+    readiness_contract = payload["conversion_readiness_contract"]
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["id"] == "ga4_operator_summary"
+    assert operator_summary["title"] == "Co marketer ma sprawdzić teraz w jakości ruchu"
+    assert operator_summary["top_decision_ids"] == [
+        decision["id"]
+        for decision in sorted(
+            payload["decision_queue"],
+            key=lambda decision: (decision["priority"], decision["id"]),
+        )[:4]
+    ]
+    assert operator_summary["measurement_issue_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision["decision_type"] == "fix_measurement"
+    )
+    assert operator_summary["wordpress_missing_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("wordpress_match") == "missing"
+    )
+    assert operator_summary["action_ids"] == payload["action_ids"]
+    assert operator_summary["conversion_readiness_status"] == readiness_contract["status"]
+    assert "ROAS" in operator_summary["blocked_claims"]
+    assert operator_summary["summary"]
+    assert operator_summary["next_step"]
     sections = {section["id"]: section for section in payload["sections"]}
     assert sections["ga4_landing_behavior"]["status"] == "ready"
     assert sections["ga4_landing_behavior"]["tactical_items"]
@@ -2789,7 +2815,6 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert sections["ga4_tracking_readiness"]["status"] == "missing"
     assert "conversion drop" in sections["ga4_tracking_readiness"]["blocked_claims"]
     assert sections["ga4_action_safety"]["status"] == "ready"
-    readiness_contract = payload["conversion_readiness_contract"]
     assert readiness_contract["id"] == "ga4_conversion_readiness_contract"
     assert readiness_contract["status"] == "blocked"
     assert readiness_contract["conversion_like_metric_count"] == 0

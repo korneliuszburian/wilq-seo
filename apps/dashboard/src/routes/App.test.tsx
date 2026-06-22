@@ -4312,6 +4312,22 @@ const ga4Diagnostics = {
       "Waliduj `act_review_ga4_tracking_quality` i sprawdź mapowanie konwersji/key events przed wnioskami o opłacalności.",
     risk: "medium"
   },
+  operator_summary: {
+    id: "ga4_operator_summary",
+    title: "Co marketer ma sprawdzić teraz w jakości ruchu",
+    summary:
+      "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, revenue, spadku konwersji ani winie kampanii.",
+    next_step:
+      "Przejdź przez top decyzje GA4, oddziel problem pomiaru od problemu jakości ruchu i waliduj ActionObject tylko jako review-only.",
+    top_decision_ids: ["ga4_decision_tq_ga4_landing"],
+    measurement_issue_count: 0,
+    wordpress_missing_count: 1,
+    conversion_readiness_status: "blocked",
+    source_connectors: ["google_analytics_4"],
+    evidence_ids: ["ev_refresh_ga4"],
+    action_ids: ["act_review_ga4_tracking_quality"],
+    blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"]
+  },
   decision_queue: [
     {
       id: "ga4_decision_tq_ga4_landing",

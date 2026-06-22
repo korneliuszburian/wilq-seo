@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- GA4 operator summary contract, 2026-06-22 23:45 CEST.
+  `/api/ga4/diagnostics` exposes typed `operator_summary` for the marketer route:
+  title/summary/next_step, top decision IDs, measurement issue count,
+  WordPress missing count, conversion readiness status, evidence IDs,
+  ActionObject IDs and blocked claims. `Ga4DiagnosticSurface` now renders this
+  API view-model instead of recomputing top GA4 decisions and counts in React.
+  Live proof after `scripts/local_stack.sh restart`: `/api/ga4/diagnostics`
+  returns `operator_summary.id=ga4_operator_summary`, `decision_count=6`,
+  `blocker_count=1`, `conversion_readiness_status=blocked`, and
+  `act_review_ga4_tracking_quality`. Focused proof: RED then GREEN
+  `uv run pytest tests/test_api_contracts.py -q -k ga4_diagnostics_exposes_landing_quality_contract`,
+  `uv run pytest tests/test_api_contracts.py -q -k ga4`, ruff OK, mypy OK,
+  shared schema typecheck OK, dashboard typecheck OK, dashboard lint OK, and
+  focused dashboard route test OK. Full `scripts/verify.sh` intentionally not
+  run for this narrow contract slice.
 - Dashboard Ads Doctor extraction, 2026-06-22 23:30 CEST.
   Entire Ads Doctor route surface, Ads operator summary, campaign/KPI/budget/
   recommendation/search-term/negative-keyword panels, Ads labels and Ads

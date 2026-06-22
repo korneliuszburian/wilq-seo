@@ -2084,6 +2084,21 @@ class Ga4ConversionReadinessContract(BaseModel):
     risk: ActionRisk = ActionRisk.medium
 
 
+class Ga4OperatorSummary(BaseModel):
+    id: Literal["ga4_operator_summary"] = "ga4_operator_summary"
+    title: str
+    summary: str
+    next_step: str
+    top_decision_ids: list[str] = Field(default_factory=list)
+    measurement_issue_count: int = 0
+    wordpress_missing_count: int = 0
+    conversion_readiness_status: Literal["ready", "blocked"]
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class Ga4DiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -2095,6 +2110,7 @@ class Ga4DiagnosticsResponse(BaseModel):
     low_engagement_count: int = 0
     wordpress_match_count: int = 0
     conversion_readiness_contract: Ga4ConversionReadinessContract
+    operator_summary: Ga4OperatorSummary
     decision_queue: list[Ga4DecisionItem] = Field(default_factory=list)
     sections: list[Ga4DiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

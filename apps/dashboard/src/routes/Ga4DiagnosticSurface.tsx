@@ -172,20 +172,16 @@ export function Ga4DiagnosticSurface() {
 }
 
 function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
-  const decisions = data.decision_queue;
-  const topDecisions = decisions
-    .slice()
-    .sort((left, right) => ga4DecisionSortValue(left) - ga4DecisionSortValue(right))
-    .slice(0, 4);
-  const measurementIssueCount = decisions.filter(
-    (decision) => decision.decision_type === "fix_measurement"
-  ).length;
-  const wordpressMissingCount = decisions.filter(
-    (decision) => decision.wordpress_match === "missing"
-  ).length;
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const topDecisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is Ga4DecisionItem => Boolean(decision));
   const conversionReadiness = data.conversion_readiness_contract;
   const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");
-  const actionIds = data.action_ids.length ? data.action_ids : ["act_review_ga4_tracking_quality"];
+  const actionIds = summary.action_ids.length
+    ? summary.action_ids
+    : ["act_review_ga4_tracking_quality"];
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -195,18 +191,16 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
             Operator GA4
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
-            Co marketer ma sprawdzić teraz w jakości ruchu
+            {summary.title}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii.
-            Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS,
-            revenue, spadku konwersji ani winie kampanii.
+            {summary.summary}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Grupy ruchu" value={data.landing_group_count} />
-          <MetricTile label="Pomiar" value={measurementIssueCount} />
-          <MetricTile label="Brak WP" value={wordpressMissingCount} />
+          <MetricTile label="Pomiar" value={summary.measurement_issue_count} />
+          <MetricTile label="Brak WP" value={summary.wordpress_missing_count} />
         </div>
       </div>
 
@@ -249,10 +243,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
             <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={ga4BlockedClaimLabels([
-                ...data.sections.flatMap((section) => section.blocked_claims),
-                ...conversionReadiness.blocked_claims
-              ])}
+              values={ga4BlockedClaimLabels(summary.blocked_claims)}
             />
           </div>
           <a
@@ -486,10 +477,6 @@ function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {
 function ga4DecisionStatusLabel(status: Ga4DecisionItem["status"]) {
   if (status === "blocked") return "zablokowane";
   return "gotowe";
-}
-
-function ga4DecisionSortValue(decision: Ga4DecisionItem) {
-  return decision.priority;
 }
 
 function ga4SectionLabel(sectionId: string) {
