@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 00:41 CEST.
+Last updated: 2026-06-23 00:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -62,15 +62,15 @@ test triage, browser QA, code review, performance profiling, docs/research and
 handoff prep. Do not delegate overlapping edits into the same files without a
 clear owner and integration plan.
 
-Current dashboard monolith slice: `ContentDiagnosticSurface`,
+Current dashboard monolith/performance slice: `ContentDiagnosticSurface`,
 `AhrefsDiagnosticSurface`, `LocaloDiagnosticSurface` and
 `DemandGenDiagnosticSurface`, `Ga4DiagnosticSurface` and
 `CustomSegmentsDiagnosticSurface` plus `AdsDoctorSurface` have been extracted
 from `apps/dashboard/src/routes/App.tsx` into dedicated route modules. Current
-line-counts: `App.tsx=211`, `AdsDoctorSurface.tsx=2294`,
-`ContentDiagnosticSurface.tsx=821`,
-`AhrefsDiagnosticSurface.tsx=353`, `LocaloDiagnosticSurface.tsx=349`,
-`DemandGenDiagnosticSurface.tsx=361`, `Ga4DiagnosticSurface.tsx=581`.
+line-counts after route-level lazy loading: `App.tsx=276`, `AdsDoctorSurface.tsx=2277`,
+`ContentDiagnosticSurface.tsx=802`,
+`AhrefsDiagnosticSurface.tsx=348`, `LocaloDiagnosticSurface.tsx=344`,
+`DemandGenDiagnosticSurface.tsx=361`, `Ga4DiagnosticSurface.tsx=568`.
 `CustomSegmentsDiagnosticSurface.tsx=433`. Focused proof: dashboard lint OK,
 dashboard typecheck OK, focused content/GSC/GA4/Ahrefs/Localo/Demand Gen/Custom
 Segments/Ads Doctor route tests OK. This resolves the immediate `App.tsx`
@@ -78,7 +78,11 @@ monolith concern for the dashboard route shell; remaining large files should be
 handled as separate code-quality slices only when they block product velocity or
 reviewability. Post-push dashboard route-shell proof:
 `pnpm --filter @wilq/dashboard test -- --run App.test.tsx` passed with 17 tests
-across 4 route test files.
+across 4 route test files. Latest performance proof: `App.tsx` lazy-loads heavy
+diagnostic modules for Ads Doctor, Custom Segments, Demand Gen, GA4, Localo,
+Ahrefs, Merchant and Content/GSC. `pnpm --filter @wilq/dashboard build`
+emits separate diagnostic chunks and passed together with dashboard typecheck,
+lint and focused route tests.
 
 ## Product Bar
 

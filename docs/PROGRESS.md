@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard diagnostic route code splitting, 2026-06-23 00:50 CEST.
+  `apps/dashboard/src/routes/App.tsx` lazy-loads the heavy diagnostic route
+  modules: Ads Doctor, Custom Segments, Demand Gen, GA4, Localo, Ahrefs,
+  Merchant and Content/GSC. Detail routes stay statically imported because they
+  are smaller and have named exports. Production build now emits separate
+  diagnostic chunks, including `AdsDoctorSurface` (~67.7 kB raw), `ContentDiagnosticSurface`
+  (~20.9 kB raw), GA4/Merchant/Localo/Ahrefs/Demand Gen/Custom Segments chunks,
+  and a separate main `index` chunk. Focused proof: dashboard typecheck OK,
+  dashboard lint OK, focused dashboard route test OK, and dashboard build OK.
+  Remaining performance work is backend cold-build internals and later
+  component-level splitting inside large route modules when it directly improves
+  product velocity.
 - Tactical queue compact groups, 2026-06-23 00:41 CEST.
   `/api/marketing/tactical-queue` now exposes API-owned `compact_groups` next
   to raw `items`. `TacticalQueuePanel` compact mode now renders these groups

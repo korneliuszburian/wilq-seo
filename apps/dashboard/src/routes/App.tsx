@@ -10,29 +10,21 @@ import {
   RouterProvider,
   useParams
 } from "@tanstack/react-router";
+import { lazy, Suspense, type ReactNode } from "react";
 import { Shell } from "../components/Shell";
+import { LoadingBand } from "../components/OperatorPrimitives";
 import { queryClient } from "../lib/queryClient";
-import { AdsDoctorSurface } from "./AdsDoctorSurface";
-import { AhrefsDiagnosticSurface } from "./AhrefsDiagnosticSurface";
 import {
   BriefWorkflowSurface,
   briefSurfaceConfigs
 } from "./BriefWorkflowSurface";
 import { CommandCenter } from "./CommandCenterRoute";
-import { ContentDiagnosticSurface } from "./ContentDiagnosticSurface";
-import {
-  CustomSegmentsDiagnosticSurface
-} from "./CustomSegmentsDiagnosticSurface";
-import { DemandGenDiagnosticSurface } from "./DemandGenDiagnosticSurface";
 import {
   ActionDetailSurface,
   EvidenceDetailSurface,
   OpportunityDetailSurface
 } from "./DetailPanels";
 import { GenericSurface } from "./GenericSurface";
-import { Ga4DiagnosticSurface } from "./Ga4DiagnosticSurface";
-import { LocaloDiagnosticSurface } from "./LocaloDiagnosticSurface";
-import { MerchantDiagnosticSurface } from "./MerchantDiagnosticSurface";
 import {
   ActionsSurface,
   OpportunitiesSurface,
@@ -40,6 +32,43 @@ import {
 } from "./OperatingRouteSurfaces";
 
 export { createWilqQueryClient } from "../lib/queryClient";
+
+const AdsDoctorSurface = lazy(() =>
+  import("./AdsDoctorSurface").then((module) => ({ default: module.AdsDoctorSurface }))
+);
+const AhrefsDiagnosticSurface = lazy(() =>
+  import("./AhrefsDiagnosticSurface").then((module) => ({
+    default: module.AhrefsDiagnosticSurface
+  }))
+);
+const ContentDiagnosticSurface = lazy(() =>
+  import("./ContentDiagnosticSurface").then((module) => ({
+    default: module.ContentDiagnosticSurface
+  }))
+);
+const CustomSegmentsDiagnosticSurface = lazy(() =>
+  import("./CustomSegmentsDiagnosticSurface").then((module) => ({
+    default: module.CustomSegmentsDiagnosticSurface
+  }))
+);
+const DemandGenDiagnosticSurface = lazy(() =>
+  import("./DemandGenDiagnosticSurface").then((module) => ({
+    default: module.DemandGenDiagnosticSurface
+  }))
+);
+const Ga4DiagnosticSurface = lazy(() =>
+  import("./Ga4DiagnosticSurface").then((module) => ({ default: module.Ga4DiagnosticSurface }))
+);
+const LocaloDiagnosticSurface = lazy(() =>
+  import("./LocaloDiagnosticSurface").then((module) => ({
+    default: module.LocaloDiagnosticSurface
+  }))
+);
+const MerchantDiagnosticSurface = lazy(() =>
+  import("./MerchantDiagnosticSurface").then((module) => ({
+    default: module.MerchantDiagnosticSurface
+  }))
+);
 
 const operatingRoutes = [
   "/ads-doctor",
@@ -71,6 +100,10 @@ function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflow
   if (kind === "actions") return <ActionDetailSurface actionId={id} />;
   if (kind === "opportunities") return <OpportunityDetailSurface opportunityId={id} />;
   return <GenericSurface routeName={`/${kind}/${id}`} />;
+}
+
+function LazyRoute({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<LoadingBand />}>{children}</Suspense>;
 }
 
 const rootRoute = createRootRoute({ component: Shell });
@@ -126,28 +159,60 @@ const generatedRoutes = operatingRoutes.map((path) =>
     path,
     component: () => {
       if (path === "/ads-doctor") {
-        return <AdsDoctorSurface />;
+        return (
+          <LazyRoute>
+            <AdsDoctorSurface />
+          </LazyRoute>
+        );
       }
       if (path === "/ads-doctor/custom-segments") {
-        return <CustomSegmentsDiagnosticSurface />;
+        return (
+          <LazyRoute>
+            <CustomSegmentsDiagnosticSurface />
+          </LazyRoute>
+        );
       }
       if (path === "/ads-doctor/demand-gen") {
-        return <DemandGenDiagnosticSurface />;
+        return (
+          <LazyRoute>
+            <DemandGenDiagnosticSurface />
+          </LazyRoute>
+        );
       }
       if (path === "/ga4") {
-        return <Ga4DiagnosticSurface />;
+        return (
+          <LazyRoute>
+            <Ga4DiagnosticSurface />
+          </LazyRoute>
+        );
       }
       if (path === "/localo") {
-        return <LocaloDiagnosticSurface />;
+        return (
+          <LazyRoute>
+            <LocaloDiagnosticSurface />
+          </LazyRoute>
+        );
       }
       if (path === "/ahrefs") {
-        return <AhrefsDiagnosticSurface />;
+        return (
+          <LazyRoute>
+            <AhrefsDiagnosticSurface />
+          </LazyRoute>
+        );
       }
       if (path === "/merchant") {
-        return <MerchantDiagnosticSurface />;
+        return (
+          <LazyRoute>
+            <MerchantDiagnosticSurface />
+          </LazyRoute>
+        );
       }
       if (path === "/seo-gsc" || path === "/content-planner") {
-        return <ContentDiagnosticSurface title={briefSurfaceConfigs[path].title} />;
+        return (
+          <LazyRoute>
+            <ContentDiagnosticSurface title={briefSurfaceConfigs[path].title} />
+          </LazyRoute>
+        );
       }
       const briefConfig = briefSurfaceConfigs[path];
       return briefConfig ? (
