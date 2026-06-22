@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard brief workflow extraction, 2026-06-22 22:59 CEST.
+  `BriefWorkflowSurface`, `MarketingBriefCard`, `briefSurfaceConfigs` and
+  brief-surface matching were extracted from `App.tsx` into
+  `BriefWorkflowSurface.tsx`. This moves generic fallback workflow views for
+  settings/social/SEO/brief routes out of the route monolith while preserving
+  the same WILQ API reads and ActionObject focus. Current line-counts:
+  `App.tsx=5707`, `BriefWorkflowSurface.tsx=294`. Focused proof: dashboard
+  lint OK, dashboard typecheck OK, focused `vitest run src/routes/App.test.tsx`
+  OK: 14/14.
 - Dashboard tactical queue extraction, 2026-06-22 22:52 CEST.
   `TacticalQueuePanel`, tactical grouping, labels, context chips and shared
   `shortPath` helper were extracted from `App.tsx` into
