@@ -25,6 +25,69 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-ga4-analyst conversion-readiness eval
+
+Purpose:
+
+- Prove that `wilq-ga4-analyst` uses `/api/ga4/diagnostics` and the scoped
+  context-pack to separate traffic-quality review from unsupported revenue,
+  ROAS, conversion-drop and profitability claims.
+- Confirm that the current live GA4 state is useful for review, but still
+  blocked for conversion/profitability verdicts because conversion-like facts
+  are missing.
+
+Smoke proof:
+
+```bash
+uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- `ga4_diagnostics.live_data_available=true`.
+- `decision_count=6`, `landing_group_count=10`, `low_engagement_count=0`,
+  `wordpress_match_count=0`.
+- `decision_types=["fix_measurement","review_traffic_quality"]`.
+- `conversion_readiness_contract.status=blocked`,
+  `missing_read_contracts=["conversion_or_key_event_mapping"]`,
+  `conversion_like_metric_count=0`.
+- ActionObject: `act_review_ga4_tracking_quality`.
+
+Non-interactive Codex eval:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+```text
+passed
+artifact: .local-lab/evals/codex-skill/20260622T230737Z/wilq-ga4-analyst/result.json
+```
+
+Eval output facts:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `google_analytics_4`.
+- Evidence IDs include `ev_refresh_refresh_google_analytics_4_681b6bcefc85`,
+  GA4 refresh evidence IDs and `ev_connector_google_analytics_4_status`.
+- Recommendations cover `fix_measurement`, `review_traffic_quality` and a
+  blocked/downgraded `review_landing_mapping` note because `wordpress_match_count=0`.
+- Action candidate: `act_review_ga4_tracking_quality`, but validation remains
+  pending in the eval output.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- The skill behaves correctly for the current GA4 surface: it can help the
+  marketer review measurement and traffic quality, but it does not claim ROAS,
+  revenue, conversion drop, profitability or tracking fixed.
+- Next improvement: make the eval/output require an actual
+  `POST /api/actions/act_review_ga4_tracking_quality/validate` result when the
+  ActionObject exists, not only `pending_validation`.
+
 ## 2026-06-22 - wilq-ads-doctor knowledge/rule lineage eval
 
 Purpose:

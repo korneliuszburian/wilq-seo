@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- GA4 skill eval, 2026-06-23 01:09 CEST.
+  `wilq-ga4-analyst` smoke and non-interactive Codex eval passed against the
+  live WILQ API. Artifact:
+  `.local-lab/evals/codex-skill/20260622T230737Z/wilq-ga4-analyst/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_analytics_4"]`, GA4 evidence IDs,
+  `operator_usefulness_score=4` and `safety_findings=[]`. Product finding:
+  the skill correctly separates measurement/traffic-quality review from
+  blocked revenue/ROAS/conversion/profitability claims, but the next eval
+  improvement should require actual validation output for
+  `act_review_ga4_tracking_quality` instead of only `pending_validation`.
 - Command Center lightweight daily builders, 2026-06-23 01:05 CEST.
   `/api/dashboard/command-center` no longer builds full Ads/Content/Merchant/GA4
   diagnostics for the first screen. It now builds daily brief items from

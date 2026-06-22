@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 01:05 CEST.
+Last updated: 2026-06-23 01:09 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -98,6 +98,18 @@ Python ruff OK, Python mypy OK, 10 command/tactical API tests OK and 17 dashboar
 route tests OK. Remaining performance work should target tactical metric-store
 read/model construction or route-specific diagnostics only when a measured
 bottleneck justifies it.
+
+Latest skill eval proof: `wilq-ga4-analyst` passed smoke plus non-interactive
+Codex eval against live WILQ API. Artifact:
+`.local-lab/evals/codex-skill/20260622T230737Z/wilq-ga4-analyst/result.json`.
+The result has `language=pl-PL`, Polish diacritics, `api_used=true`, GA4
+evidence IDs, `source_connectors=["google_analytics_4"]`,
+`operator_usefulness_score=4` and no safety findings. It correctly keeps
+revenue, ROAS, conversion-drop, profitability and tracking-fixed claims blocked
+because `conversion_readiness_contract.status=blocked` and
+`conversion_like_metric_count=0`. Next GA4 eval improvement: require actual
+`POST /api/actions/act_review_ga4_tracking_quality/validate` output when the
+ActionObject exists.
 
 ## Product Bar
 
