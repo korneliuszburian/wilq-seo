@@ -643,11 +643,26 @@ class TacticalQueueItem(BaseModel):
         return value
 
 
+class TacticalQueueGroup(BaseModel):
+    id: str
+    title: str
+    meta: str
+    diagnosis: str
+    next_step: str
+    priority: int = Field(ge=1, le=100)
+    risk: ActionRisk = ActionRisk.low
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class TacticalQueueResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
     strict_instruction: str
     items: list[TacticalQueueItem] = Field(default_factory=list)
+    compact_groups: list[TacticalQueueGroup] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
 

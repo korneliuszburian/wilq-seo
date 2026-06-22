@@ -1,6 +1,6 @@
 import { ClipboardCheck } from "lucide-react";
 
-import { MetricFact, TacticalQueueResponse } from "../lib/api";
+import { TacticalQueueResponse } from "../lib/api";
 import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
@@ -8,6 +8,7 @@ import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { marketerBlockedClaimLabels, priorityLabel } from "./marketingLabels";
 
 type TacticalQueueItem = TacticalQueueResponse["items"][number];
+type CompactTacticalGroup = TacticalQueueResponse["compact_groups"][number];
 
 export const tacticalIntentLabels: Record<TacticalQueueItem["intent"], string> = {
   content_refresh: "odświeżenie treści",
@@ -81,7 +82,15 @@ export function TacticalQueuePanel({
         : true
     )
     .filter((item) => !(hideTrackingGaps && item.intent === "tracking_gap"));
-  const compactGroups = compact ? compactTacticalGroups(filteredItems).slice(0, limit) : [];
+  const compactGroups = compact
+    ? queue.compact_groups
+        .filter((group) =>
+          connectorIds
+            ? group.source_connectors.some((connector) => connectorIds.includes(connector))
+            : true
+        )
+        .slice(0, limit)
+    : [];
   const items = compact ? [] : filteredItems.slice(0, limit);
 
   return (
@@ -127,19 +136,6 @@ export function TacticalQueuePanel({
   );
 }
 
-type CompactTacticalGroup = {
-  id: string;
-  title: string;
-  meta: string;
-  diagnosis: string;
-  nextStep: string;
-  sourceConnectors: string[];
-  evidenceIds: string[];
-  actionIds: string[];
-  blockedClaims: string[];
-  risk: TacticalQueueItem["risk"];
-};
-
 function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
   return (
     <article className="rounded-md border border-line bg-white p-4">
@@ -151,117 +147,15 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
         <StatusBadge value={group.risk} />
       </div>
       <p className="mt-3 text-sm leading-6 text-slate-700">{group.diagnosis}</p>
-      <p className="mt-3 text-sm font-medium text-ink">{group.nextStep}</p>
+      <p className="mt-3 text-sm font-medium text-ink">{group.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Dowody" values={group.evidenceIds.slice(0, 4)} kind="evidence" />
-        <TraceLine label="Źródła" values={group.sourceConnectors} />
-        <LinkedTraceLine label="Akcje" values={group.actionIds} kind="actions" empty="brak" />
-        <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(group.blockedClaims)} />
+        <LinkedTraceLine label="Dowody" values={group.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Źródła" values={group.source_connectors} />
+        <LinkedTraceLine label="Akcje" values={group.action_ids} kind="actions" empty="brak" />
+        <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(group.blocked_claims)} />
       </div>
     </article>
   );
-}
-
-function compactTacticalGroups(items: TacticalQueueItem[]): CompactTacticalGroup[] {
-  const groups = new Map<string, TacticalQueueItem[]>();
-  for (const item of items) {
-    const key = compactTacticalGroupKey(item);
-    groups.set(key, [...(groups.get(key) ?? []), item]);
-  }
-  return Array.from(groups.values())
-    .map((groupItems) => compactTacticalGroup(groupItems))
-    .sort((left, right) => prioritySortValue(left.meta) - prioritySortValue(right.meta));
-}
-
-function compactTacticalGroupKey(item: TacticalQueueItem) {
-  if (item.domain === "gsc_seo" && item.dimensions.page) {
-    return `${item.domain}:${item.intent}:${item.dimensions.page}`;
-  }
-  if (item.domain === "ga4") {
-    return `${item.domain}:${item.intent}:${item.dimensions.landing_page ?? ""}:${item.dimensions.source_medium ?? ""}`;
-  }
-  if (item.domain === "merchant") {
-    return `${item.domain}:${item.intent}:${item.dimensions.issue_type ?? ""}:${item.dimensions.affected_attribute ?? ""}:${item.dimensions.country ?? ""}`;
-  }
-  return item.id;
-}
-
-function compactTacticalGroup(items: TacticalQueueItem[]): CompactTacticalGroup {
-  const first = items[0];
-  const facts = items.flatMap((item) => item.metric_facts);
-  const queries = uniqueValues(items.map((item) => item.dimensions.query).filter(Boolean));
-  const clicks = sumMetricFacts(facts, "clicks");
-  const impressions = sumMetricFacts(facts, "impressions");
-  return {
-    id: compactTacticalGroupKey(first),
-    title: compactTacticalTitle(first, items.length),
-    meta: `${tacticalDomainLabels[first.domain] ?? first.domain} / ${tacticalIntentLabels[first.intent]} / ${priorityLabel(first.priority)}`,
-    diagnosis: compactTacticalDiagnosis(first, queries, clicks, impressions, items.length),
-    nextStep: first.next_step,
-    sourceConnectors: uniqueValues(items.flatMap((item) => item.source_connectors)),
-    evidenceIds: uniqueValues(items.flatMap((item) => item.evidence_ids)),
-    actionIds: uniqueValues(items.flatMap((item) => item.action_ids)),
-    blockedClaims: uniqueValues(items.flatMap((item) => item.blocked_claims)),
-    risk: first.risk
-  };
-}
-
-function compactTacticalTitle(item: TacticalQueueItem, groupSize: number) {
-  if (item.domain === "gsc_seo" && item.dimensions.page) {
-    const action = item.intent === "content_refresh" ? "odśwież" : "zweryfikuj treść";
-    return `SEO: ${action} ${shortPath(item.dimensions.page)} (${groupSize} ${polishQueryLabel(groupSize)})`;
-  }
-  if (item.domain === "ga4") {
-    return `GA4: sprawdź ${item.dimensions.landing_page ?? "landing"} / ${item.dimensions.source_medium ?? "źródło"}`;
-  }
-  if (item.domain === "merchant") {
-    return `Merchant: sprawdź ${merchantDimensionLabel(item.dimensions.issue_type ?? "problem feedu")} / ${merchantDimensionLabel(item.dimensions.affected_attribute ?? "atrybut")}`;
-  }
-  return item.title;
-}
-
-function merchantDimensionLabel(value: string) {
-  const labels: Record<string, string> = {
-    availability_updated: "zmiana dostępności",
-    missing_potentially_required_attribute: "brak potencjalnie wymaganego atrybutu",
-    "n:availability": "dostępność",
-    "n:unit_pricing_measure": "miara ceny jednostkowej",
-    "problem feedu": "problem feedu",
-    atrybut: "atrybut"
-  };
-  return labels[value] ?? value.replaceAll("_", " ");
-}
-
-function compactTacticalDiagnosis(
-  item: TacticalQueueItem,
-  queries: string[],
-  clicks: number | null,
-  impressions: number | null,
-  groupSize: number
-) {
-  if (item.domain === "gsc_seo") {
-    const queryText = queries.length > 0 ? ` Query: ${queries.slice(0, 4).join(", ")}.` : "";
-    const metrics = [
-      clicks === null ? null : `clicks=${formatCompactNumber(clicks)}`,
-      impressions === null ? null : `impressions=${formatCompactNumber(impressions)}`
-    ]
-      .filter(Boolean)
-      .join(", ");
-    return `${groupSize} powiązanych zapytań prowadzi do tej samej strony.${queryText}${metrics ? ` Suma widocznych metryk: ${metrics}.` : ""}`;
-  }
-  return item.diagnosis;
-}
-
-function sumMetricFacts(facts: MetricFact[], name: string) {
-  const values = facts
-    .filter((fact) => fact.name === name && typeof fact.value === "number")
-    .map((fact) => Number(fact.value));
-  if (values.length === 0) return null;
-  return values.reduce((sum, value) => sum + value, 0);
-}
-
-function formatCompactNumber(value: number) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 export function shortPath(value: string) {
@@ -271,19 +165,6 @@ export function shortPath(value: string) {
   } catch {
     return value;
   }
-}
-
-function polishQueryLabel(count: number) {
-  if (count === 1) return "zapytanie";
-  if (count >= 2 && count <= 4) return "zapytania";
-  return "zapytań";
-}
-
-function prioritySortValue(meta: string) {
-  if (meta.includes("najpierw")) return 0;
-  if (meta.includes("wysoki priorytet")) return 1;
-  if (meta.includes("do sprawdzenia")) return 2;
-  return 3;
 }
 
 function TacticalQueueCard({ item }: { item: TacticalQueueItem }) {

@@ -13,6 +13,7 @@ from wilq.schemas import (
     ActionRisk,
     MetricFact,
     OpportunityDomain,
+    TacticalQueueGroup,
     TacticalQueueItem,
     TacticalQueueResponse,
 )
@@ -139,9 +140,204 @@ def _build_tactical_queue() -> TacticalQueueResponse:
     return TacticalQueueResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         items=items,
+        compact_groups=_compact_tactical_groups(items),
         evidence_ids=_unique(evidence_id for item in items for evidence_id in item.evidence_ids),
         action_ids=_unique(action_id for item in items for action_id in item.action_ids),
     )
+
+
+def _compact_tactical_groups(items: list[TacticalQueueItem]) -> list[TacticalQueueGroup]:
+    groups: dict[str, list[TacticalQueueItem]] = {}
+    for item in items:
+        key = _compact_tactical_group_key(item)
+        groups.setdefault(key, []).append(item)
+    return sorted(
+        (_compact_tactical_group(group_items) for group_items in groups.values()),
+        key=lambda group: (group.priority, group.id),
+    )
+
+
+def _compact_tactical_group_key(item: TacticalQueueItem) -> str:
+    if item.domain == OpportunityDomain.gsc_seo and item.dimensions.get("page"):
+        return f"{item.domain.value}:{item.intent}:{item.dimensions['page']}"
+    if item.domain == OpportunityDomain.ga4:
+        return (
+            f"{item.domain.value}:{item.intent}:"
+            f"{item.dimensions.get('landing_page', '')}:"
+            f"{item.dimensions.get('source_medium', '')}"
+        )
+    if item.domain == OpportunityDomain.merchant:
+        return (
+            f"{item.domain.value}:{item.intent}:"
+            f"{item.dimensions.get('issue_type', '')}:"
+            f"{item.dimensions.get('affected_attribute', '')}:"
+            f"{item.dimensions.get('country', '')}"
+        )
+    return item.id
+
+
+def _compact_tactical_group(items: list[TacticalQueueItem]) -> TacticalQueueGroup:
+    first = items[0]
+    facts = [fact for item in items for fact in item.metric_facts]
+    queries = _unique(
+        query
+        for item in items
+        if (query := item.dimensions.get("query")) is not None
+    )
+    clicks = _sum_metric_facts(facts, "clicks")
+    impressions = _sum_metric_facts(facts, "impressions")
+    return TacticalQueueGroup(
+        id=_compact_tactical_group_key(first),
+        title=_compact_tactical_title(first, len(items)),
+        meta=(
+            f"{_tactical_domain_label(first.domain)} / "
+            f"{_tactical_intent_label(first.intent)} / "
+            f"{_priority_label(first.priority)}"
+        ),
+        diagnosis=_compact_tactical_diagnosis(
+            first,
+            queries,
+            clicks,
+            impressions,
+            len(items),
+        ),
+        next_step=first.next_step,
+        priority=first.priority,
+        risk=first.risk,
+        source_connectors=_unique(
+            connector for item in items for connector in item.source_connectors
+        ),
+        evidence_ids=_unique(
+            evidence_id for item in items for evidence_id in item.evidence_ids
+        ),
+        action_ids=_unique(action_id for item in items for action_id in item.action_ids),
+        blocked_claims=_unique(claim for item in items for claim in item.blocked_claims),
+    )
+
+
+def _compact_tactical_title(item: TacticalQueueItem, group_size: int) -> str:
+    if item.domain == OpportunityDomain.gsc_seo and item.dimensions.get("page"):
+        action = "odśwież" if item.intent == "content_refresh" else "zweryfikuj treść"
+        return (
+            f"SEO: {action} {_short_path(item.dimensions['page'])} "
+            f"({group_size} {_polish_query_label(group_size)})"
+        )
+    if item.domain == OpportunityDomain.ga4:
+        return (
+            f"GA4: sprawdź {item.dimensions.get('landing_page', 'landing')} / "
+            f"{item.dimensions.get('source_medium', 'źródło')}"
+        )
+    if item.domain == OpportunityDomain.merchant:
+        return (
+            "Merchant: sprawdź "
+            f"{_merchant_dimension_label(item.dimensions.get('issue_type', 'problem feedu'))} / "
+            f"{_merchant_dimension_label(item.dimensions.get('affected_attribute', 'atrybut'))}"
+        )
+    return item.title
+
+
+def _compact_tactical_diagnosis(
+    item: TacticalQueueItem,
+    queries: list[str],
+    clicks: float | int | None,
+    impressions: float | int | None,
+    group_size: int,
+) -> str:
+    if item.domain == OpportunityDomain.gsc_seo:
+        query_text = f" Query: {', '.join(queries[:4])}." if queries else ""
+        metrics = ", ".join(
+            metric
+            for metric in (
+                None if clicks is None else f"clicks={_format_compact_number(clicks)}",
+                None
+                if impressions is None
+                else f"impressions={_format_compact_number(impressions)}",
+            )
+            if metric is not None
+        )
+        metrics_text = f" Suma widocznych metryk: {metrics}." if metrics else ""
+        return (
+            f"{group_size} powiązanych zapytań prowadzi do tej samej strony."
+            f"{query_text}{metrics_text}"
+        )
+    return item.diagnosis
+
+
+def _sum_metric_facts(facts: list[MetricFact], name: str) -> float | int | None:
+    values = [
+        float(fact.value)
+        for fact in facts
+        if fact.name == name and isinstance(fact.value, int | float)
+    ]
+    if not values:
+        return None
+    total = sum(values)
+    return int(total) if total.is_integer() else total
+
+
+def _short_path(value: str) -> str:
+    parsed = urlparse(value)
+    if parsed.scheme and parsed.netloc:
+        return parsed.netloc if parsed.path in {"", "/"} else parsed.path
+    return value
+
+
+def _format_compact_number(value: float | int) -> str:
+    if isinstance(value, int):
+        return str(value)
+    return str(int(value)) if value.is_integer() else f"{value:.2f}"
+
+
+def _polish_query_label(count: int) -> str:
+    if count == 1:
+        return "zapytanie"
+    if 2 <= count <= 4:
+        return "zapytania"
+    return "zapytań"
+
+
+def _priority_label(priority: int) -> str:
+    if priority <= 15:
+        return "najpierw"
+    if priority <= 25:
+        return "wysoki priorytet"
+    return "do sprawdzenia"
+
+
+def _tactical_domain_label(domain: OpportunityDomain) -> str:
+    labels = {
+        OpportunityDomain.gsc_seo: "SEO / GSC",
+        OpportunityDomain.ga4: "GA4",
+        OpportunityDomain.merchant: "Merchant",
+        OpportunityDomain.content: "Content",
+    }
+    return labels.get(domain, domain.value)
+
+
+def _tactical_intent_label(intent: TacticalIntent) -> str:
+    labels: dict[TacticalIntent, str] = {
+        "content_refresh": "odświeżenie treści",
+        "content_create": "nowa treść",
+        "content_merge": "scalenie treści",
+        "content_block": "blokada treści",
+        "landing_page_quality": "jakość landing page",
+        "tracking_gap": "problem pomiaru",
+        "merchant_feed_triage": "triage feedu",
+        "traffic_quality_review": "jakość ruchu",
+    }
+    return labels[intent]
+
+
+def _merchant_dimension_label(value: str) -> str:
+    labels = {
+        "availability_updated": "zmiana dostępności",
+        "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
+        "n:availability": "dostępność",
+        "n:unit_pricing_measure": "miara ceny jednostkowej",
+        "problem feedu": "problem feedu",
+        "atrybut": "atrybut",
+    }
+    return labels.get(value, value.replace("_", " "))
 
 
 def _tactical_metric_facts() -> list[MetricFact]:

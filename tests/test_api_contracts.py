@@ -2711,6 +2711,17 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
     assert "merchant_feed_triage" in intents
     assert queue["evidence_ids"]
     assert queue["action_ids"]
+    assert queue["compact_groups"]
+    assert len(queue["compact_groups"]) <= len(queue["items"])
+    gsc_groups = [
+        group
+        for group in queue["compact_groups"]
+        if "google_search_console" in group["source_connectors"]
+    ]
+    assert gsc_groups
+    assert any("powiązanych zapytań" in group["diagnosis"] for group in gsc_groups)
+    assert all(group["evidence_ids"] for group in queue["compact_groups"])
+    assert all(group["blocked_claims"] for group in queue["compact_groups"])
     content_items = [item for item in queue["items"] if item["intent"] == "content_refresh"]
     assert any(item["dimensions"]["wordpress_match"] == "found" for item in content_items)
     assert any(

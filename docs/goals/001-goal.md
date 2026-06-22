@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 00:36 CEST.
+Last updated: 2026-06-23 00:41 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -3715,6 +3715,10 @@ Commit rules:
    `/api/content/diagnostics.operator_summary`, so do not move top-decision
    ordering/counts/labels back into React; next Localo/Ahrefs/Merchant/GA4/
    content work should add new API facts or contracts, not UI-side recomputation.
+   Tactical queue compact grouping is now also API-owned through
+   `/api/marketing/tactical-queue.compact_groups`; do not reintroduce query/page
+   or feed issue grouping, summed metrics, compact titles or compact diagnoses
+   in React.
 
 2. **Continue the measured Command Center performance work.**
    First backend split is done: `/api/dashboard/command-center` now uses
@@ -3789,6 +3793,46 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-23 tactical queue compact groups API slice:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k marketing_tactical_queue_uses_dimensioned_metric_facts
+uv run ruff check wilq/schemas.py wilq/briefing/tactical_queue.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/briefing/tactical_queue.py
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard lint
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"
+scripts/local_stack.sh restart
+uv run python - <<'PY'
+import httpx
+with httpx.Client(base_url="http://127.0.0.1:8000", timeout=60.0) as client:
+    data = client.get("/api/marketing/tactical-queue").json()
+print({
+    "item_count": len(data["items"]),
+    "compact_group_count": len(data["compact_groups"]),
+    "first_group": data["compact_groups"][0] if data["compact_groups"] else None,
+})
+PY
+```
+
+Live proof:
+
+- raw `item_count=10`;
+- API-owned `compact_group_count=4`;
+- first compact group is the Zielony Ład cluster:
+  `SEO: zweryfikuj treść /europejski-zielony-lad-co-to-takiego/ (7 zapytań)`;
+- compact diagnosis sums visible evidence-backed metrics:
+  `clicks=123`, `impressions=2902`;
+- evidence and ActionObject trace:
+  `ev_refresh_refresh_google_search_console_554550c44ec7`,
+  `act_prepare_content_refresh_queue`;
+- `TacticalQueuePanel` compact mode now renders `compact_groups` instead of
+  owning grouping/copy logic in React.
+
+Full `scripts/verify.sh` intentionally not run for this narrow API/dashboard
+contract slice; run it at the next broader release gate.
 
 Passed after the 2026-06-23 daily runtime split performance slice:
 

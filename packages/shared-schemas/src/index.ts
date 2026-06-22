@@ -336,11 +336,26 @@ export const TacticalQueueItemSchema = z.object({
   action_ids: z.array(z.string())
 });
 
+export const TacticalQueueGroupSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  meta: z.string(),
+  diagnosis: z.string(),
+  next_step: z.string(),
+  priority: z.number(),
+  risk: z.enum(["low", "medium", "high", "critical"]),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const TacticalQueueResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
   strict_instruction: z.string(),
   items: z.array(TacticalQueueItemSchema),
+  compact_groups: z.array(TacticalQueueGroupSchema).optional().default([]),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string())
 });

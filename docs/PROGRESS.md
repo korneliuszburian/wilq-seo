@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Tactical queue compact groups, 2026-06-23 00:41 CEST.
+  `/api/marketing/tactical-queue` now exposes API-owned `compact_groups` next
+  to raw `items`. `TacticalQueuePanel` compact mode now renders these groups
+  instead of grouping query/page/landing/feed issue rows, summing metrics and
+  generating marketer-facing copy in React. Live proof after stack restart:
+  raw `item_count=10`, `compact_group_count=4`, first compact group is the
+  Zielony Ład cluster with `7 zapytań`, summed `clicks=123` and
+  `impressions=2902`, evidence `ev_refresh_refresh_google_search_console_554550c44ec7`
+  and `act_prepare_content_refresh_queue`. Focused proof:
+  `uv run pytest tests/test_api_contracts.py -q -k marketing_tactical_queue_uses_dimensioned_metric_facts`,
+  Python ruff OK, Python mypy OK, shared schema typecheck OK, dashboard
+  typecheck OK, dashboard lint OK and focused dashboard route test OK.
 - Daily runtime split, 2026-06-23 00:36 CEST.
   `/api/dashboard/command-center` no longer builds the full Marketing Brief on
   the Command Center endpoint path. `wilq/briefing/daily_runtime.py` now has a
