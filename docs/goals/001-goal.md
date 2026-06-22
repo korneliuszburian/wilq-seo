@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 21:05 CEST.
+Last updated: 2026-06-22 21:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -296,6 +296,21 @@ non-reproducing action-detail Playwright route-load failure; the focused rerun
 passed, then full `scripts/verify.sh` passed, including backend API contracts
 154/154, dashboard unit tests 17/17, Playwright 14/14 and dashboard production
 build.
+
+Latest Ads change-history split proof, 2026-06-22 21:24 CEST:
+`build_change_history_read_contract` and change-event row helpers have been
+extracted from `wilq/briefing/ads_diagnostics.py` into
+`wilq/briefing/ads_change_history.py`. This is the fourth behavior-preserving
+Ads diagnostics split. `/api/ads/diagnostics` still exposes the same typed
+change-history read contract; `ads_diagnostics.py` still owns top-level
+orchestration, change-impact readiness composition, ActionObject ID enrichment
+and the rendered `Historia zmian Google Ads` section. Proof:
+`ads_diagnostics.py=5876` lines, `ads_change_history.py=195` lines; ruff,
+mypy and `tests/test_api_contracts.py` passed. The dashboard e2e route helper
+now applies the same route-ready timeout to headings after the loading state
+disappears; focused action detail/workflows reruns passed, then full
+`scripts/verify.sh` passed, including backend API contracts 154/154, dashboard
+unit tests 17/17, Playwright 14/14 and dashboard production build.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and

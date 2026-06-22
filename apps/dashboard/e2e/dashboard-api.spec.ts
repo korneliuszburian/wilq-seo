@@ -10,7 +10,9 @@ async function expectApiBackedRouteHeading(
   await expect(page.getByText("Ładowanie stanu WILQ API")).toBeHidden({
     timeout: routeReadyTimeoutMs
   });
-  await expect(page.getByRole("heading", { name, exact: options.exact })).toBeVisible();
+  await expect(page.getByRole("heading", { name, exact: options.exact })).toBeVisible({
+    timeout: routeReadyTimeoutMs
+  });
 }
 
 test.describe("WILQ dashboard API-backed smoke", () => {

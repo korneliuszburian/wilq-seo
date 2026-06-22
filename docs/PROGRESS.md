@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads change history contract extraction, 2026-06-22 21:24 CEST.
+  `build_change_history_read_contract` i helpery change-event rows zostały
+  przeniesione z `wilq/briefing/ads_diagnostics.py` do
+  `wilq/briefing/ads_change_history.py`. Publiczny `/api/ads/diagnostics`
+  pozostaje bez zmiany; `ads_diagnostics.py` nadal renderuje sekcję
+  `Historia zmian Google Ads`, enrichuje ActionObject IDs i składa
+  change-impact readiness. File-size proof: `ads_diagnostics.py=5876` linii,
+  `ads_change_history.py=195`. Proof: ruff OK, mypy OK,
+  `tests/test_api_contracts.py` OK, focused Playwright reruns dla action detail
+  i workflows OK po ujednoliceniu route heading timeout helpera, a pełne
+  `scripts/verify.sh` przeszło zielono: backend 154/154, dashboard unit 17/17,
+  Playwright 14/14 i dashboard production build.
 - Ads impression share contract extraction, 2026-06-22 21:05 CEST.
   `build_impression_share_read_contract` i helpery impression-share rows
   zostały przeniesione z `wilq/briefing/ads_diagnostics.py` do
