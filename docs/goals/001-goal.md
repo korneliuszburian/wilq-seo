@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 21:55 CEST.
+Last updated: 2026-06-22 22:13 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -25,6 +25,27 @@ Every Codex session working on WILQ must read these files first:
 
 Keep this file updated when connector readiness, live data status, blockers,
 verification state or next tasks change.
+
+Development speed rule: WILQ must move faster. Do not run broad test suites
+after every tiny edit. Use a verification budget:
+
+- During implementation, inspect diffs and run only the cheapest check that
+  proves the local boundary you touched, or skip tests until a meaningful
+  boundary is reached.
+- Run a focused test only when a change crosses an API/schema/route/action
+  boundary or when the risk is concrete.
+- Run `scripts/verify.sh` only before a push/main handoff, after a genuinely
+  large cross-surface change, or when a failure pattern suggests broad
+  regression risk.
+- Prefer batching several small safe refactors into one verified slice instead
+  of paying the full gate after each tiny extraction.
+
+Subagent speed rule: use subagents to accelerate development, not only audits.
+Delegate whenever work can run in parallel with disjoint write sets or clear
+read-only questions: repo hotspot discovery, implementation slices, focused
+test triage, browser QA, code review, performance profiling, docs/research and
+handoff prep. Do not delegate overlapping edits into the same files without a
+clear owner and integration plan.
 
 ## Product Bar
 
@@ -3321,16 +3342,19 @@ Remaining blocker:
 
 Goal: keep WILQ shippable as it grows into a BDOS-class operator system. The
 current product works, but several files are too large to remain healthy
-long-term: `apps/dashboard/src/routes/App.tsx` is still about 7911 lines after
-the first Command Center route extraction,
-`apps/dashboard/src/routes/App.test.tsx` about 5335 lines,
-`wilq/briefing/ads_diagnostics.py` about 5690 lines,
+long-term. Current known hotspots after the latest dashboard extraction:
+`apps/dashboard/src/routes/App.tsx` is still about 7180 lines,
+`apps/dashboard/src/routes/App.test.tsx` about 6149 lines,
+`wilq/briefing/ads_diagnostics.py` about 5876 lines,
 `wilq/actions/service.py` about 2076 lines and
 `packages/shared-schemas/src/index.ts` about 1918 lines. These are acceptable
 as temporary consolidation during fast product discovery, not as the target
 architecture.
 
 This slice must be treated as product-risk reduction, not cosmetic cleanup.
+Assume there are more hotspots until a repo-wide hotspot pass proves otherwise.
+Use subagents for hotspot mapping, disjoint implementation slices and focused
+review/test triage whenever that materially speeds development.
 
 Rules:
 
@@ -3660,25 +3684,39 @@ Commit rules:
    decision, honest blocker, ActionObject validation path or remove it from the
    marketer route.
 
-4. **Run focused verification after every route slice.**
-   Minimum:
+4. **Use a verification budget, not test loops.**
+   Do not run every check after every small edit. For route/component-only
+   slices, use this as a menu, not a mandatory sequence:
    ```bash
-   uv run ruff check <touched-python-files>
-   uv run mypy <touched-python-files>
-   uv run pytest tests/test_api_contracts.py -q -k '<relevant-tests>'
    pnpm --filter @wilq/dashboard lint
    pnpm --filter @wilq/dashboard typecheck
    pnpm --filter @wilq/dashboard test -- --run App.test.tsx
-   WILQ_E2E_API_PORT=8000 WILQ_E2E_DASHBOARD_PORT=5173 pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts
    ```
+   Pick the cheapest command that proves the changed boundary. Use focused e2e
+   only for UI behavior or route-load risk. Use Python ruff/mypy/pytest only
+   when Python/API/schema files changed. Do not run full `scripts/verify.sh`
+   repeatedly during exploratory implementation.
 
-5. **Run full verification before commit.**
-   Required:
+5. **Run full verification only at real gates.**
+   Required before push/main handoff or after a broad cross-surface change:
    ```bash
    scripts/verify.sh
    ```
+   If a tiny refactor is still inside an uncommitted batch, keep working and
+   pay this cost once for the whole slice.
 
-6. **Run stricter Codex/API proof for the next high-value gap.**
+6. **Use subagents to reduce wall-clock time.**
+   For non-trivial work, delegate independent work in parallel:
+   - `repo-explorer`/`architect` for hotspot maps and boundaries,
+   - `implementation-worker` for disjoint files,
+   - `test-runner` or `performance-profiler` for focused failures and slow
+     gates,
+   - `browser-qa` for route proof,
+   - `reviewer` for owner-style review before broad commits.
+   Keep ownership explicit and do not let subagents edit overlapping files
+   without coordination.
+
+7. **Run stricter Codex/API proof for the next high-value gap.**
    Use `codex exec` or Codex Desktop/CLI against the local WILQ API. Plain
    static prompt evaluation is not enough. The proof must show API use, Polish
    output, evidence IDs, source connectors, blocked claims and safe next actions.

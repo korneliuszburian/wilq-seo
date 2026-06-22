@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard ActionObject panel extraction, 2026-06-22 22:13 CEST.
+  `ActionObjectFocus`, `ActionObjectIdFocus`, review gate, preview, human
+  review, validation, confirmation and impact-check controls were extracted
+  from `apps/dashboard/src/routes/App.tsx` into
+  `apps/dashboard/src/routes/ActionObjectPanels.tsx`. Shared Ads missing/blocked
+  claim labels moved into `marketingLabels.ts`. This is a behavior-preserving
+  code-quality slice: `App.tsx=7180` lines,
+  `ActionObjectPanels.tsx=604`, `marketingLabels.ts=150`. Focused proof:
+  dashboard lint OK, dashboard typecheck OK, dashboard unit tests 17/17 OK.
+  Full `scripts/verify.sh` also completed green before this note was written:
+  backend 154/154, dashboard unit 17/17, Playwright 14/14 and dashboard
+  production build. Process correction from the user is now recorded in
+  `docs/goals/001-goal.md`: use a verification budget, batch small safe
+  refactors, run full verify only at real gates, and use subagents for parallel
+  development, not only audits.
 - Ads change history contract extraction, 2026-06-22 21:24 CEST.
   `build_change_history_read_contract` i helpery change-event rows zostały
   przeniesione z `wilq/briefing/ads_diagnostics.py` do

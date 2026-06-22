@@ -9,6 +9,84 @@ export function marketerBlockedClaimLabels(claims: string[]) {
   return Array.from(new Set(claims.map(marketerBlockedClaimLabel)));
 }
 
+export function adsMissingReadContractLabel(value: string) {
+  const labels: Record<string, string> = {
+    recommendations: "rekomendacje Google Ads",
+    recommendation_impact_preview: "impact preview rekomendacji",
+    recommendation_apply_preview: "podgląd apply rekomendacji",
+    human_strategy_review: "review strategii przez człowieka",
+    change_history: "historia zmian",
+    budget_pacing: "tempo wydawania budżetu",
+    campaign_budget: "budżet kampanii",
+    shared_budget_distribution: "podział shared budget",
+    budget_target_or_seasonality: "cel budżetowy lub sezonowość",
+    business_goal: "cel biznesowy",
+    target_roas_or_cpa: "target ROAS albo CPA",
+    profit_margin: "marża albo model rentowności",
+    human_budget_goal: "cel budżetu od człowieka",
+    account_currency: "waluta konta",
+    pre_change_performance_window: "okno wyników przed zmianą",
+    post_change_performance_window: "okno wyników po zmianie",
+    human_change_impact_review: "ręczny review wpływu zmian",
+    apply_preview: "podgląd wdrożenia",
+    change_event_rows: "zdarzenia historii zmian",
+    current_campaign_snapshot: "bieżący snapshot kampanii",
+    impression_share: "udział w wyświetleniach",
+    "keyword match context": "kontekst dopasowania słów kluczowych",
+    keyword_match_context_read: "odczyt istniejących keywords i match types",
+    "90_day_safety_check": "90-dniowa kontrola bezpieczeństwa",
+    search_term_90d_read: "90-dniowy odczyt zapytań",
+    human_intent_review: "ręczny review intencji",
+    negative_keyword_payload_preview: "podgląd payloadu wykluczeń",
+    ngram_to_negative_keyword_payload_preview:
+      "podgląd payloadu wykluczeń z n-gramów",
+    review_search_term_context: "sprawdzenie intencji zapytania",
+    check_existing_keywords_and_match_types: "sprawdzenie słów i typów dopasowania",
+    human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
+    google_ads_mutation_audit: "audyt mutacji Google Ads",
+    keyword_planner_enrichment: "enrichment Keyword Planner",
+    forecast_or_audience_size: "forecast albo audience size",
+    "campaign activity": "aktywność kampanii",
+    search_term_view: "widok zapytań użytkowników",
+    zero_conversion_search_terms: "terminy z zerową konwersją"
+  };
+  return labels[value] ?? value;
+}
+
+export function adsBlockedClaimLabel(value: string) {
+  const labels: Record<string, string> = {
+    CPA: "CPA",
+    ROAS: "ROAS",
+    "search-term waste": "waste na zapytaniach",
+    "wasted budget": "zmarnowany budżet",
+    "wasted spend": "zmarnowany spend",
+    "negative keyword candidates": "kandydaci do wykluczeń",
+    "negative keyword apply": "wdrożenie wykluczeń",
+    "90-day negative keyword safety": "90-dniowe bezpieczeństwo wykluczeń",
+    "budget apply": "zmiana budżetu",
+    "margin verdict": "werdykt marży",
+    "currency-formatted cost": "koszt w walucie konta",
+    "budget mutation": "zmiana budżetu",
+    "campaign mutation": "zmiana kampanii",
+    "change history": "historia zmian",
+    "change impact": "wpływ zmian",
+    "campaign creation": "tworzenie kampanii",
+    "impression share": "udział w wyświetleniach",
+    "recommendation apply": "wdrożenie rekomendacji",
+    "automatic recommendation accept": "automatyczne przyjęcie rekomendacji",
+    "performance uplift": "wzrost performance",
+    "budget scaling": "skalowanie budżetu",
+    "budget amount": "kwota budżetu",
+    "budget pacing": "tempo wydawania budżetu",
+    profitability: "opłacalność",
+    "conversion drop": "spadek konwersji",
+    "conversion loss": "utrata konwersji",
+    "search terms": "zapytania użytkowników",
+    "campaign scaling": "skalowanie kampanii"
+  };
+  return labels[value] ?? value;
+}
+
 function marketerBlockedClaimLabel(value: string) {
   const labels: Record<string, string> = {
     CPA: "CPA",
