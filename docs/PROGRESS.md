@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Demand Gen route extraction, 2026-06-22 23:20 CEST.
+  `DemandGenDiagnosticSurface`, readiness contract view, review-only payload
+  preview, landing quality/migration rows and Demand Gen label helpers were
+  extracted from `App.tsx` into `DemandGenDiagnosticSurface.tsx`.
+  `/ads-doctor/demand-gen` still reads `/api/demand-gen/diagnostics` and still
+  blocks launch/migration/performance claims without real Demand Gen evidence.
+  Current line-counts: `App.tsx=3454`, `DemandGenDiagnosticSurface.tsx=361`.
+  Focused proof: dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "demand gen route renders readiness contract instead of generic registry"`
+  OK: 1/1.
 - Dashboard Localo route extraction, 2026-06-22 23:17 CEST.
   `LocaloDiagnosticSurface`, Localo operator summary, safety gate, proof panel
   and Localo label helpers were extracted from `App.tsx` into

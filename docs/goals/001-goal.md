@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 23:17 CEST.
+Last updated: 2026-06-22 23:20 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -63,12 +63,14 @@ handoff prep. Do not delegate overlapping edits into the same files without a
 clear owner and integration plan.
 
 Current dashboard monolith slice: `ContentDiagnosticSurface`,
-`AhrefsDiagnosticSurface` and `LocaloDiagnosticSurface` have been extracted from
+`AhrefsDiagnosticSurface`, `LocaloDiagnosticSurface` and
+`DemandGenDiagnosticSurface` have been extracted from
 `apps/dashboard/src/routes/App.tsx` into dedicated route modules. Current
-line-counts: `App.tsx=3782`, `ContentDiagnosticSurface.tsx=821`,
-`AhrefsDiagnosticSurface.tsx=353`, `LocaloDiagnosticSurface.tsx=349`.
-Focused proof: dashboard lint OK, dashboard typecheck OK, focused
-content/GSC/GA4/Ahrefs/Localo route tests OK.
+line-counts: `App.tsx=3454`, `ContentDiagnosticSurface.tsx=821`,
+`AhrefsDiagnosticSurface.tsx=353`, `LocaloDiagnosticSurface.tsx=349`,
+`DemandGenDiagnosticSurface.tsx=361`. Focused proof: dashboard lint OK,
+dashboard typecheck OK, focused content/GSC/GA4/Ahrefs/Localo/Demand Gen route
+tests OK.
 
 ## Product Bar
 
