@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads recommendations contract extraction, 2026-06-22 20:45 CEST.
+  `build_recommendations_read_contract` i helpery recommendation rows,
+  impact/apply-preview oraz review scoring zostały przeniesione z
+  `wilq/briefing/ads_diagnostics.py` do
+  `wilq/briefing/ads_recommendations.py`. Publiczny `/api/ads/diagnostics`
+  pozostaje bez zmiany; `ads_diagnostics.py` nadal renderuje sekcję
+  `Rekomendacje Google Ads do review` i składa całość odpowiedzi. File-size
+  proof: `ads_diagnostics.py=6179` linii, `ads_recommendations.py=506`.
+  Wąskie proofy: ruff OK, mypy OK, `tests/test_api_contracts.py` OK.
+  Finalny proof: `scripts/verify.sh` OK, including backend API contracts
+  154/154, dashboard unit tests 17/17, Playwright 14/14 and dashboard
+  production build.
 - Ads budget pacing contract extraction, 2026-06-22 20:22 CEST.
   `build_budget_pacing_read_contract` i helpery budget/shared-budget/apply-preview
   zostały przeniesione z dużego `wilq/briefing/ads_diagnostics.py` do

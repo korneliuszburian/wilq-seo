@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 20:22 CEST.
+Last updated: 2026-06-22 20:45 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -267,6 +267,20 @@ including backend API contracts 154/154, dashboard unit tests 17/17,
 Playwright 14/14 and dashboard production build. The first full verify attempt
 hit a `custom segments` Playwright startup/process-contention failure; focused
 rerun on a clean process passed, then full verify passed.
+
+Latest Ads recommendations split proof, 2026-06-22 20:45 CEST:
+`build_recommendations_read_contract` and its recommendation row, impact,
+apply-preview and review-scoring helpers have been extracted from
+`wilq/briefing/ads_diagnostics.py` into
+`wilq/briefing/ads_recommendations.py`. This is the second behavior-preserving
+Ads diagnostics split after budget pacing. `/api/ads/diagnostics` still exposes
+the same typed recommendations read contract; `ads_diagnostics.py` still owns
+top-level orchestration and the rendered `Rekomendacje Google Ads do review`
+section. Proof so far: `ads_diagnostics.py=6179` lines,
+`ads_recommendations.py=506` lines; ruff, mypy and
+`tests/test_api_contracts.py` passed. Full `scripts/verify.sh` passed,
+including backend API contracts 154/154, dashboard unit tests 17/17,
+Playwright 14/14 and dashboard production build.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and
