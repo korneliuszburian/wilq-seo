@@ -1568,6 +1568,67 @@ def test_content_brief_candidate_review_persists_audit_event(
     )
 
 
+def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "content_review_context_state.sqlite3"),
+    )
+
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    assert action_response.status_code == 200
+    action = action_response.json()
+    candidate = action["payload"]["content_brief_preview"][0]
+    candidate_id = candidate["candidate_id"]
+
+    review_response = client.post(
+        "/api/actions/act_prepare_content_refresh_queue/review",
+        json={
+            "outcome": "approved_for_prepare",
+            "reviewed_by": "operator_test",
+            "notes": f"Wybrano kandydata briefu {candidate_id} do context-pack proof.",
+            "checked_items": [
+                f"candidate:{candidate_id}",
+                f"source_type:{candidate['source_type']}",
+                f"mode:{candidate['mode']}",
+            ],
+            "blockers": [
+                "payload_apply_allowed_false",
+                "wordpress_write_not_requested",
+                "blocked_claim:ranking guarantee",
+            ],
+        },
+    )
+    assert review_response.status_code == 200
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-content-strategist"},
+    )
+
+    assert context_response.status_code == 200
+    context = context_response.json()
+    actions_by_id = {item["id"]: item for item in context["active_action_objects"]}
+    content_action = actions_by_id["act_prepare_content_refresh_queue"]
+    payload = content_action["payload"]
+
+    assert payload["wordpress_draft_payload_preview_total"] == 1
+    assert payload["wordpress_draft_payload_preview_included"] == 1
+    draft_preview = payload["wordpress_draft_payload_preview"][0]
+    assert draft_preview["preview_contract"] == "wordpress_draft_payload_preview_v1"
+    assert draft_preview["source_preview_contract"] == "content_brief_preview_v1"
+    assert draft_preview["candidate_id"] == candidate_id
+    assert draft_preview["post_status"] == "draft"
+    assert draft_preview["apply_allowed"] is False
+    assert draft_preview["api_mutation_ready"] is False
+    assert draft_preview["evidence_ids"]
+    assert "ranking guarantee" in draft_preview["blocked_claims"]
+    assert content_action["review_gate"]["last_review_outcome"] == "approved_for_prepare"
+
+
 def test_daily_context_pack_preserves_action_preview_audit(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

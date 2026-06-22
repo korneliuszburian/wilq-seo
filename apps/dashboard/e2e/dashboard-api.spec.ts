@@ -1,4 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+const routeReadyTimeoutMs = 30_000;
+
+async function expectApiBackedRouteHeading(
+  page: Page,
+  name: string,
+  options: { exact?: boolean } = {}
+) {
+  await expect(page.getByText("Ładowanie stanu WILQ API")).toBeHidden({
+    timeout: routeReadyTimeoutMs
+  });
+  await expect(page.getByRole("heading", { name, exact: options.exact })).toBeVisible();
+}
 
 test.describe("WILQ dashboard API-backed smoke", () => {
   test("command center renders live API-backed sections", async ({ page }) => {
@@ -88,7 +101,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("ads doctor route exposes live metric-backed diagnostics", async ({ page }) => {
     await page.goto("/ads-doctor");
 
-    await expect(page.getByRole("heading", { name: "Ads Doctor" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Ads Doctor");
     await expect(page.getByRole("heading", { name: "Status Google Ads" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
@@ -119,7 +132,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("custom segments route exposes review-only segment candidates", async ({ page }) => {
     await page.goto("/ads-doctor/custom-segments");
 
-    await expect(page.getByRole("heading", { name: "Custom Segments", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Custom Segments", { exact: true });
     await expect(
       page.getByRole("heading", { name: "Status Custom Segments / search terms evidence" })
     ).toBeVisible();
@@ -140,7 +153,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("demand gen route exposes readiness blocker instead of generic registry", async ({ page }) => {
     await page.goto("/ads-doctor/demand-gen");
 
-    await expect(page.getByRole("heading", { name: "Demand Gen", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Demand Gen", { exact: true });
     await expect(page.getByRole("heading", { name: "Demand Gen: brak kampanii do rekomendacji" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma wiedzieć przed planem Demand Gen" })
@@ -159,7 +172,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("ga4 route exposes metric-backed workflow focus", async ({ page }) => {
     await page.goto("/ga4");
 
-    await expect(page.getByRole("heading", { name: "GA4", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "GA4", { exact: true });
     await expect(page.getByRole("heading", { name: "Status GA4 / Landing Quality" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia GA4" })).toBeVisible();
     await expect(page.getByRole("link", { name: "act_review_ga4_tracking_quality" }).first()).toBeVisible();
@@ -172,7 +185,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("seo and content routes expose dedicated Content Diagnostics", async ({ page }) => {
     await page.goto("/seo-gsc");
 
-    await expect(page.getByRole("heading", { name: "SEO / GSC" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "SEO / GSC");
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma zrobić teraz z treściami" })
@@ -186,7 +199,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await page.goto("/content-planner");
 
-    await expect(page.getByRole("heading", { name: "Content Planner", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Content Planner", { exact: true });
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "ActionObjecty do walidacji" })).toBeVisible();
   });
@@ -194,9 +207,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
     await page.goto("/actions/act_review_merchant_feed_issues");
 
-    await expect(
-      page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" })
-    ).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Przygotuj kolejkę przeglądu feedu Merchant Center");
     await expect(page.getByRole("heading", { name: "Dowody i diagnoza" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Podgląd payloadu" })).toBeVisible();
     await expect(page.getByText(/Dowody: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
@@ -219,7 +230,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("actions route starts with ActionObjects instead of registry dumps", async ({ page }) => {
     await page.goto("/actions");
 
-    await expect(page.getByRole("heading", { name: "Actions", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Actions", { exact: true });
     await expect(page.getByRole("heading", { name: "ActionObjecty do przeglądu" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody powiązane z akcjami" })).toBeVisible();
     await expect(page.getByText("Do walidacji")).toBeVisible();
@@ -231,7 +242,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("workflows route exposes decision-backed operator workflows", async ({ page }) => {
     await page.goto("/workflows");
 
-    await expect(page.getByRole("heading", { name: "Workflowy WILQ" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Workflowy WILQ");
     await expect(page.getByRole("heading", { name: "Workflowy decyzyjne" })).toBeVisible();
     await expect(page.getByText("Plan dnia WILQ")).toBeVisible();
     await expect(page.getByText("Merchant feed review")).toBeVisible();
@@ -251,7 +262,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("knowledge route maps source knowledge to decisions", async ({ page }) => {
     await page.goto("/knowledge");
 
-    await expect(page.getByRole("heading", { name: "Baza wiedzy WILQ" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Baza wiedzy WILQ");
     await expect(page.getByRole("heading", { name: "Mapa wiedzy do decyzji" })).toBeVisible();
     await expect(page.getByText("Powiązania")).toBeVisible();
     await expect(page.getByText("Karty wiedzy").first()).toBeVisible();
@@ -272,7 +283,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("merchant route renders live Merchant Diagnostics evidence links", async ({ page }) => {
     await page.goto("/merchant");
 
-    await expect(page.getByRole("heading", { name: "Merchant Center", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Merchant Center", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Merchant Center" })).toBeVisible();
     await expect(page.getByText("Dowody i ograniczenia Merchant")).toBeVisible();
     await expect(page.getByText("Merchant Center: feed/product health")).toHaveCount(0);
@@ -308,7 +319,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("localo route exposes aggregate facts without unsupported local claims", async ({ page }) => {
     await page.goto("/localo");
 
-    await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Localo", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Localo / MCP access" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
@@ -336,7 +347,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
   test("ahrefs route exposes authority context and gap safety state", async ({ page }) => {
     await page.goto("/ahrefs");
 
-    await expect(page.getByRole("heading", { name: "Ahrefs", exact: true })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Ahrefs", { exact: true });
     await expect(page.getByRole("heading", { name: "Status Ahrefs / dowody SEO" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Co marketer ma wiedzieć o Ahrefs" })

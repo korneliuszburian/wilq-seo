@@ -37,6 +37,29 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content review -> Codex context-pack draft preview, 2026-06-22 09:58 CEST.
+  Po zapisanym review kandydata content briefu scoped
+  `POST /api/codex/context-pack {"skill":"wilq-content-strategist"}` ma teraz
+  jawny, kompaktowany `wordpress_draft_payload_preview`: licznik
+  `wordpress_draft_payload_preview_total`, licznik included i zwięzły draft
+  preview z `candidate_id`, `post_status=draft`, evidence IDs, blocked claims
+  oraz `apply_allowed=false` / `api_mutation_ready=false`. To spina wybór
+  operatora w dashboardzie z tym, co widzi Codex skill, bez pełnego WordPress
+  payload dumpu i bez publikacji. RED/GREEN proof:
+  `test_content_strategist_context_pack_preserves_reviewed_draft_preview`
+  failował na braku `wordpress_draft_payload_preview_total`, a po kompakcji
+  przechodzi. Live proof po `scripts/local_stack.sh restart`: po review
+  `content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca`, context-pack zwraca
+  `draft_total=1`, `draft_included=1`, `post_status=draft`,
+  `apply_allowed=false`, `api_mutation_ready=false` i evidence
+  `ev_refresh_refresh_google_search_console_554550c44ec7`. Wąskie checks:
+  ruff OK, mypy OK, content/action/context-pack API tests 6/6 OK. Verification
+  follow-up: Playwright route smoke had a loading-state race under heavy
+  API-backed routes. E2E now waits for `Ładowanie stanu WILQ API` to disappear
+  before first route heading assertions and Playwright is configured for one
+  worker, matching `scripts/verify.sh`. Final proof: `scripts/verify.sh` green,
+  including 153 backend tests, 17 dashboard unit tests, Skill/API smokes,
+  14 Playwright e2e tests and dashboard production build.
 - Content brief homepage candidate ID traceability, 2026-06-22 08:41 CEST.
   Live ActionObject preview miał regresję jakościową:
   `target_url=https://www.ekologus.pl/` dostawał `candidate_id=content_brief_gsc_`,
@@ -1520,10 +1543,11 @@ Aktualny maintenance:
   `content_brief_preview_v1` payload previews in
   `act_prepare_content_refresh_queue`, operator selection/review persistence,
   stronger GSC/WP overlap for Ahrefs candidates and review-gated
-  `wordpress_draft_payload_preview_v1`. Remaining work is better final brief
-  selection, eventual WordPress write adapter/safety after explicit review and
-  richer content impact contracts. Do not claim ranking, traffic, authority,
-  lead or revenue uplift.
+  `wordpress_draft_payload_preview_v1` that now also survives scoped
+  `wilq-content-strategist` context-pack compaction after review. Remaining
+  work is better final brief selection, eventual WordPress write adapter/safety
+  after explicit review and richer content impact contracts. Do not claim
+  ranking, traffic, authority, lead or revenue uplift.
 - Demand Gen is honest-blocked, not useful yet. Campaign channel rows are now
   available from Google Ads evidence, and current live state has no
   Demand Gen/Discovery campaigns. It still needs real Demand Gen read

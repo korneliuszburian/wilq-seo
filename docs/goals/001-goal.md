@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 08:41 CEST.
+Last updated: 2026-06-22 09:58 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -217,6 +217,32 @@ ruff, mypy and the content/action API contract subset. Final proof:
 `scripts/verify.sh` green, including 152 backend tests, 17 dashboard unit
 tests, Skill/API smokes, 14 Playwright e2e tests and dashboard production
 build.
+
+Latest Content review-to-Codex draft preview proof, 2026-06-22 09:58 CEST:
+when an operator reviews a content brief candidate, scoped
+`POST /api/codex/context-pack {"skill":"wilq-content-strategist"}` now exposes
+a compacted `wordpress_draft_payload_preview` contract with
+`wordpress_draft_payload_preview_total`, `wordpress_draft_payload_preview_included`,
+candidate ID, `post_status=draft`, evidence IDs, blocked claims and
+`apply_allowed=false` / `api_mutation_ready=false`. This connects dashboard
+operator selection to Codex skill context without dumping the full WordPress
+payload or implying publication. RED/GREEN proof:
+`test_content_strategist_context_pack_preserves_reviewed_draft_preview` failed
+on missing `wordpress_draft_payload_preview_total`, then passed after context
+compaction. Live proof after `scripts/local_stack.sh restart`: reviewing
+`content_brief_gsc_bdo_co_musi_wiedziec_przedsiebiorca` makes the
+`wilq-content-strategist` context-pack return `draft_total=1`,
+`draft_included=1`, `post_status=draft`, `apply_allowed=false`,
+`api_mutation_ready=false` and evidence
+`ev_refresh_refresh_google_search_console_554550c44ec7`. Narrow checks passed:
+ruff, mypy and the content/action/context-pack API subset. Verification
+follow-up: Playwright route smoke had a loading-state race under heavy
+API-backed routes. The e2e route helper now waits for `Ładowanie stanu WILQ API`
+to disappear before first route heading assertions, and Playwright is
+configured for one worker to match `scripts/verify.sh` and avoid concurrent
+demo-proof/API smoke contention. Final proof: `scripts/verify.sh` green,
+including 153 backend tests, 17 dashboard unit tests, Skill/API smokes,
+14 Playwright e2e tests and dashboard production build.
 
 Latest Ads Doctor ActionObject scope compaction proof, 2026-06-22 01:40 CEST:
 `wilq-ads-doctor` now has an explicit ActionObject allowlist. It no longer

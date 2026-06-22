@@ -1799,6 +1799,19 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
         compact_payload["content_brief_preview_included"] = len(
             compact_payload["content_brief_preview"]
         )
+    wordpress_draft_payload_preview = compact_payload.get("wordpress_draft_payload_preview")
+    if isinstance(wordpress_draft_payload_preview, list):
+        compact_payload["wordpress_draft_payload_preview_total"] = len(
+            wordpress_draft_payload_preview
+        )
+        compact_payload["wordpress_draft_payload_preview"] = (
+            _compact_wordpress_draft_payload_preview_for_context(
+                wordpress_draft_payload_preview
+            )
+        )
+        compact_payload["wordpress_draft_payload_preview_included"] = len(
+            compact_payload["wordpress_draft_payload_preview"]
+        )
     payload_preview_kept = False
     payload_preview = compact_payload.get("payload_preview")
     if (
@@ -2086,6 +2099,62 @@ def _compact_content_brief_preview_for_context(
     for item in preview_items[:4]:
         if isinstance(item, dict):
             compact_items.append({key: item[key] for key in keep_keys if key in item})
+    return compact_items
+
+
+def _compact_wordpress_draft_payload_preview_for_context(
+    preview_items: list[Any],
+) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    keep_keys = {
+        "preview_contract",
+        "source_preview_contract",
+        "candidate_id",
+        "source_type",
+        "mode",
+        "operation_type",
+        "post_status",
+        "topic",
+        "target_url",
+        "source_url",
+        "required_validation",
+        "blocked_claims",
+        "source_connectors",
+        "evidence_ids",
+        "mutation_allowed",
+        "apply_allowed",
+        "api_mutation_ready",
+        "destructive",
+    }
+    for item in preview_items[:2]:
+        if not isinstance(item, dict):
+            continue
+        compact_item = {key: item[key] for key in keep_keys if key in item}
+        draft_payload = item.get("draft_payload")
+        if isinstance(draft_payload, dict):
+            compact_item["draft_payload"] = {
+                key: draft_payload[key]
+                for key in (
+                    "post_status",
+                    "post_title",
+                    "post_excerpt_direction",
+                )
+                if key in draft_payload
+            }
+            content_blocks = draft_payload.get("content_blocks")
+            if isinstance(content_blocks, list):
+                compact_item["draft_payload"]["content_blocks_total"] = len(
+                    content_blocks
+                )
+                compact_item["draft_payload"]["content_blocks"] = [
+                    block
+                    for block in content_blocks[:4]
+                    if isinstance(block, dict)
+                ]
+                compact_item["draft_payload"]["content_blocks_included"] = len(
+                    compact_item["draft_payload"]["content_blocks"]
+                )
+        compact_items.append(compact_item)
     return compact_items
 
 
