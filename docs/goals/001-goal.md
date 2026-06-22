@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 20:45 CEST.
+Last updated: 2026-06-22 21:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -281,6 +281,21 @@ section. Proof so far: `ads_diagnostics.py=6179` lines,
 `tests/test_api_contracts.py` passed. Full `scripts/verify.sh` passed,
 including backend API contracts 154/154, dashboard unit tests 17/17,
 Playwright 14/14 and dashboard production build.
+
+Latest Ads impression-share split proof, 2026-06-22 21:05 CEST:
+`build_impression_share_read_contract` and impression-share row helpers have
+been extracted from `wilq/briefing/ads_diagnostics.py` into
+`wilq/briefing/ads_impression_share.py`. This is the third behavior-preserving
+Ads diagnostics split after budget pacing and recommendations. `/api/ads/diagnostics`
+still exposes the same typed impression-share read contract; `ads_diagnostics.py`
+still owns top-level orchestration, campaign triage/optimizer composition and
+the rendered `Udział w wyświetleniach Google Ads` section. Proof so far:
+`ads_diagnostics.py=6029` lines, `ads_impression_share.py=188` lines; ruff,
+mypy and `tests/test_api_contracts.py` passed. One full verify attempt hit a
+non-reproducing action-detail Playwright route-load failure; the focused rerun
+passed, then full `scripts/verify.sh` passed, including backend API contracts
+154/154, dashboard unit tests 17/17, Playwright 14/14 and dashboard production
+build.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and

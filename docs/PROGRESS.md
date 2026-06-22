@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads impression share contract extraction, 2026-06-22 21:05 CEST.
+  `build_impression_share_read_contract` i helpery impression-share rows
+  zostały przeniesione z `wilq/briefing/ads_diagnostics.py` do
+  `wilq/briefing/ads_impression_share.py`. Publiczny `/api/ads/diagnostics`
+  pozostaje bez zmiany; `ads_diagnostics.py` nadal renderuje sekcję
+  `Udział w wyświetleniach Google Ads` i składa campaign triage/optimizer.
+  File-size proof: `ads_diagnostics.py=6029` linii,
+  `ads_impression_share.py=188`. Wąskie proofy: ruff OK, mypy OK,
+  `tests/test_api_contracts.py` OK. Finalny proof: focused Playwright action
+  detail rerun OK po jednorazowym route-load failure, potem `scripts/verify.sh`
+  OK, including backend API contracts 154/154, dashboard unit tests 17/17,
+  Playwright 14/14 and dashboard production build.
 - Ads recommendations contract extraction, 2026-06-22 20:45 CEST.
   `build_recommendations_read_contract` i helpery recommendation rows,
   impact/apply-preview oraz review scoring zostały przeniesione z

@@ -43,6 +43,7 @@ from wilq.actions.google_ads.recommendations import (
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.ads_budget_pacing import build_budget_pacing_read_contract
+from wilq.briefing.ads_impression_share import build_impression_share_read_contract
 from wilq.briefing.ads_recommendations import build_recommendations_read_contract
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -330,9 +331,13 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         ),
         fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
     )
-    impression_share_read_contract = _impression_share_read_contract(
+    impression_share_read_contract = build_impression_share_read_contract(
         trusted_metric_facts,
-        latest_refresh,
+        read_attempted=_latest_refresh_has_summary_metric(
+            latest_refresh,
+            "impression_share_row_count",
+        ),
+        fallback_evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
     )
     change_history_read_contract = _change_history_read_contract(
         trusted_metric_facts,
@@ -1882,153 +1887,6 @@ def _recommendations_section(
     )
 
 
-def _impression_share_read_contract(
-    metric_facts: list[MetricFact],
-    latest_refresh: ConnectorRefreshRun | None,
-) -> AdsImpressionShareReadContract:
-    rows = _impression_share_rows(metric_facts)
-    read_attempted = _latest_refresh_has_summary_metric(
-        latest_refresh,
-        "impression_share_row_count",
-    )
-    missing_read_contracts = [
-        "change_history",
-        "human_budget_goal",
-        "budget_apply_preview",
-    ]
-    blocked_claims = [
-        "budget scaling",
-        "budget apply",
-        "wasted budget",
-        "performance uplift",
-        "campaign mutation",
-    ]
-    if rows or read_attempted:
-        if rows:
-            budget_limited = sum(
-                1
-                for row in rows
-                if (row.search_budget_lost_impression_share or 0) > 0
-            )
-            rank_limited = sum(
-                1
-                for row in rows
-                if (row.search_rank_lost_impression_share or 0) > 0
-            )
-            summary = (
-                f"WILQ ma impression share dla {len(rows)} kampanii; "
-                f"budget-lost > 0 w {budget_limited}, rank-lost > 0 w {rank_limited}."
-            )
-        else:
-            summary = (
-                "WILQ wykonał read-only impression share read; Google Ads nie zwrócił "
-                "kampanii z tymi metrykami w bieżącym oknie."
-            )
-        return AdsImpressionShareReadContract(
-            status="ready",
-            title="Google Ads: udział w wyświetleniach",
-            summary=summary,
-            allowed_metrics=[
-                "search_impression_share",
-                "search_budget_lost_impression_share",
-                "search_rank_lost_impression_share",
-            ],
-            missing_read_contracts=missing_read_contracts,
-            blocked_claims=blocked_claims,
-            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-            evidence_ids=_unique(
-                [*(evidence_id for row in rows for evidence_id in row.evidence_ids)]
-                or _refresh_or_connector_evidence_ids(latest_refresh)
-            ),
-            impression_share_rows=rows,
-            next_step=(
-                "Użyj udziału w wyświetleniach jako kontekstu ograniczeń budżetu lub "
-                "rankingu. Nie skaluj budżetu ani nie claimuj wasted budget bez historii "
-                "zmian, celu biznesowego i preview apply."
-            ),
-        )
-    return AdsImpressionShareReadContract(
-        status="blocked",
-        title="Google Ads: brak udziału w wyświetleniach",
-        summary="WILQ nie ma jeszcze impression share metric facts z Google Ads.",
-        allowed_metrics=[],
-        missing_read_contracts=["impression_share", *missing_read_contracts],
-        blocked_claims=["impression share", *blocked_claims],
-        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
-        evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
-        impression_share_rows=[],
-        next_step=(
-            "Uruchom Google Ads vendor_read z metrics.search_*_impression_share. "
-            "Nie oceniaj utraconego udziału w wyświetleniach bez tych facts."
-        ),
-    )
-
-
-def _impression_share_rows(metric_facts: list[MetricFact]) -> list[AdsImpressionShareRow]:
-    grouped_facts: dict[tuple[str | None, str], list[MetricFact]] = {}
-    seen_metric_keys: set[tuple[str | None, str, str]] = set()
-    for fact in metric_facts:
-        if fact.name not in {
-            "search_impression_share",
-            "search_budget_lost_impression_share",
-            "search_rank_lost_impression_share",
-        }:
-            continue
-        campaign_id = fact.dimensions.get("campaign_id")
-        campaign_name = fact.dimensions.get("campaign_name")
-        if not campaign_id and not campaign_name:
-            continue
-        row_key = (campaign_id, campaign_name or f"campaign {campaign_id}")
-        metric_key = (campaign_id, row_key[1], fact.name)
-        if metric_key in seen_metric_keys:
-            continue
-        seen_metric_keys.add(metric_key)
-        grouped_facts.setdefault(row_key, []).append(fact)
-
-    rows = [
-        _impression_share_row(campaign_id, campaign_name, facts)
-        for (campaign_id, campaign_name), facts in grouped_facts.items()
-    ]
-    return sorted(rows, key=_impression_share_row_sort_key)
-
-
-def _impression_share_row(
-    campaign_id: str | None,
-    campaign_name: str,
-    facts: list[MetricFact],
-) -> AdsImpressionShareRow:
-    facts_by_name = {fact.name: fact for fact in facts}
-    first_dimensions = facts[0].dimensions if facts else {}
-    expected_metrics = [
-        "search_impression_share",
-        "search_budget_lost_impression_share",
-        "search_rank_lost_impression_share",
-    ]
-    return AdsImpressionShareRow(
-        campaign_id=campaign_id,
-        campaign_name=campaign_name,
-        campaign_status=first_dimensions.get("campaign_status"),
-        advertising_channel_type=first_dimensions.get("advertising_channel_type"),
-        search_impression_share=_float_metric_value(
-            facts_by_name.get("search_impression_share")
-        ),
-        search_budget_lost_impression_share=_float_metric_value(
-            facts_by_name.get("search_budget_lost_impression_share")
-        ),
-        search_rank_lost_impression_share=_float_metric_value(
-            facts_by_name.get("search_rank_lost_impression_share")
-        ),
-        evidence_ids=_unique(fact.evidence_id for fact in facts),
-        metric_facts=sorted(facts, key=lambda fact: fact.name),
-        missing_metrics=[name for name in expected_metrics if name not in facts_by_name],
-        blocked_claims=[
-            "budget scaling",
-            "budget apply",
-            "wasted budget",
-            "performance uplift",
-        ],
-    )
-
 
 def _impression_share_section(
     impression_share_read_contract: AdsImpressionShareReadContract,
@@ -2056,14 +1914,6 @@ def _impression_share_section(
         blocked_claims=impression_share_read_contract.blocked_claims,
         risk=ActionRisk.medium,
     )
-
-
-def _impression_share_row_sort_key(
-    row: AdsImpressionShareRow,
-) -> tuple[float, float, str]:
-    budget_lost = row.search_budget_lost_impression_share or 0
-    rank_lost = row.search_rank_lost_impression_share or 0
-    return (-budget_lost, -rank_lost, row.campaign_name)
 
 
 def _campaign_triage_read_contract(
