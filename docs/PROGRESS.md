@@ -37,6 +37,13 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard generic surface extraction, 2026-06-22 22:40 CEST.
+  `GenericSurface` and route-expert-domain mapping were extracted from
+  `App.tsx` into `GenericSurface.tsx`. This moves broad fallback/knowledge
+  registry queries out of the route monolith while preserving route behavior.
+  Current line-counts: `App.tsx=6524`, `GenericSurface.tsx=229`. Focused proof:
+  dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx` OK: 14/14.
 - Dashboard detail panels extraction, 2026-06-22 22:34 CEST.
   `ActionDetailSurface`, `EvidenceDetailSurface`, `OpportunityDetailSurface`
   and their detail renderers were extracted from `App.tsx` into
