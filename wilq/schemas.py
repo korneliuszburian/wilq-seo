@@ -2203,6 +2203,21 @@ class LocaloDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class LocaloOperatorSummary(BaseModel):
+    id: Literal["localo_operator_summary"] = "localo_operator_summary"
+    title: str
+    summary: str
+    next_step: str
+    top_decision_ids: list[str] = Field(default_factory=list)
+    access_status: Literal["access_ready", "access_blocked", "unknown"]
+    visibility_fact_count: int = 0
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class LocaloDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -2212,6 +2227,7 @@ class LocaloDiagnosticsResponse(BaseModel):
     access_probe: LocaloAccessProbe
     live_data_available: bool
     visibility_fact_count: int = 0
+    operator_summary: LocaloOperatorSummary
     decision_queue: list[LocaloDecisionItem] = Field(default_factory=list)
     sections: list[LocaloDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

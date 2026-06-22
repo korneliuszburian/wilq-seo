@@ -3703,13 +3703,14 @@ Commit rules:
    target-aware KPI triage is started, but remains review-only. Campaign
    ActionObjects are now partially started via
    `act_prepare_ads_campaign_review_queue`; do not treat that as budget
-   optimization or apply support. Ahrefs, Merchant, GA4 and content routes now have typed
+   optimization or apply support. Localo, Ahrefs, Merchant, GA4 and content
+   routes now have typed `/api/localo/diagnostics.operator_summary`,
    `/api/ahrefs/diagnostics.operator_summary`,
    `/api/merchant/diagnostics.operator_summary`,
    `/api/ga4/diagnostics.operator_summary` and
    `/api/content/diagnostics.operator_summary`, so do not move top-decision
-   ordering/counts/labels back into React; next Ahrefs/Merchant/GA4/content work
-   should add new API facts or contracts, not UI-side recomputation.
+   ordering/counts/labels back into React; next Localo/Ahrefs/Merchant/GA4/
+   content work should add new API facts or contracts, not UI-side recomputation.
 
 2. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a
@@ -3771,6 +3772,35 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-23 Localo operator summary view-model slice:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k localo_diagnostics_shows_access_ready_without_visibility_claims
+uv run ruff check wilq/schemas.py wilq/briefing/localo_diagnostics.py tests/test_api_contracts.py
+uv run mypy wilq/schemas.py wilq/briefing/localo_diagnostics.py
+pnpm --filter @wilq/shared-schemas typecheck
+pnpm --filter @wilq/dashboard typecheck
+pnpm --filter @wilq/dashboard test -- --run App.test.tsx -t "localo social and content routes render workflow-specific blockers or focus"
+pnpm --filter @wilq/dashboard lint
+uv run pytest tests/test_api_contracts.py -q -k localo_diagnostics
+scripts/local_stack.sh restart
+curl -sS http://127.0.0.1:8000/api/localo/diagnostics | jq '{operator_summary, decision_count:(.decision_queue|length), visibility_fact_count, blocker_count}'
+```
+
+Live proof:
+
+- `operator_summary.id=localo_operator_summary`;
+- `decision_count=2`;
+- `visibility_fact_count=17`;
+- `blocker_count=1`;
+- `access_status=access_ready`;
+- `action_ids=["act_review_localo_visibility_facts"]`;
+- blocked GBP/competitor/local-task claims now come from WILQ API summary, not
+  React-side sorting/text ownership.
+
+Full `scripts/verify.sh` intentionally not run for this narrow API/dashboard
+contract slice; run it at the next broader release gate.
 
 Passed after the 2026-06-23 Ahrefs operator summary view-model slice:
 

@@ -37,6 +37,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo operator summary contract, 2026-06-23 00:18 CEST.
+  `/api/localo/diagnostics` exposes typed `operator_summary` for the marketer
+  route: title/summary/next_step, top decision IDs, access status,
+  visibility fact count, missing read contracts, evidence IDs, ActionObject IDs
+  and blocked claims. `LocaloDiagnosticSurface` now renders this API view-model
+  instead of sorting Localo decisions and owning Localo operator summary text in
+  React. Live proof after `scripts/local_stack.sh restart`:
+  `/api/localo/diagnostics` returns
+  `operator_summary.id=localo_operator_summary`, `decision_count=2`,
+  `visibility_fact_count=17`, `blocker_count=1`, access ready,
+  `act_review_localo_visibility_facts`, and blocked GBP/competitor/local-task
+  claims. Focused proof: RED then GREEN
+  `uv run pytest tests/test_api_contracts.py -q -k localo_diagnostics_shows_access_ready_without_visibility_claims`,
+  `uv run pytest tests/test_api_contracts.py -q -k localo_diagnostics`, ruff
+  OK, mypy OK, shared schema typecheck OK, dashboard typecheck OK, dashboard
+  lint OK, and focused dashboard route test OK. Full `scripts/verify.sh`
+  intentionally not run for this narrow contract slice.
 - Ahrefs operator summary contract, 2026-06-23 00:12 CEST.
   `/api/ahrefs/diagnostics` exposes typed `operator_summary` for the marketer
   route: title/summary/next_step, top decision IDs, gap read status,

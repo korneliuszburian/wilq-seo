@@ -120,7 +120,11 @@ export function LocaloDiagnosticSurface() {
 }
 
 function LocaloOperatorSummary({ data }: { data: LocaloDiagnosticsResponse }) {
-  const decisions = [...data.decision_queue].sort(localoDecisionSortValue);
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const decisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is LocaloDecisionItem => Boolean(decision));
   return (
     <section className="rounded-md border border-line bg-white p-4">
       <div className="mb-4 flex items-start gap-3">
@@ -129,11 +133,10 @@ function LocaloOperatorSummary({ data }: { data: LocaloDiagnosticsResponse }) {
         </div>
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Co marketer ma wiedzieć o Localo
+            {summary.title}
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Ten widok nie jest listą connectorów. Pokazuje, czy Localo może już
-            wspierać decyzje lokalnego SEO, i co WILQ musi jeszcze zebrać.
+            {summary.summary}
           </p>
         </div>
       </div>
@@ -236,14 +239,6 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
       ) : null}
     </section>
   );
-}
-
-function localoDecisionSortValue(decision: LocaloDecisionItem) {
-  const statusRank: Record<LocaloDecisionItem["status"], number> = {
-    ready: 0,
-    blocked: 1
-  };
-  return statusRank[decision.status] * 1000 + decision.priority;
 }
 
 function localoDecisionStatusLabel(status: string) {

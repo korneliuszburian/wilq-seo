@@ -4493,6 +4493,36 @@ const localoDiagnostics = {
   },
   live_data_available: false,
   visibility_fact_count: 0,
+  operator_summary: {
+    id: "localo_operator_summary",
+    title: "Co marketer ma wiedzieć o Localo",
+    summary:
+      "Ten widok pokazuje, czy Localo może już wspierać decyzje lokalnego SEO. Dostęp MCP nie jest jeszcze dowodem rankingów, GBP, konkurencji ani recenzji, więc WILQ blokuje claimy bez typed visibility facts.",
+    next_step:
+      "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań SEO ani GBP, dopóki Localo read contract nie dostarczy visibility facts.",
+    top_decision_ids: [
+      "localo_access_ready_wait_for_visibility_facts",
+      "localo_block_visibility_claims_without_read_contract"
+    ],
+    access_status: "access_ready",
+    visibility_fact_count: 0,
+    missing_read_contracts: [
+      "local_rankings",
+      "gbp_visibility",
+      "competitor_visibility",
+      "reviews",
+      "local_tasks"
+    ],
+    source_connectors: ["localo"],
+    evidence_ids: ["ev_refresh_refresh_localo_access_ready_test"],
+    action_ids: [],
+    blocked_claims: [
+      "local ranking",
+      "GBP performance",
+      "competitor visibility",
+      "local visibility uplift"
+    ]
+  },
   decision_queue: [
     {
       id: "localo_access_ready_wait_for_visibility_facts",

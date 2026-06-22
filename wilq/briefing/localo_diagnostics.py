@@ -15,6 +15,7 @@ from wilq.schemas import (
     LocaloDecisionItem,
     LocaloDiagnosticSection,
     LocaloDiagnosticsResponse,
+    LocaloOperatorSummary,
     MetricFact,
 )
 from wilq.storage.metric_store import metric_store
@@ -103,6 +104,11 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
         access_probe=access_probe,
         live_data_available=live_data_available,
         visibility_fact_count=len(visibility_facts),
+        operator_summary=_operator_summary(
+            decision_queue,
+            access_probe,
+            len(visibility_facts),
+        ),
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
@@ -110,6 +116,54 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
         ),
         action_ids=action_ids,
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
+    )
+
+
+def _operator_summary(
+    decisions: list[LocaloDecisionItem],
+    access_probe: LocaloAccessProbe,
+    visibility_fact_count: int,
+) -> LocaloOperatorSummary:
+    top_decisions = decisions[:4]
+    return LocaloOperatorSummary(
+        title="Co marketer ma wiedzieć o Localo",
+        summary=(
+            "Ten widok pokazuje, czy Localo może już wspierać decyzje lokalnego SEO. "
+            "Dostęp MCP nie jest jeszcze dowodem rankingów, GBP, konkurencji ani "
+            "recenzji, więc WILQ blokuje claimy bez typed visibility facts."
+        ),
+        next_step=(
+            "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań "
+            "SEO ani GBP, dopóki Localo read contract nie dostarczy visibility facts."
+        ),
+        top_decision_ids=[decision.id for decision in top_decisions],
+        access_status=access_probe.status,
+        visibility_fact_count=visibility_fact_count,
+        missing_read_contracts=_unique(
+            contract
+            for decision in top_decisions
+            for contract in decision.missing_read_contracts
+        ),
+        source_connectors=_unique(
+            connector for decision in top_decisions for connector in decision.source_connectors
+        )
+        or [LOCALO_CONNECTOR_ID],
+        evidence_ids=_unique(
+            [
+                *(
+                    evidence_id
+                    for decision in top_decisions
+                    for evidence_id in decision.evidence_ids
+                ),
+                *access_probe.evidence_ids,
+            ]
+        ),
+        action_ids=_unique(
+            action_id for decision in top_decisions for action_id in decision.action_ids
+        ),
+        blocked_claims=_unique(
+            claim for decision in top_decisions for claim in decision.blocked_claims
+        ),
     )
 
 

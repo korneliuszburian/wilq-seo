@@ -3317,6 +3317,20 @@ def test_localo_diagnostics_shows_access_ready_without_visibility_claims(
     }
     assert "local visibility uplift" in block_decision["blocked_claims"]
     assert all(fact["name"] != "mcp_initialize_status" for fact in block_decision["metric_facts"])
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["id"] == "localo_operator_summary"
+    assert operator_summary["title"] == "Co marketer ma wiedzieć o Localo"
+    assert operator_summary["top_decision_ids"] == [
+        decision["id"] for decision in payload["decision_queue"][:4]
+    ]
+    assert operator_summary["access_status"] == "access_ready"
+    assert operator_summary["visibility_fact_count"] == 0
+    assert "local_rankings" in operator_summary["missing_read_contracts"]
+    assert "localo" in operator_summary["source_connectors"]
+    assert "ev_refresh_refresh_localo_access_ready_diag_test" in operator_summary["evidence_ids"]
+    assert "GBP performance" in operator_summary["blocked_claims"]
+    assert operator_summary["summary"]
+    assert operator_summary["next_step"]
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "localo-access-test" not in serialized
     assert "localo-token-test" not in serialized

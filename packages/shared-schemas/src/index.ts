@@ -1807,6 +1807,21 @@ export const LocaloDecisionItemSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const LocaloOperatorSummarySchema = z.object({
+  id: z.literal("localo_operator_summary"),
+  title: z.string(),
+  summary: z.string(),
+  next_step: z.string(),
+  top_decision_ids: z.array(z.string()),
+  access_status: z.enum(["access_ready", "access_blocked", "unknown"]),
+  visibility_fact_count: z.number(),
+  missing_read_contracts: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const LocaloDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1816,6 +1831,7 @@ export const LocaloDiagnosticsResponseSchema = z.object({
   access_probe: LocaloAccessProbeSchema,
   live_data_available: z.boolean(),
   visibility_fact_count: z.number(),
+  operator_summary: LocaloOperatorSummarySchema,
   decision_queue: z.array(LocaloDecisionItemSchema),
   sections: z.array(LocaloDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
