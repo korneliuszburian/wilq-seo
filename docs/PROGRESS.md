@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard workflows panel extraction, 2026-06-22 19:38 CEST.
+  Route-specific panele `WorkflowRunList` i `WorkflowRegistryList` zostały
+  przeniesione z `apps/dashboard/src/routes/App.tsx` do
+  `apps/dashboard/src/routes/WorkflowPanels.tsx`. `WorkflowsSurface` nadal
+  zostaje w `App.tsx`, więc routing i pobieranie danych są bez zmian; to mały
+  krok utrzymaniowy po granicy "workflow presentation panels". File-size proof:
+  `App.tsx=7824` linii, `WorkflowPanels.tsx=92`. Wąskie proofy: dashboard lint
+  OK, dashboard typecheck OK, dashboard unit tests 17/17 OK. Finalny proof:
+  `scripts/verify.sh` OK, including backend API contracts 154/154, dashboard
+  unit tests 17/17, Playwright 14/14 and dashboard production build.
 - Dashboard Command Center route test split, 2026-06-22 19:21 CEST.
   Pierwszy route-focused test został wyjęty z monolitycznego
   `apps/dashboard/src/routes/App.test.tsx` do

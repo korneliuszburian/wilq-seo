@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 19:21 CEST.
+Last updated: 2026-06-22 19:38 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -3307,6 +3307,13 @@ Initial target slices:
      Final proof: `scripts/verify.sh` OK, including backend API contracts
      154/154, dashboard unit tests 17/17, Playwright 14/14 and dashboard
      production build.
+   - 2026-06-22 workflow panel extraction completed:
+     `WorkflowRunList` and `WorkflowRegistryList` moved to
+     `apps/dashboard/src/routes/WorkflowPanels.tsx`; `WorkflowsSurface` keeps
+     the same routing/query behavior in `App.tsx`. Final proof:
+     `scripts/verify.sh` OK, including backend API contracts 154/154,
+     dashboard unit tests 17/17, Playwright 14/14 and dashboard production
+     build.
 2. Dashboard test split:
    - move route groups out of one huge `App.test.tsx` into route-focused test
      files,
