@@ -37,6 +37,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Merchant operator summary contract, 2026-06-23 00:05 CEST.
+  `/api/merchant/diagnostics` exposes typed `operator_summary` for the marketer
+  route: title/summary/next_step, top decision IDs, top issue cluster IDs, top
+  tactical item IDs, reported issue occurrences, issue types, evidence IDs,
+  ActionObject IDs and blocked claims. `MerchantDiagnosticSurface` now renders
+  this API view-model instead of recomputing top feed decisions, issue cluster
+  counts, issue types and blocked claims in React. Live proof after
+  `scripts/local_stack.sh restart`: `/api/merchant/diagnostics` returns
+  `operator_summary.id=merchant_operator_summary`, `decision_count=8`,
+  `issue_cluster_count=11`, `reported_issue_occurrences=1887`,
+  `action_ids=["act_review_merchant_feed_issues"]`, and live Merchant issue
+  types. Focused proof: RED then GREEN
+  `uv run pytest tests/test_api_contracts.py -q -k merchant_diagnostics_exposes_feed_issue_queue`,
+  `uv run pytest tests/test_api_contracts.py -q -k merchant_diagnostics`, ruff
+  OK, mypy OK, shared schema typecheck OK, dashboard typecheck OK, dashboard
+  lint OK, and focused dashboard route test OK. Full `scripts/verify.sh`
+  intentionally not run for this narrow contract slice.
 - Content operator summary contract, 2026-06-22 23:55 CEST.
   `/api/content/diagnostics` exposes typed `operator_summary` for the marketer
   route: title/summary/next_step, top decision IDs, confirmed/missing WordPress

@@ -143,32 +143,28 @@ function merchantRefreshStatusLabel(status: string) {
 }
 
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
-  const decisions = data.decision_queue;
-  const topDecisions = decisions
-    .slice()
-    .sort((left, right) => merchantDecisionSortValue(left) - merchantDecisionSortValue(right))
-    .slice(0, 4);
-  const issueItems = data.sections.flatMap((section) => section.tactical_items);
-  const topIssueClusters = data.issue_clusters.slice(0, 4);
-  const topIssueItems = issueItems
-    .slice()
-    .sort((left, right) => right.priority - left.priority)
-    .slice(0, 3);
-  const issueMetricFacts = data.sections
-    .flatMap((section) => section.metric_facts)
-    .filter((fact) => fact.name === "issue_product_count");
-  const reportedIssueOccurrences = data.issue_clusters.length
-    ? data.issue_clusters.reduce((sum, cluster) => sum + cluster.product_count, 0)
-    : issueMetricFacts.reduce((sum, fact) => {
-        return sum + (typeof fact.value === "number" ? fact.value : 0);
-      }, 0);
-  const issueTypes = Array.from(
-    new Set([
-      ...data.issue_clusters.map((cluster) => cluster.issue_type),
-      ...issueItems.map((item) => item.dimensions.issue_type).filter(Boolean)
-    ])
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const clustersById = new Map(data.issue_clusters.map((cluster) => [cluster.id, cluster]));
+  const itemsById = new Map(
+    data.sections.flatMap((section) => section.tactical_items).map((item) => [item.id, item])
   );
-  const actionIds = data.action_ids.length ? data.action_ids : ["act_review_merchant_feed_issues"];
+  const topDecisions = summary.top_decision_ids
+    .map((decisionId) => decisionsById.get(decisionId))
+    .filter((decision): decision is MerchantDecisionItem => Boolean(decision));
+  const topIssueClusters = summary.top_issue_cluster_ids
+    .map((clusterId) => clustersById.get(clusterId))
+    .filter((cluster): cluster is MerchantDiagnosticsResponse["issue_clusters"][number] =>
+      Boolean(cluster)
+    );
+  const topIssueItems = summary.top_tactical_item_ids
+    .map((itemId) => itemsById.get(itemId))
+    .filter((item): item is MerchantDiagnosticsResponse["sections"][number]["tactical_items"][number] =>
+      Boolean(item)
+    );
+  const actionIds = summary.action_ids.length
+    ? summary.action_ids
+    : ["act_review_merchant_feed_issues"];
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -178,18 +174,16 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
             Operator Merchant
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">
-            Co marketer ma zrobić teraz z feedem
+            {summary.title}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka
-            przeglądu: można przygotować decyzje i podgląd payloadu, ale nie wolno
-            obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu.
+            {summary.summary}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Produkty" value={data.product_count ?? 0} />
-          <MetricTile label="Decyzje" value={decisions.length} />
-          <MetricTile label="Zgłoszenia" value={reportedIssueOccurrences} />
+          <MetricTile label="Decyzje" value={data.decision_queue.length} />
+          <MetricTile label="Zgłoszenia" value={summary.reported_issue_occurrences} />
         </div>
       </div>
 
@@ -291,12 +285,12 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
         <div className="rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb pracy</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <TraceLine label="Typy problemów" values={issueTypes} empty="brak" />
-            <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
+            <TraceLine label="Typy problemów" values={summary.issue_types} empty="brak" />
+            <LinkedTraceLine label="Dowody" values={summary.evidence_ids.slice(0, 6)} kind="evidence" />
             <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={merchantBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+              values={merchantBlockedClaimLabels(summary.blocked_claims)}
             />
           </div>
           <a
@@ -376,15 +370,6 @@ function merchantDecisionTypeLabel(decisionType: MerchantDecisionItem["decision_
   if (decisionType === "review_issue_cluster") return "przegląd problemu feedu";
   if (decisionType === "review_feed_status") return "przegląd statusu feedu";
   return "blocker odczytu Merchant";
-}
-
-function merchantDecisionSortValue(decision: MerchantDecisionItem) {
-  const statusRank: Record<MerchantDecisionItem["status"], number> = {
-    ready: 0,
-    blocked: 1,
-    missing: 2
-  };
-  return statusRank[decision.status] * 1000 + decision.priority;
 }
 
 function merchantReportingContextLabel(value: string | null | undefined) {

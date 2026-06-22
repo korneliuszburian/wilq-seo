@@ -3919,6 +3919,30 @@ const merchantDiagnostics = {
   live_data_available: true,
   product_count: 10900,
   issue_count: 23,
+  operator_summary: {
+    id: "merchant_operator_summary",
+    title: "Co marketer ma zrobić teraz z feedem",
+    summary:
+      "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka przeglądu: można przygotować decyzje i podgląd payloadu, ale nie wolno obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu.",
+    next_step:
+      "Przejdź przez top decyzje lub klastry problemów, przygotuj review ActionObject i nie wykonuj zmian feedu bez walidacji oraz zgody operatora.",
+    top_decision_ids: [
+      "merchant_decision_merchant_issue_pl_not_impacted_availability_updated_n_availability"
+    ],
+    top_issue_cluster_ids: ["merchant_issue_pl_not_impacted_availability_updated_n_availability"],
+    top_tactical_item_ids: ["tq_merchant_issue"],
+    reported_issue_occurrences: 23,
+    issue_types: ["availability_updated"],
+    source_connectors: ["google_merchant_center"],
+    evidence_ids: ["ev_refresh_merchant_feed"],
+    action_ids: ["act_review_merchant_feed_issues"],
+    blocked_claims: [
+      "approval restored",
+      "revenue recovered",
+      "automatic feed edit",
+      "primary feed overwrite"
+    ]
+  },
   issue_clusters: [
     {
       id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",

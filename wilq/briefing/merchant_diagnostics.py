@@ -17,6 +17,7 @@ from wilq.schemas import (
     MerchantDiagnosticSection,
     MerchantDiagnosticsResponse,
     MerchantIssueCluster,
+    MerchantOperatorSummary,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -121,6 +122,12 @@ def build_merchant_diagnostics(
             trusted_facts,
             latest_refresh,
             "item_level_issue_count",
+        ),
+        operator_summary=_operator_summary(
+            decision_queue,
+            issue_clusters,
+            sections,
+            action_ids,
         ),
         issue_clusters=issue_clusters,
         decision_queue=decision_queue,
@@ -376,6 +383,82 @@ def _merchant_issue_clusters(
             _merchant_severity_rank(cluster.severity),
             -cluster.product_count,
             cluster.issue_type,
+        ),
+    )
+
+
+def _operator_summary(
+    decisions: list[MerchantDecisionItem],
+    issue_clusters: list[MerchantIssueCluster],
+    sections: list[MerchantDiagnosticSection],
+    action_ids: list[str],
+) -> MerchantOperatorSummary:
+    issue_items = [item for section in sections for item in section.tactical_items]
+    issue_metric_facts = [
+        fact
+        for section in sections
+        for fact in section.metric_facts
+        if fact.name == "issue_product_count"
+    ]
+    reported_issue_occurrences = (
+        sum(cluster.product_count for cluster in issue_clusters)
+        if issue_clusters
+        else sum(
+            int(fact.value)
+            for fact in issue_metric_facts
+            if isinstance(fact.value, int | float)
+        )
+    )
+    top_issue_items = sorted(
+        issue_items,
+        key=lambda item: (-item.priority, item.id),
+    )[:3]
+    return MerchantOperatorSummary(
+        title="Co marketer ma zrobić teraz z feedem",
+        summary=(
+            "WILQ grupuje problemy Merchant po typie i atrybucie. To jest kolejka "
+            "przeglądu: można przygotować decyzje i podgląd payloadu, ale nie wolno "
+            "obiecać ponownego zatwierdzenia produktu ani automatycznie nadpisać feedu."
+        ),
+        next_step=(
+            "Przejdź przez top decyzje lub klastry problemów, przygotuj review "
+            "ActionObject i nie wykonuj zmian feedu bez walidacji oraz zgody operatora."
+        ),
+        top_decision_ids=[decision.id for decision in decisions[:4]],
+        top_issue_cluster_ids=[cluster.id for cluster in issue_clusters[:4]],
+        top_tactical_item_ids=[item.id for item in top_issue_items],
+        reported_issue_occurrences=reported_issue_occurrences,
+        issue_types=_unique(
+            [
+                *(cluster.issue_type for cluster in issue_clusters),
+                *(
+                    item.dimensions.get("issue_type")
+                    for item in issue_items
+                    if item.dimensions.get("issue_type")
+                ),
+            ]
+        ),
+        source_connectors=_unique(
+            connector for decision in decisions[:4] for connector in decision.source_connectors
+        )
+        or [MERCHANT_CONNECTOR_ID],
+        evidence_ids=_unique(
+            [
+                *(
+                    evidence_id
+                    for decision in decisions[:4]
+                    for evidence_id in decision.evidence_ids
+                ),
+                *(
+                    evidence_id
+                    for cluster in issue_clusters[:4]
+                    for evidence_id in cluster.evidence_ids
+                ),
+            ]
+        ),
+        action_ids=action_ids,
+        blocked_claims=_unique(
+            claim for section in sections for claim in section.blocked_claims
         ),
     )
 

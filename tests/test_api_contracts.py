@@ -8201,6 +8201,25 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "wystąpień problemu" in cluster["sample_unavailable_reason"]
     assert "approval restored" in cluster["blocked_claims"]
     assert payload["decision_queue"]
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["id"] == "merchant_operator_summary"
+    assert operator_summary["title"] == "Co marketer ma zrobić teraz z feedem"
+    assert operator_summary["top_decision_ids"] == [
+        decision["id"] for decision in payload["decision_queue"][:4]
+    ]
+    assert operator_summary["top_issue_cluster_ids"] == [
+        cluster["id"] for cluster in payload["issue_clusters"][:4]
+    ]
+    assert operator_summary["reported_issue_occurrences"] == sum(
+        cluster["product_count"] for cluster in payload["issue_clusters"]
+    )
+    assert "availability_updated" in operator_summary["issue_types"]
+    assert operator_summary["source_connectors"] == ["google_merchant_center"]
+    assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
+    assert "act_review_merchant_feed_issues" in operator_summary["action_ids"]
+    assert "approval restored" in operator_summary["blocked_claims"]
+    assert operator_summary["summary"]
+    assert operator_summary["next_step"]
     decision = payload["decision_queue"][0]
     assert decision["decision_type"] == "review_issue_cluster"
     assert decision["status"] == "ready"
@@ -8230,6 +8249,9 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "problemów feedu" in issue_section["summary"]
     assert "wystąpieniami problemu" in issue_section["summary"]
     assert issue_section["tactical_items"]
+    assert operator_summary["top_tactical_item_ids"] == [
+        item["id"] for item in issue_section["tactical_items"][:3]
+    ]
     assert any(
         item["dimensions"].get("issue_type") == "availability_updated"
         for item in issue_section["tactical_items"]

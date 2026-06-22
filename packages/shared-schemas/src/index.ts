@@ -1517,6 +1517,22 @@ export const MerchantDecisionItemSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const MerchantOperatorSummarySchema = z.object({
+  id: z.literal("merchant_operator_summary"),
+  title: z.string(),
+  summary: z.string(),
+  next_step: z.string(),
+  top_decision_ids: z.array(z.string()),
+  top_issue_cluster_ids: z.array(z.string()),
+  top_tactical_item_ids: z.array(z.string()),
+  reported_issue_occurrences: z.number(),
+  issue_types: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
 export const MerchantDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1526,6 +1542,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   product_count: z.number().nullable().optional(),
   issue_count: z.number().nullable().optional(),
+  operator_summary: MerchantOperatorSummarySchema,
   issue_clusters: z.array(MerchantIssueClusterSchema),
   decision_queue: z.array(MerchantDecisionItemSchema),
   sections: z.array(MerchantDiagnosticSectionSchema),

@@ -1895,6 +1895,22 @@ class MerchantDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class MerchantOperatorSummary(BaseModel):
+    id: Literal["merchant_operator_summary"] = "merchant_operator_summary"
+    title: str
+    summary: str
+    next_step: str
+    top_decision_ids: list[str] = Field(default_factory=list)
+    top_issue_cluster_ids: list[str] = Field(default_factory=list)
+    top_tactical_item_ids: list[str] = Field(default_factory=list)
+    reported_issue_occurrences: int = 0
+    issue_types: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class MerchantDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -1904,6 +1920,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     live_data_available: bool
     product_count: int | None = None
     issue_count: int | None = None
+    operator_summary: MerchantOperatorSummary
     issue_clusters: list[MerchantIssueCluster] = Field(default_factory=list)
     decision_queue: list[MerchantDecisionItem] = Field(default_factory=list)
     sections: list[MerchantDiagnosticSection] = Field(default_factory=list)
