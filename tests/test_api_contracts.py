@@ -2484,6 +2484,26 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert sections["ga4_tracking_readiness"]["status"] == "missing"
     assert "conversion drop" in sections["ga4_tracking_readiness"]["blocked_claims"]
     assert sections["ga4_action_safety"]["status"] == "ready"
+    readiness_contract = payload["conversion_readiness_contract"]
+    assert readiness_contract["id"] == "ga4_conversion_readiness_contract"
+    assert readiness_contract["status"] == "blocked"
+    assert readiness_contract["conversion_like_metric_count"] == 0
+    assert readiness_contract["dimensioned_behavior_metric_count"] >= 1
+    assert readiness_contract["landing_group_count"] >= 1
+    assert readiness_contract["missing_read_contracts"] == [
+        "conversion_or_key_event_mapping"
+    ]
+    assert {
+        "conversions",
+        "key_events",
+        "purchase_revenue",
+        "total_revenue",
+        "transactions",
+    }.issubset(set(readiness_contract["allowed_metrics"]))
+    assert "conversion rate" in readiness_contract["blocked_claims"]
+    assert "act_review_ga4_tracking_quality" in readiness_contract["action_ids"]
+    assert readiness_contract["evidence_ids"]
+    assert payload["blocker_count"] >= 1
 
     action_response = client.get("/api/actions/act_review_ga4_tracking_quality")
     assert action_response.status_code == 200
@@ -2510,6 +2530,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     context_ga4 = context_payload["ga4_diagnostics"]
     assert context_ga4["evidence_ids"] == payload["evidence_ids"]
     assert context_ga4["action_ids"] == payload["action_ids"]
+    assert context_ga4["conversion_readiness_contract"] == readiness_contract
     assert ga4_decision_trace(context_ga4["decision_queue"]) == ga4_decision_trace(
         payload["decision_queue"]
     )

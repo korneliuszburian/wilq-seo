@@ -3692,6 +3692,26 @@ const ga4Diagnostics = {
   landing_group_count: 1,
   low_engagement_count: 1,
   wordpress_match_count: 0,
+  conversion_readiness_contract: {
+    id: "ga4_conversion_readiness_contract",
+    status: "blocked",
+    title: "GA4: kontrakt konwersji i key events",
+    summary:
+      "WILQ może oceniać jakość ruchu z GA4, ale claimy o konwersjach, ROAS, revenue i profitability wymagają osobnych metryk konwersji albo key events.",
+    allowed_metrics: ["conversions", "key_events", "purchase_revenue", "total_revenue", "transactions"],
+    available_read_contracts: [],
+    missing_read_contracts: ["conversion_or_key_event_mapping"],
+    conversion_like_metric_count: 0,
+    dimensioned_behavior_metric_count: 1,
+    landing_group_count: 1,
+    source_connectors: ["google_analytics_4"],
+    evidence_ids: ["ev_refresh_ga4"],
+    action_ids: ["act_review_ga4_tracking_quality"],
+    blocked_claims: ["conversion rate", "ROAS", "revenue", "profitability"],
+    next_step:
+      "Waliduj `act_review_ga4_tracking_quality` i sprawdź mapowanie konwersji/key events przed wnioskami o opłacalności.",
+    risk: "medium"
+  },
   decision_queue: [
     {
       id: "ga4_decision_tq_ga4_landing",
@@ -3752,7 +3772,7 @@ const ga4Diagnostics = {
   ],
   evidence_ids: ["ev_refresh_ga4"],
   action_ids: ["act_review_ga4_tracking_quality"],
-  blocker_count: 0
+  blocker_count: 1
 };
 
 const localoDiagnostics = {
@@ -5340,6 +5360,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
     expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();
+    expect(screen.getByText(/Konwersje \/ key events/)).toBeInTheDocument();
+    expect(screen.getByText(/blokuje wnioski o konwersjach/)).toBeInTheDocument();
+    expect(screen.getByText(/mapowanie konwersji \/ key events/)).toBeInTheDocument();
     expect(screen.getByText("Sprawdź mapowanie landing page: /oferta/")).toBeInTheDocument();
     expect(screen.getByText("aktywni")).toBeInTheDocument();
     expect(screen.getByText("sesje")).toBeInTheDocument();

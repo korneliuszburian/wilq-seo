@@ -14,6 +14,7 @@ from wilq.schemas import (
     ActionRisk,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
+    Ga4ConversionReadinessContract,
     Ga4DecisionItem,
     Ga4DiagnosticSection,
     Ga4DiagnosticsResponse,
@@ -25,6 +26,22 @@ from wilq.storage.metric_store import metric_store
 
 GA4_CONNECTOR_ID = "google_analytics_4"
 GA4_METRIC_FACT_LIMIT = 2000
+GA4_CONVERSION_METRIC_NAMES = {
+    "conversions",
+    "key_events",
+    "purchase_revenue",
+    "total_revenue",
+    "transactions",
+}
+GA4_CONVERSION_BLOCKED_CLAIMS = [
+    "conversion rate",
+    "ROAS",
+    "revenue",
+    "profitability",
+    "conversion drop",
+    "funnel diagnosis",
+    "attribution verdict",
+]
 Ga4DecisionType = Literal[
     "fix_measurement",
     "review_traffic_quality",
@@ -67,6 +84,12 @@ def build_ga4_diagnostics(
     action_ids = _ga4_action_ids(actions)
     dimensioned_facts = _dimensioned_ga4_facts(trusted_facts)
     decision_queue = _ga4_decision_queue(tactical_items, action_ids, dimensioned_facts)
+    conversion_readiness_contract = _conversion_readiness_contract(
+        latest_refresh=latest_refresh,
+        facts=trusted_facts,
+        tactical_items=tactical_items,
+        action_ids=action_ids,
+    )
     sections = [
         _landing_behavior_section(latest_refresh, trusted_facts, tactical_items, action_ids),
         _tracking_readiness_section(latest_refresh, trusted_facts, tactical_items, action_ids),
@@ -83,13 +106,24 @@ def build_ga4_diagnostics(
         ),
         low_engagement_count=_low_engagement_count(tactical_items),
         wordpress_match_count=_wordpress_match_count(tactical_items),
+        conversion_readiness_contract=conversion_readiness_contract,
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
-            evidence_id for section in sections for evidence_id in section.evidence_ids
+            [
+                *(
+                    evidence_id
+                    for section in sections
+                    for evidence_id in section.evidence_ids
+                ),
+                *conversion_readiness_contract.evidence_ids,
+            ]
         ),
         action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
-        blocker_count=sum(1 for section in sections if section.status == "blocked"),
+        blocker_count=(
+            sum(1 for section in sections if section.status == "blocked")
+            + (1 if conversion_readiness_contract.status == "blocked" else 0)
+        ),
     )
 
 
@@ -192,10 +226,7 @@ def _tracking_readiness_section(
     action_ids: list[str],
 ) -> Ga4DiagnosticSection:
     conversion_like_facts = [
-        fact
-        for fact in facts
-        if fact.name
-        in {"conversions", "key_events", "purchase_revenue", "total_revenue", "transactions"}
+        fact for fact in facts if fact.name in GA4_CONVERSION_METRIC_NAMES
     ]
     dimensioned_facts = _dimensioned_ga4_facts(facts)
     tactical_group_count = _tactical_landing_group_count(tactical_items)
@@ -236,7 +267,64 @@ def _tracking_readiness_section(
         metric_facts=[*dimensioned_facts[:8], *conversion_like_facts[:4]],
         tactical_items=tactical_items[:4],
         action_ids=action_ids,
-        blocked_claims=["conversion drop", "funnel diagnosis", "attribution verdict"],
+        blocked_claims=[
+            "conversion drop",
+            "funnel diagnosis",
+            "attribution verdict",
+        ],
+        risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
+    )
+
+
+def _conversion_readiness_contract(
+    latest_refresh: ConnectorRefreshRun | None,
+    facts: list[MetricFact],
+    tactical_items: list[TacticalQueueItem],
+    action_ids: list[str],
+) -> Ga4ConversionReadinessContract:
+    conversion_like_facts = [
+        fact for fact in facts if fact.name in GA4_CONVERSION_METRIC_NAMES
+    ]
+    dimensioned_facts = _dimensioned_ga4_facts(facts)
+    landing_group_count = max(
+        _landing_group_count(dimensioned_facts),
+        _tactical_landing_group_count(tactical_items),
+    )
+    status: Literal["ready", "blocked"] = "ready" if conversion_like_facts else "blocked"
+    evidence_ids = _unique(
+        [
+            *(fact.evidence_id for fact in conversion_like_facts),
+            *(fact.evidence_id for fact in dimensioned_facts[:12]),
+            *(evidence_id for item in tactical_items for evidence_id in item.evidence_ids),
+            *_refresh_or_connector_evidence_ids(latest_refresh),
+        ]
+    )
+    return Ga4ConversionReadinessContract(
+        status=status,
+        title="GA4: kontrakt konwersji i key events",
+        summary=(
+            "WILQ może oceniać jakość ruchu z GA4, ale claimy o konwersjach, "
+            "ROAS, revenue i profitability wymagają osobnych metryk konwersji "
+            "albo key events."
+        ),
+        allowed_metrics=sorted(GA4_CONVERSION_METRIC_NAMES),
+        available_read_contracts=(
+            ["conversion_or_key_event_metric_facts"] if conversion_like_facts else []
+        ),
+        missing_read_contracts=(
+            [] if conversion_like_facts else ["conversion_or_key_event_mapping"]
+        ),
+        conversion_like_metric_count=len(conversion_like_facts),
+        dimensioned_behavior_metric_count=len(dimensioned_facts),
+        landing_group_count=landing_group_count,
+        source_connectors=[GA4_CONNECTOR_ID],
+        evidence_ids=evidence_ids,
+        action_ids=action_ids,
+        blocked_claims=[] if conversion_like_facts else GA4_CONVERSION_BLOCKED_CLAIMS,
+        next_step=(
+            "Waliduj `act_review_ga4_tracking_quality` i sprawdź mapowanie "
+            "konwersji/key events przed wnioskami o opłacalności."
+        ),
         risk=ActionRisk.low if conversion_like_facts else ActionRisk.medium,
     )
 

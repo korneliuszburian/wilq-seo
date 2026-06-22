@@ -37,6 +37,25 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- GA4 conversion/key-event readiness contract, 2026-06-22 04:01 CEST.
+  `/api/ga4/diagnostics` ma teraz typed
+  `conversion_readiness_contract`, który rozdziela gotowość review jakości
+  ruchu od gotowości do claimów o konwersjach, ROAS, revenue i profitability.
+  RED/GREEN proof:
+  `tests/test_api_contracts.py::test_ga4_diagnostics_exposes_landing_quality_contract`
+  najpierw failował na braku `conversion_readiness_contract`, potem przeszedł
+  po dodaniu kontraktu. Live proof po `scripts/local_stack.sh restart`:
+  `live_data_available=true`, `landing_group_count=10`, `blocker_count=1`,
+  `conversion_readiness_contract.status=blocked`,
+  `missing_read_contracts=[conversion_or_key_event_mapping]`,
+  `conversion_like_metric_count=0`, `dimensioned_behavior_metric_count=50` i
+  ActionObject `act_review_ga4_tracking_quality`. `POST /api/codex/context-pack`
+  dla `wilq-ga4-analyst` zwraca ten sam kontrakt, a smoke
+  `.agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py` passed.
+  Dashboard `/ga4` pokazuje polski blocker `mapowanie konwersji / key events`
+  w panelu bezpiecznej analityki. Final proof: `scripts/verify.sh` green, w
+  tym 150 backend tests, 17 dashboard unit tests, Skill API smoke,
+  14 Playwright e2e tests i dashboard production build.
 - Ads n-gram review missing-contract precision, 2026-06-22 03:38 CEST.
   N-gramy search terms mają teraz własny blocker
   `ngram_to_negative_keyword_payload_preview`, zamiast mylącego generycznego

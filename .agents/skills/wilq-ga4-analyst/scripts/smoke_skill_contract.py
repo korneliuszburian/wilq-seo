@@ -70,6 +70,25 @@ def main() -> int:
         raise SystemExit("Context-pack ga4_diagnostics evidence IDs differ from route")
     if context_ga4.get("action_ids") != ga4_diagnostics.get("action_ids"):
         raise SystemExit("Context-pack ga4_diagnostics action IDs differ from route")
+    readiness_contract = ga4_diagnostics.get("conversion_readiness_contract") or {}
+    if readiness_contract.get("id") != "ga4_conversion_readiness_contract":
+        raise SystemExit("GA4 diagnostics missing conversion readiness contract")
+    if context_ga4.get("conversion_readiness_contract") != readiness_contract:
+        raise SystemExit("Context-pack GA4 conversion readiness contract differs from route")
+    if readiness_contract.get("status") == "blocked":
+        missing_read_contracts = set(readiness_contract.get("missing_read_contracts", []))
+        if "conversion_or_key_event_mapping" not in missing_read_contracts:
+            raise SystemExit(
+                "Blocked GA4 conversion readiness must expose conversion/key-event mapping gap"
+            )
+        blocked_claims = set(readiness_contract.get("blocked_claims", []))
+        required_blocked_claims = {"conversion rate", "ROAS", "revenue", "profitability"}
+        missing_claims = sorted(required_blocked_claims - blocked_claims)
+        if missing_claims:
+            raise SystemExit(
+                "Blocked GA4 conversion readiness lacks blocked claims: "
+                + ", ".join(missing_claims)
+            )
     if _decision_trace(context_ga4.get("decision_queue", [])) != _decision_trace(
         ga4_diagnostics.get("decision_queue", [])
     ):
@@ -184,6 +203,16 @@ def main() -> int:
                     "low_engagement_count": ga4_diagnostics.get("low_engagement_count"),
                     "wordpress_match_count": ga4_diagnostics.get("wordpress_match_count"),
                     "blocker_count": ga4_diagnostics.get("blocker_count"),
+                    "conversion_readiness_contract": {
+                        "status": readiness_contract.get("status"),
+                        "missing_read_contracts": readiness_contract.get(
+                            "missing_read_contracts",
+                            [],
+                        ),
+                        "conversion_like_metric_count": readiness_contract.get(
+                            "conversion_like_metric_count",
+                        ),
+                    },
                     "decision_count": len(decision_queue),
                     "decision_ids": [
                         decision.get("id") for decision in decision_queue if decision.get("id")

@@ -4093,6 +4093,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
   const wordpressMissingCount = decisions.filter(
     (decision) => decision.wordpress_match === "missing"
   ).length;
+  const conversionReadiness = data.conversion_readiness_contract;
   const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");
   const actionIds = data.action_ids.length ? data.action_ids : ["act_review_ga4_tracking_quality"];
 
@@ -4142,11 +4143,26 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
               }
               empty="brak"
             />
+            <TraceLine
+              label="Konwersje / key events"
+              values={[
+                ga4ConversionReadinessStatusLabel(conversionReadiness.status),
+                conversionReadiness.summary
+              ]}
+            />
+            <TraceLine
+              label="Braki kontraktu"
+              values={conversionReadiness.missing_read_contracts.map(ga4ReadContractLabel)}
+              empty="brak"
+            />
             <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
             <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
             <TraceLine
               label="Nie wolno twierdzić"
-              values={ga4BlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
+              values={ga4BlockedClaimLabels([
+                ...data.sections.flatMap((section) => section.blocked_claims),
+                ...conversionReadiness.blocked_claims
+              ])}
             />
           </div>
           <a
@@ -4380,6 +4396,20 @@ function ga4SectionStatusLabel(status: string) {
   if (status === "blocked") return "zablokowane";
   if (status === "missing") return "brak metryk konwersji";
   return status;
+}
+
+function ga4ConversionReadinessStatusLabel(status: string) {
+  if (status === "ready") return "gotowe";
+  if (status === "blocked") return "blokuje wnioski o konwersjach";
+  return status;
+}
+
+function ga4ReadContractLabel(value: string) {
+  const labels: Record<string, string> = {
+    conversion_or_key_event_mapping: "mapowanie konwersji / key events",
+    conversion_or_key_event_metric_facts: "metryki konwersji / key events"
+  };
+  return labels[value] ?? value;
 }
 
 function ga4TrackingDimensionLabel(value: string) {

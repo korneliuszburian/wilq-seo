@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 03:38 CEST.
+Last updated: 2026-06-22 04:01 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -122,6 +122,16 @@ Ekologus evidence has no Demand Gen/Discovery campaign rows, so
 blocker; it is an evidence/no-candidate blocker. Demand Gen launch, migration,
 creative-quality verdicts, campaign apply and performance uplift claims remain
 blocked.
+GA4 now has a typed `ga4_conversion_readiness_contract` that keeps behavior
+review separate from conversion/profitability claims. Current live Ekologus GA4
+evidence has landing/source/campaign behavior rows, but no conversion-like
+metrics, so `/api/ga4/diagnostics` correctly reports
+`conversion_readiness_contract.status=blocked`,
+`missing_read_contracts=[conversion_or_key_event_mapping]` and
+`blocker_count=1` while still allowing review-only
+`act_review_ga4_tracking_quality`. The dashboard and `wilq-ga4-analyst`
+context-pack must show this same blocker instead of implying GA4 is fully ready
+for ROAS, revenue, profitability, conversion-drop or attribution verdicts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
 
 Latest Ads Doctor ActionObject scope compaction proof, 2026-06-22 01:40 CEST:
