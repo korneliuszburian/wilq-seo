@@ -6443,7 +6443,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert ngram_contract["missing_read_contracts"] == [
         "human_intent_review",
-        "negative_keyword_payload_preview",
+        "ngram_to_negative_keyword_payload_preview",
+    ]
+    assert "negative_keyword_payload_preview" not in ngram_contract[
+        "missing_read_contracts"
     ]
     assert ngram_contract["operator_review_gates"] == [
         "human_intent_review",
@@ -6482,7 +6485,12 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "top koszt" in ngram_decision["metric_tiles"]
     assert ngram_decision["search_term_ngram_rows"]
     assert ngram_decision["action_ids"] == [SEARCH_TERM_NGRAM_ACTION_ID]
-    assert "negative_keyword_payload_preview" in ngram_decision["missing_read_contracts"]
+    assert "ngram_to_negative_keyword_payload_preview" in ngram_decision[
+        "missing_read_contracts"
+    ]
+    assert "negative_keyword_payload_preview" not in ngram_decision[
+        "missing_read_contracts"
+    ]
     assert "card_google_ads_search_playbook" in ngram_decision["knowledge_card_ids"]
     search_term_safety_contract = payload["search_term_safety_read_contract"]
     assert search_term_safety_contract["status"] == "ready"

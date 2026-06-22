@@ -29,6 +29,20 @@ Audit `docs/audits/001-output.md` is now folded into
    actions there. Move older detail to `docs/progress/archive/`; the first full
    archive is `docs/progress/archive/2026-06-19-progress-ledger.md`.
 
+0. Ads n-gram review missing-contract precision, 2026-06-22 03:38 CEST:
+   search-term n-gram review uses
+   `ngram_to_negative_keyword_payload_preview`, not the generic
+   `negative_keyword_payload_preview` used by the normal negative keyword
+   review queue. This keeps `/api/ads/diagnostics`, dashboard wording and
+   `wilq-ads-doctor` context aligned: n-grams are a review-only theme grouping
+   and do not imply negative-keyword payload preview/apply readiness. Live proof
+   after `scripts/local_stack.sh restart`: n-gram contract and decision both
+   show missing `[human_intent_review, ngram_to_negative_keyword_payload_preview]`,
+   while `negative_keywords_read_contract.missing_read_contracts=[]`. Full
+   `scripts/verify.sh` passed after this slice: backend `150 passed`,
+   dashboard unit `17 passed`, Playwright e2e `14 passed`, skill/API smokes
+   and dashboard production build.
+
 0. Ads Doctor ActionObject scope compaction, 2026-06-22 01:40 CEST:
    `wilq-ads-doctor` has an explicit ActionObject allowlist and no longer
    inherits every `google_ads` action. `act_review_demand_gen_readiness` stays

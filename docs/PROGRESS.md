@@ -37,6 +37,24 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads n-gram review missing-contract precision, 2026-06-22 03:38 CEST.
+  N-gramy search terms mają teraz własny blocker
+  `ngram_to_negative_keyword_payload_preview`, zamiast mylącego generycznego
+  `negative_keyword_payload_preview`. To utrzymuje rozdział między review
+  powtarzających się tematów zapytań a właściwą kolejką negative keywords.
+  RED/GREEN proof:
+  `tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts`
+  najpierw failował na starym `negative_keyword_payload_preview`, potem
+  przeszedł po zmianie API contract. Live proof po `scripts/local_stack.sh
+  restart`: `/api/ads/diagnostics.search_term_ngram_read_contract` i decyzja
+  `ads_review_search_term_ngrams` pokazują missing contracts
+  `[human_intent_review, ngram_to_negative_keyword_payload_preview]`, a
+  `negative_keywords_read_contract.missing_read_contracts=[]`. Dashboard ma
+  polską etykietę `podgląd payloadu wykluczeń z n-gramów`, a smoke
+  `wilq-ads-doctor` failuje, jeśli n-gram contract wróci do generycznego
+  negative-keyword preview. Final proof: `scripts/verify.sh` green, w tym
+  150 backend tests, 17 dashboard unit tests, Skill API smoke,
+  14 Playwright e2e tests i dashboard production build.
 - Ads Doctor ActionObject scope compaction, 2026-06-22 01:40 CEST.
   `wilq-ads-doctor` ma teraz explicit ActionObject allowlist zamiast brać
   każdy `google_ads` ActionObject. Demand Gen readiness zostaje w

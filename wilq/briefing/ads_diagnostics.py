@@ -3118,7 +3118,7 @@ def _search_term_ngram_read_contract(
             ],
             missing_read_contracts=[
                 "human_intent_review",
-                "negative_keyword_payload_preview",
+                "ngram_to_negative_keyword_payload_preview",
             ],
             operator_review_gates=[
                 "human_intent_review",

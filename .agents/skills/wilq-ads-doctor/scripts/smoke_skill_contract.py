@@ -103,6 +103,9 @@ def main() -> int:
         ads_diagnostics.get("change_history_read_contract") or {}
     )
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
+    search_term_ngram_read_contract = (
+        ads_diagnostics.get("search_term_ngram_read_contract") or {}
+    )
     search_term_safety_read_contract = (
         ads_diagnostics.get("search_term_safety_read_contract") or {}
     )
@@ -452,6 +455,20 @@ def main() -> int:
         if custom_segment_idea_count:
             raise SystemExit(
                 "Blocked Keyword Planner must not enrich custom segment candidates"
+            )
+    if search_term_ngram_read_contract.get("status") == "ready":
+        ngram_missing = set(
+            search_term_ngram_read_contract.get("missing_read_contracts") or []
+        )
+        if "negative_keyword_payload_preview" in ngram_missing:
+            raise SystemExit(
+                "Search-term n-gram contract must not use the generic negative "
+                "keyword payload preview blocker"
+            )
+        if "ngram_to_negative_keyword_payload_preview" not in ngram_missing:
+            raise SystemExit(
+                "Search-term n-gram contract must list the n-gram-specific "
+                "payload preview blocker"
             )
     if negative_keywords_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose negative_keywords_read_contract")

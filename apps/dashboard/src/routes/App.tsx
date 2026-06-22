@@ -3781,6 +3781,8 @@ function adsMissingReadContractLabel(value: string) {
     search_term_90d_read: "90-dniowy odczyt zapytań",
     human_intent_review: "ręczny review intencji",
     negative_keyword_payload_preview: "podgląd payloadu wykluczeń",
+    ngram_to_negative_keyword_payload_preview:
+      "podgląd payloadu wykluczeń z n-gramów",
     review_search_term_context: "sprawdzenie intencji zapytania",
     check_existing_keywords_and_match_types: "sprawdzenie słów i typów dopasowania",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",

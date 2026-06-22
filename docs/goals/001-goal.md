@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 01:40 CEST.
+Last updated: 2026-06-22 03:38 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -139,6 +139,25 @@ skill still receives its own ActionObject. Live smoke after
 campaign review, recommendation review, n-gram review, custom segments,
 negative keywords, target guardrails, strategy review and Keyword Planner
 access ActionObjects.
+
+Latest Ads n-gram review missing-contract precision, 2026-06-22 03:38 CEST:
+search-term n-gram review now uses the n-gram-specific missing read contract
+`ngram_to_negative_keyword_payload_preview`, not the generic
+`negative_keyword_payload_preview` used by the negative keyword review queue.
+This prevents dashboard/Codex confusion where a review-only n-gram decision
+looked like the normal negative keyword payload preview was missing. RED/GREEN
+proof: `tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts`
+failed before the fix on the old generic missing contract, then passed.
+Live proof after `scripts/local_stack.sh restart`:
+`/api/ads/diagnostics.search_term_ngram_read_contract.missing_read_contracts`
+and decision `ads_review_search_term_ngrams.missing_read_contracts` both show
+`[human_intent_review, ngram_to_negative_keyword_payload_preview]`, while
+`negative_keywords_read_contract.missing_read_contracts=[]`. Dashboard labels
+the new blocker in Polish as `podgląd payloadu wykluczeń z n-gramów`; the
+`wilq-ads-doctor` smoke script fails if the n-gram contract regresses to the
+generic negative keyword payload preview blocker. Final proof:
+`scripts/verify.sh` green, including 150 backend tests, 17 dashboard unit
+tests, Skill API smoke, 14 Playwright e2e tests and dashboard production build.
 
 Latest Ads shared-budget distribution proof, 2026-06-22 01:25 CEST:
 `/api/ads/diagnostics.budget_pacing_read_contract` exposes typed
