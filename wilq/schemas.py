@@ -1099,6 +1099,44 @@ class AdsCampaignTriageReadContract(BaseModel):
     next_step: str
 
 
+class AdsOptimizerReadinessItem(BaseModel):
+    id: str
+    title: str
+    status: Literal["ready", "blocked"]
+    summary: str
+    next_step: str
+    source_contract_ids: list[str] = Field(default_factory=list)
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    risk: ActionRisk = ActionRisk.medium
+
+
+class AdsOptimizerReadinessContract(BaseModel):
+    id: str = "ads_optimizer_readiness_contract"
+    status: Literal["review_ready", "blocked"]
+    mode: Literal["review_only"] = "review_only"
+    title: str
+    summary: str
+    ready_area_count: int = 0
+    blocked_area_count: int = 0
+    readiness_items: list[AdsOptimizerReadinessItem] = Field(default_factory=list)
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    action_ids: list[str] = Field(default_factory=list)
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    next_step: str
+
+
 class AdsChangeHistoryRow(BaseModel):
     change_event_id: str | None = None
     change_date_time: str | None = None
@@ -1663,6 +1701,7 @@ class AdsDiagnosticsResponse(BaseModel):
     recommendations_read_contract: AdsRecommendationsReadContract
     impression_share_read_contract: AdsImpressionShareReadContract
     campaign_triage_read_contract: AdsCampaignTriageReadContract
+    optimizer_readiness_contract: AdsOptimizerReadinessContract
     change_history_read_contract: AdsChangeHistoryReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
     search_term_review_summary_contract: AdsSearchTermReviewSummaryContract

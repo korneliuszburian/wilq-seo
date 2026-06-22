@@ -1445,8 +1445,10 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         compact,
         ("negative_keywords_read_contract", "candidates"),
     )
+    _compact_ads_optimizer_readiness_for_context(compact)
     _limit_decision_rows(compact)
     _omit_decision_row_payloads(compact)
+    _compact_ads_decision_queue_for_context(compact)
     sections = compact.pop("sections", [])
     compact["context_pack_compaction"] = {
         "metric_facts_removed": True,
@@ -1505,8 +1507,187 @@ def _compact_ads_diagnostics_for_context(ads_diagnostics: dict[str, Any]) -> dic
         "negative_keyword_candidates_included": len(
             _list_at(compact, "negative_keywords_read_contract", "candidates")
         ),
+        "optimizer_readiness_compacted": isinstance(
+            compact.get("optimizer_readiness_contract"),
+            dict,
+        ),
     }
     return compact
+
+
+def _compact_ads_optimizer_readiness_for_context(data: dict[str, Any]) -> None:
+    contract = data.get("optimizer_readiness_contract")
+    if not isinstance(contract, dict):
+        return
+
+    required_missing = [
+        "change_event_rows",
+        "pre_change_performance_window",
+        "post_change_performance_window",
+        "human_change_impact_review",
+        "google_ads_mutation_audit",
+        "human_confirm_before_apply",
+    ]
+    required_blocked = [
+        "campaign mutation",
+        "change impact",
+        "budget apply",
+        "negative keyword apply",
+        "targeting applied",
+    ]
+    contract["allowed_metrics"] = _priority_limited_strings(
+        contract.get("allowed_metrics"),
+        ["clicks", "cost_micros", "conversions", "search_term", "change_event_available"],
+        limit=8,
+    )
+    contract["missing_read_contracts"] = _priority_limited_strings(
+        contract.get("missing_read_contracts"),
+        required_missing,
+        limit=10,
+    )
+    contract["operator_review_gates"] = _priority_limited_strings(
+        contract.get("operator_review_gates"),
+        ["human_strategy_review", "human_confirm_before_apply"],
+        limit=6,
+    )
+    contract["blocked_claims"] = _priority_limited_strings(
+        contract.get("blocked_claims"),
+        required_blocked,
+        limit=10,
+    )
+    contract["evidence_ids"] = _priority_limited_strings(
+        contract.get("evidence_ids"),
+        [],
+        limit=4,
+    )
+
+    items = contract.get("readiness_items")
+    if not isinstance(items, list):
+        return
+
+    compact_items = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        compact_item = {
+            key: item.get(key)
+            for key in (
+                "id",
+                "status",
+                "source_contract_ids",
+                "risk",
+            )
+            if key in item
+        }
+        if item.get("status") == "blocked":
+            compact_item["next_step"] = _context_pack_text(
+                item.get("next_step"),
+                limit=150,
+            )
+        compact_item["source_contract_ids"] = _priority_limited_strings(
+            item.get("source_contract_ids"),
+            ["ads_change_history_read_contract", "ads_action_safety_contract"],
+            limit=3,
+        )
+        if item.get("status") == "blocked":
+            compact_item["missing_read_contracts"] = _priority_limited_strings(
+                item.get("missing_read_contracts"),
+                required_missing,
+                limit=5,
+            )
+            compact_item["blocked_claims"] = _priority_limited_strings(
+                item.get("blocked_claims"),
+                required_blocked,
+                limit=5,
+            )
+        compact_item["action_ids"] = _priority_limited_strings(
+            item.get("action_ids"),
+            [],
+            limit=3,
+        )
+        compact_items.append(compact_item)
+    contract["readiness_items_total"] = len(items)
+    contract["readiness_items"] = compact_items
+
+
+def _compact_ads_decision_queue_for_context(data: dict[str, Any]) -> None:
+    required_blocked = [
+        "campaign mutation",
+        "change impact",
+        "budget apply",
+        "negative keyword apply",
+        "targeting applied",
+    ]
+    required_missing = [
+        "change_event_rows",
+        "pre_change_performance_window",
+        "post_change_performance_window",
+        "human_confirm_before_apply",
+    ]
+    for decision in _list_at(data, "decision_queue"):
+        if not isinstance(decision, dict):
+            continue
+        for key, limit in (
+            ("summary", 120),
+            ("rationale", 125),
+            ("next_step", 135),
+        ):
+            compact_text = _context_pack_text(decision.get(key), limit=limit)
+            if compact_text is not None:
+                decision[key] = compact_text
+        decision["allowed_metrics"] = _priority_limited_strings(
+            decision.get("allowed_metrics"),
+            ["clicks", "cost_micros", "conversions", "search_term", "change_event_available"],
+            limit=4,
+        )
+        decision["missing_read_contracts"] = _priority_limited_strings(
+            decision.get("missing_read_contracts"),
+            required_missing,
+            limit=5,
+        )
+        decision["operator_review_gates"] = _priority_limited_strings(
+            decision.get("operator_review_gates"),
+            ["human_strategy_review", "human_confirm_before_apply"],
+            limit=3,
+        )
+        decision["blocked_claims"] = _priority_limited_strings(
+            decision.get("blocked_claims"),
+            required_blocked,
+            limit=5,
+        )
+        decision["evidence_ids"] = _priority_limited_strings(
+            decision.get("evidence_ids"),
+            [],
+            limit=4,
+        )
+        decision["action_ids"] = _priority_limited_strings(
+            decision.get("action_ids"),
+            [],
+            limit=4,
+        )
+
+
+def _priority_limited_strings(value: Any, required: list[str], limit: int) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    result: list[str] = []
+    for item in [*required, *value]:
+        if not isinstance(item, str) or item in result:
+            continue
+        if item not in value:
+            continue
+        result.append(item)
+        if len(result) >= limit:
+            break
+    return result
+
+
+def _context_pack_text(value: Any, limit: int) -> str | None:
+    if not isinstance(value, str):
+        return None
+    if len(value) <= limit:
+        return value
+    return f"{value[: limit - 3]}..."
 
 
 def _compact_budget_row_payload_preview_for_context(rows: list[Any]) -> None:
@@ -2458,6 +2639,7 @@ def _limit_decision_rows(data: dict[str, Any]) -> None:
             "keyword_match_context_rows",
             "keyword_planner_idea_rows",
             "custom_segment_candidates",
+            "custom_segment_audience_forecast_rows",
             "custom_segment_payload_preview",
             "negative_keyword_candidates",
             "negative_keyword_payload_preview",
@@ -2506,6 +2688,7 @@ def _omit_decision_row_payloads(data: dict[str, Any]) -> None:
             "search_term_safety_rows",
             "keyword_match_context_rows",
             "custom_segment_candidates",
+            "custom_segment_audience_forecast_rows",
             "custom_segment_payload_preview",
             "negative_keyword_candidates",
             "negative_keyword_payload_preview",

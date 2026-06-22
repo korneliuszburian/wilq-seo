@@ -49,8 +49,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("zapytania").first()).toBeVisible();
     await expect(page.getByText("50").first()).toBeVisible();
     await expect(page.getByText("podgląd budżetu").first()).toBeVisible();
-    await expect(page.getByText("Dowody").first()).toBeVisible();
-    await expect(page.getByText("Przykładowe dowody").first()).toBeVisible();
+    await expect(page.getByText("Dowody w API").first()).toBeVisible();
+    await expect(page.getByText(/potwierdzonych śladów w WILQ API/).first()).toBeVisible();
+    await expect(page.getByText("Akcje do walidacji").first()).toBeVisible();
+    await expect(page.getByText(/bezpieczna akcja do walidacji/).first()).toBeVisible();
+    await expect(page.getByText("Przykładowe dowody")).toHaveCount(0);
+    await expect(page.getByText(/ev_refresh_/)).toHaveCount(0);
+    await expect(page.getByText(/act_review_merchant_feed_issues/)).toHaveCount(0);
     await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
     await expect(page.getByText("Przykładowe evidence")).toHaveCount(0);
     await expect(page.getByText("ponowne zatwierdzenie produktu").first()).toBeVisible();
@@ -59,6 +64,13 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("zmarnowany budżet").first()).toBeVisible();
     await expect(page.getByText("approval restored")).toHaveCount(0);
     await expect(page.getByText("lead uplift")).toHaveCount(0);
+    await expect(page.getByText("traffic uplift")).toHaveCount(0);
+    await expect(page.getByText("authority improvement")).toHaveCount(0);
+    await expect(page.getByText("off-topic content recommendation")).toHaveCount(0);
+    await expect(page.getByText("funnel diagnosis")).toHaveCount(0);
+    await expect(page.getByText("attribution verdict")).toHaveCount(0);
+    await expect(page.getByText("GA4 write")).toHaveCount(0);
+    await expect(page.getByText("competitor visibility")).toHaveCount(0);
     await expect(page.getByText("search-term waste")).toHaveCount(0);
     await expect(page.getByText("profitability")).toHaveCount(0);
     await expect(page.getByText("wasted budget")).toHaveCount(0);
@@ -75,13 +87,15 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dzisiejsze konkretne taktyki" })).toHaveCount(0);
     await expect(page.getByText("Jak Codex może pomóc").first()).toBeVisible();
     await expect(page.getByText("Prompt do Codex").first()).toBeVisible();
-    await expect(page.getByText("Context-pack: /api/codex/context-pack").first()).toBeVisible();
+    await expect(page.getByText("Kontekst: WILQ API i dowody tej decyzji").first()).toBeVisible();
+    await expect(page.getByText("Context-pack: /api/codex/context-pack")).toHaveCount(0);
     await expect(page.getByText(/Oczekiwany wynik:/).first()).toBeVisible();
     await expect(page.getByText(/Wymiar:/)).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "Przejrzyj kolejkę SEO z GSC i WordPress" })
     ).toBeVisible();
-    await expect(page.getByText("Skill: wilq-content-strategist")).toBeVisible();
+    await expect(page.getByText("Tryb Codexa: Content Strategist")).toBeVisible();
+    await expect(page.getByText("Skill: wilq-content-strategist")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Priorytety dnia" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Budżet i ryzyko wydatków" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Kandydaci działań API" })).toHaveCount(0);
@@ -233,7 +247,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expectApiBackedRouteHeading(page, "Actions", { exact: true });
     await expect(page.getByRole("heading", { name: "ActionObjecty do przeglądu" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody powiązane z akcjami" })).toBeVisible();
-    await expect(page.getByText("Do walidacji")).toBeVisible();
+    await expect(page.getByText("Do walidacji", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Odnow Google Ads OAuth refresh token")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "OPPORTUNITIES" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Connector Refresh Runs" })).toHaveCount(0);

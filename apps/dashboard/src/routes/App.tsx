@@ -40,6 +40,7 @@ import {
   Evidence,
   ExpertRule,
   Ga4DiagnosticsResponse,
+  getAction,
   getActions,
   getAdsDiagnostics,
   getAhrefsDiagnostics,
@@ -513,12 +514,8 @@ function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
 }
 
 function ActionPreviewControls({ action }: { action: ActionObject }) {
-  const queryClient = useQueryClient();
   const previewMutation = useMutation({
-    mutationFn: () => previewAction(action.id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["actions"] });
-    }
+    mutationFn: () => previewAction(action.id)
   });
 
   return (
@@ -586,6 +583,20 @@ function ActionPreviewResultPanel({
   );
 }
 
+function ActionObjectIdFocus({ actionIds, note }: { actionIds: string[]; note: string }) {
+  return (
+    <section>
+      <SectionHeading title="ActionObjecty do walidacji" />
+      <div className="rounded-md border border-line bg-white p-4 text-sm leading-6 text-slate-700">
+        <p>{note}</p>
+        <div className="mt-3">
+          <LinkedTraceLine label="ActionObjecty" values={actionIds} kind="actions" empty="brak" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type ActionReviewOutcome = ActionReviewRequest["outcome"];
 
 const ACTION_REVIEW_OPTIONS: Array<{ value: ActionReviewOutcome; label: string }> = [
@@ -611,7 +622,7 @@ function ActionHumanReviewControls({ action }: { action: ActionObject }) {
         blockers: action.review_gate.apply_blockers.slice(0, 8)
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
@@ -792,7 +803,7 @@ function ActionValidationControls({ action }: { action: ActionObject }) {
   const validationMutation = useMutation({
     mutationFn: () => validateAction(action.id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
@@ -804,7 +815,7 @@ function ActionValidationControls({ action }: { action: ActionObject }) {
         preview_acknowledged: true
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
@@ -937,7 +948,7 @@ function ActionImpactCheckControls({ action }: { action: ActionObject }) {
         post_window_days: 7
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["actions"] });
+      void queryClient.invalidateQueries({ queryKey: ["actions", action.id] });
       void queryClient.invalidateQueries({ queryKey: ["marketing-brief"] });
     }
   });
@@ -1029,33 +1040,52 @@ function marketerBlockedClaimLabel(value: string) {
     "audience size": "rozmiar odbiorców",
     "budget apply": "wdrożenie zmiany budżetu",
     "budget scaling": "skalowanie budżetu",
+    "campaign creation": "utworzenie kampanii",
     "campaign mutation": "zmiana kampanii",
     "campaign performance": "wynik kampanii",
+    "change impact": "wpływ zmian",
+    "content brief without relevance review": "brief treści bez review trafności",
     "conversion drop": "spadek konwersji",
     "conversion loss": "utrata konwersji",
-    "conversion rate": "conversion rate",
+    "conversion rate": "współczynnik konwersji",
     "conversion uplift": "wzrost konwersji",
+    "CPA verdict": "werdykt CPA",
+    "attribution verdict": "werdykt atrybucji",
+    "authority improvement": "wzrost autorytetu",
+    "competitor visibility": "widoczność konkurencji",
     "feed fix candidate": "kandydat naprawy feedu",
     "feed write": "zapis do feedu",
+    "funnel diagnosis": "diagnoza lejka",
+    "GA4 write": "zapis w GA4",
     "GBP performance": "wynik Google Business Profile",
     "lead quality": "jakość leadów",
     "lead uplift": "wzrost leadów",
     "local ranking": "lokalne pozycje",
+    "local ranking uplift": "wzrost lokalnych pozycji",
     "local visibility uplift": "wzrost lokalnej widoczności",
+    "margin verdict": "werdykt marży",
     "negative keyword apply": "wdrożenie wykluczeń",
     "negative keyword candidates": "kandydaci do wykluczeń",
     "new article without inventory check": "nowy artykuł bez sprawdzenia inventory",
+    "off-topic content recommendation": "rekomendacja treści poza intencją",
+    "performance uplift": "wzrost performance",
     profitability: "opłacalność",
+    "primary feed overwrite": "nadpisanie głównego feedu",
+    "profit uplift": "wzrost zysku",
     "product data mutation": "zmiana danych produktu",
     "product fix applied": "naprawa produktu wdrożona",
     "ranking guarantee": "gwarancja pozycji",
     "recommendation apply": "wdrożenie rekomendacji",
+    revenue: "przychód",
     "revenue impact": "wpływ na przychód",
     "revenue recovered": "odzyskany przychód",
+    "ROAS verdict": "werdykt ROAS",
     "search-term waste": "waste na zapytaniach",
     "targeting applied": "targetowanie wdrożone",
     "tracking fixed": "pomiar naprawiony",
-    "wasted budget": "zmarnowany budżet"
+    "traffic uplift": "wzrost ruchu",
+    "wasted budget": "zmarnowany budżet",
+    "wasted budget verdict": "werdykt przepalonego budżetu"
   };
   return labels[value] ?? value;
 }
@@ -1434,6 +1464,63 @@ function priorityLabel(priority: number) {
   return "niżej w kolejce";
 }
 
+function marketerConnectorLabels(values: string[]) {
+  return uniqueValues(values.map(marketerConnectorLabel));
+}
+
+function marketerConnectorLabel(value: string) {
+  const labels: Record<string, string> = {
+    ahrefs: "Ahrefs",
+    facebook: "Facebook",
+    google_ads: "Google Ads",
+    google_analytics_4: "GA4",
+    google_merchant_center: "Merchant Center",
+    google_search_console: "Google Search Console",
+    google_sheets: "Google Sheets",
+    linkedin: "LinkedIn",
+    localo: "Localo",
+    wordpress_ekologus: "WordPress ekologus.pl",
+    wordpress_sklep: "WordPress sklep.ekologus.pl"
+  };
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
+function codexSkillLabel(value: string) {
+  const labels: Record<string, string> = {
+    "wilq-ads-doctor": "Ads Doctor",
+    "wilq-ahrefs-gap-finder": "Ahrefs Gap Finder",
+    "wilq-campaign-builder": "Campaign Builder",
+    "wilq-content-strategist": "Content Strategist",
+    "wilq-custom-segments": "Custom Segments",
+    "wilq-daily-command": "Daily Command",
+    "wilq-demand-gen-operator": "Demand Gen Operator",
+    "wilq-ga4-analyst": "GA4 Analyst",
+    "wilq-gsc-content-doctor": "GSC Content Doctor",
+    "wilq-localo-operator": "Localo Operator",
+    "wilq-merchant-feed-operator": "Merchant Feed Operator",
+    "wilq-social-publisher": "Social Publisher"
+  };
+  return labels[value] ?? value.replace(/^wilq-/, "").replaceAll("-", " ");
+}
+
+function evidenceCountSummary(count: number) {
+  if (count === 0) return "brak potwierdzonych śladów w WILQ API";
+  if (count === 1) return "1 potwierdzony ślad w WILQ API";
+  return `${count} potwierdzonych śladów w WILQ API`;
+}
+
+function actionValidationSummary(count: number) {
+  if (count === 0) return "brak bezpiecznej akcji na pierwszym ekranie";
+  if (count === 1) return "1 bezpieczna akcja do walidacji";
+  return `${count} bezpiecznych akcji do walidacji`;
+}
+
+function marketerDecisionText(value: string) {
+  return value
+    .replace(/`?act_[a-z0-9_]+`?/gi, "ActionObject w widoku szczegółowym")
+    .replace(/`?ev_[a-z0-9_]+`?/gi, "dowód w WILQ API");
+}
+
 function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
   return (
     <section>
@@ -1462,7 +1549,9 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               </div>
               <StatusBadge value={item.status} />
             </div>
-            <p className="mt-3 text-sm leading-6 text-slate-700">{item.co_widzimy}</p>
+            <p className="mt-3 text-sm leading-6 text-slate-700">
+              {marketerDecisionText(item.co_widzimy)}
+            </p>
             {Object.keys(item.metric_tiles ?? {}).length > 0 ? (
               <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-3">
                 {Object.entries(item.metric_tiles).map(([label, value]) => (
@@ -1471,9 +1560,11 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               </div>
             ) : null}
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {item.dlaczego_to_ma_znaczenie}
+              {marketerDecisionText(item.dlaczego_to_ma_znaczenie)}
             </p>
-            <p className="mt-2 text-sm font-medium text-ink">{item.bezpieczny_next_step}</p>
+            <p className="mt-2 text-sm font-medium text-ink">
+              {marketerDecisionText(item.bezpieczny_next_step)}
+            </p>
             {item.skill_id && item.codex_prompt ? (
               <div className="mt-3 rounded-md border border-action/25 bg-action/5 p-3 text-sm">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-action">
@@ -1484,11 +1575,14 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
                   Prompt do Codex
                 </p>
                 <p className="mt-2 leading-6 text-slate-700">{item.codex_prompt}</p>
-                <TraceLine label="Skill" values={[item.skill_id]} />
-                <TraceLine
-                  label="Context-pack"
-                  values={item.codex_context_endpoint ? [item.codex_context_endpoint] : []}
-                />
+                <div className="mt-2 text-xs text-slate-600">
+                  Tryb Codexa: {codexSkillLabel(item.skill_id)}
+                </div>
+                {item.codex_context_endpoint ? (
+                  <div className="mt-1 text-xs text-slate-600">
+                    Kontekst: WILQ API i dowody tej decyzji
+                  </div>
+                ) : null}
                 {item.expected_codex_output ? (
                   <p className="mt-2 leading-6 text-slate-700">
                     Oczekiwany wynik: {item.expected_codex_output}
@@ -1497,19 +1591,10 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               </div>
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
-              <TraceLine label="Źródła" values={item.source_connectors} />
-              <div>
-                Dowody: {item.evidence_ids.length} ID
-                {item.evidence_ids.length === 1 ? "" : "s"}
-              </div>
-              <LinkedTraceLine
-                label="Przykładowe dowody"
-                values={item.evidence_ids.slice(0, 2)}
-                kind="evidence"
-                empty="brak"
-              />
-              <LinkedTraceLine label="Akcje" values={item.action_ids} kind="actions" empty="brak" />
-              <TraceLine label="Zablokowane claimy" values={marketerBlockedClaimLabels(item.blocked_claims)} />
+              <TraceLine label="Źródła danych" values={marketerConnectorLabels(item.source_connectors)} />
+              <TraceLine label="Dowody w API" values={[evidenceCountSummary(item.evidence_ids.length)]} />
+              <TraceLine label="Akcje do walidacji" values={[actionValidationSummary(item.action_ids.length)]} />
+              <TraceLine label="Czego nie twierdzimy" values={marketerBlockedClaimLabels(item.blocked_claims)} />
             </div>
             <a
               href={item.route}
@@ -1967,6 +2052,8 @@ type AdsImpressionShareRow =
   AdsDiagnosticsResponse["impression_share_read_contract"]["impression_share_rows"][number];
 type AdsCampaignTriageRow =
   AdsDiagnosticsResponse["campaign_triage_read_contract"]["triage_rows"][number];
+type AdsOptimizerReadinessItem =
+  AdsDiagnosticsResponse["optimizer_readiness_contract"]["readiness_items"][number];
 type AdsChangeHistoryRow =
   AdsDiagnosticsResponse["change_history_read_contract"]["change_history_rows"][number];
 type AdsSearchTermMetricRow =
@@ -2085,6 +2172,7 @@ function AdsDoctorSurface() {
 function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
   const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
   const searchTermReview = data.search_term_review_summary_contract;
+  const optimizer = data.optimizer_readiness_contract;
   const decisions = data.decision_queue
     .slice()
     .sort((left, right) => adsDecisionSortValue(left) - adsDecisionSortValue(right));
@@ -2161,8 +2249,12 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             value={data.keyword_match_context_read_contract.context_rows.length}
           />
           <MetricTile label="Decyzje" value={decisions.length} />
+          <MetricTile label="Ready" value={optimizer.ready_area_count} />
+          <MetricTile label="Blocked" value={optimizer.blocked_area_count} />
         </div>
       </div>
+
+      <AdsOptimizerReadinessPanel contract={optimizer} />
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
@@ -2197,6 +2289,131 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function AdsOptimizerReadinessPanel({
+  contract
+}: {
+  contract: AdsDiagnosticsResponse["optimizer_readiness_contract"];
+}) {
+  const readyItems = contract.readiness_items.filter((item) => item.status === "ready");
+  const blockedItems = contract.readiness_items.filter((item) => item.status === "blocked");
+
+  return (
+    <div className="mb-4 rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">
+            Co można zrobić teraz w Ads
+          </h3>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-600">
+            {contract.summary}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Gotowe" value={contract.ready_area_count} />
+          <MetricTile label="Zablokowane" value={contract.blocked_area_count} />
+          <MetricTile label="Tryb" value={contract.mode} />
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 xl:grid-cols-2">
+        <AdsOptimizerReadinessGroup
+          title="Gotowe do review"
+          items={readyItems}
+          empty="Brak obszarów gotowych do review."
+        />
+        <AdsOptimizerReadinessGroup
+          title="Zablokowane claimy / apply"
+          items={blockedItems}
+          empty="Brak aktywnych blockerów."
+        />
+      </div>
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine
+          label="Brakujące kontrakty"
+          values={contract.missing_read_contracts.map(adsMissingReadContractLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Nie wolno twierdzić"
+          values={contract.blocked_claims.map(adsBlockedClaimLabel)}
+          empty="brak"
+        />
+        <LinkedTraceLine
+          label="Dowody"
+          values={contract.evidence_ids.slice(0, 6)}
+          kind="evidence"
+          empty="brak"
+        />
+        <LinkedTraceLine
+          label="ActionObjecty"
+          values={contract.action_ids}
+          kind="actions"
+          empty="brak"
+        />
+      </div>
+    </div>
+  );
+}
+
+function AdsOptimizerReadinessGroup({
+  title,
+  items,
+  empty
+}: {
+  title: string;
+  items: AdsOptimizerReadinessItem[];
+  empty: string;
+}) {
+  if (items.length === 0) {
+    return <BlockerNotice message={empty} />;
+  }
+
+  return (
+    <div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-normal text-slate-500">
+        {title}
+      </div>
+      <div className="grid gap-2">
+        {items.slice(0, 5).map((item) => (
+          <article key={item.id} className="rounded-md border border-line bg-white p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h4 className="text-sm font-semibold text-ink">
+                  {adsOptimizerReadinessItemLabel(item.id)}
+                </h4>
+                <p className="mt-1 text-xs text-slate-500">{item.title}</p>
+              </div>
+              <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                {adsDecisionStatusLabel(item.status)} / {adsRiskLabel(item.risk)}
+              </span>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-700">{item.summary}</p>
+            <p className="mt-2 text-xs font-medium text-ink">{item.next_step}</p>
+            <div className="mt-2 grid gap-1 text-xs text-slate-600">
+              <TraceLine
+                label="Kontrakty"
+                values={item.source_contract_ids}
+                empty="brak"
+              />
+              <TraceLine
+                label="Braki"
+                values={item.missing_read_contracts.map(adsMissingReadContractLabel)}
+                empty="brak"
+              />
+              <TraceLine
+                label="Blokady"
+                values={item.blocked_claims.map(adsBlockedClaimLabel)}
+                empty="brak"
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -4039,11 +4256,26 @@ function adsMissingReadContractLabel(value: string) {
     review_search_term_context: "sprawdzenie intencji zapytania",
     check_existing_keywords_and_match_types: "sprawdzenie słów i typów dopasowania",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
+    google_ads_mutation_audit: "audyt mutacji Google Ads",
     keyword_planner_enrichment: "enrichment Keyword Planner",
     forecast_or_audience_size: "forecast albo audience size",
     "campaign activity": "aktywność kampanii",
     search_term_view: "widok zapytań użytkowników",
     zero_conversion_search_terms: "terminy z zerową konwersją"
+  };
+  return labels[value] ?? value;
+}
+
+function adsOptimizerReadinessItemLabel(value: string) {
+  const labels: Record<string, string> = {
+    campaign_review_queue: "kampanie do review",
+    budget_and_recommendation_review: "budżety i rekomendacje",
+    search_terms_review_queue: "search terms",
+    negative_keyword_review_queue: "negative keywords",
+    custom_segments_review_queue: "custom segments",
+    keyword_planner_enrichment: "Keyword Planner",
+    change_history_impact_review: "historia zmian",
+    ads_apply_safety_gate: "apply safety gate"
   };
   return labels[value] ?? value;
 }
@@ -5895,10 +6127,11 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
   });
   const actions = useQuery({
     queryKey: ["actions"],
-    queryFn: getActions
+    queryFn: getActions,
+    enabled: diagnostics.isSuccess
   });
 
-  if (diagnostics.isLoading || actions.isLoading) return <LoadingBand />;
+  if (diagnostics.isLoading) return <LoadingBand />;
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -5906,16 +6139,9 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
       </main>
     );
   }
-  if (actions.error || !actions.data) {
-    return (
-      <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/actions. Content route nie może pokazać walidacji ani podglądu payloadu." />
-      </main>
-    );
-  }
 
   const data = diagnostics.data;
-  const routeActions = actions.data.filter((action) => data.action_ids.includes(action.id));
+  const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
   const latestStatuses = data.latest_refreshes.map(
     (refresh) => `${refresh.connector_id}: ${contentRefreshStatusLabel(refresh.status)}`
   );
@@ -5969,11 +6195,21 @@ function ContentDiagnosticSurface({ title }: { title: string }) {
 
       <ContentDiagnosticProof data={data} />
 
-      {routeActions.length > 0 ? (
-        <div className="mt-6">
+      <div className="mt-6">
+        {actions.isLoading ? (
+          <ActionObjectIdFocus
+            actionIds={data.action_ids}
+            note="Ładuję szczegóły ActionObjectów; decyzje contentowe powyżej są już oparte o WILQ API."
+          />
+        ) : actions.error ? (
+          <ActionObjectIdFocus
+            actionIds={data.action_ids}
+            note="Nie udało się odczytać pełnych ActionObjectów. Linki do walidacji zostają widoczne, ale payload preview wymaga /api/actions."
+          />
+        ) : (
           <ActionObjectFocus actions={routeActions} />
-        </div>
-      ) : null}
+        )}
+      </div>
 
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <div className="mb-3 flex items-start gap-3">
@@ -7456,13 +7692,15 @@ function DetailSurface({ kind }: { kind: "actions" | "opportunities" | "workflow
 }
 
 function ActionDetailSurface({ actionId }: { actionId: string }) {
-  const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
+  const action = useQuery({
+    queryKey: ["actions", actionId],
+    queryFn: () => getAction(actionId)
+  });
 
-  if (actions.isLoading) return <LoadingBand />;
-  if (actions.error) return <ErrorState />;
+  if (action.isLoading) return <LoadingBand />;
+  if (action.error) return <ErrorState />;
 
-  const action = (actions.data ?? []).find((item) => item.id === actionId);
-  if (action) return <ActionDetail action={action} />;
+  if (action.data) return <ActionDetail action={action.data} />;
   return <GenericSurface routeName={`/actions/${actionId}`} />;
 }
 

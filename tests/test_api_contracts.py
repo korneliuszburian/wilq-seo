@@ -5224,6 +5224,26 @@ def test_ads_change_history_blocks_empty_read_attempt(
     assert "change_event_rows" in change_history_decision["missing_read_contracts"]
     assert change_history_decision["action_ids"] == []
     assert "impact review zablokowany" in change_history_decision["next_step"]
+    optimizer_contract = payload["optimizer_readiness_contract"]
+    assert optimizer_contract["id"] == "ads_optimizer_readiness_contract"
+    assert optimizer_contract["status"] == "review_ready"
+    assert optimizer_contract["mode"] == "review_only"
+    assert optimizer_contract["api_mutation_ready"] is False
+    assert optimizer_contract["apply_allowed"] is False
+    assert optimizer_contract["ready_area_count"] == 2
+    assert optimizer_contract["blocked_area_count"] >= 1
+    assert "change_event_rows" in optimizer_contract["missing_read_contracts"]
+    assert "change impact" in optimizer_contract["blocked_claims"]
+    readiness_items_by_id = {
+        item["id"]: item for item in optimizer_contract["readiness_items"]
+    }
+    assert readiness_items_by_id["change_history_impact_review"]["status"] == "blocked"
+    assert "change_event_rows" in readiness_items_by_id[
+        "change_history_impact_review"
+    ]["missing_read_contracts"]
+    assert "impact review zablokowany" in readiness_items_by_id[
+        "change_history_impact_review"
+    ]["next_step"]
 
     for decision_id in (
         "ads_review_campaign_activity",
@@ -6679,6 +6699,26 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "review_reason"
     ]
     assert "nie jest werdyktem wasted budget" in campaign_triage_contract["summary"]
+    optimizer_contract = payload["optimizer_readiness_contract"]
+    assert optimizer_contract["status"] == "review_ready"
+    assert optimizer_contract["mode"] == "review_only"
+    assert optimizer_contract["apply_allowed"] is False
+    assert "campaign mutation" in optimizer_contract["blocked_claims"]
+    assert "change_event_rows" not in optimizer_contract["missing_read_contracts"]
+    assert "pre_change_performance_window" in optimizer_contract[
+        "missing_read_contracts"
+    ]
+    optimizer_items_by_id = {
+        item["id"]: item for item in optimizer_contract["readiness_items"]
+    }
+    assert optimizer_items_by_id["campaign_review_queue"]["status"] == "ready"
+    assert optimizer_items_by_id["change_history_impact_review"]["status"] == "blocked"
+    assert "pre_change_performance_window" in optimizer_items_by_id[
+        "change_history_impact_review"
+    ]["missing_read_contracts"]
+    assert optimizer_items_by_id["change_history_impact_review"]["source_contract_ids"] == [
+        "ads_change_history_read_contract"
+    ]
     change_history_contract = payload["change_history_read_contract"]
     assert change_history_contract["status"] == "ready"
     assert change_history_contract["action_ids"] == [CHANGE_HISTORY_IMPACT_ACTION_ID]
@@ -10414,6 +10454,14 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         ads_context["context_pack_compaction"]["campaign_triage_rows_included"]
         == len(triage_contract["triage_rows"])
     )
+    optimizer_contract = ads_context["optimizer_readiness_contract"]
+    assert optimizer_contract["status"] == "review_ready"
+    assert optimizer_contract["mode"] == "review_only"
+    assert optimizer_contract["apply_allowed"] is False
+    assert "campaign_review_queue" in [
+        item["id"] for item in optimizer_contract["readiness_items"]
+    ]
+    assert "campaign mutation" in optimizer_contract["blocked_claims"]
     custom_segment_candidate = ads_context["custom_segments_read_contract"]["candidates"][0]
     assert "source_quality" in custom_segment_candidate
     assert "rejection_reasons" not in custom_segment_candidate

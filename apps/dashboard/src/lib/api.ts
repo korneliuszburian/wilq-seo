@@ -155,6 +155,10 @@ export function getActions(): Promise<ActionObject[]> {
   return apiGet("/api/actions", z.array(ActionObjectSchema));
 }
 
+export function getAction(actionId: string): Promise<ActionObject> {
+  return apiGet(`/api/actions/${encodeURIComponent(actionId)}`, ActionObjectSchema);
+}
+
 export function validateAction(actionId: string): Promise<ActionValidationResult> {
   return apiPost(`/api/actions/${actionId}/validate`, ActionValidationResultSchema);
 }

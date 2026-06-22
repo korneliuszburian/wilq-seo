@@ -91,6 +91,9 @@ def main() -> int:
     campaign_triage_read_contract = (
         ads_diagnostics.get("campaign_triage_read_contract") or {}
     )
+    optimizer_readiness_contract = (
+        ads_diagnostics.get("optimizer_readiness_contract") or {}
+    )
     account_currency_read_contract = (
         ads_diagnostics.get("account_currency_read_contract") or {}
     )
@@ -128,6 +131,45 @@ def main() -> int:
     decision_queue = ads_diagnostics.get("decision_queue") or []
     pack_decision_queue = pack.get("ads_diagnostics", {}).get("decision_queue") or []
     validate_context_lineage(pack)
+    pack_optimizer_readiness_contract = (
+        pack.get("ads_diagnostics", {}).get("optimizer_readiness_contract") or {}
+    )
+    if optimizer_readiness_contract.get("status") not in {"review_ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose optimizer_readiness_contract")
+    if optimizer_readiness_contract.get("mode") != "review_only":
+        raise SystemExit("Ads optimizer readiness must stay review_only")
+    if optimizer_readiness_contract.get("apply_allowed") is not False:
+        raise SystemExit("Ads optimizer readiness must keep apply_allowed=false")
+    if optimizer_readiness_contract.get("api_mutation_ready") is not False:
+        raise SystemExit("Ads optimizer readiness must keep api_mutation_ready=false")
+    if "campaign mutation" not in optimizer_readiness_contract.get("blocked_claims", []):
+        raise SystemExit("Ads optimizer readiness must block campaign mutation claims")
+    readiness_items = optimizer_readiness_contract.get("readiness_items") or []
+    if not readiness_items:
+        raise SystemExit("Ads optimizer readiness must expose readiness_items")
+    change_impact_item = _find_readiness_item(
+        readiness_items,
+        "change_history_impact_review",
+    )
+    if change_impact_item.get("status") != "blocked":
+        raise SystemExit("Ads optimizer readiness must block change impact review")
+    if "ads_change_history_read_contract" not in (
+        change_impact_item.get("source_contract_ids") or []
+    ):
+        raise SystemExit("Change impact readiness item must cite change history contract")
+    if "change impact" not in change_impact_item.get("blocked_claims", []):
+        raise SystemExit("Change impact readiness item must block change impact claim")
+    apply_item = _find_readiness_item(readiness_items, "ads_apply_safety_gate")
+    if apply_item.get("status") != "blocked":
+        raise SystemExit("Ads optimizer readiness must block apply safety gate")
+    if pack_optimizer_readiness_contract.get("summary") != (
+        optimizer_readiness_contract.get("summary")
+    ):
+        raise SystemExit("Context pack optimizer readiness contract differs")
+    if pack_optimizer_readiness_contract.get("mode") != "review_only":
+        raise SystemExit("Context pack optimizer readiness must stay review_only")
+    if pack_optimizer_readiness_contract.get("apply_allowed") is not False:
+        raise SystemExit("Context pack optimizer readiness must keep apply blocked")
     budget_decision = _find_decision(decision_queue, "ads_review_budget_context")
     pack_budget_decision = _find_decision(pack_decision_queue, "ads_review_budget_context")
     if (
@@ -635,6 +677,35 @@ def main() -> int:
                             in (ads_diagnostics.get("action_ids") or [])
                         ),
                     },
+                    "optimizer_readiness_contract": {
+                        "status": optimizer_readiness_contract.get("status"),
+                        "mode": optimizer_readiness_contract.get("mode"),
+                        "ready_area_count": optimizer_readiness_contract.get(
+                            "ready_area_count"
+                        ),
+                        "blocked_area_count": optimizer_readiness_contract.get(
+                            "blocked_area_count"
+                        ),
+                        "apply_allowed": optimizer_readiness_contract.get(
+                            "apply_allowed"
+                        ),
+                        "readiness_item_ids": [
+                            item.get("id")
+                            for item in optimizer_readiness_contract.get(
+                                "readiness_items",
+                            )
+                            or []
+                            if item.get("id")
+                        ],
+                        "missing_read_contracts": optimizer_readiness_contract.get(
+                            "missing_read_contracts",
+                            [],
+                        ),
+                        "blocked_claims": optimizer_readiness_contract.get(
+                            "blocked_claims",
+                            [],
+                        ),
+                    },
                     "account_currency_read_contract": {
                         "status": account_currency_read_contract.get("status"),
                         "currency_code": account_currency_read_contract.get(
@@ -933,6 +1004,13 @@ def _find_decision(decisions: list[dict[str, Any]], decision_id: str) -> dict[st
     for decision in decisions:
         if decision.get("id") == decision_id:
             return decision
+    return {}
+
+
+def _find_readiness_item(items: list[dict[str, Any]], item_id: str) -> dict[str, Any]:
+    for item in items:
+        if item.get("id") == item_id:
+            return item
     return {}
 
 

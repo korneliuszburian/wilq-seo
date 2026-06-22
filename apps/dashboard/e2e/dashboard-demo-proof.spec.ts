@@ -43,7 +43,9 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByRole("heading", { name: "Plan działań marketera" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Blockery i świeżość źródeł" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Demo dla marketera" })).toHaveCount(0);
-    await expect(page.getByText("act_review_merchant_feed_issues").first()).toBeVisible();
+    await expect(page.getByText("Akcje do walidacji").first()).toBeVisible();
+    await expect(page.getByText("1 bezpieczna akcja do walidacji").first()).toBeVisible();
+    await expect(page.getByText("act_review_merchant_feed_issues")).toHaveCount(0);
     await expect(page.getByText("Przejrzyj kolejki Ads do oceny bez apply")).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "01-command-center-action-plan.png"),

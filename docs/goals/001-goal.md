@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 11:55 CEST.
+Last updated: 2026-06-22 16:34 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -184,6 +184,24 @@ to live WILQ evidence without turning detail routes into registry dumps.
 Final proof: `scripts/verify.sh` green, including 153 backend tests, 17
 dashboard unit tests, Skill/API smokes, 14 Playwright e2e tests and dashboard
 production build.
+
+Latest Ads optimizer/readiness and Command Center cleanup proof, 2026-06-22
+16:34 CEST: `/api/ads/diagnostics` exposes a typed
+`optimizer_readiness_contract` that separates review-ready campaign/search
+term/custom segment work from blocked change impact and apply safety. The
+contract is present in shared schemas, `/ads-doctor`, scoped
+`wilq-ads-doctor` context-pack and the Ads skill smoke. Ads context-pack now
+compacts optimizer readiness and decision queue payloads; ActionObject detail
+uses `GET /api/actions/{action_id}` instead of broad `/api/actions`, and
+`/content-planner` no longer blocks the whole route on the full actions
+registry. Command Center first screen now hides raw `ev_*`, `act_*`, `Skill:
+wilq-*` and `Context-pack: /api/codex/context-pack`; it shows Polish status
+labels, marketer-readable source names, proof counts and safe-action counts.
+Browser proof on `http://127.0.0.1:5173/command-center` shows five decisions,
+one blocker and seven sources without first-screen raw trace IDs. Final proof:
+`scripts/verify.sh` green, including 153 backend tests, 17 dashboard unit
+tests, Skill/API smokes, 14 Playwright e2e tests and dashboard production
+build.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and
@@ -2132,7 +2150,7 @@ Work in this order:
    `117 passed`, dashboard unit `14 passed`, Playwright e2e `9 passed`,
    security, skill/API smokes and dashboard production build passed.
 
-2. **Active local slice: Command Center as canonical `DailyDecision`.**
+2. **Done: Command Center as canonical `DailyDecision`.**
    Introduce one first-screen decision model instead of competing
    `operator_brief`, `action_plan`, `marketing_brief`, diagnostics and action
    fragments. A `DailyDecision` must include:
@@ -2183,7 +2201,19 @@ Work in this order:
    Follow-up completed on 2026-06-19: `/ga4` now consumes a typed
    `Ga4DecisionItem` queue from `/api/ga4/diagnostics.decision_queue` and shows
    marketer-facing decisions instead of raw `landing/source/campaign behavior`
-   diagnostic sections. Browser proof found no stale phrases:
+   cards.
+
+   Follow-up completed on 2026-06-22: Command Center first screen was cleaned
+   again as a marketer view, not a trace registry. It keeps the same
+   `DailyDecision` evidence/action state, but hides raw `ev_*`, `act_*`,
+   `Skill: wilq-*` and `Context-pack: /api/codex/context-pack` from the first
+   screen. It now shows Polish status labels, human source names, proof counts
+   and safe-action counts, with raw IDs preserved on supporting detail routes.
+   Browser proof and Playwright prove this behavior, and `scripts/verify.sh`
+   passed with backend, dashboard, skill smoke, e2e and build gates.
+
+   Earlier GA4 route cleanup also removed stale diagnostic sections. Browser
+   proof found no stale phrases:
    `payload preview`, `read-only`, `Evidence`, `READY`, `configured`,
    `WP match`, `WP missing`, `landing/source/campaign`,
    `Analytics Safety Gate`, `Tracking readiness`, `conversion-like`,

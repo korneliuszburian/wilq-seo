@@ -37,6 +37,24 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads optimizer readiness, context-pack/action performance i Command Center
+  marketer cleanup, 2026-06-22 16:34 CEST. `/api/ads/diagnostics` ma teraz
+  typed `optimizer_readiness_contract`, który rozdziela obszary gotowe do
+  review od blokad apply/change impact. Kontrakt jest obecny w shared schema,
+  dashboardzie `/ads-doctor`, scoped `wilq-ads-doctor` context-packu i smoke
+  skilla; apply pozostaje zablokowany. `POST /api/codex/context-pack` dla Ads
+  ma dodatkową kompakcję optimizer readiness i decision queue, a detail route
+  ActionObject używa `GET /api/actions/{action_id}` zamiast pobierać całe
+  `/api/actions`. `/content-planner` nie blokuje już całej strony na pełnym
+  `/api/actions`; pokazuje shell ActionObject IDs i dogrywa detale później.
+  Command Center first screen ukrywa surowe `ev_*`, `act_*`, `Skill:
+  wilq-*` i `Context-pack: /api/codex/context-pack`; pokazuje polskie statusy,
+  ludzkie nazwy źródeł, podsumowanie dowodów i liczbę bezpiecznych akcji do
+  walidacji. Browser proof na `http://127.0.0.1:5173/command-center` pokazuje
+  5 decyzji, 1 blocker, 7 źródeł, bez raw trace IDs na pierwszym ekranie.
+  Final proof: `scripts/verify.sh` green, including 153 backend tests, 17
+  dashboard unit tests, Skill/API smokes, 14 Playwright e2e tests and
+  dashboard production build.
 - Dashboard detail route performance/stability, 2026-06-22 11:55 CEST.
   Root cause dwóch późnych failures w `scripts/verify.sh`: detail route dla
   evidence czekał na pełne `/api/evidence` registry (~1.7 MB, ~17 s), a detail
