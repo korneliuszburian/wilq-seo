@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Ahrefs route extraction, 2026-06-22 23:15 CEST.
+  `AhrefsDiagnosticSurface`, Ahrefs operator summary, gap contract panel,
+  proof panel and Ahrefs label helpers were extracted from `App.tsx` into
+  `AhrefsDiagnosticSurface.tsx`. `/ahrefs` still reads
+  `/api/ahrefs/diagnostics`, but Ahrefs-specific authority/gap presentation no
+  longer lives in the route monolith. Current line-counts: `App.tsx=4120`,
+  `AhrefsDiagnosticSurface.tsx=353`. Focused proof: dashboard lint OK,
+  dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "ahrefs route renders authority context and typed gap records"`
+  OK: 1/1.
 - Dashboard content diagnostics extraction, 2026-06-22 23:13 CEST.
   `ContentDiagnosticSurface`, content operator summary, content brief preview,
   WordPress draft payload preview, content decision cards, proof panel and
