@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Ads Doctor extraction, 2026-06-22 23:30 CEST.
+  Entire Ads Doctor route surface, Ads operator summary, campaign/KPI/budget/
+  recommendation/search-term/negative-keyword panels, Ads labels and Ads
+  format helpers were extracted from `App.tsx` into `AdsDoctorSurface.tsx`.
+  `App.tsx` is now a route-composition file instead of a dashboard monolith.
+  Current line-counts: `App.tsx=211`, `AdsDoctorSurface.tsx=2294`.
+  Focused proof: dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "ads doctor route"` OK: 1/1 and
+  focused
+  `vitest run src/routes/App.test.tsx -t "custom segments route renders dedicated review-only contract"`
+  OK: 1/1.
 - Dashboard Custom Segments route extraction, 2026-06-22 23:28 CEST.
   `CustomSegmentsDiagnosticSurface`, custom segment candidates panel and
   audience forecast panel were extracted from `App.tsx` into

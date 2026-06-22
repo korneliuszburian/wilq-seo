@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 23:28 CEST.
+Last updated: 2026-06-22 23:30 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -65,14 +65,18 @@ clear owner and integration plan.
 Current dashboard monolith slice: `ContentDiagnosticSurface`,
 `AhrefsDiagnosticSurface`, `LocaloDiagnosticSurface` and
 `DemandGenDiagnosticSurface`, `Ga4DiagnosticSurface` and
-`CustomSegmentsDiagnosticSurface` have been extracted from
-`apps/dashboard/src/routes/App.tsx` into dedicated route modules. Current
-line-counts: `App.tsx=2507`, `ContentDiagnosticSurface.tsx=821`,
+`CustomSegmentsDiagnosticSurface` plus `AdsDoctorSurface` have been extracted
+from `apps/dashboard/src/routes/App.tsx` into dedicated route modules. Current
+line-counts: `App.tsx=211`, `AdsDoctorSurface.tsx=2294`,
+`ContentDiagnosticSurface.tsx=821`,
 `AhrefsDiagnosticSurface.tsx=353`, `LocaloDiagnosticSurface.tsx=349`,
 `DemandGenDiagnosticSurface.tsx=361`, `Ga4DiagnosticSurface.tsx=581`.
 `CustomSegmentsDiagnosticSurface.tsx=433`. Focused proof: dashboard lint OK,
 dashboard typecheck OK, focused content/GSC/GA4/Ahrefs/Localo/Demand Gen/Custom
-Segments route tests OK.
+Segments/Ads Doctor route tests OK. This resolves the immediate `App.tsx`
+monolith concern for the dashboard route shell; remaining large files should be
+handled as separate code-quality slices only when they block product velocity or
+reviewability.
 
 ## Product Bar
 
