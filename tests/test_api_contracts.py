@@ -2558,6 +2558,39 @@ def test_daily_runtime_cache_seconds_default_and_env(
     assert daily_runtime._cache_seconds() == 30.0
 
 
+def test_tactical_queue_uses_short_ttl_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import tactical_queue
+
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setenv("WILQ_TACTICAL_QUEUE_CACHE_SECONDS", "30")
+    tactical_queue.clear_tactical_queue_cache()
+    calls = {"build": 0}
+
+    def fake_build() -> TacticalQueueResponse:
+        calls["build"] += 1
+        return TacticalQueueResponse(
+            strict_instruction=f"cached tactical queue {calls['build']}",
+            items=[],
+            evidence_ids=[],
+            action_ids=[],
+        )
+
+    monkeypatch.setattr(tactical_queue, "_build_tactical_queue", fake_build)
+
+    first = tactical_queue.build_tactical_queue()
+    second = tactical_queue.build_tactical_queue()
+    tactical_queue.clear_tactical_queue_cache()
+    third = tactical_queue.build_tactical_queue()
+
+    assert first.strict_instruction == "cached tactical queue 1"
+    assert second.strict_instruction == "cached tactical queue 1"
+    assert third.strict_instruction == "cached tactical queue 2"
+    assert calls == {"build": 2}
+    tactical_queue.clear_tactical_queue_cache()
+
+
 def test_marketing_brief_aggregates_metric_facts_and_blockers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

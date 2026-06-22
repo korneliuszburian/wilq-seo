@@ -6090,6 +6090,11 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Metric facts")).not.toBeInTheDocument();
     expect(screen.queryByText("24 Taktyki")).not.toBeInTheDocument();
     expect(screen.queryByText("Dokończ Localo access")).not.toBeInTheDocument();
+    expect(
+      vi.mocked(fetch).mock.calls.some(([url]) =>
+        String(url).endsWith("/api/marketing/tactical-queue")
+      )
+    ).toBe(false);
 
     cleanup();
     testQueryClient.clear();

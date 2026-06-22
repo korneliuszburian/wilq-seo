@@ -57,7 +57,7 @@ from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.localo_diagnostics import build_localo_diagnostics
 from wilq.briefing.marketing_brief import core_brief_actions
 from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
-from wilq.briefing.tactical_queue import build_tactical_queue
+from wilq.briefing.tactical_queue import build_tactical_queue, clear_tactical_queue_cache
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.refresh import (
     get_connector_refresh_run,
@@ -800,6 +800,12 @@ def _skill_scoped_context_pack(
 
 def clear_skill_context_cache() -> None:
     _cached_skill_context_packs.clear()
+
+
+def clear_api_view_model_caches() -> None:
+    clear_tactical_queue_cache()
+    clear_daily_runtime_cache()
+    clear_skill_context_cache()
 
 
 def _read_skill_context_cache(request: ContextPackRequest) -> dict[str, Any] | None:
@@ -3063,8 +3069,7 @@ def connector_refresh(
     run = run_connector_refresh(connector, request)
     if run is None:
         raise HTTPException(status_code=404, detail=f"Unknown connector: {connector}")
-    clear_daily_runtime_cache()
-    clear_skill_context_cache()
+    clear_api_view_model_caches()
     return run
 
 
@@ -3217,8 +3222,7 @@ def validate_action_endpoint(action_id: str) -> dict[str, Any]:
     if action is None:
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = validate_action(action).model_dump(mode="json")
-    clear_daily_runtime_cache()
-    clear_skill_context_cache()
+    clear_api_view_model_caches()
     return result
 
 
@@ -3246,8 +3250,7 @@ def review_action_endpoint(
                 evidence_ids=action.evidence_ids,
             )
         )
-    clear_daily_runtime_cache()
-    clear_skill_context_cache()
+    clear_api_view_model_caches()
     return result.model_dump(mode="json")
 
 
@@ -3261,8 +3264,7 @@ def preview_action_endpoint(
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = preview_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
-    clear_daily_runtime_cache()
-    clear_skill_context_cache()
+    clear_api_view_model_caches()
     return result.model_dump(mode="json")
 
 
@@ -3289,8 +3291,7 @@ def confirm_action_endpoint(
                 evidence_ids=action.evidence_ids,
             )
         )
-    clear_daily_runtime_cache()
-    clear_skill_context_cache()
+    clear_api_view_model_caches()
     return result.model_dump(mode="json")
 
 
@@ -3304,8 +3305,7 @@ def impact_check_action_endpoint(
         raise HTTPException(status_code=404, detail=f"Unknown action: {action_id}")
     result = impact_check_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
-    clear_daily_runtime_cache()
-    clear_skill_context_cache()
+    clear_api_view_model_caches()
     return result.model_dump(mode="json")
 
 
@@ -3320,8 +3320,7 @@ def apply_action_endpoint(
     result = apply_action(action, request)
     local_state_store().save_audit_event(result.audit_event)
     local_state_store().save_action_mutation_audit(result.mutation_audit)
-    clear_daily_runtime_cache()
-    clear_skill_context_cache()
+    clear_api_view_model_caches()
     if not result.applied:
         raise HTTPException(status_code=409, detail=result.model_dump(mode="json"))
     return result.model_dump(mode="json")

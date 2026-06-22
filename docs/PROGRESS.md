@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Tactical queue performance cache, 2026-06-22 18:48 CEST.
+  `/api/marketing/tactical-queue` był największym mierzalnym nie-debug
+  bottleneckiem po odchudzeniu Command Center: przed zmianą median HTTP wynosił
+  około `1.198s` przy payloadzie `35262 B`. Dodano krótki TTL cache
+  `WILQ_TACTICAL_QUEUE_CACHE_SECONDS` z domyślnym `30s`, wyłączany w pytestach,
+  oraz wspólną invalidację `clear_api_view_model_caches()` po connector refresh
+  i ActionObject validate/review/preview/confirm/impact/apply paths. Live proof
+  po `scripts/local_stack.sh restart`: `/api/marketing/tactical-queue` median
+  `0.006s`, payload `35262 B`; Command Center warm median `0.007s`, daily
+  context-pack warm median `0.152s`, full debug context nadal ciężki
+  `~6.263s` / `~6.19 MB` i pozostaje debug path. Agent-browser proof otworzył
+  `http://127.0.0.1:5173/command-center` i zobaczył decyzje Merchant, Content,
+  GA4 oraz Ads. Proofy: ruff OK, mypy OK, focused backend tests OK, dashboard
+  route tests 17/17 OK, Playwright 14/14 OK, `scripts/verify.sh` OK with
+  backend API contracts 154/154.
 - Command Center daily focus + daily context-pack budget, 2026-06-22 17:52 CEST.
   `daily_decisions` na `/api/dashboard/command-center` są teraz ograniczone do
   core decyzji dnia: Merchant feed issues, Content SEO queue, GA4

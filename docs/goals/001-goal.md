@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 17:52 CEST.
+Last updated: 2026-06-22 18:48 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -3219,13 +3219,43 @@ Completed follow-up on 2026-06-19, pushed as
   now a known future performance issue, not a blocker for this API runtime
   slice.
 
+Completed follow-up on 2026-06-22, pushed as current performance cache slice:
+
+- `/api/marketing/tactical-queue` now has a short TTL cache controlled by
+  `WILQ_TACTICAL_QUEUE_CACHE_SECONDS`, default `30s`, disabled under pytest.
+  The tactical queue is read-only view-model state over metric facts and
+  ActionObjects, so it can share the same short-lived runtime behavior as
+  `DailyRuntime` while preserving evidence/action traceability.
+- API mutation/readiness paths now call one `clear_api_view_model_caches()`
+  helper after connector refresh and ActionObject
+  validate/review/preview/confirm/impact/apply operations. This invalidates
+  tactical queue, daily runtime and skill context caches together.
+- Measured live proof after `scripts/local_stack.sh restart`:
+  - before this slice, `/api/marketing/tactical-queue` median was about
+    `1.198s`, payload `35262 bytes`;
+  - after this slice, `/api/marketing/tactical-queue` median is `0.006s`,
+    payload `35262 bytes`;
+  - `/api/dashboard/command-center` warm median remains `0.007s`;
+  - `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` warm median
+    remains `0.152s`;
+  - full debug context remains intentionally heavy at about `6.263s` and
+    `6.19 MB`, so it must stay debug-only rather than default runtime.
+- Browser proof through `agent-browser` opened
+  `http://127.0.0.1:5173/command-center` and showed the four current primary
+  daily decisions plus `Źródła i ograniczenia`.
+- Verification:
+  - focused ruff/mypy/backend/dashboard tests passed;
+  - `scripts/verify.sh` passed with backend API contracts `154 passed`,
+    dashboard unit tests `17 passed`, Skill/API smokes, Playwright e2e
+    `14 passed` and dashboard production build.
+
 Remaining blocker:
 
-- Payload size, DuckDB read stability and warm daily Codex context are much
-  better, but cold runtime is not done. The remaining cost is inside Command
-  Center diagnostics/tactical joins and should be reduced by the next product
-  slices: Merchant issue-level triage, URL normalization and slimmer
-  `DailyDecision` data. Do not hide this in skill references.
+- Warm daily runtime is now acceptable for the local demo path, but cold runtime
+  and debug/full-context payloads are not done. Remaining performance work is
+  bundle/code-splitting risk, cold diagnostic construction for non-daily routes,
+  and keeping future value contracts from reintroducing broad registry fetches
+  into first-screen marketer routes. Do not hide this in skill references.
 
 ### 5. Code Quality and Maintainability Slice
 

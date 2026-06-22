@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable
 from dataclasses import dataclass
+from time import monotonic
 from typing import Literal
 from urllib.parse import urlparse
 
@@ -48,6 +50,8 @@ WORDPRESS_CANONICAL_HOST_ALIASES = {
     "www.ekologus.pl": {"ekologus.dev.proudsite.pl", "ekologus.pl"},
     "ekologus.pl": {"ekologus.dev.proudsite.pl", "www.ekologus.pl"},
 }
+DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS = 30.0
+_cached_tactical_queue: TacticalQueueCacheEntry | None = None
 
 
 @dataclass(frozen=True)
@@ -64,7 +68,59 @@ class WordPressMatch:
     requested_path_key: str
 
 
-def build_tactical_queue() -> TacticalQueueResponse:
+@dataclass(frozen=True)
+class TacticalQueueCacheEntry:
+    created_at: float
+    queue: TacticalQueueResponse
+
+
+def build_tactical_queue(use_cache: bool = True) -> TacticalQueueResponse:
+    if use_cache:
+        cached_queue = _read_tactical_queue_cache()
+        if cached_queue is not None:
+            return cached_queue
+    queue = _build_tactical_queue()
+    if use_cache:
+        _write_tactical_queue_cache(queue)
+    return queue
+
+
+def clear_tactical_queue_cache() -> None:
+    global _cached_tactical_queue
+    _cached_tactical_queue = None
+
+
+def _read_tactical_queue_cache() -> TacticalQueueResponse | None:
+    cache_seconds = _cache_seconds()
+    if cache_seconds <= 0:
+        return None
+    if _cached_tactical_queue is None:
+        return None
+    if monotonic() - _cached_tactical_queue.created_at > cache_seconds:
+        return None
+    return _cached_tactical_queue.queue
+
+
+def _write_tactical_queue_cache(queue: TacticalQueueResponse) -> None:
+    global _cached_tactical_queue
+    if _cache_seconds() <= 0:
+        return
+    _cached_tactical_queue = TacticalQueueCacheEntry(created_at=monotonic(), queue=queue)
+
+
+def _cache_seconds() -> float:
+    if os.getenv("PYTEST_CURRENT_TEST"):
+        return 0.0
+    configured = os.getenv("WILQ_TACTICAL_QUEUE_CACHE_SECONDS")
+    if configured is None:
+        return DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS
+    try:
+        return max(0.0, float(configured))
+    except ValueError:
+        return DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS
+
+
+def _build_tactical_queue() -> TacticalQueueResponse:
     facts = [
         fact
         for fact in _tactical_metric_facts()
