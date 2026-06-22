@@ -89,9 +89,12 @@ from wilq.schemas import (
     AdsRecommendationApplyPreview,
     AdsRecommendationRow,
     AdsRecommendationsReadContract,
+    AdsSearchTermCampaignReviewRow,
     AdsSearchTermMetricRow,
     AdsSearchTermNgramReadContract,
     AdsSearchTermNgramRow,
+    AdsSearchTermReviewRow,
+    AdsSearchTermReviewSummaryContract,
     AdsSearchTermSafetyReadContract,
     AdsSearchTermSafetyRow,
     AdsSearchTermsReadContract,
@@ -503,6 +506,10 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
                 )
             }
         )
+    search_term_review_summary_contract = _search_term_review_summary_contract(
+        search_terms_read_contract,
+        latest_refresh,
+    )
     search_term_ngram_read_contract = _search_term_ngram_read_contract(
         search_terms_read_contract,
         latest_refresh,
@@ -596,6 +603,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         impression_share_read_contract=impression_share_read_contract,
         change_history_read_contract=change_history_read_contract,
         search_terms_read_contract=search_terms_read_contract,
+        search_term_review_summary_contract=search_term_review_summary_contract,
         search_term_ngram_read_contract=search_term_ngram_read_contract,
         search_term_safety_read_contract=search_term_safety_read_contract,
         keyword_match_context_read_contract=keyword_match_context_read_contract,
@@ -3006,6 +3014,140 @@ def _search_terms_read_contract(
             "Uruchom read-only Google Ads vendor_read po wdrożeniu search_term_view "
             "i zapisz search_term_* metric facts."
         ),
+        )
+
+
+def _search_term_review_summary_contract(
+    search_terms_read_contract: AdsSearchTermsReadContract,
+    latest_refresh: ConnectorRefreshRun | None,
+) -> AdsSearchTermReviewSummaryContract:
+    rows = search_terms_read_contract.search_term_rows
+    blocked_claims = [
+        "search-term waste",
+        "negative keyword apply",
+        "CPA",
+        "ROAS",
+    ]
+    if not rows:
+        return AdsSearchTermReviewSummaryContract(
+            status="blocked",
+            title="Google Ads: brak kolejki review zapytań",
+            summary="WILQ nie ma search-term rows, więc nie może wskazać kolejności review.",
+            allowed_metrics=[],
+            missing_read_contracts=["search_term_view"],
+            operator_review_gates=[],
+            blocked_claims=["search terms", *blocked_claims],
+            source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+            evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
+            top_cost_search_terms=[],
+            campaign_review_rows=[],
+            next_step="Uruchom read-only Google Ads vendor_read z search_term_view.",
+        )
+
+    total_clicks = sum(row.clicks or 0 for row in rows)
+    total_impressions = sum(row.impressions or 0 for row in rows)
+    total_cost_micros = sum(row.cost_micros or 0 for row in rows)
+    total_conversions = sum(row.conversions or 0 for row in rows)
+    zero_conversion_count = sum(1 for row in rows if row.conversions == 0)
+    campaign_review_rows = _search_term_campaign_review_rows(rows)
+    return AdsSearchTermReviewSummaryContract(
+        status="ready",
+        title="Google Ads: kolejność review zapytań",
+        summary=(
+            f"WILQ ma {len(rows)} search-term rows do ręcznego review: "
+            f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
+            f"koszt_micros={total_cost_micros}, "
+            f"konwersje={_format_float(total_conversions)}, "
+            f"wiersze_bez_konwersji={zero_conversion_count}."
+        ),
+        allowed_metrics=search_terms_read_contract.allowed_metrics,
+        missing_read_contracts=search_terms_read_contract.missing_read_contracts,
+        operator_review_gates=_unique(
+            ["human_intent_review", *search_terms_read_contract.operator_review_gates]
+        ),
+        blocked_claims=blocked_claims,
+        source_connectors=search_terms_read_contract.source_connectors,
+        evidence_ids=search_terms_read_contract.evidence_ids,
+        total_search_term_count=len(rows),
+        zero_conversion_search_term_count=zero_conversion_count,
+        total_clicks=total_clicks,
+        total_impressions=total_impressions,
+        total_cost_micros=total_cost_micros,
+        total_conversions=round(total_conversions, 6),
+        top_cost_search_terms=[
+            _search_term_review_row(row) for row in rows[:5]
+        ],
+        campaign_review_rows=campaign_review_rows,
+        next_step=(
+            "Najpierw przejrzyj kampanie i zapytania z największym kosztem. "
+            "Nie nazywaj ich waste i nie twórz wykluczeń bez review intencji, "
+            "safety checku, payload preview i walidacji ActionObject."
+        ),
+    )
+
+
+def _search_term_review_row(row: AdsSearchTermMetricRow) -> AdsSearchTermReviewRow:
+    return AdsSearchTermReviewRow(
+        search_term=row.search_term,
+        campaign_id=row.campaign_id,
+        campaign_name=row.campaign_name,
+        ad_group_id=row.ad_group_id,
+        ad_group_name=row.ad_group_name,
+        search_term_status=row.search_term_status,
+        clicks=row.clicks,
+        impressions=row.impressions,
+        cost_micros=row.cost_micros,
+        conversions=row.conversions,
+        evidence_ids=row.evidence_ids,
+        blocked_claims=[
+            "search-term waste",
+            "negative keyword apply",
+            "CPA",
+            "ROAS",
+        ],
+    )
+
+
+def _search_term_campaign_review_rows(
+    rows: list[AdsSearchTermMetricRow],
+) -> list[AdsSearchTermCampaignReviewRow]:
+    grouped: dict[tuple[str | None, str | None], list[AdsSearchTermMetricRow]] = {}
+    for row in rows:
+        grouped.setdefault((row.campaign_id, row.campaign_name), []).append(row)
+
+    review_rows = []
+    for (campaign_id, campaign_name), campaign_rows in grouped.items():
+        review_rows.append(
+            AdsSearchTermCampaignReviewRow(
+                campaign_id=campaign_id,
+                campaign_name=campaign_name,
+                search_term_count=len(campaign_rows),
+                zero_conversion_search_term_count=sum(
+                    1 for row in campaign_rows if row.conversions == 0
+                ),
+                clicks=sum(row.clicks or 0 for row in campaign_rows),
+                impressions=sum(row.impressions or 0 for row in campaign_rows),
+                cost_micros=sum(row.cost_micros or 0 for row in campaign_rows),
+                conversions=round(
+                    sum(row.conversions or 0 for row in campaign_rows),
+                    6,
+                ),
+                evidence_ids=_unique(
+                    evidence_id
+                    for row in campaign_rows
+                    for evidence_id in row.evidence_ids
+                ),
+                blocked_claims=[
+                    "search-term waste",
+                    "negative keyword apply",
+                    "CPA",
+                    "ROAS",
+                ],
+            )
+        )
+    return sorted(
+        review_rows,
+        key=lambda row: (-row.cost_micros, -row.clicks, row.campaign_name or ""),
     )
 
 

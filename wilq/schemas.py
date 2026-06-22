@@ -1105,6 +1105,58 @@ class AdsSearchTermsReadContract(BaseModel):
     next_step: str
 
 
+class AdsSearchTermReviewRow(BaseModel):
+    search_term: str
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    ad_group_id: str | None = None
+    ad_group_name: str | None = None
+    search_term_status: str | None = None
+    clicks: int | None = None
+    impressions: int | None = None
+    cost_micros: int | None = None
+    conversions: float | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsSearchTermCampaignReviewRow(BaseModel):
+    campaign_id: str | None = None
+    campaign_name: str | None = None
+    search_term_count: int = 0
+    zero_conversion_search_term_count: int = 0
+    clicks: int = 0
+    impressions: int = 0
+    cost_micros: int = 0
+    conversions: float = 0.0
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class AdsSearchTermReviewSummaryContract(BaseModel):
+    id: str = "ads_search_term_review_summary_contract"
+    status: Literal["ready", "blocked"]
+    title: str
+    summary: str
+    allowed_metrics: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    operator_review_gates: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    total_search_term_count: int = 0
+    zero_conversion_search_term_count: int = 0
+    total_clicks: int = 0
+    total_impressions: int = 0
+    total_cost_micros: int = 0
+    total_conversions: float = 0.0
+    top_cost_search_terms: list[AdsSearchTermReviewRow] = Field(default_factory=list)
+    campaign_review_rows: list[AdsSearchTermCampaignReviewRow] = Field(
+        default_factory=list
+    )
+    next_step: str
+
+
 class AdsSearchTermNgramRow(BaseModel):
     ngram: str
     ngram_size: int = Field(ge=1, le=3)
@@ -1533,6 +1585,7 @@ class AdsDiagnosticsResponse(BaseModel):
     impression_share_read_contract: AdsImpressionShareReadContract
     change_history_read_contract: AdsChangeHistoryReadContract
     search_terms_read_contract: AdsSearchTermsReadContract
+    search_term_review_summary_contract: AdsSearchTermReviewSummaryContract
     search_term_ngram_read_contract: AdsSearchTermNgramReadContract
     search_term_safety_read_contract: AdsSearchTermSafetyReadContract
     keyword_match_context_read_contract: AdsKeywordMatchContextReadContract

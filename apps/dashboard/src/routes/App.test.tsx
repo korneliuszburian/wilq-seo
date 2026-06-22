@@ -1347,6 +1347,70 @@ const adsDiagnostics = {
     ],
     next_step: "Użyj wierszy zapytań jako przeglądu danych z reklam."
   },
+  search_term_review_summary_contract: {
+    id: "ads_search_term_review_summary_contract",
+    status: "ready",
+    title: "Google Ads: kolejność review zapytań",
+    summary:
+      "WILQ ma 1 search-term rows do ręcznego review: kliknięcia=12, wyświetlenia=140, koszt_micros=9000000, konwersje=1, wiersze_bez_konwersji=0.",
+    allowed_metrics: [
+      "search_term",
+      "campaign",
+      "ad_group",
+      "status",
+      "clicks",
+      "impressions",
+      "cost_micros",
+      "conversions",
+      "conversion_value"
+    ],
+    missing_read_contracts: ["90_day_safety_check"],
+    operator_review_gates: [
+      "human_intent_review",
+      "negative_keyword_action_validation"
+    ],
+    blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"],
+    source_connectors: ["google_ads"],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    total_search_term_count: 1,
+    zero_conversion_search_term_count: 0,
+    total_clicks: 12,
+    total_impressions: 140,
+    total_cost_micros: 9000000,
+    total_conversions: 1,
+    top_cost_search_terms: [
+      {
+        search_term: "bdo rejestracja",
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        ad_group_id: "456",
+        ad_group_name: "BDO",
+        search_term_status: "ADDED",
+        clicks: 12,
+        impressions: 140,
+        cost_micros: 9000000,
+        conversions: 1,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"]
+      }
+    ],
+    campaign_review_rows: [
+      {
+        campaign_id: "123",
+        campaign_name: "Ekologus Search",
+        search_term_count: 1,
+        zero_conversion_search_term_count: 0,
+        clicks: 12,
+        impressions: 140,
+        cost_micros: 9000000,
+        conversions: 1,
+        evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+        blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"]
+      }
+    ],
+    next_step:
+      "Najpierw przejrzyj kampanie i zapytania z największym kosztem."
+  },
   search_term_ngram_read_contract: {
     id: "ads_search_term_ngram_read_contract",
     status: "ready",

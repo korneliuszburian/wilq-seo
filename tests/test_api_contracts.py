@@ -6444,6 +6444,38 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             "blocked_claims": ["CPA", "ROAS", "negative keyword apply", "wasted budget"],
         },
     ]
+    search_term_review_contract = payload["search_term_review_summary_contract"]
+    assert search_term_review_contract["status"] == "ready"
+    assert search_term_review_contract["total_search_term_count"] == 2
+    assert search_term_review_contract["zero_conversion_search_term_count"] == 1
+    assert search_term_review_contract["total_clicks"] == 10
+    assert search_term_review_contract["total_impressions"] == 100
+    assert search_term_review_contract["total_cost_micros"] == 12000000
+    assert search_term_review_contract["total_conversions"] == 1.0
+    assert search_term_review_contract["top_cost_search_terms"][0]["search_term"] == (
+        "bdo rejestracja"
+    )
+    assert search_term_review_contract["campaign_review_rows"] == [
+        {
+            "campaign_id": "101",
+            "campaign_name": "Brand Search",
+            "search_term_count": 2,
+            "zero_conversion_search_term_count": 1,
+            "clicks": 10,
+            "impressions": 100,
+            "cost_micros": 12000000,
+            "conversions": 1.0,
+            "evidence_ids": [refresh_response.json()["evidence_ids"][-1]],
+            "blocked_claims": [
+                "search-term waste",
+                "negative keyword apply",
+                "CPA",
+                "ROAS",
+            ],
+        }
+    ]
+    assert "search-term waste" in search_term_review_contract["blocked_claims"]
+    assert "negative keyword apply" in search_term_review_contract["blocked_claims"]
     search_terms_section = next(
         section for section in payload["sections"] if section["id"] == "ads_search_terms"
     )

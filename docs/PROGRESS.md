@@ -37,6 +37,26 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads search-term review summary contract, 2026-06-22 04:28 CEST.
+  `/api/ads/diagnostics` ma teraz typed
+  `search_term_review_summary_contract`, który agreguje live search-term rows
+  do kolejki ręcznego review bez claimów o waste, CPA, ROAS ani apply
+  wykluczeń. RED/GREEN proof:
+  `tests/test_api_contracts.py::test_ads_diagnostics_exposes_live_campaign_metric_facts`
+  najpierw failował na `KeyError: search_term_review_summary_contract`, potem
+  przeszedł po dodaniu kontraktu. Live proof po `scripts/local_stack.sh
+  restart`: `status=ready`, `total_search_term_count=50`,
+  `zero_conversion_search_term_count=50`, `total_clicks=7`,
+  `total_impressions=70`, `total_cost_micros=45969902`,
+  `campaign_review_rows=1`, top kosztowe zapytania zaczynają się od
+  `asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a`,
+  `alba czeladź`, `darmowy odbiór elektrośmieci`. Blocked claims pozostają:
+  `search-term waste`, `negative keyword apply`, `CPA`, `ROAS`.
+  `POST /api/codex/context-pack` dla `wilq-ads-doctor` niesie ten sam
+  kontrakt, a smoke skilla przeszedł z `context_pack_bytes=195569`, czyli
+  poniżej limitu 200 KB. Dashboard `/ads-doctor` pokazuje panel
+  `Kolejność review zapytań` przed surową tabelą search terms. Wąskie proofy:
+  ruff OK, mypy OK, dashboard unit tests 17/17 OK.
 - GA4 conversion/key-event readiness contract, 2026-06-22 04:01 CEST.
   `/api/ga4/diagnostics` ma teraz typed
   `conversion_readiness_contract`, który rozdziela gotowość review jakości

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 04:01 CEST.
+Last updated: 2026-06-22 04:28 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -133,6 +133,19 @@ metrics, so `/api/ga4/diagnostics` correctly reports
 context-pack must show this same blocker instead of implying GA4 is fully ready
 for ROAS, revenue, profitability, conversion-drop or attribution verdicts.
 Missing contracts must be shown as blockers, not hidden with prompt language.
+
+Ads search-term review now has a typed
+`ads_search_term_review_summary_contract` that sits above raw
+`search_terms_read_contract` rows. It aggregates search-term row count,
+zero-conversion row count, clicks, impressions, cost, conversions, top cost
+terms and campaign-level review rows so Ads Doctor can say "review these
+queries/campaigns first" without claiming waste, CPA, ROAS or apply-ready
+negative keywords. Live proof on 2026-06-22: status `ready`,
+`total_search_term_count=50`, `zero_conversion_search_term_count=50`,
+`total_cost_micros=45969902`, `campaign_review_rows=1`, blocked claims
+`search-term waste`, `negative keyword apply`, `CPA`, `ROAS`; the same contract
+is present in the scoped `wilq-ads-doctor` context-pack and dashboard
+`/ads-doctor` renders `Kolejność review zapytań`.
 
 Latest Ads Doctor ActionObject scope compaction proof, 2026-06-22 01:40 CEST:
 `wilq-ads-doctor` now has an explicit ActionObject allowlist. It no longer
@@ -3293,10 +3306,11 @@ Commit rules:
    Command Center, `/merchant`, `/content-planner`, `/ga4`, `/ads-doctor`,
    `/localo`, `/actions` and `/opportunities` have current decision-first
    cleanup proof. Do not restart those audits unless browser proof shows a
-   regression. Next product work should add missing value contracts:
-   deeper search-term evidence, live Keyword Planner access/enrichment,
-   live forecast/audience-size data, custom segment apply/audit contracts
-   and remaining campaign optimization contracts.
+   regression. Search-term review summary now exists as a typed contract; next
+   Ads product work should move beyond review ordering into missing value
+   contracts: approved live Keyword Planner access/enrichment, live forecast/
+   audience-size data, custom segment apply/audit contracts and remaining
+   campaign optimization contracts.
    Demand Gen readiness now has review-only
    `act_review_demand_gen_readiness` plus available empty-read contracts for
    `demand_gen_ad_group_ad_rows`, `demand_gen_creative_asset_rows`,

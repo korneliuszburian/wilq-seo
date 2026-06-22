@@ -795,6 +795,56 @@ export const AdsSearchTermsReadContractSchema = z.object({
   next_step: z.string()
 });
 
+export const AdsSearchTermReviewRowSchema = z.object({
+  search_term: z.string(),
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  ad_group_id: z.string().nullable().optional(),
+  ad_group_name: z.string().nullable().optional(),
+  search_term_status: z.string().nullable().optional(),
+  clicks: z.number().nullable().optional(),
+  impressions: z.number().nullable().optional(),
+  cost_micros: z.number().nullable().optional(),
+  conversions: z.number().nullable().optional(),
+  evidence_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsSearchTermCampaignReviewRowSchema = z.object({
+  campaign_id: z.string().nullable().optional(),
+  campaign_name: z.string().nullable().optional(),
+  search_term_count: z.number().int().nonnegative(),
+  zero_conversion_search_term_count: z.number().int().nonnegative(),
+  clicks: z.number().int().nonnegative(),
+  impressions: z.number().int().nonnegative(),
+  cost_micros: z.number().int().nonnegative(),
+  conversions: z.number(),
+  evidence_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const AdsSearchTermReviewSummaryContractSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  title: z.string(),
+  summary: z.string(),
+  allowed_metrics: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  operator_review_gates: z.array(z.string()).optional().default([]),
+  blocked_claims: z.array(z.string()),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  total_search_term_count: z.number().int().nonnegative(),
+  zero_conversion_search_term_count: z.number().int().nonnegative(),
+  total_clicks: z.number().int().nonnegative(),
+  total_impressions: z.number().int().nonnegative(),
+  total_cost_micros: z.number().int().nonnegative(),
+  total_conversions: z.number(),
+  top_cost_search_terms: z.array(AdsSearchTermReviewRowSchema),
+  campaign_review_rows: z.array(AdsSearchTermCampaignReviewRowSchema),
+  next_step: z.string()
+});
+
 export const AdsSearchTermNgramRowSchema = z.object({
   ngram: z.string(),
   ngram_size: z.number().min(1).max(3),
@@ -1199,6 +1249,7 @@ export const AdsDiagnosticsResponseSchema = z.object({
   impression_share_read_contract: AdsImpressionShareReadContractSchema,
   change_history_read_contract: AdsChangeHistoryReadContractSchema,
   search_terms_read_contract: AdsSearchTermsReadContractSchema,
+  search_term_review_summary_contract: AdsSearchTermReviewSummaryContractSchema,
   search_term_ngram_read_contract: AdsSearchTermNgramReadContractSchema,
   search_term_safety_read_contract: AdsSearchTermSafetyReadContractSchema,
   keyword_match_context_read_contract: AdsKeywordMatchContextReadContractSchema,

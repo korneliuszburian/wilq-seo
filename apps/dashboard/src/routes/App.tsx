@@ -2081,6 +2081,7 @@ function AdsDoctorSurface() {
 
 function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
   const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
+  const searchTermReview = data.search_term_review_summary_contract;
   const decisions = data.decision_queue
     .slice()
     .sort((left, right) => adsDecisionSortValue(left) - adsDecisionSortValue(right));
@@ -2131,6 +2132,10 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
           <MetricTile
             label="Zapytania"
             value={data.search_terms_read_contract.search_term_rows.length}
+          />
+          <MetricTile
+            label="Zero conv."
+            value={searchTermReview.zero_conversion_search_term_count}
           />
           <MetricTile
             label="N-gramy"
@@ -2278,6 +2283,7 @@ function AdsMetricEvidencePanel({
   const recommendationRows = data.recommendations_read_contract.recommendation_rows;
   const impressionShareRows = data.impression_share_read_contract.impression_share_rows;
   const changeHistoryRows = data.change_history_read_contract.change_history_rows;
+  const searchTermReview = data.search_term_review_summary_contract;
   const searchTermRows = data.search_terms_read_contract.search_term_rows;
   const searchTermNgramRows = data.search_term_ngram_read_contract.ngram_rows;
   const searchTermSafetyRows = data.search_term_safety_read_contract.safety_rows;
@@ -2295,6 +2301,7 @@ function AdsMetricEvidencePanel({
     ...data.recommendations_read_contract.missing_read_contracts,
     ...data.impression_share_read_contract.missing_read_contracts,
     ...data.change_history_read_contract.missing_read_contracts,
+    ...searchTermReview.missing_read_contracts,
     ...data.search_terms_read_contract.missing_read_contracts,
     ...data.search_term_ngram_read_contract.missing_read_contracts,
     ...data.search_term_safety_read_contract.missing_read_contracts,
@@ -2304,6 +2311,7 @@ function AdsMetricEvidencePanel({
     ...data.negative_keywords_read_contract.missing_read_contracts
   ]).map(adsMissingReadContractLabel);
   const operatorReviewGates = uniqueValues([
+    ...searchTermReview.operator_review_gates,
     ...(data.search_terms_read_contract.operator_review_gates ?? []),
     ...data.search_term_ngram_read_contract.operator_review_gates,
     ...data.search_term_safety_read_contract.operator_review_gates,
@@ -2321,6 +2329,7 @@ function AdsMetricEvidencePanel({
     ...data.recommendations_read_contract.blocked_claims,
     ...data.impression_share_read_contract.blocked_claims,
     ...data.change_history_read_contract.blocked_claims,
+    ...searchTermReview.blocked_claims,
     ...data.search_terms_read_contract.blocked_claims,
     ...data.search_term_ngram_read_contract.blocked_claims,
     ...data.search_term_safety_read_contract.blocked_claims,
@@ -2351,6 +2360,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Rekom." value={recommendationRows.length} />
           <MetricTile label="Udział" value={impressionShareRows.length} />
           <MetricTile label="Zmiany" value={changeHistoryRows.length} />
+          <MetricTile label="Review zapytań" value={searchTermReview.total_search_term_count} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="N-gramy" value={searchTermNgramRows.length} />
           <MetricTile label="Safety 90d" value={searchTermSafetyRows.length} />
@@ -2382,6 +2392,10 @@ function AdsMetricEvidencePanel({
         />
         <AdsImpressionShareRowsTable rows={impressionShareRows} />
         <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
+        <AdsSearchTermReviewSummaryPanel
+          contract={searchTermReview}
+          currencyCode={currencyCode}
+        />
         <AdsSearchTermRowsTable rows={searchTermRows} currencyCode={currencyCode} />
         <AdsSearchTermNgramRowsTable
           rows={searchTermNgramRows}
@@ -2983,6 +2997,108 @@ function AdsChangeHistoryRowsTable({ rows }: { rows: AdsChangeHistoryRow[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function AdsSearchTermReviewSummaryPanel({
+  contract,
+  currencyCode
+}: {
+  contract: AdsDiagnosticsResponse["search_term_review_summary_contract"];
+  currencyCode?: string;
+}) {
+  if (contract.status === "blocked") {
+    return <BlockerNotice message={contract.summary} />;
+  }
+
+  return (
+    <div className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Kolejność review zapytań</h3>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            {contract.summary}
+          </p>
+          <p className="mt-1 text-sm font-medium text-ink">{contract.next_step}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+          <MetricTile label="Zapytania" value={contract.total_search_term_count} />
+          <MetricTile label="Zero conv." value={contract.zero_conversion_search_term_count} />
+          <MetricTile label="Kliknięcia" value={contract.total_clicks} />
+          <MetricTile label="Koszt" value={adsCost(contract.total_cost_micros, currencyCode)} />
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Kampanie do przejrzenia
+          </h4>
+          <div className="mt-2 overflow-x-auto rounded-md border border-line bg-white">
+            <table className="min-w-full text-left text-xs">
+              <thead className="border-b border-line bg-slate-50 uppercase tracking-normal text-slate-500">
+                <tr>
+                  <th className="py-2 pl-3 pr-3 font-semibold">Kampania</th>
+                  <th className="py-2 pr-3 font-semibold">Zapytania</th>
+                  <th className="py-2 pr-3 font-semibold">Zero conv.</th>
+                  <th className="py-2 pr-3 font-semibold">Koszt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {contract.campaign_review_rows.slice(0, 6).map((row) => (
+                  <tr key={`${row.campaign_id ?? "unknown"}-${row.campaign_name ?? "campaign"}`}>
+                    <td className="py-2 pl-3 pr-3 font-medium text-ink">
+                      {row.campaign_name ?? row.campaign_id ?? "brak"}
+                    </td>
+                    <td className="py-2 pr-3 text-slate-700">{row.search_term_count}</td>
+                    <td className="py-2 pr-3 text-slate-700">
+                      {row.zero_conversion_search_term_count}
+                    </td>
+                    <td className="py-2 pr-3 text-slate-700">
+                      {adsCost(row.cost_micros, currencyCode)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Top kosztowe zapytania
+          </h4>
+          <div className="mt-2 grid gap-2">
+            {contract.top_cost_search_terms.slice(0, 5).map((row) => (
+              <div
+                key={`${row.search_term}-${row.campaign_id ?? "unknown"}-${
+                  row.ad_group_id ?? "unknown"
+                }`}
+                className="rounded-md border border-line bg-white p-2"
+              >
+                <div className="text-sm font-medium text-ink">{row.search_term}</div>
+                <div className="mt-1 text-xs text-slate-600">
+                  {row.campaign_name ?? row.campaign_id ?? "brak kampanii"} / koszt{" "}
+                  {adsCost(row.cost_micros, currencyCode)} / konwersje{" "}
+                  {adsNumber(row.conversions)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine
+          label="Wymaga review"
+          values={contract.operator_review_gates.map(adsOperatorReviewGateLabel)}
+        />
+        <TraceLine
+          label="Nie wolno twierdzić"
+          values={contract.blocked_claims.map(adsBlockedClaimLabel)}
+        />
+      </div>
     </div>
   );
 }

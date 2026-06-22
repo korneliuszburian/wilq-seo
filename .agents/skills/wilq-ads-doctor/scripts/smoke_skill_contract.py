@@ -103,6 +103,9 @@ def main() -> int:
         ads_diagnostics.get("change_history_read_contract") or {}
     )
     search_terms_read_contract = ads_diagnostics.get("search_terms_read_contract") or {}
+    search_term_review_summary_contract = (
+        ads_diagnostics.get("search_term_review_summary_contract") or {}
+    )
     search_term_ngram_read_contract = (
         ads_diagnostics.get("search_term_ngram_read_contract") or {}
     )
@@ -344,6 +347,24 @@ def main() -> int:
                 "Blocked change history contract must list missing change_history "
                 "or empty change_event_rows"
             )
+    if search_term_review_summary_contract.get("status") not in {"ready", "blocked"}:
+        raise SystemExit("Ads diagnostics must expose search_term_review_summary_contract")
+    if search_term_review_summary_contract.get("status") == "ready":
+        pack_search_term_review_contract = (
+            pack.get("ads_diagnostics", {}).get("search_term_review_summary_contract")
+            or {}
+        )
+        if pack_search_term_review_contract.get("summary") != (
+            search_term_review_summary_contract.get("summary")
+        ):
+            raise SystemExit("Context pack search-term review contract differs")
+        if not search_term_review_summary_contract.get("campaign_review_rows"):
+            raise SystemExit("Ready search-term review contract must expose campaign rows")
+        if "search-term waste" not in search_term_review_summary_contract.get(
+            "blocked_claims",
+            [],
+        ):
+            raise SystemExit("Search-term review summary must keep waste claim blocked")
     if search_term_safety_read_contract.get("status") not in {"ready", "blocked"}:
         raise SystemExit("Ads diagnostics must expose search_term_safety_read_contract")
     if not search_term_safety_read_contract.get("blocked_claims"):
@@ -725,6 +746,21 @@ def main() -> int:
                         ),
                         "row_count": len(
                             search_terms_read_contract.get("search_term_rows") or []
+                        ),
+                    },
+                    "search_term_review_summary_contract": {
+                        "status": search_term_review_summary_contract.get("status"),
+                        "summary": search_term_review_summary_contract.get("summary"),
+                        "campaign_review_row_count": len(
+                            search_term_review_summary_contract.get(
+                                "campaign_review_rows"
+                            )
+                            or []
+                        ),
+                        "zero_conversion_search_term_count": (
+                            search_term_review_summary_contract.get(
+                                "zero_conversion_search_term_count"
+                            )
                         ),
                     },
                     "search_term_safety_read_contract": {
