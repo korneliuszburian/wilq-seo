@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Daily runtime split, 2026-06-23 00:36 CEST.
+  `/api/dashboard/command-center` no longer builds the full Marketing Brief on
+  the Command Center endpoint path. `wilq/briefing/daily_runtime.py` now has a
+  shared `DailyRuntimeBase` plus separate cached derivations:
+  `build_daily_command_center()` and `build_daily_marketing_brief()`. The
+  compatibility `build_daily_runtime()` still exists for surfaces that need both
+  objects. Focused proof:
+  `uv run pytest tests/test_api_contracts.py -q -k "daily_runtime or daily_command_center or command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache"`,
+  Python ruff OK and Python mypy OK. Live HTTP after stack restart showed first
+  process-warm Command Center hit still expensive, but the next Marketing Brief
+  derivation reused the command/base path and returned in about 0.35s, with warm
+  hits around 0.01s. Next performance bottleneck is deeper in Command Center
+  cold build itself: Ads/content/merchant/GA4 diagnostics and metric-store reads.
 - Ads operator summary contract, 2026-06-23 00:28 CEST.
   `/api/ads/diagnostics` exposes typed `operator_summary` for Ads Doctor:
   title/summary/next_step, top decision IDs, campaign/search-term counts,

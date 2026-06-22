@@ -52,7 +52,12 @@ from wilq.actions.service import (
 from wilq.briefing.ads_diagnostics import build_ads_diagnostics
 from wilq.briefing.ahrefs_diagnostics import build_ahrefs_diagnostics
 from wilq.briefing.content_diagnostics import build_content_diagnostics
-from wilq.briefing.daily_runtime import build_daily_runtime, clear_daily_runtime_cache
+from wilq.briefing.daily_runtime import (
+    build_daily_command_center,
+    build_daily_marketing_brief,
+    build_daily_runtime,
+    clear_daily_runtime_cache,
+)
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.localo_diagnostics import build_localo_diagnostics
 from wilq.briefing.marketing_brief import core_brief_actions
@@ -3075,12 +3080,12 @@ def connector_refresh(
 
 @app.get("/api/dashboard/command-center", response_model=CommandCenterResponse)
 def command_center() -> CommandCenterResponse:
-    return build_daily_runtime().command_center
+    return build_daily_command_center()
 
 
 @app.get("/api/marketing/brief", response_model=MarketingBrief)
 def marketing_brief() -> MarketingBrief:
-    return build_daily_runtime().marketing_brief
+    return build_daily_marketing_brief()
 
 
 @app.get("/api/marketing/tactical-queue", response_model=TacticalQueueResponse)

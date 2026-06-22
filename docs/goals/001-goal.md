@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 00:28 CEST.
+Last updated: 2026-06-23 00:36 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -3716,14 +3716,18 @@ Commit rules:
    ordering/counts/labels back into React; next Localo/Ahrefs/Merchant/GA4/
    content work should add new API facts or contracts, not UI-side recomputation.
 
-2. **Fix the measured Command Center cold-build bottleneck next.**
-   The latest performance scout found Command Center slowness is mostly backend
-   cold-build/duplicate daily view-model work: warm `/api/dashboard/command-center`
-   hits are fast, while cold build measured around 3.3s and `daily_runtime`,
-   `command_center` and `marketing_brief` recompute overlapping source state.
-   Next performance slice: split daily runtime into shared base inputs plus
-   separately cached `command_center` and `marketing_brief` derivations. After
-   that, consider route-level code splitting for dashboard app code.
+2. **Continue the measured Command Center performance work.**
+   First backend split is done: `/api/dashboard/command-center` now uses
+   `build_daily_command_center()` and does not build the full Marketing Brief on
+   that endpoint path; `/api/marketing/brief` uses
+   `build_daily_marketing_brief()`, and shared base inputs are cached
+   separately. Focused proof includes a test that Command Center does not call
+   `build_marketing_brief`. Next performance bottleneck is deeper in cold
+   Command Center internals: Ads/content/merchant/GA4 diagnostics and
+   metric-store reads. Do not hide this with arbitrary frontend loading copy;
+   profile the next cold path and move repeated source reads into typed shared
+   read bundles/view-models. After backend cold path improves, consider
+   route-level code splitting for dashboard app code.
 
 3. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a
@@ -3785,6 +3789,49 @@ Commit rules:
    Add only the final result and any active blockers back into this file.
 
 ## Latest Focused Verification
+
+Passed after the 2026-06-23 daily runtime split performance slice:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k "daily_runtime or daily_command_center or command_center_endpoint_uses_daily_runtime_cache or marketing_brief_endpoint_uses_daily_runtime_cache"
+uv run ruff check wilq/briefing/daily_runtime.py apps/api/wilq_api/main.py tests/test_api_contracts.py
+uv run mypy wilq/briefing/daily_runtime.py apps/api/wilq_api/main.py
+scripts/local_stack.sh restart
+uv run python - <<'PY'
+from time import perf_counter
+import httpx
+paths = [
+    "/api/dashboard/command-center",
+    "/api/dashboard/command-center",
+    "/api/marketing/brief",
+    "/api/marketing/brief",
+]
+with httpx.Client(base_url="http://127.0.0.1:8000", timeout=60.0) as client:
+    for path in paths:
+        start = perf_counter()
+        response = client.get(path)
+        elapsed = perf_counter() - start
+        print(f"{path} status={response.status_code} seconds={elapsed:.4f}")
+PY
+```
+
+Proof:
+
+- `build_daily_command_center()` has a focused test proving it does not call
+  `build_marketing_brief`;
+- `/api/dashboard/command-center` endpoint now calls `build_daily_command_center()`;
+- `/api/marketing/brief` endpoint now calls `build_daily_marketing_brief()`;
+- compatibility `build_daily_runtime()` still returns both objects for surfaces
+  that need both;
+- HTTP timing after restart: first process-warm Command Center hit remained
+  expensive, warm Command Center hit was about `0.0076s`, first Marketing Brief
+  after Command Center was about `0.3518s`, warm Marketing Brief was about
+  `0.0086s`;
+- next performance work should profile Command Center internals, not re-add
+  duplicate brief construction.
+
+Full `scripts/verify.sh` intentionally not run for this narrow performance
+contract slice; run it at the next broader release gate.
 
 Passed after the 2026-06-23 Ads operator summary view-model slice:
 

@@ -17,10 +17,21 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorStatus,
     MarketingBrief,
+    TacticalQueueResponse,
 )
 
 DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 30.0
-_cached_runtime: DailyRuntimeCacheEntry | None = None
+_cached_base: DailyRuntimeBaseCacheEntry | None = None
+_cached_command_center: DailyCommandCenterCacheEntry | None = None
+_cached_marketing_brief: DailyMarketingBriefCacheEntry | None = None
+
+
+@dataclass(frozen=True)
+class DailyRuntimeBase:
+    connectors: list[ConnectorStatus]
+    actions: list[ActionObject]
+    refresh_runs: list[ConnectorRefreshRun]
+    tactical_queue: TacticalQueueResponse
 
 
 @dataclass(frozen=True)
@@ -34,17 +45,47 @@ class DailyRuntime:
 
 
 @dataclass(frozen=True)
-class DailyRuntimeCacheEntry:
+class DailyRuntimeBaseCacheEntry:
     created_at: float
-    runtime: DailyRuntime
+    base: DailyRuntimeBase
+
+
+@dataclass(frozen=True)
+class DailyCommandCenterCacheEntry:
+    created_at: float
+    command_center: CommandCenterResponse
+
+
+@dataclass(frozen=True)
+class DailyMarketingBriefCacheEntry:
+    created_at: float
+    marketing_brief: MarketingBrief
 
 
 def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
-    """Build the daily marketer view once for API and Codex surfaces."""
+    """Build both daily marketer views for API and Codex surfaces."""
+    base = build_daily_runtime_base(use_cache=use_cache)
+    command = build_daily_command_center(use_cache=use_cache, base=base)
+    brief = build_daily_marketing_brief(
+        use_cache=use_cache,
+        base=base,
+        command_center=command,
+    )
+    return DailyRuntime(
+        connectors=base.connectors,
+        actions=base.actions,
+        refresh_runs=base.refresh_runs,
+        core_actions=core_brief_actions(base.actions),
+        command_center=command,
+        marketing_brief=brief,
+    )
+
+
+def build_daily_runtime_base(use_cache: bool = True) -> DailyRuntimeBase:
     if use_cache:
-        cached_runtime = _read_daily_runtime_cache()
-        if cached_runtime is not None:
-            return cached_runtime
+        cached_base = _read_daily_runtime_base_cache()
+        if cached_base is not None:
+            return cached_base
     with ThreadPoolExecutor(max_workers=4) as executor:
         connectors_future = executor.submit(list_connector_statuses)
         actions_future = executor.submit(list_actions)
@@ -55,54 +96,126 @@ def build_daily_runtime(use_cache: bool = True) -> DailyRuntime:
         actions = actions_future.result()
         refresh_runs = refresh_runs_future.result()
         tactical_queue = tactical_queue_future.result()
-        command_future = executor.submit(
-            build_command_center_response,
-            connectors=connectors,
-            tactical_queue=tactical_queue,
-            actions=actions,
-        )
-
-        command = command_future.result()
-        brief = build_marketing_brief(
-            connectors=connectors,
-            refresh_runs=refresh_runs,
-            actions=actions,
-            command_center=command,
-        )
-    runtime = DailyRuntime(
+    base = DailyRuntimeBase(
         connectors=connectors,
         actions=actions,
         refresh_runs=refresh_runs,
-        core_actions=core_brief_actions(actions),
-        command_center=command,
-        marketing_brief=brief,
+        tactical_queue=tactical_queue,
     )
     if use_cache:
-        _write_daily_runtime_cache(runtime)
-    return runtime
+        _write_daily_runtime_base_cache(base)
+    return base
+
+
+def build_daily_command_center(
+    use_cache: bool = True,
+    base: DailyRuntimeBase | None = None,
+) -> CommandCenterResponse:
+    if use_cache:
+        cached_command = _read_daily_command_center_cache()
+        if cached_command is not None:
+            return cached_command
+    base = base if base is not None else build_daily_runtime_base(use_cache=use_cache)
+    command = build_command_center_response(
+        connectors=base.connectors,
+        tactical_queue=base.tactical_queue,
+        actions=base.actions,
+    )
+    if use_cache:
+        _write_daily_command_center_cache(command)
+    return command
+
+
+def build_daily_marketing_brief(
+    use_cache: bool = True,
+    base: DailyRuntimeBase | None = None,
+    command_center: CommandCenterResponse | None = None,
+) -> MarketingBrief:
+    if use_cache:
+        cached_brief = _read_daily_marketing_brief_cache()
+        if cached_brief is not None:
+            return cached_brief
+    base = base if base is not None else build_daily_runtime_base(use_cache=use_cache)
+    command_center = command_center if command_center is not None else build_daily_command_center(
+        use_cache=use_cache,
+        base=base,
+    )
+    brief = build_marketing_brief(
+        connectors=base.connectors,
+        refresh_runs=base.refresh_runs,
+        actions=base.actions,
+        command_center=command_center,
+    )
+    if use_cache:
+        _write_daily_marketing_brief_cache(brief)
+    return brief
 
 
 def clear_daily_runtime_cache() -> None:
-    global _cached_runtime
-    _cached_runtime = None
+    global _cached_base, _cached_command_center, _cached_marketing_brief
+    _cached_base = None
+    _cached_command_center = None
+    _cached_marketing_brief = None
 
 
-def _read_daily_runtime_cache() -> DailyRuntime | None:
+def _read_daily_runtime_base_cache() -> DailyRuntimeBase | None:
     cache_seconds = _cache_seconds()
     if cache_seconds <= 0:
         return None
-    if _cached_runtime is None:
+    if _cached_base is None:
         return None
-    if monotonic() - _cached_runtime.created_at > cache_seconds:
+    if monotonic() - _cached_base.created_at > cache_seconds:
         return None
-    return _cached_runtime.runtime
+    return _cached_base.base
 
 
-def _write_daily_runtime_cache(runtime: DailyRuntime) -> None:
-    global _cached_runtime
+def _write_daily_runtime_base_cache(base: DailyRuntimeBase) -> None:
+    global _cached_base
     if _cache_seconds() <= 0:
         return
-    _cached_runtime = DailyRuntimeCacheEntry(created_at=monotonic(), runtime=runtime)
+    _cached_base = DailyRuntimeBaseCacheEntry(created_at=monotonic(), base=base)
+
+
+def _read_daily_command_center_cache() -> CommandCenterResponse | None:
+    cache_seconds = _cache_seconds()
+    if cache_seconds <= 0:
+        return None
+    if _cached_command_center is None:
+        return None
+    if monotonic() - _cached_command_center.created_at > cache_seconds:
+        return None
+    return _cached_command_center.command_center
+
+
+def _write_daily_command_center_cache(command_center: CommandCenterResponse) -> None:
+    global _cached_command_center
+    if _cache_seconds() <= 0:
+        return
+    _cached_command_center = DailyCommandCenterCacheEntry(
+        created_at=monotonic(),
+        command_center=command_center,
+    )
+
+
+def _read_daily_marketing_brief_cache() -> MarketingBrief | None:
+    cache_seconds = _cache_seconds()
+    if cache_seconds <= 0:
+        return None
+    if _cached_marketing_brief is None:
+        return None
+    if monotonic() - _cached_marketing_brief.created_at > cache_seconds:
+        return None
+    return _cached_marketing_brief.marketing_brief
+
+
+def _write_daily_marketing_brief_cache(marketing_brief: MarketingBrief) -> None:
+    global _cached_marketing_brief
+    if _cache_seconds() <= 0:
+        return
+    _cached_marketing_brief = DailyMarketingBriefCacheEntry(
+        created_at=monotonic(),
+        marketing_brief=marketing_brief,
+    )
 
 
 def _cache_seconds() -> float:
