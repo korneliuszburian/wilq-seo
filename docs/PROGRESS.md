@@ -37,6 +37,14 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard tactical queue extraction, 2026-06-22 22:52 CEST.
+  `TacticalQueuePanel`, tactical grouping, labels, context chips and shared
+  `shortPath` helper were extracted from `App.tsx` into
+  `TacticalQueuePanel.tsx`. Merchant and content surfaces now import the same
+  helpers instead of keeping tactical presentation logic in the route monolith.
+  Current line-counts: `App.tsx=5985`, `TacticalQueuePanel.tsx=350`. Focused
+  proof: dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx` OK: 14/14.
 - Dashboard operating route surfaces extraction, 2026-06-22 22:45 CEST.
   Top-level `/opportunities`, `/actions` and `/workflows` route surfaces were
   extracted from `App.tsx` into `OperatingRouteSurfaces.tsx`. This keeps route
