@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads budget pacing contract extraction, 2026-06-22 20:22 CEST.
+  `build_budget_pacing_read_contract` i helpery budget/shared-budget/apply-preview
+  zostały przeniesione z dużego `wilq/briefing/ads_diagnostics.py` do
+  `wilq/briefing/ads_budget_pacing.py`. Publiczny `/api/ads/diagnostics`
+  pozostaje bez zmiany; `ads_diagnostics.py` tylko składa kontrakty i dalej
+  renderuje sekcje diagnostyczne. File-size proof: `ads_diagnostics.py=6590`
+  linii, `ads_budget_pacing.py=400`. Wąskie proofy: ruff OK, mypy OK,
+  `tests/test_api_contracts.py` OK. Finalny proof: `scripts/verify.sh` OK,
+  including backend API contracts 154/154, dashboard unit tests 17/17,
+  Playwright 14/14 and dashboard production build. Focused Playwright
+  `custom segments route exposes review-only segment candidates` został
+  powtórzony po sprzątnięciu nakładających się runnerów i przeszedł; wcześniejszy
+  failure był startup/process contention, nie regresją route.
 - Dashboard workflows panel extraction, 2026-06-22 19:38 CEST.
   Route-specific panele `WorkflowRunList` i `WorkflowRegistryList` zostały
   przeniesione z `apps/dashboard/src/routes/App.tsx` do

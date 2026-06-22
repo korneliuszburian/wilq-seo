@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 19:38 CEST.
+Last updated: 2026-06-22 20:22 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -251,6 +251,22 @@ and opportunity summaries. `/api/opportunities` is deliberately decoupled from
 the focused `daily_decisions`: it is derived from the broader `action_plan`, so
 `opp_decision_review_localo_visibility_facts` remains available in the
 opportunity registry while Localo stays out of the primary daily cards.
+
+Latest Ads code-quality split proof, 2026-06-22 20:22 CEST:
+`build_budget_pacing_read_contract` and its budget/shared-budget/apply-preview
+helpers have been extracted from the large
+`wilq/briefing/ads_diagnostics.py` into
+`wilq/briefing/ads_budget_pacing.py`. This is intentionally a behavior-preserving
+maintenance slice: `/api/ads/diagnostics` still exposes the same typed budget
+pacing contract and Ads Doctor/Codex surfaces consume the same API state.
+`ads_diagnostics.py` keeps section rendering and top-level orchestration while
+the new module owns the read-contract row building. Proof:
+`ads_diagnostics.py=6590` lines, `ads_budget_pacing.py=400` lines; ruff,
+mypy, `tests/test_api_contracts.py` and full `scripts/verify.sh` passed,
+including backend API contracts 154/154, dashboard unit tests 17/17,
+Playwright 14/14 and dashboard production build. The first full verify attempt
+hit a `custom segments` Playwright startup/process-contention failure; focused
+rerun on a clean process passed, then full verify passed.
 
 Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
 `/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and
