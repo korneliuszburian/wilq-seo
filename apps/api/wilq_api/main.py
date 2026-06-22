@@ -1837,6 +1837,20 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload["payload_preview"]
         )
         payload_preview_kept = True
+    if (
+        compact_payload.get("preview_contract") == "custom_segment_payload_preview_v1"
+        and isinstance(payload_preview, list)
+    ):
+        compact_payload["payload_preview_total"] = len(payload_preview)
+        compact_payload["payload_preview"] = [
+            _compact_custom_segment_payload_preview_item(item)
+            for item in payload_preview
+            if isinstance(item, dict)
+        ]
+        compact_payload["payload_preview_included"] = len(
+            compact_payload["payload_preview"]
+        )
+        payload_preview_kept = True
     ngram_preview = compact_payload.get("ngram_preview")
     if (
         compact_payload.get("preview_contract") == "search_term_ngram_review_v1"
@@ -2204,32 +2218,65 @@ def _compact_custom_segment_payload_preview_for_context(data: dict[str, Any]) ->
     for item in payload_preview:
         if not isinstance(item, dict):
             continue
-        compact_items.append(
-            {
-                key: item.get(key)
-                for key in (
-                    "id",
-                    "custom_segment_name",
-                    "member_type",
-                    "source_terms",
-                    "campaign_id",
-                    "campaign_name",
-                    "evidence_ids",
-                    "required_validation",
-                    "blocked_claims",
-                    "api_mutation_ready",
-                    "apply_allowed",
-                    "destructive",
-                )
-                if key in item
-            }
-        )
-        compact_items[-1]["targeting_preview"] = (
-            _compact_custom_segment_targeting_preview_for_context(
-                item.get("targeting_preview")
-            )
-        )
+        compact_items.append(_compact_custom_segment_payload_preview_item(item))
     contract["payload_preview"] = compact_items
+
+
+def _compact_custom_segment_payload_preview_item(item: dict[str, Any]) -> dict[str, Any]:
+    compact_item = {
+        key: item.get(key)
+        for key in (
+            "id",
+            "custom_segment_name",
+            "member_type",
+            "source_terms",
+            "campaign_id",
+            "campaign_name",
+            "evidence_ids",
+            "required_validation",
+            "blocked_claims",
+            "api_mutation_ready",
+            "apply_allowed",
+            "destructive",
+        )
+        if key in item
+    }
+    compact_item["targeting_preview"] = (
+        _compact_custom_segment_targeting_preview_for_context(
+            item.get("targeting_preview")
+        )
+    )
+    safety_review = item.get("safety_review")
+    if isinstance(safety_review, dict):
+        compact_item["safety_review"] = _compact_custom_segment_safety_review_item(
+            safety_review
+        )
+    return compact_item
+
+
+def _compact_custom_segment_safety_review_item(item: dict[str, Any]) -> dict[str, Any]:
+    compact_item = {
+        key: item.get(key)
+        for key in (
+            "id",
+            "safety_contract",
+            "status",
+            "reason",
+            "missing_requirements",
+            "audit_required",
+            "api_mutation_ready",
+            "apply_allowed",
+            "destructive",
+        )
+        if key in item
+    }
+    required_validation = item.get("required_validation")
+    if isinstance(required_validation, list):
+        compact_item["required_validation_total"] = len(required_validation)
+    blocked_claims = item.get("blocked_claims")
+    if isinstance(blocked_claims, list):
+        compact_item["blocked_claims"] = blocked_claims[:4]
+    return compact_item
 
 
 def _compact_custom_segment_targeting_preview_for_context(value: Any) -> list[dict[str, Any]]:

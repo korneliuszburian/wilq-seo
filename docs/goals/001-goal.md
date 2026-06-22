@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-22 04:28 CEST.
+Last updated: 2026-06-22 04:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -87,9 +87,13 @@ have a review-only payload preview, a review-only targeting preview from real
 search terms, and a typed nested
 `ads_custom_segment_audience_forecast_read_contract` that produces
 `missing_forecast` rows instead of hiding `forecast_or_audience_size` as only a
-string. Their review reason preserves missing search-term impressions/cost as
-`brak danych` instead of fake zeroes, but no custom segment targeting apply
-support. Campaign budgets now have read-only budget pacing, typed
+string. Custom segment payload previews now also expose typed
+`custom_segment_apply_safety_v1` safety reviews: apply remains blocked, audit
+is required, and missing requirements include forecast/audience size, Keyword
+Planner enrichment, Google Ads mutation audit and human confirmation. Their
+review reason preserves missing search-term impressions/cost as `brak danych`
+instead of fake zeroes, but no custom segment targeting apply support.
+Campaign budgets now have read-only budget pacing, typed
 `shared_budget_distribution_rows` for campaigns sharing a Google Ads
 `budget_id`, review-only `CampaignBudgetOperation` payload previews from
 budget facts and typed `campaign_budget_apply_safety_v1` safety reviews that
@@ -146,6 +150,21 @@ negative keywords. Live proof on 2026-06-22: status `ready`,
 `search-term waste`, `negative keyword apply`, `CPA`, `ROAS`; the same contract
 is present in the scoped `wilq-ads-doctor` context-pack and dashboard
 `/ads-doctor` renders `Kolejność review zapytań`.
+
+Latest Custom Segments apply/audit safety proof, 2026-06-22 04:55 CEST:
+`/api/ads/diagnostics.custom_segments_read_contract.payload_preview[0]` and
+scoped `POST /api/codex/context-pack {"skill":"wilq-custom-segments"}` both
+carry `safety_review.safety_contract=custom_segment_apply_safety_v1` with
+`status=blocked`, `apply_allowed=false`, `api_mutation_ready=false`,
+`audit_required=true` and missing requirements
+`forecast_or_audience_size`, `keyword_planner_enrichment`,
+`google_ads_mutation_audit`, `human_confirm_before_apply`. RED/GREEN proof:
+`test_ads_diagnostics_exposes_live_campaign_metric_facts` failed on missing
+`safety_review`; `test_codex_context_pack_scopes_custom_segments_payload`
+failed because context-pack compaction dropped it. Both now pass, and
+`wilq-custom-segments` smoke requires the safety review. Final proof:
+`scripts/verify.sh` green, including 150 backend tests, 17 dashboard unit
+tests, Skill API smoke, 14 Playwright e2e tests and dashboard production build.
 
 Latest Ads Doctor ActionObject scope compaction proof, 2026-06-22 01:40 CEST:
 `wilq-ads-doctor` now has an explicit ActionObject allowlist. It no longer

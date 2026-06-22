@@ -955,6 +955,22 @@ export const AdsCustomSegmentTargetingPreviewSchema = z.object({
   destructive: z.boolean()
 });
 
+export const AdsCustomSegmentApplySafetyReviewSchema = z.object({
+  id: z.string(),
+  custom_segment_preview_id: z.string(),
+  safety_contract: z.literal("custom_segment_apply_safety_v1"),
+  status: z.literal("blocked"),
+  reason: z.string(),
+  missing_requirements: z.array(z.string()),
+  required_validation: z.array(z.string()),
+  blocked_claims: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  audit_required: z.boolean(),
+  api_mutation_ready: z.boolean(),
+  apply_allowed: z.boolean(),
+  destructive: z.boolean()
+});
+
 export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   id: z.string(),
   custom_segment_name: z.string(),
@@ -968,6 +984,7 @@ export const AdsCustomSegmentPayloadPreviewSchema = z.object({
   required_validation: z.array(z.string()),
   blocked_claims: z.array(z.string()),
   targeting_preview: z.array(AdsCustomSegmentTargetingPreviewSchema).optional().default([]),
+  safety_review: AdsCustomSegmentApplySafetyReviewSchema,
   api_mutation_ready: z.boolean(),
   apply_allowed: z.boolean(),
   destructive: z.boolean()

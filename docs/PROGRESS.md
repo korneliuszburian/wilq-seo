@@ -37,6 +37,27 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Custom segments apply/audit safety contract, 2026-06-22 04:55 CEST.
+  `AdsCustomSegmentPayloadPreview` ma teraz typed
+  `safety_review.safety_contract=custom_segment_apply_safety_v1`. Apply
+  pozostaje zablokowany (`apply_allowed=false`, `api_mutation_ready=false`,
+  `destructive=false`), a safety review jawnie wymaga
+  `forecast_or_audience_size`, `keyword_planner_enrichment`,
+  `google_ads_mutation_audit` i `human_confirm_before_apply`.
+  RED/GREEN proof: `test_ads_diagnostics_exposes_live_campaign_metric_facts`
+  najpierw failował na `KeyError: safety_review`, a
+  `test_codex_context_pack_scopes_custom_segments_payload` failował, bo
+  scoped `wilq-custom-segments` context-pack gubił safety review w compaction;
+  oba testy przechodzą po dodaniu kontraktu. Live proof po
+  `scripts/local_stack.sh restart`: `/api/ads/diagnostics` i
+  `POST /api/codex/context-pack {"skill":"wilq-custom-segments"}` pokazują ten
+  sam `custom_segment_apply_safety_v1`, `audit_required=true`,
+  `custom_segment_payload_preview_included=1`, ActionObject
+  `act_prepare_custom_segments_from_search_terms` i forecast blocker. Smoke
+  `.agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py` passed.
+  Final proof: `scripts/verify.sh` green, w tym 150 backend tests, 17
+  dashboard unit tests, Skill API smoke, 14 Playwright e2e tests i dashboard
+  production build.
 - Ads search-term review summary contract, 2026-06-22 04:28 CEST.
   `/api/ads/diagnostics` ma teraz typed
   `search_term_review_summary_contract`, który agreguje live search-term rows

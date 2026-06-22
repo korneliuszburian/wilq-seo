@@ -32,6 +32,7 @@ from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_
 from wilq.actions.google_ads.custom_segments import (
     CUSTOM_SEGMENT_ACTION_ID,
     CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+    custom_segment_apply_safety_review,
 )
 from wilq.actions.google_ads.demand_gen import DEMAND_GEN_READINESS_REVIEW_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
@@ -65,6 +66,7 @@ from wilq.schemas import (
     AdsCampaignReadContract,
     AdsChangeHistoryReadContract,
     AdsChangeHistoryRow,
+    AdsCustomSegmentApplySafetyReview,
     AdsCustomSegmentAudienceForecastReadContract,
     AdsCustomSegmentAudienceForecastRow,
     AdsCustomSegmentCandidate,
@@ -4287,6 +4289,7 @@ def _custom_segment_candidates(
             metric_facts=metric_facts,
             campaign_id=campaign_id,
             campaign_name=campaign_name,
+            keyword_planner_enriched=bool(matched_keyword_planner_ideas),
         )
         review_score = _custom_segment_review_score(
             source_terms=source_terms,
@@ -4455,6 +4458,7 @@ def _custom_segment_payload_preview(
     metric_facts: list[MetricFact],
     campaign_id: str | None,
     campaign_name: str | None,
+    keyword_planner_enriched: bool,
 ) -> AdsCustomSegmentPayloadPreview:
     source_metric_names = _unique(
         fact.name for fact in metric_facts if fact.name.startswith("search_term_")
@@ -4504,6 +4508,14 @@ def _custom_segment_payload_preview(
                 destructive=False,
             )
         ],
+        safety_review=AdsCustomSegmentApplySafetyReview.model_validate(
+            custom_segment_apply_safety_review(
+                preview_id=preview_id,
+                evidence_ids=evidence_ids,
+                keyword_planner_enriched=keyword_planner_enriched,
+                forecast_available=False,
+            )
+        ),
         api_mutation_ready=False,
         apply_allowed=False,
         destructive=False,

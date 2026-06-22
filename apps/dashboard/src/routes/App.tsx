@@ -3531,6 +3531,17 @@ function AdsCustomSegmentCandidatesPanel({
                     : "zablokowany"}
                   .
                 </div>
+                <div className="mt-1 text-slate-600">
+                  Safety: {candidate.payload_preview.safety_review.safety_contract} /{" "}
+                  {candidate.payload_preview.safety_review.audit_required
+                    ? "audyt wymagany"
+                    : "audyt niewymagany"}
+                  . Braki:{" "}
+                  {candidate.payload_preview.safety_review.missing_requirements
+                    .map(adsMissingReadContractLabel)
+                    .join(", ")}
+                  .
+                </div>
                 {candidate.payload_preview.targeting_preview.length > 0 ? (
                   <div className="mt-1 text-slate-600">
                     Targeting preview:{" "}

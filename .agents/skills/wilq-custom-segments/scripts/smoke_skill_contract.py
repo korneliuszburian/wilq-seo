@@ -113,6 +113,7 @@ def main() -> int:
 
     custom_segment_candidates = custom_segments_read_contract.get("candidates") or []
     custom_segment_action_validation: dict[str, Any] | None = None
+    safety_review: dict[str, Any] = {}
     if custom_segment_candidates:
         if not audience_forecast_contract.get("forecast_rows"):
             raise SystemExit(
@@ -158,6 +159,29 @@ def main() -> int:
             raise SystemExit("Ready custom segments contract must not miss payload preview")
         if not custom_segments_read_contract.get("payload_preview"):
             raise SystemExit("Ready custom segments contract must expose payload_preview")
+        payload_preview = custom_segments_read_contract["payload_preview"][0]
+        safety_review = payload_preview.get("safety_review") or {}
+        if safety_review.get("safety_contract") != "custom_segment_apply_safety_v1":
+            raise SystemExit(
+                "Custom segment payload_preview must expose apply safety_review"
+            )
+        if safety_review.get("apply_allowed") is not False:
+            raise SystemExit("Custom segment safety_review must keep apply blocked")
+        if safety_review.get("api_mutation_ready") is not False:
+            raise SystemExit(
+                "Custom segment safety_review must keep api_mutation_ready=false"
+            )
+        if safety_review.get("audit_required") is not True:
+            raise SystemExit("Custom segment safety_review must require mutation audit")
+        missing_safety = set(safety_review.get("missing_requirements") or [])
+        if "forecast_or_audience_size" not in missing_safety:
+            raise SystemExit(
+                "Custom segment safety_review must require forecast_or_audience_size"
+            )
+        if "google_ads_mutation_audit" not in missing_safety:
+            raise SystemExit(
+                "Custom segment safety_review must require google_ads_mutation_audit"
+            )
         if CUSTOM_SEGMENT_ACTION_ID not in custom_segments_read_contract.get("action_ids", []):
             raise SystemExit(
                 "Custom segments read contract must expose custom segment ActionObject"
@@ -240,6 +264,15 @@ def main() -> int:
                         "payload_preview_count": len(
                             custom_segments_read_contract.get("payload_preview") or []
                         ),
+                        "apply_safety_review": {
+                            "status": safety_review.get("status"),
+                            "safety_contract": safety_review.get("safety_contract"),
+                            "missing_requirements": safety_review.get(
+                                "missing_requirements", []
+                            ),
+                            "audit_required": safety_review.get("audit_required"),
+                            "apply_allowed": safety_review.get("apply_allowed"),
+                        },
                         "missing_read_contracts": custom_segments_read_contract.get(
                             "missing_read_contracts", []
                         ),

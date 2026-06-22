@@ -13,6 +13,16 @@ CUSTOM_SEGMENT_BLOCKED_CLAIMS = [
     "targeting applied",
     "campaign performance",
 ]
+CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT = "custom_segment_apply_safety_v1"
+CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION = [
+    "review_source_terms",
+    "reject_brand_or_low_intent_terms",
+    "keyword_planner_enrichment",
+    "forecast_or_audience_size",
+    "custom_segment_operation_preview",
+    "google_ads_mutation_audit",
+    "human_confirm_before_apply",
+]
 
 
 def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
@@ -33,6 +43,28 @@ def validate_custom_segment_payload(payload: dict[str, Any]) -> list[str]:
             if not isinstance(item, dict):
                 continue
             targeting_preview = item.get("targeting_preview")
+            safety_review = item.get("safety_review")
+            if not isinstance(safety_review, dict):
+                errors.append(
+                    "Custom segment payload preview requires apply safety_review."
+                )
+            else:
+                if safety_review.get("apply_allowed") is not False:
+                    errors.append(
+                        "Custom segment safety review must keep apply_allowed=false."
+                    )
+                if safety_review.get("api_mutation_ready") is not False:
+                    errors.append(
+                        "Custom segment safety review must keep "
+                        "api_mutation_ready=false."
+                    )
+                if safety_review.get("safety_contract") != (
+                    CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT
+                ):
+                    errors.append(
+                        "Custom segment safety review must use "
+                        "custom_segment_apply_safety_v1."
+                    )
             if not isinstance(targeting_preview, list) or not targeting_preview:
                 errors.append(
                     "Custom segment payload preview requires targeting_preview."
@@ -103,6 +135,12 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
                         campaign_name=_first_dimension(eligible_facts, "campaign_name"),
                     )
                 ],
+                "safety_review": custom_segment_apply_safety_review(
+                    preview_id="custom_segment_preview_google_ads_search_terms",
+                    evidence_ids=evidence_ids,
+                    keyword_planner_enriched=False,
+                    forecast_available=False,
+                ),
                 "api_mutation_ready": False,
                 "apply_allowed": False,
                 "destructive": False,
@@ -119,6 +157,39 @@ def custom_segment_payload_from_metric_facts(facts: list[MetricFact]) -> dict[st
         ],
         "blocked_claims": CUSTOM_SEGMENT_BLOCKED_CLAIMS,
         "invented_terms": False,
+        "destructive": False,
+    }
+
+
+def custom_segment_apply_safety_review(
+    *,
+    preview_id: str,
+    evidence_ids: list[str],
+    keyword_planner_enriched: bool,
+    forecast_available: bool,
+) -> dict[str, Any]:
+    missing_requirements = ["google_ads_mutation_audit", "human_confirm_before_apply"]
+    if not keyword_planner_enriched:
+        missing_requirements.insert(0, "keyword_planner_enrichment")
+    if not forecast_available:
+        missing_requirements.insert(0, "forecast_or_audience_size")
+    return {
+        "id": f"{preview_id}_safety",
+        "custom_segment_preview_id": preview_id,
+        "safety_contract": CUSTOM_SEGMENT_APPLY_SAFETY_CONTRACT,
+        "status": "blocked",
+        "reason": (
+            "Custom segment apply zablokowany: preview jest tylko do review. "
+            "WILQ wymaga Keyword Planner/forecast evidence, audytu mutacji "
+            "Google Ads i potwierdzenia człowieka przed apply."
+        ),
+        "missing_requirements": missing_requirements,
+        "required_validation": CUSTOM_SEGMENT_APPLY_SAFETY_REQUIRED_VALIDATION,
+        "blocked_claims": CUSTOM_SEGMENT_BLOCKED_CLAIMS,
+        "evidence_ids": evidence_ids,
+        "audit_required": True,
+        "api_mutation_ready": False,
+        "apply_allowed": False,
         "destructive": False,
     }
 

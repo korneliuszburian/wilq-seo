@@ -17,6 +17,43 @@ const connectors = [
   }
 ];
 
+function customSegmentSafetyReview(previewId: string) {
+  return {
+    id: `${previewId}_safety`,
+    custom_segment_preview_id: previewId,
+    safety_contract: "custom_segment_apply_safety_v1",
+    status: "blocked",
+    reason:
+      "Custom segment apply zablokowany: preview jest tylko do review.",
+    missing_requirements: [
+      "forecast_or_audience_size",
+      "google_ads_mutation_audit",
+      "human_confirm_before_apply"
+    ],
+    required_validation: [
+      "review_source_terms",
+      "reject_brand_or_low_intent_terms",
+      "keyword_planner_enrichment",
+      "forecast_or_audience_size",
+      "custom_segment_operation_preview",
+      "google_ads_mutation_audit",
+      "human_confirm_before_apply"
+    ],
+    blocked_claims: [
+      "audience size",
+      "conversion uplift",
+      "ROAS",
+      "targeting applied",
+      "campaign performance"
+    ],
+    evidence_ids: ["ev_refresh_refresh_google_ads_test"],
+    audit_required: true,
+    api_mutation_ready: false,
+    apply_allowed: false,
+    destructive: false
+  };
+}
+
 const opportunities = [
   {
     id: "opp_decision_review_ads_campaign_metrics",
@@ -1734,6 +1771,7 @@ const adsDiagnostics = {
               destructive: false
             }
           ],
+          safety_review: customSegmentSafetyReview("preview_ads_custom_segment_123"),
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false
@@ -1773,6 +1811,7 @@ const adsDiagnostics = {
           "targeting applied",
           "campaign performance"
         ],
+        safety_review: customSegmentSafetyReview("preview_ads_custom_segment_123"),
         api_mutation_ready: false,
         apply_allowed: false,
         destructive: false
@@ -2806,6 +2845,7 @@ const adsDiagnostics = {
               "targeting applied",
               "campaign performance"
             ],
+            safety_review: customSegmentSafetyReview("preview_ads_custom_segment_123"),
             api_mutation_ready: false,
             apply_allowed: false,
             destructive: false
@@ -2871,6 +2911,7 @@ const adsDiagnostics = {
               destructive: false
             }
           ],
+          safety_review: customSegmentSafetyReview("preview_ads_custom_segment_123"),
           api_mutation_ready: false,
           apply_allowed: false,
           destructive: false

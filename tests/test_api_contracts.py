@@ -7322,6 +7322,23 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     )
     assert custom_segment_action["payload"]["payload_preview"][0]["member_type"] == "KEYWORD"
     assert custom_segment_action["payload"]["payload_preview"][0]["apply_allowed"] is False
+    custom_segment_safety_review = custom_segment_action["payload"]["payload_preview"][0][
+        "safety_review"
+    ]
+    assert custom_segment_safety_review["safety_contract"] == (
+        "custom_segment_apply_safety_v1"
+    )
+    assert custom_segment_safety_review["status"] == "blocked"
+    assert custom_segment_safety_review["apply_allowed"] is False
+    assert custom_segment_safety_review["api_mutation_ready"] is False
+    assert custom_segment_safety_review["destructive"] is False
+    assert custom_segment_safety_review["audit_required"] is True
+    assert "forecast_or_audience_size" in custom_segment_safety_review[
+        "missing_requirements"
+    ]
+    assert "google_ads_mutation_audit" in custom_segment_safety_review[
+        "missing_requirements"
+    ]
     custom_segment_targeting_preview = custom_segment_action["payload"][
         "payload_preview"
     ][0]["targeting_preview"][0]
@@ -10027,6 +10044,15 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
                 ):
                     assert 0 < len(rows) <= 3
                     assert payload[f"{rows_key}_included"] == len(rows)
+                elif rows_key == "payload_preview" and action["id"] == (
+                    "act_prepare_custom_segments_from_search_terms"
+                ):
+                    assert len(rows) == 1
+                    assert rows[0]["safety_review"]["safety_contract"] == (
+                        "custom_segment_apply_safety_v1"
+                    )
+                    assert rows[0]["safety_review"]["apply_allowed"] is False
+                    assert payload[f"{rows_key}_included"] == 1
                 else:
                     assert rows == []
                     assert payload[f"{rows_key}_included"] == 0
@@ -10169,6 +10195,25 @@ def test_codex_context_pack_scopes_custom_segments_payload(
         "ads_prepare_custom_segments_from_search_terms"
     ]
     assert ads_context["custom_segments_read_contract"]["payload_preview"]
+    context_safety_review = ads_context["custom_segments_read_contract"][
+        "payload_preview"
+    ][0]["safety_review"]
+    assert context_safety_review["safety_contract"] == "custom_segment_apply_safety_v1"
+    assert context_safety_review["status"] == "blocked"
+    assert context_safety_review["apply_allowed"] is False
+    assert context_safety_review["api_mutation_ready"] is False
+    assert context_safety_review["audit_required"] is True
+    assert "forecast_or_audience_size" in context_safety_review[
+        "missing_requirements"
+    ]
+    assert "google_ads_mutation_audit" in context_safety_review[
+        "missing_requirements"
+    ]
+    action_safety_review = data["active_action_objects"][0]["payload"][
+        "payload_preview"
+    ][0]["safety_review"]
+    assert action_safety_review["safety_contract"] == "custom_segment_apply_safety_v1"
+    assert action_safety_review["apply_allowed"] is False
     assert ads_context["custom_segments_read_contract"][
         "audience_forecast_read_contract"
     ]["forecast_rows"]
@@ -10190,8 +10235,15 @@ def test_codex_context_pack_scopes_custom_segments_payload(
         payload = action.get("payload") or {}
         rows = payload.get("payload_preview")
         if isinstance(rows, list):
-            assert rows == []
-            assert payload["payload_preview_included"] == 0
+            if action["id"] == "act_prepare_custom_segments_from_search_terms":
+                assert len(rows) == 1
+                assert rows[0]["safety_review"]["safety_contract"] == (
+                    "custom_segment_apply_safety_v1"
+                )
+                assert payload["payload_preview_included"] == 1
+            else:
+                assert rows == []
+                assert payload["payload_preview_included"] == 0
             assert payload["payload_preview_total"] >= 0
 
 

@@ -1269,6 +1269,24 @@ class AdsCustomSegmentTargetingPreview(BaseModel):
     destructive: bool = False
 
 
+class AdsCustomSegmentApplySafetyReview(BaseModel):
+    id: str
+    custom_segment_preview_id: str
+    safety_contract: Literal["custom_segment_apply_safety_v1"] = (
+        "custom_segment_apply_safety_v1"
+    )
+    status: Literal["blocked"] = "blocked"
+    reason: str
+    missing_requirements: list[str] = Field(default_factory=list)
+    required_validation: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    audit_required: bool = True
+    api_mutation_ready: bool = False
+    apply_allowed: bool = False
+    destructive: bool = False
+
+
 class AdsCustomSegmentPayloadPreview(BaseModel):
     id: str
     custom_segment_name: str
@@ -1284,6 +1302,7 @@ class AdsCustomSegmentPayloadPreview(BaseModel):
     targeting_preview: list[AdsCustomSegmentTargetingPreview] = Field(
         default_factory=list
     )
+    safety_review: AdsCustomSegmentApplySafetyReview
     api_mutation_ready: bool = False
     apply_allowed: bool = False
     destructive: bool = False
