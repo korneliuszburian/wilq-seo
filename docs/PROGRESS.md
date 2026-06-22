@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center lightweight daily builders, 2026-06-23 01:05 CEST.
+  `/api/dashboard/command-center` no longer builds full Ads/Content/Merchant/GA4
+  diagnostics for the first screen. It now builds daily brief items from
+  tactical queue groups plus scoped metric facts, while full diagnostics remain
+  on their dedicated routes. `tactical_queue` also stopped calling full
+  `list_actions()` just to attach action IDs; it now uses a static lightweight
+  action-ID map for the three tactical queue connectors. Live proof after stack
+  restart: Command Center cold/warm/warm HTTP `2.1856s/0.0074s/0.0086s`;
+  Marketing Brief after CC `0.4372s/0.0087s/0.0110s`; tactical queue warm
+  around `0.008s`. Focused proof: Python ruff OK, Python mypy OK, 10 API
+  command/tactical tests OK and 17 dashboard route tests OK. Remaining cold
+  cost is mostly tactical metric-store read/model construction; avoid rebuilding
+  full route diagnostics on first-screen paths.
 - Dashboard diagnostic route code splitting, 2026-06-23 00:50 CEST.
   `apps/dashboard/src/routes/App.tsx` lazy-loads the heavy diagnostic route
   modules: Ads Doctor, Custom Segments, Demand Gen, GA4, Localo, Ahrefs,

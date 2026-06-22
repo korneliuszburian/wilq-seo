@@ -10402,7 +10402,7 @@ def test_daily_command_center_does_not_build_marketing_brief(
     assert daily_runtime.build_daily_command_center(use_cache=False) == command
 
 
-def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
+def test_command_center_brief_uses_lightweight_daily_item_builders(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from wilq.briefing import command_center
@@ -10426,43 +10426,36 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
         strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
         items=[],
     )
-    ads_item = CommandCenterBriefItem(
-        id="daily_ads_status",
-        title="Ads: live campaign metrics dostępne",
-        route="/ads-doctor",
-        status="ready",
-        priority=30,
-        summary="Google Ads ma live metric facts.",
-        next_step="Otwórz /ads-doctor.",
-        source_connectors=["google_ads"],
-        evidence_ids=["ev_ads"],
-        action_ids=[action.id],
-    )
     seen: dict[str, object] = {}
 
-    def ads_builder(actions: list[ActionObject] | None = None) -> object:
+    def ads_item_builder(
+        facts: list[object],
+        actions: list[ActionObject],
+    ) -> CommandCenterBriefItem:
+        seen["ads_metric_facts"] = facts
         seen["actions"] = actions
-        return object()
+        return CommandCenterBriefItem(
+            id="daily_ads_status",
+            title="Ads: live campaign metrics dostępne",
+            route="/ads-doctor",
+            status="ready",
+            priority=30,
+            summary="Google Ads ma live metric facts.",
+            next_step="Otwórz /ads-doctor.",
+            source_connectors=["google_ads"],
+            evidence_ids=["ev_ads"],
+            action_ids=[action.id],
+        )
 
-    monkeypatch.setattr(command_center, "build_ads_diagnostics", ads_builder)
-    monkeypatch.setattr(command_center, "_ads_item", lambda _ads: ads_item)
-    merchant_diagnostics = object()
-
-    def merchant_builder(
-        tactical_items: list[object] | None = None,
-        actions: list[ActionObject] | None = None,
-        metric_facts: list[object] | None = None,
-    ) -> object:
+    def merchant_item_builder(
+        tactical_items: list[object],
+        actions: list[ActionObject],
+        metric_facts: list[object],
+    ) -> CommandCenterBriefItem:
         seen["merchant_tactical_items"] = tactical_items
         seen["merchant_actions"] = actions
         seen["merchant_metric_facts"] = metric_facts
-        return merchant_diagnostics
-
-    monkeypatch.setattr(command_center, "build_merchant_diagnostics", merchant_builder)
-    monkeypatch.setattr(
-        command_center,
-        "_merchant_item_from_diagnostics",
-        lambda _merchant_diagnostics: CommandCenterBriefItem(
+        return CommandCenterBriefItem(
             id="daily_merchant_feed",
             title="Merchant",
             route="/merchant",
@@ -10470,25 +10463,11 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
             priority=10,
             summary="Merchant.",
             next_step="Otwórz /merchant.",
-        ),
-    )
-    content_diagnostics = object()
+        )
 
-    def content_builder(
-        tactical_items: list[object] | None = None,
-        actions: list[ActionObject] | None = None,
-        metric_facts: list[object] | None = None,
-    ) -> object:
-        seen["content_tactical_items"] = tactical_items
-        seen["content_actions"] = actions
-        seen["content_metric_facts"] = metric_facts
-        return content_diagnostics
-
-    monkeypatch.setattr(command_center, "build_content_diagnostics", content_builder)
-    monkeypatch.setattr(
-        command_center,
-        "_content_item_from_diagnostics",
-        lambda _content_diagnostics: CommandCenterBriefItem(
+    def content_item_builder(queue: TacticalQueueResponse) -> CommandCenterBriefItem:
+        seen["content_tactical_queue"] = queue
+        return CommandCenterBriefItem(
             id="daily_content_queue",
             title="Content",
             route="/content-planner",
@@ -10496,12 +10475,17 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
             priority=12,
             summary="Content.",
             next_step="Otwórz /content-planner.",
-        ),
-    )
-    monkeypatch.setattr(
-        command_center,
-        "_ga4_item_from_diagnostics",
-        lambda _diagnostics: CommandCenterBriefItem(
+        )
+
+    def ga4_item_builder(
+        tactical_items: list[object],
+        actions: list[ActionObject],
+        metric_facts: list[object],
+    ) -> CommandCenterBriefItem:
+        seen["ga4_tactical_items"] = tactical_items
+        seen["ga4_actions"] = actions
+        seen["ga4_metric_facts"] = metric_facts
+        return CommandCenterBriefItem(
             id="daily_ga4_landing_quality",
             title="GA4",
             route="/ga4",
@@ -10509,8 +10493,18 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
             priority=14,
             summary="GA4.",
             next_step="Otwórz /ga4.",
-        ),
+        )
+
+    monkeypatch.setattr(command_center, "_ads_item_from_facts", ads_item_builder)
+    monkeypatch.setattr(
+        command_center,
+        "_ads_business_context_item_from_facts",
+        lambda *_args: None,
     )
+    monkeypatch.setattr(command_center, "_merchant_item_from_tactical", merchant_item_builder)
+    monkeypatch.setattr(command_center, "_content_item_from_tactical", content_item_builder)
+    monkeypatch.setattr(command_center, "_ga4_item_from_tactical", ga4_item_builder)
+
     class EmptyMetricStore:
         def list_metric_facts(self, *_args: object) -> list[object]:
             return []
@@ -10524,12 +10518,14 @@ def test_command_center_brief_passes_preloaded_actions_to_ads_diagnostics(
     )
 
     assert seen["actions"] == [action]
+    assert seen["ads_metric_facts"] == []
     assert seen["merchant_tactical_items"] == tactical_queue.items
     assert seen["merchant_actions"] == [action]
     assert seen["merchant_metric_facts"] == []
-    assert seen["content_tactical_items"] == tactical_queue.items
-    assert seen["content_actions"] == [action]
-    assert seen["content_metric_facts"] is None
+    assert seen["content_tactical_queue"] == tactical_queue
+    assert seen["ga4_tactical_items"] == tactical_queue.items
+    assert seen["ga4_actions"] == [action]
+    assert seen["ga4_metric_facts"] == []
 
 
 def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(

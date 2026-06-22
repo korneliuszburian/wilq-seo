@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 00:50 CEST.
+Last updated: 2026-06-23 01:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -83,6 +83,21 @@ diagnostic modules for Ads Doctor, Custom Segments, Demand Gen, GA4, Localo,
 Ahrefs, Merchant and Content/GSC. `pnpm --filter @wilq/dashboard build`
 emits separate diagnostic chunks and passed together with dashboard typecheck,
 lint and focused route tests.
+
+Current API performance slice: Command Center first-screen paths must not build
+full route diagnostics. `/api/dashboard/command-center` now uses lightweight
+daily builders from tactical queue groups plus scoped metric facts for Ads,
+Merchant, Content and GA4. Full diagnostics remain on dedicated routes:
+`/api/ads/diagnostics`, `/api/merchant/diagnostics`, `/api/content/diagnostics`
+and `/api/ga4/diagnostics`. `tactical_queue` uses a static action-ID map for
+the tactical connectors instead of full `list_actions()` payload construction.
+Latest live proof after stack restart: Command Center cold/warm/warm
+`2.1856s/0.0074s/0.0086s`, Marketing Brief after Command Center
+`0.4372s/0.0087s/0.0110s`, tactical queue around `0.008s` warm. Focused proof:
+Python ruff OK, Python mypy OK, 10 command/tactical API tests OK and 17 dashboard
+route tests OK. Remaining performance work should target tactical metric-store
+read/model construction or route-specific diagnostics only when a measured
+bottleneck justifies it.
 
 ## Product Bar
 

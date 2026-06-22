@@ -8,11 +8,7 @@ from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import list_actions
-from wilq.briefing.ads_diagnostics import build_ads_diagnostics
-from wilq.briefing.content_diagnostics import build_content_diagnostics
-from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
-from wilq.briefing.merchant_diagnostics import build_merchant_diagnostics
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
@@ -20,7 +16,6 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
-    AdsDiagnosticsResponse,
     CommandCenterActionPlanItem,
     CommandCenterBriefItem,
     CommandCenterResponse,
@@ -28,13 +23,7 @@ from wilq.schemas import (
     ConnectorRefreshStatus,
     ConnectorStatus,
     ConnectorSummary,
-    ContentDecisionItem,
-    ContentDiagnosticsResponse,
     DailyDecision,
-    Ga4DecisionItem,
-    Ga4DiagnosticsResponse,
-    MerchantDecisionItem,
-    MerchantDiagnosticsResponse,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
@@ -48,6 +37,10 @@ STRICT_DAILY_INSTRUCTION = (
     "nie domysł marketingowy."
 )
 GA4_CONNECTOR_ID = "google_analytics_4"
+GOOGLE_ADS_CONNECTOR_ID = "google_ads"
+GOOGLE_MERCHANT_CONNECTOR_ID = "google_merchant_center"
+GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT = 1200
+MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
 GA4_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
 LOCALO_PROBE_METRIC_NAMES = {
     "access_token_present",
@@ -111,16 +104,15 @@ def build_command_center_brief(
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
     with ThreadPoolExecutor(max_workers=4) as executor:
-        ads_future = executor.submit(build_ads_diagnostics, actions=actions)
-        content_future = executor.submit(
-            build_content_diagnostics,
-            tactical_items=tactical_queue.items,
-            actions=actions,
+        ads_facts_future = executor.submit(
+            metric_store().list_metric_facts,
+            GOOGLE_ADS_CONNECTOR_ID,
+            GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT,
         )
         merchant_facts_future = executor.submit(
             metric_store().list_metric_facts,
-            "google_merchant_center",
-            2000,
+            GOOGLE_MERCHANT_CONNECTOR_ID,
+            MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
         )
         ga4_facts_future = executor.submit(
             metric_store().list_metric_facts,
@@ -132,30 +124,19 @@ def build_command_center_brief(
             "localo",
             120,
         )
-        ads = ads_future.result()
-        content = content_future.result()
+        ads_facts = ads_facts_future.result()
         merchant_facts = merchant_facts_future.result()
         ga4_facts = ga4_facts_future.result()
         localo_facts = localo_facts_future.result()
-    merchant = build_merchant_diagnostics(
-        tactical_items=tactical_queue.items,
-        actions=actions,
-        metric_facts=merchant_facts,
-    )
-    ga4_diagnostics = build_ga4_diagnostics(
-        tactical_items=tactical_queue.items,
-        actions=actions,
-        metric_facts=ga4_facts,
-    )
     localo = get_connector_status("localo")
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
-        _ads_item(ads),
-        _merchant_item_from_diagnostics(merchant),
-        _content_item_from_diagnostics(content),
-        _ga4_item_from_diagnostics(ga4_diagnostics),
+        _ads_item_from_facts(ads_facts, actions),
+        _merchant_item_from_tactical(tactical_queue.items, actions, merchant_facts),
+        _content_item_from_tactical(tactical_queue),
+        _ga4_item_from_tactical(tactical_queue.items, actions, ga4_facts),
     ]
-    ads_business_item = _ads_business_context_item(ads)
+    ads_business_item = _ads_business_context_item_from_facts(ads_facts, actions)
     if ads_business_item is not None:
         items.append(ads_business_item)
     if localo is not None:
@@ -263,70 +244,147 @@ def tactical_item_count() -> int:
     return len(build_tactical_queue().items)
 
 
-def _ads_item(data: AdsDiagnosticsResponse) -> CommandCenterBriefItem:
-    blocked_section = _first_blocked_section(data.sections)
-    metric_tiles = _ads_metric_tiles(data) if data.live_data_available else {}
-    summary = (
-        _ads_ready_summary(metric_tiles)
-        if data.live_data_available
-        else (blocked_section.summary if blocked_section else "Google Ads nie ma live danych.")
-    )
-    next_step = (
-        _ads_ready_next_step(metric_tiles)
-        if data.live_data_available
-        else "Otwórz /ads-doctor i napraw OAuth przez `act_configure_google_ads_env`."
-    )
+def _ads_item_from_facts(
+    facts: list[MetricFact],
+    actions: list[ActionObject],
+) -> CommandCenterBriefItem:
+    latest_refresh = _latest_connector_refresh(GOOGLE_ADS_CONNECTOR_ID)
+    live_data_available = _refresh_has_live_data(latest_refresh) and bool(facts)
+    campaign_count = _ads_campaign_count(facts)
+    search_term_count = _ads_search_term_count(facts)
+    budget_preview_count = _ads_distinct_dimension_count(facts, "budget_id")
+    recommendation_count = _ads_recommendation_count(facts)
+    review_term_count = _ads_review_search_term_count(facts)
+    action_ids = [
+        action_id
+        for action_id in _action_ids_for(actions, connector=GOOGLE_ADS_CONNECTOR_ID)
+        if action_id
+        not in {
+            ADS_BUSINESS_CONTEXT_ACTION_ID,
+            KEYWORD_PLANNER_ACCESS_ACTION_ID,
+        }
+    ]
+    metric_tiles: dict[str, float | int | str] = {
+        "kampanie": campaign_count,
+        "zapytania": search_term_count,
+        "podgląd budżetu": budget_preview_count,
+        "rekomendacje": recommendation_count,
+        "wykluczenia": review_term_count,
+        "segmenty": review_term_count,
+    }
     return CommandCenterBriefItem(
         id="daily_ads_status",
         title=(
             "Ads: kolejki budżetu, rekomendacji i zapytań"
-            if data.live_data_available
+            if live_data_available
             else "Ads: blocker OAuth przed analizą spendu"
         ),
         route="/ads-doctor",
-        status="ready" if data.live_data_available else "blocked",
-        priority=16 if data.live_data_available else 5,
-        summary=summary,
-        next_step=next_step,
-        source_connectors=["google_ads"],
-        evidence_ids=_limited_ids(data.evidence_ids),
-        action_ids=[
-            action_id
-            for action_id in data.action_ids
-            if action_id
-            not in {
-                ADS_BUSINESS_CONTEXT_ACTION_ID,
-                KEYWORD_PLANNER_ACCESS_ACTION_ID,
-            }
-        ],
-        metric_tiles=metric_tiles if data.live_data_available else {"blockery": data.blocker_count},
+        status="ready" if live_data_available else "blocked",
+        priority=16 if live_data_available else 5,
+        summary=(
+            _ads_ready_summary(metric_tiles)
+            if live_data_available
+            else "Google Ads nie ma live danych do Command Center."
+        ),
+        next_step=(
+            _ads_ready_next_step(metric_tiles)
+            if live_data_available
+            else "Otwórz /ads-doctor i napraw OAuth przez `act_configure_google_ads_env`."
+        ),
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_limited_ids(
+            _unique(
+                [
+                    *(latest_refresh.evidence_ids if latest_refresh is not None else []),
+                    *(fact.evidence_id for fact in facts),
+                    connector_evidence_id(GOOGLE_ADS_CONNECTOR_ID),
+                ]
+            )
+        ),
+        action_ids=action_ids,
+        metric_tiles=metric_tiles if live_data_available else {"blockery": 1},
         blocked_claims=(
-            _ads_ready_blocked_claims(data)
-            if data.live_data_available
+            [
+                "CPA",
+                "ROAS",
+                "search-term waste",
+                "negative keyword apply",
+                "budget apply",
+                "recommendation apply",
+                "profitability",
+                "wasted budget",
+            ]
+            if live_data_available
             else ["spend", "CPA", "ROAS", "search terms", "wasted budget"]
         ),
         risk=ActionRisk.medium,
     )
 
 
-def _ads_metric_tiles(data: AdsDiagnosticsResponse) -> dict[str, float | int | str]:
-    return {
-        "kampanie": len(data.campaign_read_contract.campaign_rows),
-        "zapytania": len(data.search_terms_read_contract.search_term_rows),
-        "podgląd budżetu": len(data.budget_pacing_read_contract.payload_preview),
-        "rekomendacje": len(data.recommendations_read_contract.payload_preview),
-        "wykluczenia": len(data.negative_keywords_read_contract.payload_preview),
-        "segmenty": len(data.custom_segments_read_contract.payload_preview),
-    }
+def _ads_campaign_count(facts: list[MetricFact]) -> int:
+    return len(
+        {
+            fact.dimensions.get("campaign_id")
+            for fact in facts
+            if fact.dimensions.get("campaign_id")
+            and fact.name
+            in {
+                "clicks",
+                "impressions",
+                "cost_micros",
+                "conversions",
+                "conversion_value",
+                "budget_amount_micros",
+            }
+        }
+    )
 
 
-def _ads_business_context_item(
-    data: AdsDiagnosticsResponse,
+def _ads_search_term_count(facts: list[MetricFact]) -> int:
+    return len(
+        {
+            fact.dimensions.get("search_term")
+            for fact in facts
+            if fact.dimensions.get("search_term") and fact.name.startswith("search_term_")
+        }
+    )
+
+
+def _ads_distinct_dimension_count(facts: list[MetricFact], dimension: str) -> int:
+    return len({fact.dimensions.get(dimension) for fact in facts if fact.dimensions.get(dimension)})
+
+
+def _ads_recommendation_count(facts: list[MetricFact]) -> int:
+    return _ads_distinct_dimension_count(facts, "recommendation_type")
+
+
+def _ads_review_search_term_count(facts: list[MetricFact]) -> int:
+    return len(
+        {
+            fact.dimensions.get("search_term")
+            for fact in facts
+            if fact.name in {"search_term_cost_micros", "search_term_90d_cost_micros"}
+            and fact.dimensions.get("search_term")
+            and isinstance(fact.value, int | float)
+            and fact.value > 0
+        }
+    )
+
+
+def _ads_business_context_item_from_facts(
+    facts: list[MetricFact],
+    actions: list[ActionObject],
 ) -> CommandCenterBriefItem | None:
-    if not hasattr(data, "business_context_read_contract"):
+    latest_refresh = _latest_connector_refresh(GOOGLE_ADS_CONNECTOR_ID)
+    if not (_refresh_has_live_data(latest_refresh) and facts):
         return None
-    contract = data.business_context_read_contract
-    if not data.live_data_available or contract.status != "blocked":
+    action_ids = [
+        action_id
+        for action_id in _action_ids_for(actions, connector=GOOGLE_ADS_CONNECTOR_ID)
+        if action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
+    ]
+    if not action_ids:
         return None
     return CommandCenterBriefItem(
         id="daily_ads_business_context",
@@ -334,22 +392,264 @@ def _ads_business_context_item(
         route="/ads-doctor",
         status="blocked",
         priority=18,
-        summary=contract.summary,
-        next_step=contract.next_step,
-        source_connectors=contract.source_connectors,
-        evidence_ids=_limited_ids(contract.evidence_ids),
-        action_ids=[
-            action_id
-            for action_id in data.action_ids
-            if action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
-        ],
+        summary=(
+            "Ads ma live evidence, ale WILQ nie ma kompletnego kontekstu "
+            "biznesowego do decyzji budżetowych: marży, celu, target CPA/ROAS "
+            "i potwierdzonego review strategii. Bez tego KPI są tylko triage, "
+            "nie werdyktem opłacalności."
+        ),
+        next_step=(
+            "Otwórz /ads-doctor i uzupełnij WILQ_ADS_PROFIT_MARGIN, cel "
+            "biznesowy, cel budżetu oraz target CPA/ROAS. Potem zwaliduj "
+            "`act_confirm_ads_target_guardrails` i review strategii zanim "
+            "ocenisz profitability albo skalowanie budżetu."
+        ),
+        source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
+        evidence_ids=_limited_ids(
+            _unique(
+                [
+                    *(latest_refresh.evidence_ids if latest_refresh is not None else []),
+                    *(fact.evidence_id for fact in facts),
+                    connector_evidence_id(GOOGLE_ADS_CONNECTOR_ID),
+                ]
+            )
+        ),
+        action_ids=action_ids,
         metric_tiles={
-            "braki": len(contract.missing_read_contracts),
-            **contract.metric_tiles,
+            "braki": 5,
+            "marża": "brak",
+            "cel biznesowy": "brak",
         },
-        blocked_claims=contract.blocked_claims,
+        blocked_claims=[
+            "profitability",
+            "wasted budget",
+            "budget scaling",
+            "target CPA verdict",
+            "target ROAS verdict",
+        ],
         risk=ActionRisk.medium,
     )
+
+
+def _merchant_item_from_tactical(
+    tactical_items: list[TacticalQueueItem],
+    actions: list[ActionObject],
+    facts: list[MetricFact],
+) -> CommandCenterBriefItem:
+    merchant_items = [
+        item for item in tactical_items if item.domain == OpportunityDomain.merchant
+    ]
+    product_count = int(_first_numeric_fact(facts, "total_products"))
+    issue_type_count = _merchant_issue_type_count(facts)
+    issue_occurrence_count = int(_sum_numeric_facts(facts, "issue_product_count"))
+    decision_count = len(merchant_items)
+    live_data_available = bool(merchant_items or issue_occurrence_count)
+    action_ids = _unique(
+        [
+            *(
+                action_id
+                for item in merchant_items
+                for action_id in item.action_ids
+            ),
+            *_action_ids_for(actions, connector=GOOGLE_MERCHANT_CONNECTOR_ID),
+        ]
+    )
+    top_item = sorted(
+        merchant_items,
+        key=lambda item: (_risk_rank(item.risk), -_merchant_item_product_count(item), item.id),
+    )[0] if merchant_items else None
+    summary = (
+        f"Produkty={product_count}, typy problemów={issue_type_count}, "
+        f"zgłoszenia={issue_occurrence_count}, decyzje={decision_count}. "
+        f"Najważniejsza decyzja: {top_item.title}."
+        if top_item is not None
+        else "Merchant nie ma gotowej kolejki decyzji z aktualnych metric facts."
+    )
+    return CommandCenterBriefItem(
+        id="daily_merchant_feed",
+        title="Merchant: kolejka problemów feedu",
+        route="/merchant",
+        status="ready" if live_data_available else "blocked",
+        priority=10 if live_data_available and issue_occurrence_count > 0 else 35,
+        summary=(
+            f"{summary} To jest read-only queue, nie automatyczna naprawa feedu."
+            if live_data_available
+            else summary
+        ),
+        next_step=(
+            "Otwórz /merchant i przejrzyj decyzje feedu przed walidacją ActionObject."
+            if live_data_available
+            else "Uruchom read-only Merchant vendor_read, potem wróć do /merchant."
+        ),
+        source_connectors=[GOOGLE_MERCHANT_CONNECTOR_ID],
+        evidence_ids=_limited_ids(
+            _unique(
+                [
+                    *(evidence_id for item in merchant_items for evidence_id in item.evidence_ids),
+                    *(fact.evidence_id for fact in facts),
+                    connector_evidence_id(GOOGLE_MERCHANT_CONNECTOR_ID),
+                ]
+            )
+        ),
+        action_ids=action_ids,
+        metric_tiles={
+            "produkty": product_count,
+            "typy problemów": issue_type_count,
+            "zgłoszenia": issue_occurrence_count,
+            "decyzje": decision_count,
+            "blockery": 0 if live_data_available else 1,
+        },
+        blocked_claims=_unique(
+            claim for item in merchant_items for claim in item.blocked_claims
+        )
+        or ["approval restored", "revenue recovered", "automatic feed edit"],
+        risk=ActionRisk.medium,
+    )
+
+
+def _latest_connector_refresh(connector_id: str) -> ConnectorRefreshRun | None:
+    runs = local_state_store().list_connector_refresh_runs(connector_id)
+    return runs[0] if runs else None
+
+
+def _refresh_has_live_data(run: ConnectorRefreshRun | None) -> bool:
+    return (
+        run is not None
+        and run.status == ConnectorRefreshStatus.completed
+        and run.vendor_data_collected
+    )
+
+
+def _first_numeric_fact(facts: list[MetricFact], name: str) -> float:
+    for fact in facts:
+        if fact.name == name and isinstance(fact.value, int | float):
+            return float(fact.value)
+    return 0.0
+
+
+def _sum_numeric_facts(facts: list[MetricFact], name: str) -> float:
+    return sum(
+        float(fact.value)
+        for fact in facts
+        if fact.name == name and isinstance(fact.value, int | float)
+    )
+
+
+def _merchant_issue_type_count(facts: list[MetricFact]) -> int:
+    issue_keys = {
+        (
+            fact.dimensions.get("issue_type", ""),
+            fact.dimensions.get("affected_attribute", ""),
+            fact.dimensions.get("country", ""),
+        )
+        for fact in facts
+        if fact.name == "issue_product_count" and fact.dimensions
+    }
+    return len(issue_keys)
+
+
+def _merchant_item_product_count(item: TacticalQueueItem) -> float:
+    for fact in item.metric_facts:
+        if fact.name == "issue_product_count" and isinstance(fact.value, int | float):
+            return float(fact.value)
+    return 0.0
+
+
+def _content_item_from_tactical(queue: TacticalQueueResponse) -> CommandCenterBriefItem:
+    content_groups = [
+        group
+        for group in queue.compact_groups
+        if group.source_connectors and "google_search_console" in group.source_connectors
+    ]
+    content_items = [
+        item for item in queue.items if item.domain == OpportunityDomain.gsc_seo
+    ]
+    live_data_available = bool(content_items)
+    top_group = content_groups[0] if content_groups else None
+    top_item = content_items[0] if content_items else None
+    total_clicks = _sum_tactical_metric(content_items, "clicks")
+    total_impressions = _sum_tactical_metric(content_items, "impressions")
+    summary = (
+        _content_tactical_summary(top_item, top_group.diagnosis)
+        if top_group is not None
+        else (
+            _content_tactical_summary(top_item, "")
+            if top_item is not None
+            else (
+                "Brak gotowej kolejki contentowej. WILQ potrzebuje GSC query/page "
+                "i WordPress inventory."
+            )
+        )
+    )
+    next_step = (
+        top_group.next_step
+        if top_group is not None
+        else "Otwórz /content-planner i odśwież GSC oraz WordPress inventory."
+    )
+    return CommandCenterBriefItem(
+        id="daily_content_queue",
+        title=(
+            "Content: kolejka SEO z GSC i WordPress"
+            if live_data_available
+            else "Content: brak kolejki SEO"
+        ),
+        route="/content-planner",
+        status="ready" if live_data_available else "blocked",
+        priority=12 if live_data_available else 40,
+        summary=summary,
+        next_step=next_step,
+        source_connectors=[
+            "google_search_console",
+            "wordpress_ekologus",
+            "wordpress_sklep",
+        ],
+        evidence_ids=_limited_ids(
+            _unique(evidence_id for item in content_items for evidence_id in item.evidence_ids)
+            or [connector_evidence_id("google_search_console")]
+        ),
+        action_ids=_unique(action_id for item in content_items for action_id in item.action_ids),
+        metric_tiles={
+            "query/page": len(content_items),
+            "WP match": sum(
+                1 for item in content_items if item.dimensions.get("wordpress_match") == "found"
+            ),
+            "decyzje": len(content_groups) or len(content_items),
+            "wyświetlenia": total_impressions,
+            "kliknięcia": total_clicks,
+            "blockery": 0 if live_data_available else 1,
+        },
+        blocked_claims=_unique(
+            claim for item in content_items for claim in item.blocked_claims
+        )
+        or ["lead uplift", "revenue impact", "ranking guarantee"],
+        risk=ActionRisk.low if live_data_available else ActionRisk.medium,
+    )
+
+
+def _content_tactical_summary(
+    item: TacticalQueueItem | None,
+    fallback_summary: str,
+) -> str:
+    if item is None:
+        return fallback_summary
+    if item.dimensions.get("wordpress_match") == "found":
+        return (
+            f"{fallback_summary} WordPress potwierdza istniejącą stronę; "
+            "to jest kandydat do refresh/merge, nie tworzenia duplikatu."
+        ).strip()
+    if item.diagnosis:
+        return item.diagnosis
+    return fallback_summary
+
+
+def _sum_tactical_metric(items: list[TacticalQueueItem], name: str) -> int | float:
+    total = sum(
+        float(fact.value)
+        for item in items
+        for fact in item.metric_facts
+        if fact.name == name and isinstance(fact.value, int | float)
+    )
+    return int(total) if total.is_integer() else total
 
 
 def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
@@ -384,21 +684,6 @@ def _ads_ready_next_step(metric_tiles: dict[str, float | int | str]) -> str:
     )
 
 
-def _ads_ready_blocked_claims(data: AdsDiagnosticsResponse) -> list[str]:
-    blocked_claims = _unique(
-        [
-            *data.budget_pacing_read_contract.blocked_claims,
-            *data.recommendations_read_contract.blocked_claims,
-            *data.negative_keywords_read_contract.blocked_claims,
-            *data.custom_segments_read_contract.blocked_claims,
-            *data.business_context_read_contract.blocked_claims,
-            "profitability",
-            "wasted budget",
-        ]
-    )
-    return blocked_claims[:8]
-
-
 def _numeric_tile(metric_tiles: dict[str, float | int | str], name: str) -> float:
     value = metric_tiles.get(name, 0)
     return float(value) if isinstance(value, int | float) else 0.0
@@ -413,270 +698,6 @@ def _risk_rank(risk: ActionRisk) -> int:
     }.get(risk, 4)
 
 
-def _merchant_item_from_diagnostics(data: MerchantDiagnosticsResponse) -> CommandCenterBriefItem:
-    top_decision = _top_merchant_decision(data.decision_queue)
-    decision_count = len(data.decision_queue)
-    problem_type_count = data.issue_count or len(data.issue_clusters)
-    issue_occurrence_count = sum(cluster.product_count for cluster in data.issue_clusters)
-    if not issue_occurrence_count:
-        issue_occurrence_count = sum(
-            decision.issue_count
-            if decision.issue_count is not None
-            else decision.product_count or 0
-            for decision in data.decision_queue
-        )
-    product_count = data.product_count or 0
-    live_data_available = data.live_data_available and bool(data.decision_queue)
-    action_ids = data.action_ids or _unique(
-        action_id for decision in data.decision_queue for action_id in decision.action_ids
-    )
-    evidence_ids = (
-        data.evidence_ids
-        or _unique(
-            evidence_id
-            for decision in data.decision_queue
-            for evidence_id in decision.evidence_ids
-        )
-        or [connector_evidence_id("google_merchant_center")]
-    )
-    if live_data_available:
-        top_reason = (
-            f"Najważniejsza decyzja: {top_decision.title}."
-            if top_decision is not None
-            else "Najpierw przejrzyj kolejkę Merchant."
-        )
-        summary = (
-            f"Produkty={product_count}, typy problemów={problem_type_count}, "
-            f"zgłoszenia={issue_occurrence_count}, decyzje={decision_count}. {top_reason} "
-            "To jest read-only queue, nie automatyczna naprawa feedu."
-        )
-        next_step = "Otwórz /merchant i przejrzyj decyzje feedu przed walidacją ActionObject."
-    else:
-        summary = "Merchant nie ma gotowej kolejki decyzji z aktualnych metric facts."
-        next_step = "Uruchom read-only Merchant vendor_read, potem wróć do /merchant."
-    return CommandCenterBriefItem(
-        id="daily_merchant_feed",
-        title="Merchant: kolejka problemów feedu",
-        route="/merchant",
-        status="ready" if live_data_available else "blocked",
-        priority=10 if live_data_available and issue_occurrence_count > 0 else 35,
-        summary=summary,
-        next_step=next_step,
-        source_connectors=["google_merchant_center"],
-        evidence_ids=_limited_ids(evidence_ids),
-        action_ids=action_ids,
-        metric_tiles={
-            "produkty": product_count,
-            "typy problemów": problem_type_count,
-            "zgłoszenia": issue_occurrence_count,
-            "decyzje": decision_count,
-            "blockery": data.blocker_count,
-        },
-        blocked_claims=_unique(
-            [
-                *(claim for section in data.sections for claim in section.blocked_claims),
-                *(claim for decision in data.decision_queue for claim in decision.blocked_claims),
-            ]
-        )
-        or ["approval restored", "revenue recovered", "automatic feed edit"],
-        risk=ActionRisk.medium,
-    )
-
-
-def _top_merchant_decision(
-    decisions: list[MerchantDecisionItem],
-) -> MerchantDecisionItem | None:
-    if not decisions:
-        return None
-    return sorted(
-        decisions,
-        key=lambda decision: (
-            _risk_rank(decision.risk),
-            -(decision.product_count or 0),
-            decision.title,
-        ),
-    )[0]
-
-
-def _content_item_from_diagnostics(data: ContentDiagnosticsResponse) -> CommandCenterBriefItem:
-    top_decision = _top_content_decision(data.decision_queue)
-    live_data_available = data.live_data_available and bool(data.decision_queue)
-    action_ids = data.action_ids or _unique(
-        action_id for decision in data.decision_queue for action_id in decision.action_ids
-    )
-    evidence_ids = (
-        data.evidence_ids
-        or _unique(
-            evidence_id
-            for decision in data.decision_queue
-            for evidence_id in decision.evidence_ids
-        )
-        or [connector_evidence_id("google_search_console")]
-    )
-    total_clicks = sum(decision.total_clicks or 0 for decision in data.decision_queue)
-    total_impressions = sum(decision.total_impressions or 0 for decision in data.decision_queue)
-    summary = (
-        _content_command_summary(top_decision)
-        if top_decision is not None
-        else (
-            "Brak gotowej kolejki contentowej. WILQ potrzebuje GSC query/page "
-            "i WordPress inventory."
-        )
-    )
-    next_step = (
-        _content_command_next_step(top_decision)
-        if top_decision is not None
-        else "Otwórz /content-planner i odśwież GSC oraz WordPress inventory."
-    )
-    return CommandCenterBriefItem(
-        id="daily_content_queue",
-        title=(
-            "Content: kolejka SEO z GSC i WordPress"
-            if live_data_available
-            else "Content: brak kolejki SEO"
-        ),
-        route="/content-planner",
-        status="ready" if live_data_available else "blocked",
-        priority=12 if live_data_available else 40,
-        summary=summary,
-        next_step=next_step,
-        source_connectors=[
-            "google_search_console",
-            "wordpress_ekologus",
-            "wordpress_sklep",
-        ],
-        evidence_ids=_limited_ids(evidence_ids),
-        action_ids=action_ids,
-        metric_tiles={
-            "query/page": data.query_page_count,
-            "WP match": data.matched_inventory_count,
-            "decyzje": len(data.decision_queue),
-            "wyświetlenia": total_impressions,
-            "kliknięcia": total_clicks,
-            "blockery": 0 if live_data_available else 1,
-        },
-        blocked_claims=_unique(
-            claim for decision in data.decision_queue for claim in decision.blocked_claims
-        )
-        or ["lead uplift", "revenue impact", "ranking guarantee"],
-        risk=ActionRisk.low if live_data_available else ActionRisk.medium,
-    )
-
-
-def _top_content_decision(
-    decisions: list[ContentDecisionItem],
-) -> ContentDecisionItem | None:
-    preferred_decision_types = {
-        "refresh_or_merge",
-        "merge_create_after_inventory_check",
-        "inventory_check_before_create",
-    }
-    for decision in decisions:
-        if decision.decision_type in preferred_decision_types:
-            return decision
-    return next(
-        (
-            decision
-            for decision in decisions
-            if decision.decision_type != "block_as_tracking_not_content"
-        ),
-        decisions[0] if decisions else None,
-    )
-
-
-def _content_command_summary(decision: ContentDecisionItem) -> str:
-    if decision.summary:
-        return decision.summary
-    if decision.primary_query:
-        return f'Najważniejsze zapytanie contentowe: "{decision.primary_query}".'
-    return decision.rationale
-
-
-def _content_command_next_step(decision: ContentDecisionItem) -> str:
-    if decision.page:
-        return f"Otwórz /content-planner i zacznij od: {decision.title}."
-    return decision.next_step
-
-
-def _ga4_item_from_diagnostics(data: Ga4DiagnosticsResponse) -> CommandCenterBriefItem:
-    decision_count = len(data.decision_queue)
-    measurement_issue_count = _ga4_decision_type_count(
-        data.decision_queue,
-        "fix_measurement",
-    )
-    traffic_review_count = _ga4_decision_type_count(
-        data.decision_queue,
-        "review_traffic_quality",
-    )
-    landing_mapping_count = _ga4_decision_type_count(
-        data.decision_queue,
-        "review_landing_mapping",
-    )
-    missing_contract_count = sum(1 for section in data.sections if section.status != "ready")
-    action_ids = data.action_ids or _unique(
-        action_id for decision in data.decision_queue for action_id in decision.action_ids
-    )
-    evidence_ids = (
-        data.evidence_ids
-        or _unique(
-            evidence_id
-            for decision in data.decision_queue
-            for evidence_id in decision.evidence_ids
-        )
-        or [connector_evidence_id(GA4_CONNECTOR_ID)]
-    )
-    live_data_available = data.live_data_available and data.landing_group_count > 0
-    return CommandCenterBriefItem(
-        id="daily_ga4_landing_quality",
-        title=(
-            "GA4: pomiar i jakość ruchu do kontroli"
-            if live_data_available
-            else "GA4: brak danych do oceny ruchu"
-        ),
-        route="/ga4",
-        status="blocked",
-        priority=14 if live_data_available else 42,
-        summary=(
-            f"GA4 ma {data.landing_group_count} grup landing/source/campaign i "
-            f"{decision_count} decyzji review: pomiar={measurement_issue_count}, "
-            f"jakość ruchu={traffic_review_count}, mapowanie={landing_mapping_count}. "
-            "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
-            "drop/tracking fixed, nie awarię connectora."
-        ),
-        next_step=(
-            "Otwórz /ga4 i przejdź przez kolejkę decyzji: problemy pomiaru, "
-            "mapowanie landingów i jakość ruchu. Waliduj "
-            "`act_review_ga4_tracking_quality`; nie traktuj tego jako werdyktu "
-            "performance."
-        ),
-        source_connectors=[GA4_CONNECTOR_ID],
-        evidence_ids=_limited_ids(evidence_ids),
-        action_ids=action_ids,
-        metric_tiles={
-            "grupy ruchu": data.landing_group_count,
-            "decyzje": decision_count,
-            "pomiar": measurement_issue_count,
-            "jakość ruchu": traffic_review_count,
-            "braki kontraktu": max(missing_contract_count, 1),
-        },
-        blocked_claims=_unique(
-            [
-                *(claim for section in data.sections for claim in section.blocked_claims),
-                *(claim for decision in data.decision_queue for claim in decision.blocked_claims),
-                "tracking fixed",
-            ]
-        )[:8],
-        risk=ActionRisk.medium,
-    )
-
-
-def _ga4_decision_type_count(
-    decisions: list[Ga4DecisionItem],
-    decision_type: str,
-) -> int:
-    return sum(1 for decision in decisions if decision.decision_type == decision_type)
-
-
 def _ga4_item_from_tactical(
     tactical_items: list[TacticalQueueItem],
     actions: list[ActionObject],
@@ -685,6 +706,7 @@ def _ga4_item_from_tactical(
     ga4_items = [item for item in tactical_items if item.domain == OpportunityDomain.ga4]
     dimensioned_facts = _dimensioned_ga4_facts(ga4_facts)
     landing_group_count = max(len(ga4_items), _ga4_landing_group_count(dimensioned_facts))
+    decision_count = max(len(ga4_items), landing_group_count)
     low_engagement_items = [
         item for item in ga4_items if item.intent == "landing_page_quality"
     ]
@@ -726,7 +748,7 @@ def _ga4_item_from_tactical(
         action_ids=action_ids,
         metric_tiles={
             "grupy ruchu": landing_group_count,
-            "decyzje": len(ga4_items),
+            "decyzje": decision_count,
             "pomiar": sum(1 for item in ga4_items if item.intent == "tracking_gap"),
             "jakość ruchu": len(low_engagement_items),
             "braki kontraktu": 1,

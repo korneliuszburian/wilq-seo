@@ -7,7 +7,6 @@ from time import monotonic
 from typing import Literal
 from urllib.parse import urlparse
 
-from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.schemas import (
     ActionRisk,
@@ -127,8 +126,7 @@ def _build_tactical_queue() -> TacticalQueueResponse:
         for fact in _tactical_metric_facts()
         if fact.dimensions and not _is_probe_only_fact(fact)
     ]
-    actions = list_actions()
-    action_ids_by_connector = _action_ids_by_connector(actions)
+    action_ids_by_connector = _tactical_action_ids_by_connector()
     wordpress_index = _wordpress_content_index(facts)
     gsc_page_counts = _gsc_page_counts(facts)
     items = [
@@ -1016,14 +1014,12 @@ def _wordpress_match_confidence_label(confidence: WordPressMatchConfidence) -> s
     return "brak dopasowania"
 
 
-def _action_ids_by_connector(actions: Iterable[object]) -> dict[str, list[str]]:
-    grouped: dict[str, list[str]] = {}
-    for action in actions:
-        connector = getattr(action, "connector", None)
-        action_id = getattr(action, "id", None)
-        if isinstance(connector, str) and isinstance(action_id, str):
-            grouped.setdefault(connector, []).append(action_id)
-    return grouped
+def _tactical_action_ids_by_connector() -> dict[str, list[str]]:
+    return {
+        "google_analytics_4": ["act_review_ga4_tracking_quality"],
+        "google_merchant_center": ["act_review_merchant_feed_issues"],
+        "wordpress_ekologus": ["act_prepare_content_refresh_queue"],
+    }
 
 
 def _is_probe_only_fact(fact: MetricFact) -> bool:
