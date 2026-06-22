@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard hotspot batch, 2026-06-22 22:22 CEST.
+  Zasady prędkości zostały dopisane do `docs/goals/001-goal.md`: verification
+  budget zamiast test-loopów, full `scripts/verify.sh` tylko na realnych gate'ach
+  oraz subagenty do równoległego developmentu, nie tylko audytu. W batchu:
+  `ActionObjectPanels.tsx` wyciągnięty z `App.tsx`, `KnowledgePanels.tsx`
+  wyciągnięty z `App.tsx`, a test action detail route przeniesiony do
+  `ActionDetailRoute.test.tsx` przez subagenta i poprawiony pod aktualny
+  `review_gate` schema. Aktualne line-counts: `App.tsx=7073`,
+  `App.test.tsx=6140`, `ActionDetailRoute.test.tsx=114`,
+  `KnowledgePanels.tsx=116`, `ActionObjectPanels.tsx=604`. Focused proof:
+  dashboard lint OK, dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx src/routes/ActionDetailRoute.test.tsx`
+  OK: 16/16.
 - Dashboard ActionObject panel extraction, 2026-06-22 22:13 CEST.
   `ActionObjectFocus`, `ActionObjectIdFocus`, review gate, preview, human
   review, validation, confirmation and impact-check controls were extracted

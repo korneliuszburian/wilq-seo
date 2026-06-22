@@ -5687,15 +5687,6 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });
 
-  it("action detail route renders", async () => {
-    renderApp("/actions/act_1");
-    await waitFor(() =>
-      expect(
-        screen.getByRole("heading", { name: "Odnow Google Ads OAuth refresh token" })
-      ).toBeInTheDocument()
-    );
-  });
-
   it("ads doctor route renders live metric-backed diagnostics", async () => {
     renderApp("/ads-doctor");
     await waitFor(() =>

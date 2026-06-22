@@ -39,6 +39,21 @@ after every tiny edit. Use a verification budget:
   regression risk.
 - Prefer batching several small safe refactors into one verified slice instead
   of paying the full gate after each tiny extraction.
+- Slice gate matrix:
+  - Dashboard component/route extraction: run the touched route unit file or
+    focused `vitest` files plus `tsc --noEmit` when props/types moved. Skip
+    Playwright unless routing, loading state or browser-only behavior changed.
+  - API contract change: run `uv run pytest tests/test_api_contracts.py -q -k
+    '<affected feature>'`; run the whole file only at the final gate.
+  - Codex skill change: run `uv run pytest tests/test_codex_skill_eval_cases.py
+    -q` plus `scripts/codex_skill_eval.sh --skill <skill>`. Use `--all` only
+    if the shared harness/schema changed.
+  - Connector/read adapter change: run the connector-specific tests plus the
+    relevant API-contract subset. Add browser e2e only if the connector is
+    surfaced in the dashboard.
+  - Security-sensitive, shared schema, action validation, connector-read,
+    cross API/dashboard/skill, or release/handoff work: run full
+    `scripts/verify.sh` once at the final gate.
 
 Subagent speed rule: use subagents to accelerate development, not only audits.
 Delegate whenever work can run in parallel with disjoint write sets or clear
