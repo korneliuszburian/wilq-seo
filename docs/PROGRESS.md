@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Dashboard Localo route extraction, 2026-06-22 23:17 CEST.
+  `LocaloDiagnosticSurface`, Localo operator summary, safety gate, proof panel
+  and Localo label helpers were extracted from `App.tsx` into
+  `LocaloDiagnosticSurface.tsx`. `/localo` still reads
+  `/api/localo/diagnostics`, preserves the current rule that MCP access is not
+  ranking/GBP evidence, and no longer keeps Localo presentation in the route
+  monolith. Current line-counts: `App.tsx=3782`,
+  `LocaloDiagnosticSurface.tsx=349`. Focused proof: dashboard lint OK,
+  dashboard typecheck OK, focused
+  `vitest run src/routes/App.test.tsx -t "localo social and content routes render workflow-specific blockers or focus"`
+  OK: 1/1.
 - Dashboard Ahrefs route extraction, 2026-06-22 23:15 CEST.
   `AhrefsDiagnosticSurface`, Ahrefs operator summary, gap contract panel,
   proof panel and Ahrefs label helpers were extracted from `App.tsx` into
