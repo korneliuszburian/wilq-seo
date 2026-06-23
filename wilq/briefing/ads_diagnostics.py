@@ -9,6 +9,7 @@ from wilq.actions.google_ads.business_context import (
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
     ads_business_context_configured,
+    ads_business_context_missing_read_contracts,
     ads_float_env,
     ads_int_env,
     ads_profit_margin_env,
@@ -994,6 +995,9 @@ def _google_ads_action_ids(
     live_data_available: bool,
 ) -> list[str]:
     if actions is None:
+        missing_read_contracts = ads_business_context_missing_read_contracts()
+        business_context_configured = ads_business_context_configured()
+        strategy_review = ads_strategy_review_state()
         return [
             action_id
             for action_id in GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS
@@ -1001,8 +1005,27 @@ def _google_ads_action_ids(
                 live_data_available and action_id == GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID
             )
             and not (
-                ads_business_context_configured()
+                business_context_configured
                 and action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
+            )
+            and not (
+                action_id == ADS_TARGET_CONFIRMATION_ACTION_ID
+                and (
+                    not live_data_available
+                    or not business_context_configured
+                    or "target_roas_or_cpa" not in missing_read_contracts
+                )
+            )
+            and not (
+                action_id == ADS_STRATEGY_REVIEW_ACTION_ID
+                and (
+                    not live_data_available
+                    or not business_context_configured
+                    or (
+                        strategy_review is not None
+                        and strategy_review.outcome == "approved_for_prepare"
+                    )
+                )
             )
         ]
     return [

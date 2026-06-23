@@ -2447,6 +2447,12 @@ def test_action_metric_facts_use_latest_batch_read_for_speed(
                 "google_search_console": [fact]
             }
 
+        def list_metric_facts_by_evidence_ids(
+            self,
+            _evidence_ids: list[str],
+        ) -> list[MetricFact]:
+            return []
+
     monkeypatch.setattr(action_service, "metric_store", lambda: FastMetricStore())
 
     facts = action_service._action_metric_facts()
@@ -2691,7 +2697,10 @@ def test_tactical_queue_uses_short_ttl_cache(
     tactical_queue.clear_tactical_queue_cache()
     calls = {"build": 0}
 
-    def fake_build() -> TacticalQueueResponse:
+    def fake_build(
+        facts_by_connector: dict[str, list[MetricFact]] | None = None,
+    ) -> TacticalQueueResponse:
+        assert facts_by_connector is None
         calls["build"] += 1
         return TacticalQueueResponse(
             strict_instruction=f"cached tactical queue {calls['build']}",
@@ -2743,13 +2752,25 @@ def test_tactical_queue_uses_latest_metric_fact_batch_for_speed(
                 "google_search_console": [fact]
             }
 
+        def list_latest_metric_facts_by_connector_limits(
+            self,
+            connector_limits: dict[str, int],
+        ) -> dict[str, list[MetricFact]]:
+            seen["connector_limits"] = connector_limits
+            return {connector_id: [] for connector_id in connector_limits} | {
+                "google_search_console": [fact]
+            }
+
     monkeypatch.setattr(tactical_queue, "metric_store", lambda: FastMetricStore())
 
     facts = tactical_queue._tactical_metric_facts()
 
     assert facts == [fact]
-    assert "google_search_console" in seen["connector_ids"]
-    assert seen["limit_per_connector"] == tactical_queue.WORDPRESS_INVENTORY_FACT_LIMIT
+    assert "google_search_console" in seen["connector_limits"]
+    assert (
+        seen["connector_limits"]["wordpress_ekologus"]
+        == tactical_queue.WORDPRESS_INVENTORY_FACT_LIMIT
+    )
 
 
 def test_command_center_reuses_batched_localo_facts_before_evidence_lookup(
@@ -5432,14 +5453,10 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     assert google_ads["domain"] == "google_ads"
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
-        "act_review_demand_gen_readiness",
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
-        SEARCH_TERM_NGRAM_ACTION_ID,
         "act_prepare_custom_segments_from_search_terms",
         "act_prepare_negative_keyword_review_queue",
-        ADS_TARGET_CONFIRMATION_ACTION_ID,
-        ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     assert google_ads["is_fixture"] is False
     localo = next(
@@ -12771,6 +12788,7 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from wilq.briefing import command_center
+    from wilq.briefing import tactical_queue as tactical_queue_module
 
     action = ActionObject(
         id="act_prepare_ads_campaign_review_queue",
@@ -12796,6 +12814,7 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
     def ads_item_builder(
         facts: list[object],
         actions: list[ActionObject],
+        **_kwargs: object,
     ) -> CommandCenterBriefItem:
         seen["ads_metric_facts"] = facts
         seen["actions"] = actions
@@ -12816,6 +12835,7 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
         tactical_items: list[object],
         actions: list[ActionObject],
         metric_facts: list[object],
+        **_kwargs: object,
     ) -> CommandCenterBriefItem:
         seen["merchant_tactical_items"] = tactical_items
         seen["merchant_actions"] = actions
@@ -12833,6 +12853,7 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
     def content_item_builder(
         queue: TacticalQueueResponse,
         ahrefs_facts: list[object],
+        **_kwargs: object,
     ) -> CommandCenterBriefItem:
         seen["content_tactical_queue"] = queue
         seen["content_ahrefs_facts"] = ahrefs_facts
@@ -12868,7 +12889,7 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
     monkeypatch.setattr(
         command_center,
         "_ads_business_context_item_from_facts",
-        lambda *_args: None,
+        lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(command_center, "_merchant_item_from_tactical", merchant_item_builder)
     monkeypatch.setattr(command_center, "_content_item_from_tactical", content_item_builder)
@@ -12923,6 +12944,9 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
         "google_analytics_4": command_center.GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
         "ahrefs": command_center.AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT,
         "localo": 120,
+        "google_search_console": tactical_queue_module.GSC_QUERY_PAGE_FACT_LIMIT,
+        "wordpress_ekologus": tactical_queue_module.WORDPRESS_INVENTORY_FACT_LIMIT,
+        "wordpress_sklep": tactical_queue_module.WORDPRESS_INVENTORY_FACT_LIMIT,
     }
 
 
