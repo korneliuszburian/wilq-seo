@@ -54,6 +54,13 @@ Stan produktu:
   aggregate GA4 facts are noisy. Live HTTP proof after stack restart:
   `/api/ga4/diagnostics` returned `landing_group_count=10`,
   `wordpress_match_count=6`; `(not set)` rows remain measurement blockers.
+- Merchant decision queue now carries review-only `payload_preview` on concrete
+  feed issue decisions, including sample product IDs/titles when available and
+  blocked apply/API mutation state. Focused API contract tests pass for issue
+  queue and grouped reporting contexts. Live HTTP proof after stack restart:
+  `/api/merchant/diagnostics` decision queue entries expose
+  `merchant_feed_issue_review_preview_v1`; apply/API mutation/destructive flags
+  stay false.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
@@ -68,34 +75,28 @@ Stan produktu:
 
 ## Active Gaps
 
-1. **Merchant product-row depth**
-   - Current Merchant diagnostics expose fresh read state, queue semantics,
-     count semantics and sample product IDs/titles where available.
-   - Remaining: product-row issue payload previews tied to concrete Merchant
-     decisions, not only global product samples.
-
-2. **Localo beyond OAuth and aggregate facts**
+1. **Localo beyond OAuth and aggregate facts**
    - Current Localo supports aggregate visibility/reviews review.
    - Rankings, GBP performance, competitors, local tasks, writes and uplift
      claims still require typed read/write contracts.
 
-3. **Skill/reference hygiene audit**
+2. **Skill/reference hygiene audit**
    - Audit `.agents/skills/**/SKILL.md` and `references/*.md`.
    - References should describe contracts and output shape only.
    - Product logic, workaround rules and bug fixes belong in API/schema/eval.
 
-4. **Remaining Ads optimizer value**
+3. **Remaining Ads optimizer value**
    - Current Ads is review-only for many important paths.
    - Missing: live Keyword Planner enrichment, forecast/audience size, stronger
      budget pacing, change-history impact context, safe apply/audit contracts.
 
-5. **Code quality where it affects velocity**
+4. **Code quality where it affects velocity**
    - Avoid broad aesthetic refactors.
    - Extract large route modules only when they block product work, reviewability
      or focused verification.
 
 ## Next Best Queue
 
-1. Commit/push the GA4 landing inventory matching fix.
-2. Continue with Merchant product-row issue payload previews or Localo typed read
-   contracts based on live API/browser proof.
+1. Commit/push Merchant product-row issue payload previews.
+2. Continue with Localo typed read contracts or skill/reference hygiene audit
+   based on live API/browser proof.

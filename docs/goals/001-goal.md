@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 21:44 CEST.
+Last updated: 2026-06-23 21:53 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -38,44 +38,22 @@ Build WILQ as an API-first Marketing Operating System for Ekologus:
 
 ## Current Product State
 
-Strong Ekologus demo is partially built, not done.
-
-Ready enough for demo walkthrough:
-
-- Command Center daily plan based on WILQ API decisions.
-- Merchant issue review route and feed ActionObject review flow.
-- Content Planner with GSC, GA4, Ahrefs and WordPress evidence boundaries.
-- Ads Doctor with live campaign/search-term/recommendation review, target and
-  strategy guardrails, negative keyword/custom segment review and blocked
-  apply claims.
-- GA4 route separates measurement issues from traffic-quality review.
-- Localo route has MCP access and aggregate Localo visibility/reviews evidence,
-  but not full GBP/competitor/ranking/task workflow.
-- 12/12 WILQ skills have non-interactive eval artifacts and current coverage in
-  `docs/evals/skill-coverage-audit.md`.
-
-Do not turn these ready surfaces back into active tasks unless browser/API proof
-shows regression.
+Strong Ekologus demo is partially built, not done. Baseline demo surfaces are
+tracked in git history, `docs/PROGRESS.md`, route tests and
+`docs/evals/skill-coverage-audit.md`; do not keep ready/done surfaces as active
+goal tasks. Only reopen a ready surface when fresh browser/API proof shows a
+regression.
 
 ## Active Demo Backlog
 
 Finish these before claiming the Ekologus demo is done:
 
-1. **Merchant product-row depth**
-   - Current Merchant diagnostics already expose fresh read state, decision
-     queue semantics, count semantics and sample product IDs/titles where
-     available.
-   - Remaining depth: product-row issue payload previews tied to the concrete
-     Merchant decision, not only global product samples.
-   - Do not claim product fixes, approval restoration, feed writes or recovered
-     revenue without exact row-level payload, validation and audit contracts.
-
-2. **Localo beyond OAuth and aggregate facts**
+1. **Localo beyond OAuth and aggregate facts**
    - Current Localo evidence supports aggregate review only.
    - Add typed read contracts before claiming rankings, GBP performance,
      competitor visibility, local tasks, GBP writes or local visibility uplift.
 
-3. **Skill/reference hygiene audit**
+2. **Skill/reference hygiene audit**
    - Audit `.agents/skills/**/SKILL.md` and `.agents/skills/**/references/*.md`.
    - References may describe API usage, required evidence, output shape and
      safety rules.
@@ -84,7 +62,7 @@ Finish these before claiming the Ekologus demo is done:
    - If a skill needs a smarter decision, implement typed API/schema/view-model
      and eval contract first, then make the skill consume it.
 
-4. **Remaining Ads optimizer value**
+3. **Remaining Ads optimizer value**
    - Current Ads is review-only and intentionally blocks unsupported claims.
    - Next value contracts: approved/live Keyword Planner enrichment,
      forecast/audience size, budget pacing, change-history impact context,
@@ -93,7 +71,7 @@ Finish these before claiming the Ekologus demo is done:
    - Do not claim wasted budget, profitability, CPA/ROAS verdicts, budget
      scaling or apply until these contracts exist.
 
-5. **Dashboard code quality only where it helps velocity**
+4. **Dashboard code quality only where it helps velocity**
    - `App.tsx` shell has been reduced, but large route modules still exist.
    - Do not spend time on aesthetic refactors. Extract only when a file blocks
      product velocity, focused tests, browser QA or reviewability.
@@ -117,10 +95,9 @@ Finish these before claiming the Ekologus demo is done:
 
 ## Immediate Next Tasks
 
-1. Commit and push the GA4 landing inventory matching fix.
-2. Continue with Merchant product-row issue payload previews or Localo typed
-   read contracts, depending on the strongest remaining demo blocker in live
-   API/browser proof.
+1. Commit and push Merchant product-row issue payload previews.
+2. Continue with Localo typed read contracts or skill/reference hygiene audit,
+   depending on the strongest remaining demo blocker in live API/browser proof.
 
 ## Stop Condition
 

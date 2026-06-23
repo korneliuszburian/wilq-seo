@@ -9757,6 +9757,24 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
         "online~pl~PL~SKU-002",
     ]
     assert decision["sample_titles"] == ["Sorbent chemiczny 10 kg"]
+    assert decision["payload_preview"][0]["preview_contract"] == (
+        "merchant_feed_issue_review_preview_v1"
+    )
+    decision_preview = decision["payload_preview"][0]
+    assert decision_preview["operation_type"] == "MerchantIssueClusterReview"
+    assert decision_preview["cluster_id"] == cluster["id"]
+    assert decision_preview["issue_type"] == "availability_updated"
+    assert decision_preview["affected_attribute"] == "n:availability"
+    assert decision_preview["metric_snapshot"] == {"issue_product_count": 23}
+    assert decision_preview["sample_products_available"] is True
+    assert decision_preview["sample_product_ids"] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert decision_preview["sample_titles"] == ["Sorbent chemiczny 10 kg"]
+    assert decision_preview["apply_allowed"] is False
+    assert decision_preview["api_mutation_ready"] is False
+    assert decision_preview["destructive"] is False
     assert decision["count_semantics"] == "reported_issue_occurrences"
     assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
     assert "zgłoszeń problemu" in decision["summary"]

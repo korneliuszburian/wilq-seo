@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from wilq.actions.service import list_actions
+from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -864,6 +864,30 @@ def _merchant_decision_from_cluster_group(
         sample_titles=_unique(
             title for cluster in clusters for title in cluster.sample_titles
         )[:10],
+        payload_preview=[
+            _merchant_decision_payload_preview(
+                cluster=primary_cluster,
+                product_count=max_reported_count,
+                metric_snapshot={
+                    "max_issue_product_count": max_reported_count,
+                    "reported_issue_occurrences": reported_occurrences,
+                    "reporting_contexts": len(clusters),
+                },
+                sample_product_ids=_unique(
+                    sample_id
+                    for cluster in clusters
+                    for sample_id in cluster.sample_product_ids
+                )[:10],
+                sample_titles=_unique(
+                    title for cluster in clusters for title in cluster.sample_titles
+                )[:10],
+                evidence_ids=_unique(
+                    evidence_id
+                    for cluster in clusters
+                    for evidence_id in cluster.evidence_ids
+                ),
+            )
+        ],
         source_connectors=_unique(
             connector for cluster in clusters for connector in cluster.source_connectors
         ),
@@ -929,6 +953,16 @@ def _merchant_decision_from_cluster(
         metric_tiles={"zgłoszenia": cluster.product_count},
         sample_product_ids=cluster.sample_product_ids,
         sample_titles=cluster.sample_titles,
+        payload_preview=[
+            _merchant_decision_payload_preview(
+                cluster=cluster,
+                product_count=cluster.product_count,
+                metric_snapshot={"issue_product_count": cluster.product_count},
+                sample_product_ids=cluster.sample_product_ids,
+                sample_titles=cluster.sample_titles,
+                evidence_ids=cluster.evidence_ids,
+            )
+        ],
         source_connectors=cluster.source_connectors,
         evidence_ids=cluster.evidence_ids,
         metric_facts=cluster_facts[:6],
@@ -982,6 +1016,67 @@ def _merchant_decision_from_tactical_item(
         next_step=item.next_step,
         risk=item.risk,
     )
+
+
+def _merchant_decision_payload_preview(
+    *,
+    cluster: MerchantIssueCluster,
+    product_count: int,
+    metric_snapshot: dict[str, int],
+    sample_product_ids: list[str],
+    sample_titles: list[str],
+    evidence_ids: list[str],
+) -> dict[str, object]:
+    return {
+        "id": f"merchant_feed_issue_review_{cluster.id}",
+        "preview_contract": MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
+        "operation_type": "MerchantIssueClusterReview",
+        "cluster_id": cluster.id,
+        "issue_type": cluster.issue_type,
+        "affected_attribute": cluster.affected_attribute,
+        "country": cluster.country,
+        "reporting_context": cluster.reporting_context,
+        "severity": cluster.severity,
+        "resolution": cluster.resolution,
+        "metric_snapshot": metric_snapshot,
+        "sample_products_available": bool(sample_product_ids),
+        "sample_product_ids": sample_product_ids,
+        "sample_titles": sample_titles,
+        "sample_unavailable_reason": None
+        if sample_product_ids
+        else cluster.sample_unavailable_reason
+        or (
+            "Obecny kontrakt Merchant zwraca wymiary problemu i liczbę wystąpień, "
+            "ale nie zwraca przykładowych ID produktów ani tytułów."
+        ),
+        "reason": (
+            "Review-only podgląd konkretnej decyzji Merchant. WILQ może przygotować "
+            "kolejkę review, ale nie może zmienić feedu ani obiecać przywrócenia "
+            "approval bez osobnego write/audit contract."
+        ),
+        "required_validation": [
+            "review_issue_type_and_attribute",
+            "review_reporting_context",
+            "prepare_feed_fix_preview",
+            "human_confirm_before_apply",
+            "mutation_audit_required",
+        ],
+        "blocked_claims": [
+            "approval restored",
+            "revenue recovered",
+            "automatic feed edit",
+            "primary feed overwrite",
+            "feed write",
+            "product data mutation",
+            "automatic approval fix",
+        ],
+        "evidence_ids": evidence_ids,
+        "api_mutation_ready": False,
+        "apply_allowed": False,
+        "destructive": False,
+        "count_semantics": "reported_issue_occurrences",
+        "reported_issue_occurrences": product_count,
+    }
 
 
 def _merchant_aggregate_feed_status_decision(

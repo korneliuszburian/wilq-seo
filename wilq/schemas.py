@@ -1932,6 +1932,7 @@ class MerchantDecisionItem(BaseModel):
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     sample_product_ids: list[str] = Field(default_factory=list)
     sample_titles: list[str] = Field(default_factory=list)
+    payload_preview: list[dict[str, Any]] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
