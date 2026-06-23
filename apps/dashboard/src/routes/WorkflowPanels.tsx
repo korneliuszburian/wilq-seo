@@ -64,7 +64,7 @@ export function WorkflowRegistryList({ workflows }: { workflows: Workflow[] }) {
             <p className="mt-3 text-sm font-medium text-ink">{workflow.safe_next_step}</p>
           ) : null}
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Skill: {workflow.skill_id ?? "brak"}</div>
+            <div>Skill: {workflow.skill_id ? "dostępny" : "brak"}</div>
             <div>
               Widok:{" "}
               {workflow.route ? (
@@ -78,7 +78,7 @@ export function WorkflowRegistryList({ workflows }: { workflows: Workflow[] }) {
             <div>Źródła: {workflow.source_connectors.join(", ") || "brak"}</div>
             <div>Akcje: {workflow.action_ids.length || "brak"}</div>
             <div>Dowody: {workflow.evidence_ids.length || "brak"}</div>
-            <div>Brakujące kontrakty: {workflow.missing_contracts.join(", ") || "brak"}</div>
+            <div>Brakujące kontrakty: {workflow.missing_contracts.length}</div>
           </div>
           {workflow.blocked_claims.length > 0 ? (
             <p className="mt-3 text-xs text-slate-600">

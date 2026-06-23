@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 06:57 CEST.
+Last updated: 2026-06-23 07:00 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -98,6 +98,12 @@ count, marketer-facing source labels, ActionObject count and knowledge-contract
 count; the full evidence details remain in the dedicated evidence section.
 Focused proof: opportunities route unit test passed, dashboard lint OK and
 dashboard typecheck OK.
+
+2026-06-23 Workflows follow-up: `/workflows` now hides raw `skill_id` and raw
+missing contract names from workflow cards. It shows whether a skill is
+available and how many contracts are missing, keeping the route useful as an
+operator workflow map instead of a schema dump. Focused proof: workflow route
+unit test passed, dashboard lint OK and dashboard typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

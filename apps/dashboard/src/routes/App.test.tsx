@@ -5960,9 +5960,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Workflowy decyzyjne")).toBeInTheDocument();
     expect(screen.getByText("Plan dnia WILQ")).toBeInTheDocument();
     expect(screen.getByText("Localo visibility review")).toBeInTheDocument();
-    expect(screen.getByText(/wilq-daily-command/)).toBeInTheDocument();
     expect(screen.getByText("Gotowe workflowy")).toBeInTheDocument();
-    expect(screen.getByText(/local_ranking_rows/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Skill: dostępny/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Brakujące kontrakty: 1/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/wilq-daily-command/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
     expect(screen.getByText("Wyniki workflowów")).toBeInTheDocument();
     expect(screen.getByText("run_daily_command_test")).toBeInTheDocument();
     expect(screen.queryByText("Rejestr workflowów")).not.toBeInTheDocument();

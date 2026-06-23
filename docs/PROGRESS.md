@@ -37,6 +37,13 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Workflows dashboard cleanup, 2026-06-23 07:00 CEST.
+  `/workflows` nie drukuje już raw `skill_id` ani nazw brakujących kontraktów
+  na kartach workflowów. Widok pokazuje, czy skill jest dostępny, oraz licznik
+  brakujących kontraktów; raw kontrakty zostają w API/diagnostyce. Focused
+  proof: `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx
+  -t "workflow route renders persisted workflow runs"` passed, dashboard lint
+  OK and dashboard typecheck OK.
 - Opportunities dashboard cleanup, 2026-06-23 06:57 CEST.
   `OpportunityList` nie drukuje już raw evidence IDs, expert rule IDs ani
   playbook IDs na kartach decyzji. Karta pokazuje liczbę dowodów, źródła
