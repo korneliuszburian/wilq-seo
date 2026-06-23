@@ -40,6 +40,7 @@ CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
 ContentDecisionType = Literal[
+    "block_until_vendor_read",
     "refresh_or_merge",
     "merge_create_after_inventory_check",
     "inventory_check_before_create",
@@ -196,7 +197,12 @@ def build_content_diagnostics(
         or item.source_connectors.count("wordpress_ekologus") > 0
     ]
     action_ids = _content_action_ids(actions if actions is not None else list_actions())
-    decision_queue = _content_decision_queue(all_tactical_items, trusted_facts, action_ids)
+    decision_queue = _content_decision_queue(
+        all_tactical_items,
+        trusted_facts,
+        action_ids,
+        latest_refreshes,
+    )
     sections = [
         _query_page_section(latest_refreshes, trusted_facts, content_tactical_items, action_ids),
         _inventory_match_section(
@@ -289,6 +295,8 @@ def _operator_summary(
 
 
 def _content_decision_type_summary_label(decision_type: ContentDecisionType) -> str:
+    if decision_type == "block_until_vendor_read":
+        return "blokada do czasu odczytu vendor_read"
     if decision_type == "refresh_or_merge":
         return "refresh/merge"
     if decision_type == "merge_create_after_inventory_check":
@@ -577,13 +585,65 @@ def _content_decision_queue(
     items: list[TacticalQueueItem],
     metric_facts: list[MetricFact],
     action_ids: list[str],
+    latest_refreshes: list[ConnectorRefreshRun],
 ) -> list[ContentDecisionItem]:
     decisions = [
         *_gsc_content_decisions(items),
         *_ga4_tracking_gap_decisions(items),
         *_ahrefs_gap_record_decisions(metric_facts, action_ids),
     ]
-    return sorted(decisions, key=_content_decision_sort_key)[:5]
+    if decisions:
+        return sorted(decisions, key=_content_decision_sort_key)[:5]
+    return [_content_vendor_read_blocker_decision(latest_refreshes, action_ids)]
+
+
+def _content_vendor_read_blocker_decision(
+    latest_refreshes: list[ConnectorRefreshRun],
+    action_ids: list[str],
+) -> ContentDecisionItem:
+    gsc_reason = _content_blocker_reason(latest_refreshes, "google_search_console")
+    wordpress_reason = _content_blocker_reason(latest_refreshes, "wordpress_ekologus")
+    return ContentDecisionItem(
+        id="content_block_vendor_read",
+        decision_type="block_until_vendor_read",
+        status="blocked",
+        title="Content: odczyt GSC i WordPress wymagany przed decyzją",
+        summary=(
+            "WILQ nie ma query/page facts z Google Search Console ani inventory "
+            "WordPress wystarczających do decyzji refresh, merge lub create."
+        ),
+        priority=5,
+        metric_tiles={"blockery": 2},
+        source_connectors=["google_search_console", "wordpress_ekologus"],
+        evidence_ids=_unique(
+            [
+                *_refresh_or_connector_evidence_ids(
+                    latest_refreshes,
+                    "google_search_console",
+                ),
+                *_refresh_or_connector_evidence_ids(
+                    latest_refreshes,
+                    "wordpress_ekologus",
+                ),
+            ]
+        ),
+        action_ids=action_ids,
+        blocked_claims=[
+            "content recommendation",
+            "ranking uplift",
+            "lead uplift",
+            "auto publish",
+        ],
+        rationale=(
+            f"GSC blocker: {gsc_reason} WordPress blocker: {wordpress_reason} "
+            "Bez tych odczytów WILQ może tylko wskazać brak danych, nie decyzję SEO."
+        ),
+        next_step=(
+            "Uruchom read-only vendor_read dla Google Search Console i WordPress, "
+            "potem wróć do content diagnostics."
+        ),
+        risk=ActionRisk.medium,
+    )
 
 
 def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:

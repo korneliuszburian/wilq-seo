@@ -2134,6 +2134,7 @@ class ContentAhrefsCandidateRow(BaseModel):
 class ContentDecisionItem(BaseModel):
     id: str
     decision_type: Literal[
+        "block_until_vendor_read",
         "refresh_or_merge",
         "merge_create_after_inventory_check",
         "inventory_check_before_create",

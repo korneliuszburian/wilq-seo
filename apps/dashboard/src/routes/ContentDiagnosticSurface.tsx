@@ -788,6 +788,7 @@ function formatNumber(value: number, fractionDigits: number) {
 }
 
 function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_type"]) {
+  if (decisionType === "block_until_vendor_read") return "blokada do czasu odczytu";
   if (decisionType === "refresh_or_merge") return "odświeżenie albo scalenie";
   if (decisionType === "merge_create_after_inventory_check") {
     return "scalenie lub utworzenie po kontroli inventory";

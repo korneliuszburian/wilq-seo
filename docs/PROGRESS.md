@@ -52,7 +52,10 @@ Stan produktu:
   missing when wide WordPress inventory pushes public sitemap URLs past the old
   slice boundary. Live HTTP proof after stack restart:
   `/api/content/diagnostics` returned `query_page_count=10` and
-  `matched_inventory_count=10`.
+  `matched_inventory_count=10`. Content diagnostics now also returns a typed
+  `block_until_vendor_read` decision when no GSC/WordPress/Ahrefs-backed
+  content decisions exist, so skills/dashboard show a blocker instead of an
+  empty queue.
 - GA4 landing inventory matching preserves dimensioned landing facts even when
   aggregate GA4 facts are noisy. Live HTTP proof after stack restart:
   `/api/ga4/diagnostics` returned `landing_group_count=10`,

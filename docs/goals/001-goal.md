@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:06 CEST.
+Last updated: 2026-06-24 02:16 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -238,6 +238,9 @@ Finish these before claiming the Ekologus demo is done:
         Localo with stable fields: `why_it_matters`, `operator_action`,
         `evidence_ids`, `source_connectors`, `metric_facts`,
         `blocked_claims`, `action_ids`, `freshness`.
+        Content diagnostics now returns `block_until_vendor_read` when no
+        evidence-backed content decisions exist, so empty content data becomes
+        a typed blocker instead of an empty queue.
      2. Decision-quality ranking that prefers high-value marketer actions over
         connector readiness or technical status.
      3. Explicit stale/ready/blocked semantics per contract, so `ready` never

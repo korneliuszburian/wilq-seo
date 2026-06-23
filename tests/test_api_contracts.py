@@ -27,6 +27,7 @@ from wilq.briefing.ads_diagnostics import (
     _custom_segment_source_quality,
     build_ads_diagnostics,
 )
+from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.merchant_diagnostics import _merchant_product_performance_readiness
@@ -10823,6 +10824,45 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
     assert decision_preview["reported_issue_occurrences"] == 1784
     assert len(payload["issue_clusters"]) == 3
     assert payload["operator_summary"]["decision_source"] == "decision_queue"
+
+
+def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_block_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "content_block_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    clear_wordpress_env(monkeypatch)
+
+    diagnostics = build_content_diagnostics(
+        tactical_items=[],
+        metric_facts=[],
+        actions=[],
+    )
+
+    assert diagnostics.live_data_available is False
+    assert len(diagnostics.decision_queue) == 1
+    decision = diagnostics.decision_queue[0]
+    assert decision.id == "content_block_vendor_read"
+    assert decision.decision_type == "block_until_vendor_read"
+    assert decision.status == "blocked"
+    assert decision.source_connectors == [
+        "google_search_console",
+        "wordpress_ekologus",
+    ]
+    assert decision.evidence_ids == [
+        "ev_connector_google_search_console_status",
+        "ev_connector_wordpress_ekologus_status",
+    ]
+    assert decision.metric_tiles == {"blockery": 2}
+    assert "content recommendation" in decision.blocked_claims
+    assert "vendor_read" in decision.next_step
+    assert diagnostics.operator_summary.top_decision_ids == [decision.id]
+    assert "blokada do czasu odczytu vendor_read" in (
+        diagnostics.operator_summary.decision_type_labels
+    )
 
 
 def test_content_diagnostics_exposes_query_page_inventory_queue(
