@@ -150,6 +150,8 @@ class MetricFact(BaseModel):
     unit: str | None = None
     collected_at: datetime | None = None
     previous_value: float | int | str | None = None
+    previous_evidence_id: str | None = None
+    previous_collected_at: datetime | None = None
     delta: float | int | None = None
     delta_percent: float | None = None
     trend: Literal["up", "down", "flat", "unknown"] = "unknown"
@@ -2014,7 +2016,10 @@ class MerchantProductPerformanceRow(BaseModel):
     ads_product_availability: str | None = None
     ads_product_price_micros: int | None = None
     ads_product_currency_code: str | None = None
+    ads_product_price_collected_at: datetime | None = None
     ads_product_previous_price_micros: int | None = None
+    ads_product_previous_price_collected_at: datetime | None = None
+    ads_product_previous_price_evidence_id: str | None = None
     ads_product_price_delta_micros: int | None = None
     ads_product_price_delta_percent: float | None = None
     ads_clicks: int | None = None

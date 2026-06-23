@@ -166,6 +166,8 @@ def test_metric_store_exposes_previous_value_delta_and_freshness(
     active_users = latest_facts_by_name["active_users"]
     assert active_users.value == 15
     assert active_users.previous_value == 10
+    assert active_users.previous_evidence_id == "ev_refresh_refresh_ga4_delta_old"
+    assert active_users.previous_collected_at == older
     assert active_users.delta == 5
     assert active_users.delta_percent == 50
     assert active_users.trend == "up"
@@ -242,6 +244,8 @@ def test_metric_store_lists_metric_facts_by_connector_in_one_batch(
     assert ga4_fact.name == "active_users"
     assert ga4_fact.value == 15
     assert ga4_fact.previous_value == 10
+    assert ga4_fact.previous_evidence_id == "ev_refresh_batch_ga4_old"
+    assert ga4_fact.previous_collected_at == older
     assert ga4_fact.delta == 5
     gsc_facts = facts_by_connector["google_search_console"]
     assert {fact.name for fact in gsc_facts} == {"clicks", "impressions"}

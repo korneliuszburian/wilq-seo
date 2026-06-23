@@ -10620,6 +10620,15 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
             delta_percent=2.875,
         ),
     ]
+    current_price_collected_at = datetime(2026, 6, 24, 8, 0, tzinfo=UTC)
+    previous_price_collected_at = datetime(2026, 6, 23, 8, 0, tzinfo=UTC)
+    state_facts[-1] = state_facts[-1].model_copy(
+        update={
+            "collected_at": current_price_collected_at,
+            "previous_collected_at": previous_price_collected_at,
+            "previous_evidence_id": "ev_ads_product_state_previous",
+        }
+    )
     monkeypatch.setattr(
         "wilq.briefing.merchant_diagnostics._product_performance_metric_facts_by_connector",
         lambda _sample_product_ids: {
@@ -10689,7 +10698,17 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     price_preview = price_readiness["payload_preview"][0]
     assert price_preview["preview_contract"] == "merchant_price_impact_readiness_preview_v1"
     assert price_preview["products"][0]["current_price_micros"] == 123450000
+    assert price_preview["products"][0]["current_price_collected_at"] == (
+        "2026-06-24T08:00:00+00:00"
+    )
     assert price_preview["products"][0]["previous_price_micros"] == 120000000
+    assert price_preview["products"][0]["previous_price_collected_at"] == (
+        "2026-06-23T08:00:00+00:00"
+    )
+    assert price_preview["products"][0]["previous_price_evidence_id"] == (
+        "ev_ads_product_state_previous"
+    )
+    assert price_preview["products"][0]["has_price_snapshot_history"] is True
     assert price_preview["products"][0]["price_delta_micros"] == 3450000
     assert price_preview["products"][0]["has_product_performance_metrics"] is False
     readiness = payload["product_performance_readiness"]

@@ -85,7 +85,11 @@ Stan produktu:
   that typed contract: its deterministic smoke verifies endpoint/context-pack
   consistency for `price_impact_readiness`, required missing read contracts,
   review-only preview flags and blocked product ROAS/profitability/price-impact
-  claims.
+  claims. Metric facts now also expose `previous_evidence_id` and
+  `previous_collected_at`, and Merchant price preview rows expose current and
+  previous price snapshot timestamps. Live proof still shows 3 current Ads
+  prices, 0 previous price snapshots and 0 performance windows, so impact claims
+  remain blocked.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,

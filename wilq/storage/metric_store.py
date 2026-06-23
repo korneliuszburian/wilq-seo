@@ -122,7 +122,15 @@ class DuckDbMetricStore:
               LAG(value_kind) OVER (
                 PARTITION BY connector_id, metric_name, dimensions_json
                 ORDER BY collected_at ASC, evidence_id ASC
-              ) AS previous_value_kind
+              ) AS previous_value_kind,
+              LAG(evidence_id) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_evidence_id,
+              LAG(collected_at) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_collected_at
             FROM connector_metric_facts
             )
             SELECT
@@ -138,7 +146,9 @@ class DuckDbMetricStore:
               dimensions_json,
               previous_metric_value_double,
               previous_metric_value_text,
-              previous_value_kind
+              previous_value_kind,
+              previous_evidence_id,
+              previous_collected_at
             FROM metric_facts_with_previous
         """
         params: list[Any] = []
@@ -192,7 +202,15 @@ class DuckDbMetricStore:
               LAG(value_kind) OVER (
                 PARTITION BY connector_id, metric_name, dimensions_json
                 ORDER BY collected_at ASC, evidence_id ASC
-              ) AS previous_value_kind
+              ) AS previous_value_kind,
+              LAG(evidence_id) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_evidence_id,
+              LAG(collected_at) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_collected_at
             FROM connector_metric_facts
             WHERE connector_id = ANY(?)
             ),
@@ -226,7 +244,9 @@ class DuckDbMetricStore:
               facts.dimensions_json,
               facts.previous_metric_value_double,
               facts.previous_metric_value_text,
-              facts.previous_value_kind
+              facts.previous_value_kind,
+              facts.previous_evidence_id,
+              facts.previous_collected_at
             FROM metric_facts_with_previous facts
             INNER JOIN ranked_metric_fact_groups groups
               ON facts.connector_id = groups.connector_id
@@ -311,7 +331,9 @@ class DuckDbMetricStore:
               facts.dimensions_json,
               NULL AS previous_metric_value_double,
               NULL AS previous_metric_value_text,
-              NULL AS previous_value_kind
+              NULL AS previous_value_kind,
+              NULL AS previous_evidence_id,
+              NULL AS previous_collected_at
             FROM connector_metric_facts facts
             INNER JOIN ranked_metric_fact_groups groups
               ON facts.connector_id = groups.connector_id
@@ -372,7 +394,15 @@ class DuckDbMetricStore:
               LAG(value_kind) OVER (
                 PARTITION BY connector_id, metric_name, dimensions_json
                 ORDER BY collected_at ASC, evidence_id ASC
-              ) AS previous_value_kind
+              ) AS previous_value_kind,
+              LAG(evidence_id) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_evidence_id,
+              LAG(collected_at) OVER (
+                PARTITION BY connector_id, metric_name, dimensions_json
+                ORDER BY collected_at ASC, evidence_id ASC
+              ) AS previous_collected_at
             FROM connector_metric_facts
             WHERE evidence_id = ANY(?)
             )
@@ -389,7 +419,9 @@ class DuckDbMetricStore:
               dimensions_json,
               previous_metric_value_double,
               previous_metric_value_text,
-              previous_value_kind
+              previous_value_kind,
+              previous_evidence_id,
+              previous_collected_at
             FROM metric_facts_with_previous
             ORDER BY
               evidence_id ASC,
@@ -620,6 +652,8 @@ def _metric_fact_from_row(row: tuple[Any, ...]) -> MetricFact:
     previous_value: float | int | str | None = None
     if previous_value_kind:
         previous_value = _metric_value(previous_value_kind, row[10], row[11])
+    previous_evidence_id = cast(str | None, row[13])
+    previous_collected_at = _coerce_datetime(row[14])
     delta, delta_percent, trend = _metric_delta(value, previous_value)
     collected_at = _coerce_datetime(row[6])
     freshness_state, freshness_label = _metric_freshness(collected_at)
@@ -633,6 +667,8 @@ def _metric_fact_from_row(row: tuple[Any, ...]) -> MetricFact:
         unit=cast(str | None, row[8]),
         collected_at=collected_at,
         previous_value=previous_value,
+        previous_evidence_id=previous_evidence_id,
+        previous_collected_at=previous_collected_at,
         delta=delta,
         delta_percent=delta_percent,
         trend=trend,

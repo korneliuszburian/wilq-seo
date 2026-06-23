@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Literal
 
 from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
@@ -531,7 +532,16 @@ def _merchant_product_performance_readiness(
                 ["shopping_product_price_micros"],
             ),
             ads_product_currency_code=_dimension_value(ads_facts, ["currency_code"]),
+            ads_product_price_collected_at=(
+                price_fact.collected_at if price_fact is not None else None
+            ),
             ads_product_previous_price_micros=_int_previous_metric_value(price_fact),
+            ads_product_previous_price_collected_at=(
+                price_fact.previous_collected_at if price_fact is not None else None
+            ),
+            ads_product_previous_price_evidence_id=(
+                price_fact.previous_evidence_id if price_fact is not None else None
+            ),
             ads_product_price_delta_micros=_int_delta_metric_value(price_fact),
             ads_product_price_delta_percent=_delta_percent_metric_value(price_fact),
             ads_clicks=_int_metric_value(
@@ -700,7 +710,10 @@ def _merchant_price_impact_readiness(
         row for row in rows if row.ads_product_price_micros is not None
     ]
     rows_with_previous_price = [
-        row for row in rows_with_current_price if row.ads_product_previous_price_micros is not None
+        row
+        for row in rows_with_current_price
+        if row.ads_product_previous_price_micros is not None
+        and row.ads_product_previous_price_collected_at is not None
     ]
     rows_with_performance = [row for row in rows if _has_product_performance_metric(row)]
     current_read_contracts = _merchant_price_impact_current_read_contracts(
@@ -819,10 +832,21 @@ def _merchant_price_impact_payload_preview(
                 "product_id": row.product_id,
                 "title": row.sample_title or row.ads_product_title,
                 "current_price_micros": row.ads_product_price_micros,
+                "current_price_collected_at": _iso_datetime(
+                    row.ads_product_price_collected_at
+                ),
                 "previous_price_micros": row.ads_product_previous_price_micros,
+                "previous_price_collected_at": _iso_datetime(
+                    row.ads_product_previous_price_collected_at
+                ),
+                "previous_price_evidence_id": row.ads_product_previous_price_evidence_id,
                 "price_delta_micros": row.ads_product_price_delta_micros,
                 "price_delta_percent": row.ads_product_price_delta_percent,
                 "currency_code": row.ads_product_currency_code,
+                "has_price_snapshot_history": (
+                    row.ads_product_previous_price_micros is not None
+                    and row.ads_product_previous_price_collected_at is not None
+                ),
                 "has_product_performance_metrics": _has_product_performance_metric(row),
                 "issue_type": row.issue_type,
                 "affected_attribute": row.affected_attribute,
@@ -1092,6 +1116,12 @@ def _delta_percent_metric_value(fact: MetricFact | None) -> float | None:
     if fact is None or not isinstance(fact.delta_percent, int | float):
         return None
     return float(fact.delta_percent)
+
+
+def _iso_datetime(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    return value.isoformat()
 
 
 def _text_metric_value(facts: list[MetricFact], names: list[str]) -> str | None:
