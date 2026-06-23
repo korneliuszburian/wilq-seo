@@ -457,6 +457,52 @@ const localoActionFixture: ActionObject = {
   }
 };
 
+const socialDraftActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_social_draft",
+  title: "Przygotuj kandydaty postów LinkedIn z dowodów WILQ",
+  domain: "social",
+  connector: "linkedin",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_gsc", "ev_refresh_merchant"],
+  human_diagnosis: "WILQ ma evidence, z którego można przygotować social draft do review.",
+  recommended_reason: "Przejrzyj źródłowe metryki i blokady zanim powstanie draft.",
+  payload: {
+    action_type: "linkedin_post_candidate",
+    mode: "prepare_only",
+    connector: "linkedin",
+    candidate_inputs: [
+      {
+        source_connector: "google_search_console",
+        metric_name: "clicks",
+        value: 12,
+        dimensions: {},
+        evidence_id: "ev_refresh_gsc"
+      },
+      {
+        source_connector: "google_merchant_center",
+        metric_name: "issue_product_count",
+        value: 14,
+        dimensions: {
+          affected_attribute: "n:availability",
+          country: "PL",
+          issue_type: "availability_updated",
+          reporting_context: "FREE_LISTINGS"
+        },
+        evidence_id: "ev_refresh_merchant"
+      }
+    ],
+    draft_constraints: [
+      "use_only_wilq_evidence",
+      "write_in_polish",
+      "no_performance_claims_without_source_metric",
+      "require_human_review_before_apply"
+    ],
+    blocked_claims: ["ROAS", "revenue", "conversion uplift", "product fix applied"],
+    destructive: false
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -587,6 +633,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_localo")) {
         return Promise.resolve(Response.json(localoActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_social_draft")) {
+        return Promise.resolve(Response.json(socialDraftActionFixture));
       }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
@@ -810,6 +859,28 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Braki: gbp_visibility/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: GBP performance/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders social draft evidence inputs without requiring raw JSON", async () => {
+    renderActionDetail("act_social_draft");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj kandydaty postów LinkedIn z dowodów WILQ"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getAllByText("Wejście do social draftu").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Źródło: google_search_console/)).toBeInTheDocument();
+    expect(screen.getByText(/Metryka: clicks/)).toBeInTheDocument();
+    expect(screen.getByText(/Wartość: 12/)).toBeInTheDocument();
+    expect(screen.getByText(/Źródło: google_merchant_center/)).toBeInTheDocument();
+    expect(screen.getByText(/Metryka: issue_product_count/)).toBeInTheDocument();
+    expect(screen.getByText(/Wartość: 14/)).toBeInTheDocument();
+    expect(screen.getByText(/Wymiary: affected_attribute=n:availability/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Ograniczenia: use_only_wilq_evidence/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Blokady: ROAS/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Publikacja zablokowana/).length).toBeGreaterThan(0);
   });
 
   it("renders content brief and WordPress draft preview without requiring raw JSON", async () => {

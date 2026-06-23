@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard social draft ActionObject candidate input preview, 2026-06-23.
+   `/actions/act_prepare_linkedin_social_drafts` now renders
+   `candidate_inputs` as marketer-reviewable cards above the debug payload.
+   The cards show source connector, metric name, value, dimensions, draft
+   constraints, blocked claims and explicit blocked publication/API mutation
+   state. Browser proof:
+   `.local-lab/proof/dashboard/action-social-draft-input-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not publish social posts, create LinkedIn/Facebook drafts,
+   claim ROAS, revenue, conversion uplift or product fixes; it only exposes
+   evidence inputs for human review.
+
 0. Dashboard Localo visibility ActionObject preview, 2026-06-23.
    `/actions/act_review_localo_visibility_facts` now renders
    `local_visibility_review_preview_v1` as a marketer-reviewable card above the

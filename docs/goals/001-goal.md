@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:43 CEST.
+Last updated: 2026-06-23 20:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -240,6 +240,17 @@ visibility, completed local tasks, GBP writes or local visibility uplift.
 Focused proof: Action detail route tests, dashboard typecheck, dashboard lint
 and browser proof
 `.local-lab/proof/dashboard/action-localo-visibility-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:50 CEST: the ActionObject detail route now
+renders social draft candidate inputs from `candidate_inputs`.
+`/actions/act_prepare_linkedin_social_drafts` shows source connector, metric
+name, value, dimensions, draft constraints, blocked claims and blocked
+publication/API mutation state as Polish review cards. Raw payload stays under
+`Surowy payload debug`. This improves the social/content demo path without
+publishing social posts, creating LinkedIn/Facebook drafts, claiming ROAS,
+revenue, conversion uplift or product fixes. Focused proof: Action detail route
+tests, dashboard typecheck, dashboard lint and browser proof
+`.local-lab/proof/dashboard/action-social-draft-input-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

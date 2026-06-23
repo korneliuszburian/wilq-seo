@@ -127,6 +127,7 @@ type PayloadPreviewItem = {
     | "demandGenReadiness"
     | "ga4TrackingQuality"
     | "localVisibility"
+    | "socialDraftInput"
     | "contentBrief"
     | "wordpressDraft";
   item: Record<string, unknown>;
@@ -159,10 +160,24 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "wordpressDraft" as const, item }))
     : [];
+  const socialDraftItems = Array.isArray(payload.candidate_inputs)
+    ? payload.candidate_inputs.filter(isRecord).map((item) => ({
+        kind: "socialDraftInput" as const,
+        item: {
+          ...item,
+          apply_allowed: false,
+          api_mutation_ready: false,
+          blocked_claims: payload.blocked_claims,
+          connector: payload.connector,
+          draft_constraints: payload.draft_constraints
+        }
+      }))
+    : [];
   return [
     ...genericItems,
     ...budgetItems,
     ...ngramItems,
+    ...socialDraftItems,
     ...contentBriefItems,
     ...wordpressDraftItems
   ];
@@ -192,6 +207,9 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "localVisibility") {
     return <LocalVisibilityPreviewCard item={previewItem.item} />;
+  }
+  if (previewItem.kind === "socialDraftInput") {
+    return <SocialDraftInputPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "contentBrief") {
     return <ContentBriefPreviewCard item={previewItem.item} />;
@@ -484,6 +502,35 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
   );
 }
 
+function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }) {
+  const dimensions = isRecord(item.dimensions) ? item.dimensions : {};
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Wejście do social draftu</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.connector, "social")}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Źródło: {stringValue(item.source_connector, "brak")}</div>
+        <div>Metryka: {stringValue(item.metric_name, "brak")}</div>
+        <div>Wartość: {formatMetricValue(item.value)}</div>
+        <div>Wymiary: {formatDimensions(dimensions)}</div>
+        <PreviewValues label="Ograniczenia" values={asStringArray(item.draft_constraints)} />
+        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>
+          Publikacja zablokowana: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
   const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
   return (
@@ -578,9 +625,10 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "demandGenReadiness") return 5;
   if (kind === "ga4TrackingQuality") return 6;
   if (kind === "localVisibility") return 7;
-  if (kind === "contentBrief") return 8;
-  if (kind === "wordpressDraft") return 9;
-  return 10;
+  if (kind === "socialDraftInput") return 8;
+  if (kind === "contentBrief") return 9;
+  if (kind === "wordpressDraft") return 10;
+  return 11;
 }
 
 function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewItem["kind"] {
@@ -689,6 +737,34 @@ function formatPercent(value: unknown) {
     maximumFractionDigits: 2,
     style: "percent"
   }).format(value);
+}
+
+function formatMetricValue(value: unknown) {
+  if (typeof value === "number") {
+    return formatNumber(value);
+  }
+  if (typeof value === "boolean") {
+    return value ? "tak" : "nie";
+  }
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+  return "brak";
+}
+
+function formatDimensions(value: Record<string, unknown>) {
+  const entries = Object.entries(value)
+    .filter(
+      ([, dimensionValue]) =>
+        typeof dimensionValue === "string" ||
+        typeof dimensionValue === "number" ||
+        typeof dimensionValue === "boolean"
+    )
+    .map(([key, dimensionValue]) => `${key}=${formatMetricValue(dimensionValue)}`);
+  if (entries.length === 0) {
+    return "brak";
+  }
+  return entries.slice(0, 4).join(", ");
 }
 
 function stringValue(value: unknown, fallback: string) {
