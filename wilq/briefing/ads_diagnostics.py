@@ -8,6 +8,7 @@ from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
     ADS_STRATEGY_REVIEW_ACTION_ID,
     ADS_TARGET_CONFIRMATION_ACTION_ID,
+    ads_business_context_configured,
     ads_float_env,
     ads_int_env,
     ads_profit_margin_env,
@@ -998,6 +999,10 @@ def _google_ads_action_ids(
             for action_id in GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS
             if not (
                 live_data_available and action_id == GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID
+            )
+            and not (
+                ads_business_context_configured()
+                and action_id == ADS_BUSINESS_CONTEXT_ACTION_ID
             )
         ]
     return [

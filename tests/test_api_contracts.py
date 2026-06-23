@@ -8877,7 +8877,6 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
     assert business_ready_contract["target_interpretation"]["action_ids"] == [
-        ADS_BUSINESS_CONTEXT_ACTION_ID,
         ADS_TARGET_CONFIRMATION_ACTION_ID,
         ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
@@ -8931,7 +8930,6 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         business_ready_contract["operator_review_gates"]
     )
     assert business_ready_decision["action_ids"] == [
-        ADS_BUSINESS_CONTEXT_ACTION_ID,
         ADS_TARGET_CONFIRMATION_ACTION_ID,
         ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
@@ -8981,6 +8979,36 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     )
     assert len(summary_payload["search_term_safety_read_contract"]["safety_rows"]) <= 5
     assert len(summary_payload["keyword_match_context_read_contract"]["context_rows"]) <= 5
+
+
+def test_ads_diagnostics_summary_action_ids_are_validatable() -> None:
+    response = client.get("/api/ads/diagnostics?view=summary")
+    assert response.status_code == 200
+    payload = response.json()
+
+    action_ids = {
+        *payload["operator_summary"]["action_ids"],
+        *(
+            action_id
+            for item in payload["optimizer_readiness_contract"]["readiness_items"]
+            for action_id in item["action_ids"]
+        ),
+        *(
+            action_id
+            for decision in payload["decision_queue"]
+            for action_id in decision["action_ids"]
+        ),
+    }
+
+    assert action_ids
+    for action_id in sorted(action_ids):
+        action_response = client.get(f"/api/actions/{action_id}")
+        assert action_response.status_code == 200, action_id
+        validate_response = client.post(f"/api/actions/{action_id}/validate")
+        assert validate_response.status_code == 200, action_id
+        validation = validate_response.json()
+        assert validation["valid"] is True, action_id
+        assert validation["status"] == "valid", action_id
 
 
 def test_ads_diagnostics_summary_view_uses_smaller_metric_fact_read(

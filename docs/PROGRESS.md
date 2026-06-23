@@ -39,6 +39,17 @@ Stan produktu:
 
 ## Last Done
 
+0. Ads diagnostics ActionObject consistency, 2026-06-23.
+   `/api/ads/diagnostics?view=summary` no longer emits
+   `act_configure_ads_business_context` after the business context is already
+   configured, because `/api/actions/{id}` correctly hides that ActionObject in
+   that state. Added a focused contract test requiring every Ads summary
+   `action_id` from operator summary, optimizer readiness and decision queue to
+   exist and validate through `/api/actions/{id}/validate`. Live proof after
+   `scripts/local_stack.sh restart`: all Ads summary action IDs returned
+   `200 valid`; no `act_configure_ads_business_context` remained in the summary
+   action set.
+
 1. Compact all-skill coverage audit, 2026-06-23.
    Added `docs/evals/skill-coverage-audit.md` as the short map of current
    WILQ skill readiness. It lists 12/12 WILQ skills, latest eval artifact,
@@ -317,9 +328,10 @@ Stan produktu:
 ## Next Best Queue
 
 1. Move from skill proof back into product value: choose the next API/dashboard
-   slice that makes the demo stronger, likely Ads business-context guardrails,
-   Ads apply-preview safety, GA4 tracking-quality detail or Merchant product
-   payload preview.
+   slice that makes the demo stronger. Ads business-context ActionObject
+   consistency is now repaired; next candidates are GA4 tracking-quality detail,
+   Merchant product-row payload preview, Localo typed local tasks, or deeper Ads
+   apply/impact contracts.
 2. If a future eval exposes reasoning gaps, fix typed API/dashboard contracts
    first, not skill references.
 3. Keep focused verification. Use full `scripts/verify.sh` only for final

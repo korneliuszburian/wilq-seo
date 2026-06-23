@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 18:18 CEST.
+Last updated: 2026-06-23 18:24 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -367,6 +367,17 @@ full Ads diagnostics `0.984s`, `0.503s`, `0.693s`; summary `0.416s`,
 `list_actions`, summary payload test, Python ruff OK and mypy OK. Remaining
 performance follow-up: reduce Ads metric fact parsing for summary paths if the
 route needs another latency pass.
+
+2026-06-23 Ads diagnostics ActionObject consistency follow-up: summary Ads
+diagnostics no longer emits `act_configure_ads_business_context` after the
+basic Ads business context is already configured, because `/api/actions/{id}`
+intentionally hides that prepare action in this state. Added a focused API
+contract test requiring every Ads summary `action_id` from operator summary,
+optimizer readiness and decision queue to exist and validate through
+`/api/actions/{id}/validate`. Focused proof: RED failed on
+`act_configure_ads_business_context` 404, GREEN passed with 7 focused Ads API
+tests, Python ruff OK and mypy OK. Live proof after `scripts/local_stack.sh
+restart`: all Ads summary action IDs returned `200 valid`.
 
 2026-06-23 Demand Gen diagnostics performance: `/api/demand-gen/diagnostics`
 and the `wilq-demand-gen-operator` context-pack no longer build full GA4

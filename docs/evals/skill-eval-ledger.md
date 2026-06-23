@@ -4595,6 +4595,13 @@ Product finding:
   WILQ still blocks feed writes, approval restoration, revenue recovery,
   unique-product-count claims and any apply path without a separate validated
   ActionObject, payload preview and audit event.
+- Manual operator run on 2026-06-23 confirmed the same product lesson: final
+  Merchant queues must be based on `decision_queue`, while `issue_clusters` are
+  drill-down only. Responses must state freshness, explain `reported_issue_occurrences`
+  versus unique product counts, list `unknowns` such as missing row-level samples
+  when unavailable, and distinguish context-pack `needs_validation` state from a
+  fresh `/api/actions/{id}/validate` result. These are API/diagnostics contract
+  requirements first; do not patch them only inside skill reference prose.
 
 ## 2026-06-23 - wilq-gsc-content-doctor scoped context-pack eval
 
