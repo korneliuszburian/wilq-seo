@@ -10645,6 +10645,23 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert decision["payload_preview"][0]["products"][0]["ads_product_status"] == (
         "NOT_ELIGIBLE"
     )
+    supplemental_preview = next(
+        preview
+        for preview in decision["payload_preview"]
+        if preview["preview_contract"] == "merchant_supplemental_feed_review_preview_v1"
+    )
+    assert supplemental_preview["apply_allowed"] is False
+    assert supplemental_preview["api_mutation_ready"] is False
+    assert supplemental_preview["primary_feed_mutation_allowed"] is False
+    assert supplemental_preview["candidates"][0]["product_id"] == (
+        "online~pl~PL~SKU-001"
+    )
+    assert supplemental_preview["candidates"][0]["review_fields"] == [
+        "availability",
+    ]
+    assert supplemental_preview["candidates"][0]["candidate_status"] == (
+        "requires_human_value_confirmation"
+    )
     readiness = payload["product_performance_readiness"]
     assert readiness["status"] == "blocked"
     row = readiness["performance_rows"][0]

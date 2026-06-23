@@ -1553,6 +1553,7 @@ export const MerchantDecisionItemSchema = z.object({
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   sample_product_ids: z.array(z.string()).default([]),
   sample_titles: z.array(z.string()).default([]),
+  payload_preview: z.array(z.record(z.unknown())).default([]),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   metric_facts: z.array(MetricFactSchema),

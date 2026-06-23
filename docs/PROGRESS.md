@@ -22,7 +22,7 @@ Pełne archiwa:
 
 ## Current Readout
 
-Data: 2026-06-23
+Data: 2026-06-24
 
 Stan produktu:
 
@@ -72,7 +72,11 @@ Stan produktu:
   restart: `/api/merchant/diagnostics` shows 3 joined products, all
   `NOT_ELIGIBLE`, with Ads title, availability, price and Merchant issue
   context; product ROAS/revenue/fix impact and feed write remain blocked because
-  no Ads/GA4 performance metrics match those products.
+  no Ads/GA4 performance metrics match those products. The same decision now
+  includes review-only `merchant_supplemental_feed_review_preview_v1`
+  candidates with product ID, title, Merchant issue context, Ads state,
+  required validation and blocked apply/API mutation. This is not a feed write
+  or approval/revenue claim.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
@@ -115,9 +119,9 @@ Stan produktu:
   Merchant product sample readiness and Localo GBP/competitor/reviews/rankings
   are ready for review-only decisions; Merchant product-performance join is
   blocked by state-only/zero performance product rows, not by missing GA4/Ads
-  read contracts. The nearest source gaps are Merchant state-row review
-  decisions, supplemental-feed/price-impact contracts, Ahrefs granular gaps,
-  Keyword Planner approval/forecast and cross-source decision joins.
+  read contracts. The nearest source gaps are Merchant price-impact/before-after
+  contracts, Ahrefs granular gaps, Keyword Planner approval/forecast and
+  cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
   stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
   `total_revenue` and `transactions` with landing/source/campaign dimensions.
@@ -161,7 +165,7 @@ Stan produktu:
      visibility aggregate read contracts.
    - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
      Localo tasks blocked unless a side-effect-free read exists.
-   - Source-contract queue: Merchant supplemental-feed/price-impact deepening,
+   - Source-contract queue: Merchant price-impact/before-after deepening,
      Ahrefs granular gap enrichment, Keyword Planner approval/forecast and
      cross-source decision joins.
    - Ads remaining gaps are not OAuth: optimizer review is ready/read-only,
@@ -169,9 +173,9 @@ Stan produktu:
      currently has no rows in the selected window, and apply/audit contracts
      are still required before budget, recommendation, custom-segment or
      negative-keyword mutations.
-   - Merchant now has partial Ads product-state joins for Merchant samples and a
-     state-only review decision. It still needs performance rows,
-     supplemental-feed candidates or before/after audit before
+   - Merchant now has partial Ads product-state joins for Merchant samples,
+     a state-only review decision and review-only supplemental-feed candidates.
+     It still needs performance rows, price-impact snapshots or before/after audit before
      product-performance decisions can become useful. GA4 item facts,
      state-only Ads rows or zero-row Ads performance reads alone do not justify
      revenue, approval, ROAS or product-fix claims.
@@ -250,7 +254,7 @@ Stan produktu:
    safety -> Codex skill/eval quality -> knowledge compiler -> dashboard
    usefulness/performance -> release/live-test hardening.
 2. Next concrete slice should come from live proof: Localo missing read
-   `local_tasks` only if a read-only contract exists, Merchant deepening,
+   `local_tasks` only if a read-only contract exists, Merchant price-impact/performance deepening,
    Ahrefs granular gaps, semantic skill-reference audit or route-level
    dashboard usefulness/performance.
 3. Do not re-add ready/done surfaces as active tasks. If a completed area looks

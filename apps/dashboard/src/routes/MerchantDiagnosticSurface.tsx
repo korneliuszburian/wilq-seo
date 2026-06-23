@@ -585,6 +585,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
             </p>
           </div>
         ) : null}
+        <MerchantDecisionPreview previews={decision.payload_preview} />
         <TraceLine
           label="Dowody"
           values={[formatMerchantIdCount(decision.evidence_ids.length, "ID", "ID")]}
@@ -606,11 +607,71 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
   );
 }
 
+function MerchantDecisionPreview({
+  previews
+}: {
+  previews: MerchantDecisionItem["payload_preview"];
+}) {
+  if (!previews.length) return null;
+  return (
+    <div className="rounded border border-line bg-white p-2">
+      <p className="font-medium text-ink">Podgląd review</p>
+      <div className="mt-1 grid gap-1.5">
+        {previews.map((preview, index) => {
+          const candidates = merchantUnknownArray(preview.candidates);
+          const products = merchantUnknownArray(preview.products);
+          const rowCount = candidates.length || products.length;
+          return (
+            <div
+              key={`${merchantString(preview.preview_contract) || "preview"}-${index}`}
+              className="rounded border border-line bg-slate-50 px-2 py-1.5"
+            >
+              <TraceLine
+                label="Kontrakt"
+                values={[merchantString(preview.preview_contract) || "brak"]}
+              />
+              <TraceLine
+                label="Zakres"
+                values={[
+                  rowCount
+                    ? formatMerchantIdCount(rowCount, "wiersz", "wiersze")
+                    : "bez wierszy"
+                ]}
+              />
+              <TraceLine
+                label="Apply/API"
+                values={[
+                  `apply=${merchantBooleanLabel(preview.apply_allowed)}`,
+                  `api=${merchantBooleanLabel(preview.api_mutation_ready)}`
+                ]}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function merchantDecisionTypeLabel(decisionType: MerchantDecisionItem["decision_type"]) {
   if (decisionType === "review_issue_cluster") return "przegląd problemu feedu";
   if (decisionType === "review_feed_status") return "przegląd statusu feedu";
   if (decisionType === "review_product_state_mapping") return "mapowanie produktu Ads";
   return "blocker odczytu Merchant";
+}
+
+function merchantUnknownArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function merchantString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function merchantBooleanLabel(value: unknown) {
+  if (value === true) return "odblokowane";
+  if (value === false) return "zablokowane";
+  return "brak statusu";
 }
 
 function merchantMicrosPrice(value: number | null | undefined, currencyCode?: string | null) {

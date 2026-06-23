@@ -51,6 +51,9 @@ MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS = [
 MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT = (
     "merchant_product_state_review_preview_v1"
 )
+MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT = (
+    "merchant_supplemental_feed_review_preview_v1"
+)
 PRODUCT_JOIN_DIMENSION_KEYS = [
     "product_id",
     "item_id",
@@ -1443,7 +1446,11 @@ def _merchant_product_state_review_decision(
             _merchant_product_state_review_payload_preview(
                 visible_rows,
                 product_performance_readiness.evidence_ids,
-            )
+            ),
+            _merchant_supplemental_feed_review_payload_preview(
+                visible_rows,
+                product_performance_readiness.evidence_ids,
+            ),
         ],
         source_connectors=product_performance_readiness.source_connectors,
         evidence_ids=product_performance_readiness.evidence_ids,
@@ -1456,10 +1463,9 @@ def _merchant_product_state_review_decision(
             "wyciągać wniosków o ROAS, odzyskanym revenue ani skutku naprawy."
         ),
         next_step=(
-            "Sprawdź zmapowane produkty w review: status Ads, dostępność, cenę i "
-            "powiązany problem Merchant. Jeżeli trzeba przygotować zmianę feedu, "
-            "zrób osobny supplemental-feed payload preview; primary feed i apply "
-            "pozostają zablokowane."
+            "Sprawdź zmapowane produkty w review: status Ads, dostępność, cenę, "
+            "powiązany problem Merchant i supplemental-feed candidate preview. "
+            "Primary feed, apply i wpływ na approval pozostają zablokowane."
         ),
         risk=ActionRisk.medium,
     )
@@ -1504,6 +1510,94 @@ def _merchant_product_state_review_payload_preview(
         "apply_allowed": False,
         "destructive": False,
     }
+
+
+def _merchant_supplemental_feed_review_payload_preview(
+    rows: list[MerchantProductPerformanceRow],
+    evidence_ids: list[str],
+) -> dict[str, object]:
+    candidates = [
+        _merchant_supplemental_feed_candidate(row)
+        for row in rows
+        if row.issue_type or row.affected_attribute or row.ads_product_status
+    ]
+    return {
+        "id": "merchant_supplemental_feed_review_preview",
+        "preview_contract": MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT,
+        "operation_type": "MerchantSupplementalFeedCandidateReview",
+        "feed_target": "supplemental_feed_review_only",
+        "primary_feed_mutation_allowed": False,
+        "candidates": candidates,
+        "reason": (
+            "Review-only kandydaci do supplemental feed. WILQ pokazuje pola do "
+            "sprawdzenia i źródła walidacji, ale nie wylicza docelowych wartości "
+            "feedu i nie wykonuje mutacji."
+        ),
+        "required_validation": [
+            "review_product_identity_mapping",
+            "review_merchant_issue_context",
+            "confirm_source_of_truth_values",
+            "prepare_supplemental_feed_draft_preview",
+            "validate_payload_values",
+            "human_confirm_before_apply",
+            "mutation_audit_required",
+        ],
+        "blocked_claims": _unique(
+            [
+                *MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
+                "primary feed overwrite",
+                "supplemental feed write",
+                "product data mutation",
+                "automatic approval fix",
+            ]
+        ),
+        "evidence_ids": evidence_ids,
+        "api_mutation_ready": False,
+        "apply_allowed": False,
+        "destructive": False,
+    }
+
+
+def _merchant_supplemental_feed_candidate(
+    row: MerchantProductPerformanceRow,
+) -> dict[str, object]:
+    review_fields = _merchant_supplemental_feed_review_fields(row)
+    value_sources = [
+        "Merchant Center issue context",
+        "Google Ads shopping_product state",
+        "operator-confirmed product source of truth",
+    ]
+    return {
+        "product_id": row.product_id,
+        "title": row.sample_title or row.ads_product_title,
+        "issue_type": row.issue_type,
+        "affected_attribute": row.affected_attribute,
+        "country": row.country,
+        "reporting_context": row.reporting_context,
+        "ads_product_status": row.ads_product_status,
+        "ads_product_availability": row.ads_product_availability,
+        "ads_product_price_micros": row.ads_product_price_micros,
+        "ads_product_currency_code": row.ads_product_currency_code,
+        "review_fields": review_fields,
+        "value_sources_required": value_sources,
+        "candidate_status": "requires_human_value_confirmation",
+        "allowed_next_step": (
+            "Przygotuj supplemental-feed draft dopiero po potwierdzeniu wartości "
+            "w źródle produktu. Nie nadpisuj primary feed."
+        ),
+    }
+
+
+def _merchant_supplemental_feed_review_fields(
+    row: MerchantProductPerformanceRow,
+) -> list[str]:
+    attribute = (row.affected_attribute or "").removeprefix("n:").strip()
+    fields = [attribute] if attribute else []
+    if row.ads_product_availability:
+        fields.append("availability")
+    if row.ads_product_price_micros is not None:
+        fields.append("price")
+    return _unique(field for field in fields if field)
 
 
 def _merchant_decision_cluster_groups(
