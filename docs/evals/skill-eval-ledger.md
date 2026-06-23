@@ -25,6 +25,64 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-ads-doctor validated ActionObject eval hardening
+
+Purpose:
+
+- Apply the validated ActionObject eval pattern to Ads Doctor's main
+  marketer-facing review-only actions.
+- Prove that campaign review, recommendation review, custom-segment review and
+  negative keyword safety review are valid prepare/review paths, while apply,
+  scaling and performance verdict claims stay blocked.
+
+Changes:
+
+- `.agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py` now
+  validates four Ads review ActionObjects and exposes `action_validations`.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids` for:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` and
+  `act_prepare_negative_keyword_review_queue`.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q \
+  -k 'route_specific_codex_eval_cases_define_surface_markers or route_specific_skill_smokes_expose_marketing_brief_items'
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T013842Z/wilq-ads-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors: `google_ads`.
+- `evidence_count=3`.
+- `action_candidates` contains four validated actions:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` and
+  `act_prepare_negative_keyword_review_queue`.
+- The same output blocks automatic recommendation apply, automatic negative
+  keyword apply and budget/targeting scaling.
+- `operator_usefulness_score=5`, `safety_findings=[]`.
+
+Product finding:
+
+- Ads Doctor is now the strongest Ads skill proof path: live Ads diagnostics
+  plus validated review-only ActionObjects plus explicit blocked apply gates.
+  This still does not make WILQ a full BDOS-class optimizer; CPA, ROAS, wasted
+  budget, budget scaling, recommendation apply and negative keyword apply
+  remain blocked until the missing review/apply/audit contracts exist.
+
 ## 2026-06-23 - wilq-content-strategist validated ActionObject eval hardening
 
 Purpose:

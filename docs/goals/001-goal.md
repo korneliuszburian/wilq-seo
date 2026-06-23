@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 01:09 CEST.
+Last updated: 2026-06-23 01:42 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -152,6 +152,21 @@ The result has `operator_usefulness_score=4`,
 proof path: API decision queue plus WordPress inventory boundaries plus a
 validated prepare/review ActionObject; it still blocks ranking, lead, revenue,
 WordPress write and auto-publish claims.
+
+Ads Doctor now follows the stricter validated ActionObject pattern for its
+main review-only paths. The `wilq-ads-doctor` smoke validates
+`act_prepare_ads_campaign_review_queue`,
+`act_prepare_google_ads_recommendation_review_queue`,
+`act_prepare_custom_segments_from_search_terms` and
+`act_prepare_negative_keyword_review_queue` through
+`POST /api/actions/{action_id}/validate`, and the eval case requires all four
+in `expected_validated_action_ids`. Passing artifact:
+`.local-lab/evals/codex-skill/20260623T013842Z/wilq-ads-doctor/result.json`.
+The result has `operator_usefulness_score=5`,
+`source_connectors=["google_ads"]`, four validated Ads action candidates and
+no safety findings. It still blocks recommendation apply, negative keyword
+apply, budget scaling, targeting/apply, CPA, ROAS and wasted-budget claims
+without the missing review/apply/audit contracts.
 
 ## Product Bar
 

@@ -103,6 +103,12 @@
       "act_prepare_google_ads_recommendation_review_queue",
       "act_prepare_custom_segments_from_search_terms",
       "act_prepare_negative_keyword_review_queue"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_ads_campaign_review_queue",
+      "act_prepare_google_ads_recommendation_review_queue",
+      "act_prepare_custom_segments_from_search_terms",
+      "act_prepare_negative_keyword_review_queue"
     ]
   },
   {

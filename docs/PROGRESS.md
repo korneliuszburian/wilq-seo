@@ -17,7 +17,7 @@ Pełne archiwum sprzed kompaktowania:
 
 ## Current Snapshot
 
-Data: 2026-06-22
+Data: 2026-06-23
 
 Stan produktu:
 
@@ -37,6 +37,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor eval hardening, 2026-06-23 01:38 CEST.
+  `wilq-ads-doctor` smoke now validates the four marketer-facing Ads
+  review-only ActionObjects through `POST /api/actions/{action_id}/validate`:
+  `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms` and
+  `act_prepare_negative_keyword_review_queue`. The eval case now requires all
+  four in `expected_validated_action_ids`. Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T013842Z/wilq-ads-doctor/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_ads"]`, 3 Ads evidence IDs,
+  `operator_usefulness_score=5`, `safety_findings=[]` and four validated Ads
+  `action_candidates`. Product finding: Ads Doctor can now prove safe
+  campaign review, recommendation review, custom-segment review and negative
+  keyword safety review paths while still blocking recommendation apply,
+  negative keyword apply, budget scaling, targeting/apply, CPA, ROAS and
+  wasted-budget claims without the missing review/apply/audit contracts.
 - Command Center cold path action split, 2026-06-23 01:31 CEST.
   `/api/dashboard/command-center` no longer builds full ActionObject payloads
   through `list_actions()` on the first-screen path. `build_daily_command_center`

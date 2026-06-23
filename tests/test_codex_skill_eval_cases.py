@@ -57,6 +57,12 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "act_prepare_custom_segments_from_search_terms",
                 "act_prepare_negative_keyword_review_queue",
             },
+            "validated_action_ids": {
+                "act_prepare_ads_campaign_review_queue",
+                "act_prepare_google_ads_recommendation_review_queue",
+                "act_prepare_custom_segments_from_search_terms",
+                "act_prepare_negative_keyword_review_queue",
+            },
         },
         "wilq-ga4-analyst": {
             "surface_path": "/ga4",
@@ -284,6 +290,11 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "blocked_handoff" in ads_skill_doc
     assert "Live Ads diagnostics must not expose OAuth blocked_handoff" in ads_smoke_script
     assert "Blocked Ads diagnostics must expose blocked_handoff" in ads_smoke_script
+    ads_validation_call = (
+        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert ads_validation_call in ads_smoke_script
+    assert '"action_validations": action_validations' in ads_smoke_script
 
     custom_segments_skill_doc = Path(
         ".agents/skills/wilq-custom-segments/SKILL.md"

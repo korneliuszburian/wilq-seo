@@ -10,6 +10,12 @@ from typing import Any
 
 SKILL_NAME = "wilq-ads-doctor"
 REQUIRED_CONNECTORS = ["google_ads"]
+VALIDATED_ACTION_IDS = [
+    "act_prepare_ads_campaign_review_queue",
+    "act_prepare_google_ads_recommendation_review_queue",
+    "act_prepare_custom_segments_from_search_terms",
+    "act_prepare_negative_keyword_review_queue",
+]
 MAX_CONTEXT_PACK_BYTES = 200_000
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
@@ -658,6 +664,31 @@ def main() -> int:
     elif not negative_keywords_read_contract.get("missing_read_contracts"):
         raise SystemExit("Blocked negative keyword contract must list missing read contracts")
 
+    action_ids = ads_diagnostics.get("action_ids") or []
+    if ads_diagnostics.get("live_data_available") is True:
+        missing_validated_actions = sorted(set(VALIDATED_ACTION_IDS) - set(action_ids))
+        if missing_validated_actions:
+            raise SystemExit(
+                "Live Ads diagnostics must expose review ActionObjects for validation: "
+                + ", ".join(missing_validated_actions)
+            )
+    action_validations = []
+    for action_id in VALIDATED_ACTION_IDS:
+        if action_id not in action_ids:
+            continue
+        quoted_action = urllib.parse.quote(str(action_id), safe="")
+        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        action_validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"Ads ActionObject validation failed: {validation}")
+
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
         {
@@ -1078,6 +1109,7 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "action_validations": action_validations,
                 "context_pack_bytes": pack_bytes,
                 "evidence_ids": [
                     item.get("id")
