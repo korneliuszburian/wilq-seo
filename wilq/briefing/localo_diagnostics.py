@@ -60,6 +60,16 @@ LOCALO_CONTRACT_FACT_NAMES = {
         "localo_reviews_removed_count",
         "localo_review_reply_rate",
     },
+    "gbp_visibility": {
+        "localo_gbp_impressions_total",
+        "localo_gbp_actions_total",
+        "localo_gbp_metric_point_count",
+    },
+    "competitor_visibility": {
+        "localo_competitor_count",
+        "localo_favorite_competitor_count",
+        "localo_competitor_change_count",
+    },
 }
 LOCALO_CONTRACT_ORDER = [
     "place_inventory",
@@ -134,10 +144,11 @@ def _operator_summary(
     read_contract_statuses: list[LocaloReadContractStatus],
 ) -> LocaloOperatorSummary:
     top_decisions = decisions[:4]
+    missing_contracts = _missing_contract_ids(read_contract_statuses)
     return LocaloOperatorSummary(
         title="Co marketer ma wiedzieć o Localo",
-        summary=_operator_summary_text(visibility_fact_count),
-        next_step=_operator_summary_next_step(visibility_fact_count),
+        summary=_operator_summary_text(visibility_fact_count, missing_contracts),
+        next_step=_operator_summary_next_step(visibility_fact_count, missing_contracts),
         top_decision_ids=[decision.id for decision in top_decisions],
         access_status=access_probe.status,
         visibility_fact_count=visibility_fact_count,
@@ -170,8 +181,18 @@ def _operator_summary(
     )
 
 
-def _operator_summary_text(visibility_fact_count: int) -> str:
+def _operator_summary_text(visibility_fact_count: int, missing_contracts: list[str]) -> str:
     if visibility_fact_count:
+        if (
+            "gbp_visibility" not in missing_contracts
+            and "competitor_visibility" not in missing_contracts
+        ):
+            return (
+                "Localo dostarczył typed agregaty miejsc, fraz, GBP, konkurencji "
+                "i recenzji. WILQ może użyć ich do lokalnego review, ale nadal "
+                "blokuje local tasks, write path i claim o wzroście widoczności "
+                "bez osobnego ActionObject/effect evidence."
+            )
         return (
             "Localo dostarczył typed agregaty widoczności, miejsc, fraz i recenzji. "
             "WILQ może użyć ich do lokalnego review, ale nadal blokuje GBP, "
@@ -185,8 +206,19 @@ def _operator_summary_text(visibility_fact_count: int) -> str:
     )
 
 
-def _operator_summary_next_step(visibility_fact_count: int) -> str:
+def _operator_summary_next_step(
+    visibility_fact_count: int,
+    missing_contracts: list[str],
+) -> str:
     if visibility_fact_count:
+        if (
+            "gbp_visibility" not in missing_contracts
+            and "competitor_visibility" not in missing_contracts
+        ):
+            return (
+                "Przejrzyj agregaty Localo: miejsca, frazy, GBP, konkurencję "
+                "i recenzje. Local tasks i działania write zostaw zablokowane."
+            )
         return (
             "Przejrzyj agregaty Localo: miejsca, frazy, średnią widoczność i "
             "recenzje. Konkurencję, GBP i działania write zostaw zablokowane."
@@ -353,7 +385,8 @@ def _localo_sections(
         ),
         diagnosis=(
             "Localo facts wspierają tylko wskazane kontrakty. WILQ nie rozszerza ich "
-            "na GBP, konkurencję ani poprawę widoczności bez osobnego evidence."
+            "na brakujące kontrakty, write path ani poprawę widoczności bez "
+            "osobnego evidence."
             if visibility_facts
             else "Brak tych facts oznacza brak lokalnej diagnozy marketingowej, nie brak problemu."
         ),
@@ -424,12 +457,12 @@ def _localo_decision_queue(
                 ),
                 rationale=(
                     "Localo dostarczył read-only agregaty dla miejsc, monitorowanych fraz "
-                    "i recenzji. To pozwala na review, ale nie na claim o poprawie "
-                    "widoczności ani działania GBP."
+                    "i obsługiwanych kontraktów widoczności. To pozwala na review, "
+                    "ale nie na claim o poprawie widoczności ani działania write."
                 ),
                 next_step=(
-                    "Sprawdź średnią widoczność, pozycje grid i stan recenzji. "
-                    "Konkurencję/GBP/write path zostaw zablokowane."
+                    "Sprawdź średnią widoczność, pozycje grid, GBP, konkurencję "
+                    "i stan recenzji. Local tasks/write path zostaw zablokowane."
                 ),
                 access_status=access_probe.status,
                 priority=20,
@@ -630,6 +663,16 @@ def _localo_read_contract_statuses(
             ),
         )
         for contract in LOCALO_CONTRACT_ORDER
+    ]
+
+
+def _missing_contract_ids(
+    read_contract_statuses: list[LocaloReadContractStatus],
+) -> list[str]:
+    return [
+        str(contract.id)
+        for contract in read_contract_statuses
+        if contract.status != "ready"
     ]
 
 

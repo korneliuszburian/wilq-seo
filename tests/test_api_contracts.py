@@ -38,7 +38,10 @@ from wilq.connectors.google_merchant_center.client import (
 )
 from wilq.connectors.google_search_console.client import refresh_search_console_site_summary
 from wilq.connectors.google_sheets.client import refresh_google_sheets_review_surface
-from wilq.connectors.localo.client import refresh_localo_visibility_summary
+from wilq.connectors.localo.client import (
+    _competitor_visibility_summary,
+    refresh_localo_visibility_summary,
+)
 from wilq.connectors.vendor import VendorMetricFact, VendorReadResult
 from wilq.connectors.wordpress.client import refresh_wordpress_content_inventory
 from wilq.evidence.registry import list_evidence_by_ids, refresh_run_evidence_id
@@ -11531,7 +11534,39 @@ def test_localo_vendor_read_collects_read_only_aggregate_facts(
                             "removedCount": 2,
                         }
                     }
-                }
+                    }
+                )
+        if "googleMetricSeries" in query:
+            metric = variables["args"]["metrics"][0]
+            assert variables["args"]["placeId"] in {"place-one", "place-two"}
+            assert variables["args"]["dateStart"]
+            assert variables["args"]["dateEnd"]
+            if metric in {
+                "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
+                "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
+                "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
+                "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
+            }:
+                return _localo_mcp_text_response(
+                    {"data": {"googleMetricSeries": [{"value": 10}, {"value": 5}]}}
+                )
+            return _localo_mcp_text_response(
+                {"data": {"googleMetricSeries": [{"value": 2}, {"value": 1}]}}
+            )
+        if "listPlaceActionTrackerFavoriteCompetitors" in query:
+            if variables["placeId"] == "place-one":
+                return _localo_mcp_text_response(
+                    {
+                        "data": {
+                            "competitors": [
+                                {"favorite": True, "changesCount": 3},
+                                {"favorite": False, "changesCount": 1},
+                            ]
+                        }
+                    }
+                )
+            return _localo_mcp_text_response(
+                {"data": {"competitors": [{"favorite": True, "changesCount": 2}]}}
             )
         return httpx.Response(500, json={"error": "Unexpected Localo query"})
 
@@ -11551,6 +11586,11 @@ def test_localo_vendor_read_collects_read_only_aggregate_facts(
     assert result.metric_summary["localo_total_keyword_volume"] == 350
     assert result.metric_summary["localo_reviews_count"] == 30
     assert result.metric_summary["localo_review_reply_rate"] == 0.6
+    assert result.metric_summary["localo_gbp_impressions_total"] == 120
+    assert result.metric_summary["localo_gbp_actions_total"] == 18
+    assert result.metric_summary["localo_competitor_count"] == 3
+    assert result.metric_summary["localo_favorite_competitor_count"] == 2
+    assert result.metric_summary["localo_competitor_change_count"] == 6
     fact_by_name = {fact.name: fact for fact in result.metric_facts}
     assert fact_by_name["localo_active_place_count"].dimensions == {
         "contract": "place_inventory",
@@ -11560,6 +11600,12 @@ def test_localo_vendor_read_collects_read_only_aggregate_facts(
         "local_rankings"
     )
     assert fact_by_name["localo_reviews_count"].dimensions["contract"] == "reviews"
+    assert fact_by_name["localo_gbp_impressions_total"].dimensions["contract"] == (
+        "gbp_visibility"
+    )
+    assert fact_by_name["localo_competitor_count"].dimensions["contract"] == (
+        "competitor_visibility"
+    )
     serialized = json.dumps(
         {
             "summary": result.metric_summary,
@@ -11589,6 +11635,27 @@ def _localo_mcp_text_response(payload: dict[str, Any]) -> httpx.Response:
             },
         },
     )
+
+
+def test_localo_competitor_summary_treats_graphql_errors_as_missing_optional_contract() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content.decode())
+        assert payload["method"] == "tools/call"
+        return _localo_mcp_text_response(
+            {"errors": [{"message": "Competitor visibility is unavailable for this place."}]}
+        )
+
+    summary = _competitor_visibility_summary(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        "localo-access-test",
+        "place-without-competitor-contract",
+    )
+
+    assert summary == {
+        "competitor_count": 0,
+        "favorite_competitor_count": 0,
+        "competitor_change_count": 0,
+    }
 
 
 def test_wordpress_vendor_read_uses_rest_content_inventory(

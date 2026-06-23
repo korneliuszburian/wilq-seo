@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 22:56 CEST.
+Last updated: 2026-06-23 23:03 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -44,20 +44,41 @@ tracked in git history, `docs/PROGRESS.md`, route tests and
 goal tasks. Only reopen a ready surface when fresh browser/API proof shows a
 regression.
 
+## Current Stack Map
+
+Use this map before adding tasks, so work lands in the right layer instead of
+becoming dashboard copy, skill prose or test theater:
+
+1. **Source adapters**: connector modules under `wilq/connectors/**` perform
+   read-only vendor reads, sanitize responses and persist evidence/metric facts.
+2. **Typed product contracts**: diagnostics, briefing, tactical queue and
+   ActionObject services under `wilq/**` turn source facts into decisions,
+   blockers, payload previews and safe next steps.
+3. **API surface**: `apps/api/wilq_api/main.py` exposes the shared contracts
+   used by dashboard and Codex skills.
+4. **Dashboard**: `apps/dashboard/src/**` renders decision cockpit and
+   drilldown routes. It should not invent ranking, grouping or safety logic.
+5. **Codex skills**: `.agents/skills/wilq-*` describe how an operator uses the
+   API contracts. They must not repair missing product behavior in references.
+6. **Eval and release gates**: `scripts/**`, `tests/**`, `docs/evals/**` prove
+   contracts, evidence, Polish output, safety and no invented metrics.
+
 ## Active Demo Backlog
 
 Finish these before claiming the Ekologus demo is done:
 
 1. **Source contracts and data acquisition**
    - Current Localo diagnostics expose live aggregate facts and typed
-     read-contract status after a managed stack restart:
-     `live_data_available=true`, `visibility_fact_count=17`,
+     read-contract status after a managed stack restart. Live proof
+     `refresh_localo_a1b33cd17835` completed with
+     `live_data_available=true`, `visibility_fact_count=23`,
      `act_review_localo_visibility_facts` ready, and `place_inventory`,
-     `local_rankings` and `reviews` ready.
-   - Localo remaining work is narrower: add `gbp_visibility`,
-     `competitor_visibility` and `local_tasks` typed read contracts before
-     claiming GBP performance, competitor visibility, local task completion, GBP
-     writes or local visibility uplift.
+     `local_rankings`, `gbp_visibility`, `competitor_visibility` and `reviews`
+     ready.
+   - Localo remaining work is now narrower: `local_tasks` stays missing/blocked
+     unless Localo exposes a side-effect-free task read. Do not claim local task
+     completion, GBP writes or local visibility uplift from current Localo
+     facts.
    - If Localo appears empty while `/api/metrics?connector_id=localo` has facts,
      restart via `scripts/local_stack.sh restart` before changing product logic.
    - Current Ads is review-only and intentionally blocks unsupported claims.
@@ -77,6 +98,19 @@ Finish these before claiming the Ekologus demo is done:
    - GA4 remaining source contracts: conversion/key-event readiness, ecommerce
      and campaign-to-landing quality evidence before ROAS/revenue/profitability
      claims.
+   - Add source-contract slices in this order:
+     1. Keep Localo `local_tasks` blocked unless Localo exposes a
+        side-effect-free task read. Do not call task endpoints that generate
+        new tasks.
+     2. Merchant row-level proof where available: sample product IDs/titles,
+        issue context, payload preview boundaries and freshness status.
+     3. Ads optimizer evidence: budget pacing, recommendation safety,
+        impression-share context, approved Keyword Planner readiness and
+        change-history windows.
+     4. GA4 commerce/conversion readiness: key events, ecommerce revenue
+        availability, campaign-to-landing quality and tracking blockers.
+     5. Ahrefs/content-gap enrichment only where API evidence is granular
+        enough to support URL/query/backlink decisions.
 
 2. **Decision API and view-model quality**
    - Keep `/api/dashboard/command-center`, `/api/marketing/brief`,
@@ -91,6 +125,17 @@ Finish these before claiming the Ekologus demo is done:
    - If a skill or dashboard needs smarter grouping, dedupe, ranking or copy,
      implement it in typed API/schema/view-model first, then make the UI/skill
      consume it.
+   - Add decision/view-model slices:
+     1. One shared daily decision view-model for command center and marketing
+        brief, so the same decisions are not rebuilt or phrased twice.
+     2. Domain-specific decision queues for Ads, Merchant, Content, GA4 and
+        Localo with stable fields: `why_it_matters`, `operator_action`,
+        `evidence_ids`, `source_connectors`, `metric_facts`,
+        `blocked_claims`, `action_ids`, `freshness`.
+     3. Decision-quality ranking that prefers high-value marketer actions over
+        connector readiness or technical status.
+     4. Explicit stale/ready/blocked semantics per contract, so `ready` never
+        hides missing conversion, GBP, product or Ads safety evidence.
 
 3. **Action safety and apply path**
    - Current demo is mostly prepare/review-only. This is acceptable for demo,
@@ -102,6 +147,19 @@ Finish these before claiming the Ekologus demo is done:
    - Do not claim wasted budget, profitability, CPA/ROAS verdicts, budget
      scaling, feed writes, GBP writes, social publishing or campaign apply until
      the matching ActionObject contract exists and is validated.
+   - Add ActionObject slices:
+     1. Ads review actions: negative keyword review, custom segment review,
+        campaign strategy review and target guardrails stay prepare-only until
+        payload preview, 90-day safety checks, audit and explicit confirm exist.
+     2. Merchant feed actions: review queue and supplemental-feed candidates
+        must show row-level evidence when available and keep primary-feed
+        mutation blocked.
+     3. Content actions: refresh/merge/create/block payload previews must
+        reference GSC/GA4/WordPress/Ahrefs evidence and show duplicate checks.
+     4. Localo/GBP actions: no GBP post, ranking, review reply or task apply
+        until Localo evidence and ActionObject validation exist.
+     5. Social actions: draft-only is acceptable; publishing stays blocked
+        until page/org permissions, preview, confirm and audit exist.
 
 4. **Codex skills, prompts and eval quality**
    - `scripts/skill_hygiene_check.py` now guards obvious hygiene failures:
@@ -128,6 +186,24 @@ Finish these before claiming the Ekologus demo is done:
    - Marketer prompts should be practical Polish commands such as “pokaż
      przestrzeń do poprawy Ads”, “przejrzyj Merchant feed”, “zbuduj kolejkę
      content refresh” and must map to the right skill/context pack.
+   - Add skill/eval slices:
+     1. Run manual and non-interactive eval for every WILQ skill after its
+        domain API contract is strong enough. Record results in
+        `docs/evals/skill-eval-ledger.md` and coverage in
+        `docs/evals/skill-coverage-audit.md`.
+     2. Upgrade evals from format checks to decision checks. Examples:
+        content must identify BDO refresh, Zielony Ład merge/check and GA4
+        `(not set)` as blocker; Merchant must use `decision_queue` before
+        drilldown clusters and not treat reporting sums as unique products;
+        Ads must separate review candidates from CPA/ROAS/waste verdicts.
+     3. Audit `.agents/skills/**/references` semantically. Remove or move any
+        product behavior, workaround, bugfix, ranking/dedupe rule or dashboard
+        cleanup rule into typed API/eval code.
+     4. Normalize skill prompts exposed in dashboard: Polish marketer command,
+        skill name, source connectors, evidence IDs, ActionObject IDs and
+        blocked-claim instruction. No vague “analyze this” prompts.
+     5. Keep skill context packs scoped. Do not send the full system context
+        when a narrow diagnostics endpoint and skill-scoped pack are enough.
 
 5. **Dashboard usefulness, performance and code quality**
    - Command Center must stay a decision cockpit, not a connector registry or
@@ -142,6 +218,24 @@ Finish these before claiming the Ekologus demo is done:
    - `App.tsx` shell has been reduced, but large route modules still exist.
    - Do not spend time on aesthetic refactors. Extract only when a file blocks
      product velocity, focused tests, browser QA or reviewability.
+   - Add dashboard/code slices:
+     1. Keep Command Center as the first-screen decision cockpit: max useful
+        daily decisions, prompt-to-Codex, action focus and source freshness.
+        Move registries, raw metric dumps and long evidence lists to drilldown
+        routes.
+     2. Audit each route from a marketer perspective:
+        `/command-center`, `/ads-doctor`, `/merchant`, `/content-planner`,
+        `/ga4`, `/localo`, `/actions`, `/opportunities`, `/knowledge`,
+        `/settings`. Mark cards as keep, rewrite, move to drilldown or delete.
+     3. Build shared route data boundaries so Command Center, brief and
+        drilldowns do not independently request and format the same heavy
+        surfaces.
+     4. Reduce large frontend modules only where the split makes slices faster:
+        detail panels, prompt cards, decision cards, metric chips, route
+        loaders and domain-specific panels.
+     5. Browser QA should prove user-visible decisions, not screenshots as
+        artifacts. Use `agent-browser` when checking real routes and record
+        only concise proof paths.
 
 6. **Release, staging and live-test strategy**
    - Blocking CI/release tests must verify contracts, schemas, evidence IDs,
@@ -156,6 +250,18 @@ Finish these before claiming the Ekologus demo is done:
    - Production monitoring should alert on source failures, stale freshness,
      zero facts where a contract is expected, secret leaks or unsafe apply
      attempts. Those are operational alerts, not brittle CI assertions.
+   - Add release/live-test slices:
+     1. Split deterministic fixture tests from live smoke checks. Fixture tests
+        may assert exact values; live checks assert contract state, freshness,
+        nonempty facts and correct blockers.
+     2. Define the pre-demo gate: targeted API tests, targeted dashboard route
+        tests, touched skill smoke/eval, secret redaction check and one browser
+        walkthrough of the strong demo path.
+     3. Define the production gate separately: full `scripts/verify.sh`, API
+        health, dashboard build, skill smokes/evals, security gate and live
+        read-only connector checks.
+     4. Add operational alerts for stale connector contracts, missing expected
+        facts, unsafe apply attempts and secret leakage.
 
 ## Quality Rules For Remaining Work
 

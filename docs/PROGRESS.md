@@ -63,12 +63,12 @@ Stan produktu:
   stay false.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
-  `live_data_available=true`, `visibility_fact_count=17`,
-  `act_review_localo_visibility_facts` ready, `place_inventory`,
-  `local_rankings` and `reviews` ready; `gbp_visibility`,
-  `competitor_visibility` and `local_tasks` missing with explicit blocked
-  claims. If Localo appears empty while metric store has facts, restart the
-  managed stack before changing product logic.
+  `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
+  `visibility_fact_count=23`, `act_review_localo_visibility_facts` ready,
+  `place_inventory`, `local_rankings`, `gbp_visibility`,
+  `competitor_visibility` and `reviews` ready; `local_tasks` remains missing
+  with explicit blocked claims. If Localo appears empty while metric store has
+  facts, restart the managed stack before changing product logic.
 - Skill hygiene now has a deterministic gate: `scripts/skill_hygiene_check.py`
   runs from `scripts/quality.sh`, blocks `Goal 001`/workaround/bugfix/outdated
   prose, English safety headings, English `with mode=vendor_read` endpoint notes
@@ -96,9 +96,13 @@ Stan produktu:
 
 1. **Source contracts and data acquisition**
    - Current Localo supports live place inventory, local rankings and reviews as
-     typed aggregate read contracts.
-   - Missing: GBP visibility, competitor visibility, local tasks, write/apply
-     contracts and uplift claims.
+     typed aggregate read contracts, and now also GBP visibility and competitor
+     visibility aggregate read contracts.
+   - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
+     Localo tasks blocked unless a side-effect-free read exists.
+   - Source-contract queue: Merchant row-level payload proof, Ads
+     pacing/recommendations/Keyword Planner/change history context, GA4
+     conversion/ecommerce readiness and Ahrefs granular gap enrichment.
    - Ads remaining gaps are not OAuth: Keyword Planner is blocked by developer
      token approval, change history has no rows in the current window, and
      deeper optimizer value still needs pacing, recommendations safety, forecast
@@ -111,11 +115,18 @@ Stan produktu:
      command-center, marketing brief, tactical queue, diagnostics and actions.
    - Do not push decisions into prompt/reference prose; implement typed
      API/schema/view-model first.
+   - Next decision/API work should add a shared daily decision view-model,
+     stable domain queues and explicit ready/stale/blocked semantics. Avoid
+     showing connector readiness as a marketing decision.
 
 3. **Action safety and apply path**
    - Current demo is mostly prepare/review-only.
    - Future writes need dry_run, preview, confirm, audit, SafetyLimits and
      partial-failure handling before apply claims.
+   - Near-term actions stay review-only: Ads negative keywords/custom
+     segments/strategy, Merchant feed review, content refresh/merge/create,
+     Localo/GBP and social drafts. Apply remains blocked until the matching
+     preview, validation, confirmation and audit contracts exist.
 
 4. **Skill/reference hygiene and eval quality**
    - Obvious hygiene failures are now guarded by `scripts/skill_hygiene_check.py`.
@@ -126,6 +137,10 @@ Stan produktu:
      workaround rules and bug fixes belong in API/schema/eval.
    - Evals now cover basic API/evidence/Polish/safety, but still need stronger
      decision-quality assertions per skill.
+   - Skill queue: manual + non-interactive eval per skill after its domain API
+     contract is strong; upgrade evals to require concrete decisions, not only
+     JSON shape; normalize dashboard prompts to Polish operator commands with
+     evidence IDs, action IDs and blocked claims.
 
 5. **Dashboard usefulness, performance and code quality**
    - Avoid broad aesthetic refactors.
@@ -133,6 +148,10 @@ Stan produktu:
      or focused verification.
    - Focus performance work on shared daily view-model/cache and duplicated
      aggregation, not visual churn.
+   - Dashboard queue: route-by-route marketer audit, Command Center as decision
+     cockpit only, drilldowns for raw evidence/registries, shared route data
+     boundaries and targeted extraction of large modules only when it speeds
+     real slices.
 
 6. **Release/live-test strategy**
    - Release gates should assert contracts, safety, evidence, Polish output and
@@ -140,6 +159,10 @@ Stan produktu:
    - Exact changing metric values belong in fixture tests only. Live smokes
      should assert freshness, nonempty expected facts and correct
      ready/missing/blocked status.
+   - Release queue: separate fixture tests from live smokes, define a smaller
+     pre-demo gate, keep full `scripts/verify.sh` for broad/final gates and add
+     operational alerts for stale contracts, missing facts, unsafe apply and
+     secret leakage.
 
 ## Next Best Queue
 
@@ -149,3 +172,6 @@ Stan produktu:
 2. Next concrete slice should come from live proof: Localo missing read
    contracts, Ads optimizer blockers, semantic skill-reference audit or shared
    daily view-model/cache.
+3. Do not re-add ready/done surfaces as active tasks. If a completed area looks
+   wrong, reopen it only with fresh API/browser proof and a focused failing
+   check.

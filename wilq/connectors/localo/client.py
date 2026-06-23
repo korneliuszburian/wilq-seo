@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -16,6 +17,17 @@ LOCALO_AUTHORIZATION_SERVER_METADATA_ENDPOINT = (
 )
 LOCALO_PLACE_PAGE_SIZE = 20
 LOCALO_PLACE_DETAIL_LIMIT = 10
+LOCALO_GBP_IMPRESSION_METRICS = [
+    "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
+    "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
+    "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
+    "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
+]
+LOCALO_GBP_ACTION_METRICS = [
+    "CALL_CLICKS",
+    "WEBSITE_CLICKS",
+    "BUSINESS_DIRECTION_REQUESTS",
+]
 
 LOCALO_PLACES_QUERY = """
 query PlaceList($input: PlaceListFiltersInput!) {
@@ -61,6 +73,24 @@ query PlaceReviewsStats($placeId: GUID!) {
     reviewsCount
     repliedCount
     removedCount
+  }
+}
+"""
+
+LOCALO_GOOGLE_METRIC_SERIES_QUERY = """
+query GoogleMetricSeries($args: GoogleMetricSeriesArgs!) {
+  googleMetricSeries(args: $args) {
+    value
+    date
+  }
+}
+"""
+
+LOCALO_FAVORITE_COMPETITORS_QUERY = """
+query LocaloFavoriteCompetitors($placeId: GUID!) {
+  competitors: listPlaceActionTrackerFavoriteCompetitors(placeId: $placeId) {
+    favorite
+    changesCount
   }
 }
 """
@@ -224,6 +254,12 @@ def _fetch_localo_value_facts(
     reviews_count = 0
     reviews_replied_count = 0
     reviews_removed_count = 0
+    gbp_impressions_total = 0
+    gbp_actions_total = 0
+    gbp_metric_point_count = 0
+    competitor_count = 0
+    favorite_competitor_count = 0
+    competitor_change_count = 0
     tracked_keyword_count = 0
 
     for place_id in place_ids:
@@ -253,8 +289,18 @@ def _fetch_localo_value_facts(
         reviews_replied_count += _int_metric(review_stats.get("repliedCount"))
         reviews_removed_count += _int_metric(review_stats.get("removedCount"))
 
+        gbp_summary = _gbp_visibility_summary(client, access_token, place_id)
+        gbp_impressions_total += gbp_summary["impressions_total"]
+        gbp_actions_total += gbp_summary["actions_total"]
+        gbp_metric_point_count += gbp_summary["metric_point_count"]
+
+        competitor_summary = _competitor_visibility_summary(client, access_token, place_id)
+        competitor_count += competitor_summary["competitor_count"]
+        favorite_competitor_count += competitor_summary["favorite_competitor_count"]
+        competitor_change_count += competitor_summary["competitor_change_count"]
+
     summary: dict[str, MetricSummaryValue] = {
-        "localo_read_contract_count": 3,
+        "localo_read_contract_count": 5,
         "localo_active_place_count": len(places),
         "localo_place_detail_count": len(place_ids),
         "localo_tracked_keyword_count": tracked_keyword_count,
@@ -265,6 +311,12 @@ def _fetch_localo_value_facts(
         "localo_reviews_count": reviews_count,
         "localo_reviews_replied_count": reviews_replied_count,
         "localo_reviews_removed_count": reviews_removed_count,
+        "localo_gbp_impressions_total": gbp_impressions_total,
+        "localo_gbp_actions_total": gbp_actions_total,
+        "localo_gbp_metric_point_count": gbp_metric_point_count,
+        "localo_competitor_count": competitor_count,
+        "localo_favorite_competitor_count": favorite_competitor_count,
+        "localo_competitor_change_count": competitor_change_count,
         "localo_review_reply_rate": round(reviews_replied_count / reviews_count, 6)
         if reviews_count
         else 0.0,
@@ -332,6 +384,91 @@ def _reviews_stats(client: httpx.Client, access_token: str | None, place_id: str
         {"placeId": place_id},
     )
     return _mapping(data.get("reviewsStats"))
+
+
+def _gbp_visibility_summary(
+    client: httpx.Client,
+    access_token: str | None,
+    place_id: str,
+) -> dict[str, int]:
+    impressions_total = 0
+    actions_total = 0
+    metric_point_count = 0
+    for metric in LOCALO_GBP_IMPRESSION_METRICS:
+        values = _google_metric_series_values(client, access_token, place_id, metric)
+        impressions_total += sum(values)
+        metric_point_count += len(values)
+    for metric in LOCALO_GBP_ACTION_METRICS:
+        values = _google_metric_series_values(client, access_token, place_id, metric)
+        actions_total += sum(values)
+        metric_point_count += len(values)
+    return {
+        "impressions_total": impressions_total,
+        "actions_total": actions_total,
+        "metric_point_count": metric_point_count,
+    }
+
+
+def _google_metric_series_values(
+    client: httpx.Client,
+    access_token: str | None,
+    place_id: str,
+    metric: str,
+) -> list[int]:
+    date_range = _google_metric_series_date_range()
+    data = _mcp_graphql_query(
+        client,
+        access_token,
+        LOCALO_GOOGLE_METRIC_SERIES_QUERY,
+        {"args": {"placeId": place_id, "metrics": [metric], **date_range}},
+    )
+    series = data.get("googleMetricSeries", [])
+    if not isinstance(series, list):
+        return []
+    return [_int_metric(_mapping(item).get("value")) for item in series]
+
+
+def _google_metric_series_date_range() -> dict[str, str]:
+    date_end = datetime.now(UTC).date()
+    date_start = date_end - timedelta(days=30)
+    return {"dateStart": date_start.isoformat(), "dateEnd": date_end.isoformat()}
+
+
+def _competitor_visibility_summary(
+    client: httpx.Client,
+    access_token: str | None,
+    place_id: str,
+) -> dict[str, int]:
+    try:
+        data = _mcp_graphql_query(
+            client,
+            access_token,
+            LOCALO_FAVORITE_COMPETITORS_QUERY,
+            {"placeId": place_id},
+        )
+    except LocaloMcpReadError:
+        return {
+            "competitor_count": 0,
+            "favorite_competitor_count": 0,
+            "competitor_change_count": 0,
+        }
+    competitors = data.get("competitors", [])
+    if not isinstance(competitors, list):
+        return {
+            "competitor_count": 0,
+            "favorite_competitor_count": 0,
+            "competitor_change_count": 0,
+        }
+    competitor_rows = [item for item in competitors if isinstance(item, dict)]
+    return {
+        "competitor_count": len(competitor_rows),
+        "favorite_competitor_count": sum(
+            1 for item in competitor_rows if item.get("favorite") is True
+        ),
+        "competitor_change_count": sum(
+            _int_metric(item.get("changesCount")) for item in competitor_rows
+        ),
+    }
 
 
 def _mcp_graphql_query(
@@ -417,6 +554,12 @@ def _localo_metric_facts(summary: dict[str, MetricSummaryValue]) -> list[VendorM
         "localo_reviews_replied_count": "reviews",
         "localo_reviews_removed_count": "reviews",
         "localo_review_reply_rate": "reviews",
+        "localo_gbp_impressions_total": "gbp_visibility",
+        "localo_gbp_actions_total": "gbp_visibility",
+        "localo_gbp_metric_point_count": "gbp_visibility",
+        "localo_competitor_count": "competitor_visibility",
+        "localo_favorite_competitor_count": "competitor_visibility",
+        "localo_competitor_change_count": "competitor_visibility",
     }
     facts: list[VendorMetricFact] = []
     for name, contract in contracts.items():
