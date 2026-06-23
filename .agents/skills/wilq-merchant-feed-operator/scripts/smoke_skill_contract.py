@@ -65,6 +65,10 @@ def main() -> int:
         raise SystemExit("Context pack merchant_diagnostics evidence IDs differ from endpoint")
     if packed_merchant.get("action_ids") != merchant_diagnostics.get("action_ids"):
         raise SystemExit("Context pack merchant_diagnostics action IDs differ from endpoint")
+    if packed_merchant.get("price_impact_readiness") != merchant_diagnostics.get(
+        "price_impact_readiness"
+    ):
+        raise SystemExit("Context pack merchant price_impact_readiness differs from endpoint")
     product_sample_readiness = merchant_diagnostics.get("product_sample_readiness")
     if not isinstance(product_sample_readiness, dict):
         raise SystemExit("Merchant diagnostics must expose product_sample_readiness")
@@ -126,6 +130,49 @@ def main() -> int:
             )
     else:
         raise SystemExit("Merchant product_performance_readiness status must be ready or blocked")
+    price_impact_readiness = merchant_diagnostics.get("price_impact_readiness")
+    if not isinstance(price_impact_readiness, dict):
+        raise SystemExit("Merchant diagnostics must expose price_impact_readiness")
+    required_price_contracts = set(price_impact_readiness.get("required_read_contracts") or [])
+    if not {
+        "google_ads_shopping_product_current_price",
+        "google_ads_shopping_product_price_history",
+        "merchant_price_change_event_or_snapshot",
+        "google_ads_or_ga4_product_performance_window",
+    }.issubset(required_price_contracts):
+        raise SystemExit("Merchant price_impact_readiness must name price impact read contracts")
+    price_status = price_impact_readiness.get("status")
+    price_preview = price_impact_readiness.get("payload_preview") or []
+    if price_status == "ready":
+        if price_impact_readiness.get("products_with_current_price", 0) <= 0:
+            raise SystemExit("Ready price_impact_readiness must include current prices")
+        if price_impact_readiness.get("products_with_previous_price", 0) <= 0:
+            raise SystemExit("Ready price_impact_readiness must include previous prices")
+        if price_impact_readiness.get("products_with_performance_metrics", 0) <= 0:
+            raise SystemExit("Ready price_impact_readiness must include performance windows")
+    elif price_status == "blocked":
+        blocked_claims = set(price_impact_readiness.get("blocked_claims") or [])
+        if not {
+            "price change impact",
+            "product ROAS",
+            "product profitability",
+            "feed write",
+        }.issubset(blocked_claims):
+            raise SystemExit("Blocked price_impact_readiness must block price/ROAS claims")
+        if not price_impact_readiness.get("missing_read_contracts"):
+            raise SystemExit("Blocked price_impact_readiness must list missing read contracts")
+    else:
+        raise SystemExit("Merchant price_impact_readiness status must be ready or blocked")
+    if price_preview:
+        if (
+            price_preview[0].get("preview_contract")
+            != "merchant_price_impact_readiness_preview_v1"
+        ):
+            raise SystemExit("Merchant price impact preview contract mismatch")
+        if price_preview[0].get("apply_allowed") is not False:
+            raise SystemExit("Merchant price impact preview must keep apply_allowed=false")
+        if price_preview[0].get("api_mutation_ready") is not False:
+            raise SystemExit("Merchant price impact preview must keep api_mutation_ready=false")
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
     decision_queue = merchant_diagnostics.get("decision_queue") or []
     unknowns = merchant_diagnostics.get("unknowns") or []
@@ -284,6 +331,7 @@ def main() -> int:
                     ][:20],
                     "product_sample_readiness": product_sample_readiness,
                     "product_performance_readiness": product_performance_readiness,
+                    "price_impact_readiness": price_impact_readiness,
                     "latest_refresh_status": (
                         merchant_diagnostics.get("latest_refresh") or {}
                     ).get("status"),

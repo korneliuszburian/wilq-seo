@@ -569,11 +569,7 @@ def _merchant_product_performance_readiness(
             row.model_copy(
                 update={
                     "missing_metrics": missing_metrics,
-                    "blocked_claims": [
-                        "product fix impact",
-                        "approval restored",
-                        "feed write",
-                    ],
+                    "blocked_claims": MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
                 }
             )
         )
@@ -649,11 +645,7 @@ def _merchant_product_performance_readiness(
             ),
             summary=summary,
             next_step=next_step,
-            blocked_claims=[
-                "product fix impact",
-                "approval restored",
-                "feed write",
-            ],
+            blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
         )
 
     blocked_reason = _product_performance_blocked_reason(

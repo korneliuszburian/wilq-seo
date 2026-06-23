@@ -5882,7 +5882,8 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                             {
                                 "shoppingProduct": {
                                     "resourceName": (
-                                        "customers/1234567890/shoppingProducts/"
+                                        "customers/1234567890/"
+                                        "shoppingProducts/"  # pragma: allowlist secret
                                         "5519957373~ONLINE~pl~PL~SKU-001"
                                     ),
                                     "merchantCenterId": "5519957373",

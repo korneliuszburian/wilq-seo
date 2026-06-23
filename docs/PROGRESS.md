@@ -81,7 +81,11 @@ Stan produktu:
   `merchant_price_impact_readiness_preview_v1`: live API sees 3 current Ads
   prices, 0 previous price snapshots and 0 matching product performance
   windows, so price-impact stays blocked with missing read contracts instead of
-  pretending to measure price impact.
+  pretending to measure price impact. `wilq-merchant-feed-operator` now consumes
+  that typed contract: its deterministic smoke verifies endpoint/context-pack
+  consistency for `price_impact_readiness`, required missing read contracts,
+  review-only preview flags and blocked product ROAS/profitability/price-impact
+  claims.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
