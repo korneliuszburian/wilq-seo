@@ -117,7 +117,13 @@ function ActionPayloadPreviewSummary({ action }: { action: ActionObject }) {
 }
 
 type PayloadPreviewItem = {
-  kind: "generic" | "budget" | "recommendation" | "contentBrief" | "wordpressDraft";
+  kind:
+    | "generic"
+    | "budget"
+    | "recommendation"
+    | "customSegment"
+    | "contentBrief"
+    | "wordpressDraft";
   item: Record<string, unknown>;
 };
 
@@ -153,6 +159,9 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   if (previewItem.kind === "recommendation") {
     return <RecommendationPayloadPreviewCard item={previewItem.item} />;
   }
+  if (previewItem.kind === "customSegment") {
+    return <CustomSegmentPayloadPreviewCard item={previewItem.item} />;
+  }
   if (previewItem.kind === "contentBrief") {
     return <ContentBriefPreviewCard item={previewItem.item} />;
   }
@@ -181,6 +190,45 @@ function GenericPayloadPreviewCard({ item }: { item: Record<string, unknown> }) 
         </div>
         <PreviewValues label="Przykładowe produkty" values={asStringArray(item.sample_product_ids)} />
         <PreviewValues label="Tytuły próbek" values={asStringArray(item.sample_titles)} />
+      </div>
+    </article>
+  );
+}
+
+function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
+  const safetyReview = isRecord(item.safety_review) ? item.safety_review : {};
+  const targetingPreview = Array.isArray(item.targeting_preview)
+    ? item.targeting_preview.find(isRecord)
+    : undefined;
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Custom segment do review</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.member_type, "KEYWORD")}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Nazwa: {stringValue(item.custom_segment_name, "brak")}</div>
+        <div>Typ członków: {stringValue(item.member_type, "brak")}</div>
+        <PreviewValues label="Hasła źródłowe" values={asStringArray(item.source_terms)} />
+        <div>
+          Kampania do review:{" "}
+          {targetingPreview
+            ? stringValue(targetingPreview.campaign_name, stringValue(targetingPreview.campaign_id, "brak"))
+            : "brak"}
+        </div>
+        <div>Safety: {stringValue(safetyReview.status, "brak")}</div>
+        <PreviewValues label="Braki" values={asStringArray(safetyReview.missing_requirements)} />
+        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
       </div>
     </article>
   );
@@ -327,12 +375,19 @@ function visiblePayloadPreviewItems(items: PayloadPreviewItem[]) {
 function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "budget") return 0;
   if (kind === "recommendation") return 1;
-  if (kind === "contentBrief") return 2;
-  if (kind === "wordpressDraft") return 3;
-  return 3;
+  if (kind === "customSegment") return 2;
+  if (kind === "contentBrief") return 3;
+  if (kind === "wordpressDraft") return 4;
+  return 5;
 }
 
 function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewItem["kind"] {
+  if (
+    typeof item.custom_segment_name === "string" ||
+    (typeof item.member_type === "string" && Array.isArray(item.source_terms))
+  ) {
+    return "customSegment";
+  }
   if (
     stringValue(item.operation_type, "") === "ApplyRecommendationOperation" ||
     typeof item.recommendation_type === "string"

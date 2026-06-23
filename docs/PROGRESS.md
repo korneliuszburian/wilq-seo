@@ -39,6 +39,17 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Custom Segment ActionObject preview, 2026-06-23.
+   `/actions/act_prepare_custom_segments_from_search_terms` now renders
+   `custom_segment_apply_preview_v1` as a marketer-reviewable card above the
+   debug payload. The card shows segment name, member type, source search terms,
+   campaign context, safety status, missing requirements, required validations,
+   blocked claims and explicit blocked apply/API mutation state. Browser proof:
+   `.local-lab/proof/dashboard/action-custom-segment-preview.txt`. Focused
+   proof: Action detail route tests, dashboard typecheck and dashboard lint.
+   This does not create audiences, apply targeting, claim audience size,
+   conversion uplift or ROAS; it only exposes the review contract.
+
 0. Dashboard Google Ads recommendation ActionObject preview, 2026-06-23.
    `/actions/act_prepare_google_ads_recommendation_review_queue` now renders
    Google Ads `ApplyRecommendationOperation` preview rows as marketer-reviewable

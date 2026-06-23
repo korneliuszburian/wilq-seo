@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:17 CEST.
+Last updated: 2026-06-23 20:21 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -163,6 +163,19 @@ without accepting Google recommendations, mutating campaigns, applying budgets
 or claiming performance uplift. Focused proof: Action detail route tests,
 dashboard typecheck, dashboard lint and browser proof
 `.local-lab/proof/dashboard/action-ads-recommendation-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:21 CEST: the ActionObject detail route now
+renders Custom Segment review previews from
+`preview_contract=custom_segment_apply_preview_v1`.
+`/actions/act_prepare_custom_segments_from_search_terms` shows segment name,
+member type, source search terms, campaign context, safety status, missing
+requirements, required validations, blocked claims and blocked apply/API
+mutation state as a Polish review card. Raw payload stays under
+`Surowy payload debug`. This improves the Ads demo path without creating
+audiences, applying targeting, claiming audience size, conversion uplift or
+ROAS. Focused proof: Action detail route tests, dashboard typecheck, dashboard
+lint and browser proof
+`.local-lab/proof/dashboard/action-custom-segment-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

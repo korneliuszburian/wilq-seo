@@ -178,6 +178,58 @@ const adsRecommendationActionFixture: ActionObject = {
   }
 };
 
+const customSegmentActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_custom_segments",
+  title: "Przygotuj kandydatów segmentów z wyszukiwanych haseł",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_google_ads"],
+  human_diagnosis: "Search terms mogą zasilić review-only custom segment.",
+  recommended_reason: "Przejrzyj źródłowe hasła i safety przed targetowaniem.",
+  payload: {
+    action_type: "custom_segment_review",
+    preview_contract: "custom_segment_apply_preview_v1",
+    payload_preview: [
+      {
+        id: "custom_segment_preview_google_ads_search_terms",
+        custom_segment_name: "WILQ search-term intent review",
+        member_type: "KEYWORD",
+        source_terms: [
+          "alba czeladź",
+          "asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a",
+          "bdo szkolenia stacjonarne"
+        ],
+        required_validation: [
+          "review_source_terms",
+          "reject_brand_or_low_intent_terms",
+          "keyword_planner_enrichment",
+          "forecast_or_audience_size"
+        ],
+        blocked_claims: ["audience size", "conversion uplift", "targeting applied"],
+        targeting_preview: [
+          {
+            campaign_id: "23848569273",
+            campaign_name: "Kompendium PPWR",
+            operation_type: "custom_segment_targeting_review",
+            apply_allowed: false,
+            api_mutation_ready: false
+          }
+        ],
+        safety_review: {
+          status: "blocked",
+          reason: "Custom segment apply zablokowany.",
+          missing_requirements: ["forecast_or_audience_size", "keyword_planner_enrichment"]
+        },
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -291,6 +343,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_ads_recommendation")) {
         return Promise.resolve(Response.json(adsRecommendationActionFixture));
       }
+      if (url.endsWith("/api/actions/act_custom_segments")) {
+        return Promise.resolve(Response.json(customSegmentActionFixture));
+      }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
       }
@@ -382,6 +437,26 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Budżet kampanii: 15587163334/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_recommendation_type/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: recommendation apply/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders custom segment payload preview without requiring raw JSON", async () => {
+    renderActionDetail("act_custom_segments");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj kandydatów segmentów z wyszukiwanych haseł"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Custom segment do review")).toBeInTheDocument();
+    expect(screen.getByText(/Nazwa: WILQ search-term intent review/)).toBeInTheDocument();
+    expect(screen.getByText(/Typ członków: KEYWORD/)).toBeInTheDocument();
+    expect(screen.getByText(/Hasła źródłowe: alba czeladź/)).toBeInTheDocument();
+    expect(screen.getByText(/Kampania do review: Kompendium PPWR/)).toBeInTheDocument();
+    expect(screen.getByText(/Safety: blocked/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: forecast_or_audience_size/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: audience size/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 
