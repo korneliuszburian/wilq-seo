@@ -66,8 +66,8 @@ Stan produktu:
   `reported_issue_occurrences`; apply/API mutation/destructive flags stay
   false. Product samples are ready; GA4 exposes item-level product facts and
   Ads now has a live `shopping_performance_view` read contract. The latest Ads
-  proof `refresh_google_ads_8cc89c2570a8` returned
-  `shopping_product_performance_status=ready` with 0 product rows, so
+  proof `refresh_google_ads_3a629caccfa3` checked 30d and 90d lookbacks,
+  returned `shopping_product_performance_status=ready` with 0 product rows, so
   `product_performance_readiness` still blocks instead of inventing product
   ROAS or fix impact.
 - Localo diagnostics now expose live aggregate facts and typed
@@ -97,16 +97,17 @@ Stan produktu:
 - Ads Shopping/PMax product performance read contract is now live. The Google
   Ads adapter queries `shopping_performance_view` by `segments.product_item_id`
   and stores `shopping_product_*` facts when rows exist. Live proof
-  `refresh_google_ads_8cc89c2570a8` completed; the contract is ready but
-  returned 0 product rows for the current last-30-days query.
+  `refresh_google_ads_3a629caccfa3` completed with
+  `shopping_product_performance_query=shopping_performance_view_last_90_days`,
+  `shopping_product_performance_zero_row_lookbacks=30,90` and 0 product rows.
 - Goal 001 now has a thematic stack assessment: acquisition/source proof,
   decision contracts, action safety, Codex skills, knowledge/compiler,
   dashboard/UI and testing/release. Current source triage: Ads optimizer review,
   Merchant product sample readiness and Localo GBP/competitor/reviews/rankings
   are ready for review-only decisions; Merchant product-performance join is
   blocked by zero/mismatched product-level rows, not by missing GA4/Ads read
-  contracts. The nearest source gaps are product-ID mapping/longer Ads lookback
-  or `shopping_product` state read, Merchant supplemental-feed/price-impact
+  contracts. The nearest source gaps are product-ID mapping or
+  `shopping_product` state read, Merchant supplemental-feed/price-impact
   contracts, Ahrefs granular gaps, Keyword Planner approval/forecast and
   cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
@@ -152,10 +153,10 @@ Stan produktu:
      visibility aggregate read contracts.
    - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
      Localo tasks blocked unless a side-effect-free read exists.
-   - Source-contract queue: Merchant product-ID mapping, Ads longer-lookback
-     or `shopping_product` state read, supplemental-feed/price-impact
-     deepening, Ahrefs granular gap enrichment, Keyword Planner approval/
-     forecast and cross-source decision joins.
+   - Source-contract queue: Merchant product-ID mapping or Ads
+     `shopping_product` state read, supplemental-feed/price-impact deepening,
+     Ahrefs granular gap enrichment, Keyword Planner approval/forecast and
+     cross-source decision joins.
    - Ads remaining gaps are not OAuth: optimizer review is ready/read-only,
      Keyword Planner is blocked by developer token approval, change history
      currently has no rows in the selected window, and apply/audit contracts

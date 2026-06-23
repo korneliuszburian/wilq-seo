@@ -31,7 +31,10 @@ from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.briefing.merchant_diagnostics import _merchant_product_performance_readiness
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
-from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
+from wilq.connectors.google_ads.client import (
+    _fetch_optional_shopping_product_performance,
+    refresh_google_ads_campaign_summary,
+)
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
 from wilq.connectors.google_auth import GOOGLE_CREDENTIAL_ENV_NAMES
 from wilq.connectors.google_merchant_center.client import (
@@ -5835,7 +5838,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
             assert "metrics.cost_micros" in query
             assert "metrics.conversions" in query
             assert "metrics.conversions_value" in query
-            assert "segments.date DURING LAST_30_DAYS" in query
+            assert "segments.date BETWEEN" in query
             return httpx.Response(
                 200,
                 json=[
@@ -5982,6 +5985,10 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["search_term_safety_conversions"] == 2.0
     assert result.metric_summary["search_term_safety_conversion_value"] == 240.0
     assert result.metric_summary["shopping_product_performance_status"] == "ready"
+    assert result.metric_summary["shopping_product_performance_query"] == (
+        "shopping_performance_view_last_30_days"
+    )
+    assert result.metric_summary["shopping_product_performance_lookback_days"] == 30
     assert result.metric_summary["shopping_product_performance_row_count"] == 1
     assert result.metric_summary["shopping_product_performance_product_count"] == 1
     assert result.metric_summary["shopping_product_clicks"] == 14
@@ -6244,6 +6251,75 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     serialized_facts = json.dumps([fact.__dict__ for fact in result.metric_facts])
     assert "user_email" not in serialized_facts
     assert "https://www.ekologus.pl/oferta/" not in serialized_facts
+
+
+def test_google_ads_shopping_product_performance_falls_back_to_90_day_lookback() -> None:
+    queries: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "googleads.googleapis.com"
+        assert request.url.path == "/v24/customers/1234567890/googleAds:searchStream"
+        query = json.loads(request.content.decode())["query"]
+        queries.append(query)
+        assert "FROM shopping_performance_view" in query
+        assert "segments.date BETWEEN" in query
+        assert "segments.product_item_id" in query
+        if len(queries) == 1:
+            return httpx.Response(200, json=[{"results": []}])
+        return httpx.Response(
+            200,
+            json=[
+                {
+                    "results": [
+                        {
+                            "campaign": {
+                                "id": "102",
+                                "name": "Shopping sorbenty",
+                                "advertisingChannelType": "PERFORMANCE_MAX",
+                            },
+                            "segments": {
+                                "productItemId": "SKU-001",
+                                "productTitle": "Sorbent chemiczny 10 kg",
+                            },
+                            "metrics": {
+                                "clicks": "3",
+                                "impressions": "33",
+                                "costMicros": "990000",
+                                "conversions": "1",
+                                "conversionsValue": "120",
+                            },
+                        },
+                    ]
+                }
+            ],
+        )
+
+    summary, facts = _fetch_optional_shopping_product_performance(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        {
+            "developer_token": "developer-token-test",
+            "login_customer_id": "9998887777",
+            "customer_id": "1234567890",
+            "client_id": "unused",
+            "client_secret": "unused",  # pragma: allowlist secret
+            "refresh_token": "unused",
+        },
+        "ya29.mocktoken",
+    )
+
+    assert len(queries) == 2
+    assert queries[0] != queries[1]
+    assert summary["shopping_product_performance_status"] == "ready"
+    assert summary["shopping_product_performance_query"] == (
+        "shopping_performance_view_last_90_days"
+    )
+    assert summary["shopping_product_performance_lookback_days"] == 90
+    assert summary["shopping_product_performance_zero_row_lookbacks"] == "30"
+    assert summary["shopping_product_performance_row_count"] == 1
+    assert summary["shopping_product_clicks"] == 3
+    clicks_fact = next(fact for fact in facts if fact.name == "shopping_product_clicks")
+    assert clicks_fact.period == "shopping_product_performance_90d"
+    assert clicks_fact.dimensions["product_item_id"] == "SKU-001"
 
 
 def test_google_ads_vendor_read_discovers_child_accounts_for_manager_customer(
@@ -10239,6 +10315,7 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
             evidence_ids=["ev_ads_shopping_zero_rows"],
             metric_summary={
                 "shopping_product_performance_status": "ready",
+                "shopping_product_performance_lookback_days": 90,
                 "shopping_product_performance_row_count": 0,
             },
             summary="Shopping product read returned zero rows.",

@@ -101,7 +101,8 @@ WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
 LIMIT 200
 """.strip()
 
-SHOPPING_PRODUCT_PERFORMANCE_QUERY = """
+SHOPPING_PRODUCT_PERFORMANCE_LOOKBACK_DAYS = (30, 90)
+SHOPPING_PRODUCT_PERFORMANCE_QUERY_TEMPLATE = """
 SELECT
   campaign.id,
   campaign.name,
@@ -114,7 +115,7 @@ SELECT
   metrics.conversions,
   metrics.conversions_value
 FROM shopping_performance_view
-WHERE segments.date DURING LAST_30_DAYS
+WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
   AND metrics.impressions > 0
 ORDER BY
   metrics.conversions DESC,
@@ -626,26 +627,55 @@ def _fetch_optional_shopping_product_performance(
     credentials: Mapping[str, str | None],
     access_token: str,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
-    try:
-        response = _post_google_ads_search_stream(
-            client,
-            credentials,
-            access_token,
-            SHOPPING_PRODUCT_PERFORMANCE_QUERY,
+    zero_row_lookbacks: list[int] = []
+    latest_summary: dict[str, float | int | str] | None = None
+    for lookback_days in SHOPPING_PRODUCT_PERFORMANCE_LOOKBACK_DAYS:
+        try:
+            response = _post_google_ads_search_stream(
+                client,
+                credentials,
+                access_token,
+                _shopping_product_performance_query(lookback_days),
+            )
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            return _shopping_product_performance_http_failure_summary(exc, lookback_days)
+        except httpx.HTTPError as exc:
+            return (
+                {
+                    "shopping_product_performance_status": "blocked",
+                    "shopping_product_performance_blocker": type(exc).__name__,
+                    "shopping_product_performance_lookback_days": lookback_days,
+                    "shopping_product_performance_row_count": 0,
+                },
+                [],
+            )
+        summary, facts = _summarize_shopping_product_performance_response(
+            response.json(),
+            lookback_days,
         )
-        response.raise_for_status()
-    except httpx.HTTPStatusError as exc:
-        return _shopping_product_performance_http_failure_summary(exc)
-    except httpx.HTTPError as exc:
+        row_count = _int_metric(summary["shopping_product_performance_row_count"])
+        if row_count > 0:
+            if zero_row_lookbacks:
+                summary["shopping_product_performance_zero_row_lookbacks"] = ",".join(
+                    str(days) for days in zero_row_lookbacks
+                )
+            return summary, facts
+        zero_row_lookbacks.append(lookback_days)
+        latest_summary = summary
+
+    if latest_summary is None:
         return (
             {
-                "shopping_product_performance_status": "blocked",
-                "shopping_product_performance_blocker": type(exc).__name__,
+                "shopping_product_performance_status": "ready",
                 "shopping_product_performance_row_count": 0,
             },
             [],
         )
-    return _summarize_shopping_product_performance_response(response.json())
+    latest_summary["shopping_product_performance_zero_row_lookbacks"] = ",".join(
+        str(days) for days in zero_row_lookbacks
+    )
+    return latest_summary, []
 
 
 def _fetch_recommendation_summary(
@@ -914,11 +944,13 @@ def _keyword_planner_http_failure_summary(
 
 def _shopping_product_performance_http_failure_summary(
     exc: httpx.HTTPStatusError,
+    lookback_days: int,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     detail = _sanitized_http_error_detail(exc.response)
     summary: dict[str, float | int | str] = {
         "shopping_product_performance_status": "blocked",
         "shopping_product_performance_http_status": exc.response.status_code,
+        "shopping_product_performance_lookback_days": lookback_days,
         "shopping_product_performance_row_count": 0,
     }
     if detail:
@@ -939,6 +971,18 @@ def _search_term_safety_query(today: date | None = None) -> str:
     end_date = today or date.today()
     start_date = end_date - timedelta(days=SEARCH_TERM_SAFETY_LOOKBACK_DAYS)
     return SEARCH_TERM_SAFETY_QUERY_TEMPLATE.format(
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+    )
+
+
+def _shopping_product_performance_query(
+    lookback_days: int,
+    today: date | None = None,
+) -> str:
+    end_date = today or date.today()
+    start_date = end_date - timedelta(days=lookback_days)
+    return SHOPPING_PRODUCT_PERFORMANCE_QUERY_TEMPLATE.format(
         start_date=start_date.isoformat(),
         end_date=end_date.isoformat(),
     )
@@ -1589,6 +1633,7 @@ def _summarize_keyword_match_context_response(
 
 def _summarize_shopping_product_performance_response(
     payload: Any,
+    lookback_days: int,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     rows = _search_stream_rows(payload)
     clicks = 0
@@ -1598,6 +1643,7 @@ def _summarize_shopping_product_performance_response(
     conversion_value = 0.0
     product_ids: set[str] = set()
     metric_facts: list[VendorMetricFact] = []
+    fact_period = f"shopping_product_performance_{lookback_days}d"
     for row in rows:
         metrics = row.get("metrics", {})
         row_clicks = _int_metric(metrics.get("clicks"))
@@ -1623,38 +1669,41 @@ def _summarize_shopping_product_performance_response(
                         "shopping_product_clicks",
                         row_clicks,
                         dimensions,
-                        period="shopping_product_performance_30d",
+                        period=fact_period,
                     ),
                     VendorMetricFact(
                         "shopping_product_impressions",
                         row_impressions,
                         dimensions,
-                        period="shopping_product_performance_30d",
+                        period=fact_period,
                     ),
                     VendorMetricFact(
                         "shopping_product_cost_micros",
                         row_cost_micros,
                         dimensions,
-                        period="shopping_product_performance_30d",
+                        period=fact_period,
                     ),
                     VendorMetricFact(
                         "shopping_product_conversions",
                         row_conversions,
                         dimensions,
-                        period="shopping_product_performance_30d",
+                        period=fact_period,
                     ),
                     VendorMetricFact(
                         "shopping_product_conversion_value",
                         row_conversion_value,
                         dimensions,
-                        period="shopping_product_performance_30d",
+                        period=fact_period,
                     ),
                 ]
             )
     return (
         {
             "shopping_product_performance_status": "ready",
-            "shopping_product_performance_query": "shopping_performance_view_last_30_days",
+            "shopping_product_performance_query": (
+                f"shopping_performance_view_last_{lookback_days}_days"
+            ),
+            "shopping_product_performance_lookback_days": lookback_days,
             "shopping_product_performance_row_count": len(rows),
             "shopping_product_performance_product_count": len(product_ids),
             "shopping_product_clicks": clicks,

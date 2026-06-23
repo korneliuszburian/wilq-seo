@@ -439,10 +439,10 @@ def _merchant_product_performance_readiness(
         if product_metric_facts_by_connector is not None
         else _product_performance_metric_facts_by_connector(sample_product_ids)
     )
-    ads_shopping_contract_ready = (
-        _google_ads_shopping_product_read_contract_ready()
+    ads_shopping_contract_ready, ads_shopping_lookback_days = (
+        _google_ads_shopping_product_read_contract_status()
         if use_live_contract_status
-        else False
+        else (False, None)
     )
     ads_product_facts = _product_scoped_metric_facts(
         product_metric_facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])
@@ -571,12 +571,14 @@ def _merchant_product_performance_readiness(
         ads_product_facts=ads_product_facts,
         ga4_product_facts=ga4_product_facts,
         ads_shopping_contract_ready=ads_shopping_contract_ready,
+        ads_shopping_lookback_days=ads_shopping_lookback_days,
     )
     next_step = _product_performance_next_step(
         sample_product_ids=sample_product_ids,
         ads_product_facts=ads_product_facts,
         ga4_product_facts=ga4_product_facts,
         ads_shopping_contract_ready=ads_shopping_contract_ready,
+        ads_shopping_lookback_days=ads_shopping_lookback_days,
     )
     return MerchantProductPerformanceReadiness(
         status="blocked",
@@ -608,11 +610,14 @@ def _merchant_product_performance_readiness(
     )
 
 
-def _google_ads_shopping_product_read_contract_ready() -> bool:
+def _google_ads_shopping_product_read_contract_status() -> tuple[bool, int | None]:
     latest_refresh = _latest_connector_refresh(GOOGLE_ADS_CONNECTOR_ID)
     if latest_refresh is None or latest_refresh.status != ConnectorRefreshStatus.completed:
-        return False
-    return latest_refresh.metric_summary.get("shopping_product_performance_status") == "ready"
+        return False, None
+    if latest_refresh.metric_summary.get("shopping_product_performance_status") != "ready":
+        return False, None
+    lookback = latest_refresh.metric_summary.get("shopping_product_performance_lookback_days")
+    return True, int(lookback) if isinstance(lookback, int | float) else None
 
 
 def _product_performance_blocked_reason(
@@ -621,6 +626,7 @@ def _product_performance_blocked_reason(
     ads_product_facts: list[MetricFact],
     ga4_product_facts: list[MetricFact],
     ads_shopping_contract_ready: bool,
+    ads_shopping_lookback_days: int | None,
 ) -> str:
     if not sample_product_ids:
         return (
@@ -628,11 +634,16 @@ def _product_performance_blocked_reason(
             "do połączenia problemów feedu z Ads/GA4."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
+        lookback_label = (
+            f" z lookbackiem {ads_shopping_lookback_days} dni"
+            if ads_shopping_lookback_days is not None
+            else ""
+        )
         return (
             "Merchant read zwraca sample product IDs, GA4 ma item facts, a Ads "
-            "shopping_performance_view jest gotowy, ale bieżący Ads read zwrócił "
-            "0 product performance rows. WILQ nie ma więc dopasowanych Ads facts "
-            "dla próbek Merchant."
+            f"shopping_performance_view jest gotowy{lookback_label}, ale bieżący "
+            "Ads read zwrócił 0 product performance rows. WILQ nie ma więc "
+            "dopasowanych Ads facts dla próbek Merchant."
         )
     if ga4_product_facts and not ads_product_facts:
         return (
@@ -651,6 +662,7 @@ def _product_performance_next_step(
     ads_product_facts: list[MetricFact],
     ga4_product_facts: list[MetricFact],
     ads_shopping_contract_ready: bool,
+    ads_shopping_lookback_days: int | None,
 ) -> str:
     if not sample_product_ids:
         return (
@@ -658,10 +670,16 @@ def _product_performance_next_step(
             "spróbuje łączyć feed z performance."
         )
     if ads_shopping_contract_ready and not ads_product_facts:
+        if ads_shopping_lookback_days is not None and ads_shopping_lookback_days >= 90:
+            return (
+                "Dodaj aktualny `shopping_product` state read albo mapowanie Merchant "
+                "offer ID -> Ads product_item_id, zamiast claimować produktowy "
+                "performance z pustej historii emisji."
+            )
         return (
-            "Sprawdź, czy produkty miały emisję w Ads w ostatnich 30 dniach; jeśli nie, "
-            "dodaj dłuższy lookback albo aktualny `shopping_product` state read zamiast "
-            "claimować produktowy performance."
+            "Sprawdź, czy produkty miały emisję w Ads w ostatnich 30 dniach; jeśli "
+            "nie, dodaj dłuższy lookback albo aktualny `shopping_product` state read "
+            "zamiast claimować produktowy performance."
         )
     if ga4_product_facts and not ads_product_facts:
         return (
