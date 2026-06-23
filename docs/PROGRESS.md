@@ -37,6 +37,14 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Custom Segments first-flow trace cleanup, 2026-06-23 10:15 CEST.
+  `/ads-doctor/custom-segments` no longer prints raw `ev_*` evidence IDs inside
+  marketer-facing custom segment candidate or forecast cards. Those cards now
+  show evidence counts such as `Dowody: N ID`; raw evidence/action links remain
+  available lower in `Dowody i ograniczenia segmentów`. Browser proof with
+  agent-browser on `http://127.0.0.1:5173/ads-doctor/custom-segments`: raw
+  trace links start only under the lower proof section. Focused proof: RED/GREEN
+  custom-segments route test, dashboard lint OK and dashboard typecheck OK.
 - Ahrefs first-flow trace cleanup, 2026-06-23 10:07 CEST.
   `/ahrefs` no longer prints raw `ev_*` evidence IDs in the marketer-facing
   first flow: Ahrefs decision cards and the Ahrefs gap contract panel now show

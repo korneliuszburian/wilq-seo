@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 10:07 CEST.
+Last updated: 2026-06-23 10:15 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -130,6 +130,15 @@ Ahrefs gap contract panel now show counts such as `Dowody: N ID`; lower
 Browser proof with agent-browser on `http://127.0.0.1:5173/ahrefs`: raw
 evidence links start only under the lower proof section. Focused proof:
 RED/GREEN Ahrefs route test, dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Custom Segments first-flow cleanup: `/ads-doctor/custom-segments`
+no longer prints raw `ev_*` evidence IDs inside marketer-facing custom segment
+candidate or forecast cards. Cards show counts such as `Dowody: N ID`; lower
+`Dowody i ograniczenia segmentów` remains the place for raw evidence/action
+traceability. Browser proof with agent-browser on
+`http://127.0.0.1:5173/ads-doctor/custom-segments`: raw trace links start only
+under the lower proof section. Focused proof: RED/GREEN custom-segments route
+test, dashboard lint OK and dashboard typecheck OK.
 
 2026-06-23 Ads wording follow-up: `/api/ads/diagnostics` no longer uses
 `snapshot kampanii` in marketer-facing change-impact readiness copy. The

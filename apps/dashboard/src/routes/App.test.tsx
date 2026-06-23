@@ -6005,6 +6005,14 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co marketer może przygotować teraz")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia segmentów")).toBeInTheDocument();
     expect(screen.getAllByText("Search terms: Ekologus Search").length).toBeGreaterThan(0);
+    const customSegmentCards = screen
+      .getAllByText("Search terms: Ekologus Search")
+      .map((title) => title.closest("article"))
+      .filter((card): card is HTMLElement => card !== null);
+    expect(customSegmentCards.length).toBeGreaterThan(1);
+    for (const card of customSegmentCards) {
+      expect(within(card).queryByText(/ev_/)).not.toBeInTheDocument();
+    }
     expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Brakujące kontrakty/)).toBeInTheDocument();
     expect(screen.getByText(/Wymaga review/)).toBeInTheDocument();

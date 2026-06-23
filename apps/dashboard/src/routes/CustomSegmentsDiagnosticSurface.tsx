@@ -151,10 +151,10 @@ export function AdsCustomSegmentCandidatesPanel({
               />
               <TraceLine label="Source terms" values={candidate.source_terms.slice(0, 8)} />
               <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />
-              <LinkedTraceLine
+              <TraceLine
                 label="Dowody"
-                values={candidate.evidence_ids.slice(0, 4)}
-                kind="evidence"
+                values={[formatCustomSegmentsEvidenceCount(candidate.evidence_ids.length)]}
+                empty="brak"
               />
               <TraceLine
                 label="Nie wolno twierdzić"
@@ -213,10 +213,10 @@ export function AdsCustomSegmentAudienceForecastPanel({
             <p className="mt-2 text-sm leading-6 text-slate-700">{row.reason}</p>
             <div className="mt-2 grid gap-2 text-xs text-slate-600">
               <TraceLine label="Source terms" values={row.source_terms.slice(0, 8)} />
-              <LinkedTraceLine
+              <TraceLine
                 label="Dowody"
-                values={row.evidence_ids.slice(0, 4)}
-                kind="evidence"
+                values={[formatCustomSegmentsEvidenceCount(row.evidence_ids.length)]}
+                empty="brak"
               />
               <TraceLine
                 label="Nie wolno twierdzić"
@@ -427,4 +427,10 @@ function adsOperatorReviewGateLabel(value: string) {
 
 function uniqueValues(values: string[]) {
   return Array.from(new Set(values));
+}
+
+function formatCustomSegmentsEvidenceCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ID";
+  return `${count} ID`;
 }
