@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Merchant diagnostics decision contract, 2026-06-23.
+  `/api/merchant/diagnostics` ma teraz typed pola, które eliminują błąd
+  interpretacji z live-run `wilq-merchant-feed-operator`: `freshness_assessment`
+  oznacza realny Merchant `vendor_read` jako `fresh/stale/missing/blocked`,
+  `unknowns` mówi wprost, że WILQ nie ma product IDs/tytułów/SKU i nie zna
+  unikalnej liczby produktów, `operator_summary.decision_source=decision_queue`,
+  `drilldown_source=issue_clusters`, a decyzje mają `issue_cluster_ids` oraz
+  `count_semantics=reported_issue_occurrences`. Live API po restartcie stacka:
+  Merchant read jest `stale`, około `133.3h`, `requires_refresh=true`; pierwsza
+  decyzja grupuje 3 issue clusters i pokazuje `max zgłoszeń=892`, `raporty
+  razem=1784`, `konteksty=3`. Dashboard `/merchant` pokazuje `dane do
+  odświeżenia` i sekcję `Czego nie wiemy z Merchant API`. Browser proof:
+  `.local-lab/proof/dashboard/merchant-freshness-unknowns.txt`. Focused proof:
+  Merchant API contract tests, dashboard Merchant route test, Python ruff/mypy,
+  dashboard lint/typecheck and shared-schemas typecheck.
 - Ads Doctor drilldown/API copy cleanup, 2026-06-23.
   Trwa cleanup niższych sekcji Ads Doctor i źródłowych kontraktów Ads API:
   operator-facing teksty nie powinny mieszać polskiego z `review/apply/search

@@ -3998,6 +3998,30 @@ const merchantDiagnostics = {
   live_data_available: true,
   product_count: 10900,
   issue_count: 23,
+  freshness_assessment: {
+    state: "fresh",
+    checked_at: "2026-06-17T10:00:02Z",
+    latest_refresh_id: "refresh_google_merchant_center_test",
+    latest_refresh_completed_at: "2026-06-17T10:00:01Z",
+    age_hours: 0,
+    stale_after_hours: 48,
+    requires_refresh: false,
+    summary: "Ostatni Merchant vendor_read mieści się w progu świeżości.",
+    next_step: "Można użyć danych do kolejki review bez dodatkowego refreshu."
+  },
+  unknowns: [
+    {
+      id: "merchant_product_examples_missing",
+      title: "Brak przykładowych produktów/SKU w kontrakcie odczytu",
+      reason:
+        "Merchant diagnostics ma typ problemu, atrybut, kraj, kontekst raportowania i licznik, ale nie zwraca product IDs, SKU ani tytułów.",
+      impact:
+        "WILQ może przygotować kolejkę review po klastrach, ale nie listę konkretnych produktów do edycji.",
+      next_step:
+        "Dodać osobny read contract dla bezpiecznych przykładów produktów albo otworzyć Merchant Center podczas review.",
+      blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
+    }
+  ],
   operator_summary: {
     id: "merchant_operator_summary",
     title: "Co marketer ma zrobić teraz z feedem",
@@ -4011,6 +4035,9 @@ const merchantDiagnostics = {
     top_issue_cluster_ids: ["merchant_issue_pl_not_impacted_availability_updated_n_availability"],
     top_tactical_item_ids: ["tq_merchant_issue"],
     reported_issue_occurrences: 23,
+    decision_source: "decision_queue",
+    drilldown_source: "issue_clusters",
+    count_semantics: "reported_issue_occurrences",
     issue_types: ["availability_updated"],
     source_connectors: ["google_merchant_center"],
     evidence_ids: ["ev_refresh_merchant_feed"],
@@ -4032,6 +4059,7 @@ const merchantDiagnostics = {
       country: "PL",
       reporting_context: "SHOPPING_ADS",
       product_count: 23,
+      count_semantics: "reported_issue_occurrences",
       sample_product_ids: [],
       sample_titles: [],
       sample_unavailable_reason:
@@ -4053,6 +4081,7 @@ const merchantDiagnostics = {
       title: "Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność",
       summary: "23 zgłoszeń problemu NOT_IMPACTED/MERCHANT_ACTION dla PL / SHOPPING_ADS.",
       cluster_id: "merchant_issue_pl_not_impacted_availability_updated_n_availability",
+      issue_cluster_ids: ["merchant_issue_pl_not_impacted_availability_updated_n_availability"],
       issue_type: "availability_updated",
       severity: "NOT_IMPACTED",
       resolution: "MERCHANT_ACTION",
@@ -4061,6 +4090,7 @@ const merchantDiagnostics = {
       reporting_context: "SHOPPING_ADS",
       product_count: 23,
       issue_count: 23,
+      count_semantics: "reported_issue_occurrences",
       priority: 23,
       metric_tiles: {
         zgłoszenia: 23
@@ -6224,6 +6254,11 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("configured")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence")).not.toBeInTheDocument();
     expect(screen.getByText("dostęp skonfigurowany")).toBeInTheDocument();
+    expect(screen.getByText("dane świeże")).toBeInTheDocument();
+    expect(screen.getByText("Czego nie wiemy z Merchant API")).toBeInTheDocument();
+    expect(
+      screen.getByText("Brak przykładowych produktów/SKU w kontrakcie odczytu")
+    ).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
     expect(screen.getByText("Dowody")).toBeInTheDocument();
     expect(screen.getByText(/nie zwraca przykładowych ID produktów/)).toBeInTheDocument();

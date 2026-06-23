@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 14:38 CEST.
+Last updated: 2026-06-23 14:56 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -137,14 +137,20 @@ next_steps, rationale and UI labels. Focused proof in progress: Ads live API
 contract test, Ads Doctor + Custom Segments route tests, dashboard lint/typecheck,
 Python ruff/mypy.
 
-2026-06-23 Merchant skill live-run follow-up: do not patch Merchant behavior by
-stuffing edge-case fixes into skill references. The next Merchant quality slice
-should harden typed API/evals instead: final queue is `decision_queue`-first,
-`issue_clusters` are drilldown, reported issue occurrences are not unique
-products, stale `vendor_read` must trigger read-only refresh or a stale-review
-label, answers must include "Czego nie wiemy" when product IDs/titles/SKU are
-not available, and ActionObject reporting must distinguish context-pack
-`needs_validation` from live `POST /api/actions/{id}/validate` success.
+2026-06-23 Merchant skill live-run follow-up completed at typed API/dashboard
+level, not by stuffing edge cases into skill references. `/api/merchant/diagnostics`
+now exposes `freshness_assessment`, `unknowns`, `decision_source=decision_queue`,
+`drilldown_source=issue_clusters`, `count_semantics=reported_issue_occurrences`
+and `issue_cluster_ids` on grouped decisions. Live Merchant state after stack
+restart is correctly labeled `stale` at about `133.3h` and
+`requires_refresh=true`; `/merchant` shows `dane do odświeżenia` plus `Czego nie
+wiemy z Merchant API`. Focused proof: Merchant API contract tests, Merchant
+dashboard route test, Python ruff/mypy, dashboard lint/typecheck, shared-schemas
+typecheck and browser proof
+`.local-lab/proof/dashboard/merchant-freshness-unknowns.txt`. Remaining
+Merchant gap: add a separate product-level read contract if the marketer needs
+real product IDs/titles/SKU for item-by-item feed work; do not infer those from
+aggregate issue clusters.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

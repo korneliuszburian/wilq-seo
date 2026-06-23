@@ -1893,6 +1893,7 @@ class MerchantIssueCluster(BaseModel):
     country: str | None = None
     reporting_context: str | None = None
     product_count: int = 0
+    count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
     sample_product_ids: list[str] = Field(default_factory=list)
     sample_titles: list[str] = Field(default_factory=list)
     sample_unavailable_reason: str | None = None
@@ -1915,6 +1916,7 @@ class MerchantDecisionItem(BaseModel):
     title: str
     summary: str | None = None
     cluster_id: str | None = None
+    issue_cluster_ids: list[str] = Field(default_factory=list)
     issue_type: str | None = None
     severity: str | None = None
     resolution: str | None = None
@@ -1923,6 +1925,9 @@ class MerchantDecisionItem(BaseModel):
     reporting_context: str | None = None
     product_count: int | None = None
     issue_count: int | None = None
+    count_semantics: Literal["reported_issue_occurrences"] = (
+        "reported_issue_occurrences"
+    )
     priority: int = Field(ge=1, le=100)
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     source_connectors: list[str] = Field(default_factory=list)
@@ -1944,10 +1949,34 @@ class MerchantOperatorSummary(BaseModel):
     top_issue_cluster_ids: list[str] = Field(default_factory=list)
     top_tactical_item_ids: list[str] = Field(default_factory=list)
     reported_issue_occurrences: int = 0
+    decision_source: Literal["decision_queue"] = "decision_queue"
+    drilldown_source: Literal["issue_clusters"] = "issue_clusters"
+    count_semantics: Literal["reported_issue_occurrences"] = "reported_issue_occurrences"
     issue_types: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class MerchantFreshnessAssessment(BaseModel):
+    state: Literal["fresh", "stale", "missing", "blocked"]
+    checked_at: datetime = Field(default_factory=utc_now)
+    latest_refresh_id: str | None = None
+    latest_refresh_completed_at: datetime | None = None
+    age_hours: float | None = None
+    stale_after_hours: int = 48
+    requires_refresh: bool
+    summary: str
+    next_step: str
+
+
+class MerchantUnknownFact(BaseModel):
+    id: str
+    title: str
+    reason: str
+    impact: str
+    next_step: str
     blocked_claims: list[str] = Field(default_factory=list)
 
 
@@ -1960,6 +1989,8 @@ class MerchantDiagnosticsResponse(BaseModel):
     live_data_available: bool
     product_count: int | None = None
     issue_count: int | None = None
+    freshness_assessment: MerchantFreshnessAssessment
+    unknowns: list[MerchantUnknownFact] = Field(default_factory=list)
     operator_summary: MerchantOperatorSummary
     issue_clusters: list[MerchantIssueCluster] = Field(default_factory=list)
     decision_queue: list[MerchantDecisionItem] = Field(default_factory=list)

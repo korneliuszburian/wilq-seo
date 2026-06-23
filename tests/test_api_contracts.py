@@ -9180,7 +9180,14 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["product_count"] == 10900
     assert payload["issue_count"] == 23
     assert payload["latest_refresh"]["status"] == "completed"
+    assert payload["freshness_assessment"]["state"] == "fresh"
+    assert payload["freshness_assessment"]["requires_refresh"] is False
+    assert payload["freshness_assessment"]["stale_after_hours"] == 48
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
+    assert payload["unknowns"]
+    unknown_ids = {unknown["id"] for unknown in payload["unknowns"]}
+    assert "merchant_product_examples_missing" in unknown_ids
+    assert "merchant_unique_product_count_unknown" in unknown_ids
     assert payload["issue_clusters"]
     cluster = payload["issue_clusters"][0]
     assert cluster["issue_type"] == "availability_updated"
@@ -9190,6 +9197,7 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert cluster["severity"] == "NOT_IMPACTED"
     assert cluster["resolution"] == "MERCHANT_ACTION"
     assert cluster["product_count"] == 23
+    assert cluster["count_semantics"] == "reported_issue_occurrences"
     assert cluster["action_id"] == "act_review_merchant_feed_issues"
     assert cluster["sample_product_ids"] == []
     assert cluster["sample_titles"] == []
@@ -9209,6 +9217,9 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert operator_summary["reported_issue_occurrences"] == sum(
         cluster["product_count"] for cluster in payload["issue_clusters"]
     )
+    assert operator_summary["decision_source"] == "decision_queue"
+    assert operator_summary["drilldown_source"] == "issue_clusters"
+    assert operator_summary["count_semantics"] == "reported_issue_occurrences"
     assert "availability_updated" in operator_summary["issue_types"]
     assert operator_summary["source_connectors"] == ["google_merchant_center"]
     assert refresh_response.json()["evidence_ids"][-1] in operator_summary["evidence_ids"]
@@ -9229,6 +9240,8 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["priority"] == 23
     assert decision["metric_tiles"] == {"zgłoszenia": 23}
     assert decision["cluster_id"] == cluster["id"]
+    assert decision["issue_cluster_ids"] == [cluster["id"]]
+    assert decision["count_semantics"] == "reported_issue_occurrences"
     assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
     assert "zgłoszeń problemu" in decision["summary"]
     assert "wystąpienia problemu" in decision["rationale"]
@@ -9371,8 +9384,13 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
     }
     assert "ALL_CONTEXTS, FREE_LISTINGS, SHOPPING_ADS" in decision["summary"]
     assert "nie jest liczbą unikalnych produktów" in decision["rationale"]
+    assert set(decision["issue_cluster_ids"]) == {
+        cluster["id"] for cluster in payload["issue_clusters"]
+    }
+    assert decision["count_semantics"] == "reported_issue_occurrences"
     assert len(decision["metric_facts"]) == 3
     assert len(payload["issue_clusters"]) == 3
+    assert payload["operator_summary"]["decision_source"] == "decision_queue"
 
 
 def test_content_diagnostics_exposes_query_page_inventory_queue(

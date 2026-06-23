@@ -1515,6 +1515,7 @@ export const MerchantIssueClusterSchema = z.object({
   country: z.string().nullable().optional(),
   reporting_context: z.string().nullable().optional(),
   product_count: z.number(),
+  count_semantics: z.literal("reported_issue_occurrences").default("reported_issue_occurrences"),
   sample_product_ids: z.array(z.string()),
   sample_titles: z.array(z.string()),
   sample_unavailable_reason: z.string().nullable().optional(),
@@ -1537,6 +1538,7 @@ export const MerchantDecisionItemSchema = z.object({
   title: z.string(),
   summary: z.string().nullable().optional(),
   cluster_id: z.string().nullable().optional(),
+  issue_cluster_ids: z.array(z.string()).default([]),
   issue_type: z.string().nullable().optional(),
   severity: z.string().nullable().optional(),
   resolution: z.string().nullable().optional(),
@@ -1545,6 +1547,7 @@ export const MerchantDecisionItemSchema = z.object({
   reporting_context: z.string().nullable().optional(),
   product_count: z.number().nullable().optional(),
   issue_count: z.number().nullable().optional(),
+  count_semantics: z.literal("reported_issue_occurrences").default("reported_issue_occurrences"),
   priority: z.number(),
   metric_tiles: z.record(z.union([z.string(), z.number()])).default({}),
   source_connectors: z.array(z.string()),
@@ -1566,10 +1569,34 @@ export const MerchantOperatorSummarySchema = z.object({
   top_issue_cluster_ids: z.array(z.string()),
   top_tactical_item_ids: z.array(z.string()),
   reported_issue_occurrences: z.number(),
+  decision_source: z.literal("decision_queue").default("decision_queue"),
+  drilldown_source: z.literal("issue_clusters").default("issue_clusters"),
+  count_semantics: z.literal("reported_issue_occurrences").default("reported_issue_occurrences"),
   issue_types: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const MerchantFreshnessAssessmentSchema = z.object({
+  state: z.enum(["fresh", "stale", "missing", "blocked"]),
+  checked_at: z.string().nullable().optional(),
+  latest_refresh_id: z.string().nullable().optional(),
+  latest_refresh_completed_at: z.string().nullable().optional(),
+  age_hours: z.number().nullable().optional(),
+  stale_after_hours: z.number(),
+  requires_refresh: z.boolean(),
+  summary: z.string(),
+  next_step: z.string()
+});
+
+export const MerchantUnknownFactSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  reason: z.string(),
+  impact: z.string(),
+  next_step: z.string(),
   blocked_claims: z.array(z.string())
 });
 
@@ -1582,6 +1609,8 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   live_data_available: z.boolean(),
   product_count: z.number().nullable().optional(),
   issue_count: z.number().nullable().optional(),
+  freshness_assessment: MerchantFreshnessAssessmentSchema,
+  unknowns: z.array(MerchantUnknownFactSchema),
   operator_summary: MerchantOperatorSummarySchema,
   issue_clusters: z.array(MerchantIssueClusterSchema),
   decision_queue: z.array(MerchantDecisionItemSchema),

@@ -16,11 +16,14 @@ from wilq.schemas import (
     MerchantDecisionItem,
     MerchantDiagnosticSection,
     MerchantDiagnosticsResponse,
+    MerchantFreshnessAssessment,
     MerchantIssueCluster,
     MerchantOperatorSummary,
+    MerchantUnknownFact,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
+    utc_now,
 )
 from wilq.storage.metric_store import metric_store
 
@@ -34,6 +37,7 @@ MERCHANT_HEALTH_METRIC_NAMES = {
     "item_level_issue_count",
     "merchant_action_issue_count",
 }
+MERCHANT_STALE_AFTER_HOURS = 48
 MERCHANT_ISSUE_LABELS = {
     "availability_updated": "zmiana dostępności do sprawdzenia",
     "missing_potentially_required_attribute": "brak potencjalnie wymaganego atrybutu",
@@ -108,6 +112,7 @@ def build_merchant_diagnostics(
         issue_clusters=issue_clusters,
         action_ids=action_ids,
     )
+    freshness_assessment = _merchant_freshness_assessment(latest_refresh)
     return MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -123,6 +128,8 @@ def build_merchant_diagnostics(
             latest_refresh,
             "item_level_issue_count",
         ),
+        freshness_assessment=freshness_assessment,
+        unknowns=_merchant_unknowns(issue_clusters, decision_queue),
         operator_summary=_operator_summary(
             decision_queue,
             issue_clusters,
@@ -155,6 +162,122 @@ def build_merchant_diagnostics(
 def _latest_merchant_refresh() -> ConnectorRefreshRun | None:
     runs = list_connector_refresh_runs(connector_id=MERCHANT_CONNECTOR_ID)
     return runs[0] if runs else None
+
+
+def _merchant_freshness_assessment(
+    latest_refresh: ConnectorRefreshRun | None,
+) -> MerchantFreshnessAssessment:
+    if latest_refresh is None:
+        return MerchantFreshnessAssessment(
+            state="missing",
+            latest_refresh_id=None,
+            latest_refresh_completed_at=None,
+            age_hours=None,
+            stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            summary="Brak zapisanego read-only vendor_read Merchant Center.",
+            next_step="Uruchom Merchant vendor_read przed oceną aktualnego stanu feedu.",
+        )
+
+    completed_at = latest_refresh.completed_at or latest_refresh.started_at
+    age_hours = round((utc_now() - completed_at).total_seconds() / 3600, 2)
+    if latest_refresh.status != ConnectorRefreshStatus.completed:
+        return MerchantFreshnessAssessment(
+            state="blocked",
+            latest_refresh_id=latest_refresh.id,
+            latest_refresh_completed_at=completed_at,
+            age_hours=age_hours,
+            stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            summary=(
+                "Ostatni odczyt Merchant nie zakończył się statusem completed, "
+                f"tylko {latest_refresh.status.value}."
+            ),
+            next_step=(
+                "Napraw blocker odczytu i uruchom read-only vendor_read przed "
+                "budowaniem kolejki feedu."
+            ),
+        )
+
+    if age_hours > MERCHANT_STALE_AFTER_HOURS:
+        return MerchantFreshnessAssessment(
+            state="stale",
+            latest_refresh_id=latest_refresh.id,
+            latest_refresh_completed_at=completed_at,
+            age_hours=age_hours,
+            stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            summary=(
+                f"Ostatni Merchant vendor_read ma około {age_hours:.1f}h. "
+                "To wystarcza do stale review, ale nie do claimów o bieżącym stanie feedu."
+            ),
+            next_step=(
+                "Uruchom read-only Merchant vendor_read, jeśli pytanie dotyczy "
+                "aktualnego stanu produktów."
+            ),
+        )
+
+    return MerchantFreshnessAssessment(
+        state="fresh",
+        latest_refresh_id=latest_refresh.id,
+        latest_refresh_completed_at=completed_at,
+        age_hours=age_hours,
+        stale_after_hours=MERCHANT_STALE_AFTER_HOURS,
+        requires_refresh=False,
+        summary=(
+            f"Ostatni Merchant vendor_read ma około {age_hours:.1f}h i mieści się "
+            f"w progu {MERCHANT_STALE_AFTER_HOURS}h."
+        ),
+        next_step="Można użyć danych do kolejki review bez dodatkowego refreshu.",
+    )
+
+
+def _merchant_unknowns(
+    issue_clusters: list[MerchantIssueCluster],
+    decisions: list[MerchantDecisionItem],
+) -> list[MerchantUnknownFact]:
+    unknowns: list[MerchantUnknownFact] = []
+    if issue_clusters or decisions:
+        unknowns.append(
+            MerchantUnknownFact(
+                id="merchant_product_examples_missing",
+                title="Brak przykładowych produktów/SKU w kontrakcie odczytu",
+                reason=(
+                    "Merchant diagnostics ma typ problemu, atrybut, kraj, kontekst "
+                    "raportowania i licznik, ale nie zwraca product IDs, SKU ani tytułów."
+                ),
+                impact=(
+                    "WILQ może przygotować kolejkę review po klastrach, ale nie listę "
+                    "konkretnych produktów do edycji."
+                ),
+                next_step=(
+                    "Dodać osobny read contract dla bezpiecznych przykładów produktów "
+                    "albo otworzyć Merchant Center podczas review."
+                ),
+                blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
+            )
+        )
+        unknowns.append(
+            MerchantUnknownFact(
+                id="merchant_unique_product_count_unknown",
+                title="Zgłoszenia raportowe nie są liczbą unikalnych produktów",
+                reason=(
+                    "Ten sam problem może wystąpić w ALL_CONTEXTS, FREE_LISTINGS i "
+                    "SHOPPING_ADS, więc suma raportów może liczyć ten sam produkt więcej "
+                    "niż raz."
+                ),
+                impact=(
+                    "Decision queue musi używać max zgłoszeń jako skali i traktować "
+                    "sumę raportów wyłącznie jako drilldown."
+                ),
+                next_step=(
+                    "Grupować decyzje po decision_queue, a issue_clusters pokazywać "
+                    "jako szczegóły raportowania."
+                ),
+                blocked_claims=["unique product count", "approval restored"],
+            )
+        )
+    return unknowns
 
 
 def _merchant_action_ids(actions: list[ActionObject]) -> list[str]:
@@ -567,9 +690,10 @@ def _merchant_decision_from_cluster_group(
             f"Ten sam problem Merchant występuje w {len(clusters)} raportach: "
             f"{', '.join(context_labels)}. Największy raport pokazuje "
             f"{max_reported_count} zgłoszeń, a suma wystąpień raportowych to "
-            f"{reported_occurrences}."
+            f"{reported_occurrences}; to nie jest liczba unikalnych produktów."
         ),
         cluster_id=primary_cluster.id,
+        issue_cluster_ids=[cluster.id for cluster in clusters],
         issue_type=issue_type,
         severity=primary_cluster.severity,
         resolution=primary_cluster.resolution,
@@ -636,6 +760,7 @@ def _merchant_decision_from_cluster(
             f" / {context}."
         ),
         cluster_id=cluster.id,
+        issue_cluster_ids=[cluster.id],
         issue_type=issue_type,
         severity=cluster.severity,
         resolution=cluster.resolution,
@@ -683,6 +808,7 @@ def _merchant_decision_from_tactical_item(
         status="ready",
         title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
         summary=item.diagnosis,
+        issue_cluster_ids=[],
         issue_type=issue_type,
         severity=severity,
         resolution=item.dimensions.get("resolution"),
@@ -750,6 +876,7 @@ def _merchant_aggregate_feed_status_decision(
             "zgłoszeń problemów feedu. Brakuje wymiarowego klastra problemów, "
             "więc to jest kolejka agregatowego review."
         ),
+        issue_cluster_ids=[],
         product_count=product_count,
         issue_count=issue_count,
         priority=45,

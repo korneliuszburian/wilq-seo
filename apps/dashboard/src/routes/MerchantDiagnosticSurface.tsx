@@ -74,10 +74,19 @@ export function MerchantDiagnosticSurface() {
               Status Merchant Center
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              {data.freshness_assessment.summary}
+            </p>
+            <p className="mt-1 text-sm font-medium text-ink">
+              {data.freshness_assessment.next_step}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {merchantConnectorStatusLabel(data.connector.status)}
+            </span>
+            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+              {merchantFreshnessLabel(data.freshness_assessment.state)}
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.live_data_available ? "metryki feedu dostępne" : "brak metryk feedu"}
@@ -92,6 +101,8 @@ export function MerchantDiagnosticSurface() {
       </section>
 
       <MerchantOperatorSummary data={data} />
+
+      <MerchantUnknowns data={data} />
 
       <MerchantDiagnosticProof data={data} />
 
@@ -139,6 +150,13 @@ function merchantRefreshStatusLabel(status: string) {
   if (status === "failed") return "błąd";
   if (status === "running") return "w toku";
   return status;
+}
+
+function merchantFreshnessLabel(status: MerchantDiagnosticsResponse["freshness_assessment"]["state"]) {
+  if (status === "fresh") return "dane świeże";
+  if (status === "stale") return "dane do odświeżenia";
+  if (status === "missing") return "brak odczytu";
+  return "odczyt zablokowany";
 }
 
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
@@ -307,6 +325,42 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
             Waliduj ActionObject
           </a>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
+  if (data.unknowns.length === 0) return null;
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Czego nie wiemy z Merchant API
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Te ograniczenia blokują zbyt mocne wnioski i automatyczne zmiany feedu.
+            Decision queue jest źródłem decyzji, a issue clusters są drilldownem.
+          </p>
+        </div>
+        <MetricTile label="Ograniczenia" value={data.unknowns.length} />
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        {data.unknowns.map((unknown) => (
+          <article key={unknown.id} className="rounded-md border border-line bg-slate-50 p-3">
+            <h3 className="text-sm font-semibold text-ink">{unknown.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{unknown.reason}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">{unknown.impact}</p>
+            <p className="mt-2 text-sm font-medium text-ink">{unknown.next_step}</p>
+            <div className="mt-2 text-xs text-slate-600">
+              <TraceLine
+                label="Blokuje claimy"
+                values={merchantBlockedClaimLabels(unknown.blocked_claims)}
+              />
+            </div>
+          </article>
+        ))}
       </div>
     </section>
   );
