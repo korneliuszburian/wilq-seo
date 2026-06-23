@@ -584,5 +584,11 @@ Stan produktu:
    apply/impact contracts.
 2. If a future eval exposes reasoning gaps, fix typed API/dashboard contracts
    first, not skill references.
-3. Keep focused verification. Use full `scripts/verify.sh` only for final
+3. If Merchant skill/live-run quality is revisited, keep the decision model
+   `decision_queue` first and `issue_clusters` as drilldown, report freshness
+   explicitly, expose `unknowns` such as missing SKU/title granularity, and
+   distinguish context-pack validation state from live
+   `POST /api/actions/{id}/validate` state. Implement this through typed
+   diagnostics/context-pack/eval contracts, not reference prose patches.
+4. Keep focused verification. Use full `scripts/verify.sh` only for final
    handoff or broad cross-surface changes.

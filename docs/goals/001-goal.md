@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:50 CEST.
+Last updated: 2026-06-23 20:54 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -4795,6 +4795,14 @@ Commit rules:
    `/api/marketing/tactical-queue.compact_groups`; do not reintroduce query/page
    or feed issue grouping, summed metrics, compact titles or compact diagnoses
    in React.
+   Merchant skill/live-run follow-ups must stay API-first: final queue should
+   be grouped by `decision_queue`, `issue_clusters` are drilldown, freshness
+   must say whether the read is fresh or stale, `unknowns` must explicitly call
+   out missing SKU/title/product-row granularity, and skill output must
+   distinguish context-pack validation state from the current
+   `POST /api/actions/{id}/validate` result. Do not solve these by expanding
+   skill references; expose or harden typed diagnostics/context-pack/eval
+   contracts first.
 
 2. **Continue the measured Command Center performance work.**
    First backend split is done: `/api/dashboard/command-center` now uses
