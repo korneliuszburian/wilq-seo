@@ -45,6 +45,11 @@ Stan produktu:
   decision, safe next step, blocked-claims handling, workflow-specific
   interpretation and evidence-backed reasoning. Live proof:
   `.local-lab/evals/codex-skill/20260623T191904Z/wilq-daily-command/result.json`.
+- Content/GSC inventory matching no longer marks current Ekologus URLs as
+  missing when wide WordPress inventory pushes public sitemap URLs past the old
+  slice boundary. Live HTTP proof after stack restart:
+  `/api/content/diagnostics` returned `query_page_count=10` and
+  `matched_inventory_count=10`.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
@@ -60,14 +65,16 @@ Stan produktu:
 ## Active Gaps
 
 1. **Merchant product-row depth**
-   - Current Merchant review is useful, but still too aggregate in places.
-   - Preserve freshness and queue semantics.
-   - Add product IDs/titles/SKU-level previews where vendor/API allows.
+   - Current Merchant diagnostics expose fresh read state, queue semantics,
+     count semantics and sample product IDs/titles where available.
+   - Remaining: product-row issue payload previews tied to concrete Merchant
+     decisions, not only global product samples.
 
-2. **Content inventory matching**
-   - GSC/GA4 can see URLs that WordPress inventory may mark missing.
-   - Improve URL normalization, host aliases, trailing slash and post/page/sitemap
-     matching before publish-ready content decisions.
+2. **GA4 landing inventory matching**
+   - GSC/content matching is fixed for current Ekologus URLs.
+   - Remaining: GA4 diagnostics must preserve landing -> WordPress match evidence
+     when enough dimensioned GA4 facts exist.
+   - Keep `(not set)` rows as measurement blockers.
 
 3. **Localo beyond OAuth and aggregate facts**
    - Current Localo supports aggregate visibility/reviews review.
@@ -91,6 +98,6 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Commit/push the decision-quality eval contract.
-2. Continue with Merchant product-row depth or content inventory matching based
-   on live API/browser proof.
+1. Commit/push the content inventory matching fix.
+2. Continue with GA4 landing inventory matching or Merchant product-row issue
+   payload previews based on live API/browser proof.

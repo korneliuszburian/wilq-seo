@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 21:23 CEST.
+Last updated: 2026-06-23 21:32 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -62,18 +62,21 @@ shows regression.
 Finish these before claiming the Ekologus demo is done:
 
 1. **Merchant product-row depth**
-   - Keep `decision_queue` as the main queue and `issue_clusters` as drilldown.
-   - Preserve freshness and `count_semantics`.
-   - Expose product IDs/titles/SKU-level previews where vendor/API allows.
+   - Current Merchant diagnostics already expose fresh read state, decision
+     queue semantics, count semantics and sample product IDs/titles where
+     available.
+   - Remaining depth: product-row issue payload previews tied to the concrete
+     Merchant decision, not only global product samples.
    - Do not claim product fixes, approval restoration, feed writes or recovered
      revenue without exact row-level payload, validation and audit contracts.
 
-2. **Content inventory matching**
-   - Reconcile GSC/GA4 URL evidence with WordPress inventory.
-   - Prevent false `WordPress missing` states when URL normalization, host alias,
-     trailing slash, sitemap source or post/page type is the real issue.
-   - Improve refresh/merge/create/block decisions through typed diagnostics,
-     not prompt/reference patches.
+2. **GA4 landing inventory matching**
+   - GSC/content diagnostics now match real WordPress inventory for the current
+     Ekologus URLs after wide inventory reads.
+   - Remaining gap: GA4 diagnostics must also preserve landing -> WordPress
+     match evidence when enough dimensioned GA4 facts exist.
+   - Keep `(not set)` rows as measurement blockers, but do not mark real
+     landing paths as unmapped just because tactical selection dropped GA4 items.
 
 3. **Localo beyond OAuth and aggregate facts**
    - Current Localo evidence supports aggregate review only.
@@ -122,14 +125,10 @@ Finish these before claiming the Ekologus demo is done:
 
 ## Immediate Next Tasks
 
-1. Tighten `docs/evals/schemas/wilq-skill-eval-result.schema.json` and
-   `scripts/codex_skill_eval.sh` with explicit decision-quality checks. Done:
-   `decision_quality` is now required and verified; live
-   `wilq-daily-command` eval passed at
-   `.local-lab/evals/codex-skill/20260623T191904Z/wilq-daily-command/result.json`.
-2. Commit and push the decision-quality eval contract.
-3. Continue with Merchant product-row depth or content inventory matching,
-   depending on the strongest remaining demo blocker in live API/browser proof.
+1. Commit and push the content inventory matching fix.
+2. Continue with GA4 landing inventory matching or Merchant product-row issue
+   payload previews, depending on the strongest remaining demo blocker in live
+   API/browser proof.
 
 ## Stop Condition
 

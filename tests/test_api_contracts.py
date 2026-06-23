@@ -5050,6 +5050,95 @@ def test_marketing_tactical_queue_uses_full_wordpress_inventory_for_url_matching
     assert "ev_refresh_wordpress_ekologus_target_inventory_test" in item["evidence_ids"]
 
 
+def test_marketing_tactical_queue_does_not_slice_wordpress_inventory_url_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "wide_inventory.duckdb"))
+    gsc_run = ConnectorRefreshRun(
+        id="refresh_google_search_console_wide_inventory_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_google_search_console_wide_inventory_test"],
+        metric_summary={"clicks": 4, "impressions": 4429},
+        summary="GSC wide inventory test seed.",
+    )
+    wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_ekologus_wide_inventory_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wordpress_ekologus_wide_inventory_test"],
+        metric_summary={"content_object_count": 1301},
+        summary="Wide WordPress inventory seed.",
+    )
+    target_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    metric_store().save_connector_refresh_metrics(
+        gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=4,
+                dimensions={
+                    "query": "bdo co to",
+                    "page": target_url,
+                },
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=4429,
+                dimensions={
+                    "query": "bdo co to",
+                    "page": target_url,
+                },
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_run,
+        detailed_facts=[
+            *[
+                VendorMetricFact(
+                    name="content_object_seen",
+                    value=1,
+                    dimensions={
+                        "connector_id": "wordpress_ekologus",
+                        "content_type": "sitemap",
+                        "content_url": f"https://www.ekologus.pl/a-noise-{index:04d}/",
+                        "status": "indexed",
+                        "inventory_source": "public_sitemap",
+                    },
+                )
+                for index in range(1250)
+            ],
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "sitemap",
+                    "content_url": target_url,
+                    "status": "indexed",
+                    "inventory_source": "public_sitemap",
+                },
+            ),
+        ],
+    )
+
+    response = client.get("/api/marketing/tactical-queue")
+
+    assert response.status_code == 200
+    item = next(
+        item
+        for item in response.json()["items"]
+        if item["dimensions"].get("query") == "bdo co to"
+    )
+    assert item["dimensions"]["wordpress_match"] == "found"
+    assert item["dimensions"]["wordpress_match_confidence"] == "exact_url"
+    assert item["dimensions"]["wordpress_content_url"] == target_url
+
+
 def test_evidence_registry_exposes_connector_status_without_secret_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

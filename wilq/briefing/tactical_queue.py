@@ -29,7 +29,7 @@ TACTICAL_QUEUE_SOURCE_CONNECTORS = (
 )
 TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT = 300
 GSC_QUERY_PAGE_FACT_LIMIT = 1200
-WORDPRESS_INVENTORY_FACT_LIMIT = 1200
+WORDPRESS_INVENTORY_FACT_LIMIT = 5000
 TacticalIntent = Literal[
     "content_refresh",
     "content_create",
@@ -347,14 +347,15 @@ def _tactical_metric_facts(
     facts_by_connector: dict[str, list[MetricFact]] | None = None,
 ) -> list[MetricFact]:
     if facts_by_connector is None:
-        facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
-            list(TACTICAL_QUEUE_SOURCE_CONNECTORS),
-            limit_per_connector=WORDPRESS_INVENTORY_FACT_LIMIT,
+        facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
+            {
+                connector_id: _tactical_connector_fact_limit(connector_id)
+                for connector_id in TACTICAL_QUEUE_SOURCE_CONNECTORS
+            }
         )
     facts: list[MetricFact] = []
     for connector_id in TACTICAL_QUEUE_SOURCE_CONNECTORS:
-        connector_limit = _tactical_connector_fact_limit(connector_id)
-        facts.extend(facts_by_connector.get(connector_id, [])[:connector_limit])
+        facts.extend(facts_by_connector.get(connector_id, []))
     return facts
 
 
