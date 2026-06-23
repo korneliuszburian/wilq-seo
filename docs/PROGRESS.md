@@ -39,6 +39,19 @@ Stan produktu:
 
 ## Last Done
 
+0. GA4 diagnostics freshness contract, 2026-06-23.
+   `/api/ga4/diagnostics` now exposes a typed `freshness_assessment` with
+   `fresh/stale/missing/blocked`, `age_hours`, `stale_after_hours=48` and
+   `requires_refresh`. GA4 route shows that freshness state at the top and in
+   the operator safety panel, so stale GA4 facts are not mistaken for a current
+   campaign verdict. Live proof after `scripts/local_stack.sh restart`: GA4 is
+   currently `stale`, `requires_refresh=true`, latest refresh
+   `refresh_google_analytics_4_681b6bcefc85`, age about `139h`, while
+   `act_review_ga4_tracking_quality` remains the only review ActionObject and
+   conversion/ROAS/revenue claims stay blocked. Focused proof: GA4 API contract
+   tests, stale-refresh test, GA4 route test, shared schema typecheck, dashboard
+   typecheck, Python ruff and mypy.
+
 0. Command Center Ads KPI review tiles, 2026-06-23.
    Command Center Ads daily decision now surfaces review-only campaign KPI
    availability from the same Google Ads metric facts already loaded for the

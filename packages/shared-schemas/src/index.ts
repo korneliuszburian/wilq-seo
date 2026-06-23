@@ -1805,6 +1805,18 @@ export const Ga4ConversionReadinessContractSchema = z.object({
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
+export const Ga4FreshnessAssessmentSchema = z.object({
+  state: z.enum(["fresh", "stale", "missing", "blocked"]),
+  checked_at: z.string().nullable().optional(),
+  latest_refresh_id: z.string().nullable().optional(),
+  latest_refresh_completed_at: z.string().nullable().optional(),
+  age_hours: z.number().nullable().optional(),
+  stale_after_hours: z.number(),
+  requires_refresh: z.boolean(),
+  summary: z.string(),
+  next_step: z.string()
+});
+
 export const Ga4OperatorSummarySchema = z.object({
   id: z.literal("ga4_operator_summary"),
   title: z.string(),
@@ -1830,6 +1842,7 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   landing_group_count: z.number(),
   low_engagement_count: z.number(),
   wordpress_match_count: z.number(),
+  freshness_assessment: Ga4FreshnessAssessmentSchema,
   conversion_readiness_contract: Ga4ConversionReadinessContractSchema,
   operator_summary: Ga4OperatorSummarySchema,
   decision_queue: z.array(Ga4DecisionItemSchema),

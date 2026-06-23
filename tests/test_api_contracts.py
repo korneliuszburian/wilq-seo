@@ -2954,6 +2954,10 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert payload["landing_group_count"] >= 1
     assert payload["low_engagement_count"] >= 1
     assert payload["wordpress_match_count"] >= 1
+    assert payload["freshness_assessment"]["state"] == "fresh"
+    assert payload["freshness_assessment"]["requires_refresh"] is False
+    assert payload["freshness_assessment"]["stale_after_hours"] == 48
+    assert "GA4" in payload["freshness_assessment"]["summary"]
     assert "act_review_ga4_tracking_quality" in payload["action_ids"]
     decision_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     assert decision_by_id
@@ -3084,6 +3088,65 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert context_preview["apply_allowed"] is False
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
+
+
+def test_ga4_diagnostics_marks_stale_refresh_as_stale_review(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_stale_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ga4_stale_metrics.duckdb"))
+    completed_at = datetime.now(UTC) - timedelta(hours=72)
+    run = ConnectorRefreshRun(
+        id="refresh_google_analytics_4_stale_test",
+        connector_id="google_analytics_4",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=completed_at,
+        evidence_ids=["ev_refresh_refresh_google_analytics_4_stale_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"active_users": 20, "sessions": 30},
+        summary="GA4 stale diagnostics seed.",
+    )
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="active_users",
+                value=20,
+                dimensions={
+                    "landing_page": "/oferta/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Test",
+                },
+            ),
+            VendorMetricFact(
+                name="sessions",
+                value=30,
+                dimensions={
+                    "landing_page": "/oferta/",
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Test",
+                },
+            ),
+        ],
+    )
+
+    response = client.get("/api/ga4/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    freshness = payload["freshness_assessment"]
+    assert freshness["state"] == "stale"
+    assert freshness["requires_refresh"] is True
+    assert freshness["stale_after_hours"] == 48
+    assert freshness["latest_refresh_id"] == "refresh_google_analytics_4_stale_test"
+    assert freshness["age_hours"] >= 72
+    assert "do odświeżenia" in freshness["summary"]
+    assert "read-only GA4 vendor_read" in freshness["next_step"]
+    assert "odświeżenia" in payload["operator_summary"]["summary"]
 
 
 def test_ga4_measurement_decision_titles_include_reporting_context(

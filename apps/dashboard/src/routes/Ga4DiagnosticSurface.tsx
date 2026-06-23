@@ -92,10 +92,19 @@ export function Ga4DiagnosticSurface() {
               Status GA4 / pomiar i jakość ruchu
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+              {data.freshness_assessment.summary}
+            </p>
+            <p className="mt-1 text-sm font-medium text-ink">
+              {data.freshness_assessment.next_step}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.connector.id}: {ga4ConnectorStatusLabel(data.connector.status)}
+            </span>
+            <span className="rounded-md border border-line px-2 py-1 text-slate-600">
+              {ga4FreshnessLabel(data.freshness_assessment.state)}
             </span>
             <span className="rounded-md border border-line px-2 py-1 text-slate-600">
               {data.live_data_available ? "metryki GA4 dostępne" : "brak metryk GA4"}
@@ -252,6 +261,13 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
         <div className="rounded-md border border-line bg-slate-50 p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb analityki</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
+            <TraceLine
+              label="Świeżość danych"
+              values={[
+                ga4FreshnessLabel(data.freshness_assessment.state),
+                data.freshness_assessment.summary
+              ]}
+            />
             <TraceLine
               label="Gotowość pomiaru"
               values={
@@ -632,6 +648,13 @@ function ga4RefreshStatusLabel(status: string) {
   if (status === "failed") return "błąd";
   if (status === "running") return "w toku";
   return status;
+}
+
+function ga4FreshnessLabel(status: Ga4DiagnosticsResponse["freshness_assessment"]["state"]) {
+  if (status === "fresh") return "dane świeże";
+  if (status === "stale") return "dane do odświeżenia";
+  if (status === "missing") return "brak odczytu";
+  return "odczyt zablokowany";
 }
 
 function ga4BlockedClaimLabels(claims: string[]) {

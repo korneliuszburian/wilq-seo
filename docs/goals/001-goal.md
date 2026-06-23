@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:34 CEST.
+Last updated: 2026-06-23 19:24 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -186,6 +186,14 @@ with `pl-PL`, `api_used=true`, evidence count `12`,
 `fix_measurement` and `review_traffic_quality`; `review_landing_mapping` is
 absent, so Codex must say mapping still needs contract/review instead of
 inferring landing quality from GA4 behavior rows alone.
+
+2026-06-23 GA4 diagnostics freshness contract completed. `/api/ga4/diagnostics`
+now exposes typed `freshness_assessment` with `fresh/stale/missing/blocked`,
+`requires_refresh` and a 48h stale threshold. `/ga4` shows that state in the
+top status and operator panel. Live proof after stack restart: current GA4 data
+is `stale`, about `139h`, `requires_refresh=true`, so the marketer sees stale
+review instead of a current campaign verdict; conversion, ROAS, revenue and
+tracking-fixed claims remain blocked behind `act_review_ga4_tracking_quality`.
 
 2026-06-23 Merchant skill live-run follow-up completed at typed API/dashboard
 level, not by stuffing edge cases into skill references. `/api/merchant/diagnostics`

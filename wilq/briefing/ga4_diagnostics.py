@@ -18,15 +18,18 @@ from wilq.schemas import (
     Ga4DecisionItem,
     Ga4DiagnosticSection,
     Ga4DiagnosticsResponse,
+    Ga4FreshnessAssessment,
     Ga4OperatorSummary,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
+    utc_now,
 )
 from wilq.storage.metric_store import metric_store
 
 GA4_CONNECTOR_ID = "google_analytics_4"
 GA4_METRIC_FACT_LIMIT = 2000
+GA4_STALE_AFTER_HOURS = 48
 GA4_CONVERSION_METRIC_NAMES = {
     "conversions",
     "key_events",
@@ -85,6 +88,7 @@ def build_ga4_diagnostics(
     action_ids = _ga4_action_ids(actions)
     dimensioned_facts = _dimensioned_ga4_facts(trusted_facts)
     decision_queue = _ga4_decision_queue(tactical_items, action_ids, dimensioned_facts)
+    freshness_assessment = _ga4_freshness_assessment(latest_refresh, trusted_facts)
     conversion_readiness_contract = _conversion_readiness_contract(
         latest_refresh=latest_refresh,
         facts=trusted_facts,
@@ -107,10 +111,12 @@ def build_ga4_diagnostics(
         ),
         low_engagement_count=_low_engagement_count(tactical_items),
         wordpress_match_count=_wordpress_match_count(tactical_items),
+        freshness_assessment=freshness_assessment,
         conversion_readiness_contract=conversion_readiness_contract,
         operator_summary=_operator_summary(
             decision_queue,
             conversion_readiness_contract,
+            freshness_assessment,
             sections,
             action_ids,
         ),
@@ -137,20 +143,33 @@ def build_ga4_diagnostics(
 def _operator_summary(
     decisions: list[Ga4DecisionItem],
     conversion_readiness_contract: Ga4ConversionReadinessContract,
+    freshness_assessment: Ga4FreshnessAssessment,
     sections: list[Ga4DiagnosticSection],
     action_ids: list[str],
 ) -> Ga4OperatorSummary:
     top_decisions = sorted(decisions, key=lambda item: (item.priority, item.id))[:4]
+    freshness_note = (
+        f" Dane GA4 są do odświeżenia: {freshness_assessment.summary}"
+        if freshness_assessment.requires_refresh
+        else f" {freshness_assessment.summary}"
+    )
+    freshness_next_step = (
+        f" Najpierw: {freshness_assessment.next_step}"
+        if freshness_assessment.requires_refresh
+        else ""
+    )
     return Ga4OperatorSummary(
         title="Co marketer ma sprawdzić teraz w jakości ruchu",
         summary=(
             "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. "
             "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, "
             "revenue, spadku konwersji ani winie kampanii."
+            f"{freshness_note}"
         ),
         next_step=(
             "Przejdź przez top decyzje GA4, oddziel problem pomiaru od problemu "
             "jakości ruchu i waliduj ActionObject tylko jako review-only."
+            f"{freshness_next_step}"
         ),
         top_decision_ids=[decision.id for decision in top_decisions],
         measurement_issue_count=sum(
@@ -189,6 +208,114 @@ def _operator_summary(
 def _latest_ga4_refresh() -> ConnectorRefreshRun | None:
     runs = list_connector_refresh_runs(connector_id=GA4_CONNECTOR_ID)
     return runs[0] if runs else None
+
+
+def _ga4_freshness_assessment(
+    latest_refresh: ConnectorRefreshRun | None,
+    facts: list[MetricFact],
+) -> Ga4FreshnessAssessment:
+    if latest_refresh is None:
+        fact_collected_dates = [
+            fact.collected_at for fact in facts if fact.collected_at is not None
+        ]
+        if fact_collected_dates:
+            latest_fact_collected_at = max(fact_collected_dates)
+            age_hours = round((utc_now() - latest_fact_collected_at).total_seconds() / 3600, 2)
+            if age_hours > GA4_STALE_AFTER_HOURS:
+                return Ga4FreshnessAssessment(
+                    state="stale",
+                    latest_refresh_id=None,
+                    latest_refresh_completed_at=latest_fact_collected_at,
+                    age_hours=age_hours,
+                    stale_after_hours=GA4_STALE_AFTER_HOURS,
+                    requires_refresh=True,
+                    summary=(
+                        f"Najnowsze GA4 metric facts mają około {age_hours:.1f}h "
+                        "i są do odświeżenia."
+                    ),
+                    next_step=(
+                        "Uruchom read-only GA4 vendor_read, jeśli pytanie dotyczy "
+                        "aktualnego stanu landingów, źródeł albo kampanii."
+                    ),
+                )
+            return Ga4FreshnessAssessment(
+                state="fresh",
+                latest_refresh_id=None,
+                latest_refresh_completed_at=latest_fact_collected_at,
+                age_hours=age_hours,
+                stale_after_hours=GA4_STALE_AFTER_HOURS,
+                requires_refresh=False,
+                summary=(
+                    f"Najnowsze GA4 metric facts mają około {age_hours:.1f}h i mieszczą się "
+                    f"w progu {GA4_STALE_AFTER_HOURS}h."
+                ),
+                next_step="Można użyć danych GA4 do review bez dodatkowego refreshu.",
+            )
+        return Ga4FreshnessAssessment(
+            state="missing",
+            latest_refresh_id=None,
+            latest_refresh_completed_at=None,
+            age_hours=None,
+            stale_after_hours=GA4_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            summary="Brak zapisanego read-only vendor_read GA4.",
+            next_step="Uruchom read-only GA4 vendor_read przed oceną aktualnej jakości ruchu.",
+        )
+
+    completed_at = latest_refresh.completed_at or latest_refresh.started_at
+    age_hours = round((utc_now() - completed_at).total_seconds() / 3600, 2)
+    if (
+        latest_refresh.status != ConnectorRefreshStatus.completed
+        or not latest_refresh.vendor_data_collected
+    ):
+        return Ga4FreshnessAssessment(
+            state="blocked",
+            latest_refresh_id=latest_refresh.id,
+            latest_refresh_completed_at=completed_at,
+            age_hours=age_hours,
+            stale_after_hours=GA4_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            summary=(
+                "Ostatni odczyt GA4 nie zakończył się pełnym vendor_read z metrykami, "
+                f"tylko {latest_refresh.status.value}."
+            ),
+            next_step=(
+                "Napraw blocker odczytu i uruchom read-only GA4 vendor_read przed "
+                "wnioskami o aktualnej jakości ruchu."
+            ),
+        )
+
+    if age_hours > GA4_STALE_AFTER_HOURS:
+        return Ga4FreshnessAssessment(
+            state="stale",
+            latest_refresh_id=latest_refresh.id,
+            latest_refresh_completed_at=completed_at,
+            age_hours=age_hours,
+            stale_after_hours=GA4_STALE_AFTER_HOURS,
+            requires_refresh=True,
+            summary=(
+                f"Ostatni GA4 vendor_read ma około {age_hours:.1f}h i jest do odświeżenia. "
+                "To wystarcza do stale review, ale nie do claimów o bieżącym stanie ruchu."
+            ),
+            next_step=(
+                "Uruchom read-only GA4 vendor_read, jeśli pytanie dotyczy aktualnego "
+                "stanu landingów, źródeł albo kampanii."
+            ),
+        )
+
+    return Ga4FreshnessAssessment(
+        state="fresh",
+        latest_refresh_id=latest_refresh.id,
+        latest_refresh_completed_at=completed_at,
+        age_hours=age_hours,
+        stale_after_hours=GA4_STALE_AFTER_HOURS,
+        requires_refresh=False,
+        summary=(
+            f"Ostatni GA4 vendor_read ma około {age_hours:.1f}h i mieści się "
+            f"w progu {GA4_STALE_AFTER_HOURS}h."
+        ),
+        next_step="Można użyć danych GA4 do review bez dodatkowego refreshu.",
+    )
 
 
 def _ga4_action_ids(actions: list[ActionObject]) -> list[str]:

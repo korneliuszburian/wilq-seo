@@ -4480,6 +4480,17 @@ const ga4Diagnostics = {
   landing_group_count: 1,
   low_engagement_count: 1,
   wordpress_match_count: 0,
+  freshness_assessment: {
+    state: "fresh",
+    checked_at: "2026-06-17T10:00:02Z",
+    latest_refresh_id: "refresh_google_analytics_4_test",
+    latest_refresh_completed_at: "2026-06-17T10:00:01Z",
+    age_hours: 0,
+    stale_after_hours: 48,
+    requires_refresh: false,
+    summary: "Ostatni GA4 vendor_read mieści się w progu świeżości.",
+    next_step: "Można użyć danych GA4 do review bez dodatkowego refreshu."
+  },
   conversion_readiness_contract: {
     id: "ga4_conversion_readiness_contract",
     status: "blocked",
@@ -6359,6 +6370,8 @@ describe("WILQ dashboard", () => {
     renderApp("/ga4");
     await waitFor(() => expect(screen.getByRole("heading", { name: /^GA4$/ })).toBeInTheDocument());
     expect(screen.getByText("Status GA4 / pomiar i jakość ruchu")).toBeInTheDocument();
+    expect(screen.getByText("dane świeże")).toBeInTheDocument();
+    expect(screen.getAllByText(/Ostatni GA4 vendor_read mieści się/).length).toBeGreaterThan(0);
     expect(screen.getByText("Problemy pomiaru GA4")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();

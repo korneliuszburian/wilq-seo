@@ -2205,6 +2205,18 @@ class Ga4ConversionReadinessContract(BaseModel):
     risk: ActionRisk = ActionRisk.medium
 
 
+class Ga4FreshnessAssessment(BaseModel):
+    state: Literal["fresh", "stale", "missing", "blocked"]
+    checked_at: datetime = Field(default_factory=utc_now)
+    latest_refresh_id: str | None = None
+    latest_refresh_completed_at: datetime | None = None
+    age_hours: float | None = None
+    stale_after_hours: int = 48
+    requires_refresh: bool
+    summary: str
+    next_step: str
+
+
 class Ga4OperatorSummary(BaseModel):
     id: Literal["ga4_operator_summary"] = "ga4_operator_summary"
     title: str
@@ -2230,6 +2242,7 @@ class Ga4DiagnosticsResponse(BaseModel):
     landing_group_count: int = 0
     low_engagement_count: int = 0
     wordpress_match_count: int = 0
+    freshness_assessment: Ga4FreshnessAssessment
     conversion_readiness_contract: Ga4ConversionReadinessContract
     operator_summary: Ga4OperatorSummary
     decision_queue: list[Ga4DecisionItem] = Field(default_factory=list)
