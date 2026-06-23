@@ -3178,6 +3178,76 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ADS_BUSINESS_CONTEXT_ACTION_ID in blocker_action_ids
 
 
+def test_command_center_ads_totals_use_latest_refresh_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    clear_google_ads_env(monkeypatch)
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ads_summary_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ads_summary_metrics.duckdb"))
+    completed_at = datetime.now(UTC)
+    run = ConnectorRefreshRun(
+        id="refresh_google_ads_summary_totals",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=completed_at,
+        evidence_ids=["ev_refresh_refresh_google_ads_summary_totals"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "row_count": 18,
+            "search_term_row_count": 50,
+            "clicks": 117,
+            "impressions": 2968,
+            "cost_micros": 154049650,
+            "conversions": 2.0,
+            "conversion_value": 2.0,
+            "customer_currency_code": "PLN",
+            "budgeted_campaign_count": 18,
+            "recommendation_row_count": 4,
+        },
+        summary="Google Ads summary totals seed.",
+    )
+    local_state_store().save_connector_refresh_run(run)
+    metric_store().save_connector_refresh_metrics(
+        run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="search_term_clicks",
+                value=7,
+                dimensions={
+                    "campaign_id": "101",
+                    "campaign_name": "Brand Search",
+                    "ad_group_id": "202",
+                    "ad_group_name": "BDO",
+                    "search_term": "odpady cena",
+                    "search_term_status": "NONE",
+                },
+            ),
+        ],
+    )
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
+    ads_item = brief_by_id["daily_ads_status"]
+    assert ads_item["status"] == "ready"
+    assert ads_item["metric_tiles"]["kampanie"] == 18
+    assert ads_item["metric_tiles"]["zapytania"] == 50
+    assert ads_item["metric_tiles"]["kliknięcia"] == 117
+    assert ads_item["metric_tiles"]["wyświetlenia"] == 2968
+    assert ads_item["metric_tiles"]["koszt"] == "154.05 PLN"
+    assert ads_item["metric_tiles"]["konwersje"] == 2
+    assert ads_item["metric_tiles"]["wartość konw."] == "2 PLN"
+    assert ads_item["metric_tiles"]["podgląd budżetu"] == 18
+    assert ads_item["metric_tiles"]["rekomendacje"] == 4
+    assert "kampanie=18" in ads_item["summary"]
+    assert "koszt=154.05 PLN" in ads_item["summary"]
+
+
 def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

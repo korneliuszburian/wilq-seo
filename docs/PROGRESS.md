@@ -58,6 +58,18 @@ Aktualny proof produktowy:
   review. Focused proof: `uv run pytest tests/test_api_contracts.py -q -k
   command_center_ads_plan_uses_live_review_queues`, Python ruff OK and mypy OK
   for `wilq/briefing/command_center.py`.
+- Command Center Ads latest-summary fix, 2026-06-23 08:43 CEST.
+  `daily_ads_status` now uses the latest Google Ads refresh `metric_summary`
+  for top-line campaign totals instead of summing older metric-store facts.
+  Live proof after `scripts/local_stack.sh restart`:
+  `kampanie=18`, `zapytania=50`, `kliknięcia=117`, `wyświetlenia=2968`,
+  `koszt=154.05 PLN`, `konwersje=2`, `wartość konw.=2 PLN`,
+  `podgląd budżetu=18`, `rekomendacje=4`, while review candidates still come
+  from detailed facts. Focused proof: RED/GREEN
+  `uv run pytest tests/test_api_contracts.py -q -k
+  'command_center_ads_totals_use_latest_refresh_summary or
+  command_center_ads_plan_uses_live_review_queues'`, Python ruff OK and mypy
+  OK for `wilq/briefing/command_center.py`.
 - Ads value readout, 2026-06-23 07:53 CEST.
   `/api/ads/diagnostics.operator_summary` exposes typed top-line campaign
   totals: `total_clicks`, `total_impressions`, `total_cost_micros`,

@@ -326,7 +326,10 @@ def _ads_item_from_facts(
     actions: list[ActionObject],
 ) -> CommandCenterBriefItem:
     latest_refresh = _latest_connector_refresh(GOOGLE_ADS_CONNECTOR_ID)
-    live_data_available = _refresh_has_live_data(latest_refresh) and bool(facts)
+    latest_summary = latest_refresh.metric_summary if latest_refresh is not None else {}
+    live_data_available = _refresh_has_live_data(latest_refresh) and (
+        bool(facts) or bool(latest_summary)
+    )
     campaign_count = _ads_campaign_count(facts)
     search_term_count = _ads_search_term_count(facts)
     budget_preview_count = _ads_distinct_dimension_count(facts, "budget_id")
@@ -351,15 +354,48 @@ def _ads_item_from_facts(
             if action_id == CONFIGURE_GOOGLE_ADS_ACTION_ID
         ]
     metric_tiles: dict[str, float | int | str] = {
-        "kampanie": campaign_count,
-        "zapytania": search_term_count,
-        "kliknięcia": _sum_numeric_facts(facts, "clicks"),
-        "wyświetlenia": _sum_numeric_facts(facts, "impressions"),
-        "koszt": _ads_currency_tile(facts, "cost_micros", divide_by_million=True),
-        "konwersje": _sum_numeric_facts(facts, "conversions"),
-        "wartość konw.": _ads_currency_tile(facts, "conversion_value"),
-        "podgląd budżetu": budget_preview_count,
-        "rekomendacje": recommendation_count,
+        "kampanie": _summary_int_tile(latest_summary, ("row_count",), campaign_count),
+        "zapytania": _summary_int_tile(
+            latest_summary,
+            ("search_term_row_count",),
+            search_term_count,
+        ),
+        "kliknięcia": _summary_number_tile(
+            latest_summary,
+            "clicks",
+            _sum_numeric_facts(facts, "clicks"),
+        ),
+        "wyświetlenia": _summary_number_tile(
+            latest_summary,
+            "impressions",
+            _sum_numeric_facts(facts, "impressions"),
+        ),
+        "koszt": _ads_currency_tile_from_summary(
+            latest_summary,
+            facts,
+            "cost_micros",
+            divide_by_million=True,
+        ),
+        "konwersje": _summary_number_tile(
+            latest_summary,
+            "conversions",
+            _sum_numeric_facts(facts, "conversions"),
+        ),
+        "wartość konw.": _ads_currency_tile_from_summary(
+            latest_summary,
+            facts,
+            "conversion_value",
+        ),
+        "podgląd budżetu": _summary_int_tile(
+            latest_summary,
+            ("budgeted_campaign_count", "recommended_budget_count"),
+            budget_preview_count,
+        ),
+        "rekomendacje": _summary_int_tile(
+            latest_summary,
+            ("recommendation_row_count", "recommendation_campaign_count"),
+            recommendation_count,
+        ),
         "wykluczenia": review_term_count,
         "segmenty": review_term_count,
     }
@@ -474,6 +510,59 @@ def _ads_currency_tile(
     currency = _ads_currency_code(facts)
     amount_label = str(int(amount)) if amount.is_integer() else f"{amount:.2f}"
     return f"{amount_label} {currency}" if currency else amount_label
+
+
+def _ads_currency_tile_from_summary(
+    summary: dict[str, Any],
+    facts: list[MetricFact],
+    metric_name: str,
+    *,
+    divide_by_million: bool = False,
+) -> str:
+    value = _summary_numeric(summary, metric_name)
+    if value is None:
+        return _ads_currency_tile(facts, metric_name, divide_by_million=divide_by_million)
+    amount = value / 1_000_000 if divide_by_million else value
+    currency = _ads_summary_currency_code(summary) or _ads_currency_code(facts)
+    amount_label = str(int(amount)) if amount.is_integer() else f"{amount:.2f}"
+    return f"{amount_label} {currency}" if currency else amount_label
+
+
+def _summary_int_tile(
+    summary: dict[str, Any],
+    keys: tuple[str, ...],
+    fallback: int,
+) -> int:
+    for key in keys:
+        value = _summary_numeric(summary, key)
+        if value is not None:
+            return int(value)
+    return fallback
+
+
+def _summary_number_tile(
+    summary: dict[str, Any],
+    key: str,
+    fallback: float,
+) -> int | float:
+    value = _summary_numeric(summary, key)
+    if value is None:
+        value = fallback
+    return int(value) if value.is_integer() else value
+
+
+def _summary_numeric(summary: dict[str, Any], key: str) -> float | None:
+    value = summary.get(key)
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, int | float):
+        return float(value)
+    return None
+
+
+def _ads_summary_currency_code(summary: dict[str, Any]) -> str | None:
+    value = summary.get("customer_currency_code") or summary.get("account_currency_code")
+    return value if isinstance(value, str) and value else None
 
 
 def _ads_currency_code(facts: list[MetricFact]) -> str | None:

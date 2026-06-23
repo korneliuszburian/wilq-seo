@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 08:31 CEST.
+Last updated: 2026-06-23 08:43 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -180,6 +180,18 @@ review. This keeps the first-screen Ads plan focused on marketer value and
 safe review, not connector/readiness jargon. Focused proof: Command Center Ads
 API contract RED/GREEN test passed, Python ruff and mypy passed for the
 touched backend boundary.
+
+2026-06-23 Command Center Ads latest-summary fix:
+`daily_ads_status` now reads top-line Ads totals from the latest Google Ads
+refresh `metric_summary` before falling back to detailed facts. This prevents
+the first screen from showing zero campaigns/cost/conversions when detailed
+campaign facts are outside the current metric-store slice or mixed with older
+runs. Live proof after stack restart: `kampanie=18`, `zapytania=50`,
+`kliknięcia=117`, `wyświetlenia=2968`, `koszt=154.05 PLN`, `konwersje=2`,
+`wartość konw.=2 PLN`, `podgląd budżetu=18`, `rekomendacje=4`. Detailed facts
+still drive review-candidate counts such as exclusions and custom segments.
+Focused proof: Command Center Ads latest-summary RED/GREEN test passed,
+existing Ads Command Center contract stayed green, Python ruff and mypy passed.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight
