@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Campaign Builder eval hardening, 2026-06-23 02:21 CEST.
+  `wilq-campaign-builder` smoke validates
+  `act_prepare_ads_campaign_review_queue` and
+  `act_prepare_google_ads_recommendation_review_queue` through
+  `POST /api/actions/{action_id}/validate`, exposes `action_validations`, and
+  the eval case requires both review ActionObjects. Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T022153Z/wilq-campaign-builder/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_ads","google_analytics_4","google_search_console"]`,
+  15 evidence IDs, `operator_usefulness_score=4`, `safety_findings=[]` and
+  two validated Ads review action candidates. Product finding: Campaign
+  Builder can now prepare campaign/recommendation review queues from WILQ
+  evidence, but this is still not a campaign apply/create proof.
 - Social Publisher eval hardening, 2026-06-23 02:17 CEST.
   `wilq-social-publisher` smoke validates
   `act_prepare_linkedin_social_drafts` and

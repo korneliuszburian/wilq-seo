@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 02:23 CEST.
+Last updated: 2026-06-23 02:28 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -237,6 +237,18 @@ social draft action candidates and no safety findings. This is intentionally a
 blocked/review-only proof: LinkedIn/Facebook credentials and social evidence
 are missing, so WILQ must not claim publishing ability or recommend actual
 social output from nonexistent social data.
+
+Campaign Builder now has validated review-only Ads planning proof. The
+`wilq-campaign-builder` smoke validates
+`act_prepare_ads_campaign_review_queue` and
+`act_prepare_google_ads_recommendation_review_queue`, and the eval case
+requires both in `expected_validated_action_ids`. Passing artifact:
+`.local-lab/evals/codex-skill/20260623T022153Z/wilq-campaign-builder/result.json`.
+The result has `operator_usefulness_score=4`, source connectors
+`google_ads`, `google_analytics_4` and `google_search_console`, 15 evidence
+IDs, two validated action candidates and no safety findings. This proves a
+campaign/recommendation review queue, not campaign creation, mutation apply,
+budget scaling or targeting changes.
 
 ## Product Bar
 

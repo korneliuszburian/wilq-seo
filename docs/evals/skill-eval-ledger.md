@@ -4069,3 +4069,43 @@ Product finding:
   path: WILQ can prepare review queues for social drafts, but must not claim
   publishing access, social performance, or final post recommendations while
   LinkedIn/Facebook credentials and evidence are missing.
+
+## 2026-06-23 - wilq-campaign-builder validated Ads review eval
+
+Purpose:
+
+- Prove that Campaign Builder can use WILQ API evidence to prepare validated
+  review-only Ads campaign/recommendation queues, without pretending that a
+  campaign create/apply path exists.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-campaign-builder --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T022153Z/wilq-campaign-builder/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `source_connectors=["google_ads","google_analytics_4","google_search_console"]`
+- Evidence count: `15`
+- `action_candidates` contain validated
+  `act_prepare_ads_campaign_review_queue` and
+  `act_prepare_google_ads_recommendation_review_queue`.
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- The current useful behavior is campaign/recommendation review, not campaign
+  build/apply. WILQ must not claim campaign creation, mutation apply, targeting
+  changes or budget scaling until a dedicated ActionObject, payload preview,
+  audit and confirmation path exist.

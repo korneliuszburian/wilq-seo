@@ -435,3 +435,17 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     )
     assert social_validation_call in social_smoke_script
     assert '"action_validations": action_validations' in social_smoke_script
+
+    campaign_case = cases_by_skill["wilq-campaign-builder"]
+    assert set(campaign_case["expected_validated_action_ids"]) == {
+        "act_prepare_ads_campaign_review_queue",
+        "act_prepare_google_ads_recommendation_review_queue",
+    }
+    campaign_smoke_script = Path(
+        ".agents/skills/wilq-campaign-builder/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    campaign_validation_call = (
+        'request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert campaign_validation_call in campaign_smoke_script
+    assert '"action_validations": action_validations' in campaign_smoke_script

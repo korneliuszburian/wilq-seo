@@ -228,7 +228,15 @@
   {
     "skill": "wilq-campaign-builder",
     "task_pl": "Oceń, czy można przygotować kandydat kampanii lub payload preview. Nie proponuj apply bez validated ActionObject.",
-    "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"]
+    "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"],
+    "expected_action_ids": [
+      "act_prepare_ads_campaign_review_queue",
+      "act_prepare_google_ads_recommendation_review_queue"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_ads_campaign_review_queue",
+      "act_prepare_google_ads_recommendation_review_queue"
+    ]
   },
   {
     "skill": "wilq-custom-segments",
