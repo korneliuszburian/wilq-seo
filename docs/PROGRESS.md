@@ -39,6 +39,19 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard GA4 tracking-quality ActionObject preview, 2026-06-23.
+   `/actions/act_review_ga4_tracking_quality` now renders
+   `ga4_tracking_quality_review_v1` rows as marketer-reviewable cards above
+   the debug payload. The cards show landing page, source/medium, campaign,
+   active users, sessions, engagement rate, events, page views, dimension gaps,
+   required validations, blocked claims and explicit blocked apply/API mutation
+   state. Browser proof:
+   `.local-lab/proof/dashboard/action-ga4-tracking-quality-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not claim conversion rate, ROAS, revenue, funnel diagnosis,
+   attribution verdict, tracking fixed or GA4 writes; it only exposes the
+   review contract.
+
 0. Dashboard Demand Gen readiness ActionObject preview, 2026-06-23.
    `/actions/act_review_demand_gen_readiness` now renders
    `demand_gen_readiness_review_preview_v1` as a marketer-reviewable card above

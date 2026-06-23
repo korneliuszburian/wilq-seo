@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:32 CEST.
+Last updated: 2026-06-23 20:36 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -201,6 +201,19 @@ launching or migrating Demand Gen, judging creative quality, claiming asset
 performance, applying campaigns or claiming uplift. Focused proof: Action
 detail route tests, dashboard typecheck, dashboard lint and browser proof
 `.local-lab/proof/dashboard/action-demand-gen-readiness-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:36 CEST: the ActionObject detail route now
+renders GA4 tracking-quality previews from
+`preview_contract=ga4_tracking_quality_review_v1`.
+`/actions/act_review_ga4_tracking_quality` shows landing page, source/medium,
+campaign, active users, sessions, engagement rate, events, page views,
+dimension gaps, required validations, blocked claims and blocked apply/API
+mutation state as Polish review cards. Raw payload stays under
+`Surowy payload debug`. This improves the GA4 demo path without claiming
+conversion rate, ROAS, revenue, funnel diagnosis, attribution verdict,
+tracking fixed or GA4 writes. Focused proof: Action detail route tests,
+dashboard typecheck, dashboard lint and browser proof
+`.local-lab/proof/dashboard/action-ga4-tracking-quality-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

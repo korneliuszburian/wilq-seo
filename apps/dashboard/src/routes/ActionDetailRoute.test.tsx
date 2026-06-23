@@ -320,6 +320,52 @@ const demandGenActionFixture: ActionObject = {
   }
 };
 
+const ga4TrackingActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_ga4_tracking",
+  title: "Sprawdź jakość pomiaru GA4 przed oceną kampanii",
+  domain: "ga4",
+  connector: "google_analytics_4",
+  risk: "low",
+  evidence_ids: ["ev_refresh_ga4"],
+  human_diagnosis: "GA4 ma landing/source/campaign rows do review jakości pomiaru.",
+  recommended_reason: "Sprawdź message match i mapowanie konwersji bez claimów ROAS.",
+  payload: {
+    action_type: "ga4_tracking_gap",
+    preview_contract: "ga4_tracking_quality_review_v1",
+    payload_preview: [
+      {
+        id: "ga4_tracking_review_1",
+        preview_contract: "ga4_tracking_quality_review_v1",
+        operation_type: "tracking_quality_review",
+        landing_page: "/",
+        source_medium: "google / cpc",
+        campaign_name: "(2026) Ekologus Ogólna",
+        tracking_dimension_gaps: [],
+        metric_snapshot: {
+          active_users: 49,
+          engagement_rate: 0.766234,
+          event_count: 1190,
+          screen_page_views: 392,
+          sessions: 77
+        },
+        reason:
+          "Review-only checklist dla landing/source/campaign quality. To pozwala sprawdzić message match, ale nie odblokowuje claimów o ROAS ani revenue.",
+        required_validation: [
+          "review_landing_page_dimension",
+          "review_source_medium_dimension",
+          "review_campaign_name_dimension",
+          "review_conversion_or_key_event_mapping"
+        ],
+        blocked_claims: ["conversion rate", "ROAS", "revenue", "tracking fixed"],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -441,6 +487,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_demand_gen")) {
         return Promise.resolve(Response.json(demandGenActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_ga4_tracking")) {
+        return Promise.resolve(Response.json(ga4TrackingActionFixture));
       }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
@@ -594,6 +643,28 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Braki: demand_gen_landing_quality_by_campaign/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_ads_campaign_channel_context/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: Demand Gen launch recommendation/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders GA4 tracking-quality preview without requiring raw JSON", async () => {
+    renderActionDetail("act_ga4_tracking");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Sprawdź jakość pomiaru GA4 przed oceną kampanii"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("GA4 jakość pomiaru do review")).toBeInTheDocument();
+    expect(screen.getByText(/Landing: \//)).toBeInTheDocument();
+    expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
+    expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
+    expect(screen.getByText(/Aktywni użytkownicy: 49/)).toBeInTheDocument();
+    expect(screen.getByText(/Sesje: 77/)).toBeInTheDocument();
+    expect(screen.getByText(/Engagement rate: 76,62%/)).toBeInTheDocument();
+    expect(screen.getByText(/Eventy: 1190/)).toBeInTheDocument();
+    expect(screen.getByText(/Walidacje: review_landing_page_dimension/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: conversion rate/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 
