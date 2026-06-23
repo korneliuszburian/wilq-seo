@@ -116,6 +116,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "organic keywords",
                 "content gap",
                 "backlink gap",
+                "gap_read_contract",
+                "stale",
+                "review-only",
                 "Zablokowane claims",
             },
             "action_ids": set(),
@@ -271,7 +274,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "act_review_ga4_tracking_quality",
     }
     ahrefs_case = cases["wilq-ahrefs-gap-finder"]
-    assert ahrefs_case["expected_blocked"] is True
+    assert ahrefs_case["expected_blocked"] is False
     assert ahrefs_case["expected_no_action_ids"] is True
     assert "content gap" not in ahrefs_case["blocked_claim_terms"]
     assert "backlink gap" not in ahrefs_case["blocked_claim_terms"]
@@ -296,6 +299,7 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "expected no action_ids",
         "forbidden action_id present",
         "expected validated action_id",
+        "blocked claim terms must stay out of recommendations",
         "uses blocked claim term without blocked_reason",
     ):
         assert required in harness

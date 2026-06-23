@@ -78,6 +78,26 @@ def main() -> int:
         )
     if not missing_read_contracts and "ahrefs_review_gap_records" not in decision_ids:
         raise SystemExit("Ahrefs diagnostics must expose ready gap review decision")
+    freshness_states = sorted(
+        {
+            str(fact.get("freshness_state"))
+            for record in gap_records
+            if isinstance(record, dict)
+            for fact in record.get("metric_facts", [])
+            if isinstance(fact, dict) and fact.get("freshness_state")
+        }
+    )
+    freshness_labels = sorted(
+        {
+            str(fact.get("freshness_label"))
+            for record in gap_records
+            if isinstance(record, dict)
+            for fact in record.get("metric_facts", [])
+            if isinstance(fact, dict) and fact.get("freshness_label")
+        }
+    )
+    if gap_records and not freshness_states:
+        raise SystemExit("Ahrefs gap records must expose freshness_state")
     serialized_ahrefs = json.dumps(ahrefs_diagnostics, ensure_ascii=False)
     for required_term in ("evidence_ids", "missing_read_contracts", "blocked_claims"):
         if required_term not in serialized_ahrefs:
@@ -147,6 +167,15 @@ def main() -> int:
                 ),
                 "ahrefs_gap_fact_count": ahrefs_diagnostics.get("gap_fact_count"),
                 "ahrefs_blocker_count": ahrefs_diagnostics.get("blocker_count"),
+                "gap_read_contract": {
+                    "status": gap_contract.get("status"),
+                    "gap_record_count": len(gap_records),
+                    "missing_read_contracts": missing_read_contracts,
+                    "blocked_claims": gap_contract.get("blocked_claims", []),
+                    "freshness_states": freshness_states,
+                    "freshness_labels": freshness_labels[:5],
+                    "review_mode": "review-only",
+                },
                 "ahrefs_decision_ids": sorted(decision_ids),
                 "evidence_ids": [
                     item.get("id")

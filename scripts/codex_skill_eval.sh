@@ -181,6 +181,15 @@ expected_blocker_instruction = (
     if expected_blocked is True
     else ""
 )
+blocked_claim_terms_instruction = (
+    "\n<blocked_claim_terms>\nThese blocked claim terms must stay out of recommendations "
+    "`label_pl` and non-blocked action labels, even when mentioned negatively. Put them only "
+    "in top-level `blocked_reason`, `notes`, or action candidates with "
+    f"`validation_state=\"blocked\"`: {', '.join(blocked_claim_terms)}.\n"
+    "</blocked_claim_terms>\n"
+    if blocked_claim_terms
+    else ""
+)
 expected_no_actions_instruction = (
     "\n<expected_no_action_ids>\nWILQ API nie zwraca ActionObject dla tego workflow. "
     "Nie dodawaj żadnych nie-null `action_id` w `action_candidates`.\n"
@@ -212,6 +221,7 @@ Zadanie: {case["task_pl"]}
 {expected_validated_actions_instruction}
 {expected_lineage_instruction}
 {expected_blocker_instruction}
+{blocked_claim_terms_instruction}
 {expected_no_actions_instruction}
 {forbidden_actions_instruction}
 {forbidden_connectors_instruction}

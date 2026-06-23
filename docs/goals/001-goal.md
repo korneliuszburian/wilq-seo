@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 17:04 CEST.
+Last updated: 2026-06-23 17:12 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -232,6 +232,20 @@ with `pl-PL`, `api_used=true`, source connectors
 `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`,
 `operator_usefulness_score=5`, no safety findings and validated
 `act_prepare_content_refresh_queue`.
+
+Completed at 2026-06-23 17:12 CEST:
+`wilq-ahrefs-gap-finder` eval contract corrected from global blocker to
+review-only workflow. Current Ahrefs API has `gap_read_contract.status=ready`,
+`gap_record_count=8`, `missing_read_contracts=[]`, `review_mode=review-only`
+and stale freshness labels around `60-62h`. The eval now expects
+`blocked=false` while keeping unsupported `traffic uplift` and
+`authority improvement` claims blocked outside recommendations. The smoke
+script exposes compact `gap_read_contract` fields so Codex can cite ready vs
+stale state without reading huge raw diagnostics. Non-interactive eval passed
+at
+`.local-lab/evals/codex-skill/20260623T151121Z/wilq-ahrefs-gap-finder/result.json`
+with `pl-PL`, `api_used=true`, `operator_usefulness_score=4`, no safety
+findings and no invented ActionObject IDs.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

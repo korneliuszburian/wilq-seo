@@ -159,9 +159,12 @@
       "organic keywords",
       "content gap",
       "backlink gap",
+      "gap_read_contract",
+      "stale",
+      "review-only",
       "Zablokowane claims"
     ],
-    "expected_blocked": true,
+    "expected_blocked": false,
     "expected_no_action_ids": true,
     "blocked_claim_terms": [
       "traffic uplift",

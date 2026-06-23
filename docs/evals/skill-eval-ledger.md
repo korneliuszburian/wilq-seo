@@ -4522,3 +4522,49 @@ Product finding:
   context-pack for `wilq-gsc-content-doctor` must stay narrower:
   GSC/WordPress `decision_queue`, no Ahrefs decisions, no Ahrefs evidence IDs,
   and `context_pack_compaction.purpose=gsc_content_doctor_context`.
+
+## 2026-06-23 - wilq-ahrefs-gap-finder review-only gap eval
+
+Purpose:
+
+- Prove that Ahrefs gap evidence is useful as a review workflow when
+  `gap_read_contract.status=ready`, instead of incorrectly treating the whole
+  skill as blocked.
+- Keep unsupported claims blocked: no traffic uplift or authority improvement
+  claims inside recommendations unless explicitly represented as blocked.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T151121Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors` include the Ahrefs workflow surfaces.
+- Evidence count: `6`
+- `gap_read_contract.status=ready`, `gap_record_count=8`,
+  `missing_read_contracts=[]`, `review_mode=review-only`,
+  `freshness_states=["stale"]`.
+- No ActionObject IDs were returned or invented.
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- Ahrefs can now support a defensive marketer review of competitor pages, top
+  pages, organic keywords, content gap and backlink gap records. The data is
+  stale by freshness label (`60-62h`) and remains review-only. WILQ must still
+  block claims about traffic uplift, authority improvement, writes or apply
+  paths until a stronger ActionObject/evidence contract exists.
