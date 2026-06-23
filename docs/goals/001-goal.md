@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 14:56 CEST.
+Last updated: 2026-06-23 15:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -128,14 +128,28 @@ Doctor route test, dashboard lint/typecheck and browser proof
 lower Ads drilldown sections still contain older mixed Polish/English prose and
 should be cleaned in a separate slice after the first-flow demo path.
 
-2026-06-23 Ads Doctor drilldown/API copy follow-up: lower Ads drilldown and
-shared Ads API contracts are being cleaned so visible marketer-facing copy uses
-Polish terms instead of mixed `review/apply/search terms/custom segments`
-slang. Keep enum names, endpoint names, field IDs, blocked-claim keys and
-Google API resource names unchanged, but translate summaries, titles,
-next_steps, rationale and UI labels. Focused proof in progress: Ads live API
-contract test, Ads Doctor + Custom Segments route tests, dashboard lint/typecheck,
+2026-06-23 Ads Doctor drilldown/API copy follow-up completed. Lower Ads
+drilldown and shared Ads API contracts use clearer Polish marketer-facing copy
+while keeping enum names, endpoint names, field IDs, blocked-claim keys and
+Google API resource names unchanged. Proof: commit
+`92febad fix(dashboard): polish ads doctor drilldowns`, Ads live API contract
+test, Ads Doctor + Custom Segments route tests, dashboard lint/typecheck and
 Python ruff/mypy.
+
+2026-06-23 `wilq-ads-doctor` current API proof completed. Non-interactive
+Codex eval passed at
+`.local-lab/evals/codex-skill/20260623T130149Z/wilq-ads-doctor/result.json`
+with `pl-PL`, `api_used=true`, evidence count `3`,
+`operator_usefulness_score=5`, no safety findings, Google Ads source connector,
+budget review knowledge card, Ads scaling/recommendation/principle expert
+rules, and validated review-only ActionObjects:
+`act_prepare_ads_campaign_review_queue`,
+`act_prepare_google_ads_recommendation_review_queue`,
+`act_prepare_custom_segments_from_search_terms`,
+`act_prepare_negative_keyword_review_queue`. First run failed on a transient
+context-pack byte-budget reading (`210127` bytes) before direct remeasure
+showed about `188143` bytes and rerun passed; if this repeats, fix typed
+context-pack compaction/budget stability, not skill references.
 
 2026-06-23 Merchant skill live-run follow-up completed at typed API/dashboard
 level, not by stuffing edge cases into skill references. `/api/merchant/diagnostics`

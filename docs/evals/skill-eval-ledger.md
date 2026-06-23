@@ -25,6 +25,66 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-ads-doctor current API proof
+
+Purpose:
+
+- Prove that `wilq-ads-doctor` can use the current Ads API contracts after the
+  latest dashboard/API copy and performance cleanup.
+- Confirm that the skill returns Polish, evidence-backed, review-only Ads
+  actions instead of reverting to OAuth repair or unsupported budget/waste
+  claims.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ads-doctor
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T130149Z/wilq-ads-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=false`
+- Evidence count: `3`
+- `source_connectors=["google_ads"]`
+- `knowledge_card_ids=["card_google_ads_budget_review_playbook"]`
+- `expert_rule_ids=["ads_scaling_candidates_v1","ads_recommendations_v1","ads_principles_v1"]`
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+- Validated ActionObjects:
+  - `act_prepare_ads_campaign_review_queue`
+  - `act_prepare_google_ads_recommendation_review_queue`
+  - `act_prepare_custom_segments_from_search_terms`
+  - `act_prepare_negative_keyword_review_queue`
+
+Transient failure observed:
+
+- First run artifact:
+  `.local-lab/evals/codex-skill/20260623T125928Z/wilq-ads-doctor/result.json`.
+- It failed because the skill smoke measured the scoped context-pack above the
+  budget at `210127` bytes, so the result became blocked and missed Ads action
+  candidates, knowledge cards and expert rules.
+- Direct remeasurement of `POST /api/codex/context-pack {"skill":"wilq-ads-doctor"}`
+  returned about `188143` bytes, the smoke script passed, and the rerun above
+  passed. If this repeats, fix API context-pack compaction or budget stability;
+  do not hide the issue in skill references.
+
+Product finding:
+
+- The current Ads skill is useful for review-only campaign, recommendation,
+  custom segment and negative-keyword queues.
+- It still must block final claims such as wasted budget, profitability,
+  budget scaling, recommendation apply, campaign mutation and CPA/ROAS verdicts
+  unless the relevant typed API evidence, business targets, preview and audit
+  gates exist.
+
 ## 2026-06-23 - wilq-merchant-feed-operator manual queue eval
 
 Prompt:
