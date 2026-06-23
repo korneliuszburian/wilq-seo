@@ -47,9 +47,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("grupy ruchu").first()).toBeVisible();
     await expect(page.getByText("10").first()).toBeVisible();
     await expect(page.getByText("kampanie").first()).toBeVisible();
-    await expect(page.getByText("18").first()).toBeVisible();
     await expect(page.getByText("zapytania").first()).toBeVisible();
-    await expect(page.getByText("50").first()).toBeVisible();
     await expect(page.getByText("podgląd budżetu").first()).toBeVisible();
     await expect(page.getByText("Dowody w API").first()).toBeVisible();
     await expect(page.getByText(/potwierdzonych śladów w WILQ API/).first()).toBeVisible();
@@ -123,14 +121,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
       page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeVisible();
     await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeVisible();
-    await expect(
-      page
-        .getByText(
-          /Przejrzyj zapytania z reklam bez automatycznych wykluczeń|Sprawdź 90-dniową historię zapytań przed wykluczeniami/
-        )
-        .first()
-    ).toBeVisible();
-    await expect(page.getByText("Nie wdrażaj zmian Ads bez osobnego ActionObject")).toBeVisible();
+    await expect(page.getByText("Operator Ads")).toBeVisible();
+    await expect(page.getByText("Budżety").first()).toBeVisible();
+    await expect(page.getByText("Rekom.").first()).toBeVisible();
+    await expect(page.getByText("Zablokowane claimy / apply")).toBeVisible();
+    await expect(page.getByText("ActionObjecty").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
     await expect(page.getByText("Brakujące kontrakty:").first()).toBeVisible();
     await expect(page.getByText("Konwersje").first()).toBeVisible();

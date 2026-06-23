@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Full verify stabilization, 2026-06-23 05:17 CEST.
+  `scripts/verify.sh` passes after the validated skill-eval series and clean
+  runtime fixes. Final proof: backend API contracts `156 passed`, dashboard
+  unit tests `17 passed`, Playwright e2e `14 passed`, skill/API smokes passed
+  and dashboard production build passed. Two contract clarifications are now
+  encoded: opportunities can include evidence-backed blocked plan items even
+  when no ActionObject is safe yet, and campaign/social smoke scripts validate
+  review ActionObjects when the scoped context-pack exposes them but do not
+  fail empty clean-runtime smoke fixtures.
 - Campaign Builder eval hardening, 2026-06-23 02:21 CEST.
   `wilq-campaign-builder` smoke validates
   `act_prepare_ads_campaign_review_queue` and

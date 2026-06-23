@@ -195,7 +195,7 @@ def _daily_decision_opportunities() -> list[Opportunity]:
             decisions_by_id.get(plan_item.id.replace("plan_", "decision_", 1)),
         )
         for plan_item in runtime.command_center.action_plan
-        if plan_item.evidence_ids and plan_item.source_connectors and plan_item.action_ids
+        if plan_item.evidence_ids and plan_item.source_connectors
         and plan_item.id not in EXCLUDED_DAILY_OPPORTUNITY_PLAN_IDS
     ]
     return sorted(opportunities, key=lambda item: (_opportunity_sort_priority(item), item.id))

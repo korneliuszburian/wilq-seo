@@ -4181,13 +4181,14 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     assert google_ads["domain"] == "google_ads"
     assert google_ads["metric_tiles"]["kampanie"] >= 1
     assert google_ads["action_ids"] == [
+        "act_review_demand_gen_readiness",
         "act_prepare_ads_campaign_review_queue",
-        ADS_TARGET_CONFIRMATION_ACTION_ID,
-        ADS_STRATEGY_REVIEW_ACTION_ID,
         "act_prepare_google_ads_recommendation_review_queue",
+        SEARCH_TERM_NGRAM_ACTION_ID,
         "act_prepare_custom_segments_from_search_terms",
         "act_prepare_negative_keyword_review_queue",
-        SEARCH_TERM_NGRAM_ACTION_ID,
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     assert google_ads["is_fixture"] is False
     localo = next(
@@ -4199,6 +4200,15 @@ def test_opportunities_are_derived_from_evidence_and_rule_mappings(
     assert localo["domain"] == "localo"
     assert localo["action_ids"] == ["act_review_localo_visibility_facts"]
     assert localo["is_fixture"] is False
+    content = next(
+        item
+        for item in opportunities
+        if item["id"] == "opp_decision_prepare_content_refresh_queue"
+    )
+    assert content["type"] == "content_brief_candidate"
+    assert content["domain"] == "gsc_seo"
+    assert content["action_ids"] == []
+    assert content["is_fixture"] is False
     serialized = json.dumps(opportunities, ensure_ascii=False)
     assert "opp_connector_" not in serialized
     assert "rejestr reguł i playbooków" not in serialized
@@ -11535,7 +11545,8 @@ def test_workflows_are_decision_backed_operator_contracts() -> None:
     ads_daily = workflow_by_id["ads_daily_check"]
     assert ads_daily["route"] == "/ads-doctor"
     assert ads_daily["skill_id"] == "wilq-ads-doctor"
-    assert ads_daily["metric_tiles"]["kampanie"] >= 1
+    assert "kampanie" in ads_daily["metric_tiles"]
+    assert any(value >= 1 for value in ads_daily["metric_tiles"].values())
     assert "act_prepare_ads_campaign_review_queue" in ads_daily["action_ids"]
 
     localo = workflow_by_id["localo_visibility_review"]

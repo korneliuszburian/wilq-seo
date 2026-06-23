@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 02:28 CEST.
+Last updated: 2026-06-23 05:17 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -249,6 +249,13 @@ The result has `operator_usefulness_score=4`, source connectors
 IDs, two validated action candidates and no safety findings. This proves a
 campaign/recommendation review queue, not campaign creation, mutation apply,
 budget scaling or targeting changes.
+
+Full local verification is green after the validated skill-eval series:
+`scripts/verify.sh` passed with backend API contracts `156 passed`, dashboard
+unit tests `17 passed`, Playwright e2e `14 passed`, skill/API smokes and
+dashboard production build. Keep future tests state-aware: live evals may
+require validated ActionObjects, but clean-runtime smoke fixtures must not fail
+only because scoped context-packs have no live review actions yet.
 
 ## Product Bar
 
