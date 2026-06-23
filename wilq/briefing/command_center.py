@@ -355,7 +355,7 @@ def _ads_item_from_facts(
         "zapytania": search_term_count,
         "kliknięcia": _sum_numeric_facts(facts, "clicks"),
         "wyświetlenia": _sum_numeric_facts(facts, "impressions"),
-        "koszt_micros": _sum_numeric_facts(facts, "cost_micros"),
+        "koszt": _ads_cost_tile(facts),
         "konwersje": _sum_numeric_facts(facts, "conversions"),
         "wartość konw.": _sum_numeric_facts(facts, "conversion_value"),
         "podgląd budżetu": budget_preview_count,
@@ -461,6 +461,22 @@ def _ads_review_search_term_count(facts: list[MetricFact]) -> int:
             and fact.value > 0
         }
     )
+
+
+def _ads_cost_tile(facts: list[MetricFact]) -> str:
+    cost = _sum_numeric_facts(facts, "cost_micros") / 1_000_000
+    currency = _ads_currency_code(facts)
+    cost_label = str(int(cost)) if cost.is_integer() else f"{cost:.2f}"
+    return f"{cost_label} {currency}" if currency else cost_label
+
+
+def _ads_currency_code(facts: list[MetricFact]) -> str | None:
+    for fact in facts:
+        if fact.name in {"customer_currency_code", "account_currency_code"} and isinstance(
+            fact.value, str
+        ):
+            return fact.value
+    return None
 
 
 def _ads_business_context_item_from_facts(

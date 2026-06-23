@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 07:59 CEST.
+Last updated: 2026-06-23 08:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -163,11 +163,12 @@ passed, Python ruff/mypy passed, dashboard typecheck and lint passed.
 
 2026-06-23 Command Center Ads value follow-up: `daily_ads_status.metric_tiles`
 on `/api/dashboard/command-center` now includes the same campaign value totals:
-clicks, impressions, cost micros, conversions and conversion value, localized
-as metric tile labels. Command Center therefore shows real Ads volume/value
-facts on the first screen without React-side Ads recomputation. Focused proof:
-Command Center Ads API contract RED/GREEN test passed, Python ruff and mypy
-passed for the touched backend boundary.
+clicks, impressions, cost, conversions and conversion value, localized as
+metric tile labels. Cost is shown in account units with detected currency, not
+as raw micros. Command Center therefore shows real Ads volume/value facts on
+the first screen without React-side Ads recomputation. Focused proof: Command
+Center Ads API contract RED/GREEN test passed, Python ruff and mypy passed for
+the touched backend boundary.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight
