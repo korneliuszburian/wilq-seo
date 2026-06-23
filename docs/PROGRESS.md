@@ -39,20 +39,31 @@ Stan produktu:
 
 ## Last Done
 
-1. Merchant product-sample readiness contract, 2026-06-23.
+1. `wilq-merchant-feed-operator` product-sample eval, 2026-06-23.
+   Non-interactive Codex eval passed against the new Merchant product-sample
+   contract:
+   `.local-lab/evals/codex-skill/20260623T144931Z/wilq-merchant-feed-operator/result.json`.
+   Result: `pl-PL`, `api_used=true`, evidence count `3`,
+   `operator_usefulness_score=5`, no safety findings, source connector
+   `google_merchant_center`, and validated
+   `act_review_merchant_feed_issues`. The eval result explicitly mentions
+   `/merchant`, `merchant_diagnostics`, `freshness_assessment=fresh`,
+   `decision_queue`, `unknowns`, `product_sample_readiness ready`,
+   `sample_product_ids` and review-only handling. The smoke script now also
+   exposes context-pack ActionObject state (`needs_validation/not_validated`)
+   alongside current endpoint validation (`valid=true/status=valid`).
+
+2. Merchant product-sample readiness contract, 2026-06-23.
    `/api/merchant/diagnostics` exposes `product_sample_readiness`, so WILQ no
    longer implies that aggregate Merchant issue clusters contain concrete
-   product IDs, SKU or titles. Current state is intentionally `blocked`:
-   `current_read_contract=merchant_aggregate_product_statuses`,
-   `sample_products_available=false`, required future read contracts are
-   `merchant_products_list_product_status` and
-   `merchant_reports_product_view_issue_filter`. `/merchant` shows
-   `Gotowość próbek produktów` and the Merchant skill smoke now asserts the
-   same field. Proof: Merchant API contract test, Merchant route test, Python
-   ruff/mypy, dashboard lint/typecheck, shared-schemas typecheck, live stack
-   curl and `wilq-merchant-feed-operator` smoke.
+   product IDs, SKU or titles unless the read contract actually supplies them.
+   The initial state of this contract was blocked; it is now superseded by the
+   product-sample enrichment below. Current live state:
+   `sample_products_available=true`, `sample_count=12`, with sample IDs/titles
+   usable only as review examples. `/merchant` shows `Gotowość próbek produktów`
+   and the Merchant skill smoke asserts the same field.
 
-2. `wilq-ga4-analyst` decision-sample eval, 2026-06-23.
+3. `wilq-ga4-analyst` decision-sample eval, 2026-06-23.
    GA4 smoke now exposes compact `decision_samples` with `active_users`,
    `sessions`, `engagement_rate` and landing/source/campaign dimensions, so
    non-interactive Codex can cite real GA4 decision metrics instead of only
@@ -64,7 +75,7 @@ Stan produktu:
    `fix_measurement` and `review_traffic_quality`; `review_landing_mapping`
    remains absent, so Codex must not infer landing quality from GA4 rows alone.
 
-3. `wilq-ads-doctor` current API proof, 2026-06-23.
+4. `wilq-ads-doctor` current API proof, 2026-06-23.
    Non-interactive Codex eval passed against the current WILQ API:
    `.local-lab/evals/codex-skill/20260623T130149Z/wilq-ads-doctor/result.json`.
    Result: `pl-PL`, `api_used=true`, evidence count `3`,
@@ -77,7 +88,7 @@ Stan produktu:
    `188143` bytes and rerun passed. If it repeats, fix API context-pack
    compaction/budget stability, not skill references.
 
-4. Merchant product sample enrichment, 2026-06-23.
+5. Merchant product sample enrichment, 2026-06-23.
    Merchant read-only `vendor_read` enriches aggregate issue clusters with
    product samples. It parses `sampleProducts` from `aggregateProductStatuses`
    when present and falls back to `products.list` / product status issue rows
@@ -92,26 +103,27 @@ Stan produktu:
    `unit pricing measure` only for matching; raw evidence dimensions remain
    unchanged.
 
-5. Merchant diagnostics decision contract, 2026-06-23.
+6. Merchant diagnostics decision contract, 2026-06-23.
    `/api/merchant/diagnostics` ma typed pola eliminujące błąd interpretacji z
    live-run `wilq-merchant-feed-operator`: `freshness_assessment`,
    `unknowns`, `operator_summary.decision_source=decision_queue`,
    `drilldown_source=issue_clusters`, `count_semantics=reported_issue_occurrences`
-   oraz `issue_cluster_ids` na decyzjach. Live API po restartcie stacka:
-   Merchant read jest `stale`, około `133.3h`, `requires_refresh=true`.
-   `/merchant` pokazuje `dane do odświeżenia` i `Czego nie wiemy z Merchant API`.
+   oraz `issue_cluster_ids` na decyzjach. Historical proof before the latest
+   product-sample refresh correctly labeled a stale Merchant read at about
+   `133.3h`; current live proof is fresh through
+   `refresh_google_merchant_center_a471db43f332`.
    Proof: Merchant API contract tests, Merchant dashboard route test, Python
    ruff/mypy, dashboard lint/typecheck, shared-schemas typecheck, browser proof
    `.local-lab/proof/dashboard/merchant-freshness-unknowns.txt`.
 
-6. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
+7. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
    Commit `92febad fix(dashboard): polish ads doctor drilldowns` oczyścił dolne
    sekcje Ads Doctor i Custom Segments z najbardziej mylącego mieszanego copy.
    Keep enum names, endpoint names, field IDs, blocked-claim keys and Google API
    resource names unchanged; marketer-facing summaries/titles/next steps should
    stay Polish.
 
-7. Command Center and Ads first-flow copy cleanup, 2026-06-23.
+8. Command Center and Ads first-flow copy cleanup, 2026-06-23.
    Command Center first-screen daily decision cards compose concise Polish
    marketer copy from typed API fields and metric tiles. Ads Doctor first flow
    shows review-only Ads decisions instead of raw API slang and hides raw
@@ -131,22 +143,21 @@ Stan produktu:
   contracts exist for the exact product rows.
 - Localo access works at OAuth/MCP initialize level, but WILQ still must expose
   real Localo ranking/GBP/competitor evidence before local SEO recommendations.
-- Skill evals prove API usage, Polish and evidence shape, but still need stricter
-  “quality of decision” assertions for each skill.
+- Skill evals prove API usage, Polish and evidence shape for many routes. The
+  newest Merchant eval now proves product-sample/freshness/decision-queue
+  usefulness; remaining skills still need the same stricter “quality of
+  decision” assertions.
 - `docs/goals/001-goal.md` is still too long. Keep it canonical for now, but
   future cleanup should preserve active requirements and archive old history.
 
 ## Next Best Queue
 
-1. Re-run `wilq-merchant-feed-operator` non-interactive eval against the new
-   Merchant product-sample contract and require it to mention sample products,
-   freshness, decision_queue-first grouping, "czego nie wiemy", and review-only
-   ActionObject validation nuance.
-2. Run the next high-value Codex skill eval against current API contracts and
+1. Run the next high-value Codex skill eval against current API contracts and
    record whether it produces real decisions, not only schema-valid output.
    Recommended next skill: `wilq-gsc-content-doctor` if the next demo focuses
-   on SEO/content, or `wilq-merchant-feed-operator` after product-level read.
-3. If an eval exposes reasoning gaps, fix typed API/dashboard contracts first,
+   on SEO/content, or `wilq-ahrefs-gap-finder` if the next demo focuses on
+   gap/competitor evidence.
+2. If an eval exposes reasoning gaps, fix typed API/dashboard contracts first,
    not skill references.
-4. Keep focused verification. Use full `scripts/verify.sh` only for final
+3. Keep focused verification. Use full `scripts/verify.sh` only for final
    handoff or broad cross-surface changes.

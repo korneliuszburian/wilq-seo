@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 16:49 CEST.
+Last updated: 2026-06-23 16:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -205,6 +205,16 @@ context-pack validation state and current ActionObject validation, and use
 sample product IDs/titles only as review examples. Do not patch these business
 rules into skill references unless the typed API contract already exposes the
 needed fields.
+
+Completed at 2026-06-23 16:50 CEST:
+`wilq-merchant-feed-operator` non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260623T144931Z/wilq-merchant-feed-operator/result.json`
+with `pl-PL`, `api_used=true`, evidence count `3`,
+`operator_usefulness_score=5`, `freshness_assessment=fresh`, `decision_queue`,
+`unknowns`, `product_sample_readiness ready`, `sample_product_ids` and
+validated `act_review_merchant_feed_issues`. The smoke script now exposes the
+context-pack ActionObject state (`needs_validation/not_validated`) next to
+current endpoint validation (`valid=true/status=valid`).
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

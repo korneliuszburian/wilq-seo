@@ -116,9 +116,15 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "feed",
                 "product",
                 "merchant_diagnostics",
+                "freshness_assessment",
+                "decision_queue",
+                "unknowns",
+                "product_sample_readiness",
+                "sample_product_ids",
                 "issue",
                 "act_review_merchant_feed_issues",
                 "merchant_feed_issue_review_preview_v1",
+                "review-only",
             },
             "action_ids": {"act_review_merchant_feed_issues"},
             "validated_action_ids": {"act_review_merchant_feed_issues"},
@@ -342,6 +348,15 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         in merchant_smoke_script
     )
     assert '"merchant_diagnostics": {' in merchant_smoke_script
+    assert "freshness_assessment" in merchant_smoke_script
+    assert "decision_queue" in merchant_smoke_script
+    assert "unknowns" in merchant_smoke_script
+    assert "sample_product_ids" in merchant_smoke_script
+    assert "Merchant diagnostics with samples must expose sample product IDs" in (
+        merchant_smoke_script
+    )
+    assert "context_pack_action_status" in merchant_smoke_script
+    assert "context_pack_validation_status" in merchant_smoke_script
     merchant_validation_call = (
         'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
     )

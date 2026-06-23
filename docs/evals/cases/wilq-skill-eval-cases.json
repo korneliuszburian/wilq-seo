@@ -328,9 +328,15 @@
       "feed",
       "product",
       "merchant_diagnostics",
+      "freshness_assessment",
+      "decision_queue",
+      "unknowns",
+      "product_sample_readiness",
+      "sample_product_ids",
       "issue",
       "act_review_merchant_feed_issues",
-      "merchant_feed_issue_review_preview_v1"
+      "merchant_feed_issue_review_preview_v1",
+      "review-only"
     ],
     "expected_action_ids": ["act_review_merchant_feed_issues"],
     "expected_validated_action_ids": ["act_review_merchant_feed_issues"]

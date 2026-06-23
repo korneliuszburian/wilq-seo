@@ -4432,3 +4432,50 @@ Product finding:
   build/apply. WILQ must not claim campaign creation, mutation apply, targeting
   changes or budget scaling until a dedicated ActionObject, payload preview,
   audit and confirmation path exist.
+
+## 2026-06-23 - wilq-merchant-feed-operator product-sample eval
+
+Purpose:
+
+- Prove that Merchant Feed Operator uses the new
+  `/api/merchant/diagnostics.product_sample_readiness` contract after
+  Merchant `products.list` enrichment.
+- Require the skill path to mention freshness, `decision_queue`, `unknowns`,
+  sample product IDs and review-only ActionObject validation instead of merely
+  returning a schema-valid Merchant summary.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T144931Z/wilq-merchant-feed-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `source_connectors=["google_merchant_center"]`
+- Evidence count: `3`
+- Result mentions `/merchant`, `merchant_diagnostics`,
+  `freshness_assessment=fresh`, `decision_queue`, `unknowns`,
+  `product_sample_readiness ready` and `sample_product_ids`.
+- `action_candidates` contains validated
+  `act_review_merchant_feed_issues`.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- Merchant is now useful for product-level review examples, not only aggregate
+  issue clusters. Sample product IDs/titles are allowed as review material, but
+  WILQ still blocks feed writes, approval restoration, revenue recovery,
+  unique-product-count claims and any apply path without a separate validated
+  ActionObject, payload preview and audit event.

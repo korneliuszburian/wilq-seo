@@ -80,15 +80,30 @@ def main() -> int:
     if product_sample_readiness.get("sample_products_available") is True:
         if product_sample_readiness.get("sample_count", 0) <= 0:
             raise SystemExit("Merchant product_sample_readiness ready state must include samples")
+        if not product_sample_readiness.get("sample_product_ids"):
+            raise SystemExit(
+                "Merchant diagnostics with samples must expose sample product IDs"
+            )
     elif product_sample_readiness.get("status") != "blocked":
         raise SystemExit("Merchant product_sample_readiness without samples must be blocked")
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
+    decision_queue = merchant_diagnostics.get("decision_queue") or []
+    unknowns = merchant_diagnostics.get("unknowns") or []
+    freshness_assessment = merchant_diagnostics.get("freshness_assessment") or {}
     if (
         merchant_diagnostics.get("live_data_available")
         and merchant_diagnostics.get("issue_count", 0) > 0
         and not issue_clusters
     ):
         raise SystemExit("Live Merchant diagnostics with issue_count must expose issue_clusters")
+    if (
+        merchant_diagnostics.get("live_data_available")
+        and merchant_diagnostics.get("issue_count", 0) > 0
+        and not decision_queue
+    ):
+        raise SystemExit("Live Merchant diagnostics with issue_count must expose decision_queue")
+    if merchant_diagnostics.get("live_data_available") and not freshness_assessment:
+        raise SystemExit("Live Merchant diagnostics must expose freshness_assessment")
     merchant_action = next(
         (
             action
@@ -99,6 +114,10 @@ def main() -> int:
     )
     merchant_payload = merchant_action.get("payload", {}) if merchant_action else {}
     merchant_preview = merchant_payload.get("payload_preview") or []
+    context_pack_action_status = merchant_action.get("status") if merchant_action else None
+    context_pack_validation_status = (
+        merchant_action.get("validation_status") if merchant_action else None
+    )
     if issue_clusters and merchant_action is None:
         raise SystemExit("Merchant issue clusters must expose review ActionObject")
     if (
@@ -180,7 +199,11 @@ def main() -> int:
                     "product_count": merchant_diagnostics.get("product_count"),
                     "issue_count": merchant_diagnostics.get("issue_count"),
                     "issue_cluster_count": len(issue_clusters),
+                    "decision_count": len(decision_queue),
                     "top_issue_clusters": issue_clusters[:5],
+                    "decision_queue": decision_queue[:5],
+                    "unknowns": unknowns,
+                    "freshness_assessment": freshness_assessment,
                     "blocker_count": merchant_diagnostics.get("blocker_count"),
                     "section_ids": [
                         section.get("id")
@@ -204,6 +227,8 @@ def main() -> int:
                     "latest_refresh_status": (
                         merchant_diagnostics.get("latest_refresh") or {}
                     ).get("status"),
+                    "context_pack_action_status": context_pack_action_status,
+                    "context_pack_validation_status": context_pack_validation_status,
                     "action_preview_contract": merchant_payload.get("preview_contract"),
                     "preview_cluster_ids": [
                         item.get("cluster_id")

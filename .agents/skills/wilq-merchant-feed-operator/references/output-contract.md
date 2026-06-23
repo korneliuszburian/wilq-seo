@@ -21,12 +21,15 @@ Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. API identifiers, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość connectorów i znane blockery.
-2. `Dowody`: Merchant diagnostics section IDs, evidence IDs, connector IDs, latest refresh state, issue dimensions, freshness notes and metric summaries from WILQ API only.
-3. `Diagnoza`: what `/api/merchant/diagnostics` supports, with uncertainty if the evidence is aggregate, stale, incomplete or blocked by permissions.
-4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
-5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
-6. `Następny krok`: najmniejszy bezpieczny krok operatora.
+1. `Status`: zasięg API, gotowość connectorów, `freshness_assessment` i znane blockery.
+2. `Dowody`: Merchant diagnostics section IDs, evidence IDs, connector IDs, latest refresh state, issue dimensions, metric summaries and product sample readiness from WILQ API only.
+3. `Kolejka review`: grupuj finalne rekomendacje po `decision_queue`. `issue_clusters` pokazuj tylko jako drilldown raportowania, bo suma zgłoszeń nie jest liczbą unikalnych produktów.
+4. `Przykładowe produkty`: jeśli `product_sample_readiness.sample_products_available=true`, pokaż kilka `sample_product_ids` albo tytułów jako materiał do review. Nie traktuj próbek jako pełnej listy SKU ani zgody na feed write.
+5. `Czego nie wiemy`: opisz `unknowns` z `/api/merchant/diagnostics`, szczególnie brak unikalnej liczby produktów, brak pełnego SKU workflow albo brak próbek dla części klastrów.
+6. `Diagnoza`: co `/api/merchant/diagnostics` wspiera, z uncertainty jeśli evidence jest aggregate, stale, niepełne albo zablokowane permissions.
+7. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
+8. `Walidacja`: pokaż różnicę między statusem ActionObject w context-packu a bieżącym wynikiem `POST /api/actions/{action_id}/validate`. `valid=true` oznacza tylko review/prepare path, nie apply.
+9. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
 ## Warunki odmowy lub downgrade do blockera
 
