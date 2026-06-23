@@ -5827,6 +5827,42 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
+        if "FROM shopping_performance_view" in query:
+            assert "segments.product_item_id" in query
+            assert "segments.product_title" in query
+            assert "metrics.clicks" in query
+            assert "metrics.impressions" in query
+            assert "metrics.cost_micros" in query
+            assert "metrics.conversions" in query
+            assert "metrics.conversions_value" in query
+            assert "segments.date DURING LAST_30_DAYS" in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "campaign": {
+                                    "id": "102",
+                                    "name": "Shopping sorbenty",
+                                    "advertisingChannelType": "PERFORMANCE_MAX",
+                                },
+                                "segments": {
+                                    "productItemId": "SKU-001",
+                                    "productTitle": "Sorbent chemiczny 10 kg",
+                                },
+                                "metrics": {
+                                    "clicks": "14",
+                                    "impressions": "120",
+                                    "costMicros": "2750000",
+                                    "conversions": "1.5",
+                                    "conversionsValue": "320",
+                                },
+                            },
+                        ]
+                    }
+                ],
+            )
         if "FROM ad_group_criterion" in query:
             assert "ad_group_criterion.keyword.text" in query
             assert "ad_group_criterion.keyword.match_type" in query
@@ -5945,6 +5981,14 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["search_term_safety_cost_micros"] == 9000000
     assert result.metric_summary["search_term_safety_conversions"] == 2.0
     assert result.metric_summary["search_term_safety_conversion_value"] == 240.0
+    assert result.metric_summary["shopping_product_performance_status"] == "ready"
+    assert result.metric_summary["shopping_product_performance_row_count"] == 1
+    assert result.metric_summary["shopping_product_performance_product_count"] == 1
+    assert result.metric_summary["shopping_product_clicks"] == 14
+    assert result.metric_summary["shopping_product_impressions"] == 120
+    assert result.metric_summary["shopping_product_cost_micros"] == 2750000
+    assert result.metric_summary["shopping_product_conversions"] == 1.5
+    assert result.metric_summary["shopping_product_conversion_value"] == 320.0
     assert result.metric_summary["recommendation_query"] == "active_recommendations"
     assert result.metric_summary["recommendation_row_count"] == 1
     assert result.metric_summary["recommendation_campaign_count"] == 1
@@ -5989,6 +6033,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert any("FROM ad_group_criterion" in query for query in search_stream_queries)
     assert any("FROM ad_group_ad\n" in query for query in search_stream_queries)
     assert any("FROM ad_group_ad_asset_view" in query for query in search_stream_queries)
+    assert any("FROM shopping_performance_view" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
@@ -6068,6 +6113,26 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         "keyword_text": "bdo rejestracja",
         "keyword_match_type": "PHRASE",
     }
+    shopping_product_clicks_fact = next(
+        fact for fact in result.metric_facts if fact.name == "shopping_product_clicks"
+    )
+    assert shopping_product_clicks_fact.value == 14
+    assert shopping_product_clicks_fact.period == "shopping_product_performance_30d"
+    assert shopping_product_clicks_fact.dimensions == {
+        "campaign_id": "102",
+        "campaign_name": "Shopping sorbenty",
+        "advertising_channel_type": "PERFORMANCE_MAX",
+        "product_id": "SKU-001",
+        "item_id": "SKU-001",
+        "product_item_id": "SKU-001",
+        "product_title": "Sorbent chemiczny 10 kg",
+    }
+    shopping_product_value_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "shopping_product_conversion_value"
+    )
+    assert shopping_product_value_fact.value == 320.0
     impression_share_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_impression_share"
     )
@@ -9404,7 +9469,6 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
     assert business_ready_contract["target_interpretation"]["action_ids"] == [
-        ADS_TARGET_CONFIRMATION_ACTION_ID,
         ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     assert business_ready_contract["operator_review_gates"] == [
@@ -9457,7 +9521,6 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         business_ready_contract["operator_review_gates"]
     )
     assert business_ready_decision["action_ids"] == [
-        ADS_TARGET_CONFIRMATION_ACTION_ID,
         ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     business_ready_campaign_decision = next(
@@ -10025,7 +10088,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
             period="last_30_days",
             source_connector="google_ads",
             evidence_id="ev_ads_clicks",
-            dimensions={"product_id": product_id},
+            dimensions={"product_id": "SKU-001"},
         ),
         MetricFact(
             name="cost_micros",
@@ -10033,7 +10096,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
             period="last_30_days",
             source_connector="google_ads",
             evidence_id="ev_ads_cost",
-            dimensions={"product_id": product_id},
+            dimensions={"product_id": "SKU-001"},
         ),
         MetricFact(
             name="conversions",
@@ -10041,7 +10104,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
             period="last_30_days",
             source_connector="google_ads",
             evidence_id="ev_ads_conversions",
-            dimensions={"product_id": product_id},
+            dimensions={"product_id": "SKU-001"},
         ),
         MetricFact(
             name="conversion_value",
@@ -10049,7 +10112,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
             period="last_30_days",
             source_connector="google_ads",
             evidence_id="ev_ads_value",
-            dimensions={"product_id": product_id},
+            dimensions={"product_id": "SKU-001"},
         ),
     ]
     ga4_facts = [
@@ -10059,7 +10122,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
             period="last_30_days",
             source_connector="google_analytics_4",
             evidence_id="ev_ga4_purchases",
-            dimensions={"item_id": product_id},
+            dimensions={"item_id": "SKU-001"},
         ),
         MetricFact(
             name="purchase_revenue",
@@ -10067,7 +10130,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
             period="last_30_days",
             source_connector="google_analytics_4",
             evidence_id="ev_ga4_revenue",
-            dimensions={"item_id": product_id},
+            dimensions={"item_id": "SKU-001"},
         ),
     ]
 
@@ -10110,6 +10173,101 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
     assert row.missing_metrics == []
     assert "product fix impact" in row.blocked_claims
     assert "feed write" in row.blocked_claims
+
+
+def test_merchant_product_performance_readiness_reports_ready_ads_contract_without_rows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    product_id = "online~pl~PL~SKU-001"
+    issue_cluster = MerchantIssueCluster(
+        id="merchant_issue_test",
+        issue_type="availability_updated",
+        affected_attribute="n:availability",
+        country="PL",
+        reporting_context="SHOPPING_ADS",
+        severity="NOT_IMPACTED",
+        resolution="MERCHANT_ACTION",
+        product_count=23,
+        sample_product_ids=[product_id],
+        sample_titles=["Sorbent chemiczny 10 kg"],
+        source_connectors=["google_merchant_center"],
+        evidence_ids=["ev_merchant_issue"],
+        blocked_claims=["approval restored"],
+        action_id="act_review_merchant_feed_issues",
+        next_step="Review produktu.",
+        risk=ActionRisk.medium,
+    )
+    sample_readiness = MerchantProductSampleReadiness(
+        status="ready",
+        sample_products_available=True,
+        sample_count=1,
+        sample_product_ids=[product_id],
+        sample_product_titles=["Sorbent chemiczny 10 kg"],
+        required_read_contracts=[
+            "merchant_products_list_product_status",
+            "merchant_reports_product_view_issue_filter",
+        ],
+        source_endpoint="aggregateProductStatuses",
+        summary="Merchant read ma sample product ID.",
+        next_step="Review próbki.",
+    )
+    ga4_facts = [
+        MetricFact(
+            name="item_purchases",
+            value=2,
+            period="connector_refresh",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_item",
+            dimensions={"item_id": "SKU-001"},
+        )
+    ]
+
+    monkeypatch.setattr(
+        "wilq.briefing.merchant_diagnostics._product_performance_metric_facts_by_connector",
+        lambda _sample_product_ids: {
+            "google_ads": [],
+            "google_analytics_4": ga4_facts,
+        },
+    )
+    monkeypatch.setattr(
+        "wilq.briefing.merchant_diagnostics._latest_connector_refresh",
+        lambda connector_id: ConnectorRefreshRun(
+            id="refresh_google_ads_shopping_zero_rows",
+            connector_id="google_ads",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_ads_shopping_zero_rows"],
+            metric_summary={
+                "shopping_product_performance_status": "ready",
+                "shopping_product_performance_row_count": 0,
+            },
+            summary="Shopping product read returned zero rows.",
+        )
+        if connector_id == "google_ads"
+        else None,
+    )
+
+    readiness = _merchant_product_performance_readiness(
+        issue_clusters=[issue_cluster],
+        product_sample_readiness=sample_readiness,
+    )
+
+    assert readiness.status == "ready"
+    assert readiness.joined_product_count == 1
+    assert readiness.ads_product_fact_count == 0
+    assert readiness.ga4_product_fact_count == 1
+    assert readiness.current_read_contracts == [
+        "merchant_aggregate_product_statuses",
+        "google_ads_shopping_product_performance",
+        "ga4_item_metric_facts",
+    ]
+    assert readiness.performance_rows[0].missing_metrics == [
+        "ads_clicks",
+        "ads_cost_micros",
+        "ads_conversions",
+        "ads_conversion_value",
+        "ga4_purchase_revenue",
+    ]
 
 
 def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decision(

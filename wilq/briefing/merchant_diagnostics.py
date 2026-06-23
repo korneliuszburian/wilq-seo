@@ -202,7 +202,11 @@ def build_merchant_diagnostics(
 
 
 def _latest_merchant_refresh() -> ConnectorRefreshRun | None:
-    runs = list_connector_refresh_runs(connector_id=MERCHANT_CONNECTOR_ID)
+    return _latest_connector_refresh(MERCHANT_CONNECTOR_ID)
+
+
+def _latest_connector_refresh(connector_id: str) -> ConnectorRefreshRun | None:
+    runs = list_connector_refresh_runs(connector_id=connector_id)
     return runs[0] if runs else None
 
 
@@ -429,10 +433,16 @@ def _merchant_product_performance_readiness(
     merchant_evidence_ids = _unique(
         evidence_id for cluster in issue_clusters for evidence_id in cluster.evidence_ids
     )
+    use_live_contract_status = product_metric_facts_by_connector is None
     product_metric_facts_by_connector = (
         product_metric_facts_by_connector
         if product_metric_facts_by_connector is not None
         else _product_performance_metric_facts_by_connector(sample_product_ids)
+    )
+    ads_shopping_contract_ready = (
+        _google_ads_shopping_product_read_contract_ready()
+        if use_live_contract_status
+        else False
     )
     ads_product_facts = _product_scoped_metric_facts(
         product_metric_facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])
@@ -445,8 +455,8 @@ def _merchant_product_performance_readiness(
 
     performance_rows: list[MerchantProductPerformanceRow] = []
     for product_id in sample_product_ids:
-        ads_facts = ads_facts_by_product_id.get(product_id, [])
-        ga4_facts = ga4_facts_by_product_id.get(product_id, [])
+        ads_facts = _facts_for_product_id(ads_facts_by_product_id, product_id)
+        ga4_facts = _facts_for_product_id(ga4_facts_by_product_id, product_id)
         if not ads_facts and not ga4_facts:
             continue
         row = MerchantProductPerformanceRow(
@@ -503,6 +513,8 @@ def _merchant_product_performance_readiness(
     current_read_contracts = ["merchant_aggregate_product_statuses"]
     if ads_product_facts:
         current_read_contracts.append("google_ads_product_metric_facts")
+    elif ads_shopping_contract_ready:
+        current_read_contracts.append("google_ads_shopping_product_performance")
     if ga4_product_facts:
         current_read_contracts.append("ga4_item_metric_facts")
 
@@ -554,14 +566,17 @@ def _merchant_product_performance_readiness(
             ],
         )
 
-    blocked_reason = (
-        "Merchant read zwraca sample product IDs, ale WILQ nie ma dopasowanych "
-        "product-level facts z Ads albo GA4 dla tych IDs."
-        if sample_product_ids
-        else (
-            "Merchant read nie daje sample product IDs, więc WILQ nie ma klucza "
-            "do połączenia problemów feedu z Ads/GA4."
-        )
+    blocked_reason = _product_performance_blocked_reason(
+        sample_product_ids=sample_product_ids,
+        ads_product_facts=ads_product_facts,
+        ga4_product_facts=ga4_product_facts,
+        ads_shopping_contract_ready=ads_shopping_contract_ready,
+    )
+    next_step = _product_performance_next_step(
+        sample_product_ids=sample_product_ids,
+        ads_product_facts=ads_product_facts,
+        ga4_product_facts=ga4_product_facts,
+        ads_shopping_contract_ready=ads_shopping_contract_ready,
     )
     return MerchantProductPerformanceReadiness(
         status="blocked",
@@ -588,11 +603,74 @@ def _merchant_product_performance_readiness(
             ]
         ),
         summary=blocked_reason,
-        next_step=(
-            "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 "
-            "item ecommerce oraz utrzymać wspólny product_id/item_id jako join key."
-        ),
+        next_step=next_step,
         blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
+    )
+
+
+def _google_ads_shopping_product_read_contract_ready() -> bool:
+    latest_refresh = _latest_connector_refresh(GOOGLE_ADS_CONNECTOR_ID)
+    if latest_refresh is None or latest_refresh.status != ConnectorRefreshStatus.completed:
+        return False
+    return latest_refresh.metric_summary.get("shopping_product_performance_status") == "ready"
+
+
+def _product_performance_blocked_reason(
+    *,
+    sample_product_ids: list[str],
+    ads_product_facts: list[MetricFact],
+    ga4_product_facts: list[MetricFact],
+    ads_shopping_contract_ready: bool,
+) -> str:
+    if not sample_product_ids:
+        return (
+            "Merchant read nie daje sample product IDs, więc WILQ nie ma klucza "
+            "do połączenia problemów feedu z Ads/GA4."
+        )
+    if ads_shopping_contract_ready and not ads_product_facts:
+        return (
+            "Merchant read zwraca sample product IDs, GA4 ma item facts, a Ads "
+            "shopping_performance_view jest gotowy, ale bieżący Ads read zwrócił "
+            "0 product performance rows. WILQ nie ma więc dopasowanych Ads facts "
+            "dla próbek Merchant."
+        )
+    if ga4_product_facts and not ads_product_facts:
+        return (
+            "Merchant read zwraca sample product IDs i GA4 ma item facts, ale WILQ "
+            "nie ma dopasowanych product-level facts z Ads dla tych IDs."
+        )
+    return (
+        "Merchant read zwraca sample product IDs, ale WILQ nie ma dopasowanych "
+        "product-level facts z Ads albo GA4 dla tych IDs."
+    )
+
+
+def _product_performance_next_step(
+    *,
+    sample_product_ids: list[str],
+    ads_product_facts: list[MetricFact],
+    ga4_product_facts: list[MetricFact],
+    ads_shopping_contract_ready: bool,
+) -> str:
+    if not sample_product_ids:
+        return (
+            "Dodać read-only Merchant product samples z product ID/SKU, zanim WILQ "
+            "spróbuje łączyć feed z performance."
+        )
+    if ads_shopping_contract_ready and not ads_product_facts:
+        return (
+            "Sprawdź, czy produkty miały emisję w Ads w ostatnich 30 dniach; jeśli nie, "
+            "dodaj dłuższy lookback albo aktualny `shopping_product` state read zamiast "
+            "claimować produktowy performance."
+        )
+    if ga4_product_facts and not ads_product_facts:
+        return (
+            "Dodać albo odświeżyć Ads Shopping/PMax product facts oraz utrzymać "
+            "wspólny product_id/item_id jako join key."
+        )
+    return (
+        "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 "
+        "item ecommerce oraz utrzymać wspólny product_id/item_id jako join key."
     )
 
 
@@ -630,19 +708,50 @@ def _metric_facts_by_product_id(
 ) -> dict[str, list[MetricFact]]:
     facts_by_product_id: dict[str, list[MetricFact]] = {}
     for fact in facts:
-        product_id = _metric_fact_product_id(fact)
-        if product_id is None:
-            continue
-        facts_by_product_id.setdefault(product_id, []).append(fact)
+        for product_id in _metric_fact_product_id_aliases(fact):
+            facts_by_product_id.setdefault(product_id, []).append(fact)
     return facts_by_product_id
 
 
+def _facts_for_product_id(
+    facts_by_product_id: dict[str, list[MetricFact]],
+    product_id: str,
+) -> list[MetricFact]:
+    facts: list[MetricFact] = []
+    seen: set[tuple[str, str, str]] = set()
+    for alias in _product_id_aliases(product_id):
+        for fact in facts_by_product_id.get(alias, []):
+            key = (fact.name, fact.evidence_id, repr(sorted(fact.dimensions.items())))
+            if key in seen:
+                continue
+            seen.add(key)
+            facts.append(fact)
+    return facts
+
+
 def _metric_fact_product_id(fact: MetricFact) -> str | None:
+    aliases = _metric_fact_product_id_aliases(fact)
+    return aliases[0] if aliases else None
+
+
+def _metric_fact_product_id_aliases(fact: MetricFact) -> list[str]:
+    aliases: list[str] = []
     for key in PRODUCT_JOIN_DIMENSION_KEYS:
         value = fact.dimensions.get(key)
         if value and value.strip():
-            return value.strip()
-    return None
+            aliases.extend(_product_id_aliases(value))
+    return _unique(aliases)
+
+
+def _product_id_aliases(value: str) -> list[str]:
+    stripped = value.strip()
+    if not stripped:
+        return []
+    resource_id = stripped.rsplit("/", 1)[-1].strip()
+    aliases = [stripped, resource_id]
+    if "~" in resource_id:
+        aliases.append(resource_id.rsplit("~", 1)[-1].strip())
+    return [alias for alias in _unique(aliases) if alias]
 
 
 def _int_metric_value(facts: list[MetricFact], names: list[str]) -> int | None:

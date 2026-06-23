@@ -64,10 +64,12 @@ Stan produktu:
   `/api/merchant/diagnostics` decision queue entries expose
   `merchant_feed_issue_review_preview_v1` with consistent grouped
   `reported_issue_occurrences`; apply/API mutation/destructive flags stay
-  false. Product samples are ready; GA4 now exposes item-level product facts,
-  but `product_performance_readiness` still blocks because current GA4 item IDs
-  do not match Merchant sample IDs and Ads product-level facts are still
-  missing.
+  false. Product samples are ready; GA4 exposes item-level product facts and
+  Ads now has a live `shopping_performance_view` read contract. The latest Ads
+  proof `refresh_google_ads_8cc89c2570a8` returned
+  `shopping_product_performance_status=ready` with 0 product rows, so
+  `product_performance_readiness` still blocks instead of inventing product
+  ROAS or fix impact.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
@@ -92,14 +94,21 @@ Stan produktu:
   Empty `change_history_read_contract` means "ready, no changes in the selected
   window"; `change_impact_readiness_contract` remains blocked until WILQ has
   change rows plus before/after performance windows.
+- Ads Shopping/PMax product performance read contract is now live. The Google
+  Ads adapter queries `shopping_performance_view` by `segments.product_item_id`
+  and stores `shopping_product_*` facts when rows exist. Live proof
+  `refresh_google_ads_8cc89c2570a8` completed; the contract is ready but
+  returned 0 product rows for the current last-30-days query.
 - Goal 001 now has a thematic stack assessment: acquisition/source proof,
   decision contracts, action safety, Codex skills, knowledge/compiler,
   dashboard/UI and testing/release. Current source triage: Ads optimizer review,
   Merchant product sample readiness and Localo GBP/competitor/reviews/rankings
   are ready for review-only decisions; Merchant product-performance join is
-  blocked by missing Ads/GA4 product-level facts. The nearest source gaps are
-  Merchant supplemental-feed/price-impact contracts, Ahrefs granular gaps,
-  Keyword Planner approval/forecast and cross-source decision joins.
+  blocked by zero/mismatched product-level rows, not by missing GA4/Ads read
+  contracts. The nearest source gaps are product-ID mapping/longer Ads lookback
+  or `shopping_product` state read, Merchant supplemental-feed/price-impact
+  contracts, Ahrefs granular gaps, Keyword Planner approval/forecast and
+  cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
   stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
   `total_revenue` and `transactions` with landing/source/campaign dimensions.
@@ -143,17 +152,19 @@ Stan produktu:
      visibility aggregate read contracts.
    - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
      Localo tasks blocked unless a side-effect-free read exists.
-   - Source-contract queue: Merchant product-performance/supplemental-feed/
-     price-impact deepening, Ahrefs granular gap enrichment, Keyword Planner
-     approval/forecast and cross-source decision joins.
+   - Source-contract queue: Merchant product-ID mapping, Ads longer-lookback
+     or `shopping_product` state read, supplemental-feed/price-impact
+     deepening, Ahrefs granular gap enrichment, Keyword Planner approval/
+     forecast and cross-source decision joins.
    - Ads remaining gaps are not OAuth: optimizer review is ready/read-only,
      Keyword Planner is blocked by developer token approval, change history
      currently has no rows in the selected window, and apply/audit contracts
      are still required before budget, recommendation, custom-segment or
      negative-keyword mutations.
-   - Merchant still needs Ads product-level facts and product-ID normalization/
-     mapping before product-performance rows can become ready. GA4 item facts
-     alone do not justify revenue, approval, ROAS or product-fix claims.
+   - Merchant still needs product-ID mapping and product rows that match
+     Merchant samples before product-performance decisions can become useful.
+     GA4 item facts or zero-row Ads product reads alone do not justify revenue,
+     approval, ROAS or product-fix claims.
 
 2. **Decision API and shared view-models**
    - Dashboard and skills must consume the same API contracts:

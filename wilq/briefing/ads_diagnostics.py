@@ -1011,17 +1011,15 @@ def _google_ads_action_ids(
             and not (
                 action_id == ADS_TARGET_CONFIRMATION_ACTION_ID
                 and (
-                    not live_data_available
-                    or not business_context_configured
-                    or "target_roas_or_cpa" not in missing_read_contracts
+                    business_context_configured
+                    and "target_roas_or_cpa" not in missing_read_contracts
                 )
             )
             and not (
                 action_id == ADS_STRATEGY_REVIEW_ACTION_ID
                 and (
-                    not live_data_available
-                    or not business_context_configured
-                    or (
+                    business_context_configured
+                    and (
                         strategy_review is not None
                         and strategy_review.outcome == "approved_for_prepare"
                     )

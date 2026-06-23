@@ -101,6 +101,29 @@ WHERE segments.date BETWEEN '{start_date}' AND '{end_date}'
 LIMIT 200
 """.strip()
 
+SHOPPING_PRODUCT_PERFORMANCE_QUERY = """
+SELECT
+  campaign.id,
+  campaign.name,
+  campaign.advertising_channel_type,
+  segments.product_item_id,
+  segments.product_title,
+  metrics.clicks,
+  metrics.impressions,
+  metrics.cost_micros,
+  metrics.conversions,
+  metrics.conversions_value
+FROM shopping_performance_view
+WHERE segments.date DURING LAST_30_DAYS
+  AND metrics.impressions > 0
+ORDER BY
+  metrics.conversions DESC,
+  metrics.clicks DESC,
+  metrics.cost_micros DESC,
+  metrics.impressions DESC
+LIMIT 200
+""".strip()
+
 KEYWORD_MATCH_CONTEXT_QUERY = """
 SELECT
   campaign.id,
@@ -252,6 +275,13 @@ def refresh_google_ads_campaign_summary(
                     access_token,
                 )
             )
+            shopping_product_summary, shopping_product_facts = (
+                _fetch_optional_shopping_product_performance(
+                    client,
+                    credentials,
+                    access_token,
+                )
+            )
             keyword_context_summary, keyword_context_facts = (
                 _fetch_keyword_match_context_summary(
                     client,
@@ -293,6 +323,7 @@ def refresh_google_ads_campaign_summary(
             )
             metric_summary.update(search_term_summary)
             metric_summary.update(search_term_safety_summary)
+            metric_summary.update(shopping_product_summary)
             metric_summary.update(keyword_context_summary)
             metric_summary.update(recommendation_summary)
             metric_summary.update(change_event_summary)
@@ -301,6 +332,7 @@ def refresh_google_ads_campaign_summary(
             metric_summary.update(keyword_planner_summary)
             metric_facts.extend(search_term_facts)
             metric_facts.extend(search_term_safety_facts)
+            metric_facts.extend(shopping_product_facts)
             metric_facts.extend(keyword_context_facts)
             metric_facts.extend(recommendation_facts)
             metric_facts.extend(change_event_facts)
@@ -353,6 +385,8 @@ def refresh_google_ads_campaign_summary(
             f"search term rows: {metric_summary.get('search_term_row_count', 0)}; "
             "90-day search term safety rows: "
             f"{metric_summary.get('search_term_safety_row_count', 0)}; "
+            "shopping product rows: "
+            f"{metric_summary.get('shopping_product_performance_row_count', 0)}; "
             "keyword match context rows: "
             f"{metric_summary.get('keyword_match_context_row_count', 0)}; "
             f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}; "
@@ -585,6 +619,33 @@ def _fetch_keyword_match_context_summary(
     )
     response.raise_for_status()
     return _summarize_keyword_match_context_response(response.json())
+
+
+def _fetch_optional_shopping_product_performance(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    try:
+        response = _post_google_ads_search_stream(
+            client,
+            credentials,
+            access_token,
+            SHOPPING_PRODUCT_PERFORMANCE_QUERY,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return _shopping_product_performance_http_failure_summary(exc)
+    except httpx.HTTPError as exc:
+        return (
+            {
+                "shopping_product_performance_status": "blocked",
+                "shopping_product_performance_blocker": type(exc).__name__,
+                "shopping_product_performance_row_count": 0,
+            },
+            [],
+        )
+    return _summarize_shopping_product_performance_response(response.json())
 
 
 def _fetch_recommendation_summary(
@@ -848,6 +909,20 @@ def _keyword_planner_http_failure_summary(
     }
     if detail:
         summary["keyword_planner_blocker"] = detail
+    return summary, []
+
+
+def _shopping_product_performance_http_failure_summary(
+    exc: httpx.HTTPStatusError,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    detail = _sanitized_http_error_detail(exc.response)
+    summary: dict[str, float | int | str] = {
+        "shopping_product_performance_status": "blocked",
+        "shopping_product_performance_http_status": exc.response.status_code,
+        "shopping_product_performance_row_count": 0,
+    }
+    if detail:
+        summary["shopping_product_performance_blocker"] = detail
     return summary, []
 
 
@@ -1512,6 +1587,86 @@ def _summarize_keyword_match_context_response(
     )
 
 
+def _summarize_shopping_product_performance_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    clicks = 0
+    impressions = 0
+    cost_micros = 0
+    conversions = 0.0
+    conversion_value = 0.0
+    product_ids: set[str] = set()
+    metric_facts: list[VendorMetricFact] = []
+    for row in rows:
+        metrics = row.get("metrics", {})
+        row_clicks = _int_metric(metrics.get("clicks"))
+        row_impressions = _int_metric(metrics.get("impressions"))
+        row_cost_micros = _int_metric(metrics.get("costMicros", metrics.get("cost_micros")))
+        row_conversions = _float_metric(metrics.get("conversions"))
+        row_conversion_value = _float_metric(
+            metrics.get("conversionsValue", metrics.get("conversions_value"))
+        )
+        clicks += row_clicks
+        impressions += row_impressions
+        cost_micros += row_cost_micros
+        conversions += row_conversions
+        conversion_value += row_conversion_value
+        dimensions = _shopping_product_dimensions(row)
+        product_id = dimensions.get("product_id")
+        if product_id:
+            product_ids.add(product_id)
+        if dimensions:
+            metric_facts.extend(
+                [
+                    VendorMetricFact(
+                        "shopping_product_clicks",
+                        row_clicks,
+                        dimensions,
+                        period="shopping_product_performance_30d",
+                    ),
+                    VendorMetricFact(
+                        "shopping_product_impressions",
+                        row_impressions,
+                        dimensions,
+                        period="shopping_product_performance_30d",
+                    ),
+                    VendorMetricFact(
+                        "shopping_product_cost_micros",
+                        row_cost_micros,
+                        dimensions,
+                        period="shopping_product_performance_30d",
+                    ),
+                    VendorMetricFact(
+                        "shopping_product_conversions",
+                        row_conversions,
+                        dimensions,
+                        period="shopping_product_performance_30d",
+                    ),
+                    VendorMetricFact(
+                        "shopping_product_conversion_value",
+                        row_conversion_value,
+                        dimensions,
+                        period="shopping_product_performance_30d",
+                    ),
+                ]
+            )
+    return (
+        {
+            "shopping_product_performance_status": "ready",
+            "shopping_product_performance_query": "shopping_performance_view_last_30_days",
+            "shopping_product_performance_row_count": len(rows),
+            "shopping_product_performance_product_count": len(product_ids),
+            "shopping_product_clicks": clicks,
+            "shopping_product_impressions": impressions,
+            "shopping_product_cost_micros": cost_micros,
+            "shopping_product_conversions": conversions,
+            "shopping_product_conversion_value": conversion_value,
+        },
+        metric_facts,
+    )
+
+
 def _summarize_demand_gen_ad_group_ad_response(
     payload: Any,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
@@ -1846,6 +2001,23 @@ def _keyword_match_context_dimensions(row: dict[str, Any]) -> dict[str, str]:
         match_type = keyword.get("matchType", keyword.get("match_type"))
         if isinstance(match_type, str) and match_type:
             dimensions["keyword_match_type"] = match_type
+    return dimensions
+
+
+def _shopping_product_dimensions(row: dict[str, Any]) -> dict[str, str]:
+    dimensions = _campaign_dimensions(row.get("campaign", {}))
+    segments = row.get("segments", {})
+    if not isinstance(segments, dict):
+        return dimensions
+    product_item_id = segments.get("productItemId", segments.get("product_item_id"))
+    if isinstance(product_item_id, str) and product_item_id.strip():
+        normalized_product_id = product_item_id.strip()
+        dimensions["product_id"] = normalized_product_id
+        dimensions["item_id"] = normalized_product_id
+        dimensions["product_item_id"] = normalized_product_id
+    product_title = segments.get("productTitle", segments.get("product_title"))
+    if isinstance(product_title, str) and product_title.strip():
+        dimensions["product_title"] = _clip_dimension(product_title)
     return dimensions
 
 

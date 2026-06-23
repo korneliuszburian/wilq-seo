@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 00:10 CEST.
+Last updated: 2026-06-24 00:25 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -171,14 +171,18 @@ Finish these before claiming the Ekologus demo is done:
    - Merchant current source state: aggregate issue contracts, grouped
      decision_queue, review-only payload preview and product sample readiness
      are available for review-only queues. `product_performance_readiness`
-     exists; GA4 item-level product facts are now readable and persisted, but
-     the readiness remains blocked until Merchant sample IDs can join to GA4
-     item IDs and Ads product-level facts. Remaining Merchant work is
-     product-ID normalization/mapping, Ads Shopping/PMax product facts,
-     supplemental-feed candidate contracts, price-impact snapshots and richer
-     read-only previews where the vendor API exposes safe details. Do not claim
-     approval restoration, revenue recovery, product ROAS or unique SKU fixes
-     from aggregate issue counts.
+     exists; GA4 item-level product facts are readable and persisted, and Ads
+     now has a live `shopping_performance_view` read contract by
+     `segments.product_item_id`. Current Ads proof
+     `refresh_google_ads_8cc89c2570a8` returned 0 product rows for the
+     last-30-days query, so readiness remains blocked until Merchant sample IDs
+     can join to actual Ads/GA4 product rows. Remaining Merchant work is
+     product-ID normalization/mapping, longer Ads product lookback or
+     `shopping_product` current-state read, supplemental-feed candidate
+     contracts, price-impact snapshots and richer read-only previews where the
+     vendor API exposes safe details. Do not claim approval restoration,
+     revenue recovery, product ROAS or unique SKU fixes from aggregate issue
+     counts.
    - GA4 current source state: live Data API read now requests and stores
      `keyEvents`, `ecommercePurchases`, `purchaseRevenue`, `totalRevenue` and
      `transactions` with landing/source/campaign dimensions, plus `itemId`,
@@ -193,10 +197,11 @@ Finish these before claiming the Ekologus demo is done:
      1. Keep Localo `local_tasks` blocked unless Localo exposes a
         side-effect-free task read. Do not call task endpoints that generate
         new tasks.
-     2. Merchant deepening: add Ads product-level read facts and product-ID
-        normalization/mapping for the existing `product_performance_readiness`
-        join, then supplemental-feed candidates, price-impact snapshots and
-        richer read-only previews.
+     2. Merchant deepening: add product-ID normalization/mapping, a longer Ads
+        product-performance lookback or `shopping_product` current-state read
+        for the existing `product_performance_readiness` join, then
+        supplemental-feed candidates, price-impact snapshots and richer
+        read-only previews.
      3. Ahrefs/content-gap enrichment only where API evidence is granular
         enough to support URL/query/backlink decisions.
      4. Return to Ads only when Keyword Planner approval changes, change rows
