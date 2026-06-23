@@ -3104,6 +3104,11 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_item["priority"] == 16
     assert ads_item["metric_tiles"]["kampanie"] == 1
     assert ads_item["metric_tiles"]["zapytania"] == 1
+    assert ads_item["metric_tiles"]["kliknięcia"] == 12
+    assert ads_item["metric_tiles"]["wyświetlenia"] == 120
+    assert ads_item["metric_tiles"]["koszt_micros"] == 12000000
+    assert ads_item["metric_tiles"]["konwersje"] == 1
+    assert ads_item["metric_tiles"]["wartość konw."] == 150
     assert ads_item["metric_tiles"]["podgląd budżetu"] == 1
     assert ads_item["metric_tiles"]["rekomendacje"] == 1
     assert "kolejki tylko do oceny" in ads_item["summary"]

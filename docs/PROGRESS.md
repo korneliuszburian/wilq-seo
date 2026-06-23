@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center Ads value tiles, 2026-06-23 07:59 CEST.
+  `daily_ads_status.metric_tiles` on `/api/dashboard/command-center` now
+  includes live Ads value totals from campaign facts: `kliknięcia`,
+  `wyświetlenia`, `koszt_micros`, `konwersje` and `wartość konw.`. This reuses
+  the generic Command Center metric tile renderer, so the first screen gets the
+  same evidence-backed Ads volume/value context as `/ads-doctor` without React
+  owning Ads business logic. Focused proof: RED/GREEN
+  `uv run pytest tests/test_api_contracts.py -q -k
+  command_center_ads_plan_uses_live_review_queues`, plus Python ruff/mypy on
+  `wilq/briefing/command_center.py` and `tests/test_api_contracts.py`.
 - Ads value snapshot, 2026-06-23 07:53 CEST.
   `/api/ads/diagnostics.operator_summary` exposes typed top-line campaign
   totals: `total_clicks`, `total_impressions`, `total_cost_micros`,

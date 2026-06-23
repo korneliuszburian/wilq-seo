@@ -353,6 +353,11 @@ def _ads_item_from_facts(
     metric_tiles: dict[str, float | int | str] = {
         "kampanie": campaign_count,
         "zapytania": search_term_count,
+        "kliknięcia": _sum_numeric_facts(facts, "clicks"),
+        "wyświetlenia": _sum_numeric_facts(facts, "impressions"),
+        "koszt_micros": _sum_numeric_facts(facts, "cost_micros"),
+        "konwersje": _sum_numeric_facts(facts, "conversions"),
+        "wartość konw.": _sum_numeric_facts(facts, "conversion_value"),
         "podgląd budżetu": budget_preview_count,
         "rekomendacje": recommendation_count,
         "wykluczenia": review_term_count,
