@@ -129,13 +129,15 @@ def build_daily_command_center(
         if cached_command is not None:
             return cached_command
     if base is None:
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
             connectors_future = executor.submit(list_connector_statuses)
+            refresh_runs_future = executor.submit(list_connector_refresh_runs)
             command_facts_future = executor.submit(
                 metric_store().list_latest_metric_facts_by_connector_limits,
                 command_center_metric_fact_limits(),
             )
             connectors = connectors_future.result()
+            refresh_runs = refresh_runs_future.result()
             command_center_facts_by_connector = command_facts_future.result()
             tactical_queue = build_tactical_queue(
                 facts_by_connector=command_center_facts_by_connector
@@ -145,6 +147,7 @@ def build_daily_command_center(
             tactical_queue=tactical_queue,
             actions=None,
             facts_by_connector=command_center_facts_by_connector,
+            refresh_runs=refresh_runs,
         )
         if use_cache:
             _write_daily_command_center_cache(command)
@@ -154,6 +157,7 @@ def build_daily_command_center(
         tactical_queue=base.tactical_queue,
         actions=base.actions,
         facts_by_connector=base.command_center_facts_by_connector,
+        refresh_runs=base.refresh_runs,
     )
     if use_cache:
         _write_daily_command_center_cache(command)

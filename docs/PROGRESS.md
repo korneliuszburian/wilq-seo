@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Command Center refresh-run bundle cleanup, 2026-06-23.
+   `/api/dashboard/command-center` now fetches connector refresh runs once in
+   the daily path and passes that bundle into `build_command_center_response`.
+   Command Center brief builders use preloaded refresh runs for Ads, Merchant,
+   Ahrefs and Localo instead of calling `local_state_store().list_connector_refresh_runs`
+   separately per connector. Focused proof: API tests for preloaded refresh-run
+   reuse and Command Center no-Marketing-Brief path, Python ruff and mypy.
+   Live HTTP after stack restart: cold Command Center around `1.19s`, warm
+   requests around `0.01s`, 4 daily decisions, 2 blockers and 37,734 bytes.
+   Do not overclaim this as the final cold-path fix; the remaining bottleneck
+   is deeper in cold Command Center internals and metric/view-model assembly.
+
 0. Dashboard ActionObject review preview cards, 2026-06-23.
    `/actions/act_review_merchant_feed_issues` now renders a compact
    review-only `payload_preview` summary above the raw JSON payload. Preview

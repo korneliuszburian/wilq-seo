@@ -2606,8 +2606,10 @@ def test_daily_command_center_does_not_build_full_action_payloads(
         tactical_queue: TacticalQueueResponse | None = None,
         actions: list[ActionObject] | None = None,
         facts_by_connector: dict[str, list[MetricFact]] | None = None,
+        refresh_runs: list[ConnectorRefreshRun] | None = None,
     ) -> CommandCenterResponse:
         seen["response_facts"] = facts_by_connector
+        seen["response_refresh_runs"] = refresh_runs
         return command
 
     monkeypatch.setattr(daily_runtime, "list_actions", fail_list_actions)
@@ -11954,16 +11956,24 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     monkeypatch.setattr(daily_runtime, "list_connector_statuses", lambda: [connector])
     monkeypatch.setattr(daily_runtime, "list_actions", lambda: [action])
     monkeypatch.setattr(daily_runtime, "list_connector_refresh_runs", lambda: [refresh_run])
-    monkeypatch.setattr(daily_runtime, "build_tactical_queue", lambda: tactical_queue)
+    monkeypatch.setattr(
+        daily_runtime,
+        "build_tactical_queue",
+        lambda facts_by_connector=None: tactical_queue,
+    )
 
     def command_builder(
         connectors: list[ConnectorStatus] | None = None,
         tactical_queue: TacticalQueueResponse | None = None,
         actions: list[ActionObject] | None = None,
+        facts_by_connector: dict[str, list[MetricFact]] | None = None,
+        refresh_runs: list[ConnectorRefreshRun] | None = None,
     ) -> CommandCenterResponse:
         seen["command_connectors"] = connectors
         seen["command_tactical_queue"] = tactical_queue
         seen["command_actions"] = actions
+        seen["command_facts_by_connector"] = facts_by_connector
+        seen["command_refresh_runs"] = refresh_runs
         return command
 
     def brief_builder(
@@ -11992,6 +12002,7 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     assert seen["command_connectors"] == [connector]
     assert seen["command_tactical_queue"] == tactical_queue
     assert seen["command_actions"] == [action]
+    assert seen["command_refresh_runs"] == [refresh_run]
     assert seen["brief_connectors"] == [connector]
     assert seen["brief_refresh_runs"] == [refresh_run]
     assert seen["brief_actions"] == [action]
@@ -12029,7 +12040,8 @@ def test_daily_command_center_does_not_build_marketing_brief(
         lambda connectors=None,
         tactical_queue=None,
         actions=None,
-        facts_by_connector=None: command,
+        facts_by_connector=None,
+        refresh_runs=None: command,
     )
 
     def fail_marketing_brief(*args: object, **kwargs: object) -> MarketingBrief:
@@ -12038,6 +12050,60 @@ def test_daily_command_center_does_not_build_marketing_brief(
     monkeypatch.setattr(daily_runtime, "build_marketing_brief", fail_marketing_brief)
 
     assert daily_runtime.build_daily_command_center(use_cache=False) == command
+
+
+def test_command_center_uses_preloaded_refresh_runs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import command_center
+
+    connector = ConnectorStatus(
+        id="google_ads",
+        label="Google Ads",
+        status=ConnectorStatusValue.configured,
+        configured=True,
+        freshness=FreshnessState(state="fresh"),
+        capabilities=ConnectorCapability(read=True),
+        health_check="configured",
+    )
+    refresh_run = ConnectorRefreshRun(
+        id="refresh_google_ads_live",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_google_ads_live"],
+        vendor_data_collected=True,
+        metric_summary={"row_count": 1},
+        summary="Google Ads live read.",
+    )
+    metric_fact = MetricFact(
+        name="clicks",
+        value=4,
+        period="connector_refresh",
+        source_connector="google_ads",
+        evidence_id="ev_refresh_google_ads_live",
+    )
+
+    class FailingLocalState:
+        def list_connector_refresh_runs(self, connector_id: str | None = None) -> list[object]:
+            raise AssertionError("Command Center must use preloaded refresh runs")
+
+    monkeypatch.setattr(command_center, "local_state_store", lambda: FailingLocalState())
+
+    response = command_center.build_command_center_response(
+        connectors=[connector],
+        tactical_queue=TacticalQueueResponse(
+            strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+            items=[],
+        ),
+        actions=[],
+        facts_by_connector={"google_ads": [metric_fact]},
+        refresh_runs=[refresh_run],
+    )
+
+    ads_item = next(item for item in response.operator_brief if item.id == "daily_ads_status")
+    assert ads_item.status == "ready"
+    assert "ev_refresh_google_ads_live" in ads_item.evidence_ids
 
 
 def test_command_center_brief_uses_lightweight_daily_item_builders(

@@ -81,6 +81,7 @@ def build_command_center_response(
     tactical_queue: TacticalQueueResponse | None = None,
     actions: list[ActionObject] | None = None,
     facts_by_connector: dict[str, list[MetricFact]] | None = None,
+    refresh_runs: list[ConnectorRefreshRun] | None = None,
 ) -> CommandCenterResponse:
     connectors = connectors if connectors is not None else list_connector_statuses()
     if facts_by_connector is None:
@@ -97,6 +98,7 @@ def build_command_center_response(
         tactical_queue=tactical_queue,
         actions=actions,
         facts_by_connector=facts_by_connector,
+        refresh_runs=refresh_runs,
     )
     action_plan = build_command_center_action_plan(operator_brief, tactical_queue.items)
     return CommandCenterResponse(
@@ -206,6 +208,7 @@ def build_command_center_brief(
     tactical_queue: TacticalQueueResponse | None = None,
     actions: list[ActionObject] | None = None,
     facts_by_connector: dict[str, list[MetricFact]] | None = None,
+    refresh_runs: list[ConnectorRefreshRun] | None = None,
 ) -> tuple[list[CommandCenterBriefItem], str, int]:
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
@@ -218,15 +221,37 @@ def build_command_center_brief(
     ga4_facts = facts_by_connector.get(GA4_CONNECTOR_ID, [])
     ahrefs_facts = facts_by_connector.get(AHREFS_CONNECTOR_ID, [])
     localo_facts = facts_by_connector.get("localo", [])
+    refresh_runs_by_connector = _latest_refresh_runs_by_connector(refresh_runs)
     localo = get_connector_status("localo")
-    localo_runs = local_state_store().list_connector_refresh_runs("localo")
+    localo_runs = _refresh_runs_for_connector("localo", refresh_runs)
     items = [
-        _ads_item_from_facts(ads_facts, actions),
-        _merchant_item_from_tactical(tactical_queue.items, actions, merchant_facts),
-        _content_item_from_tactical(tactical_queue, ahrefs_facts),
+        _ads_item_from_facts(
+            ads_facts,
+            actions,
+            latest_refresh=refresh_runs_by_connector.get(GOOGLE_ADS_CONNECTOR_ID),
+            allow_refresh_lookup=refresh_runs is None,
+        ),
+        _merchant_item_from_tactical(
+            tactical_queue.items,
+            actions,
+            merchant_facts,
+            latest_refresh=refresh_runs_by_connector.get(GOOGLE_MERCHANT_CONNECTOR_ID),
+            allow_refresh_lookup=refresh_runs is None,
+        ),
+        _content_item_from_tactical(
+            tactical_queue,
+            ahrefs_facts,
+            latest_ahrefs_refresh=refresh_runs_by_connector.get(AHREFS_CONNECTOR_ID),
+            allow_refresh_lookup=refresh_runs is None,
+        ),
         _ga4_item_from_tactical(tactical_queue.items, actions, ga4_facts),
     ]
-    ads_business_item = _ads_business_context_item_from_facts(ads_facts, actions)
+    ads_business_item = _ads_business_context_item_from_facts(
+        ads_facts,
+        actions,
+        latest_refresh=refresh_runs_by_connector.get(GOOGLE_ADS_CONNECTOR_ID),
+        allow_refresh_lookup=refresh_runs is None,
+    )
     if ads_business_item is not None:
         items.append(ads_business_item)
     if localo is not None:
@@ -350,8 +375,15 @@ def tactical_item_count() -> int:
 def _ads_item_from_facts(
     facts: list[MetricFact],
     actions: list[ActionObject],
+    *,
+    latest_refresh: ConnectorRefreshRun | None = None,
+    allow_refresh_lookup: bool = True,
 ) -> CommandCenterBriefItem:
-    latest_refresh = _latest_connector_refresh(GOOGLE_ADS_CONNECTOR_ID)
+    latest_refresh = _resolve_latest_connector_refresh(
+        GOOGLE_ADS_CONNECTOR_ID,
+        latest_refresh,
+        allow_refresh_lookup=allow_refresh_lookup,
+    )
     latest_summary = latest_refresh.metric_summary if latest_refresh is not None else {}
     live_data_available = _refresh_has_live_data(latest_refresh) and (
         bool(facts) or bool(latest_summary)
@@ -663,8 +695,15 @@ def _ads_currency_code(facts: list[MetricFact]) -> str | None:
 def _ads_business_context_item_from_facts(
     facts: list[MetricFact],
     actions: list[ActionObject],
+    *,
+    latest_refresh: ConnectorRefreshRun | None = None,
+    allow_refresh_lookup: bool = True,
 ) -> CommandCenterBriefItem | None:
-    latest_refresh = _latest_connector_refresh(GOOGLE_ADS_CONNECTOR_ID)
+    latest_refresh = _resolve_latest_connector_refresh(
+        GOOGLE_ADS_CONNECTOR_ID,
+        latest_refresh,
+        allow_refresh_lookup=allow_refresh_lookup,
+    )
     if not (_refresh_has_live_data(latest_refresh) and facts):
         return None
     action_ids = [
@@ -722,8 +761,15 @@ def _merchant_item_from_tactical(
     tactical_items: list[TacticalQueueItem],
     actions: list[ActionObject],
     facts: list[MetricFact],
+    *,
+    latest_refresh: ConnectorRefreshRun | None = None,
+    allow_refresh_lookup: bool = True,
 ) -> CommandCenterBriefItem:
-    latest_refresh = _latest_connector_refresh(GOOGLE_MERCHANT_CONNECTOR_ID)
+    latest_refresh = _resolve_latest_connector_refresh(
+        GOOGLE_MERCHANT_CONNECTOR_ID,
+        latest_refresh,
+        allow_refresh_lookup=allow_refresh_lookup,
+    )
     facts = _facts_for_latest_refresh(latest_refresh, facts)
     merchant_items = [
         item for item in tactical_items if item.domain == OpportunityDomain.merchant
@@ -816,6 +862,39 @@ def _latest_connector_refresh(connector_id: str) -> ConnectorRefreshRun | None:
     return runs[0] if runs else None
 
 
+def _resolve_latest_connector_refresh(
+    connector_id: str,
+    latest_refresh: ConnectorRefreshRun | None,
+    *,
+    allow_refresh_lookup: bool,
+) -> ConnectorRefreshRun | None:
+    if latest_refresh is not None:
+        return latest_refresh
+    if not allow_refresh_lookup:
+        return None
+    return _latest_connector_refresh(connector_id)
+
+
+def _latest_refresh_runs_by_connector(
+    refresh_runs: list[ConnectorRefreshRun] | None,
+) -> dict[str, ConnectorRefreshRun]:
+    latest_by_connector: dict[str, ConnectorRefreshRun] = {}
+    if refresh_runs is None:
+        return latest_by_connector
+    for run in refresh_runs:
+        latest_by_connector.setdefault(run.connector_id, run)
+    return latest_by_connector
+
+
+def _refresh_runs_for_connector(
+    connector_id: str,
+    refresh_runs: list[ConnectorRefreshRun] | None,
+) -> list[ConnectorRefreshRun]:
+    if refresh_runs is None:
+        return local_state_store().list_connector_refresh_runs(connector_id)
+    return [run for run in refresh_runs if run.connector_id == connector_id]
+
+
 def _facts_for_latest_refresh(
     latest_refresh: ConnectorRefreshRun | None,
     facts: list[MetricFact],
@@ -903,6 +982,9 @@ def _merchant_item_product_count(item: TacticalQueueItem) -> float:
 def _content_item_from_tactical(
     queue: TacticalQueueResponse,
     ahrefs_facts: list[MetricFact],
+    *,
+    latest_ahrefs_refresh: ConnectorRefreshRun | None = None,
+    allow_refresh_lookup: bool = True,
 ) -> CommandCenterBriefItem:
     content_groups = [
         group
@@ -912,7 +994,11 @@ def _content_item_from_tactical(
     content_items = [
         item for item in queue.items if item.domain == OpportunityDomain.gsc_seo
     ]
-    latest_ahrefs_refresh = _latest_connector_refresh(AHREFS_CONNECTOR_ID)
+    latest_ahrefs_refresh = _resolve_latest_connector_refresh(
+        AHREFS_CONNECTOR_ID,
+        latest_ahrefs_refresh,
+        allow_refresh_lookup=allow_refresh_lookup,
+    )
     ahrefs_facts = _facts_for_latest_refresh(latest_ahrefs_refresh, ahrefs_facts)
     ahrefs_gap_facts = _ahrefs_gap_facts(ahrefs_facts)
     ahrefs_metric_tiles = _ahrefs_content_metric_tiles(ahrefs_gap_facts)

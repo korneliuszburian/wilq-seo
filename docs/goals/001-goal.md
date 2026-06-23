@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 19:45 CEST.
+Last updated: 2026-06-23 19:53 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -120,6 +120,14 @@ restart: `decision_review_ads_campaign_metrics` shows `KPI do review=18`,
 `wiersze CPA=1`, `wiersze ROAS=2`, while `CPA`, `ROAS`, `profitability` and
 `wasted budget` remain blocked as verdicts. Focused proof: Ads Command Center
 API contract subset, Python ruff and mypy.
+Follow-up completed at 2026-06-23 19:53 CEST: Command Center now fetches
+connector refresh runs once in the daily path and passes the preloaded bundle
+into the response builder. Ads, Merchant, Ahrefs and Localo daily decisions use
+that bundle instead of separate local-state refresh-run reads. Live HTTP after
+stack restart: cold `/api/dashboard/command-center` around `1.19s`, warm
+requests around `0.01s`, 4 decisions, 2 blockers and 37,734 bytes. This fixes
+the repeated-refresh-run-read contract but does not complete all cold-path
+performance work; remaining work is deeper metric/view-model assembly.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual
