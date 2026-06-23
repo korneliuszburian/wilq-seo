@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 18:10 CEST.
+Last updated: 2026-06-23 18:18 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -343,6 +343,17 @@ core operating loop, validates `act_review_merchant_feed_issues`,
 `act_prepare_content_refresh_queue` and `act_review_ga4_tracking_quality`,
 keeps Ads review-only through `act_prepare_ads_campaign_review_queue`, and
 explicitly says Localo was not promoted as the main daily task.
+
+Completed at 2026-06-23 18:18 CEST:
+Compact all-skill coverage audit added at
+`docs/evals/skill-coverage-audit.md`. It lists all 12 WILQ skills, latest
+non-interactive eval artifact, usefulness score, current state and remaining
+blocker. Current readout: 12/12 WILQ skills have current non-interactive eval
+artifacts, Polish operator output, WILQ API usage and zero safety findings.
+The strongest demo path is `wilq-daily-command` -> `/merchant` ->
+`/content-planner` -> `/ads-doctor` -> optional `/ga4`. Next product slice
+should move from skill proof to API/dashboard value, with Ads business-context
+guardrails and apply-preview safety as the best candidate.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It
