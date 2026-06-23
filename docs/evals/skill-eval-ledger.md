@@ -4615,3 +4615,49 @@ Product finding:
   evidence, while LinkedIn/Facebook publishing remains blocked until
   credentials and publish contracts exist. The workflow must not claim social
   performance uplift, ROAS, revenue, product fixes or publication.
+
+## 2026-06-23 - wilq-demand-gen-operator blocked readiness eval
+
+Purpose:
+
+- Prove that Demand Gen can return a useful review-only blocker when Ads/GA4
+  evidence exists but there are no Demand Gen campaign, ad, creative, landing
+  quality or migration rows.
+- Prevent the skill from turning a blocked readiness state into fake launch,
+  migration, creative quality, apply or performance-uplift recommendations.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T153134Z/wilq-demand-gen-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `blocked=true`
+- `blocked_reason` says Demand Gen readiness is blocked because there are no
+  Demand Gen rows to evaluate.
+- `source_connectors=["google_ads","google_analytics_4"]`
+- Evidence count: `4`
+- `recommendations=[]`
+- `action_candidates` contains validated `act_review_demand_gen_readiness`.
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- WILQ currently sees 18 Ads campaign rows across `PERFORMANCE_MAX` and
+  `SEARCH`, but zero Demand Gen campaign/ad/creative/landing/migration rows.
+  That is a useful blocker for the marketer: Demand Gen can be reviewed, but
+  WILQ must not claim launch readiness, migration readiness, creative quality,
+  asset performance, campaign apply or performance uplift.

@@ -322,6 +322,15 @@
       "demand_gen_readiness_review_action_object",
       "blocked claims"
     ],
+    "expected_blocked": true,
+    "blocked_claim_terms": [
+      "Demand Gen launch recommendation",
+      "Demand Gen migration ready",
+      "creative quality verdict",
+      "asset performance verdict",
+      "campaign apply",
+      "performance uplift"
+    ],
     "expected_action_ids": ["act_review_demand_gen_readiness"],
     "expected_validated_action_ids": ["act_review_demand_gen_readiness"],
     "forbidden_action_ids": [
