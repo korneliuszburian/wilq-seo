@@ -39,6 +39,19 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Demand Gen readiness ActionObject preview, 2026-06-23.
+   `/actions/act_review_demand_gen_readiness` now renders
+   `demand_gen_readiness_review_preview_v1` as a marketer-reviewable card above
+   the debug payload. The card shows evaluated campaign rows, campaign channel
+   counts, Demand Gen campaign/ad group/creative/landing-quality row counts,
+   missing read contracts, required validations, blocked claims and explicit
+   blocked apply/API mutation state. Browser proof:
+   `.local-lab/proof/dashboard/action-demand-gen-readiness-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not launch or migrate Demand Gen, judge creative quality,
+   claim asset performance, recommend campaign apply or claim performance
+   uplift; it only exposes the readiness review contract.
+
 0. Dashboard Negative Keyword ActionObject preview, 2026-06-23.
    `/actions/act_prepare_negative_keyword_review_queue` now renders
    `negative_keyword_review_preview_v1` rows as marketer-reviewable cards above

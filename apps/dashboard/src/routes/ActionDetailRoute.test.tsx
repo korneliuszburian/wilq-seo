@@ -269,6 +269,57 @@ const negativeKeywordActionFixture: ActionObject = {
   }
 };
 
+const demandGenActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_demand_gen",
+  title: "Przygotuj review gotowości Demand Gen",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_google_ads", "ev_refresh_ga4"],
+  human_diagnosis: "Demand Gen wymaga review gotowości przed launch/migracją.",
+  recommended_reason: "Sprawdź kanały Ads, brakujące kontrakty i blokady apply.",
+  payload: {
+    action_type: "demand_gen_readiness_review",
+    preview_contract: "demand_gen_readiness_review_preview_v1",
+    payload_preview: [
+      {
+        id: "demand_gen_readiness_review",
+        preview_contract: "demand_gen_readiness_review_preview_v1",
+        operation_type: "DemandGenReadinessReview",
+        campaign_rows_evaluated: 20,
+        campaign_channel_counts: {
+          PERFORMANCE_MAX: 8,
+          SEARCH: 10,
+          UNKNOWN: 2
+        },
+        demand_gen_campaign_row_count: 0,
+        demand_gen_ad_group_ad_row_count: 0,
+        demand_gen_creative_asset_row_count: 0,
+        demand_gen_landing_quality_row_count: 0,
+        missing_read_contracts: [
+          "demand_gen_landing_quality_by_campaign",
+          "demand_gen_migration_constraints"
+        ],
+        required_validation: [
+          "review_ads_campaign_channel_context",
+          "review_ga4_landing_source_campaign_context",
+          "review_demand_gen_missing_contracts"
+        ],
+        blocked_claims: [
+          "Demand Gen launch recommendation",
+          "Demand Gen migration ready",
+          "creative quality verdict",
+          "performance uplift"
+        ],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -387,6 +438,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_negative_keywords")) {
         return Promise.resolve(Response.json(negativeKeywordActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_demand_gen")) {
+        return Promise.resolve(Response.json(demandGenActionFixture));
       }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
@@ -520,6 +574,26 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Grupa reklam: Grupa reklam 1/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_search_term_context/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: negative keyword apply/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders Demand Gen readiness preview without requiring raw JSON", async () => {
+    renderActionDetail("act_demand_gen");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj review gotowości Demand Gen"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Demand Gen readiness do review")).toBeInTheDocument();
+    expect(screen.getByText(/Kampanie ocenione: 20/)).toBeInTheDocument();
+    expect(screen.getByText(/Kanały: PERFORMANCE_MAX=8, SEARCH=10, UNKNOWN=2/)).toBeInTheDocument();
+    expect(screen.getByText(/Kampanie Demand Gen: 0/)).toBeInTheDocument();
+    expect(screen.getByText(/Kreacje\/assets: 0/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: demand_gen_landing_quality_by_campaign/)).toBeInTheDocument();
+    expect(screen.getByText(/Walidacje: review_ads_campaign_channel_context/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: Demand Gen launch recommendation/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 

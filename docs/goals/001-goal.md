@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:25 CEST.
+Last updated: 2026-06-23 20:32 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -188,6 +188,19 @@ This improves the Ads demo path without applying exclusions, claiming
 search-term waste, conversion loss, CPA or ROAS. Focused proof: Action detail
 route tests, dashboard typecheck, dashboard lint and browser proof
 `.local-lab/proof/dashboard/action-negative-keyword-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:32 CEST: the ActionObject detail route now
+renders Demand Gen readiness previews from
+`preview_contract=demand_gen_readiness_review_preview_v1`.
+`/actions/act_review_demand_gen_readiness` shows evaluated campaign rows,
+channel counts, Demand Gen campaign/ad group/creative/landing-quality row
+counts, missing read contracts, required validations, blocked claims and
+blocked apply/API mutation state as a Polish review card. Raw payload stays
+under `Surowy payload debug`. This improves the Demand Gen demo path without
+launching or migrating Demand Gen, judging creative quality, claiming asset
+performance, applying campaigns or claiming uplift. Focused proof: Action
+detail route tests, dashboard typecheck, dashboard lint and browser proof
+`.local-lab/proof/dashboard/action-demand-gen-readiness-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual
