@@ -25,6 +25,53 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-ga4-analyst decision-sample eval
+
+Purpose:
+
+- Prove that `wilq-ga4-analyst` can separate GA4 measurement problems from
+  traffic-quality review using the current `ga4_diagnostics.decision_queue`.
+- Improve the smoke output so non-interactive Codex sees compact
+  `decision_samples` with `active_users`, `sessions`, `engagement_rate` and
+  landing/source/campaign dimensions instead of only decision IDs.
+
+Commands:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q -k route_specific_skill_smokes_expose_marketing_brief_items
+uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T141114Z/wilq-ga4-analyst/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=false`
+- Evidence count: `12`
+- `source_connectors=["google_analytics_4"]`
+- `recommendations_count=3`
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+- Validated ActionObject: `act_review_ga4_tracking_quality`
+
+Product finding:
+
+- The skill now has enough smoke evidence to mention real behavior metrics from
+  GA4 decision samples, while still blocking `ROAS`, `revenue`, `conversion
+  rate`, `conversion drop`, `profitability`, `tracking fixed` and GA4 write
+  claims.
+- The current route has `decision_types=["fix_measurement","review_traffic_quality"]`.
+  `review_landing_mapping` is absent in this live queue, so the correct output
+  is to say mapping still needs a contract/review, not to infer landing quality
+  from GA4 behavior rows alone.
+
 ## 2026-06-23 - wilq-ads-doctor current API proof
 
 Purpose:

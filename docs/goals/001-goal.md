@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 15:04 CEST.
+Last updated: 2026-06-23 16:12 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -150,6 +150,22 @@ rules, and validated review-only ActionObjects:
 context-pack byte-budget reading (`210127` bytes) before direct remeasure
 showed about `188143` bytes and rerun passed; if this repeats, fix typed
 context-pack compaction/budget stability, not skill references.
+
+2026-06-23 `wilq-ga4-analyst` decision-sample proof completed. The smoke script
+now exposes compact `ga4_diagnostics.decision_samples` with `active_users`,
+`sessions`, `engagement_rate`, landing/source/campaign dimensions and next
+steps, so non-interactive Codex can cite real GA4 behavior metrics instead of
+only decision IDs. Focused proof: RED/GREEN
+`tests/test_codex_skill_eval_cases.py -k route_specific_skill_smokes_expose_marketing_brief_items`,
+GA4 smoke output with decision samples, ruff and mypy for the touched files.
+Non-interactive Codex eval passed at
+`.local-lab/evals/codex-skill/20260623T141114Z/wilq-ga4-analyst/result.json`
+with `pl-PL`, `api_used=true`, evidence count `12`,
+`operator_usefulness_score=4`, no safety findings, and validated
+`act_review_ga4_tracking_quality`. Live GA4 queue currently includes
+`fix_measurement` and `review_traffic_quality`; `review_landing_mapping` is
+absent, so Codex must say mapping still needs contract/review instead of
+inferring landing quality from GA4 behavior rows alone.
 
 2026-06-23 Merchant skill live-run follow-up completed at typed API/dashboard
 level, not by stuffing edge cases into skill references. `/api/merchant/diagnostics`

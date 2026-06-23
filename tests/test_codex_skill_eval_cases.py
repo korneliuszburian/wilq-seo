@@ -364,6 +364,9 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert '"action_validations": action_validations' in ga4_smoke_script
     assert "decision_queue" in ga4_smoke_script
     assert "Live GA4 diagnostics must expose decision_queue" in ga4_smoke_script
+    assert '"decision_samples": _decision_samples(decision_queue)' in ga4_smoke_script
+    assert "metric_facts" in ga4_smoke_script
+    assert "active_users" in ga4_smoke_script
 
     for skill in ("wilq-gsc-content-doctor", "wilq-content-strategist"):
         content_skill_doc = (Path(".agents/skills") / skill / "SKILL.md").read_text(

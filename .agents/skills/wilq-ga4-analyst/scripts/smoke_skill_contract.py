@@ -233,6 +233,7 @@ def main() -> int:
                     "decision_ids": [
                         decision.get("id") for decision in decision_queue if decision.get("id")
                     ][:20],
+                    "decision_samples": _decision_samples(decision_queue),
                     "decision_types": sorted(
                         {
                             decision.get("decision_type")
@@ -269,6 +270,28 @@ def _decision_trace(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "action_ids": decision.get("action_ids", []),
         }
         for decision in decisions
+    ]
+
+
+def _decision_samples(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": decision.get("id"),
+            "title": decision.get("title"),
+            "decision_type": decision.get("decision_type"),
+            "status": decision.get("status"),
+            "next_step": decision.get("next_step"),
+            "metric_facts": [
+                {
+                    "name": fact.get("name"),
+                    "value": fact.get("value"),
+                    "dimensions": fact.get("dimensions", {}),
+                }
+                for fact in decision.get("metric_facts", [])
+                if fact.get("name") in {"active_users", "sessions", "engagement_rate"}
+            ][:5],
+        }
+        for decision in decisions[:6]
     ]
 
 
