@@ -230,6 +230,45 @@ const customSegmentActionFixture: ActionObject = {
   }
 };
 
+const negativeKeywordActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_negative_keywords",
+  title: "Przygotuj kolejkę oceny wykluczeń z wyszukiwanych haseł",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_google_ads"],
+  human_diagnosis: "Search terms mogą wymagać review wykluczeń, ale apply jest zablokowany.",
+  recommended_reason: "Przejrzyj kontekst wyszukiwanego hasła i safety przed wykluczeniem.",
+  payload: {
+    action_type: "negative_keyword_review",
+    preview_contract: "negative_keyword_review_preview_v1",
+    payload_preview: [
+      {
+        id: "negative_keyword_preview_23848569273_alba",
+        search_term: "alba czeladź",
+        negative_keyword_text: "alba czeladź",
+        match_type: "EXACT",
+        level: "ad_group",
+        campaign_id: "23848569273",
+        campaign_name: "Kompendium PPWR",
+        ad_group_id: "203360679544",
+        ad_group_name: "Grupa reklam 1",
+        required_validation: [
+          "review_search_term_context",
+          "check_existing_keywords_and_match_types",
+          "90_day_safety_check",
+          "human_confirm_before_apply"
+        ],
+        blocked_claims: ["negative keyword apply", "search-term waste", "CPA", "ROAS"],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -346,6 +385,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_custom_segments")) {
         return Promise.resolve(Response.json(customSegmentActionFixture));
       }
+      if (url.endsWith("/api/actions/act_negative_keywords")) {
+        return Promise.resolve(Response.json(negativeKeywordActionFixture));
+      }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
       }
@@ -457,6 +499,27 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Safety: blocked/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: forecast_or_audience_size/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: audience size/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders negative keyword payload preview without requiring raw JSON", async () => {
+    renderActionDetail("act_negative_keywords");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj kolejkę oceny wykluczeń z wyszukiwanych haseł"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Wykluczenie słowa do review")).toBeInTheDocument();
+    expect(screen.getByText(/Hasło: alba czeladź/)).toBeInTheDocument();
+    expect(screen.getByText(/Wykluczenie: alba czeladź/)).toBeInTheDocument();
+    expect(screen.getByText(/Dopasowanie: EXACT/)).toBeInTheDocument();
+    expect(screen.getByText(/Poziom: ad_group/)).toBeInTheDocument();
+    expect(screen.getByText(/Kampania: Kompendium PPWR/)).toBeInTheDocument();
+    expect(screen.getByText(/Grupa reklam: Grupa reklam 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Walidacje: review_search_term_context/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: negative keyword apply/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 

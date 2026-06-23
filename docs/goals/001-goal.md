@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:21 CEST.
+Last updated: 2026-06-23 20:25 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -176,6 +176,18 @@ audiences, applying targeting, claiming audience size, conversion uplift or
 ROAS. Focused proof: Action detail route tests, dashboard typecheck, dashboard
 lint and browser proof
 `.local-lab/proof/dashboard/action-custom-segment-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:25 CEST: the ActionObject detail route now
+renders Negative Keyword review previews from
+`preview_contract=negative_keyword_review_preview_v1`.
+`/actions/act_prepare_negative_keyword_review_queue` shows search term,
+proposed exact negative keyword text, match type, level, campaign/ad group
+context, required validations, blocked claims and blocked apply/API mutation
+state as Polish review cards. Raw payload stays under `Surowy payload debug`.
+This improves the Ads demo path without applying exclusions, claiming
+search-term waste, conversion loss, CPA or ROAS. Focused proof: Action detail
+route tests, dashboard typecheck, dashboard lint and browser proof
+`.local-lab/proof/dashboard/action-negative-keyword-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

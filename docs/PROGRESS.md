@@ -39,6 +39,17 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Negative Keyword ActionObject preview, 2026-06-23.
+   `/actions/act_prepare_negative_keyword_review_queue` now renders
+   `negative_keyword_review_preview_v1` rows as marketer-reviewable cards above
+   the debug payload. The cards show search term, proposed exact negative
+   keyword text, match type, level, campaign/ad group context, required
+   validations, blocked claims and explicit blocked apply/API mutation state.
+   Browser proof: `.local-lab/proof/dashboard/action-negative-keyword-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not apply exclusions, claim search-term waste, conversion
+   loss, CPA or ROAS; it only exposes the review contract and 90-day safety gate.
+
 0. Dashboard Custom Segment ActionObject preview, 2026-06-23.
    `/actions/act_prepare_custom_segments_from_search_terms` now renders
    `custom_segment_apply_preview_v1` as a marketer-reviewable card above the
