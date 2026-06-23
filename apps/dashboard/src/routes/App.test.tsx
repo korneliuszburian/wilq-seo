@@ -5891,8 +5891,8 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Ads snapshot marketera" })).toBeInTheDocument();
-    expect(screen.getByText("Snapshot wartości Ads")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();
+    expect(screen.getByText("Wartości Ads")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Co można zrobić teraz w Ads" })
     ).toBeInTheDocument();
@@ -5901,7 +5901,7 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByRole("heading", { name: "Gotowość impact review zmian" })
     ).toBeInTheDocument();
-    expect(screen.getAllByText("snapshot kampanii").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("odczyt kampanii").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/bieżące kliknięcia kampanii/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/okno wyników przed zmianą/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/okno wyników po zmianie/).length).toBeGreaterThan(0);
@@ -6231,7 +6231,7 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument()
     );
     expect(screen.getByText("Status Localo / widoczność lokalna")).toBeInTheDocument();
-    expect(screen.getByText("Snapshot lokalnej widoczności")).toBeInTheDocument();
+    expect(screen.getByText("Aktualny odczyt lokalnej widoczności")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Localo")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Localo")).toBeInTheDocument();
     expect(

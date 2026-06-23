@@ -134,7 +134,7 @@ function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse })
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3">
         <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-          Snapshot lokalnej widoczności
+          Aktualny odczyt lokalnej widoczności
         </h2>
         <p className="mt-1 text-sm leading-6 text-slate-600">
           To jest marketerowy skrót z Localo facts dostępnych w WILQ API. MCP/OAuth
@@ -159,21 +159,21 @@ function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse })
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
               {metricEntries.map(([label, value]) => (
                 <MetricTile
-                  key={`${visibilityDecision.id}-snapshot-${label}`}
+                  key={`${visibilityDecision.id}-readout-${label}`}
                   label={label}
                   value={value}
                 />
               ))}
             </div>
           ) : (
-            <BlockerNotice message="Brak Localo facts do snapshotu. WILQ pokazuje tylko stan dostępu i blokuje lokalne rekomendacje." />
+            <BlockerNotice message="Brak Localo facts do odczytu. WILQ pokazuje tylko stan dostępu i blokuje lokalne rekomendacje." />
           )}
           <p className="mt-3 text-sm font-semibold leading-6 text-ink">
             {visibilityDecision.next_step}
           </p>
         </div>
       ) : (
-        <BlockerNotice message="Brak decyzji Localo z WILQ API. Snapshot lokalny nie może zostać zbudowany." />
+        <BlockerNotice message="Brak decyzji Localo z WILQ API. Odczyt lokalny nie może zostać zbudowany." />
       )}
     </section>
   );

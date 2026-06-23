@@ -3113,6 +3113,9 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_item["metric_tiles"]["podgląd budżetu"] == 1
     assert ads_item["metric_tiles"]["rekomendacje"] == 1
     assert "kolejki tylko do oceny" in ads_item["summary"]
+    assert "kliknięcia=12" in ads_item["summary"]
+    assert "koszt=12 PLN" in ads_item["summary"]
+    assert "konwersje=1" in ads_item["summary"]
     assert "apply" in ads_item["next_step"]
     assert "budget apply" in ads_item["blocked_claims"]
     assert "negative keyword candidates" not in ads_item["blocked_claims"]

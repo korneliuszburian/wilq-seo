@@ -767,9 +767,13 @@ def _sum_tactical_metric(items: list[TacticalQueueItem], name: str) -> int | flo
 
 def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
     return (
-        "Google Ads ma liczniki do oceny: "
+        "Google Ads ma aktualny odczyt do oceny: "
         f"kampanie={metric_tiles.get('kampanie', 0)}, "
         f"zapytania={metric_tiles.get('zapytania', 0)}, "
+        f"kliknięcia={metric_tiles.get('kliknięcia', 0)}, "
+        f"koszt={metric_tiles.get('koszt', 'brak')}, "
+        f"konwersje={metric_tiles.get('konwersje', 0)}, "
+        f"wartość konw.={metric_tiles.get('wartość konw.', 'brak')}, "
         f"podgląd budżetu={metric_tiles.get('podgląd budżetu', 0)}, "
         f"rekomendacje={metric_tiles.get('rekomendacje', 0)}, "
         f"wykluczenia={metric_tiles.get('wykluczenia', 0)}, "

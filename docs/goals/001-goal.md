@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 08:08 CEST.
+Last updated: 2026-06-23 08:31 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -151,10 +151,10 @@ This keeps the supporting registry operational without making cards look like
 trace-log dumps. Focused proof: connector refresh run card unit test passed,
 dashboard typecheck OK and dashboard lint OK.
 
-2026-06-23 Ads value snapshot follow-up: `/api/ads/diagnostics.operator_summary`
+2026-06-23 Ads value readout follow-up: `/api/ads/diagnostics.operator_summary`
 now exposes typed top-line campaign totals: clicks, impressions, cost micros,
 conversions and conversion value. `/ads-doctor` renders the same fields in the
-first `Ads snapshot marketera` section as `Snapshot wartości Ads`, before
+first `Aktualny odczyt Ads` section as `Wartości Ads`, before
 review-count metadata. This is a marketer value surface, not a profitability
 verdict: ROAS, CPA, waste, negative keyword apply and budget/recommendation
 apply remain blocked by the existing read/action contracts. Focused proof:
@@ -169,7 +169,7 @@ detected currency, not as raw micros or unlabelled money-like numbers. Command
 Center therefore shows real Ads volume/value facts on the first screen without
 React-side Ads recomputation. Focused proof: Command Center Ads API contract
 RED/GREEN test passed, Python ruff and mypy passed for the touched backend
-boundary.
+boundary. Current marketer-facing copy uses `aktualny odczyt`, not snapshot.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

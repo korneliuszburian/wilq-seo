@@ -157,7 +157,7 @@ function AdsMarketSnapshot({
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-            Ads snapshot marketera
+            Aktualny odczyt Ads
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Szybki obraz tego, co WILQ może dziś uczciwie przejrzeć w Ads.
@@ -168,7 +168,7 @@ function AdsMarketSnapshot({
         <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
       </div>
       <div className="mb-3 text-xs font-semibold uppercase tracking-normal text-slate-600">
-        Snapshot wartości Ads
+        Wartości Ads
       </div>
       <div className="grid gap-2 text-center text-xs sm:grid-cols-2 xl:grid-cols-5">
         <MetricTile label="Kliknięcia" value={adsNumber(summary.total_clicks)} />
@@ -1426,7 +1426,7 @@ function AdsChangeImpactReadinessPanel({
   currencyCode?: string;
 }) {
   const rows = contract.readiness_rows;
-  const currentSnapshotCount = rows.filter((row) => row.current_campaign_metrics_available).length;
+  const currentReadoutCount = rows.filter((row) => row.current_campaign_metrics_available).length;
 
   return (
     <div className="rounded-md border border-line bg-slate-50 p-3">
@@ -1440,7 +1440,7 @@ function AdsChangeImpactReadinessPanel({
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Zmiany" value={rows.length} />
-          <MetricTile label="Snapshoty" value={currentSnapshotCount} />
+          <MetricTile label="Odczyty" value={currentReadoutCount} />
           <MetricTile label="Status" value={adsDecisionStatusLabel(contract.status)} />
         </div>
       </div>
@@ -1505,7 +1505,7 @@ function AdsChangeImpactReadinessCard({
           </p>
         </div>
         <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-          {row.current_campaign_metrics_available ? "snapshot kampanii" : "brak snapshotu"}
+          {row.current_campaign_metrics_available ? "odczyt kampanii" : "brak odczytu"}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-5">

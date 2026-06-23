@@ -30,7 +30,7 @@ export function adsMissingReadContractLabel(value: string) {
     human_change_impact_review: "ręczny review wpływu zmian",
     apply_preview: "podgląd wdrożenia",
     change_event_rows: "zdarzenia historii zmian",
-    current_campaign_snapshot: "bieżący snapshot kampanii",
+    current_campaign_snapshot: "bieżący odczyt kampanii",
     impression_share: "udział w wyświetleniach",
     "keyword match context": "kontekst dopasowania słów kluczowych",
     keyword_match_context_read: "odczyt istniejących keywords i match types",
