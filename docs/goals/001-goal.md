@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 13:35 CEST.
+Last updated: 2026-06-23 13:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -248,6 +248,20 @@ Browser proof with agent-browser: raw `ev_*` and `act_*` links appear after the
 lower proof heading, not in the first Demand Gen operator section. Focused
 proof: RED/GREEN Demand Gen route test, dashboard lint OK and dashboard
 typecheck OK.
+
+2026-06-23 Command Center metric-read performance: Command Center and tactical
+queue now use `list_latest_metric_facts_by_connector` for first-screen
+marketer decisions that do not need previous-value delta windows. The existing
+full `list_metric_facts_by_connector` remains available for route/detail
+surfaces that need deltas or trends. Local profile with copied DuckDB and cache
+disabled: latest read path `0.666s`, full delta read `0.976s`, tactical queue
+`0.486s`, Command Center `1.483s`. Live HTTP after stack restart:
+`/api/dashboard/command-center` returned 4 daily decisions; warm cache responses
+were around `0.010-0.015s`. Focused proof: RED/GREEN metric-store latest-read
+test, RED/GREEN tactical queue latest-read test, Command Center brief test,
+Command Center API contract test, Python ruff OK and mypy OK. Remaining
+performance work: cold process/startup and deeper diagnostics/ActionObject reads
+are still separate bottlenecks; do not hide them with frontend loading copy.
 
 2026-06-23 Localo diagnostics copy follow-up: `/api/localo/diagnostics` now
 keeps the partial-data story consistent. When Localo has typed aggregate facts,

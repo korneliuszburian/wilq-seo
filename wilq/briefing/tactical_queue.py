@@ -339,7 +339,7 @@ def _merchant_dimension_label(value: str) -> str:
 
 
 def _tactical_metric_facts() -> list[MetricFact]:
-    facts_by_connector = metric_store().list_metric_facts_by_connector(
+    facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
         list(TACTICAL_QUEUE_SOURCE_CONNECTORS),
         limit_per_connector=WORDPRESS_INVENTORY_FACT_LIMIT,
     )

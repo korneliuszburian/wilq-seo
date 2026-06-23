@@ -249,6 +249,53 @@ def test_metric_store_lists_metric_facts_by_connector_in_one_batch(
     assert facts_by_connector["missing_connector"] == []
 
 
+def test_metric_store_lists_latest_metric_facts_by_connector_without_delta_cost(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    older = datetime.now(UTC) - timedelta(hours=2)
+    newer = datetime.now(UTC) - timedelta(minutes=5)
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_latest_ga4_old",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=older,
+            completed_at=older,
+            evidence_ids=["ev_refresh_latest_ga4_old"],
+            metric_summary={"active_users": 10},
+            summary="Older GA4 metric facts.",
+        )
+    )
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_latest_ga4_new",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=newer,
+            completed_at=newer,
+            evidence_ids=["ev_refresh_latest_ga4_new"],
+            metric_summary={"active_users": 15, "sessions": 20},
+            summary="Newer GA4 metric facts.",
+        )
+    )
+
+    facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
+        ["google_analytics_4", "missing_connector"],
+        limit_per_connector=1,
+    )
+
+    assert set(facts_by_connector) == {"google_analytics_4", "missing_connector"}
+    facts = facts_by_connector["google_analytics_4"]
+    assert {fact.name for fact in facts} == {"active_users", "sessions"}
+    assert {fact.evidence_id for fact in facts} == {"ev_refresh_latest_ga4_new"}
+    assert all(fact.previous_value is None for fact in facts)
+    assert facts_by_connector["missing_connector"] == []
+
+
 def test_connector_refresh_persists_detailed_metric_facts_with_dimensions(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

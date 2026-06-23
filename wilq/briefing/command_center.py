@@ -189,7 +189,7 @@ def build_command_center_brief(
 ) -> tuple[list[CommandCenterBriefItem], str, int]:
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
-    facts_by_connector = metric_store().list_metric_facts_by_connector(
+    facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
         [
             GOOGLE_ADS_CONNECTOR_ID,
             GOOGLE_MERCHANT_CONNECTOR_ID,

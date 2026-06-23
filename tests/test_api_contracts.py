@@ -2625,6 +2625,44 @@ def test_tactical_queue_uses_short_ttl_cache(
     tactical_queue.clear_tactical_queue_cache()
 
 
+def test_tactical_queue_uses_latest_metric_fact_batch_for_speed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import tactical_queue
+
+    fact = MetricFact(
+        name="clicks",
+        value=4,
+        period="last_28_days",
+        source_connector="google_search_console",
+        evidence_id="ev_tactical_latest",
+    )
+    seen: dict[str, Any] = {}
+
+    class FastMetricStore:
+        def list_metric_facts_by_connector(self, *_args: object, **_kwargs: object) -> object:
+            raise AssertionError("Tactical queue must use latest facts without delta windows")
+
+        def list_latest_metric_facts_by_connector(
+            self,
+            connector_ids: list[str],
+            limit_per_connector: int = 100,
+        ) -> dict[str, list[MetricFact]]:
+            seen["connector_ids"] = connector_ids
+            seen["limit_per_connector"] = limit_per_connector
+            return {connector_id: [] for connector_id in connector_ids} | {
+                "google_search_console": [fact]
+            }
+
+    monkeypatch.setattr(tactical_queue, "metric_store", lambda: FastMetricStore())
+
+    facts = tactical_queue._tactical_metric_facts()
+
+    assert facts == [fact]
+    assert "google_search_console" in seen["connector_ids"]
+    assert seen["limit_per_connector"] == tactical_queue.WORDPRESS_INVENTORY_FACT_LIMIT
+
+
 def test_marketing_brief_aggregates_metric_facts_and_blockers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -11292,6 +11330,13 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
             raise AssertionError("Command Center must use batched metric fact reads")
 
         def list_metric_facts_by_connector(
+            self,
+            *_args: object,
+            **_kwargs: object,
+        ) -> dict[str, list[object]]:
+            raise AssertionError("Command Center must use latest facts without delta windows")
+
+        def list_latest_metric_facts_by_connector(
             self,
             connector_ids: list[str],
             limit_per_connector: int = 100,

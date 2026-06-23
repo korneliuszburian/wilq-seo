@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center metric read performance, 2026-06-23.
+  Command Center and tactical queue now use a faster DuckDB read path,
+  `list_latest_metric_facts_by_connector`, for marketer first-screen decisions
+  that do not need previous-value delta windows. The existing full
+  `list_metric_facts_by_connector` remains available for surfaces that need
+  deltas/trends. Local profile with copied DuckDB and cache disabled showed the
+  latest read path at `0.666s` versus full delta read at `0.976s`; tactical
+  queue and Command Center now consume the latest path. Live HTTP after stack
+  restart: `/api/dashboard/command-center` returned 4 daily decisions and warm
+  cache responses around `0.010-0.015s`. Focused proof: RED/GREEN metric-store
+  latest-read test, RED/GREEN tactical queue latest-read test, Command Center
+  brief test, Command Center API contract test, Python ruff OK and mypy OK.
 - Demand Gen first-flow cleanup, 2026-06-23.
   `/ads-doctor/demand-gen` no longer prints raw `ev_*` evidence IDs or raw
   `act_review_demand_gen_readiness` inside the marketer-facing first flow.
