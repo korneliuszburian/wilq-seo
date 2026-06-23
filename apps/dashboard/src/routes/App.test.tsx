@@ -5949,7 +5949,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/Brakujące kontrakty/)).toBeInTheDocument();
     expect(screen.getByText(/Wymaga review/)).toBeInTheDocument();
     expect(screen.getByText(/nie twierdzi, że segment ma zasięg/)).toBeInTheDocument();
-    expect(screen.getByText(/skill=wilq-custom-segments/)).toBeInTheDocument();
+    expect(screen.getByText(/Tryb Codexa: Custom Segments/)).toBeInTheDocument();
+    expect(screen.queryByText(/skill=wilq-custom-segments/)).not.toBeInTheDocument();
+    expect(screen.queryByText("/api/codex/context-pack")).not.toBeInTheDocument();
     expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     expect(screen.queryByText("Social Publishing Focus")).not.toBeInTheDocument();

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 07:22 CEST.
+Last updated: 2026-06-23 07:27 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -132,6 +132,12 @@ opportunities, evidence registry, connector refresh runs, actions and expert
 rules. It also avoids fetching those registries for the settings route.
 Focused proof: settings route unit test passed on rerun after one unrelated
 lazy-load flake, dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Custom Segments follow-up: `/ads-doctor/custom-segments` no longer
+prints the debug context-pack endpoint and `skill=wilq-custom-segments` string
+in the marketer UI. It shows `Tryb Codexa: Custom Segments` while preserving
+linked evidence and ActionObject traces. Focused proof: custom-segments route
+unit test passed, dashboard lint OK and dashboard typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

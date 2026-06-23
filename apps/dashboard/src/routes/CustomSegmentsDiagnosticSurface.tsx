@@ -384,10 +384,7 @@ export function CustomSegmentsDiagnosticSurface() {
           <TraceLine label="Źródła" values={contract.source_connectors} />
           <LinkedTraceLine label="Dowody" values={contract.evidence_ids} kind="evidence" />
           <LinkedTraceLine label="Akcje" values={contract.action_ids} kind="actions" />
-          <TraceLine
-            label="Context-pack"
-            values={["/api/codex/context-pack skill=wilq-custom-segments"]}
-          />
+          <TraceLine label="Tryb Codexa" values={["Custom Segments"]} />
         </div>
       </section>
     </main>

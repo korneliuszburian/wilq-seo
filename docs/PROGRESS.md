@@ -37,6 +37,14 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Custom Segments dashboard cleanup, 2026-06-23 07:27 CEST.
+  `/ads-doctor/custom-segments` nie pokazuje już debugowego
+  `/api/codex/context-pack skill=wilq-custom-segments`. Widok pokazuje
+  marketer-facing `Tryb Codexa: Custom Segments`, zachowując dowody i
+  ActionObjecty jako linkowane trace. Focused proof: `pnpm --filter
+  @wilq/dashboard test -- --run src/routes/App.test.tsx -t "custom segments
+  route renders dedicated review-only contract"` passed, dashboard lint OK and
+  dashboard typecheck OK.
 - Settings dashboard cleanup, 2026-06-23 07:22 CEST.
   `/settings` używa polskiego nagłówka `Ustawienia` i pokazuje tylko status
   connectorów/credentiali zamiast doklejać opportunities, evidence registry,
