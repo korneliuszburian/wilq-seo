@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center polish decision copy, 2026-06-23.
+  First-screen daily decision cards no longer render API prose through
+  regex-style phrase replacement or expose full Codex prompts inline. The
+  dashboard now composes concise Polish marketer copy per decision type
+  (Merchant, Content, GA4, Ads) from typed API fields and metric tiles, keeps
+  compact `Kopiuj prompt` controls, and hides raw prompt text from the first
+  screen. Merchant Codex prompt in the API was clarified from raw
+  `approval/revenue` wording to plain Polish: do not claim products were
+  re-approved or revenue was recovered. Focused proof:
+  `pnpm --filter @wilq/dashboard exec vitest run src/routes/CommandCenterRoute.test.tsx`,
+  dashboard lint/typecheck OK, `uv run pytest tests/test_api_contracts.py -q -k
+  command_center`, Python ruff/mypy for `wilq/briefing/command_center.py`, and
+  browser proof at
+  `.local-lab/proof/dashboard/command-center-polish-decision-copy.txt`.
 - Ads summary evidence-scoped read, 2026-06-23.
   `/api/ads/diagnostics?view=summary` now reads Google Ads metric facts from
   the latest completed `vendor_read` evidence IDs before falling back to a

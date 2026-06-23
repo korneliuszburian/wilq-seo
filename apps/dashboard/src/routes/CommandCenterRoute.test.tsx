@@ -57,9 +57,14 @@ const commandCenterFixture: CommandCenterResponse = {
       priority: 12,
       metric_tiles: {
         "query/page": 10,
-        "WP match": 15
+        "WP match": 15,
+        "Ahrefs review": 1,
+        "link gaps": 9,
+        kliknięcia: 138,
+        wyświetlenia: 7852
       },
-      co_widzimy: "Content evidence jest gotowe.",
+      co_widzimy:
+        "Content evidence jest gotowe: query/page=10, WP match=15, Ahrefs review=1, link gaps=9, ctr=0.0445468509984639, average_position=1.6897081413210446.",
       dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać review treści.",
       bezpieczny_next_step: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -125,11 +130,29 @@ describe("CommandCenter route", () => {
     expect(
       screen.getByText("Najpierw otwórz /merchant i przejrzyj kolejkę problemów feedu.")
     ).toBeInTheDocument();
-    expect(screen.getByText("Przejrzyj kolejkę problemów Merchant Center")).toBeInTheDocument();
-    expect(screen.getByText("Przejrzyj kolejkę SEO z GSC i WordPress")).toBeInTheDocument();
+    expect(screen.getByText("Przejrzyj problemy produktów w Merchant Center")).toBeInTheDocument();
+    expect(
+      screen.getByText("Ułóż kolejkę odświeżenia i scalania treści SEO")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/WILQ widzi 10\s?900 produktów i 15 zgłoszeń problemów feedu/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/WILQ ma 10 par zapytanie-URL z GSC, 138 kliknięć i 7852 wyświetleń/)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Najpierw sprawdź mapowanie WordPress/)).not.toBeInTheDocument();
+    expect(screen.getByText(/To jest materiał do decyzji refresh, merge, create albo block/))
+      .toBeInTheDocument();
     expect(screen.getByText("10900")).toBeInTheDocument();
-    expect(screen.getAllByText("Prompt do Codex")).toHaveLength(2);
-    expect(screen.getByText("Tryb Codexa: Merchant Feed Operator")).toBeInTheDocument();
+    expect(screen.getByText("zapytania/URL")).toBeInTheDocument();
+    expect(screen.getByText("dopasowania WP")).toBeInTheDocument();
+    expect(screen.getByText("ocena Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("luki linków")).toBeInTheDocument();
+    expect(screen.getByText("Codex: feed Merchant")).toBeInTheDocument();
+    expect(screen.getByText("Codex: strategia treści")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Kopiuj prompt" })).toHaveLength(2);
+    expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Użyj skilla wilq-merchant-feed-operator/)).not.toBeInTheDocument();
     expect(screen.getByText("Źródła i ograniczenia")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Otwórz ustawienia" })).toBeInTheDocument();
     expect(screen.getAllByText(/potwierdzony ślad|potwierdzonych śladów/).length).toBeGreaterThan(0);
@@ -142,6 +165,9 @@ describe("CommandCenter route", () => {
     expect(screen.queryByText(/act_review_merchant_feed_issues/)).not.toBeInTheDocument();
     expect(screen.queryByText("Skill: wilq-merchant-feed-operator")).not.toBeInTheDocument();
     expect(screen.queryByText("Context-pack: /api/codex/context-pack")).not.toBeInTheDocument();
+    expect(screen.queryByText(/query\/page=/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/average_position=/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Content evidence jest gotowe/)).not.toBeInTheDocument();
     expect(screen.queryByText(/approval restored/)).not.toBeInTheDocument();
     expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();
     expect(screen.queryByText(/lead uplift/)).not.toBeInTheDocument();

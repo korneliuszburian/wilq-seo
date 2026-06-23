@@ -1385,7 +1385,8 @@ def _action_plan_item(
             codex_prompt=(
                 "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center "
                 "dla Ekologus, pogrupuj problemy feedu, wskaż najbezpieczniejszą "
-                "kolejkę review i nie twierdź, że approval albo revenue zostały odzyskane."
+                "kolejkę oceny i nie twierdź, że produkty zostały ponownie zatwierdzone "
+                "albo że przychód został odzyskany."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(
@@ -1482,7 +1483,12 @@ def _action_plan_item(
                 "celu budżetu oraz targetu ROAS albo CPA WILQ nie może uczciwie mówić "
                 "o rentowności, zmarnowanym budżecie ani skalowaniu."
             ),
-            operator_action=item.next_step,
+            operator_action=(
+                "Otwórz /ads-doctor i uzupełnij WILQ_ADS_PROFIT_MARGIN, "
+                "WILQ_ADS_BUSINESS_GOAL, WILQ_ADS_BUDGET_GOAL oraz target CPA/ROAS. "
+                "Potem zwaliduj target guardrails i review strategii zanim ocenisz "
+                "profitability albo skalowanie budżetu."
+            ),
             skill_id="wilq-ads-doctor",
             codex_prompt=(
                 "Użyj skilla wilq-ads-doctor. Wyjaśnij blocker kontekstu biznesowego "

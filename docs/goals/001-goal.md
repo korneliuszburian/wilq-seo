@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 13:35 CEST.
+Last updated: 2026-06-23 13:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -105,6 +105,18 @@ available at `3777180` bytes and 14 decisions. The stale business-context
 ActionObject expectation, change-history action registration expectation and
 safety ActionObject count in the broader Ads live contract test were repaired;
 do not leave outdated contract assertions as ignored gaps.
+
+2026-06-23 Command Center first-screen copy rule: the first Command Center
+screen must not render technical API prose by regex-translating individual
+words. Daily decision cards should compose concise Polish marketer copy from
+typed API fields and metric tiles per decision type, keep raw IDs/prompts out
+of the first screen, and provide compact `Kopiuj prompt` controls for Codex.
+Completed slice: Merchant, Content, GA4 and Ads daily decision cards now use
+explicit Polish copy; the Merchant Codex prompt now says plainly not to claim
+that products were re-approved or revenue recovered. Focused proof: Command
+Center route test, dashboard lint/typecheck, API command_center contract subset,
+Python ruff/mypy for `wilq/briefing/command_center.py`, and browser proof
+`.local-lab/proof/dashboard/command-center-polish-decision-copy.txt`.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It
