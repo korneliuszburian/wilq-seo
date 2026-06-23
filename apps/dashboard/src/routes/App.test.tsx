@@ -5837,6 +5837,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Dowody powiązane z akcjami")).toBeInTheDocument();
     expect(screen.getByText("Do walidacji")).toBeInTheDocument();
     expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Pokaż payload ActionObject" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });

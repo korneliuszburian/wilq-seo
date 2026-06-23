@@ -2319,6 +2319,15 @@ Aktualny maintenance:
     marketer-facing trace text. Focused proof passed: Ads Doctor route unit
     test, dashboard lint and dashboard typecheck.
 
+16. ActionObject payload folding, 2026-06-23 06:05 CEST.
+    `/actions` and shared `ActionObjectFocus` no longer render full
+    `JSON.stringify(action.payload)` blocks by default. Each card now shows a
+    short payload key summary and a `Pokaż payload ActionObject` toggle for
+    drilldown. This keeps review/action cards focused on diagnosis, risk,
+    validation and audit gates while preserving access to payload details.
+    Focused proof passed: actions route unit test, dashboard lint and dashboard
+    typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2355,9 +2364,9 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   remaining payload preview folding and route-level monolith extraction in
-   the dashboard, starting with the largest surfaces that still mix marketer
-   view-model rendering with technical registry drilldown.
+   route-level monolith extraction in the dashboard, starting with the largest
+   surfaces that still mix marketer view-model rendering with technical
+   registry drilldown.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

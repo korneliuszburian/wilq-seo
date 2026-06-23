@@ -4925,3 +4925,16 @@ Latest Ads Doctor lower-fold compaction slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest ActionObject payload folding slice:
+
+- `/actions` and shared workflow `ActionObjectFocus` no longer render full
+  `JSON.stringify(action.payload)` blocks by default.
+- Each ActionObject card shows a short payload key summary plus
+  `Pokaż payload ActionObject` / `Ukryj payload ActionObject` drilldown. This
+  keeps the default operator view focused on diagnosis, risk, validation,
+  review gates, preview/confirm controls and audit state.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "actions route starts from ActionObjects instead of registry dumps"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`
