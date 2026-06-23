@@ -6210,6 +6210,23 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
     expect(screen.getAllByText("Aktywni użytkownicy").length).toBeGreaterThan(0);
     expect(screen.queryByText(/active_users: 20/)).not.toBeInTheDocument();
+    const ga4MeasurementSection = screen
+      .getByText("Problemy pomiaru GA4")
+      .closest("section");
+    expect(ga4MeasurementSection).not.toBeNull();
+    const ga4MeasurementCopy = ga4MeasurementSection?.textContent ?? "";
+    expect(ga4MeasurementCopy).not.toMatch(/ev_/);
+    expect(ga4MeasurementCopy).not.toMatch(/act_/);
+    const ga4OperatorSection = screen
+      .getByText("Operator GA4")
+      .closest("section");
+    expect(ga4OperatorSection).not.toBeNull();
+    const ga4OperatorCopy = ga4OperatorSection?.textContent ?? "";
+    expect(ga4OperatorCopy).not.toMatch(/ev_/);
+    expect(ga4OperatorCopy).not.toMatch(/act_/);
+    expect(
+      within(ga4OperatorSection as HTMLElement).getByRole("link", { name: "Waliduj review GA4" })
+    ).toHaveAttribute("href", "/actions/act_review_ga4_tracking_quality");
     const ga4ProofSection = screen
       .getByText("Dowody i ograniczenia GA4")
       .closest("section");
@@ -6220,7 +6237,7 @@ describe("WILQ dashboard", () => {
     expect(ga4Proof.getByText("Łącznie dowodów")).toBeInTheDocument();
     expect(ga4Proof.queryByText(/ev_refresh_ga4_safety/)).not.toBeInTheDocument();
     expect(
-      screen.getAllByRole("link", { name: "act_review_ga4_tracking_quality" })[0]
+      ga4Proof.getByRole("link", { name: "act_review_ga4_tracking_quality" })
     ).toHaveAttribute("href", "/actions/act_review_ga4_tracking_quality");
 
     cleanup();

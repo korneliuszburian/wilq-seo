@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- GA4 first-flow trace cleanup, 2026-06-23 10:31 CEST.
+  `/ga4` no longer prints raw `ev_*` evidence IDs or raw
+  `act_review_ga4_tracking_quality` in first-flow GA4 measurement/operator
+  cards or the `Bezpieczny tryb analityki` panel. Those cards now show
+  evidence/action counts and the validation CTA says `Waliduj review GA4`;
+  raw trace links remain lower in `Dowody i ograniczenia GA4`, ActionObject
+  validation and review preview sections. Browser proof with agent-browser on
+  `http://127.0.0.1:5173/ga4`: raw trace links start only under lower proof and
+  validation sections. Focused proof: RED/GREEN GA4 route test, dashboard lint
+  OK and dashboard typecheck OK.
 - Merchant first-flow trace cleanup, 2026-06-23 10:24 CEST.
   `/merchant` no longer prints raw `ev_*` evidence IDs or raw
   `act_review_merchant_feed_issues` in first-flow Merchant decision cards or

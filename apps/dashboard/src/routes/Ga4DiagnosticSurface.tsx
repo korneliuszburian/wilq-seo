@@ -273,8 +273,14 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
               values={conversionReadiness.missing_read_contracts.map(ga4ReadContractLabel)}
               empty="brak"
             />
-            <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 6)} kind="evidence" />
-            <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
+            <TraceLine
+              label="Dowody w API"
+              values={[formatGa4EvidenceCount(data.evidence_ids.length)]}
+            />
+            <TraceLine
+              label="ActionObject"
+              values={[formatGa4ActionCount(actionIds.length)]}
+            />
             <TraceLine
               label="Nie wolno twierdzić"
               values={ga4BlockedClaimLabels(summary.blocked_claims)}
@@ -284,7 +290,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
             href={`/actions/${actionIds[0]}`}
             className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
           >
-            Waliduj ActionObject
+            Waliduj review GA4
           </a>
         </div>
       </div>
@@ -344,9 +350,15 @@ function Ga4DecisionCard({ decision }: { decision: Ga4DecisionItem }) {
         ) : null}
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine
+          label="Dowody w API"
+          values={[formatGa4EvidenceCount(decision.evidence_ids.length)]}
+        />
         <TraceLine label="Źródła" values={decision.source_connectors} />
-        <LinkedTraceLine label="Akcje" values={decision.action_ids} kind="actions" />
+        <TraceLine
+          label="Akcje do walidacji"
+          values={[formatGa4ActionCount(decision.action_ids.length)]}
+        />
         <TraceLine label="Nie wolno twierdzić" values={ga4BlockedClaimLabels(decision.blocked_claims)} />
       </div>
       {decision.metric_facts.length > 0 ? (
@@ -534,6 +546,18 @@ function ga4MetricFactLabel(metricName: string) {
 function formatGa4MetricValue(value: string | number | boolean) {
   if (typeof value === "boolean") return value ? "tak" : "nie";
   return value;
+}
+
+function formatGa4EvidenceCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ID";
+  return `${count} ID`;
+}
+
+function formatGa4ActionCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ActionObject";
+  return `${count} ActionObjecty`;
 }
 
 function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {
