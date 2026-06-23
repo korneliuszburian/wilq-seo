@@ -86,6 +86,46 @@ def main() -> int:
             )
     elif product_sample_readiness.get("status") != "blocked":
         raise SystemExit("Merchant product_sample_readiness without samples must be blocked")
+    product_performance_readiness = merchant_diagnostics.get("product_performance_readiness")
+    if not isinstance(product_performance_readiness, dict):
+        raise SystemExit("Merchant diagnostics must expose product_performance_readiness")
+    required_performance_contracts = set(
+        product_performance_readiness.get("required_read_contracts") or []
+    )
+    if not {
+        "merchant_product_id_join_key",
+        "google_ads_shopping_product_performance",
+        "ga4_item_product_performance",
+    }.issubset(required_performance_contracts):
+        raise SystemExit(
+            "Merchant product_performance_readiness must name product performance read contracts"
+        )
+    performance_status = product_performance_readiness.get("status")
+    if performance_status == "ready":
+        if product_performance_readiness.get("joined_product_count", 0) <= 0:
+            raise SystemExit("Ready product_performance_readiness must include joined products")
+        if not product_performance_readiness.get("performance_rows"):
+            raise SystemExit("Ready product_performance_readiness must include rows")
+        for row in product_performance_readiness.get("performance_rows") or []:
+            if not row.get("product_id"):
+                raise SystemExit("Product performance rows must include product_id")
+            if not row.get("source_connectors") or not row.get("evidence_ids"):
+                raise SystemExit(
+                    "Product performance rows must include source connectors and evidence IDs"
+                )
+    elif performance_status == "blocked":
+        blocked_claims = set(product_performance_readiness.get("blocked_claims") or [])
+        if not {
+            "product ROAS",
+            "product revenue recovery",
+            "product fix impact",
+            "feed write",
+        }.issubset(blocked_claims):
+            raise SystemExit(
+                "Blocked product_performance_readiness must block product revenue/ROAS claims"
+            )
+    else:
+        raise SystemExit("Merchant product_performance_readiness status must be ready or blocked")
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
     decision_queue = merchant_diagnostics.get("decision_queue") or []
     unknowns = merchant_diagnostics.get("unknowns") or []
@@ -243,6 +283,7 @@ def main() -> int:
                         for claim in section.get("blocked_claims", [])
                     ][:20],
                     "product_sample_readiness": product_sample_readiness,
+                    "product_performance_readiness": product_performance_readiness,
                     "latest_refresh_status": (
                         merchant_diagnostics.get("latest_refresh") or {}
                     ).get("status"),

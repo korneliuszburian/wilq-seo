@@ -4020,6 +4020,17 @@ const merchantDiagnostics = {
       next_step:
         "Użyj próbek do ręcznego review, a pełną listę produktów potwierdź w Merchant Center albo osobnym read contract.",
       blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
+    },
+    {
+      id: "merchant_product_performance_join_missing",
+      title: "Brak joinu produktów Merchant z Ads/GA4",
+      reason:
+        "Merchant diagnostics ma przykładowe produkty, ale brakuje dopasowanych faktów Ads/GA4 po product_id albo item_id.",
+      impact:
+        "WILQ może prowadzić review feedu, ale nie może wskazać ROAS produktu ani wpływu naprawy na przychód.",
+      next_step:
+        "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 item ecommerce.",
+      blocked_claims: ["product ROAS", "product revenue recovery", "product fix impact"]
     }
   ],
   product_sample_readiness: {
@@ -4039,6 +4050,37 @@ const merchantDiagnostics = {
     next_step:
       "Użyj próbek jako punktu startu review i nie wykonuj zmian feedu bez payload preview.",
     blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
+  },
+  product_performance_readiness: {
+    id: "merchant_product_performance_readiness",
+    status: "blocked",
+    joined_product_count: 0,
+    merchant_sample_count: 2,
+    ads_product_fact_count: 0,
+    ga4_product_fact_count: 0,
+    current_read_contracts: ["merchant_aggregate_product_statuses"],
+    required_read_contracts: [
+      "merchant_product_id_join_key",
+      "google_ads_shopping_product_performance",
+      "ga4_item_product_performance"
+    ],
+    join_key_candidates: ["product_id", "item_id", "offer_id"],
+    sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
+    performance_rows: [],
+    source_connectors: ["google_merchant_center"],
+    evidence_ids: ["ev_refresh_merchant_feed"],
+    summary:
+      "Merchant ma próbki produktów, ale WILQ nie ma jeszcze dopasowanych product-level faktów Ads/GA4.",
+    next_step:
+      "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 item ecommerce ze wspólnym kluczem produktu.",
+    blocked_claims: [
+      "product ROAS",
+      "product revenue recovery",
+      "product fix impact",
+      "Shopping/PMax product scaling",
+      "approval restored",
+      "feed write"
+    ]
   },
   operator_summary: {
     id: "merchant_operator_summary",
@@ -6298,6 +6340,11 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/Obecny odczyt: merchant_aggregate_product_statuses/)
     ).toBeInTheDocument();
+    expect(screen.getByText("Join produktów z Ads/GA4")).toBeInTheDocument();
+    expect(screen.getByText("join performance zablokowany")).toBeInTheDocument();
+    expect(screen.getByText(/google_ads_shopping_product_performance/)).toBeInTheDocument();
+    expect(screen.getAllByText(/ROAS produktu/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Brak joinu produktów Merchant z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
     expect(screen.getByText("Dowody")).toBeInTheDocument();
     expect(screen.getByText(/Przykładowe produkty służą tylko do ręcznego/)).toBeInTheDocument();

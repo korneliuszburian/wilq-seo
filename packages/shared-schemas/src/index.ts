@@ -1616,6 +1616,40 @@ export const MerchantProductSampleReadinessSchema = z.object({
   blocked_claims: z.array(z.string())
 });
 
+export const MerchantProductPerformanceRowSchema = z.object({
+  product_id: z.string(),
+  sample_title: z.string().nullable().optional(),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  ads_clicks: z.number().nullable().optional(),
+  ads_cost_micros: z.number().nullable().optional(),
+  ads_conversions: z.number().nullable().optional(),
+  ads_conversion_value: z.number().nullable().optional(),
+  ga4_ecommerce_purchases: z.number().nullable().optional(),
+  ga4_purchase_revenue: z.number().nullable().optional(),
+  missing_metrics: z.array(z.string()),
+  blocked_claims: z.array(z.string())
+});
+
+export const MerchantProductPerformanceReadinessSchema = z.object({
+  id: z.literal("merchant_product_performance_readiness"),
+  status: z.enum(["ready", "blocked"]),
+  joined_product_count: z.number(),
+  merchant_sample_count: z.number(),
+  ads_product_fact_count: z.number(),
+  ga4_product_fact_count: z.number(),
+  current_read_contracts: z.array(z.string()),
+  required_read_contracts: z.array(z.string()),
+  join_key_candidates: z.array(z.string()),
+  sample_product_ids: z.array(z.string()),
+  performance_rows: z.array(MerchantProductPerformanceRowSchema),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  summary: z.string(),
+  next_step: z.string(),
+  blocked_claims: z.array(z.string())
+});
+
 export const MerchantDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1628,6 +1662,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   freshness_assessment: MerchantFreshnessAssessmentSchema,
   unknowns: z.array(MerchantUnknownFactSchema),
   product_sample_readiness: MerchantProductSampleReadinessSchema,
+  product_performance_readiness: MerchantProductPerformanceReadinessSchema,
   operator_summary: MerchantOperatorSummarySchema,
   issue_clusters: z.array(MerchantIssueClusterSchema),
   decision_queue: z.array(MerchantDecisionItemSchema),

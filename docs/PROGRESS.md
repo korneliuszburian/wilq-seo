@@ -62,8 +62,10 @@ Stan produktu:
   blocked apply/API mutation state. Focused API contract tests pass for issue
   queue and grouped reporting contexts. Live HTTP proof after stack restart:
   `/api/merchant/diagnostics` decision queue entries expose
-  `merchant_feed_issue_review_preview_v1`; apply/API mutation/destructive flags
-  stay false.
+  `merchant_feed_issue_review_preview_v1` with consistent grouped
+  `reported_issue_occurrences`; apply/API mutation/destructive flags stay
+  false. Product samples are ready, but `product_performance_readiness` is
+  blocked until Ads/GA4 expose product-level facts joined by product ID/item ID.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
@@ -92,9 +94,10 @@ Stan produktu:
   decision contracts, action safety, Codex skills, knowledge/compiler,
   dashboard/UI and testing/release. Current source triage: Ads optimizer review,
   Merchant product sample readiness and Localo GBP/competitor/reviews/rankings
-  are ready for review-only decisions; the nearest source gaps are Merchant
-  deepening, Ahrefs granular gaps, Keyword Planner approval/forecast and
-  cross-source decision joins.
+  are ready for review-only decisions; Merchant product-performance join is
+  blocked by missing Ads/GA4 product-level facts. The nearest source gaps are
+  Merchant supplemental-feed/price-impact contracts, Ahrefs granular gaps,
+  Keyword Planner approval/forecast and cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
   stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
   `total_revenue` and `transactions` with landing/source/campaign dimensions.

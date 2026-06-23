@@ -1999,6 +1999,42 @@ class MerchantProductSampleReadiness(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
 
+class MerchantProductPerformanceRow(BaseModel):
+    product_id: str
+    sample_title: str | None = None
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    ads_clicks: int | None = None
+    ads_cost_micros: int | None = None
+    ads_conversions: float | None = None
+    ads_conversion_value: float | None = None
+    ga4_ecommerce_purchases: float | None = None
+    ga4_purchase_revenue: float | None = None
+    missing_metrics: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
+class MerchantProductPerformanceReadiness(BaseModel):
+    id: Literal["merchant_product_performance_readiness"] = (
+        "merchant_product_performance_readiness"
+    )
+    status: Literal["ready", "blocked"]
+    joined_product_count: int = 0
+    merchant_sample_count: int = 0
+    ads_product_fact_count: int = 0
+    ga4_product_fact_count: int = 0
+    current_read_contracts: list[str] = Field(default_factory=list)
+    required_read_contracts: list[str] = Field(default_factory=list)
+    join_key_candidates: list[str] = Field(default_factory=list)
+    sample_product_ids: list[str] = Field(default_factory=list)
+    performance_rows: list[MerchantProductPerformanceRow] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    summary: str
+    next_step: str
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class MerchantDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -2011,6 +2047,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     freshness_assessment: MerchantFreshnessAssessment
     unknowns: list[MerchantUnknownFact] = Field(default_factory=list)
     product_sample_readiness: MerchantProductSampleReadiness
+    product_performance_readiness: MerchantProductPerformanceReadiness
     operator_summary: MerchantOperatorSummary
     issue_clusters: list[MerchantIssueCluster] = Field(default_factory=list)
     decision_queue: list[MerchantDecisionItem] = Field(default_factory=list)

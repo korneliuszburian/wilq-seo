@@ -19,6 +19,8 @@ from wilq.schemas import (
     MerchantFreshnessAssessment,
     MerchantIssueCluster,
     MerchantOperatorSummary,
+    MerchantProductPerformanceReadiness,
+    MerchantProductPerformanceRow,
     MerchantProductSampleReadiness,
     MerchantUnknownFact,
     MetricFact,
@@ -29,7 +31,32 @@ from wilq.schemas import (
 from wilq.storage.metric_store import metric_store
 
 MERCHANT_CONNECTOR_ID = "google_merchant_center"
+GOOGLE_ADS_CONNECTOR_ID = "google_ads"
+GA4_CONNECTOR_ID = "google_analytics_4"
 MERCHANT_METRIC_FACT_LIMIT = 2000
+MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS = [
+    "merchant_product_id_join_key",
+    "google_ads_shopping_product_performance",
+    "ga4_item_product_performance",
+]
+MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS = [
+    "product ROAS",
+    "product revenue recovery",
+    "product fix impact",
+    "Shopping/PMax product scaling",
+    "approval restored",
+    "feed write",
+]
+PRODUCT_JOIN_DIMENSION_KEYS = [
+    "product_id",
+    "item_id",
+    "offer_id",
+    "merchant_product_id",
+    "shopping_product_id",
+    "product_item_id",
+    "sku",
+    "item_sku",
+]
 MERCHANT_HEALTH_METRIC_NAMES = {
     "total_products",
     "active_products",
@@ -114,6 +141,14 @@ def build_merchant_diagnostics(
         action_ids=action_ids,
     )
     freshness_assessment = _merchant_freshness_assessment(latest_refresh)
+    product_sample_readiness = _merchant_product_sample_readiness(
+        issue_clusters,
+        decision_queue,
+    )
+    product_performance_readiness = _merchant_product_performance_readiness(
+        issue_clusters=issue_clusters,
+        product_sample_readiness=product_sample_readiness,
+    )
     return MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -130,11 +165,13 @@ def build_merchant_diagnostics(
             "item_level_issue_count",
         ),
         freshness_assessment=freshness_assessment,
-        unknowns=_merchant_unknowns(issue_clusters, decision_queue),
-        product_sample_readiness=_merchant_product_sample_readiness(
+        unknowns=_merchant_unknowns(
             issue_clusters,
             decision_queue,
+            product_performance_readiness,
         ),
+        product_sample_readiness=product_sample_readiness,
+        product_performance_readiness=product_performance_readiness,
         operator_summary=_operator_summary(
             decision_queue,
             issue_clusters,
@@ -240,6 +277,7 @@ def _merchant_freshness_assessment(
 def _merchant_unknowns(
     issue_clusters: list[MerchantIssueCluster],
     decisions: list[MerchantDecisionItem],
+    product_performance_readiness: MerchantProductPerformanceReadiness,
 ) -> list[MerchantUnknownFact]:
     unknowns: list[MerchantUnknownFact] = []
     if issue_clusters or decisions:
@@ -284,6 +322,27 @@ def _merchant_unknowns(
                     "jako szczegóły raportowania."
                 ),
                 blocked_claims=["unique product count", "approval restored"],
+            )
+        )
+    if product_performance_readiness.status == "blocked":
+        unknowns.append(
+            MerchantUnknownFact(
+                id="merchant_product_performance_join_missing",
+                title="Brak joinu produktów Merchant z Ads/GA4",
+                reason=(
+                    "WILQ ma Merchant sample product IDs albo kolejkę problemów feedu, "
+                    "ale nie ma dopasowanych faktów Ads/GA4 z product_id/item_id dla "
+                    "tych produktów."
+                ),
+                impact=(
+                    "Można prowadzić review problemów feedu, ale nie wolno twierdzić, "
+                    "które produkty mają ROAS, przychód, koszt albo efekt naprawy."
+                ),
+                next_step=(
+                    "Dodać read-only kontrakty product performance dla Google Ads "
+                    "Shopping/PMax i GA4 item ecommerce, z jawnie wspólnym kluczem produktu."
+                ),
+                blocked_claims=product_performance_readiness.blocked_claims,
             )
         )
     return unknowns
@@ -357,6 +416,277 @@ def _merchant_product_sample_readiness(
         next_step="Najpierw uruchom read-only Merchant vendor_read.",
         blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
     )
+
+
+def _merchant_product_performance_readiness(
+    *,
+    issue_clusters: list[MerchantIssueCluster],
+    product_sample_readiness: MerchantProductSampleReadiness,
+    product_metric_facts_by_connector: dict[str, list[MetricFact]] | None = None,
+) -> MerchantProductPerformanceReadiness:
+    sample_product_ids = product_sample_readiness.sample_product_ids
+    sample_title_map = _merchant_sample_title_map(issue_clusters)
+    merchant_evidence_ids = _unique(
+        evidence_id for cluster in issue_clusters for evidence_id in cluster.evidence_ids
+    )
+    product_metric_facts_by_connector = (
+        product_metric_facts_by_connector
+        if product_metric_facts_by_connector is not None
+        else _product_performance_metric_facts_by_connector(sample_product_ids)
+    )
+    ads_product_facts = _product_scoped_metric_facts(
+        product_metric_facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])
+    )
+    ga4_product_facts = _product_scoped_metric_facts(
+        product_metric_facts_by_connector.get(GA4_CONNECTOR_ID, [])
+    )
+    ads_facts_by_product_id = _metric_facts_by_product_id(ads_product_facts)
+    ga4_facts_by_product_id = _metric_facts_by_product_id(ga4_product_facts)
+
+    performance_rows: list[MerchantProductPerformanceRow] = []
+    for product_id in sample_product_ids:
+        ads_facts = ads_facts_by_product_id.get(product_id, [])
+        ga4_facts = ga4_facts_by_product_id.get(product_id, [])
+        if not ads_facts and not ga4_facts:
+            continue
+        row = MerchantProductPerformanceRow(
+            product_id=product_id,
+            sample_title=sample_title_map.get(product_id),
+            source_connectors=_unique(
+                fact.source_connector for fact in [*ads_facts, *ga4_facts]
+            ),
+            evidence_ids=_unique(fact.evidence_id for fact in [*ads_facts, *ga4_facts]),
+            ads_clicks=_int_metric_value(
+                ads_facts,
+                ["clicks", "product_clicks", "shopping_product_clicks"],
+            ),
+            ads_cost_micros=_int_metric_value(
+                ads_facts,
+                ["cost_micros", "product_cost_micros", "shopping_product_cost_micros"],
+            ),
+            ads_conversions=_float_metric_value(
+                ads_facts,
+                ["conversions", "product_conversions", "shopping_product_conversions"],
+            ),
+            ads_conversion_value=_float_metric_value(
+                ads_facts,
+                [
+                    "conversion_value",
+                    "conversions_value",
+                    "product_conversion_value",
+                    "shopping_product_conversion_value",
+                ],
+            ),
+            ga4_ecommerce_purchases=_float_metric_value(
+                ga4_facts,
+                ["ecommerce_purchases", "item_purchases", "item_purchase_quantity"],
+            ),
+            ga4_purchase_revenue=_float_metric_value(
+                ga4_facts,
+                ["purchase_revenue", "item_revenue", "item_purchase_revenue"],
+            ),
+        )
+        missing_metrics = _missing_product_performance_metrics(row)
+        performance_rows.append(
+            row.model_copy(
+                update={
+                    "missing_metrics": missing_metrics,
+                    "blocked_claims": [
+                        "product fix impact",
+                        "approval restored",
+                        "feed write",
+                    ],
+                }
+            )
+        )
+
+    current_read_contracts = ["merchant_aggregate_product_statuses"]
+    if ads_product_facts:
+        current_read_contracts.append("google_ads_product_metric_facts")
+    if ga4_product_facts:
+        current_read_contracts.append("ga4_item_metric_facts")
+
+    if performance_rows:
+        return MerchantProductPerformanceReadiness(
+            status="ready",
+            joined_product_count=len(performance_rows),
+            merchant_sample_count=len(sample_product_ids),
+            ads_product_fact_count=len(ads_product_facts),
+            ga4_product_fact_count=len(ga4_product_facts),
+            current_read_contracts=current_read_contracts,
+            required_read_contracts=MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS,
+            join_key_candidates=PRODUCT_JOIN_DIMENSION_KEYS,
+            sample_product_ids=sample_product_ids[:20],
+            performance_rows=performance_rows[:20],
+            source_connectors=_unique(
+                [
+                    MERCHANT_CONNECTOR_ID,
+                    *(
+                        connector
+                        for row in performance_rows
+                        for connector in row.source_connectors
+                    ),
+                ]
+            ),
+            evidence_ids=_unique(
+                [
+                    *merchant_evidence_ids,
+                    *(
+                        evidence_id
+                        for row in performance_rows
+                        for evidence_id in row.evidence_ids
+                    ),
+                ]
+            ),
+            summary=(
+                "WILQ ma dopasowane product-level facts dla części Merchant sample IDs. "
+                "To wspiera review produktu z metrykami Ads/GA4, ale nie oznacza "
+                "automatycznej naprawy feedu ani efektu po zmianie."
+            ),
+            next_step=(
+                "Użyj performance_rows do priorytetyzacji review. Do claimów o efekcie "
+                "naprawy potrzebny jest osobny before/after audit."
+            ),
+            blocked_claims=[
+                "product fix impact",
+                "approval restored",
+                "feed write",
+            ],
+        )
+
+    blocked_reason = (
+        "Merchant read zwraca sample product IDs, ale WILQ nie ma dopasowanych "
+        "product-level facts z Ads albo GA4 dla tych IDs."
+        if sample_product_ids
+        else (
+            "Merchant read nie daje sample product IDs, więc WILQ nie ma klucza "
+            "do połączenia problemów feedu z Ads/GA4."
+        )
+    )
+    return MerchantProductPerformanceReadiness(
+        status="blocked",
+        joined_product_count=0,
+        merchant_sample_count=len(sample_product_ids),
+        ads_product_fact_count=len(ads_product_facts),
+        ga4_product_fact_count=len(ga4_product_facts),
+        current_read_contracts=current_read_contracts,
+        required_read_contracts=MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS,
+        join_key_candidates=PRODUCT_JOIN_DIMENSION_KEYS,
+        sample_product_ids=sample_product_ids[:20],
+        source_connectors=_unique(
+            [
+                MERCHANT_CONNECTOR_ID,
+                *(fact.source_connector for fact in ads_product_facts),
+                *(fact.source_connector for fact in ga4_product_facts),
+            ]
+        ),
+        evidence_ids=_unique(
+            [
+                *merchant_evidence_ids,
+                *(fact.evidence_id for fact in ads_product_facts),
+                *(fact.evidence_id for fact in ga4_product_facts),
+            ]
+        ),
+        summary=blocked_reason,
+        next_step=(
+            "Dodać read-only product performance dla Google Ads Shopping/PMax i GA4 "
+            "item ecommerce oraz utrzymać wspólny product_id/item_id jako join key."
+        ),
+        blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
+    )
+
+
+def _product_performance_metric_facts_by_connector(
+    sample_product_ids: list[str],
+) -> dict[str, list[MetricFact]]:
+    if not sample_product_ids:
+        return {
+            GOOGLE_ADS_CONNECTOR_ID: [],
+            GA4_CONNECTOR_ID: [],
+        }
+    return metric_store().list_metric_facts_by_connector(
+        [GOOGLE_ADS_CONNECTOR_ID, GA4_CONNECTOR_ID],
+        limit_per_connector=MERCHANT_METRIC_FACT_LIMIT,
+    )
+
+
+def _merchant_sample_title_map(
+    issue_clusters: list[MerchantIssueCluster],
+) -> dict[str, str]:
+    titles_by_product_id: dict[str, str] = {}
+    for cluster in issue_clusters:
+        for index, product_id in enumerate(cluster.sample_product_ids):
+            if index < len(cluster.sample_titles):
+                titles_by_product_id.setdefault(product_id, cluster.sample_titles[index])
+    return titles_by_product_id
+
+
+def _product_scoped_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
+    return [fact for fact in facts if _metric_fact_product_id(fact) is not None]
+
+
+def _metric_facts_by_product_id(
+    facts: list[MetricFact],
+) -> dict[str, list[MetricFact]]:
+    facts_by_product_id: dict[str, list[MetricFact]] = {}
+    for fact in facts:
+        product_id = _metric_fact_product_id(fact)
+        if product_id is None:
+            continue
+        facts_by_product_id.setdefault(product_id, []).append(fact)
+    return facts_by_product_id
+
+
+def _metric_fact_product_id(fact: MetricFact) -> str | None:
+    for key in PRODUCT_JOIN_DIMENSION_KEYS:
+        value = fact.dimensions.get(key)
+        if value and value.strip():
+            return value.strip()
+    return None
+
+
+def _int_metric_value(facts: list[MetricFact], names: list[str]) -> int | None:
+    value = _numeric_metric_value(facts, names)
+    if value is None:
+        return None
+    return int(value)
+
+
+def _float_metric_value(facts: list[MetricFact], names: list[str]) -> float | None:
+    value = _numeric_metric_value(facts, names)
+    if value is None:
+        return None
+    return float(value)
+
+
+def _numeric_metric_value(
+    facts: list[MetricFact],
+    names: list[str],
+) -> int | float | None:
+    accepted_names = set(names)
+    for fact in facts:
+        if fact.name in accepted_names and isinstance(fact.value, int | float):
+            return fact.value
+    return None
+
+
+def _missing_product_performance_metrics(
+    row: MerchantProductPerformanceRow,
+) -> list[str]:
+    missing_metrics: list[str] = []
+    if row.ads_clicks is None:
+        missing_metrics.append("ads_clicks")
+    if row.ads_cost_micros is None:
+        missing_metrics.append("ads_cost_micros")
+    if row.ads_conversions is None:
+        missing_metrics.append("ads_conversions")
+    if row.ads_conversion_value is None:
+        missing_metrics.append("ads_conversion_value")
+    if row.ga4_ecommerce_purchases is None:
+        missing_metrics.append("ga4_ecommerce_purchases")
+    if row.ga4_purchase_revenue is None:
+        missing_metrics.append("ga4_purchase_revenue")
+    return missing_metrics
 
 
 def _merchant_action_ids(actions: list[ActionObject]) -> list[str]:
@@ -868,6 +1198,7 @@ def _merchant_decision_from_cluster_group(
             _merchant_decision_payload_preview(
                 cluster=primary_cluster,
                 product_count=max_reported_count,
+                reported_issue_occurrences=reported_occurrences,
                 metric_snapshot={
                     "max_issue_product_count": max_reported_count,
                     "reported_issue_occurrences": reported_occurrences,
@@ -1022,11 +1353,13 @@ def _merchant_decision_payload_preview(
     *,
     cluster: MerchantIssueCluster,
     product_count: int,
+    reported_issue_occurrences: int | None = None,
     metric_snapshot: dict[str, int],
     sample_product_ids: list[str],
     sample_titles: list[str],
     evidence_ids: list[str],
 ) -> dict[str, object]:
+    reported_issue_occurrences = reported_issue_occurrences or product_count
     return {
         "id": f"merchant_feed_issue_review_{cluster.id}",
         "preview_contract": MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT,
@@ -1075,7 +1408,7 @@ def _merchant_decision_payload_preview(
         "apply_allowed": False,
         "destructive": False,
         "count_semantics": "reported_issue_occurrences",
-        "reported_issue_occurrences": product_count,
+        "reported_issue_occurrences": reported_issue_occurrences,
     }
 
 

@@ -29,6 +29,7 @@ from wilq.briefing.ads_diagnostics import (
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
+from wilq.briefing.merchant_diagnostics import _merchant_product_performance_readiness
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
@@ -66,6 +67,8 @@ from wilq.schemas import (
     DailyDecision,
     FreshnessState,
     MarketingBrief,
+    MerchantIssueCluster,
+    MerchantProductSampleReadiness,
     MetricFact,
     Opportunity,
     OpportunityDomain,
@@ -9774,11 +9777,39 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert sample_readiness["source_endpoint"] == "aggregateProductStatuses"
     assert "products.list" in sample_readiness["next_step"]
     assert "feed write" in sample_readiness["blocked_claims"]
+    performance_readiness = payload["product_performance_readiness"]
+    assert performance_readiness["id"] == "merchant_product_performance_readiness"
+    assert performance_readiness["status"] == "blocked"
+    assert performance_readiness["merchant_sample_count"] == 2
+    assert performance_readiness["joined_product_count"] == 0
+    assert performance_readiness["ads_product_fact_count"] == 0
+    assert performance_readiness["ga4_product_fact_count"] == 0
+    assert performance_readiness["required_read_contracts"] == [
+        "merchant_product_id_join_key",
+        "google_ads_shopping_product_performance",
+        "ga4_item_product_performance",
+    ]
+    assert performance_readiness["sample_product_ids"] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert performance_readiness["performance_rows"] == []
+    assert performance_readiness["current_read_contracts"] == [
+        "merchant_aggregate_product_statuses"
+    ]
+    assert "google_merchant_center" in performance_readiness["source_connectors"]
+    assert refresh_response.json()["evidence_ids"][-1] in performance_readiness[
+        "evidence_ids"
+    ]
+    assert "product ROAS" in performance_readiness["blocked_claims"]
+    assert "product revenue recovery" in performance_readiness["blocked_claims"]
+    assert "product fix impact" in performance_readiness["blocked_claims"]
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
     assert payload["unknowns"]
     unknown_ids = {unknown["id"] for unknown in payload["unknowns"]}
     assert "merchant_product_examples_missing" not in unknown_ids
     assert "merchant_unique_product_count_unknown" in unknown_ids
+    assert "merchant_product_performance_join_missing" in unknown_ids
     assert payload["issue_clusters"]
     cluster = payload["issue_clusters"][0]
     assert cluster["issue_type"] == "availability_updated"
@@ -9937,6 +9968,133 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "adc.json" not in serialized
 
 
+def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4() -> None:
+    product_id = "online~pl~PL~SKU-001"
+    issue_cluster = MerchantIssueCluster(
+        id="merchant_issue_test",
+        issue_type="availability_updated",
+        severity="NOT_IMPACTED",
+        resolution="MERCHANT_ACTION",
+        affected_attribute="n:availability",
+        country="PL",
+        reporting_context="SHOPPING_ADS",
+        product_count=23,
+        sample_product_ids=[product_id],
+        sample_titles=["Sorbent chemiczny 10 kg"],
+        source_connectors=["google_merchant_center"],
+        evidence_ids=["ev_merchant_issue"],
+        blocked_claims=["approval restored"],
+        action_id="act_review_merchant_feed_issues",
+        next_step="Review produktu.",
+    )
+    sample_readiness = MerchantProductSampleReadiness(
+        status="ready",
+        sample_products_available=True,
+        sample_count=1,
+        sample_product_ids=[product_id],
+        sample_product_titles=["Sorbent chemiczny 10 kg"],
+        required_read_contracts=[
+            "merchant_products_list_product_status",
+            "merchant_reports_product_view_issue_filter",
+        ],
+        source_endpoint="aggregateProductStatuses",
+        summary="Merchant read ma sample product ID.",
+        next_step="Review próbki.",
+    )
+    ads_facts = [
+        MetricFact(
+            name="clicks",
+            value=14,
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_clicks",
+            dimensions={"product_id": product_id},
+        ),
+        MetricFact(
+            name="cost_micros",
+            value=2750000,
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_cost",
+            dimensions={"product_id": product_id},
+        ),
+        MetricFact(
+            name="conversions",
+            value=1.5,
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_conversions",
+            dimensions={"product_id": product_id},
+        ),
+        MetricFact(
+            name="conversion_value",
+            value=320.0,
+            period="last_30_days",
+            source_connector="google_ads",
+            evidence_id="ev_ads_value",
+            dimensions={"product_id": product_id},
+        ),
+    ]
+    ga4_facts = [
+        MetricFact(
+            name="ecommerce_purchases",
+            value=2,
+            period="last_30_days",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_purchases",
+            dimensions={"item_id": product_id},
+        ),
+        MetricFact(
+            name="purchase_revenue",
+            value=410.0,
+            period="last_30_days",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_revenue",
+            dimensions={"item_id": product_id},
+        ),
+    ]
+
+    readiness = _merchant_product_performance_readiness(
+        issue_clusters=[issue_cluster],
+        product_sample_readiness=sample_readiness,
+        product_metric_facts_by_connector={
+            "google_ads": ads_facts,
+            "google_analytics_4": ga4_facts,
+        },
+    )
+
+    assert readiness.status == "ready"
+    assert readiness.joined_product_count == 1
+    assert readiness.merchant_sample_count == 1
+    assert readiness.ads_product_fact_count == 4
+    assert readiness.ga4_product_fact_count == 2
+    assert readiness.current_read_contracts == [
+        "merchant_aggregate_product_statuses",
+        "google_ads_product_metric_facts",
+        "ga4_item_metric_facts",
+    ]
+    assert readiness.source_connectors == [
+        "google_merchant_center",
+        "google_ads",
+        "google_analytics_4",
+    ]
+    assert "ev_merchant_issue" in readiness.evidence_ids
+    assert "ev_ads_clicks" in readiness.evidence_ids
+    assert "ev_ga4_revenue" in readiness.evidence_ids
+    row = readiness.performance_rows[0]
+    assert row.product_id == product_id
+    assert row.sample_title == "Sorbent chemiczny 10 kg"
+    assert row.ads_clicks == 14
+    assert row.ads_cost_micros == 2750000
+    assert row.ads_conversions == 1.5
+    assert row.ads_conversion_value == 320.0
+    assert row.ga4_ecommerce_purchases == 2.0
+    assert row.ga4_purchase_revenue == 410.0
+    assert row.missing_metrics == []
+    assert "product fix impact" in row.blocked_claims
+    assert "feed write" in row.blocked_claims
+
+
 def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decision(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -10019,6 +10177,13 @@ def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decisi
     }
     assert decision["count_semantics"] == "reported_issue_occurrences"
     assert len(decision["metric_facts"]) == 3
+    decision_preview = decision["payload_preview"][0]
+    assert decision_preview["metric_snapshot"] == {
+        "max_issue_product_count": 892,
+        "reported_issue_occurrences": 1784,
+        "reporting_contexts": 3,
+    }
+    assert decision_preview["reported_issue_occurrences"] == 1784
     assert len(payload["issue_clusters"]) == 3
     assert payload["operator_summary"]["decision_source"] == "decision_queue"
 

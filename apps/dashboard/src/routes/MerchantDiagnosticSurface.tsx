@@ -18,6 +18,8 @@ import {
 } from "./TacticalQueuePanel";
 
 type MerchantDecisionItem = MerchantDiagnosticsResponse["decision_queue"][number];
+type MerchantProductPerformanceRow =
+  MerchantDiagnosticsResponse["product_performance_readiness"]["performance_rows"][number];
 
 export function MerchantDiagnosticSurface() {
   const diagnostics = useQuery({
@@ -103,6 +105,8 @@ export function MerchantDiagnosticSurface() {
       <MerchantOperatorSummary data={data} />
 
       <MerchantProductSampleReadiness data={data} />
+
+      <MerchantProductPerformanceReadiness data={data} />
 
       <MerchantUnknowns data={data} />
 
@@ -415,6 +419,91 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
   );
 }
 
+function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
+  const readiness = data.product_performance_readiness;
+  const statusLabel =
+    readiness.status === "ready" ? "join performance dostępny" : "join performance zablokowany";
+  const visibleRows = readiness.performance_rows.slice(0, 4);
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Join produktów z Ads/GA4
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            {readiness.summary}
+          </p>
+          <p className="mt-2 text-sm font-medium text-ink">{readiness.next_step}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Status" value={statusLabel} />
+          <MetricTile label="Join" value={readiness.joined_product_count} />
+          <MetricTile label="Próbki" value={readiness.merchant_sample_count} />
+        </div>
+      </div>
+      <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine label="Obecne kontrakty" values={readiness.current_read_contracts} />
+        <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
+        <TraceLine label="Klucze joinu" values={readiness.join_key_candidates} />
+        <TraceLine label="Źródła" values={readiness.source_connectors} empty="brak" />
+        <LinkedTraceLine
+          label="Dowody"
+          values={readiness.evidence_ids.slice(0, 4)}
+          kind="evidence"
+        />
+        <TraceLine
+          label="Blokuje claimy"
+          values={merchantBlockedClaimLabels(readiness.blocked_claims)}
+        />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+        <MetricTile label="Ads facts" value={readiness.ads_product_fact_count} />
+        <MetricTile label="GA4 facts" value={readiness.ga4_product_fact_count} />
+        <MetricTile label="Sample IDs" value={readiness.sample_product_ids.length} />
+        <MetricTile label="Wiersze" value={readiness.performance_rows.length} />
+      </div>
+      {visibleRows.length > 0 ? (
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          {visibleRows.map((row) => (
+            <MerchantProductPerformanceRowCard key={row.product_id} row={row} />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function MerchantProductPerformanceRowCard({
+  row
+}: {
+  row: MerchantProductPerformanceRow;
+}) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <h3 className="text-sm font-semibold text-ink">{row.sample_title ?? row.product_id}</h3>
+      {row.sample_title ? (
+        <p className="mt-1 break-all text-xs text-slate-500">{row.product_id}</p>
+      ) : null}
+      <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
+        <MetricTile label="Kliknięcia Ads" value={row.ads_clicks ?? "brak"} />
+        <MetricTile label="Koszt Ads" value={row.ads_cost_micros ?? "brak"} />
+        <MetricTile label="Zakupy GA4" value={row.ga4_ecommerce_purchases ?? "brak"} />
+        <MetricTile label="Przychód GA4" value={row.ga4_purchase_revenue ?? "brak"} />
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine label="Źródła" values={row.source_connectors} />
+        <LinkedTraceLine label="Dowody" values={row.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Brakujące metryki" values={row.missing_metrics} empty="brak" />
+        <TraceLine
+          label="Nie wolno twierdzić"
+          values={merchantBlockedClaimLabels(row.blocked_claims)}
+        />
+      </div>
+    </article>
+  );
+}
+
 function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
@@ -608,9 +697,13 @@ function merchantBlockedClaimLabels(claims: string[]) {
     "primary feed overwrite": "nadpisanie głównego feedu",
     "product approval": "zatwierdzenie produktu",
     "product data mutation": "zmiana danych produktu",
+    "product fix impact": "efekt naprawy produktu",
     "product-level fix": "naprawa pojedynczego produktu",
+    "product revenue recovery": "odzyskany przychód produktu",
+    "product ROAS": "ROAS produktu",
     "profit uplift": "wzrost zysku",
-    "revenue recovered": "odzyskany przychód"
+    "revenue recovered": "odzyskany przychód",
+    "Shopping/PMax product scaling": "skalowanie produktu w Shopping/PMax"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }

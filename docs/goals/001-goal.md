@@ -168,13 +168,15 @@ Finish these before claiming the Ekologus demo is done:
      forecast/audience size, change-impact windows and mutation apply/audit
      contracts for budget, recommendations, custom segments and negative
      keywords.
-   - Merchant current source state: aggregate issue contracts and product
-     sample readiness are available for review-only queues. Remaining Merchant
-     work is deeper product performance joins with Ads/GA4, supplemental-feed
-     candidate contracts, price-impact snapshots and richer payload previews
-     where the vendor API exposes safe read-only details. Do not claim approval
-     restoration, revenue recovery or unique SKU fixes from aggregate issue
-     counts.
+   - Merchant current source state: aggregate issue contracts, grouped
+     decision_queue, review-only payload preview and product sample readiness
+     are available for review-only queues. `product_performance_readiness`
+     exists and is explicitly blocked until WILQ has Ads/GA4 product-level
+     facts joined by product ID/item ID. Remaining Merchant work is
+     supplemental-feed candidate contracts, price-impact snapshots and richer
+     read-only previews where the vendor API exposes safe details. Do not claim
+     approval restoration, revenue recovery, product ROAS or unique SKU fixes
+     from aggregate issue counts.
    - GA4 current source state: live Data API read now requests and stores
      `keyEvents`, `ecommercePurchases`, `purchaseRevenue`, `totalRevenue` and
      `transactions` with landing/source/campaign dimensions. Current live proof
@@ -186,7 +188,8 @@ Finish these before claiming the Ekologus demo is done:
      1. Keep Localo `local_tasks` blocked unless Localo exposes a
         side-effect-free task read. Do not call task endpoints that generate
         new tasks.
-     2. Merchant deepening: product performance joins, supplemental-feed
+     2. Merchant deepening: add Ads/GA4 product-level read contracts for the
+        existing `product_performance_readiness` join, then supplemental-feed
         candidates, price-impact snapshots and richer read-only previews.
      3. Ahrefs/content-gap enrichment only where API evidence is granular
         enough to support URL/query/backlink decisions.
