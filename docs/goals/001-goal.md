@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 08:43 CEST.
+Last updated: 2026-06-23 08:48 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -192,6 +192,18 @@ runs. Live proof after stack restart: `kampanie=18`, `zapytania=50`,
 still drive review-candidate counts such as exclusions and custom segments.
 Focused proof: Command Center Ads latest-summary RED/GREEN test passed,
 existing Ads Command Center contract stayed green, Python ruff and mypy passed.
+
+2026-06-23 Command Center Merchant latest-refresh fix:
+`daily_merchant_feed` now filters Merchant metric facts to the latest
+`google_merchant_center` refresh before building first-screen totals and
+evidence IDs. This prevents Command Center from summing historical Merchant
+issue runs or showing stale tactical evidence on the daily feed card. Live proof
+after stack restart: Command Center now shows `produkty=10900`,
+`typy problemów=4`, `zgłoszenia=1887`, `decyzje=8`, matching
+`/api/merchant/diagnostics` `decision_count=8` and
+`reported_issue_occurrences=1887`. Focused proof: Merchant latest-refresh
+RED/GREEN test passed with the existing Command Center Ads/operator tests,
+Python ruff and mypy passed.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

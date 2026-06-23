@@ -3248,6 +3248,77 @@ def test_command_center_ads_totals_use_latest_refresh_summary(
     assert "koszt=154.05 PLN" in ads_item["summary"]
 
 
+def test_command_center_merchant_uses_latest_refresh_issue_facts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_latest_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_latest_metrics.duckdb"))
+    older_run = ConnectorRefreshRun(
+        id="refresh_google_merchant_center_older",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=datetime.now(UTC) - timedelta(hours=1),
+        evidence_ids=["ev_refresh_refresh_google_merchant_center_older"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"total_products": 100, "item_level_issue_count": 99},
+        summary="Older Merchant seed.",
+    )
+    latest_run = ConnectorRefreshRun(
+        id="refresh_google_merchant_center_latest",
+        connector_id="google_merchant_center",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        completed_at=datetime.now(UTC),
+        evidence_ids=["ev_refresh_refresh_google_merchant_center_latest"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"total_products": 10900, "item_level_issue_count": 23},
+        summary="Latest Merchant seed.",
+    )
+    for run, issue_count in ((older_run, 99), (latest_run, 23)):
+        local_state_store().save_connector_refresh_run(run)
+        metric_store().save_connector_refresh_metrics(
+            run,
+            detailed_facts=[
+                VendorMetricFact(name="total_products", value=10900),
+                VendorMetricFact(
+                    name="issue_product_count",
+                    value=issue_count,
+                    dimensions={
+                        "issue_type": "availability_updated",
+                        "affected_attribute": "n:availability",
+                        "country": "PL",
+                        "reporting_context": "SHOPPING_ADS",
+                        "severity": "NOT_IMPACTED",
+                        "resolution": "MERCHANT_ACTION",
+                    },
+                ),
+            ],
+        )
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    brief_by_id = {item["id"]: item for item in payload["operator_brief"]}
+    merchant_item = brief_by_id["daily_merchant_feed"]
+    assert merchant_item["status"] == "ready"
+    assert merchant_item["metric_tiles"]["produkty"] == 10900
+    assert merchant_item["metric_tiles"]["zgłoszenia"] == 23
+    assert merchant_item["metric_tiles"]["decyzje"] == 1
+    assert "zgłoszenia=23" in merchant_item["summary"]
+    assert "decyzje=1" in merchant_item["summary"]
+    assert "ev_refresh_refresh_google_merchant_center_latest" in merchant_item[
+        "evidence_ids"
+    ]
+    assert "ev_refresh_refresh_google_merchant_center_older" not in merchant_item[
+        "evidence_ids"
+    ]
+
+
 def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

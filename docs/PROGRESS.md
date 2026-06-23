@@ -70,6 +70,19 @@ Aktualny proof produktowy:
   'command_center_ads_totals_use_latest_refresh_summary or
   command_center_ads_plan_uses_live_review_queues'`, Python ruff OK and mypy
   OK for `wilq/briefing/command_center.py`.
+- Command Center Merchant latest-refresh fix, 2026-06-23 08:48 CEST.
+  `daily_merchant_feed` now filters Merchant facts to the latest
+  `google_merchant_center` refresh before building first-screen totals. It no
+  longer sums older refreshes or carries stale Merchant tactical evidence into
+  the Command Center card. Live proof after `scripts/local_stack.sh restart`:
+  Command Center shows `produkty=10900`, `typy problemów=4`,
+  `zgłoszenia=1887`, `decyzje=8`, matching `/api/merchant/diagnostics`
+  `decision_count=8` and `reported_issue_occurrences=1887`. Focused proof:
+  RED/GREEN `uv run pytest tests/test_api_contracts.py -q -k
+  'command_center_merchant_uses_latest_refresh_issue_facts or
+  command_center_ads_totals_use_latest_refresh_summary or
+  command_center_ads_plan_uses_live_review_queues or
+  command_center_exposes_polish_operator_brief'`, Python ruff OK and mypy OK.
 - Ads value readout, 2026-06-23 07:53 CEST.
   `/api/ads/diagnostics.operator_summary` exposes typed top-line campaign
   totals: `total_clicks`, `total_impressions`, `total_cost_micros`,

@@ -638,13 +638,25 @@ def _merchant_item_from_tactical(
     actions: list[ActionObject],
     facts: list[MetricFact],
 ) -> CommandCenterBriefItem:
+    latest_refresh = _latest_connector_refresh(GOOGLE_MERCHANT_CONNECTOR_ID)
+    facts = _facts_for_latest_refresh(latest_refresh, facts)
     merchant_items = [
         item for item in tactical_items if item.domain == OpportunityDomain.merchant
     ]
+    has_current_issue_facts = any(
+        fact.name == "issue_product_count" and fact.dimensions.get("issue_type")
+        for fact in facts
+    )
+    merchant_items = (
+        []
+        if has_current_issue_facts
+        else _tactical_items_for_latest_refresh(latest_refresh, merchant_items)
+    )
     product_count = int(_first_numeric_fact(facts, "total_products"))
     issue_type_count = _merchant_issue_type_count(facts)
     issue_occurrence_count = int(_sum_numeric_facts(facts, "issue_product_count"))
-    decision_count = len(merchant_items)
+    issue_cluster_count = _merchant_issue_cluster_count(facts)
+    decision_count = max(len(merchant_items), min(issue_cluster_count, 8))
     live_data_available = bool(merchant_items or issue_occurrence_count)
     action_ids = _unique(
         [
@@ -665,7 +677,12 @@ def _merchant_item_from_tactical(
         f"zgłoszenia={issue_occurrence_count}, decyzje={decision_count}. "
         f"Najważniejsza decyzja: {top_item.title}."
         if top_item is not None
-        else "Merchant nie ma gotowej kolejki decyzji z aktualnych metric facts."
+        else (
+            f"Produkty={product_count}, typy problemów={issue_type_count}, "
+            f"zgłoszenia={issue_occurrence_count}, decyzje={decision_count}."
+            if live_data_available
+            else "Merchant nie ma gotowej kolejki decyzji z aktualnych metric facts."
+        )
     )
     return CommandCenterBriefItem(
         id="daily_merchant_feed",
@@ -714,6 +731,32 @@ def _latest_connector_refresh(connector_id: str) -> ConnectorRefreshRun | None:
     return runs[0] if runs else None
 
 
+def _facts_for_latest_refresh(
+    latest_refresh: ConnectorRefreshRun | None,
+    facts: list[MetricFact],
+) -> list[MetricFact]:
+    if latest_refresh is None or not latest_refresh.evidence_ids:
+        return facts
+    evidence_ids = set(latest_refresh.evidence_ids)
+    current_facts = [fact for fact in facts if fact.evidence_id in evidence_ids]
+    return current_facts or facts
+
+
+def _tactical_items_for_latest_refresh(
+    latest_refresh: ConnectorRefreshRun | None,
+    items: list[TacticalQueueItem],
+) -> list[TacticalQueueItem]:
+    if latest_refresh is None or not latest_refresh.evidence_ids:
+        return items
+    evidence_ids = set(latest_refresh.evidence_ids)
+    current_items = [
+        item
+        for item in items
+        if any(evidence_id in evidence_ids for evidence_id in item.evidence_ids)
+    ]
+    return current_items
+
+
 def _refresh_has_live_data(run: ConnectorRefreshRun | None) -> bool:
     return (
         run is not None
@@ -746,6 +789,22 @@ def _merchant_issue_type_count(facts: list[MetricFact]) -> int:
         )
         for fact in facts
         if fact.name == "issue_product_count" and fact.dimensions
+    }
+    return len(issue_keys)
+
+
+def _merchant_issue_cluster_count(facts: list[MetricFact]) -> int:
+    issue_keys = {
+        (
+            fact.dimensions.get("issue_type", ""),
+            fact.dimensions.get("affected_attribute", ""),
+            fact.dimensions.get("country", ""),
+            fact.dimensions.get("reporting_context", ""),
+            fact.dimensions.get("severity", "UNKNOWN"),
+            fact.dimensions.get("resolution", ""),
+        )
+        for fact in facts
+        if fact.name == "issue_product_count" and fact.dimensions.get("issue_type")
     }
     return len(issue_keys)
 
