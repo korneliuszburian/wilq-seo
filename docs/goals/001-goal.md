@@ -171,6 +171,16 @@ React-side Ads recomputation. Focused proof: Command Center Ads API contract
 RED/GREEN test passed, Python ruff and mypy passed for the touched backend
 boundary. Current marketer-facing copy uses `aktualny odczyt`, not snapshot.
 
+2026-06-23 Command Center Ads plan value-led follow-up:
+`plan_review_ads_campaign_metrics` now starts from `Przejrzyj aktualny odczyt
+Ads bez apply`, carries live values such as `kliknięcia`, `koszt`, `konwersje`
+and `wartość konw.` through `why_it_matters`, and sends the operator to the
+value readout on `/ads-doctor` before budget/recommendation/exclusion/segment
+review. This keeps the first-screen Ads plan focused on marketer value and
+safe review, not connector/readiness jargon. Focused proof: Command Center Ads
+API contract RED/GREEN test passed, Python ruff and mypy passed for the
+touched backend boundary.
+
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight
 daily builders from tactical queue groups plus scoped metric facts for Ads,

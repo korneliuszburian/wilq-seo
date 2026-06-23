@@ -1224,26 +1224,29 @@ def _action_plan_item(
         if item.status == "ready":
             return CommandCenterActionPlanItem(
                 id="plan_review_ads_campaign_metrics",
-                title="Przejrzyj kolejki Ads do oceny bez apply",
+                title="Przejrzyj aktualny odczyt Ads bez apply",
                 route=item.route,
                 status="ready",
                 priority=16,
                 category="Google Ads",
                 why_it_matters=(
-                    f"{item.summary} Marketer ma tu decyzje do oceny, a nie listę "
-                    "connectorów: budżet, rekomendacje, wykluczenia i segmenty mają "
-                    "evidence oraz ActionObjecty, ale apply pozostaje zablokowany."
+                    f"{item.summary} To jest aktualny odczyt Ads i zestaw decyzji do "
+                    "review, a nie lista connectorów ani ścieżka apply: budżet, "
+                    "rekomendacje, wykluczenia i segmenty mają evidence oraz "
+                    "ActionObjecty, ale wdrożenie pozostaje zablokowane."
                 ),
                 operator_action=(
-                    "Otwórz /ads-doctor i przejrzyj kolejno: podgląd budżetów, "
-                    "podgląd rekomendacji, przegląd wykluczeń i podgląd segmentów. "
+                    "Otwórz /ads-doctor: aktualny odczyt wartości Ads jest na górze, "
+                    "a potem przejrzyj: podgląd budżetów, podgląd rekomendacji, "
+                    "przegląd wykluczeń i podgląd segmentów. "
                     "Waliduj ActionObjecty, ale nie wdrażaj zmian."
                 ),
                 skill_id="wilq-ads-doctor",
                 codex_prompt=(
-                    "Użyj skilla wilq-ads-doctor. Przejrzyj Google Ads dla Ekologus "
-                    "jako kolejkę oceny: budżety, rekomendacje, zapytania wyszukiwane, "
-                    "wykluczenia i segmenty niestandardowe. Cytuj evidence IDs i "
+                    "Użyj skilla wilq-ads-doctor. Przejrzyj aktualny odczyt Google "
+                    "Ads dla Ekologus oraz kolejkę oceny: budżety, rekomendacje, "
+                    "zapytania wyszukiwane, wykluczenia i segmenty niestandardowe. "
+                    "Cytuj evidence IDs i "
                     "ActionObject IDs. Nie twierdź opłacalności, zmarnowanego budżetu "
                     "ani wdrożenia zmian; wskaż tylko bezpieczne decyzje tylko do "
                     "oceny i brakujące kontrakty."

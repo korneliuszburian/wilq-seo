@@ -3135,8 +3135,12 @@ def test_command_center_ads_plan_uses_live_review_queues(
     plan_by_id = {item["id"]: item for item in payload["action_plan"]}
     ads_plan = plan_by_id["plan_review_ads_campaign_metrics"]
     assert ads_plan["status"] == "ready"
-    assert ads_plan["title"] == "Przejrzyj kolejki Ads do oceny bez apply"
-    assert "oceny, a nie listę connectorów" in ads_plan["why_it_matters"]
+    assert ads_plan["title"] == "Przejrzyj aktualny odczyt Ads bez apply"
+    assert "kliknięcia=12" in ads_plan["why_it_matters"]
+    assert "koszt=12 PLN" in ads_plan["why_it_matters"]
+    assert "konwersje=1" in ads_plan["why_it_matters"]
+    assert "wartość konw.=150 PLN" in ads_plan["why_it_matters"]
+    assert "aktualny odczyt" in ads_plan["operator_action"]
     assert "podgląd budżetów" in ads_plan["operator_action"]
     assert "nie wdrażaj zmian" in ads_plan["operator_action"]
     assert "Użyj skilla wilq-ads-doctor" in ads_plan["codex_prompt"]

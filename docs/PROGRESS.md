@@ -15,7 +15,7 @@ Pełne archiwum sprzed kompaktowania:
 - Git i dedykowane ledgery są źródłem długiej historii. Ten plik ma pomagać po
   utracie contextu.
 
-## Current Snapshot
+## Current Readout
 
 Data: 2026-06-23
 
@@ -50,6 +50,14 @@ Aktualny proof produktowy:
   `uv run pytest tests/test_api_contracts.py -q -k
   command_center_ads_plan_uses_live_review_queues`, plus Python ruff/mypy on
   `wilq/briefing/command_center.py` and `tests/test_api_contracts.py`.
+- Command Center Ads plan value-led follow-up, 2026-06-23 08:36 CEST.
+  `plan_review_ads_campaign_metrics` now starts from `Przejrzyj aktualny
+  odczyt Ads bez apply` and carries the live Ads values in `why_it_matters`
+  before review queues. The operator action now points to the value readout on
+  `/ads-doctor` first, then budget, recommendation, exclusion and segment
+  review. Focused proof: `uv run pytest tests/test_api_contracts.py -q -k
+  command_center_ads_plan_uses_live_review_queues`, Python ruff OK and mypy OK
+  for `wilq/briefing/command_center.py`.
 - Ads value readout, 2026-06-23 07:53 CEST.
   `/api/ads/diagnostics.operator_summary` exposes typed top-line campaign
   totals: `total_clicks`, `total_impressions`, `total_cost_micros`,
