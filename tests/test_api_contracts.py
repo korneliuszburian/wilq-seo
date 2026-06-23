@@ -3751,6 +3751,12 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     )
     blocked_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
     assert blocked_decision["metric_tiles"]["braki kontraktu"] == 3
+    assert blocked_decision["title"] == (
+        "Blokuj GBP, konkurencję i local tasks bez pełnych kontraktów Localo"
+    )
+    assert "bez Localo facts" not in blocked_decision["title"]
+    assert "Przejrzyj dostępne agregaty Localo" in blocked_decision["next_step"]
+    assert "Najpierw dodaj typed Localo read contract" not in blocked_decision["next_step"]
     section_by_id = {section["id"]: section for section in payload["sections"]}
     assert section_by_id["localo_visibility_contract"]["action_ids"] == [
         LOCALO_VISIBILITY_REVIEW_ACTION_ID

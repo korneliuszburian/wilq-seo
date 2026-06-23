@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo partial-contract blocker copy fix, 2026-06-23.
+  `/api/localo/diagnostics` no longer contradicts itself when typed aggregate
+  facts exist. With partial Localo evidence, the blocked decision now says it
+  blocks missing contracts for GBP, competitor visibility and local tasks; it
+  no longer says Localo has no facts. Live proof after stack restart:
+  `live_data_available=true`, `visibility_fact_count=17`, `blocker_count=1`,
+  blocked title `Blokuj GBP, konkurencję i local tasks bez pełnych kontraktów
+  Localo`, missing contracts `[gbp_visibility, competitor_visibility,
+  local_tasks]`. Focused proof: RED/GREEN Localo partial-visibility test plus
+  access-ready and missing-access Localo diagnostics tests, Python ruff OK and
+  mypy OK.
 - Localo operator-summary visibility-facts fix, 2026-06-23.
   `/api/localo/diagnostics.operator_summary` now distinguishes ready typed
   Localo aggregate facts from access-only proof. When Localo has visibility

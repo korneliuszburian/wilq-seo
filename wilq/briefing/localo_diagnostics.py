@@ -520,22 +520,48 @@ def _blocked_visibility_decision(
 ) -> LocaloDecisionItem:
     effective_missing_contracts = missing_contracts or LOCALO_VISIBILITY_READ_CONTRACTS
     effective_blocked_claims = blocked_claims or LOCALO_BLOCKED_CLAIMS
+    has_partial_visibility_facts = missing_contracts is not None
     return LocaloDecisionItem(
         id="localo_block_visibility_claims_without_read_contract",
         decision_type="block_visibility_claims",
         status="blocked",
-        title="Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts",
+        title=(
+            "Blokuj GBP, konkurencję i local tasks bez pełnych kontraktów Localo"
+            if has_partial_visibility_facts
+            else "Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts"
+        ),
         summary=(
-            "WILQ blokuje claimy o rankingach, GBP, konkurencji, reviews i wzroście "
-            "widoczności, dopóki Localo read contract nie dostarczy tych facts."
+            (
+                "WILQ ma częściowe agregaty Localo, ale blokuje claimy zależne od "
+                "brakujących kontraktów: GBP, konkurencji, local tasks i write path."
+            )
+            if has_partial_visibility_facts
+            else (
+                "WILQ blokuje claimy o rankingach, GBP, konkurencji, reviews i wzroście "
+                "widoczności, dopóki Localo read contract nie dostarczy tych facts."
+            )
         ),
         rationale=(
-            "Access/readiness nie jest metryką marketingową. To chroni dashboard i "
-            "skille przed udawaniem lokalnego SEO insightu."
+            (
+                "Częściowe facts są wystarczające do review agregatów, ale nie do "
+                "rozszerzania ich na nieobsługiwane obszary Localo."
+            )
+            if has_partial_visibility_facts
+            else (
+                "Access/readiness nie jest metryką marketingową. To chroni dashboard i "
+                "skille przed udawaniem lokalnego SEO insightu."
+            )
         ),
         next_step=(
-            "Najpierw dodaj typed Localo read contract; dopiero potem buduj "
-            "lokalne ActionObjecty."
+            (
+                "Przejrzyj dostępne agregaty Localo, a kontrakty GBP, konkurencji "
+                "i local tasks dodaj przed szerszymi claimami lub write path."
+            )
+            if has_partial_visibility_facts
+            else (
+                "Najpierw dodaj typed Localo read contract; dopiero potem buduj "
+                "lokalne ActionObjecty."
+            )
         ),
         access_status=access_probe.status,
         priority=10,
