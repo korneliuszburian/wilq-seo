@@ -71,6 +71,10 @@ Stan produktu:
   and English imperative workflow steps in WILQ skill docs. WILQ `SKILL.md` and
   `references/output-contract.md` files now use Polish operator prose while
   preserving API IDs, endpoint paths and enum values.
+- Live Ads blocker distinction: current `change_history_read_contract` is
+  blocked because Google Ads returned zero change_event rows in the current
+  window; current `keyword_planner_read_contract` is blocked by
+  `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`, not by missing OAuth.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
@@ -99,8 +103,9 @@ Stan produktu:
 
 3. **Remaining Ads optimizer value**
    - Current Ads is review-only for many important paths.
-   - Missing: live Keyword Planner enrichment, forecast/audience size, stronger
-     budget pacing, change-history impact context, safe apply/audit contracts.
+   - Missing: approved/live Keyword Planner enrichment, forecast/audience size,
+     change-history rows with pre/post performance windows, safe apply/audit
+     contracts.
 
 4. **Code quality where it affects velocity**
    - Avoid broad aesthetic refactors.

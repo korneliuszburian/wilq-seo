@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 22:09 CEST.
+Last updated: 2026-06-23 22:10 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -72,6 +72,10 @@ Finish these before claiming the Ekologus demo is done:
 
 3. **Remaining Ads optimizer value**
    - Current Ads is review-only and intentionally blocks unsupported claims.
+   - Current live blockers are not OAuth setup gaps: `change_history` is blocked
+     because Google Ads returned zero change_event rows for the current window;
+     `keyword_planner_read_contract` is blocked by
+     `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`.
    - Next value contracts: approved/live Keyword Planner enrichment,
      forecast/audience size, budget pacing, change-history impact context,
      campaign recommendations with safety, custom segment apply/audit and
