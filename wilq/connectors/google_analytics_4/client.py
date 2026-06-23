@@ -32,6 +32,17 @@ GA4_DIMENSIONS = (
     "sessionSourceMedium",
     "sessionCampaignName",
 )
+GA4_ITEM_DIMENSIONS = (
+    "itemId",
+    "itemName",
+)
+GA4_ITEM_METRICS = (
+    "itemsViewed",
+    "itemsAddedToCart",
+    "itemsCheckedOut",
+    "itemsPurchased",
+    "itemRevenue",
+)
 
 
 def refresh_ga4_behavior_summary(
@@ -72,7 +83,8 @@ def refresh_ga4_behavior_summary(
         status=ConnectorRefreshStatus.completed,
         summary=(
             "GA4 vendor read completed through Analytics Data API runReport. "
-            f"Rows: {metric_summary['row_count']}."
+            f"Landing rows: {metric_summary['row_count']}; "
+            f"item rows: {metric_summary['ga4_item_product_row_count']}."
         ),
         external_call_attempted=True,
         vendor_data_collected=True,
@@ -87,22 +99,58 @@ def _fetch_behavior_summary(
     access_token: str,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
     date_start, date_end = _default_date_range()
+    behavior_payload = _post_run_report(
+        client,
+        property_id,
+        access_token,
+        date_start=date_start,
+        date_end=date_end,
+        dimensions=GA4_DIMENSIONS,
+        metrics=GA4_METRICS,
+        limit=10,
+    )
+    behavior_summary, behavior_facts = _summarize_run_report_response(
+        behavior_payload,
+        date_start=date_start,
+        date_end=date_end,
+    )
+    item_payload = _post_run_report(
+        client,
+        property_id,
+        access_token,
+        date_start=date_start,
+        date_end=date_end,
+        dimensions=GA4_ITEM_DIMENSIONS,
+        metrics=GA4_ITEM_METRICS,
+        limit=50,
+    )
+    item_summary, item_facts = _summarize_item_run_report_response(item_payload)
+    return behavior_summary | item_summary, [*behavior_facts, *item_facts]
+
+
+def _post_run_report(
+    client: httpx.Client,
+    property_id: str,
+    access_token: str,
+    *,
+    date_start: str,
+    date_end: str,
+    dimensions: tuple[str, ...],
+    metrics: tuple[str, ...],
+    limit: int,
+) -> Any:
     response = client.post(
         f"{GA4_API_BASE}/{_property_path(property_id)}:runReport",
         headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
         json={
             "dateRanges": [{"startDate": date_start, "endDate": date_end}],
-            "dimensions": [{"name": dimension} for dimension in GA4_DIMENSIONS],
-            "metrics": [{"name": metric} for metric in GA4_METRICS],
-            "limit": "10",
+            "dimensions": [{"name": dimension} for dimension in dimensions],
+            "metrics": [{"name": metric} for metric in metrics],
+            "limit": str(limit),
         },
     )
     response.raise_for_status()
-    return _summarize_run_report_response(
-        response.json(),
-        date_start=date_start,
-        date_end=date_end,
-    )
+    return response.json()
 
 
 def _property_path(property_id: str) -> str:
@@ -167,20 +215,62 @@ def _summarize_run_report_response(
     )
 
 
-def _metric_names(payload: Any) -> list[str]:
+def _summarize_item_run_report_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    metric_names = _metric_names(payload, fallback=GA4_ITEM_METRICS)
+    dimension_names = _dimension_names(payload, fallback=GA4_ITEM_DIMENSIONS)
+    rows = payload.get("rows", []) if isinstance(payload, dict) else []
+    if not isinstance(rows, list):
+        rows = []
+    totals = {metric: 0.0 for metric in metric_names}
+    row_count = 0
+    metric_facts: list[VendorMetricFact] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        row_count += 1
+        values = row.get("metricValues", [])
+        if not isinstance(values, list):
+            continue
+        for index, metric in enumerate(metric_names):
+            if index >= len(values) or not isinstance(values[index], dict):
+                continue
+            totals[metric] += _float_metric(values[index].get("value"))
+        dimensions = _ga4_dimensions(row, dimension_names)
+        if dimensions.get("item_id"):
+            metric_facts.extend(_ga4_metric_facts(values, metric_names, dimensions))
+    return (
+        {
+            "ga4_item_product_row_count": row_count,
+            "ga4_items_viewed": int(totals.get("itemsViewed", 0.0)),
+            "ga4_items_added_to_cart": int(totals.get("itemsAddedToCart", 0.0)),
+            "ga4_items_checked_out": int(totals.get("itemsCheckedOut", 0.0)),
+            "ga4_items_purchased": int(totals.get("itemsPurchased", 0.0)),
+            "ga4_item_revenue": round(totals.get("itemRevenue", 0.0), 2),
+        },
+        metric_facts,
+    )
+
+
+def _metric_names(payload: Any, *, fallback: tuple[str, ...] = GA4_METRICS) -> list[str]:
     headers = payload.get("metricHeaders", []) if isinstance(payload, dict) else []
     if not isinstance(headers, list):
-        return list(GA4_METRICS)
+        return list(fallback)
     names = [item.get("name") for item in headers if isinstance(item, dict)]
-    return [name for name in names if isinstance(name, str)] or list(GA4_METRICS)
+    return [name for name in names if isinstance(name, str)] or list(fallback)
 
 
-def _dimension_names(payload: Any) -> list[str]:
+def _dimension_names(
+    payload: Any,
+    *,
+    fallback: tuple[str, ...] = GA4_DIMENSIONS,
+) -> list[str]:
     headers = payload.get("dimensionHeaders", []) if isinstance(payload, dict) else []
     if not isinstance(headers, list):
-        return list(GA4_DIMENSIONS)
+        return list(fallback)
     names = [item.get("name") for item in headers if isinstance(item, dict)]
-    return [name for name in names if isinstance(name, str)] or list(GA4_DIMENSIONS)
+    return [name for name in names if isinstance(name, str)] or list(fallback)
 
 
 def _ga4_dimensions(row: dict[str, Any], dimension_names: list[str]) -> dict[str, str]:
@@ -230,6 +320,11 @@ def _snake_case_ga4_metric(value: str) -> str:
         "ecommercePurchases": "ecommerce_purchases",
         "purchaseRevenue": "purchase_revenue",
         "totalRevenue": "total_revenue",
+        "itemsViewed": "item_views",
+        "itemsAddedToCart": "item_adds_to_cart",
+        "itemsCheckedOut": "item_checkouts",
+        "itemsPurchased": "item_purchases",
+        "itemRevenue": "item_revenue",
     }
     return mapping.get(value, value)
 
@@ -239,6 +334,8 @@ def _snake_case_ga4_dimension(value: str) -> str:
         "landingPagePlusQueryString": "landing_page",
         "sessionSourceMedium": "source_medium",
         "sessionCampaignName": "campaign_name",
+        "itemId": "item_id",
+        "itemName": "item_name",
     }
     return mapping.get(value, value)
 

@@ -10756,67 +10756,108 @@ def test_ga4_vendor_read_uses_run_report(
         lambda scopes: "ga4-access-token",
     )
 
+    requests_seen: list[dict[str, Any]] = []
+
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "analyticsdata.googleapis.com"
         assert request.url.path == "/v1beta/properties/411974093:runReport"
         assert request.headers["authorization"] == "Bearer ga4-access-token"
         body = json.loads(request.content.decode())
-        assert [metric["name"] for metric in body["metrics"]] == [
-            "activeUsers",
-            "sessions",
-            "screenPageViews",
-            "eventCount",
-            "engagementRate",
-            "keyEvents",
-            "ecommercePurchases",
-            "purchaseRevenue",
-            "totalRevenue",
-            "transactions",
-        ]
-        assert [dimension["name"] for dimension in body["dimensions"]] == [
+        requests_seen.append(body)
+        dimensions = [dimension["name"] for dimension in body["dimensions"]]
+        if dimensions == [
             "landingPagePlusQueryString",
             "sessionSourceMedium",
             "sessionCampaignName",
+        ]:
+            assert [metric["name"] for metric in body["metrics"]] == [
+                "activeUsers",
+                "sessions",
+                "screenPageViews",
+                "eventCount",
+                "engagementRate",
+                "keyEvents",
+                "ecommercePurchases",
+                "purchaseRevenue",
+                "totalRevenue",
+                "transactions",
+            ]
+            assert body["limit"] == "10"
+            return httpx.Response(
+                200,
+                json={
+                    "dimensionHeaders": [
+                        {"name": "landingPagePlusQueryString"},
+                        {"name": "sessionSourceMedium"},
+                        {"name": "sessionCampaignName"},
+                    ],
+                    "metricHeaders": [
+                        {"name": "activeUsers"},
+                        {"name": "sessions"},
+                        {"name": "screenPageViews"},
+                        {"name": "eventCount"},
+                        {"name": "engagementRate"},
+                        {"name": "keyEvents"},
+                        {"name": "ecommercePurchases"},
+                        {"name": "purchaseRevenue"},
+                        {"name": "totalRevenue"},
+                        {"name": "transactions"},
+                    ],
+                    "rows": [
+                        {
+                            "dimensionValues": [
+                                {"value": "/oferta/"},
+                                {"value": "google / cpc"},
+                                {"value": "PMax odpady"},
+                            ],
+                            "metricValues": [
+                                {"value": "20"},
+                                {"value": "30"},
+                                {"value": "50"},
+                                {"value": "75"},
+                                {"value": "0.62"},
+                                {"value": "3"},
+                                {"value": "1"},
+                                {"value": "125.50"},
+                                {"value": "150.75"},
+                                {"value": "1"},
+                            ],
+                        }
+                    ],
+                },
+            )
+        assert dimensions == ["itemId", "itemName"]
+        assert [metric["name"] for metric in body["metrics"]] == [
+            "itemsViewed",
+            "itemsAddedToCart",
+            "itemsCheckedOut",
+            "itemsPurchased",
+            "itemRevenue",
         ]
-        assert body["limit"] == "10"
+        assert body["limit"] == "50"
         return httpx.Response(
             200,
             json={
-                "dimensionHeaders": [
-                    {"name": "landingPagePlusQueryString"},
-                    {"name": "sessionSourceMedium"},
-                    {"name": "sessionCampaignName"},
-                ],
+                "dimensionHeaders": [{"name": "itemId"}, {"name": "itemName"}],
                 "metricHeaders": [
-                    {"name": "activeUsers"},
-                    {"name": "sessions"},
-                    {"name": "screenPageViews"},
-                    {"name": "eventCount"},
-                    {"name": "engagementRate"},
-                    {"name": "keyEvents"},
-                    {"name": "ecommercePurchases"},
-                    {"name": "purchaseRevenue"},
-                    {"name": "totalRevenue"},
-                    {"name": "transactions"},
+                    {"name": "itemsViewed"},
+                    {"name": "itemsAddedToCart"},
+                    {"name": "itemsCheckedOut"},
+                    {"name": "itemsPurchased"},
+                    {"name": "itemRevenue"},
                 ],
                 "rows": [
                     {
                         "dimensionValues": [
-                            {"value": "/oferta/"},
-                            {"value": "google / cpc"},
-                            {"value": "PMax odpady"},
+                            {"value": "pl~PL~gla_107394"},
+                            {"value": "Sorbent chemiczny 10 kg"},
                         ],
                         "metricValues": [
-                            {"value": "20"},
-                            {"value": "30"},
-                            {"value": "50"},
-                            {"value": "75"},
-                            {"value": "0.62"},
+                            {"value": "9"},
+                            {"value": "4"},
                             {"value": "3"},
-                            {"value": "1"},
-                            {"value": "125.50"},
-                            {"value": "150.75"},
-                            {"value": "1"},
+                            {"value": "2"},
+                            {"value": "410.25"},
                         ],
                     }
                 ],
@@ -10842,6 +10883,12 @@ def test_ga4_vendor_read_uses_run_report(
     assert result.metric_summary["purchase_revenue"] == 125.50
     assert result.metric_summary["total_revenue"] == 150.75
     assert result.metric_summary["transactions"] == 1
+    assert result.metric_summary["ga4_item_product_row_count"] == 1
+    assert result.metric_summary["ga4_items_viewed"] == 9
+    assert result.metric_summary["ga4_items_added_to_cart"] == 4
+    assert result.metric_summary["ga4_items_checked_out"] == 3
+    assert result.metric_summary["ga4_items_purchased"] == 2
+    assert result.metric_summary["ga4_item_revenue"] == 410.25
     assert result.metric_facts[0].name == "active_users"
     assert result.metric_facts[0].value == 20
     assert result.metric_facts[0].dimensions == {
@@ -10855,6 +10902,13 @@ def test_ga4_vendor_read_uses_run_report(
     assert facts_by_name["purchase_revenue"].value == 125.50
     assert facts_by_name["total_revenue"].value == 150.75
     assert facts_by_name["transactions"].value == 1
+    assert facts_by_name["item_purchases"].value == 2
+    assert facts_by_name["item_purchases"].dimensions == {
+        "item_id": "pl~PL~gla_107394",
+        "item_name": "Sorbent chemiczny 10 kg",
+    }
+    assert facts_by_name["item_revenue"].value == 410.25
+    assert len(requests_seen) == 2
 
 
 def test_google_first_party_vendor_reads_route_through_refresh_endpoint(
