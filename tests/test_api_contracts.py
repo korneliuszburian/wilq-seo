@@ -4314,6 +4314,114 @@ def test_ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noi
     assert "ahrefs_block_gap_claims_without_records" not in decision_ids
 
 
+def test_ahrefs_diagnostics_prioritizes_reviewable_ekologus_gap_records(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_relevance_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_relevance.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+    ahrefs_run = ConnectorRefreshRun(
+        id="refresh_ahrefs_relevance_test",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_ahrefs_relevance_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "domain_rating": 90,
+            "ahrefs_rank": 1450,
+            "ahrefs_content_gap_count": 4,
+            "ahrefs_backlink_gap_count": 6,
+            "ahrefs_organic_keyword_gap_count": 2,
+        },
+        summary="Ahrefs mixed relevance gap read completed through test adapter.",
+    )
+    local_state_store().save_connector_refresh_run(ahrefs_run)
+    metric_store().save_connector_refresh_metrics(
+        ahrefs_run,
+        detailed_facts=[
+            VendorMetricFact("domain_rating", 90, period="ahrefs_site_explorer"),
+            VendorMetricFact("ahrefs_rank", 1450, period="ahrefs_site_explorer"),
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                2,
+                {
+                    "gap_type": "content_gap",
+                    "keyword": "bdo szkolenia środowiskowe",
+                    "competitor_domain": "denios.pl",
+                    "target_url": "https://www.ekologus.pl/bdo/",
+                    "source_url": "https://www.denios.pl/bdo/",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_organic_keyword_gap_count",
+                2,
+                {
+                    "gap_type": "organic_keyword_gap",
+                    "keyword": "magazynowanie odpadów",
+                    "competitor_domain": "dla-przemyslu.pl",
+                    "source_url": "https://dla-przemyslu.pl/magazynowanie-odpadow/",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_backlink_gap_count",
+                6,
+                {
+                    "gap_type": "backlink_gap",
+                    "competitor_domain": "cuk.pl",
+                    "source_url": "apple.com",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_backlink_gap_count",
+                4,
+                {
+                    "gap_type": "backlink_gap",
+                    "competitor_domain": "cuk.pl",
+                    "source_url": "google.com",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                4,
+                {
+                    "gap_type": "content_gap",
+                    "keyword": "prawo jazdy b1",
+                    "competitor_domain": "cuk.pl",
+                    "source_url": "https://cuk.pl/porady/prawo-jazdy-B1",
+                },
+                period="ahrefs_gap",
+            ),
+        ],
+    )
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    records = payload["gap_read_contract"]["gap_records"]
+    assert [record["keyword"] for record in records if record["keyword"]] == [
+        "bdo szkolenia środowiskowe",
+        "magazynowanie odpadów",
+    ]
+    record_text = " ".join(record["title"] for record in records)
+    assert "apple.com" not in record_text
+    assert "google.com" not in record_text
+    assert "prawo jazdy" not in record_text
+    gap_decision = {
+        decision["id"]: decision for decision in payload["decision_queue"]
+    }["ahrefs_review_gap_records"]
+    assert gap_decision["metric_tiles"]["rekordy luk"] == 2
+
+
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

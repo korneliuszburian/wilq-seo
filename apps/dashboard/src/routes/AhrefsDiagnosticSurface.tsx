@@ -9,6 +9,8 @@ import { priorityLabel } from "./marketingLabels";
 type AhrefsDecisionItem = AhrefsDiagnosticsResponse["decision_queue"][number];
 type AhrefsMetricFact = AhrefsDiagnosticsResponse["sections"][number]["metric_facts"][number];
 
+const AHREFS_VISIBLE_GAP_RECORD_LIMIT = 5;
+
 export function AhrefsDiagnosticSurface() {
   const diagnostics = useQuery({
     queryKey: ["ahrefs-diagnostics"],
@@ -168,6 +170,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
 
 function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
   const contract = data.gap_read_contract;
+  const visibleGapRecords = contract.gap_records.slice(0, AHREFS_VISIBLE_GAP_RECORD_LIMIT);
   return (
     <section className="mt-6 rounded-md border border-line bg-white p-4">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
@@ -209,20 +212,25 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
       {contract.gap_records.length === 0 ? (
         <BlockerNotice message="Brak typed gap records. Ahrefs może wspierać content review tylko jako kontekst autorytetu, nie jako lista luk konkurencji." />
       ) : (
-        <div className="mt-3 grid gap-3 xl:grid-cols-2">
-          {contract.gap_records.map((record) => (
-            <article key={record.id} className="rounded-md border border-line p-3">
-              <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-                {record.gap_type}
-              </p>
-              <h3 className="mt-1 text-sm font-semibold">{record.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-700">{record.summary}</p>
-              <p className="mt-2 text-xs font-semibold leading-5 text-ink">
-                {record.next_step}
-              </p>
-            </article>
-          ))}
-        </div>
+        <>
+          <p className="mt-3 text-xs font-medium text-slate-600">
+            Pokazuję top {visibleGapRecords.length} z {contract.gap_records.length} rekordów.
+          </p>
+          <div className="mt-3 grid gap-3 xl:grid-cols-2">
+            {visibleGapRecords.map((record) => (
+              <article key={record.id} className="rounded-md border border-line p-3">
+                <p className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  {record.gap_type}
+                </p>
+                <h3 className="mt-1 text-sm font-semibold">{record.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{record.summary}</p>
+                <p className="mt-2 text-xs font-semibold leading-5 text-ink">
+                  {record.next_step}
+                </p>
+              </article>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );

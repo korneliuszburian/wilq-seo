@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs relevance cleanup, 2026-06-23 10:46 CEST.
+  `/api/ahrefs/diagnostics` now ranks reviewable Ekologus gap records before
+  generic/off-topic Ahrefs records and filters hard noise such as CUK insurance
+  content and broad backlink domains. `/ahrefs` shows only top 5 gap records in
+  the marketer-facing contract panel, while keeping the full API count and raw
+  traceability lower in `Dowody i ograniczenia Ahrefs`. Live proof after stack
+  restart: Ahrefs first flow shows Denios/DLA/Manutan-style review records and
+  no longer starts with `apple.com`, `google.com`, `prawo jazdy` or CUK noise.
+  Focused proof: RED/GREEN Ahrefs relevance API test, existing Ahrefs API tests,
+  Ahrefs route test, Python ruff/mypy OK, dashboard lint OK and dashboard
+  typecheck OK.
 - GA4 first-flow trace cleanup, 2026-06-23 10:31 CEST.
   `/ga4` no longer prints raw `ev_*` evidence IDs or raw
   `act_review_ga4_tracking_quality` in first-flow GA4 measurement/operator

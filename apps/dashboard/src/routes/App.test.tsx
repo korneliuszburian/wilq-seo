@@ -4822,6 +4822,74 @@ const ahrefsDiagnostics = {
         next_step:
           "Sprawdź ręcznie jakość domen/linków i nie planuj link buildingu bez review ryzyka oraz źródła.",
         risk: "medium"
+      },
+      {
+        id: "ahrefs_gap_competitor_denios",
+        gap_type: "competitor_page",
+        title: "Strona konkurencji: denios.pl",
+        summary:
+          "Strona konkurencji: denios.pl. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+        source_url: null,
+        target_url: null,
+        competitor_domain: "denios.pl",
+        keyword: null,
+        metric_facts: [],
+        evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+        blocked_claims: ["traffic uplift", "authority improvement"],
+        next_step:
+          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+        risk: "medium"
+      },
+      {
+        id: "ahrefs_gap_competitor_manutan",
+        gap_type: "competitor_page",
+        title: "Strona konkurencji: manutan.pl",
+        summary:
+          "Strona konkurencji: manutan.pl. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+        source_url: null,
+        target_url: null,
+        competitor_domain: "manutan.pl",
+        keyword: null,
+        metric_facts: [],
+        evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+        blocked_claims: ["traffic uplift", "authority improvement"],
+        next_step:
+          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+        risk: "medium"
+      },
+      {
+        id: "ahrefs_gap_competitor_promag",
+        gap_type: "competitor_page",
+        title: "Strona konkurencji: e-promag.pl",
+        summary:
+          "Strona konkurencji: e-promag.pl. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+        source_url: null,
+        target_url: null,
+        competitor_domain: "e-promag.pl",
+        keyword: null,
+        metric_facts: [],
+        evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+        blocked_claims: ["traffic uplift", "authority improvement"],
+        next_step:
+          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+        risk: "medium"
+      },
+      {
+        id: "ahrefs_gap_competitor_hidden",
+        gap_type: "competitor_page",
+        title: "Strona konkurencji: hidden-noise.example",
+        summary:
+          "Strona konkurencji: hidden-noise.example. Fakty Ahrefs: competitor_pages=1. To jest read-only rekord do review, nie obietnica wzrostu ruchu.",
+        source_url: null,
+        target_url: null,
+        competitor_domain: "hidden-noise.example",
+        keyword: null,
+        metric_facts: [],
+        evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+        blocked_claims: ["traffic uplift", "authority improvement"],
+        next_step:
+          "Połącz rekord z GSC i WordPress inventory, potem zdecyduj: refresh, create, merge albo block.",
+        risk: "medium"
       }
     ],
     next_step: "Połącz gap records z GSC/WordPress i przygotuj kolejkę review.",
@@ -6442,6 +6510,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
     expect(screen.getByText(/wymagane rekordy luk Ahrefs/)).toBeInTheDocument();
     expect(screen.getAllByText(/poprawa autorytetu/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Pokazuję top 5 z 6 rekordów.")).toBeInTheDocument();
+    expect(screen.queryByText("Strona konkurencji: hidden-noise.example")).not.toBeInTheDocument();
     expect(
       screen.queryByText("API-backed operating surface with evidence, connector and action state.")
     ).not.toBeInTheDocument();

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 10:31 CEST.
+Last updated: 2026-06-23 10:46 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -160,6 +160,17 @@ preview sections remain the place for raw traceability. Browser proof with
 agent-browser on `http://127.0.0.1:5173/ga4`: raw trace links start only under
 lower proof/validation sections. Focused proof: RED/GREEN GA4 route test,
 dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Ahrefs relevance cleanup: `/api/ahrefs/diagnostics` now ranks
+reviewable Ekologus gap records before generic/off-topic Ahrefs records and
+filters hard noise such as CUK insurance content and broad backlink domains.
+`/ahrefs` shows only top 5 gap records in the marketer-facing contract panel,
+while preserving the full API count and lower proof/traceability. Live proof
+after stack restart: the Ahrefs first flow shows Denios/DLA/Manutan-style
+review records and no longer starts with `apple.com`, `google.com`, `prawo
+jazdy` or CUK noise. Focused proof: RED/GREEN Ahrefs relevance API test,
+existing Ahrefs API tests, Ahrefs route test, Python ruff/mypy OK, dashboard
+lint OK and dashboard typecheck OK.
 
 2026-06-23 Ads wording follow-up: `/api/ads/diagnostics` no longer uses
 `snapshot kampanii` in marketer-facing change-impact readiness copy. The
