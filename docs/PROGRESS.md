@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor first-flow polish copy, 2026-06-23.
+  `/ads-doctor` first flow no longer exposes old mixed English/operator slang
+  in the main Ads decision path: `Ready/Blocked`, `review`, `apply`, `search
+  terms`, `negative keywords`, `custom segments`, raw `wartość_konwersji=...`
+  and `ActionObjecty` count labels were replaced with Polish marketer-facing
+  copy where the first flow renders Ads status, current read, operator summary,
+  readiness groups and top decision cards. Lower drilldown sections still have
+  older prose and remain a separate cleanup slice. Focused proof:
+  `pnpm --filter @wilq/dashboard exec vitest run src/routes/App.test.tsx -t
+  "ads doctor route renders live metric-backed diagnostics"`, dashboard
+  lint/typecheck OK, and browser proof
+  `.local-lab/proof/dashboard/ads-doctor-polish-first-flow.txt`.
 - Command Center polish decision copy, 2026-06-23.
   First-screen daily decision cards no longer render API prose through
   regex-style phrase replacement or expose full Codex prompts inline. The

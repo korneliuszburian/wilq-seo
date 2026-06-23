@@ -25,6 +25,89 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-merchant-feed-operator manual queue eval
+
+Prompt:
+
+```text
+Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla
+Ekologus, pogrupuj problemy feedu, wskaż najbezpieczniejszą kolejkę review i
+nie twierdź, że approval albo revenue zostały odzyskane.
+```
+
+API and skill behavior observed:
+
+- The skill read its `SKILL.md` and output contract.
+- It called allowed WILQ API surfaces:
+  - `GET /api/merchant/diagnostics`
+  - `POST /api/codex/context-pack` with
+    `{"skill":"wilq-merchant-feed-operator"}`
+  - `GET /api/connectors/google_merchant_center/status`
+  - `POST /api/actions/act_review_merchant_feed_issues/validate`
+- Smoke contract ran:
+  `uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+
+Evidence:
+
+- Source connector: `google_merchant_center`.
+- Evidence IDs:
+  `ev_refresh_refresh_google_merchant_center_a3ef2f66703f`,
+  `ev_connector_google_merchant_center_status`.
+- ActionObject: `act_review_merchant_feed_issues`.
+- Action validation: `valid=true`, `status=valid`, `errors=[]`.
+
+Useful output:
+
+- WILQ API reported `live_data_available=true`, `blocker_count=0`.
+- The answer correctly treated the Merchant data as review evidence, not as a
+  product approval or revenue recovery claim.
+- It surfaced the stale-data caveat: last real Merchant `vendor_read` was from
+  `2026-06-17T23:36:39Z`, so the queue is useful for review but should be
+  refreshed before production decisions.
+- Metrics cited by the run:
+  - `10900` products
+  - `10820` active products
+  - `80` expiring products
+  - `1887` Merchant problem reports
+  - `15` item-level issues
+  - `0` disapproved products
+  - `0` pending products
+
+Safe review queue produced:
+
+1. `n:unit_pricing_measure / missing_potentially_required_attribute`
+   - max reports: `892`
+   - total report contexts: `1784`
+   - contexts: `ALL_CONTEXTS`, `FREE_LISTINGS`, `SHOPPING_ADS`
+2. `n:availability / availability_updated`
+   - max reports: `46`
+   - total report contexts: `92`
+3. `n:certification / missing_potentially_required_attribute`
+   - max reports: `4`
+   - total report contexts: `8`
+4. `n:image_link / image_too_small_for_high_resolution`
+   - max reports: `2`
+   - total report contexts: `3`
+
+Blocked claims preserved:
+
+- `approval restored`
+- `revenue recovered`
+- `automatic feed edit`
+- `primary feed overwrite`
+- `feed write`
+- `product data mutation`
+- `automatic approval fix`
+
+Product finding:
+
+- This manual eval was more useful than a schema-only run because it produced a
+  concrete Merchant review queue and correctly distinguished report counts from
+  unique product IDs.
+- Next improvement: the Merchant API should expose product/example rows and a
+  freshness-aware refresh path for this queue, so the skill can move from
+  cluster-level review to payload-preview review without inventing data.
+
 ## 2026-06-23 - wilq-daily-command compact DailyDecision context
 
 Purpose:

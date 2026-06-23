@@ -6024,7 +6024,7 @@ describe("WILQ dashboard", () => {
       within(safeModePanel as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
     const campaignReviewDecision = screen
-      .getByRole("heading", { name: "Ustal kolejność review kampanii Ads" })
+      .getByRole("heading", { name: "Ustal kolejność oceny kampanii Ads" })
       .closest("article");
     expect(campaignReviewDecision).not.toBeNull();
     expect(
@@ -6033,10 +6033,10 @@ describe("WILQ dashboard", () => {
     expect(
       within(campaignReviewDecision as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
     ).not.toBeInTheDocument();
-    expect(screen.getByText("kampanie do review")).toBeInTheDocument();
+    expect(screen.getByText("kampanie do oceny")).toBeInTheDocument();
     expect(screen.getByText("historia zmian")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Gotowość impact review zmian" })
+      screen.getByRole("heading", { name: "Gotowość oceny wpływu zmian" })
     ).toBeInTheDocument();
     expect(screen.getAllByText("odczyt kampanii").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/bieżące kliknięcia kampanii/).length).toBeGreaterThan(0);
@@ -6046,9 +6046,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/zmiana kampanii/).length).toBeGreaterThan(0);
     expect(screen.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeInTheDocument();
     expect(
-      screen.getByText("Przejrzyj zapytania z reklam bez automatycznych wykluczeń")
+      screen.getByText("Przejrzyj wyszukiwane hasła bez automatycznych wykluczeń")
     ).toBeInTheDocument();
-    expect(screen.getByText("Przejrzyj rekomendacje Google Ads bez apply")).toBeInTheDocument();
+    expect(
+      screen.getByText("Przejrzyj rekomendacje Google Ads bez wdrażania")
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/Nie wdrażaj wykluczeń, budżetów ani rekomendacji/)
     ).toBeInTheDocument();
@@ -6068,7 +6070,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("7-dniowy budżet")).not.toBeInTheDocument();
     expect(screen.getAllByText("78,38%").length).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("heading", { name: "Kolejność review kampanii" }).length
+      screen.getAllByRole("heading", { name: "Kolejność oceny kampanii" }).length
     ).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Podział wspólnych budżetów" })).not.toBeInTheDocument();
     expect(screen.queryByText("Ekologus Generic Search")).not.toBeInTheDocument();
@@ -6079,14 +6081,14 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/card_google_ads_budget_review_playbook/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Reguły:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ads_scaling_candidates_v1/)).not.toBeInTheDocument();
-    expect(screen.getByText(/wartość_konwersji=120/)).toBeInTheDocument();
+    expect(screen.queryByText(/wartość_konwersji=120/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Wymagany review/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/review strategii przez człowieka/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Wymagana ocena/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ocena strategii przez człowieka/).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("heading", { name: "Gotowość strategy review Ads" })
+      screen.getByRole("heading", { name: "Gotowość oceny strategii Ads" })
     ).toBeInTheDocument();
-    expect(screen.getAllByText("brak review").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("brak oceny").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/target KPI verdict/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);

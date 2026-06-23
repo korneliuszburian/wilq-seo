@@ -86,7 +86,7 @@ export function AdsDoctorSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">Ads Doctor</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok Google Ads z WILQ API. Pokazuje, co marketer może
-            uczciwie sprawdzić na podstawie kampanii i zapytań oraz które claimy
+            uczciwie sprawdzić na podstawie kampanii i zapytań oraz które wnioski
             pozostają zablokowane bez kolejnych kontraktów odczytu.
           </p>
         </div>
@@ -161,8 +161,9 @@ function AdsMarketSnapshot({
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Szybki obraz tego, co WILQ może dziś uczciwie przejrzeć w Ads.
-            Apply, waste, CPA/ROAS verdict i skalowanie budżetu pozostają
-            zablokowane do czasu walidacji ActionObject i brakujących kontraktów.
+            Wdrożenia zmian, ocena zmarnowanego budżetu, werdykty CPA/ROAS
+            i skalowanie budżetu pozostają zablokowane do czasu walidacji akcji
+            WILQ oraz brakujących kontraktów.
           </p>
         </div>
         <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
@@ -185,8 +186,8 @@ function AdsMarketSnapshot({
           value={data.recommendations_read_contract.recommendation_rows.length}
         />
         <MetricTile label="Budżety" value={data.budget_pacing_read_contract.budget_rows.length} />
-        <MetricTile label="Ready" value={summary.ready_area_count} />
-        <MetricTile label="Blocked" value={summary.blocked_area_count} />
+        <MetricTile label="Gotowe" value={summary.ready_area_count} />
+        <MetricTile label="Blokady" value={summary.blocked_area_count} />
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <TraceLine
@@ -225,9 +226,15 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             Operator Ads
           </div>
           <h2 className="mt-1 text-base font-semibold tracking-normal">{summary.title}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{summary.summary}</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            WILQ porządkuje bieżący odczyt Ads w kolejkę decyzji: kampanie,
+            wyszukiwane hasła, KPI, budżety i rekomendacje. To jest przegląd
+            oparty o dowody, bez wdrażania zmian i bez werdyktu o opłacalności.
+          </p>
           <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-ink">
-            {summary.next_step}
+            Przejrzyj top decyzje w tej kolejności. Nie wdrażaj wykluczeń,
+            budżetów ani rekomendacji bez podglądu zmian, walidacji akcji WILQ
+            i oceny kontekstu biznesowego.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -249,8 +256,8 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             label="Zapytania"
             value={summary.search_term_count}
           />
-          <MetricTile label="Ready" value={summary.ready_area_count} />
-          <MetricTile label="Blocked" value={summary.blocked_area_count} />
+          <MetricTile label="Gotowe" value={summary.ready_area_count} />
+          <MetricTile label="Blokady" value={summary.blocked_area_count} />
         </div>
       </div>
 
@@ -281,14 +288,14 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
               empty="brak"
             />
             <TraceLine label="Brakujące kontrakty" values={missingReadContracts} empty="brak" />
-            <TraceLine label="Wymagany review" values={operatorReviewGates} empty="brak" />
+            <TraceLine label="Wymagana ocena" values={operatorReviewGates} empty="brak" />
             <TraceLine
               label="Dowody"
               values={[formatTraceIdCount(summary.evidence_ids.length)]}
               empty="brak"
             />
             <TraceLine
-              label="ActionObjecty"
+              label="Akcje WILQ"
               values={[formatActionObjectCount(summary.action_ids.length)]}
               empty="brak"
             />
@@ -316,24 +323,26 @@ function AdsOptimizerReadinessPanel({
             Co można zrobić teraz w Ads
           </h3>
           <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-600">
-            {contract.summary}
+            WILQ ma obszary gotowe do ręcznej oceny i obszary nadal zablokowane.
+            Ten panel pokazuje, co można przejrzeć teraz, a czego nie wolno
+            jeszcze zamienić w decyzję lub wdrożenie.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Gotowe" value={contract.ready_area_count} />
           <MetricTile label="Zablokowane" value={contract.blocked_area_count} />
-          <MetricTile label="Tryb" value={contract.mode} />
+          <MetricTile label="Tryb" value={adsOptimizerModeLabel(contract.mode)} />
         </div>
       </div>
 
       <div className="mt-3 grid gap-3 xl:grid-cols-2">
         <AdsOptimizerReadinessGroup
-          title="Gotowe do review"
+          title="Gotowe do oceny"
           items={readyItems}
-          empty="Brak obszarów gotowych do review."
+          empty="Brak obszarów gotowych do oceny."
         />
         <AdsOptimizerReadinessGroup
-          title="Zablokowane claimy / apply"
+          title="Zablokowane wnioski i wdrożenia"
           items={blockedItems}
           empty="Brak aktywnych blockerów."
         />
@@ -356,7 +365,7 @@ function AdsOptimizerReadinessPanel({
           empty="brak"
         />
         <TraceLine
-          label="ActionObjecty"
+          label="Akcje WILQ"
           values={[formatActionObjectCount(contract.action_ids.length)]}
           empty="brak"
         />
@@ -373,8 +382,9 @@ function formatTraceIdCount(count: number) {
 
 function formatActionObjectCount(count: number) {
   if (count === 0) return "brak";
-  if (count === 1) return "1 ActionObject";
-  return `${count} ActionObjecty`;
+  if (count === 1) return "1 akcja WILQ";
+  if (count >= 2 && count <= 4) return `${count} akcje WILQ`;
+  return `${count} akcji WILQ`;
 }
 
 function AdsOptimizerReadinessGroup({
@@ -403,14 +413,20 @@ function AdsOptimizerReadinessGroup({
                 <h4 className="text-sm font-semibold text-ink">
                   {adsOptimizerReadinessItemLabel(item.id)}
                 </h4>
-                <p className="mt-1 text-xs text-slate-500">{item.title}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {adsOptimizerReadinessTitle(item.id, item.title)}
+                </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
                 {adsDecisionStatusLabel(item.status)} / {adsRiskLabel(item.risk)}
               </span>
             </div>
-            <p className="mt-2 text-xs leading-5 text-slate-700">{item.summary}</p>
-            <p className="mt-2 text-xs font-medium text-ink">{item.next_step}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-700">
+              {adsOptimizerReadinessSummary(item.id, item.summary)}
+            </p>
+            <p className="mt-2 text-xs font-medium text-ink">
+              {adsOptimizerReadinessNextStep(item.id, item.next_step)}
+            </p>
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
               <TraceLine
                 label="Kontrakty"
@@ -446,7 +462,7 @@ function AdsDecisionCard({
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">{decision.title}</h3>
+          <h3 className="text-sm font-semibold text-ink">{adsDecisionTitle(decision)}</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {adsDecisionTypeLabel(decision.decision_type)} / {adsDecisionStatusLabel(decision.status)}
           </p>
@@ -455,9 +471,15 @@ function AdsDecisionCard({
           ryzyko: {adsRiskLabel(decision.risk)}
         </span>
       </div>
-      <p className="mt-2 text-sm leading-6 text-slate-700">{decision.summary}</p>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{decision.rationale}</p>
-      <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-700">
+        {adsDecisionSummary(decision)}
+      </p>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        {adsDecisionRationale(decision)}
+      </p>
+      <p className="mt-2 text-sm font-medium text-ink">
+        {adsDecisionNextStep(decision)}
+      </p>
       {Object.keys(decision.metric_tiles).length > 0 ? (
         <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-700 sm:grid-cols-3">
           {Object.entries(decision.metric_tiles).map(([label, value]) => (
@@ -501,13 +523,13 @@ function AdsDecisionCard({
         />
         <TraceLine label="Źródła" values={decision.source_connectors} />
         <TraceLine
-          label="ActionObjecty"
+          label="Akcje WILQ"
           values={[formatActionObjectCount(decision.action_ids.length)]}
           empty="brak"
         />
         {decision.operator_review_gates.length > 0 ? (
           <TraceLine
-            label="Wymagany review"
+            label="Wymagana ocena"
             values={decision.operator_review_gates.map(adsOperatorReviewGateLabel)}
           />
         ) : null}
@@ -617,7 +639,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="Udział" value={impressionShareRows.length} />
           <MetricTile label="Triage" value={campaignTriageRows.length} />
           <MetricTile label="Zmiany" value={changeHistoryRows.length} />
-          <MetricTile label="Review zapytań" value={searchTermReview.total_search_term_count} />
+          <MetricTile label="Ocena zapytań" value={searchTermReview.total_search_term_count} />
           <MetricTile label="Zapytania" value={searchTermRows.length} />
           <MetricTile label="N-gramy" value={searchTermNgramRows.length} />
           <MetricTile label="Safety 90d" value={searchTermSafetyRows.length} />
@@ -699,7 +721,7 @@ function AdsMetricEvidencePanel({
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Brakujące kontrakty" values={missingReadContracts} />
-        <TraceLine label="Wymaga review" values={operatorReviewGates} empty="brak" />
+        <TraceLine label="Wymaga oceny" values={operatorReviewGates} empty="brak" />
         <TraceLine label="Nie wolno twierdzić" values={blockedClaims} />
         <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
         <TraceLine
@@ -751,7 +773,7 @@ function AdsBusinessTargetInterpretationPanel({
           empty="brak"
         />
         <LinkedTraceLine
-          label="ActionObjecty"
+          label="Akcje WILQ"
           values={interpretation.action_ids}
           kind="actions"
           empty="brak"
@@ -761,7 +783,7 @@ function AdsBusinessTargetInterpretationPanel({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h4 className="text-sm font-semibold text-ink">
-              Gotowość strategy review Ads
+              Gotowość oceny strategii Ads
             </h4>
             <p className="mt-1 text-xs leading-5 text-slate-600">
               {strategyReadiness.summary}
@@ -786,7 +808,7 @@ function AdsBusinessTargetInterpretationPanel({
             value={adsStrategyContextValue(strategyReadiness.current_context.target_cpa_micros)}
           />
           <MetricTile label="Braki" value={strategyReadiness.missing_read_contracts.length} />
-          <MetricTile label="Review" value={adsStrategyReviewStatusLabel(strategyReadiness.latest_review_status)} />
+          <MetricTile label="Ocena" value={adsStrategyReviewStatusLabel(strategyReadiness.latest_review_status)} />
         </div>
         <p className="mt-3 text-xs font-medium text-ink">{strategyReadiness.next_step}</p>
         <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
@@ -806,7 +828,7 @@ function AdsBusinessTargetInterpretationPanel({
             empty="brak"
           />
           <LinkedTraceLine
-            label="ActionObjecty"
+            label="Akcje WILQ"
             values={strategyReadiness.action_ids}
             kind="actions"
             empty="brak"
@@ -892,7 +914,7 @@ function AdsCampaignTriageRowsPanel({
 }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak kolejki triage kampanii. WILQ potrzebuje campaign activity, KPI, budżetu i kontraktów review, żeby ustalić kolejność sprawdzania." />
+      <BlockerNotice message="Brak kolejki oceny kampanii. WILQ potrzebuje aktywności kampanii, KPI, budżetu i kontraktów oceny, żeby ustalić kolejność sprawdzania." />
     );
   }
 
@@ -902,10 +924,10 @@ function AdsCampaignTriageRowsPanel({
     <div className="rounded-md border border-line bg-slate-50 p-3">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Kolejność review kampanii</h3>
+          <h3 className="text-sm font-semibold text-ink">Kolejność oceny kampanii</h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             {contract?.summary ??
-              "Ranking kampanii do ręcznego review. To nie jest werdykt waste, CPA, ROAS ani profitability."}
+              "Ranking kampanii do ręcznej oceny. To nie jest werdykt o zmarnowanym budżecie, CPA, ROAS ani opłacalności."}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -936,7 +958,7 @@ function AdsCampaignTriageRowsPanel({
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                {row.review_priority} / score {row.review_score}
+                  {row.review_priority} / wynik {row.review_score}
               </span>
             </div>
 
@@ -955,7 +977,7 @@ function AdsCampaignTriageRowsPanel({
             <p className="mt-2 text-xs font-medium text-ink">{row.next_step}</p>
             <div className="mt-3 grid gap-1 text-xs text-slate-600 md:grid-cols-2">
               <TraceLine
-                label="Wymagany review"
+                label="Wymagana ocena"
                 values={row.human_review_gates.slice(0, 4).map(adsOperatorReviewGateLabel)}
                 empty="brak"
               />
@@ -970,7 +992,7 @@ function AdsCampaignTriageRowsPanel({
                 empty="brak"
               />
               <TraceLine
-                label="ActionObjecty"
+                label="Akcje WILQ"
                 values={[formatActionObjectCount(row.action_ids.length)]}
                 empty="brak"
               />
@@ -1458,7 +1480,7 @@ function AdsChangeImpactReadinessPanel({
     <div className="rounded-md border border-line bg-slate-50 p-3">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Gotowość impact review zmian</h3>
+          <h3 className="text-sm font-semibold text-ink">Gotowość oceny wpływu zmian</h3>
           <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-600">
             {contract.summary}
           </p>
@@ -1472,7 +1494,7 @@ function AdsChangeImpactReadinessPanel({
       </div>
 
       {rows.length === 0 ? (
-        <BlockerNotice message="Brak change_event rows do impact review. WILQ może pokazać tylko blocker, nie ocenę wpływu zmian." />
+        <BlockerNotice message="Brak zdarzeń historii zmian do oceny wpływu. WILQ może pokazać tylko blocker, nie ocenę wpływu zmian." />
       ) : (
         <div className="grid gap-2">
           {rows.slice(0, 6).map((row) => (
@@ -1578,7 +1600,7 @@ function AdsSearchTermReviewSummaryPanel({
     <div className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Kolejność review zapytań</h3>
+          <h3 className="text-sm font-semibold text-ink">Kolejność oceny zapytań</h3>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             {contract.summary}
           </p>
@@ -2061,17 +2083,149 @@ function adsDecisionTypeLabel(decisionType: AdsDecisionItem["decision_type"]) {
   if (decisionType === "review_business_context") return "kontekst biznesowy";
   if (decisionType === "review_derived_kpi") return "wyliczone KPI";
   if (decisionType === "review_budget_context") return "kontekst budżetu";
-  if (decisionType === "review_recommendations") return "rekomendacje do review";
+  if (decisionType === "review_recommendations") return "rekomendacje do oceny";
   if (decisionType === "review_impression_share") return "udział w wyświetleniach";
   if (decisionType === "review_change_history") return "historia zmian";
-  if (decisionType === "review_campaign_triage") return "kolejność review kampanii";
-  if (decisionType === "review_search_term_safety") return "safety 90 dni";
+  if (decisionType === "review_campaign_triage") return "kolejność oceny kampanii";
+  if (decisionType === "review_search_term_safety") return "kontrola 90 dni";
   if (decisionType === "review_search_terms") return "przegląd zapytań";
   if (decisionType === "review_search_term_ngrams") return "tematy zapytań";
-  if (decisionType === "review_negative_keyword_safety") return "review wykluczeń";
+  if (decisionType === "review_negative_keyword_safety") return "ocena wykluczeń";
   if (decisionType === "prepare_custom_segments") return "kandydaci segmentów";
   if (decisionType === "block_write_actions") return "blokada zmian";
   return "naprawa dostępu";
+}
+
+function adsDecisionTitle(decision: AdsDecisionItem) {
+  const titles: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
+    review_budget_context: "Sprawdź kontekst budżetu kampanii",
+    review_business_context: "Potwierdź kontekst biznesowy Ads",
+    review_campaign_activity: "Przejrzyj aktywność kampanii Google Ads",
+    review_campaign_triage: "Ustal kolejność oceny kampanii Ads",
+    review_recommendations: "Przejrzyj rekomendacje Google Ads bez wdrażania",
+    review_derived_kpi: "Sprawdź wyliczone KPI bez werdyktu CPA/ROAS",
+    review_search_terms: "Przejrzyj wyszukiwane hasła bez automatycznych wykluczeń"
+  };
+  return titles[decision.decision_type] ?? decision.title;
+}
+
+function adsOptimizerModeLabel(mode: string) {
+  if (mode === "review_only") return "tylko ocena";
+  if (mode === "read_only") return "tylko odczyt";
+  if (mode === "apply_blocked") return "wdrożenia zablokowane";
+  return mode;
+}
+
+function adsOptimizerReadinessTitle(id: string, fallback: string) {
+  const titles: Record<string, string> = {
+    ads_apply_safety_gate: "Zmiany w Google Ads",
+    budget_and_recommendation_review: "Budżety, rekomendacje i udział w wyświetleniach",
+    campaign_review_queue: "Kolejność sprawdzania kampanii",
+    change_history_impact_review: "Historia zmian i wpływ na wyniki",
+    custom_segments_review_queue: "Segmenty odbiorców z haseł",
+    keyword_planner_enrichment: "Keyword Planner",
+    negative_keyword_review_queue: "Kandydaci do wykluczeń",
+    search_terms_review_queue: "Wyszukiwane hasła"
+  };
+  return titles[id] ?? fallback;
+}
+
+function adsOptimizerReadinessSummary(id: string, fallback: string) {
+  const summaries: Record<string, string> = {
+    ads_apply_safety_gate:
+      "WILQ ma część podglądów do oceny, ale nie ma jeszcze bezpiecznej ścieżki wykonania zmian w Google Ads. Każde wdrożenie pozostaje zablokowane.",
+    budget_and_recommendation_review:
+      "WILQ ma kontekst budżetów, rekomendacji albo udziału w wyświetleniach do ręcznej oceny. To nadal nie odblokowuje zmiany budżetu ani automatycznego przyjęcia rekomendacji.",
+    campaign_review_queue:
+      "WILQ łączy aktywność kampanii, KPI, budżety, rekomendacje i udział w wyświetleniach w kolejkę sprawdzania. To nie jest werdykt o zmarnowanym budżecie, CPA, ROAS ani opłacalności.",
+    change_history_impact_review:
+      "WILQ nie ma wystarczających zdarzeń historii zmian, żeby uczciwie ocenić wpływ zmian na wyniki kampanii.",
+    custom_segments_review_queue:
+      "WILQ ma kandydatów segmentów z haseł wyszukiwanych w Ads. To jest materiał do oceny, nie gotowe targetowanie.",
+    keyword_planner_enrichment:
+      "Keyword Planner nie zwrócił jeszcze danych wzbogacających, więc WILQ nie może pokazać prognozy ani rozmiaru odbiorców.",
+    negative_keyword_review_queue:
+      "WILQ ma terminy do ręcznej oceny jako potencjalne wykluczenia. To nie jest zgoda na wdrożenie wykluczeń.",
+    search_terms_review_queue:
+      "WILQ ma wyszukiwane hasła do ręcznej oceny. Najpierw sprawdź koszt, intencję i konwersje, zanim powstanie jakakolwiek lista wykluczeń."
+  };
+  return summaries[id] ?? fallback;
+}
+
+function adsOptimizerReadinessNextStep(id: string, fallback: string) {
+  const steps: Record<string, string> = {
+    ads_apply_safety_gate:
+      "Zostań w trybie oceny: waliduj akcje WILQ, ale nie wykonuj zmian budżetów, rekomendacji, wykluczeń ani segmentów.",
+    budget_and_recommendation_review:
+      "Porównaj tempo wydawania, rekomendacje i udział w wyświetleniach przy kampaniach z kolejki. Wdrożenia pozostają zablokowane.",
+    campaign_review_queue:
+      "Przejrzyj kampanie od góry kolejki. Najpierw sprawdź cel kampanii, jakość konwersji, budżet, wyszukiwane hasła i rekomendacje.",
+    change_history_impact_review:
+      "Potraktuj to jako checklistę gotowości: bez historii zmian i okien przed/po nie przypisuj wpływu zmian do wyników.",
+    custom_segments_review_queue:
+      "Przejrzyj hasła źródłowe i podgląd segmentów. Odrzuć nietrafione frazy i nie obiecuj zasięgu bez danych z Keyword Plannera.",
+    keyword_planner_enrichment:
+      "Zostaw segmenty w trybie oceny haseł źródłowych. Nie dopowiadaj prognoz ani rozmiaru odbiorców bez danych.",
+    negative_keyword_review_queue:
+      "Sprawdź intencję, dopasowanie i historię 90 dni. Wdrożenie wykluczeń wymaga osobnej walidacji akcji WILQ.",
+    search_terms_review_queue:
+      "Zacznij od haseł z największym kosztem. Nie nazywaj ich stratą budżetu bez oceny intencji i walidacji akcji WILQ."
+  };
+  return steps[id] ?? fallback;
+}
+
+function adsDecisionSummary(decision: AdsDecisionItem) {
+  const summaries: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
+    review_budget_context:
+      "WILQ pokazuje koszt kampanii względem budżetu dziennego i ostatnich 7 dni. To jest kontekst do oceny, nie decyzja o skalowaniu.",
+    review_business_context:
+      "WILQ ma wstępny lokalny kontekst biznesowy: marżę, cel biznesowy i cel budżetu. Target ROAS albo CPA wymaga osobnego potwierdzenia.",
+    review_campaign_activity:
+      "WILQ pokazuje aktywność kampanii: kliknięcia, wyświetlenia, koszt, konwersje i wartość konwersji.",
+    review_campaign_triage:
+      "WILQ łączy kampanie, KPI, budżety, rekomendacje i udział w wyświetleniach w jedną kolejkę ręcznej oceny.",
+    review_derived_kpi:
+      "WILQ może policzyć KPI z bieżących faktów Ads, ale to nadal nie jest werdykt o opłacalności.",
+    review_search_terms:
+      "WILQ pokazuje wyszukiwane hasła do ręcznej oceny kosztu, intencji i konwersji."
+  };
+  return summaries[decision.decision_type] ?? decision.summary;
+}
+
+function adsDecisionRationale(decision: AdsDecisionItem) {
+  const rationales: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
+    review_budget_context:
+      "Budżet i koszt 7 dni pomagają ustalić, co sprawdzić najpierw. Bez historii zmian, udziału w wyświetleniach i zatwierdzonego celu biznesowego WILQ blokuje decyzje o budżecie.",
+    review_business_context:
+      "Ten kontekst pomaga czytać kampanie w realiach biznesu Ekologus, ale nie odblokowuje automatycznych wniosków o rentowności ani zmarnowanym budżecie.",
+    review_campaign_activity:
+      "To uczciwy pierwszy przegląd kampanii. Wnioski o CPA, ROAS, stracie budżetu i wykluczeniach wymagają dodatkowej oceny.",
+    review_campaign_triage:
+      "Kolejka mówi, od których kampanii zacząć. Nie zastępuje decyzji człowieka ani walidacji akcji WILQ.",
+    review_derived_kpi:
+      "KPI są wyliczone z kosztu, konwersji i wartości konwersji w bieżącym evidence. Nie uwzględniają jeszcze pełnego modelu marży, targetów i historii zmian.",
+    review_search_terms:
+      "Hasła z ruchem lub kosztem są materiałem do oceny, ale WILQ nie nazywa ich automatycznie marnowaniem budżetu."
+  };
+  return rationales[decision.decision_type] ?? decision.rationale;
+}
+
+function adsDecisionNextStep(decision: AdsDecisionItem) {
+  const steps: Partial<Record<AdsDecisionItem["decision_type"], string>> = {
+    review_budget_context:
+      "Użyj tego jako kontekstu przy ocenie kampanii. Nie skaluj budżetu bez walidacji akcji WILQ.",
+    review_business_context:
+      "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Target ROAS albo CPA zapisz dopiero przez zatwierdzoną akcję WILQ.",
+    review_campaign_activity:
+      "Sprawdź kampanie z największym kosztem i ruchem. Decyzje budżetowe zostają za bramką walidacji.",
+    review_campaign_triage:
+      "Przejrzyj kampanie od góry kolejki: cel, jakość konwersji, budżet, wyszukiwane hasła i rekomendacje.",
+    review_derived_kpi:
+      "Użyj KPI jako sygnału do triage. Przed decyzją sprawdź marżę, tempo budżetu, historię zmian i rekomendacje.",
+    review_search_terms:
+      "Zacznij od haseł z największym kosztem. Wykluczenia przygotuj tylko po ocenie intencji, historii 90 dni i walidacji akcji WILQ."
+  };
+  return steps[decision.decision_type] ?? decision.next_step;
 }
 
 function adsDecisionStatusLabel(status: string) {
@@ -2120,9 +2274,9 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_search_term_ngrams") return "N-gramy zapytań";
   if (sectionId === "ads_search_term_safety") return "Safety 90 dni";
-  if (sectionId === "ads_keyword_match_context") return "Kontekst keywords";
-  if (sectionId === "ads_negative_keyword_safety") return "Review wykluczeń";
-  if (sectionId === "ads_custom_segments") return "Custom segments";
+  if (sectionId === "ads_keyword_match_context") return "Kontekst słów kluczowych";
+  if (sectionId === "ads_negative_keyword_safety") return "Ocena wykluczeń";
+  if (sectionId === "ads_custom_segments") return "Segmenty niestandardowe";
   if (sectionId === "ads_action_safety") return "Bezpieczeństwo akcji Ads";
   if (sectionId === "ads_oauth_blocker") return "Dostęp Google Ads";
   return sectionId;
@@ -2138,23 +2292,23 @@ function adsBusinessContextStatusValue(
 
 function adsBusinessUseLabel(value: string) {
   const labels: Record<string, string> = {
-    campaign_review_context: "kontekst review kampanii",
-    budget_review_context: "kontekst review budżetu",
+    campaign_review_context: "kontekst oceny kampanii",
+    budget_review_context: "kontekst oceny budżetu",
     human_strategy_review_context: "kontekst strategii człowieka",
     margin_context: "kontekst marży",
     business_goal_alignment: "dopasowanie do celu biznesowego",
     budget_goal_guardrail: "guardrail celu budżetu",
-    target_roas_review: "review target ROAS",
-    target_cpa_review: "review target CPA",
-    profitability_verdict: "werdykt rentowności",
-    target_kpi_verdict: "werdykt KPI targetu",
+    target_roas_review: "ocena target ROAS",
+    target_cpa_review: "ocena target CPA",
+    profitability_verdict: "ocena rentowności",
+    target_kpi_verdict: "ocena KPI targetu",
     budget_scaling: "skalowanie budżetu",
     budget_apply: "zmiana budżetu",
     recommendation_apply: "wdrożenie rekomendacji",
-    wasted_budget_claim: "claim wasted budget",
+    wasted_budget_claim: "wniosek o zmarnowanym budżecie",
     automatic_scaling: "automatyczne skalowanie",
     profitability_verdict_without_value_model_review:
-      "werdykt rentowności bez review modelu wartości"
+      "ocena rentowności bez przeglądu modelu wartości"
   };
   return labels[value] ?? value;
 }
@@ -2214,10 +2368,10 @@ function adsAllowedMetricLabel(value: string) {
     search_term_90d_cost_micros: "koszt 90 dni",
     search_term_90d_conversions: "konwersje 90 dni",
     search_term_90d_conversion_value: "wartość konwersji 90 dni",
-    keyword_text: "keyword",
-    keyword_match_type: "typ dopasowania keyworda",
-    criterion_status: "status keyworda",
-    keyword_negative: "keyword negative",
+    keyword_text: "słowo kluczowe",
+    keyword_match_type: "typ dopasowania słowa",
+    criterion_status: "status słowa",
+    keyword_negative: "wykluczające słowo",
     campaign: "kampania",
     ad_group: "grupa reklam",
     status: "status zapytania"
@@ -2227,22 +2381,22 @@ function adsAllowedMetricLabel(value: string) {
 
 function adsOptimizerReadinessItemLabel(value: string) {
   const labels: Record<string, string> = {
-    campaign_review_queue: "kampanie do review",
+    campaign_review_queue: "kampanie do oceny",
     budget_and_recommendation_review: "budżety i rekomendacje",
-    search_terms_review_queue: "search terms",
-    negative_keyword_review_queue: "negative keywords",
-    custom_segments_review_queue: "custom segments",
+    search_terms_review_queue: "wyszukiwane hasła",
+    negative_keyword_review_queue: "wykluczenia do oceny",
+    custom_segments_review_queue: "segmenty niestandardowe",
     keyword_planner_enrichment: "Keyword Planner",
     change_history_impact_review: "historia zmian",
-    ads_apply_safety_gate: "apply safety gate"
+    ads_apply_safety_gate: "bramka wdrożenia zmian"
   };
   return labels[value] ?? value;
 }
 
 function adsStrategyReviewStatusLabel(value: string) {
   const labels: Record<string, string> = {
-    missing: "brak review",
-    approved_for_prepare: "zatwierdzone do prepare",
+    missing: "brak oceny",
+    approved_for_prepare: "zatwierdzone do przygotowania",
     needs_changes: "wymaga zmian",
     rejected: "odrzucone",
     deferred: "odroczone"
@@ -2258,7 +2412,7 @@ function adsStrategyContextValue(value: unknown) {
 
 function adsOperatorReviewGateLabel(value: string) {
   const labels: Record<string, string> = {
-    human_strategy_review: "review strategii przez człowieka",
+    human_strategy_review: "ocena strategii przez człowieka",
     review_recommendation_type: "sprawdzenie typu rekomendacji",
     review_impact_metrics: "sprawdzenie impact metrics",
     review_change_history: "sprawdzenie historii zmian",
@@ -2273,19 +2427,19 @@ function adsOperatorReviewGateLabel(value: string) {
     review_campaign_goal: "sprawdzenie celu kampanii",
     review_conversion_quality: "sprawdzenie jakości konwersji",
     review_budget_context: "sprawdzenie kontekstu budżetu",
-    review_search_terms_before_budget_decision: "search terms przed decyzją budżetową",
+    review_search_terms_before_budget_decision: "wyszukiwane hasła przed decyzją budżetową",
     review_conversion_tracking: "sprawdzenie trackingu konwersji",
     review_pmax_asset_feed_context: "sprawdzenie PMax/feed/assets",
     review_draft_campaign_status: "sprawdzenie statusu draftu",
-    recommendation_apply_preview: "podgląd apply rekomendacji",
-    google_ads_rmf_compliance_review: "review Google Ads RMF/compliance",
+    recommendation_apply_preview: "podgląd wdrożenia rekomendacji",
+    google_ads_rmf_compliance_review: "ocena zgodności Google Ads RMF",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
     negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń",
-    human_intent_review: "ręczny review intencji",
-    review_source_terms: "sprawdzenie source terms",
+    human_intent_review: "ręczna ocena intencji",
+    review_source_terms: "sprawdzenie haseł źródłowych",
     reject_brand_or_low_intent_terms: "odrzucenie brand/low intent terms",
-    keyword_planner_enrichment: "enrichment Keyword Planner",
-    forecast_or_audience_size: "forecast albo audience size"
+    keyword_planner_enrichment: "wzbogacenie przez Keyword Planner",
+    forecast_or_audience_size: "prognoza albo rozmiar odbiorców"
   };
   return labels[value] ?? value;
 }

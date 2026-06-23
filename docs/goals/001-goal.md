@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 13:55 CEST.
+Last updated: 2026-06-23 14:10 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -117,6 +117,16 @@ that products were re-approved or revenue recovered. Focused proof: Command
 Center route test, dashboard lint/typecheck, API command_center contract subset,
 Python ruff/mypy for `wilq/briefing/command_center.py`, and browser proof
 `.local-lab/proof/dashboard/command-center-polish-decision-copy.txt`.
+
+2026-06-23 Ads Doctor first-flow copy rule: the first Ads Doctor flow must
+show what a Polish marketer can review now, not API slang. Completed slice:
+current read, operator summary, Ads readiness groups and top decision cards use
+Polish copy for review/apply/search-term/negative-keyword/custom-segment
+concepts, blocked-claim labels and ActionObject counts. Focused proof: Ads
+Doctor route test, dashboard lint/typecheck and browser proof
+`.local-lab/proof/dashboard/ads-doctor-polish-first-flow.txt`. Follow-up:
+lower Ads drilldown sections still contain older mixed Polish/English prose and
+should be cleaned in a separate slice after the first-flow demo path.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It
