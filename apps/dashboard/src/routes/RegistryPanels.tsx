@@ -161,10 +161,10 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
             <div>Zewnętrzny odczyt: {run.external_call_attempted ? "tak" : "nie"}</div>
             <div>Dowody: {formatEvidenceCount(run.evidence_ids.length)}</div>
           </div>
-          {Object.keys(run.metric_summary).length > 0 ? (
-            <pre className="mt-3 max-h-32 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
-              {JSON.stringify(run.metric_summary, null, 2)}
-            </pre>
+          {formatMetricSummary(run.metric_summary) ? (
+            <p className="mt-3 text-xs leading-5 text-slate-600">
+              Metryki: {formatMetricSummary(run.metric_summary)}
+            </p>
           ) : null}
         </article>
       ))}
@@ -212,6 +212,16 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
 
 function formatEvidenceCount(count: number) {
   return count > 0 ? `${count} ID` : "brak";
+}
+
+function formatMetricSummary(metricSummary: Record<string, unknown>) {
+  const entries = Object.entries(metricSummary);
+  if (entries.length === 0) return "";
+  const visibleEntries = entries
+    .slice(0, 4)
+    .map(([key, value]) => `${key}=${String(value)}`)
+    .join(", ");
+  return entries.length > 4 ? `${visibleEntries}, +${entries.length - 4}` : visibleEntries;
 }
 
 export function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {

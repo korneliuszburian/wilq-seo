@@ -5856,11 +5856,26 @@ describe("WILQ dashboard", () => {
   });
 
   it("connector refresh run cards summarize evidence instead of printing raw IDs", () => {
-    render(<ConnectorRefreshRunList runs={connectorRefreshRuns} />);
+    render(
+      <ConnectorRefreshRunList
+        runs={[
+          {
+            ...connectorRefreshRuns[0],
+            metric_summary: {
+              clicks: 12,
+              impressions: 120,
+              api: "google_ads_probe"
+            }
+          }
+        ]}
+      />
+    );
 
     expect(screen.getByText("Dowody: 2 ID")).toBeInTheDocument();
+    expect(screen.getByText("Metryki: clicks=12, impressions=120, api=google_ads_probe")).toBeInTheDocument();
     expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByText("ev_refresh_refresh_google_ads_test")).not.toBeInTheDocument();
+    expect(screen.queryByText(/"clicks"/)).not.toBeInTheDocument();
   });
 
   it("ads doctor route renders live metric-backed diagnostics", async () => {

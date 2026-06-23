@@ -39,11 +39,12 @@ Aktualny proof produktowy:
 
 - Connector refresh evidence-summary cleanup, 2026-06-23 07:36 CEST.
   `ConnectorRefreshRunList` shows `Dowody: N ID` instead of inline raw
-  evidence IDs in refresh-run cards. The registry can still expose operational
-  run state, but cards no longer read like raw trace logs. Focused proof:
-  `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t
-  "connector refresh run cards summarize evidence"` passed and dashboard
-  typecheck OK.
+  evidence IDs in refresh-run cards and renders `metric_summary` as a compact
+  `Metryki: key=value` line instead of raw JSON. The registry can still expose
+  operational run state, but cards no longer read like raw trace logs. Focused
+  proof: `pnpm --filter @wilq/dashboard exec vitest run src/routes/App.test.tsx
+  -t "connector refresh run cards summarize evidence"` passed, dashboard
+  typecheck OK and dashboard lint OK.
 - Actions evidence-summary cleanup, 2026-06-23 07:31 CEST.
   `/actions` ActionObject cards show `Dowody: N ID` instead of raw evidence
   IDs such as `ev_1`. Full evidence trace remains in API/detail surfaces, but
