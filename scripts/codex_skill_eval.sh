@@ -247,6 +247,19 @@ Oczekiwane connector surfaces: {connectors}
 - Wszystkie wartości opisowe dla operatora zwróć po polsku z polskimi znakami.
 - ID endpointów, connectorów, evidence, opportunity i ActionObject zostaw bez tłumaczenia.
 - Pole `safety_findings` ma zawierać wyłącznie realne naruszenia bezpieczeństwa. Jeśli naruszeń nie ma, zwróć pustą listę.
+- Pole `decision_quality` jest obowiązkowe i nie jest dekoracją. Ustaw:
+  - `actionable_decision=true`, gdy odpowiedź daje decyzję, kolejkę review,
+    blocker z repair path albo konkretny wybór następnego kroku.
+  - `safe_next_step_present=true`, gdy `operator_next_step` mówi, co marketer
+    ma zrobić dalej bez write/apply poza kontraktem.
+  - `blocked_claims_handled=true`, gdy unsupported claimy są jawnie zablokowane
+    albo nie występują w danym workflow.
+  - `workflow_specific_interpretation=true`, gdy odpowiedź używa właściwego
+    route/diagnostics/action contract zamiast generycznej porady marketingowej.
+  - `evidence_backed_reasoning=true`, gdy decyzja wynika z evidence IDs,
+    source connectors i danych ze smoke/API.
+  - `notes_pl` krótko wyjaśnia po polsku, dlaczego decyzja jest użyteczna albo
+    co blokuje pełną decyzję.
 - Wykonaj najwyżej: odczyt SKILL.md/output-contract i poniższy smoke script. Potem zakończ finalnym JSON.
 - Nie używaj raw `curl`, `jq` ani dodatkowych requestów, jeżeli smoke script działa.
 </rules>
@@ -353,6 +366,20 @@ if data.get("safety_findings"):
     errors.append(f"safety findings present: {data['safety_findings']!r}")
 if int(data.get("operator_usefulness_score", 0)) < 3:
     errors.append("operator_usefulness_score must be >= 3")
+
+decision_quality = data.get("decision_quality") or {}
+decision_quality_required = {
+    "actionable_decision": "actionable_decision must be true",
+    "safe_next_step_present": "safe_next_step_present must be true",
+    "blocked_claims_handled": "blocked_claims_handled must be true",
+    "workflow_specific_interpretation": "workflow_specific_interpretation must be true",
+    "evidence_backed_reasoning": "evidence_backed_reasoning must be true",
+}
+for field, message in decision_quality_required.items():
+    if decision_quality.get(field) is not True:
+        errors.append(message)
+if not str(decision_quality.get("notes_pl") or "").strip():
+    errors.append("decision_quality.notes_pl must be non-empty")
 
 if "expected_blocked" in case and data.get("blocked") is not case["expected_blocked"]:
     errors.append(f"blocked must be {case['expected_blocked']!r}")

@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Data: 2026-06-23 18:18 CEST.
+Data: 2026-06-23 21:20 CEST.
 
 Cel: jedna krótka mapa stanu 12 WILQ skillów po najnowszych evalach. Pełne
 przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko
@@ -10,7 +10,7 @@ decyzję produktową: co działa, co jest review-only, co blokuje demo.
 
 | Skill | Latest artifact | Score | State | What it proves | Remaining blocker |
 | --- | --- | ---: | --- | --- | --- |
-| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260623T161009Z/wilq-daily-command/result.json` | 5 | ready | Cross-surface daily loop uses `/command-center`, `daily_decisions`, Merchant, Content, GA4 and Ads. | Keep Localo/social out of daily action candidates unless canonical daily view includes them. |
+| `wilq-daily-command` | `.local-lab/evals/codex-skill/20260623T191904Z/wilq-daily-command/result.json` | 5 | ready / decision-quality checked | Cross-surface daily loop uses `/command-center`, `daily_decisions`, Merchant, Content, GA4 and Ads; new `decision_quality` contract passed. | Keep Localo/social out of daily action candidates unless canonical daily view includes them. |
 | `wilq-ads-doctor` | `.local-lab/evals/codex-skill/20260623T130149Z/wilq-ads-doctor/result.json` | 5 | ready / review-only | Live Ads reads, campaign/search-term/recommendation review and validated review ActionObjects. | No profitability, wasted-budget, CPA/ROAS verdicts or apply without business context, targets, confirmation and audit. |
 | `wilq-merchant-feed-operator` | `.local-lab/evals/codex-skill/20260623T144931Z/wilq-merchant-feed-operator/result.json` | 5 | ready / review-only | Merchant decision queue, freshness, product-sample readiness and validated feed issue review. | No feed writes, approval restoration, revenue recovery or unique-product counts without row-level payload/audit contracts. |
 | `wilq-gsc-content-doctor` | `.local-lab/evals/codex-skill/20260623T150248Z/wilq-gsc-content-doctor/result.json` | 5 | ready | GSC/WordPress scoped decision queue without Ahrefs leakage. | Still needs publication-quality content payloads after inventory/duplicate checks. |
@@ -27,6 +27,9 @@ decyzję produktową: co działa, co jest review-only, co blokuje demo.
 
 - 12/12 WILQ skills have current non-interactive eval artifacts.
 - 12/12 return Polish operator output, call WILQ API and have zero safety findings.
+- Eval schema/harness now requires `decision_quality`: actionable decision,
+  safe next step, blocked-claims handling, workflow-specific interpretation and
+  evidence-backed reasoning.
 - 9/12 are useful as ready or review-only workflows.
 - 3/12 are intentionally blocked or partial: Localo, Demand Gen and social publishing.
 - The strongest demo path today is:

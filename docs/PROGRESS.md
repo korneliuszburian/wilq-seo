@@ -41,6 +41,10 @@ Stan produktu:
 - Goal and progress were compacted on 2026-06-23 to remove ready/done task
   noise from active recovery docs. Historical proof remains in git history and
   `docs/progress/archive/`.
+- Skill eval schema/harness now requires `decision_quality`: actionable
+  decision, safe next step, blocked-claims handling, workflow-specific
+  interpretation and evidence-backed reasoning. Live proof:
+  `.local-lab/evals/codex-skill/20260623T191904Z/wilq-daily-command/result.json`.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
@@ -55,48 +59,38 @@ Stan produktu:
 
 ## Active Gaps
 
-1. **Decision-quality evals**
-   - Current skill evals are too format-heavy.
-   - Add explicit quality checks: actionable decision, safe next step, blocked
-     claims handled, workflow-specific interpretation and evidence-backed
-     reasoning.
-
-2. **Merchant product-row depth**
+1. **Merchant product-row depth**
    - Current Merchant review is useful, but still too aggregate in places.
    - Preserve freshness and queue semantics.
    - Add product IDs/titles/SKU-level previews where vendor/API allows.
 
-3. **Content inventory matching**
+2. **Content inventory matching**
    - GSC/GA4 can see URLs that WordPress inventory may mark missing.
    - Improve URL normalization, host aliases, trailing slash and post/page/sitemap
      matching before publish-ready content decisions.
 
-4. **Localo beyond OAuth and aggregate facts**
+3. **Localo beyond OAuth and aggregate facts**
    - Current Localo supports aggregate visibility/reviews review.
    - Rankings, GBP performance, competitors, local tasks, writes and uplift
      claims still require typed read/write contracts.
 
-5. **Skill/reference hygiene audit**
+4. **Skill/reference hygiene audit**
    - Audit `.agents/skills/**/SKILL.md` and `references/*.md`.
    - References should describe contracts and output shape only.
    - Product logic, workaround rules and bug fixes belong in API/schema/eval.
 
-6. **Remaining Ads optimizer value**
+5. **Remaining Ads optimizer value**
    - Current Ads is review-only for many important paths.
    - Missing: live Keyword Planner enrichment, forecast/audience size, stronger
      budget pacing, change-history impact context, safe apply/audit contracts.
 
-7. **Code quality where it affects velocity**
+6. **Code quality where it affects velocity**
    - Avoid broad aesthetic refactors.
    - Extract large route modules only when they block product work, reviewability
      or focused verification.
 
 ## Next Best Queue
 
-1. Tighten Codex skill eval schema/harness with explicit `decision_quality`.
-2. Run focused eval-contract tests and one targeted non-interactive skill eval if
-   the schema/harness changes.
-3. Update `docs/evals/skill-coverage-audit.md` with the new eval standard.
-4. Commit/push.
-5. Continue with Merchant product-row depth or content inventory matching based
+1. Commit/push the decision-quality eval contract.
+2. Continue with Merchant product-row depth or content inventory matching based
    on live API/browser proof.

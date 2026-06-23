@@ -360,8 +360,43 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "expected validated action_id",
         "blocked claim terms must stay out of recommendations",
         "uses blocked claim term without blocked_reason",
+        "decision_quality",
+        "actionable_decision must be true",
+        "safe_next_step_present must be true",
+        "blocked_claims_handled must be true",
+        "workflow_specific_interpretation must be true",
+        "evidence_backed_reasoning must be true",
     ):
         assert required in harness
+
+
+def test_codex_skill_eval_schema_requires_decision_quality() -> None:
+    schema = json.loads(
+        Path("docs/evals/schemas/wilq-skill-eval-result.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    decision_quality = schema["properties"]["decision_quality"]
+
+    assert "decision_quality" in schema["required"]
+    assert decision_quality["additionalProperties"] is False
+    assert set(decision_quality["required"]) == {
+        "actionable_decision",
+        "safe_next_step_present",
+        "blocked_claims_handled",
+        "workflow_specific_interpretation",
+        "evidence_backed_reasoning",
+        "notes_pl",
+    }
+    for field in (
+        "actionable_decision",
+        "safe_next_step_present",
+        "blocked_claims_handled",
+        "workflow_specific_interpretation",
+        "evidence_backed_reasoning",
+    ):
+        assert decision_quality["properties"][field]["type"] == "boolean"
+    assert decision_quality["properties"]["notes_pl"]["type"] == "string"
 
 
 def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:

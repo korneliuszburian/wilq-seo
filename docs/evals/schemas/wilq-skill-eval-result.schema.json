@@ -139,6 +139,38 @@
       "minimum": 1,
       "maximum": 5
     },
+    "decision_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "actionable_decision": {
+          "type": "boolean"
+        },
+        "safe_next_step_present": {
+          "type": "boolean"
+        },
+        "blocked_claims_handled": {
+          "type": "boolean"
+        },
+        "workflow_specific_interpretation": {
+          "type": "boolean"
+        },
+        "evidence_backed_reasoning": {
+          "type": "boolean"
+        },
+        "notes_pl": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "actionable_decision",
+        "safe_next_step_present",
+        "blocked_claims_handled",
+        "workflow_specific_interpretation",
+        "evidence_backed_reasoning",
+        "notes_pl"
+      ]
+    },
     "notes": {
       "type": "string"
     }
@@ -162,6 +194,7 @@
     "safety_findings",
     "operator_next_step",
     "operator_usefulness_score",
+    "decision_quality",
     "notes"
   ]
 }

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 21:20 CEST.
+Last updated: 2026-06-23 21:23 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -61,34 +61,26 @@ shows regression.
 
 Finish these before claiming the Ekologus demo is done:
 
-1. **Skill decision-quality evals**
-   - Current evals prove API usage, Polish output, evidence IDs and safety
-     shape.
-   - Missing: explicit quality-of-decision assertions.
-   - Add an eval result contract/checklist that fails when a skill has evidence
-     but no actionable decision, no safe next step, no blocked-claims handling
-     or no workflow-specific interpretation.
-
-2. **Merchant product-row depth**
+1. **Merchant product-row depth**
    - Keep `decision_queue` as the main queue and `issue_clusters` as drilldown.
    - Preserve freshness and `count_semantics`.
    - Expose product IDs/titles/SKU-level previews where vendor/API allows.
    - Do not claim product fixes, approval restoration, feed writes or recovered
      revenue without exact row-level payload, validation and audit contracts.
 
-3. **Content inventory matching**
+2. **Content inventory matching**
    - Reconcile GSC/GA4 URL evidence with WordPress inventory.
    - Prevent false `WordPress missing` states when URL normalization, host alias,
      trailing slash, sitemap source or post/page type is the real issue.
    - Improve refresh/merge/create/block decisions through typed diagnostics,
      not prompt/reference patches.
 
-4. **Localo beyond OAuth and aggregate facts**
+3. **Localo beyond OAuth and aggregate facts**
    - Current Localo evidence supports aggregate review only.
    - Add typed read contracts before claiming rankings, GBP performance,
      competitor visibility, local tasks, GBP writes or local visibility uplift.
 
-5. **Skill/reference hygiene audit**
+4. **Skill/reference hygiene audit**
    - Audit `.agents/skills/**/SKILL.md` and `.agents/skills/**/references/*.md`.
    - References may describe API usage, required evidence, output shape and
      safety rules.
@@ -97,7 +89,7 @@ Finish these before claiming the Ekologus demo is done:
    - If a skill needs a smarter decision, implement typed API/schema/view-model
      and eval contract first, then make the skill consume it.
 
-6. **Remaining Ads optimizer value**
+5. **Remaining Ads optimizer value**
    - Current Ads is review-only and intentionally blocks unsupported claims.
    - Next value contracts: approved/live Keyword Planner enrichment,
      forecast/audience size, budget pacing, change-history impact context,
@@ -106,7 +98,7 @@ Finish these before claiming the Ekologus demo is done:
    - Do not claim wasted budget, profitability, CPA/ROAS verdicts, budget
      scaling or apply until these contracts exist.
 
-7. **Dashboard code quality only where it helps velocity**
+6. **Dashboard code quality only where it helps velocity**
    - `App.tsx` shell has been reduced, but large route modules still exist.
    - Do not spend time on aesthetic refactors. Extract only when a file blocks
      product velocity, focused tests, browser QA or reviewability.
@@ -131,13 +123,12 @@ Finish these before claiming the Ekologus demo is done:
 ## Immediate Next Tasks
 
 1. Tighten `docs/evals/schemas/wilq-skill-eval-result.schema.json` and
-   `scripts/codex_skill_eval.sh` with explicit decision-quality checks.
-2. Run focused eval-contract tests and one targeted skill eval if schema/harness
-   changes require it.
-3. Update `docs/PROGRESS.md` and `docs/evals/skill-coverage-audit.md` with the
-   new decision-quality state.
-4. Commit and push.
-5. Continue with Merchant product-row depth or content inventory matching,
+   `scripts/codex_skill_eval.sh` with explicit decision-quality checks. Done:
+   `decision_quality` is now required and verified; live
+   `wilq-daily-command` eval passed at
+   `.local-lab/evals/codex-skill/20260623T191904Z/wilq-daily-command/result.json`.
+2. Commit and push the decision-quality eval contract.
+3. Continue with Merchant product-row depth or content inventory matching,
    depending on the strongest remaining demo blocker in live API/browser proof.
 
 ## Stop Condition
