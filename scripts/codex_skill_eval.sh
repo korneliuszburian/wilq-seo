@@ -118,6 +118,7 @@ connectors = ", ".join(f"`{connector}`" for connector in case["expected_connecto
 surface_path = case.get("surface_path")
 expected_terms = case.get("expected_terms_pl", [])
 expected_action_ids = case.get("expected_action_ids", [])
+expected_validated_action_ids = case.get("expected_validated_action_ids", [])
 expected_knowledge_card_ids = case.get("expected_knowledge_card_ids", [])
 expected_expert_rule_ids = case.get("expected_expert_rule_ids", [])
 expected_blocked = case.get("expected_blocked")
@@ -153,6 +154,14 @@ expected_actions_instruction = (
     "\n<expected_action_ids>\nJeżeli WILQ API zwraca te ActionObject IDs, uwzględnij je "
     f"w `action_candidates`: {', '.join(expected_action_ids)}.\n</expected_action_ids>\n"
     if expected_action_ids
+    else ""
+)
+expected_validated_actions_instruction = (
+    "\n<expected_validated_action_ids>\nDla tych ActionObject IDs wykonaj walidację przez "
+    "dozwolony endpoint skill/API i ustaw `validation_state=\"validated\"` tylko wtedy, "
+    f"gdy walidacja przejdzie: {', '.join(expected_validated_action_ids)}.\n"
+    "</expected_validated_action_ids>\n"
+    if expected_validated_action_ids
     else ""
 )
 expected_lineage_instruction = (
@@ -192,6 +201,7 @@ Zadanie: {case["task_pl"]}
 {surface_instruction}
 {expected_terms_instruction}
 {expected_actions_instruction}
+{expected_validated_actions_instruction}
 {expected_lineage_instruction}
 {expected_blocker_instruction}
 {expected_no_actions_instruction}
@@ -399,6 +409,14 @@ for action_id in case.get("forbidden_action_ids", []):
 for action_id in case.get("expected_action_ids", []):
     if action_id not in action_ids:
         errors.append(f"expected action_id missing from action_candidates: {action_id}")
+validated_action_ids = {
+    action.get("action_id")
+    for action in data.get("action_candidates", [])
+    if action.get("validation_state") == "validated"
+}
+for action_id in case.get("expected_validated_action_ids", []):
+    if action_id not in validated_action_ids:
+        errors.append(f"expected validated action_id missing from action_candidates: {action_id}")
 
 knowledge_card_ids = set(data.get("knowledge_card_ids", []))
 for card_id in case.get("expected_knowledge_card_ids", []):

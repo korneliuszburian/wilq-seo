@@ -71,6 +71,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "landing/source/campaign",
             },
             "action_ids": {"act_review_ga4_tracking_quality"},
+            "validated_action_ids": {"act_review_ga4_tracking_quality"},
         },
         "wilq-gsc-content-doctor": {
             "surface_path": "/seo-gsc",
@@ -177,8 +178,14 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         expected_action_ids = set(
             str(action_id) for action_id in case.get("expected_action_ids", [])
         )
+        expected_validated_action_ids = set(
+            str(action_id) for action_id in case.get("expected_validated_action_ids", [])
+        )
         assert expected_terms.issuperset(contract["terms"])
         assert expected_action_ids.issuperset(contract["action_ids"])
+        assert expected_validated_action_ids.issuperset(
+            contract.get("validated_action_ids", set())
+        )
         assert case["expected_connectors"]
 
     ads_case = cases["wilq-ads-doctor"]
@@ -236,6 +243,7 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "blocked must be",
         "expected no action_ids",
         "forbidden action_id present",
+        "expected validated action_id",
         "uses blocked claim term without blocked_reason",
     ):
         assert required in harness
@@ -306,6 +314,11 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "GET /api/ga4/diagnostics" in ga4_skill_doc
     assert 'request_json(args.api_base, "GET", "/api/ga4/diagnostics")' in ga4_smoke_script
     assert '"ga4_diagnostics": {' in ga4_smoke_script
+    ga4_validation_call = (
+        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert ga4_validation_call in ga4_smoke_script
+    assert '"action_validations": action_validations' in ga4_smoke_script
     assert "decision_queue" in ga4_smoke_script
     assert "Live GA4 diagnostics must expose decision_queue" in ga4_smoke_script
 

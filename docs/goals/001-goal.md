@@ -99,17 +99,20 @@ route tests OK. Remaining performance work should target tactical metric-store
 read/model construction or route-specific diagnostics only when a measured
 bottleneck justifies it.
 
-Latest skill eval proof: `wilq-ga4-analyst` passed smoke plus non-interactive
-Codex eval against live WILQ API. Artifact:
-`.local-lab/evals/codex-skill/20260622T230737Z/wilq-ga4-analyst/result.json`.
-The result has `language=pl-PL`, Polish diacritics, `api_used=true`, GA4
+Latest skill eval proof: `wilq-ga4-analyst` now has the stricter validated
+ActionObject eval. The smoke script validates `act_review_ga4_tracking_quality`
+through `POST /api/actions/{action_id}/validate` and exposes
+`action_validations`; the non-interactive eval case requires
+`expected_validated_action_ids=["act_review_ga4_tracking_quality"]`. Passing
+artifact:
+`.local-lab/evals/codex-skill/20260623T011123Z/wilq-ga4-analyst/result.json`.
+The result has `language=pl-PL`, Polish diacritics, `api_used=true`, 12 GA4
 evidence IDs, `source_connectors=["google_analytics_4"]`,
-`operator_usefulness_score=4` and no safety findings. It correctly keeps
+`operator_usefulness_score=4`, no safety findings and
+`action_candidates[0].validation_state="validated"`. It still correctly keeps
 revenue, ROAS, conversion-drop, profitability and tracking-fixed claims blocked
 because `conversion_readiness_contract.status=blocked` and
-`conversion_like_metric_count=0`. Next GA4 eval improvement: require actual
-`POST /api/actions/act_review_ga4_tracking_quality/validate` output when the
-ActionObject exists.
+`conversion_like_metric_count=0`.
 
 ## Product Bar
 

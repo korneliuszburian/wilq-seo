@@ -279,7 +279,8 @@
       "review_traffic_quality",
       "landing/source/campaign"
     ],
-    "expected_action_ids": ["act_review_ga4_tracking_quality"]
+    "expected_action_ids": ["act_review_ga4_tracking_quality"],
+    "expected_validated_action_ids": ["act_review_ga4_tracking_quality"]
   },
   {
     "skill": "wilq-merchant-feed-operator",

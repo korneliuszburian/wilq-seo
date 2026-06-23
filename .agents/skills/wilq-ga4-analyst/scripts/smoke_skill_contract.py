@@ -94,6 +94,21 @@ def main() -> int:
     ):
         raise SystemExit("Context-pack ga4_diagnostics decision trace differs from route")
 
+    action_validations = []
+    for action_id in ga4_diagnostics.get("action_ids", []):
+        quoted_action = urllib.parse.quote(str(action_id), safe="")
+        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        action_validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"GA4 ActionObject validation failed: {validation}")
+
     decision_queue = ga4_diagnostics.get("decision_queue", [])
     has_live_landing_groups = (
         ga4_diagnostics.get("live_data_available")
@@ -197,6 +212,7 @@ def main() -> int:
                     for item in (pack.get("active_action_objects") or [])
                     if item.get("id")
                 ][:20],
+                "action_validations": action_validations,
                 "ga4_diagnostics": {
                     "live_data_available": ga4_diagnostics.get("live_data_available"),
                     "landing_group_count": ga4_diagnostics.get("landing_group_count"),

@@ -25,6 +25,58 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-ga4-analyst validated ActionObject eval hardening
+
+Purpose:
+
+- Close the previous GA4 eval gap where `wilq-ga4-analyst` returned
+  `act_review_ga4_tracking_quality` with `validation_state=pending_validation`.
+- Prove the skill path can use deterministic smoke output containing
+  `POST /api/actions/{action_id}/validate` results and return a validated
+  ActionObject candidate without unlocking apply/write claims.
+
+Changes:
+
+- `.agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py` now
+  validates GA4 action IDs from `/api/ga4/diagnostics` and exposes
+  `action_validations`.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids=["act_review_ga4_tracking_quality"]` for
+  `wilq-ga4-analyst`.
+- `scripts/codex_skill_eval.sh` fails when a case-required ActionObject is not
+  returned with `validation_state="validated"`.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T011123Z/wilq-ga4-analyst/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `google_analytics_4`.
+- `evidence_count=12`.
+- `action_candidates` contains `act_review_ga4_tracking_quality` with
+  `validation_state="validated"`.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- This is the preferred pattern for future skill eval hardening: expose typed
+  evidence or validation proof through deterministic API/smoke output, then
+  make the non-interactive Codex eval consume that proof. Do not move product
+  edge-case logic into skill references.
+
 ## 2026-06-23 - wilq-ga4-analyst conversion-readiness eval
 
 Purpose:
