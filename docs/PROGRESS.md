@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo first-flow trace cleanup, 2026-06-23 09:53 CEST.
+  `/localo` no longer prints raw `ev_*` evidence IDs in the marketer-facing
+  first flow: Localo decision cards and the Localo/GBP safety gate now show
+  evidence counts such as `Dowody: N ID`. Technical access proof and lower
+  diagnostic trace sections remain separate from marketer recommendations.
+  Browser proof with agent-browser on `http://127.0.0.1:5173/localo`: the top
+  Localo flow shows status, visibility facts, two Localo decisions, the proof
+  toggle and the safety gate without raw evidence links. Focused proof:
+  RED/GREEN Localo route test, dashboard lint OK and dashboard typecheck OK.
 - Ads Doctor first-flow trace cleanup, 2026-06-23 09:48 CEST.
   `/ads-doctor` no longer prints raw `ev_*` evidence IDs or raw
   `act_prepare/review/configure/apply*` ActionObject IDs in the first Ads

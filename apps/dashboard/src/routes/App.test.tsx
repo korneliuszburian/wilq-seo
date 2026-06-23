@@ -6273,6 +6273,16 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("access działa").length).toBeGreaterThan(0);
     expect(screen.getByText("Brama bezpieczeństwa Localo/GBP")).toBeInTheDocument();
+    const localoDecisionCard = screen
+      .getByText("Localo access działa; brakuje ranking/GBP facts")
+      .closest("article");
+    expect(localoDecisionCard).not.toBeNull();
+    expect(within(localoDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    const localoSafetyGate = screen
+      .getByText("Brama bezpieczeństwa Localo/GBP")
+      .closest("section");
+    expect(localoSafetyGate).not.toBeNull();
+    expect(within(localoSafetyGate as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(screen.queryByText("MCP initialize")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pokaż techniczny proof Localo" }));
     expect(screen.getByText("MCP initialize")).toBeInTheDocument();

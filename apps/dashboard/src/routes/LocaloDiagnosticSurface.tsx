@@ -5,7 +5,7 @@ import { ClipboardCheck, ShieldAlert } from "lucide-react";
 import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
 import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
-import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
+import { TraceLine } from "../components/TraceLine";
 import { priorityLabel } from "./marketingLabels";
 
 type LocaloDecisionItem = LocaloDiagnosticsResponse["decision_queue"][number];
@@ -97,7 +97,11 @@ export function LocaloDiagnosticSurface() {
           </div>
         </div>
         <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-          <LinkedTraceLine label="Dowody" values={data.evidence_ids} kind="evidence" />
+          <TraceLine
+            label="Dowody"
+            values={[formatLocaloEvidenceCount(data.evidence_ids.length)]}
+            empty="brak"
+          />
           <TraceLine label="Źródła" values={["localo"]} />
           <TraceLine
             label="Zablokowane claimy"
@@ -256,7 +260,11 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
           label="Blokady claimów"
           values={decision.blocked_claims.map(localoBlockedClaimLabel)}
         />
-        <LinkedTraceLine label="Dowody" values={decision.evidence_ids} kind="evidence" />
+        <TraceLine
+          label="Dowody"
+          values={[formatLocaloEvidenceCount(decision.evidence_ids.length)]}
+          empty="brak"
+        />
       </div>
       {decision.metric_facts.length > 0 ? (
         <MetricFactChips facts={decision.metric_facts.slice(0, 6)} />
@@ -320,6 +328,12 @@ function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
       ) : null}
     </section>
   );
+}
+
+function formatLocaloEvidenceCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ID";
+  return `${count} ID`;
 }
 
 function localoDecisionStatusLabel(status: string) {

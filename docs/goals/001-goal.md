@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 09:48 CEST.
+Last updated: 2026-06-23 09:53 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -102,6 +102,15 @@ available in lower evidence/action validation sections. Browser proof with
 agent-browser on `http://127.0.0.1:5173/ads-doctor`: raw links start only after
 the lower `Dowody i ograniczenia Ads` / validation sections. Focused proof:
 RED/GREEN Ads Doctor route test, dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Localo first-flow cleanup: `/localo` no longer prints raw `ev_*`
+evidence IDs in the marketer-facing first flow. Localo decision cards and the
+Localo/GBP safety gate now show evidence counts such as `Dowody: N ID`; lower
+technical proof/diagnostic trace sections remain the place for raw traceability.
+Browser proof with agent-browser on `http://127.0.0.1:5173/localo`: top Localo
+flow shows status, visibility facts, two Localo decisions, the proof toggle and
+the safety gate without raw evidence links. Focused proof: RED/GREEN Localo
+route test, dashboard lint OK and dashboard typecheck OK.
 
 2026-06-23 Ads wording follow-up: `/api/ads/diagnostics` no longer uses
 `snapshot kampanii` in marketer-facing change-impact readiness copy. The
