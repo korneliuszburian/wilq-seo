@@ -7102,6 +7102,7 @@ def test_ads_diagnostics_exposes_oauth_blocker_without_fake_metrics(
     payload = response.json()
     assert payload["language"] == "pl-PL"
     assert payload["live_data_available"] is False
+    assert payload["action_ids"] == ["act_configure_google_ads_env"]
     assert payload["blocker_count"] >= 1
     assert payload["latest_refresh"]["status"] == "failed"
     assert payload["latest_refresh"]["vendor_data_collected"] is False

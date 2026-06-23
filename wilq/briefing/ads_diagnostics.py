@@ -995,6 +995,8 @@ def _google_ads_action_ids(
     live_data_available: bool,
 ) -> list[str]:
     if actions is None:
+        if not live_data_available:
+            return [GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID]
         missing_read_contracts = ads_business_context_missing_read_contracts()
         business_context_configured = ads_business_context_configured()
         strategy_review = ads_strategy_review_state()
