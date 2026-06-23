@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:54 CEST.
+Last updated: 2026-06-23 21:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -251,6 +251,19 @@ publishing social posts, creating LinkedIn/Facebook drafts, claiming ROAS,
 revenue, conversion uplift or product fixes. Focused proof: Action detail route
 tests, dashboard typecheck, dashboard lint and browser proof
 `.local-lab/proof/dashboard/action-social-draft-input-preview.txt`.
+
+Follow-up completed at 2026-06-23 21:04 CEST: the ActionObject detail route now
+renders Keyword Planner access blockers from
+`action_type=configure_google_ads_keyword_planner_access`.
+`/actions/act_configure_google_ads_keyword_planner_access` shows the blocked
+API, sanitized Google Ads blocker reason, required Google Ads state, helper
+steps, validations, blocked claims and blocked apply/API mutation state as a
+Polish review card. Raw payload stays under `Surowy payload debug`. This
+improves the Custom Segments/Ads repair path without unlocking Keyword
+Planner, forecast, audience size, targeting apply, campaign performance, ROAS
+or conversion uplift claims. Focused proof: Action detail route tests,
+dashboard typecheck, dashboard lint and browser proof
+`.local-lab/proof/dashboard/action-keyword-planner-access-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

@@ -128,6 +128,7 @@ type PayloadPreviewItem = {
     | "ga4TrackingQuality"
     | "localVisibility"
     | "socialDraftInput"
+    | "keywordPlannerAccess"
     | "contentBrief"
     | "wordpressDraft";
   item: Record<string, unknown>;
@@ -173,11 +174,16 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         }
       }))
     : [];
+  const keywordPlannerAccessItems =
+    payload.action_type === "configure_google_ads_keyword_planner_access"
+      ? [{ kind: "keywordPlannerAccess" as const, item: payload }]
+      : [];
   return [
     ...genericItems,
     ...budgetItems,
     ...ngramItems,
     ...socialDraftItems,
+    ...keywordPlannerAccessItems,
     ...contentBriefItems,
     ...wordpressDraftItems
   ];
@@ -210,6 +216,9 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "socialDraftInput") {
     return <SocialDraftInputPreviewCard item={previewItem.item} />;
+  }
+  if (previewItem.kind === "keywordPlannerAccess") {
+    return <KeywordPlannerAccessPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "contentBrief") {
     return <ContentBriefPreviewCard item={previewItem.item} />;
@@ -531,6 +540,39 @@ function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }
   );
 }
 
+function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknown> }) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">
+            Keyword Planner access do odblokowania
+          </h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.mode, "prepare_only")}
+          </p>
+        </div>
+        <StatusBadge value="blocked" />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Blokowane API: {stringValue(item.blocked_api, "brak")}</div>
+        <div>Powód: {stringValue(item.blocked_reason, "brak")}</div>
+        <PreviewValues
+          label="Wymagany stan"
+          values={asStringArray(item.required_google_ads_state)}
+        />
+        <PreviewValues label="Kroki" values={asStringArray(item.helper_steps)} />
+        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
   const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
   return (
@@ -626,9 +668,10 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "ga4TrackingQuality") return 6;
   if (kind === "localVisibility") return 7;
   if (kind === "socialDraftInput") return 8;
-  if (kind === "contentBrief") return 9;
-  if (kind === "wordpressDraft") return 10;
-  return 11;
+  if (kind === "keywordPlannerAccess") return 9;
+  if (kind === "contentBrief") return 10;
+  if (kind === "wordpressDraft") return 11;
+  return 12;
 }
 
 function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewItem["kind"] {

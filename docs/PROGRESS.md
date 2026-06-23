@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Keyword Planner access blocker ActionObject preview, 2026-06-23.
+   `/actions/act_configure_google_ads_keyword_planner_access` now renders the
+   Keyword Planner/developer-token blocker as a marketer-reviewable card above
+   the debug payload. The card shows blocked API, sanitized reason, required
+   Google Ads state, helper steps, validations, blocked claims and explicit
+   blocked apply/API mutation state. Browser proof:
+   `.local-lab/proof/dashboard/action-keyword-planner-access-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not unlock Keyword Planner, forecast, audience size,
+   conversion uplift, ROAS, targeting apply or campaign performance claims; it
+   only exposes the safe repair/retry path.
+
 0. Dashboard social draft ActionObject candidate input preview, 2026-06-23.
    `/actions/act_prepare_linkedin_social_drafts` now renders
    `candidate_inputs` as marketer-reviewable cards above the debug payload.

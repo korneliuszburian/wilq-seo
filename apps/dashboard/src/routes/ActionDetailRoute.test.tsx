@@ -503,6 +503,43 @@ const socialDraftActionFixture: ActionObject = {
   }
 };
 
+const keywordPlannerAccessActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_keyword_planner_access",
+  title: "Odblokuj Keyword Planner dla Google Ads",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_google_ads"],
+  human_diagnosis: "Keyword Planner jest zablokowany przez stan developer tokena.",
+  recommended_reason: "Odblokuj dostęp zanim WILQ zacznie oceniać forecast i audience size.",
+  payload: {
+    action_type: "configure_google_ads_keyword_planner_access",
+    connector: "google_ads",
+    mode: "prepare_only",
+    blocked_api: "Keyword Planner",
+    blocked_reason:
+      "api_code=403, api_status=PERMISSION_DENIED, ads_error=authorizationError.DEVELOPER_TOKEN_NOT_APPROVED 403",
+    required_google_ads_state: [
+      "developer_token_approved_for_keyword_planner",
+      "keyword_planner_generate_ideas_allowed"
+    ],
+    helper_steps: [
+      "Sprawdź status Google Ads API developer token w Google Ads API Center.",
+      "Po zmianie statusu wykonaj read-only refresh Google Ads."
+    ],
+    required_validation: [
+      "confirm_developer_token_approval",
+      "rerun_google_ads_vendor_read",
+      "verify_keyword_planner_idea_rows",
+      "human_confirm_before_apply"
+    ],
+    blocked_claims: ["audience size", "forecast", "conversion uplift", "ROAS"],
+    apply_allowed: false,
+    destructive: false
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -636,6 +673,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_social_draft")) {
         return Promise.resolve(Response.json(socialDraftActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_keyword_planner_access")) {
+        return Promise.resolve(Response.json(keywordPlannerAccessActionFixture));
       }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
@@ -881,6 +921,27 @@ describe("Action detail route", () => {
     expect(screen.getAllByText(/Ograniczenia: use_only_wilq_evidence/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Blokady: ROAS/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Publikacja zablokowana/).length).toBeGreaterThan(0);
+  });
+
+  it("renders Keyword Planner access blocker without requiring raw JSON", async () => {
+    renderActionDetail("act_keyword_planner_access");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Odblokuj Keyword Planner dla Google Ads"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Keyword Planner access do odblokowania")).toBeInTheDocument();
+    expect(screen.getByText(/Blokowane API: Keyword Planner/)).toBeInTheDocument();
+    expect(screen.getByText(/Powód: api_code=403/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Wymagany stan: developer_token_approved_for_keyword_planner/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Kroki: Sprawdź status Google Ads API developer token/)).toBeInTheDocument();
+    expect(screen.getByText(/Walidacje: confirm_developer_token_approval/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: audience size/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 
   it("renders content brief and WordPress draft preview without requiring raw JSON", async () => {
