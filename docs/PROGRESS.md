@@ -2293,6 +2293,15 @@ Aktualny maintenance:
     now shows example evidence IDs and total evidence count. Focused proof
     passed: Ahrefs route unit test, dashboard lint and dashboard typecheck.
 
+13. GA4 proof compaction, 2026-06-23 05:50 CEST.
+    `/ga4` now renders GA4 metric facts in decisions/proof as Polish metric
+    tiles such as `Aktywni użytkownicy`, `Sesje`, `Zaangażowanie` and
+    `Wyświetlenia stron` instead of raw `active_users: 20` chips. `Dowody i
+    ograniczenia GA4` now shows example evidence IDs and total evidence count.
+    Focused proof passed: GA4/GSC route unit test, dashboard lint and dashboard
+    typecheck. Remaining raw metric chips can still appear inside shared
+    `ActionObjectFocus`; that is a separate shared-component cleanup.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2329,7 +2338,8 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   remaining lower-fold Ads Doctor tables and GA4 proof compaction.
+   shared ActionObjectFocus metric rendering and remaining lower-fold Ads Doctor
+   tables.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

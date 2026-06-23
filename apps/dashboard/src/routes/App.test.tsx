@@ -4477,7 +4477,7 @@ const ga4Diagnostics = {
       risk: "medium"
     }
   ],
-  evidence_ids: ["ev_refresh_ga4"],
+  evidence_ids: ["ev_refresh_ga4", "ev_refresh_ga4_tracking_review", "ev_refresh_ga4_safety"],
   action_ids: ["act_review_ga4_tracking_quality"],
   blocker_count: 1
 };
@@ -6111,7 +6111,16 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/apply zablokowany/)).toBeInTheDocument();
     expect(screen.queryByText("Analytics Safety Gate")).not.toBeInTheDocument();
     expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
-    expect(screen.getAllByText(/active_users: 20/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Aktywni użytkownicy").length).toBeGreaterThan(0);
+    const ga4ProofSection = screen
+      .getByText("Dowody i ograniczenia GA4")
+      .closest("section");
+    expect(ga4ProofSection).not.toBeNull();
+    const ga4Proof = within(ga4ProofSection as HTMLElement);
+    expect(ga4Proof.queryByText(/active_users: 20/)).not.toBeInTheDocument();
+    expect(ga4Proof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
+    expect(ga4Proof.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(ga4Proof.queryByText(/ev_refresh_ga4_safety/)).not.toBeInTheDocument();
     expect(
       screen.getAllByRole("link", { name: "act_review_ga4_tracking_quality" })[0]
     ).toHaveAttribute("href", "/actions/act_review_ga4_tracking_quality");

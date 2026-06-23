@@ -4891,3 +4891,17 @@ Latest Ahrefs proof compaction slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ahrefs route renders authority context and typed gap records"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest GA4 proof compaction slice:
+
+- `/ga4` now renders GA4 metric facts in decisions and
+  `Dowody i ograniczenia GA4` as Polish metric tiles instead of raw
+  `MetricFactChips` such as `active_users: 20`.
+- The proof summary now shows readable metric tiles, section/source labels,
+  example evidence IDs and total evidence counts.
+- Remaining raw metric chips can still appear inside shared `ActionObjectFocus`;
+  handle that as a separate shared-component cleanup, not as a GA4 route bug.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`

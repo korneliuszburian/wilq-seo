@@ -7,13 +7,13 @@ import {
   getActions,
   getGa4Diagnostics
 } from "../lib/api";
-import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
 
 type Ga4DecisionItem = Ga4DiagnosticsResponse["decision_queue"][number];
+type Ga4MetricFact = Ga4DiagnosticsResponse["sections"][number]["metric_facts"][number];
 
 type Ga4TrackingQualityPreviewItem = {
   action_id: string;
@@ -349,7 +349,9 @@ function Ga4DecisionCard({ decision }: { decision: Ga4DecisionItem }) {
         <LinkedTraceLine label="Akcje" values={decision.action_ids} kind="actions" />
         <TraceLine label="Nie wolno twierdzić" values={ga4BlockedClaimLabels(decision.blocked_claims)} />
       </div>
-      {decision.metric_facts.length > 0 ? <MetricFactChips facts={decision.metric_facts.slice(0, 5)} /> : null}
+      {decision.metric_facts.length > 0 ? (
+        <Ga4MetricTiles facts={decision.metric_facts.slice(0, 5)} />
+      ) : null}
     </article>
   );
 }
@@ -465,6 +467,8 @@ function wordpressMatchConfidenceLabel(value: string) {
 
 function Ga4DiagnosticProof({ data }: { data: Ga4DiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
+  const visibleMetricFacts = metricFacts.slice(0, 4);
+  const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
   const sourceConnectors = uniqueValues([
     ...data.sections.flatMap((section) => section.source_connectors),
     ...data.decision_queue.flatMap((decision) => decision.source_connectors)
@@ -484,13 +488,13 @@ function Ga4DiagnosticProof({ data }: { data: Ga4DiagnosticsResponse }) {
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Sekcje API" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
-          <MetricTile label="Decyzje" value={data.decision_queue.length} />
+          <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
         </div>
       </div>
-      {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 8)} /> : null}
+      {visibleMetricFacts.length > 0 ? <Ga4MetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => ga4SectionLabel(section.id))} />
-        <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
+        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
         <TraceLine label="Źródła" values={sourceConnectors} />
         <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
         <TraceLine
@@ -500,6 +504,36 @@ function Ga4DiagnosticProof({ data }: { data: Ga4DiagnosticsResponse }) {
       </div>
     </section>
   );
+}
+
+function Ga4MetricTiles({ facts }: { facts: Ga4MetricFact[] }) {
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+      {facts.map((fact, index) => (
+        <MetricTile
+          key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
+          label={ga4MetricFactLabel(fact.name)}
+          value={formatGa4MetricValue(fact.value)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ga4MetricFactLabel(metricName: string) {
+  const labels: Record<string, string> = {
+    active_users: "Aktywni użytkownicy",
+    engagement_rate: "Zaangażowanie",
+    event_count: "Zdarzenia",
+    screen_page_views: "Wyświetlenia stron",
+    sessions: "Sesje"
+  };
+  return labels[metricName] ?? metricName;
+}
+
+function formatGa4MetricValue(value: string | number | boolean) {
+  if (typeof value === "boolean") return value ? "tak" : "nie";
+  return value;
 }
 
 function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {
