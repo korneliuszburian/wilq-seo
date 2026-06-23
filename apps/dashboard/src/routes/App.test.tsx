@@ -5849,13 +5849,14 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "ActionObjecty" })).toBeInTheDocument()
     );
     expect(screen.getByText("ActionObjecty do przeglądu")).toBeInTheDocument();
-    expect(screen.getByText("Dowody powiązane z akcjami")).toBeInTheDocument();
+    expect(screen.queryByText("Dowody powiązane z akcjami")).not.toBeInTheDocument();
     expect(screen.getByText("Do walidacji")).toBeInTheDocument();
     expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Pokaż payload ActionObject" }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Dowody: 1 ID").length).toBeGreaterThan(0);
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
+    expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
   });

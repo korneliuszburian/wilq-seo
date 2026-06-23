@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Actions route evidence-registry cleanup, 2026-06-23.
+  `/actions` no longer renders the extra `Dowody powiązane z akcjami` evidence
+  registry under ActionObject cards. The route still shows evidence counts on
+  ActionObjects and the top metric, but it no longer lists raw `ev_*` headings
+  on the marketer-facing route. Browser proof with agent-browser on
+  `http://127.0.0.1:5173/actions`: the route shows `ActionObjecty do przeglądu`
+  and ActionObject payload buttons, with no raw evidence section below.
+  Focused proof: RED/GREEN dashboard route test, dashboard lint OK and
+  dashboard typecheck OK.
 - Ads change-impact wording cleanup, 2026-06-23.
   `/api/ads/diagnostics.change_impact_readiness_contract.next_step` no longer
   uses the marketer-facing phrase `snapshot kampanii`. It now says

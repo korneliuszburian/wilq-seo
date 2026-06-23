@@ -71,16 +71,12 @@ export function OpportunitiesSurface() {
 
 export function ActionsSurface() {
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
-  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
 
-  if (actions.isLoading || evidence.isLoading) return <LoadingBand />;
-  if (actions.error || evidence.error) return <ErrorState />;
+  if (actions.isLoading) return <LoadingBand />;
+  if (actions.error) return <ErrorState />;
 
   const items = actions.data ?? [];
   const evidenceIds = new Set(items.flatMap((action) => action.evidence_ids));
-  const relatedEvidence = (evidence.data ?? [])
-    .filter((item) => evidenceIds.has(item.id))
-    .slice(0, 12);
   const needsValidation = items.filter(
     (action) => action.validation_status !== "valid"
   );
@@ -107,10 +103,6 @@ export function ActionsSurface() {
         <section>
           <SectionHeading title="ActionObjecty do przeglądu" />
           <ActionList actions={items} />
-        </section>
-        <section>
-          <SectionHeading title="Dowody powiązane z akcjami" />
-          <EvidenceList evidenceItems={relatedEvidence} />
         </section>
       </div>
     </main>
