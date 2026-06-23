@@ -48,6 +48,15 @@ Aktualny proof produktowy:
   `daily_runtime_base` about `0.78-0.83s`. Focused proof: RED/GREEN
   metric-store per-connector limit test, RED/GREEN action metric read test,
   expected ActionObject ID check, Python ruff OK and mypy OK.
+- Command Center connector-scoped metric read, 2026-06-23.
+  Command Center first-screen metric reads now use per-connector limits instead
+  of applying the Merchant-sized limit to Ads, Ahrefs and Localo. Live HTTP
+  after stack restart: cold `/api/dashboard/command-center` returned 4 daily
+  decisions in `1.639s`, then warm responses stayed around `0.022-0.025s`.
+  This preserves the same marketer decision surface while avoiding thousands
+  of unnecessary metric rows on the cold path. Focused proof: RED/GREEN
+  Command Center metric read test, Command Center shape test, Python ruff OK
+  and mypy OK.
 - Command Center metric read performance, 2026-06-23.
   Command Center and tactical queue now use a faster DuckDB read path,
   `list_latest_metric_facts_by_connector`, for marketer first-screen decisions

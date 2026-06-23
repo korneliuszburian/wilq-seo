@@ -189,29 +189,20 @@ def build_command_center_brief(
 ) -> tuple[list[CommandCenterBriefItem], str, int]:
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
-    facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
-        [
-            GOOGLE_ADS_CONNECTOR_ID,
-            GOOGLE_MERCHANT_CONNECTOR_ID,
-            GA4_CONNECTOR_ID,
-            AHREFS_CONNECTOR_ID,
-            "localo",
-        ],
-        limit_per_connector=MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
+    facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
+        {
+            GOOGLE_ADS_CONNECTOR_ID: GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT,
+            GOOGLE_MERCHANT_CONNECTOR_ID: MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
+            GA4_CONNECTOR_ID: GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
+            AHREFS_CONNECTOR_ID: AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT,
+            "localo": 120,
+        }
     )
-    ads_facts = facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])[
-        :GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT
-    ]
-    merchant_facts = facts_by_connector.get(GOOGLE_MERCHANT_CONNECTOR_ID, [])[
-        :MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT
-    ]
-    ga4_facts = facts_by_connector.get(GA4_CONNECTOR_ID, [])[
-        :GA4_COMMAND_CENTER_METRIC_FACT_LIMIT
-    ]
-    ahrefs_facts = facts_by_connector.get(AHREFS_CONNECTOR_ID, [])[
-        :AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT
-    ]
-    localo_facts = facts_by_connector.get("localo", [])[:120]
+    ads_facts = facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])
+    merchant_facts = facts_by_connector.get(GOOGLE_MERCHANT_CONNECTOR_ID, [])
+    ga4_facts = facts_by_connector.get(GA4_CONNECTOR_ID, [])
+    ahrefs_facts = facts_by_connector.get(AHREFS_CONNECTOR_ID, [])
+    localo_facts = facts_by_connector.get("localo", [])
     localo = get_connector_status("localo")
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [

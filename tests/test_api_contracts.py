@@ -11417,12 +11417,17 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
 
         def list_latest_metric_facts_by_connector(
             self,
-            connector_ids: list[str],
-            limit_per_connector: int = 100,
+            *_args: object,
+            **_kwargs: object,
+        ) -> object:
+            raise AssertionError("Command Center must use connector-specific limits")
+
+        def list_latest_metric_facts_by_connector_limits(
+            self,
+            connector_limits: dict[str, int],
         ) -> dict[str, list[object]]:
-            seen["metric_connector_ids"] = connector_ids
-            seen["metric_limit_per_connector"] = limit_per_connector
-            return {connector_id: [] for connector_id in connector_ids}
+            seen["metric_connector_limits"] = connector_limits
+            return {connector_id: [] for connector_id in connector_limits}
 
     monkeypatch.setattr(command_center, "metric_store", lambda: EmptyMetricStore())
     monkeypatch.setattr(command_center, "get_connector_status", lambda _connector_id: None)
@@ -11442,13 +11447,13 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
     assert seen["ga4_tactical_items"] == tactical_queue.items
     assert seen["ga4_actions"] == [action]
     assert seen["ga4_metric_facts"] == []
-    assert seen["metric_connector_ids"] == [
-        "google_ads",
-        "google_merchant_center",
-        "google_analytics_4",
-        "ahrefs",
-        "localo",
-    ]
+    assert seen["metric_connector_limits"] == {
+        "google_ads": command_center.GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        "google_merchant_center": command_center.MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        "google_analytics_4": command_center.GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        "ahrefs": command_center.AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        "localo": 120,
+    }
 
 
 def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(
