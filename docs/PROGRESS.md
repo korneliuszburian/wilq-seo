@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads change-impact wording cleanup, 2026-06-23.
+  `/api/ads/diagnostics.change_impact_readiness_contract.next_step` no longer
+  uses the marketer-facing phrase `snapshot kampanii`. It now says
+  `aktualny odczyt kampanii`, while keeping the same safety gate: change rows,
+  current campaign readout and pre/post windows are required before claiming
+  change impact. Live proof after stack restart: `contains_snapshot_kampanii=false`
+  and `contains_aktualny_odczyt=true`. Focused proof: RED/GREEN
+  `test_ads_diagnostics_exposes_live_campaign_metric_facts`, Python ruff OK and
+  mypy OK.
 - Localo partial-contract blocker copy fix, 2026-06-23.
   `/api/localo/diagnostics` no longer contradicts itself when typed aggregate
   facts exist. With partial Localo evidence, the blocked decision now says it

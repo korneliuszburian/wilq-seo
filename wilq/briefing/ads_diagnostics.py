@@ -2657,8 +2657,8 @@ def _change_impact_readiness_contract(
         apply_allowed=False,
         next_step=(
             "Użyj tego jako checklisty readiness: sprawdź, czy są change rows, "
-            "snapshot kampanii i okna wyników przed/po. Nie claimuj wpływu zmian "
-            "bez pre/post windows i human review."
+            "aktualny odczyt kampanii i okna wyników przed/po. Nie claimuj "
+            "wpływu zmian bez pre/post windows i human review."
         ),
     )
 

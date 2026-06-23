@@ -7357,6 +7357,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert change_impact_contract["id"] == "ads_change_impact_readiness_contract"
     assert change_impact_contract["status"] == "blocked"
     assert change_impact_contract["apply_allowed"] is False
+    assert "snapshot kampanii" not in change_impact_contract["next_step"]
+    assert "aktualny odczyt kampanii" in change_impact_contract["next_step"]
     assert "change impact" in change_impact_contract["blocked_claims"]
     assert "change_event_rows" not in change_impact_contract["missing_read_contracts"]
     assert "current_campaign_snapshot" not in change_impact_contract[

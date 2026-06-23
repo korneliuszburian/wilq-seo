@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 10:24 CEST.
+Last updated: 2026-06-23 10:43 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -83,6 +83,14 @@ diagnostic modules for Ads Doctor, Custom Segments, Demand Gen, GA4, Localo,
 Ahrefs, Merchant and Content/GSC. `pnpm --filter @wilq/dashboard build`
 emits separate diagnostic chunks and passed together with dashboard typecheck,
 lint and focused route tests.
+
+2026-06-23 Ads wording follow-up: `/api/ads/diagnostics` no longer uses
+`snapshot kampanii` in marketer-facing change-impact readiness copy. The
+contract now says `aktualny odczyt kampanii` while preserving the same blocked
+claim boundary for change impact until current campaign readout, change rows
+and pre/post windows are available. Live proof after stack restart:
+`contains_snapshot_kampanii=false`, `contains_aktualny_odczyt=true`. Focused
+proof: RED/GREEN Ads diagnostics test, Python ruff OK and mypy OK.
 
 2026-06-23 Localo diagnostics copy follow-up: `/api/localo/diagnostics` now
 keeps the partial-data story consistent. When Localo has typed aggregate facts,
