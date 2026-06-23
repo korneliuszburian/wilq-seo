@@ -213,6 +213,27 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "action_ids": {"act_review_localo_visibility_facts"},
             "validated_action_ids": {"act_review_localo_visibility_facts"},
         },
+        "wilq-social-publisher": {
+            "surface_path": "/social-publisher",
+            "terms": {
+                "social_draft_context",
+                "publish_allowed",
+                "missing_publish_permissions",
+                "candidate_inputs",
+                "review-only",
+                "LinkedIn",
+                "Facebook",
+                "blocked claims",
+            },
+            "action_ids": {
+                "act_prepare_linkedin_social_drafts",
+                "act_prepare_facebook_social_drafts",
+            },
+            "validated_action_ids": {
+                "act_prepare_linkedin_social_drafts",
+                "act_prepare_facebook_social_drafts",
+            },
+        },
     }
 
     for skill, contract in expected.items():
@@ -465,10 +486,13 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
 
     cases_by_skill = {case["skill"]: case for case in cases}
     social_case = cases_by_skill["wilq-social-publisher"]
+    assert social_case["expected_blocked"] is False
     assert set(social_case["expected_validated_action_ids"]) == {
         "act_prepare_linkedin_social_drafts",
         "act_prepare_facebook_social_drafts",
     }
+    assert "post published" in social_case["blocked_claim_terms"]
+    assert "social performance uplift" in social_case["blocked_claim_terms"]
     social_smoke_script = Path(
         ".agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")

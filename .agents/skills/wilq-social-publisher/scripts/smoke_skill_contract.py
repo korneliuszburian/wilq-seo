@@ -92,6 +92,18 @@ def main() -> int:
     if "must not invent metrics" not in instruction or "evidence" not in instruction:
         raise SystemExit("Context pack strict instruction does not include evidence guardrails")
 
+    social_draft_context = pack.get("social_draft_context")
+    if not isinstance(social_draft_context, dict):
+        raise SystemExit("Context pack missing social_draft_context")
+    if social_draft_context.get("mode") != "review_only":
+        raise SystemExit("Social draft context must be review_only")
+    if social_draft_context.get("publish_allowed") is not False:
+        raise SystemExit("Social draft context must keep publish_allowed=false")
+    if not social_draft_context.get("candidate_inputs"):
+        raise SystemExit("Social draft context must expose candidate_inputs")
+    if not social_draft_context.get("missing_publish_permissions"):
+        raise SystemExit("Social draft context must expose missing publish permissions")
+
     action_validations = validate_core_social_actions(args.api_base, pack)
 
     print(
@@ -101,6 +113,7 @@ def main() -> int:
                 "api_base": args.api_base,
                 "health": health.get("status"),
                 "required_connectors": connector_results,
+                "brief_items": brief_items,
                 "brief_item_count": len(brief_items),
                 "brief_item_ids": [item.get("id") for item in brief_items[:8]],
                 "evidence_count": len(pack.get("evidence_summaries") or []),
@@ -121,6 +134,21 @@ def main() -> int:
                     for item in (pack.get("active_action_objects") or [])
                     if item.get("id")
                 ][:20],
+                "social_draft_context": {
+                    "mode": social_draft_context.get("mode"),
+                    "publish_allowed": social_draft_context.get("publish_allowed"),
+                    "missing_publish_permissions": social_draft_context.get(
+                        "missing_publish_permissions"
+                    ),
+                    "candidate_input_count": len(
+                        social_draft_context.get("candidate_inputs", [])
+                    ),
+                    "candidate_inputs": social_draft_context.get("candidate_inputs", [])[:4],
+                    "draft_action_ids": social_draft_context.get("draft_action_ids", []),
+                    "draft_constraints": social_draft_context.get("draft_constraints", []),
+                    "blocked_claims": social_draft_context.get("blocked_claims", []),
+                    "operator_next_step": social_draft_context.get("operator_next_step"),
+                },
                 "action_validations": action_validations,
             },
             indent=2,

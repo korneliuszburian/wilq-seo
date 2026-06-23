@@ -717,6 +717,11 @@ def _skill_scoped_context_pack(
         for action in scoped_actions
         for evidence_id in action.evidence_ids
     )
+    if skill == "wilq-social-publisher":
+        diagnostics["social_draft_context"] = _social_draft_context_for_context(
+            scoped_actions,
+            connectors,
+        )
     scoped_opportunities = _opportunities_for_skill_scope(
         skill,
         opportunities,
@@ -937,6 +942,82 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
             "tactical_queue": build_tactical_queue().model_dump(mode="json"),
         }
     return {"marketing_brief": build_daily_runtime().marketing_brief.model_dump(mode="json")}
+
+
+def _social_draft_context_for_context(
+    actions: list[ActionObject],
+    connectors: list[ConnectorStatus],
+) -> dict[str, Any]:
+    social_actions = sorted(
+        [
+            action
+            for action in actions
+            if action.id
+            in {
+                "act_prepare_facebook_social_drafts",
+                "act_prepare_linkedin_social_drafts",
+            }
+        ],
+        key=lambda action: action.id,
+    )
+    connector_status_by_id = {connector.id: connector for connector in connectors}
+    missing_publish_permissions = {
+        connector_id: connector_status_by_id[connector_id].missing_credentials
+        for connector_id in ("linkedin", "facebook")
+        if connector_id in connector_status_by_id
+        and connector_status_by_id[connector_id].missing_credentials
+    }
+    candidate_inputs: list[dict[str, Any]] = []
+    draft_constraints: list[str] = []
+    blocked_claims = ["post published", "social performance uplift"]
+    source_metric_names: list[str] = []
+    source_connectors: list[str] = []
+    evidence_ids: list[str] = []
+    for action in social_actions:
+        payload = action.payload
+        if isinstance(payload, dict):
+            candidate_inputs.extend(
+                item
+                for item in payload.get("candidate_inputs", [])
+                if isinstance(item, dict)
+            )
+            draft_constraints.extend(
+                str(item)
+                for item in payload.get("draft_constraints", [])
+                if item
+            )
+            blocked_claims.extend(
+                str(item)
+                for item in payload.get("blocked_claims", [])
+                if item
+            )
+            source_metric_names.extend(
+                str(item)
+                for item in payload.get("source_metric_names", [])
+                if item
+            )
+            source_connectors.extend(
+                str(item)
+                for item in payload.get("source_connectors", [])
+                if item
+            )
+        evidence_ids.extend(action.evidence_ids)
+    return {
+        "mode": "review_only",
+        "publish_allowed": False,
+        "missing_publish_permissions": missing_publish_permissions,
+        "draft_action_ids": [action.id for action in social_actions],
+        "candidate_inputs": candidate_inputs[:8],
+        "draft_constraints": sorted(set(draft_constraints)),
+        "blocked_claims": sorted(set(blocked_claims)),
+        "source_metric_names": sorted(set(source_metric_names)),
+        "source_connectors": sorted(set(source_connectors)),
+        "evidence_ids": list(dict.fromkeys(evidence_ids))[:12],
+        "operator_next_step": (
+            "Przygotuj szkice do review z evidence; publikacja pozostaje "
+            "zablokowana do czasu konfiguracji LinkedIn/Facebook permissions."
+        ),
+    }
 
 
 def _demand_gen_diagnostics_for_context() -> dict[str, Any]:

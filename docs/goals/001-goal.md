@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 17:12 CEST.
+Last updated: 2026-06-23 17:23 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -246,6 +246,18 @@ at
 `.local-lab/evals/codex-skill/20260623T151121Z/wilq-ahrefs-gap-finder/result.json`
 with `pl-PL`, `api_used=true`, `operator_usefulness_score=4`, no safety
 findings and no invented ActionObject IDs.
+
+Completed at 2026-06-23 17:23 CEST:
+`wilq-social-publisher` now receives a typed review-only
+`social_draft_context` in its skill-scoped context-pack. It exposes
+`candidate_inputs` from WILQ evidence, `publish_allowed=false`,
+LinkedIn/Facebook `missing_publish_permissions`, draft constraints and blocked
+claims. Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260623T152228Z/wilq-social-publisher/result.json`
+with `pl-PL`, `api_used=true`, `blocked=false`, validated
+`act_prepare_linkedin_social_drafts` and `act_prepare_facebook_social_drafts`,
+a separate blocked publication candidate, `operator_usefulness_score=4` and no
+safety findings.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

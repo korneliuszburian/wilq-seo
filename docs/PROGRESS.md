@@ -39,7 +39,21 @@ Stan produktu:
 
 ## Last Done
 
-1. `wilq-ahrefs-gap-finder` review-only gap eval, 2026-06-23.
+1. `wilq-social-publisher` review-only draft context/eval, 2026-06-23.
+   Social Publisher now receives a typed `social_draft_context` in its
+   skill-scoped context-pack. It exposes `mode=review_only`,
+   `publish_allowed=false`, missing LinkedIn/Facebook permissions,
+   `candidate_inputs` from WILQ evidence, draft constraints and blocked claims.
+   This lets Codex prepare evidence-backed LinkedIn/Facebook draft directions
+   while keeping publication blocked. Non-interactive eval passed at
+   `.local-lab/evals/codex-skill/20260623T152228Z/wilq-social-publisher/result.json`.
+   Result: `blocked=false`, `pl-PL`, `api_used=true`,
+   `operator_usefulness_score=4`, no safety findings, validated
+   `act_prepare_linkedin_social_drafts` and
+   `act_prepare_facebook_social_drafts`, plus an explicit blocked publish
+   action candidate because `publish_allowed=false`.
+
+2. `wilq-ahrefs-gap-finder` review-only gap eval, 2026-06-23.
    Ahrefs eval now treats ready gap records as a review workflow, not a global
    blocker. Smoke exposes compact `gap_read_contract` fields:
    `status=ready`, `gap_record_count=8`, `missing_read_contracts=[]`,
@@ -52,7 +66,7 @@ Stan produktu:
    findings, no ActionObject IDs, and review-only recommendations for
    `ahrefs_review_authority_context` plus `ahrefs_review_gap_records`.
 
-2. `wilq-gsc-content-doctor` scoped context-pack/eval, 2026-06-23.
+3. `wilq-gsc-content-doctor` scoped context-pack/eval, 2026-06-23.
    GSC Content Doctor no longer receives/promotes Ahrefs decisions in its
    skill-scoped `POST /api/codex/context-pack`. Full
    `/api/content/diagnostics` can still include Ahrefs for Content Planner and
@@ -68,7 +82,7 @@ Stan produktu:
    `operator_usefulness_score=5`, no safety findings, validated
    `act_prepare_content_refresh_queue`.
 
-3. `wilq-merchant-feed-operator` product-sample eval, 2026-06-23.
+4. `wilq-merchant-feed-operator` product-sample eval, 2026-06-23.
    Non-interactive Codex eval passed against the new Merchant product-sample
    contract:
    `.local-lab/evals/codex-skill/20260623T144931Z/wilq-merchant-feed-operator/result.json`.
@@ -82,7 +96,7 @@ Stan produktu:
    exposes context-pack ActionObject state (`needs_validation/not_validated`)
    alongside current endpoint validation (`valid=true/status=valid`).
 
-4. Merchant product-sample readiness contract, 2026-06-23.
+5. Merchant product-sample readiness contract, 2026-06-23.
    `/api/merchant/diagnostics` exposes `product_sample_readiness`, so WILQ no
    longer implies that aggregate Merchant issue clusters contain concrete
    product IDs, SKU or titles unless the read contract actually supplies them.
@@ -92,7 +106,7 @@ Stan produktu:
    usable only as review examples. `/merchant` shows `Gotowość próbek produktów`
    and the Merchant skill smoke asserts the same field.
 
-5. `wilq-ga4-analyst` decision-sample eval, 2026-06-23.
+6. `wilq-ga4-analyst` decision-sample eval, 2026-06-23.
    GA4 smoke now exposes compact `decision_samples` with `active_users`,
    `sessions`, `engagement_rate` and landing/source/campaign dimensions, so
    non-interactive Codex can cite real GA4 decision metrics instead of only
@@ -104,7 +118,7 @@ Stan produktu:
    `fix_measurement` and `review_traffic_quality`; `review_landing_mapping`
    remains absent, so Codex must not infer landing quality from GA4 rows alone.
 
-6. `wilq-ads-doctor` current API proof, 2026-06-23.
+7. `wilq-ads-doctor` current API proof, 2026-06-23.
    Non-interactive Codex eval passed against the current WILQ API:
    `.local-lab/evals/codex-skill/20260623T130149Z/wilq-ads-doctor/result.json`.
    Result: `pl-PL`, `api_used=true`, evidence count `3`,
@@ -117,7 +131,7 @@ Stan produktu:
    `188143` bytes and rerun passed. If it repeats, fix API context-pack
    compaction/budget stability, not skill references.
 
-7. Merchant product sample enrichment, 2026-06-23.
+8. Merchant product sample enrichment, 2026-06-23.
    Merchant read-only `vendor_read` enriches aggregate issue clusters with
    product samples. It parses `sampleProducts` from `aggregateProductStatuses`
    when present and falls back to `products.list` / product status issue rows
@@ -132,7 +146,7 @@ Stan produktu:
    `unit pricing measure` only for matching; raw evidence dimensions remain
    unchanged.
 
-8. Merchant diagnostics decision contract, 2026-06-23.
+9. Merchant diagnostics decision contract, 2026-06-23.
    `/api/merchant/diagnostics` ma typed pola eliminujące błąd interpretacji z
    live-run `wilq-merchant-feed-operator`: `freshness_assessment`,
    `unknowns`, `operator_summary.decision_source=decision_queue`,
@@ -145,14 +159,14 @@ Stan produktu:
    ruff/mypy, dashboard lint/typecheck, shared-schemas typecheck, browser proof
    `.local-lab/proof/dashboard/merchant-freshness-unknowns.txt`.
 
-9. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
+10. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
    Commit `92febad fix(dashboard): polish ads doctor drilldowns` oczyścił dolne
    sekcje Ads Doctor i Custom Segments z najbardziej mylącego mieszanego copy.
    Keep enum names, endpoint names, field IDs, blocked-claim keys and Google API
    resource names unchanged; marketer-facing summaries/titles/next steps should
    stay Polish.
 
-9. Command Center and Ads first-flow copy cleanup, 2026-06-23.
+11. Command Center and Ads first-flow copy cleanup, 2026-06-23.
    Command Center first-screen daily decision cards compose concise Polish
    marketer copy from typed API fields and metric tiles. Ads Doctor first flow
    shows review-only Ads decisions instead of raw API slang and hides raw
@@ -173,7 +187,8 @@ Stan produktu:
 - Localo access works at OAuth/MCP initialize level, but WILQ still must expose
   real Localo ranking/GBP/competitor evidence before local SEO recommendations.
 - Skill evals prove API usage, Polish and evidence shape for many routes. The
-  newest Ahrefs eval now distinguishes ready review workflows from blocked
+  newest Social eval distinguishes review-only draft preparation from blocked
+  publishing; Ahrefs eval distinguishes ready review workflows from blocked
   uplift claims; GSC eval prevents Ahrefs scope leakage; Merchant eval proves
   product-sample/freshness/decision-queue usefulness. Remaining skills still
   need the same stricter “quality of decision” assertions.
@@ -184,9 +199,9 @@ Stan produktu:
 
 1. Run the next high-value Codex skill eval against current API contracts and
    record whether it produces real decisions, not only schema-valid output.
-   Recommended next skill: `wilq-social-publisher` if the next demo needs
-   evidence-backed draft ideas, or `wilq-demand-gen-operator` if the next demo
-   focuses on creative/campaign readiness.
+   Recommended next skill: `wilq-demand-gen-operator` if the next demo focuses
+   on creative/campaign readiness, or `wilq-campaign-builder` if the next demo
+   focuses on campaign structure/recommendation review.
 2. If an eval exposes reasoning gaps, fix typed API/dashboard contracts first,
    not skill references.
 3. Keep focused verification. Use full `scripts/verify.sh` only for final

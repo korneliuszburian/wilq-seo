@@ -232,8 +232,19 @@
   },
   {
     "skill": "wilq-social-publisher",
+    "surface_path": "/social-publisher",
     "task_pl": "Przygotuj review-safe kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",
     "expected_connectors": ["linkedin", "facebook"],
+    "expected_terms_pl": [
+      "social_draft_context",
+      "publish_allowed",
+      "missing_publish_permissions",
+      "candidate_inputs",
+      "review-only",
+      "LinkedIn",
+      "Facebook",
+      "blocked claims"
+    ],
     "expected_action_ids": [
       "act_prepare_linkedin_social_drafts",
       "act_prepare_facebook_social_drafts"
@@ -241,6 +252,13 @@
     "expected_validated_action_ids": [
       "act_prepare_linkedin_social_drafts",
       "act_prepare_facebook_social_drafts"
+    ],
+    "expected_blocked": false,
+    "blocked_claim_terms": [
+      "post published",
+      "social performance uplift",
+      "ROAS",
+      "revenue"
     ]
   },
   {

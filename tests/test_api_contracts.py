@@ -11871,6 +11871,44 @@ def test_social_context_pack_keeps_explicit_social_draft_action_objects(
     assert "act_prepare_facebook_social_drafts" in social_action_ids
 
 
+def test_social_context_pack_exposes_review_only_draft_context(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_action_candidate_metric_facts(tmp_path, monkeypatch)
+
+    context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-social-publisher"},
+    )
+    assert context_response.status_code == 200
+    context_payload = context_response.json()
+
+    social_context = context_payload["social_draft_context"]
+    assert social_context["mode"] == "review_only"
+    assert social_context["publish_allowed"] is False
+    assert social_context["missing_publish_permissions"] == {
+        "linkedin": ["LINKEDIN_ORGANIZATION_ID", "LINKEDIN_ACCESS_TOKEN"],
+        "facebook": ["FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_ACCESS_TOKEN"],
+    }
+    assert social_context["draft_action_ids"] == [
+        "act_prepare_facebook_social_drafts",
+        "act_prepare_linkedin_social_drafts",
+    ]
+    assert social_context["candidate_inputs"]
+    assert {
+        "source_connector",
+        "metric_name",
+        "value",
+        "dimensions",
+        "evidence_id",
+    }.issubset(social_context["candidate_inputs"][0])
+    assert "no_publishing_without_connector_credentials" in social_context[
+        "draft_constraints"
+    ]
+    assert "post published" in social_context["blocked_claims"]
+
+
 def test_codex_context_pack_scopes_content_strategist_payload() -> None:
     response = client.post(
         "/api/codex/context-pack",
