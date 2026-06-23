@@ -78,10 +78,12 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
           ) : null}
           <p className="mt-3 text-sm font-medium text-ink">{opportunity.recommended_action}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {opportunity.evidence_ids.join(", ")}</div>
-            <div>Źródła: {opportunity.source_connectors.join(", ")}</div>
-            <div>Reguły: {opportunity.expert_rule_ids.slice(0, 3).join(", ") || "brak"}</div>
-            <div>Playbooki: {opportunity.playbook_ids.slice(0, 2).join(", ") || "brak"}</div>
+            <div>Dowody: {opportunity.evidence_ids.length} ID</div>
+            <div>Źródła: {opportunity.source_connectors.map(opportunityConnectorLabel).join(", ")}</div>
+            <div>ActionObjecty: {opportunity.action_ids.length}</div>
+            <div>
+              Kontrakty wiedzy: {opportunity.expert_rule_ids.length + opportunity.playbook_ids.length}
+            </div>
           </div>
           {opportunity.is_fixture ? (
             <div className="mt-3 flex items-center gap-2 rounded-md border border-wait/30 bg-wait/10 p-2 text-xs text-wait">
@@ -93,6 +95,22 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
       ))}
     </div>
   );
+}
+
+function opportunityConnectorLabel(connectorId: string) {
+  const labels: Record<string, string> = {
+    ahrefs: "Ahrefs",
+    facebook: "Facebook",
+    google_ads: "Google Ads",
+    google_analytics_4: "GA4",
+    google_merchant_center: "Merchant Center",
+    google_search_console: "GSC",
+    linkedin: "LinkedIn",
+    localo: "Localo",
+    wordpress_ekologus: "WordPress ekologus.pl",
+    wordpress_sklep: "WordPress sklep"
+  };
+  return labels[connectorId] ?? connectorId;
 }
 
 export function EvidenceList({ evidenceItems }: { evidenceItems: Evidence[] }) {

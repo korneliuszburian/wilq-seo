@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -124,6 +124,15 @@ describe("Opportunities route", () => {
     expect(screen.getAllByText("kampanie").length).toBeGreaterThan(0);
     expect(screen.getAllByText("podgląd budżetu").length).toBeGreaterThan(0);
     expect(screen.getByText("Aktywne")).toBeInTheDocument();
+    const opportunityCard = screen
+      .getByText("Przejrzyj kolejki Ads do oceny bez apply")
+      .closest("article");
+    expect(opportunityCard).not.toBeNull();
+    const card = within(opportunityCard as HTMLElement);
+    expect(card.getByText("Dowody: 1 ID")).toBeInTheDocument();
+    expect(card.getByText("ActionObjecty: 2")).toBeInTheDocument();
+    expect(card.queryByText(/ev_refresh_refresh_google_ads_test/)).not.toBeInTheDocument();
+    expect(card.queryByText(/Playbooki:/)).not.toBeInTheDocument();
     expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
     expect(screen.queryByText("Evidence użyte przez opportunities")).not.toBeInTheDocument();

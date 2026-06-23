@@ -37,6 +37,13 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Opportunities dashboard cleanup, 2026-06-23 06:57 CEST.
+  `OpportunityList` nie drukuje już raw evidence IDs, expert rule IDs ani
+  playbook IDs na kartach decyzji. Karta pokazuje liczbę dowodów, źródła
+  marketerowym labellem, liczbę ActionObjectów i licznik kontraktów wiedzy;
+  pełne dowody nadal są w sekcji `Dowody użyte przez karty`. Focused proof:
+  `pnpm --filter @wilq/dashboard test -- --run src/routes/OpportunitiesRoute.test.tsx`
+  passed, dashboard lint OK and dashboard typecheck OK.
 - Localo dashboard cleanup, 2026-06-23 06:53 CEST.
   `/localo` nie pokazuje już MCP/OAuth jako pierwszoplanowej metryki
   marketingowej. Top route pokazuje `Fakty lokalne`, `Braki danych` i

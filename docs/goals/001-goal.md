@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 06:53 CEST.
+Last updated: 2026-06-23 06:57 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -91,6 +91,13 @@ and token presence are hidden behind `Pokaż techniczny proof Localo`. Focused
 proof: the Localo route unit test passed, dashboard lint OK and dashboard
 typecheck OK. This keeps Localo honest: access proof is visible on demand, but
 ranking/GBP/competitor claims remain blocked until typed Localo facts exist.
+
+2026-06-23 Opportunities follow-up: `OpportunityList` now hides raw evidence
+IDs, expert rule IDs and playbook IDs from decision cards. Cards show evidence
+count, marketer-facing source labels, ActionObject count and knowledge-contract
+count; the full evidence details remain in the dedicated evidence section.
+Focused proof: opportunities route unit test passed, dashboard lint OK and
+dashboard typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight
