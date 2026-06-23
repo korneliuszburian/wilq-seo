@@ -25,6 +25,63 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-content-strategist validated ActionObject eval hardening
+
+Purpose:
+
+- Apply the validated ActionObject eval pattern to the main content planning
+  skill. The skill must prove `act_prepare_content_refresh_queue` validates
+  before presenting the refresh/merge/create/block queue as the safe prepare
+  path.
+- Keep content decisions evidence-backed across GSC, GA4, Ahrefs and WordPress
+  inventory, with unsupported ranking, lead, revenue, WordPress write and
+  auto-publish claims blocked.
+
+Changes:
+
+- `.agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py`
+  now validates content action IDs from `/api/content/diagnostics` and exposes
+  `action_validations`.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids=["act_prepare_content_refresh_queue"]` for
+  `wilq-content-strategist`.
+- The content eval marker now uses stable connector ID `google_search_console`
+  instead of the brittle acronym `GSC`.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T012450Z/wilq-content-strategist/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors:
+  `google_search_console`, `google_analytics_4`, `ahrefs`,
+  `wordpress_ekologus`, `wordpress_sklep`.
+- `evidence_count=6`.
+- `action_candidates` contains `act_prepare_content_refresh_queue` with
+  `validation_state="validated"`.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- Content now has the strongest end-to-end skill proof so far:
+  `/api/content/diagnostics.decision_queue` plus WordPress inventory boundaries
+  plus validated ActionObject. The remaining content product work is better
+  operator selection/review persistence and eventual WordPress write adapter
+  after explicit review, not prompt-side edge cases.
+
 ## 2026-06-23 - wilq-merchant-feed-operator validated ActionObject eval hardening
 
 Purpose:

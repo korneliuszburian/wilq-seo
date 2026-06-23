@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content strategist eval hardening, 2026-06-23 01:24 CEST.
+  `wilq-content-strategist` smoke now validates
+  `act_prepare_content_refresh_queue` through
+  `POST /api/actions/{action_id}/validate` and exposes
+  `action_validations`. The non-interactive eval case now requires
+  `expected_validated_action_ids=["act_prepare_content_refresh_queue"]`.
+  Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T012450Z/wilq-content-strategist/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_search_console","google_analytics_4","ahrefs","wordpress_ekologus","wordpress_sklep"]`,
+  6 evidence IDs, `operator_usefulness_score=4`, `safety_findings=[]` and
+  `action_candidates[0].validation_state="validated"`. Product finding: the
+  skill now proves the content refresh/merge/create/block review queue is a
+  validated prepare path while still blocking unsupported ranking, lead,
+  revenue, WordPress write and auto-publish claims.
 - Merchant skill eval hardening, 2026-06-23 01:17 CEST.
   `wilq-merchant-feed-operator` smoke now validates
   `act_review_merchant_feed_issues` through

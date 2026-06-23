@@ -127,6 +127,20 @@ revenue, feed-write and automatic-fix claims. Use this as the template for
 hardening the remaining high-value skills; do not solve this by adding
 edge-case prose to skill references.
 
+Content now follows the same validated ActionObject pattern. The
+`wilq-content-strategist` smoke validates
+`act_prepare_content_refresh_queue`, the eval case requires
+`expected_validated_action_ids=["act_prepare_content_refresh_queue"]`, and the
+passing artifact is
+`.local-lab/evals/codex-skill/20260623T012450Z/wilq-content-strategist/result.json`.
+The result has `operator_usefulness_score=4`,
+`action_candidates[0].validation_state="validated"` and source connectors
+`google_search_console`, `google_analytics_4`, `ahrefs`,
+`wordpress_ekologus`, `wordpress_sklep`. This is now the strongest content
+proof path: API decision queue plus WordPress inventory boundaries plus a
+validated prepare/review ActionObject; it still blocks ranking, lead, revenue,
+WordPress write and auto-publish claims.
+
 ## Product Bar
 
 WILQ is an API-first marketing operating system for Ekologus, operated by a

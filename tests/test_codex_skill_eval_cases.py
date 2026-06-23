@@ -118,8 +118,15 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-content-strategist": {
             "surface_path": "/content-planner",
-            "terms": {"Content Planner", "WordPress", "GSC", "content_diagnostics", "inventory"},
+            "terms": {
+                "Content Planner",
+                "WordPress",
+                "google_search_console",
+                "content_diagnostics",
+                "inventory",
+            },
             "action_ids": {"act_prepare_content_refresh_queue"},
+            "validated_action_ids": {"act_prepare_content_refresh_queue"},
         },
         "wilq-custom-segments": {
             "surface_path": "/ads-doctor",
@@ -341,6 +348,12 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             in content_smoke_script
         )
         assert '"content_diagnostics": {' in content_smoke_script
+        if skill == "wilq-content-strategist":
+            content_validation_call = (
+                'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+            )
+            assert content_validation_call in content_smoke_script
+            assert '"action_validations": action_validations' in content_smoke_script
 
     ahrefs_skill_doc = Path(".agents/skills/wilq-ahrefs-gap-finder/SKILL.md").read_text(
         encoding="utf-8"

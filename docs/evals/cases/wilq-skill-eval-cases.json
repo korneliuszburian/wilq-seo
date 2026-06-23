@@ -189,14 +189,15 @@
     "expected_terms_pl": [
       "Content Planner",
       "WordPress",
-      "GSC",
+      "google_search_console",
       "content_diagnostics",
       "inventory",
       "inventory_check_before_create",
       "merge_create_after_inventory_check",
       "block_as_tracking_not_content"
     ],
-    "expected_action_ids": ["act_prepare_content_refresh_queue"]
+    "expected_action_ids": ["act_prepare_content_refresh_queue"],
+    "expected_validated_action_ids": ["act_prepare_content_refresh_queue"]
   },
   {
     "skill": "wilq-social-publisher",
