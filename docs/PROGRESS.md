@@ -37,6 +37,14 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Settings dashboard cleanup, 2026-06-23 07:22 CEST.
+  `/settings` używa polskiego nagłówka `Ustawienia` i pokazuje tylko status
+  connectorów/credentiali zamiast doklejać opportunities, evidence registry,
+  connector refresh runs, actions i expert rules. Widok pobiera tylko dane
+  potrzebne do connector status. Focused proof: `pnpm --filter
+  @wilq/dashboard test -- --run src/routes/App.test.tsx -t "connector status
+  renders"` passed on rerun after one lazy-load flake in unrelated Ads Doctor
+  assertion, dashboard lint OK and dashboard typecheck OK.
 - Knowledge dashboard cleanup, 2026-06-23 07:14 CEST.
   `/knowledge` nie drukuje już raw `knowledge_card_ids`, `playbook_ids`,
   `expert_rule_ids`, `missing_contracts` ani source lineage jako list ID na

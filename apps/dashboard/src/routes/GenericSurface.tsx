@@ -34,11 +34,13 @@ import { WorkflowRunList } from "./WorkflowPanels";
 export function GenericSurface({ routeName }: { routeName: string }) {
   const isKnowledgeRoute = routeName.startsWith("/knowledge");
   const isWorkflowRoute = routeName.startsWith("/workflows");
-  const shouldLoadGenericRegistries = !isKnowledgeRoute;
+  const isSettingsRoute = routeName.startsWith("/settings");
+  const shouldLoadGenericRegistries = !isKnowledgeRoute && !isSettingsRoute;
+  const shouldLoadConnectorStatus = shouldLoadGenericRegistries || isSettingsRoute;
   const connectors = useQuery({
     queryKey: ["connectors"],
     queryFn: getConnectors,
-    enabled: shouldLoadGenericRegistries
+    enabled: shouldLoadConnectorStatus
   });
   const connectorRefreshRuns = useQuery({
     queryKey: ["connector-refresh-runs"],
@@ -124,6 +126,8 @@ export function GenericSurface({ routeName }: { routeName: string }) {
 
   const title = isKnowledgeRoute
     ? "Baza wiedzy WILQ"
+    : isSettingsRoute
+      ? "Ustawienia"
     : routeName
         .replace(/^\//, "")
         .replaceAll("/", " / ")
@@ -139,6 +143,8 @@ export function GenericSurface({ routeName }: { routeName: string }) {
           <p className="mt-1 text-sm text-slate-600">
             {isKnowledgeRoute
               ? "Źródła, playbooki i expert rules powiązane z decyzjami, workflowami i dowodami WILQ API."
+              : isSettingsRoute
+                ? "Status dostępu do źródeł WILQ. Braki credentiali pokazujemy nazwami pól, bez wartości sekretów."
               : "API-backed operating surface with evidence, connector and action state."}
           </p>
         </div>
@@ -196,6 +202,12 @@ export function GenericSurface({ routeName }: { routeName: string }) {
               <PlaybookList playbooks={playbooks.data ?? []} />
             </section>
           </>
+        ) : null}
+        {isSettingsRoute ? (
+          <section>
+            <SectionHeading title="Status connectorów" />
+            <ConnectorGrid connectors={connectors.data ?? []} />
+          </section>
         ) : null}
         {shouldLoadGenericRegistries ? (
           <>

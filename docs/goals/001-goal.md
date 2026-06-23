@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 07:14 CEST.
+Last updated: 2026-06-23 07:22 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -125,6 +125,13 @@ dumps (`Evidence Registry`, connector refresh runs, actions, expert rules,
 connector status) and no longer fetches those registries for this route.
 Focused proof: knowledge route unit test passed, dashboard lint OK and
 dashboard typecheck OK.
+
+2026-06-23 Settings follow-up: `/settings` now uses the Polish heading
+`Ustawienia` and only renders connector/credential status instead of appending
+opportunities, evidence registry, connector refresh runs, actions and expert
+rules. It also avoids fetching those registries for the settings route.
+Focused proof: settings route unit test passed on rerun after one unrelated
+lazy-load flake, dashboard lint OK and dashboard typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

@@ -5825,11 +5825,15 @@ describe("WILQ dashboard", () => {
   it("connector status renders", async () => {
     renderApp("/settings");
     await waitFor(() => expect(screen.getByText("Google Ads")).toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: "Ustawienia" })).toBeInTheDocument();
     expect(screen.getByText("Brakujące credentiale")).toBeInTheDocument();
     expect(screen.getByText(/GOOGLE_ADS_DEVELOPER_TOKEN/)).toBeInTheDocument();
     expect(screen.queryByText("Missing credentials")).not.toBeInTheDocument();
     expect(screen.queryByText("Configured")).not.toBeInTheDocument();
     expect(screen.queryByText(/Source:/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
   });
 
   it("actions route starts from ActionObjects instead of registry dumps", async () => {
