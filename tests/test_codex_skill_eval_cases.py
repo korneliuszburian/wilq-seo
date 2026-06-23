@@ -420,3 +420,18 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     )
     assert daily_validation_call in daily_smoke_script
     assert '"action_validations": action_validations' in daily_smoke_script
+
+    cases_by_skill = {case["skill"]: case for case in cases}
+    social_case = cases_by_skill["wilq-social-publisher"]
+    assert set(social_case["expected_validated_action_ids"]) == {
+        "act_prepare_linkedin_social_drafts",
+        "act_prepare_facebook_social_drafts",
+    }
+    social_smoke_script = Path(
+        ".agents/skills/wilq-social-publisher/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    social_validation_call = (
+        'request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert social_validation_call in social_smoke_script
+    assert '"action_validations": action_validations' in social_smoke_script

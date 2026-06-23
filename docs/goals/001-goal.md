@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 02:16 CEST.
+Last updated: 2026-06-23 02:23 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -225,6 +225,18 @@ Merchant, Content, GA4 and Ads. Ads business-context and Localo review items
 may remain in operator brief/action plan/route-specific surfaces, but must not
 inflate the first-screen daily decision list unless they become the actual top
 blocker or a real evidence-backed decision.
+
+Social Publisher now has validated review-only draft ActionObject proof. The
+`wilq-social-publisher` smoke validates
+`act_prepare_linkedin_social_drafts` and
+`act_prepare_facebook_social_drafts`, and the eval case requires both in
+`expected_validated_action_ids`. Passing artifact:
+`.local-lab/evals/codex-skill/20260623T021758Z/wilq-social-publisher/result.json`.
+The result has `blocked=true`, `operator_usefulness_score=5`, two validated
+social draft action candidates and no safety findings. This is intentionally a
+blocked/review-only proof: LinkedIn/Facebook credentials and social evidence
+are missing, so WILQ must not claim publishing ability or recommend actual
+social output from nonexistent social data.
 
 ## Product Bar
 

@@ -17,6 +17,10 @@ REQUIRED_CONTEXT_KEYS = {
     "top_opportunities",
     "active_action_objects",
 }
+CORE_SOCIAL_ACTION_IDS = {
+    "act_prepare_facebook_social_drafts",
+    "act_prepare_linkedin_social_drafts",
+}
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -88,6 +92,8 @@ def main() -> int:
     if "must not invent metrics" not in instruction or "evidence" not in instruction:
         raise SystemExit("Context pack strict instruction does not include evidence guardrails")
 
+    action_validations = validate_core_social_actions(args.api_base, pack)
+
     print(
         json.dumps(
             {
@@ -115,12 +121,34 @@ def main() -> int:
                     for item in (pack.get("active_action_objects") or [])
                     if item.get("id")
                 ][:20],
+                "action_validations": action_validations,
             },
             indent=2,
             sort_keys=True,
         )
     )
     return 0
+
+
+def validate_core_social_actions(api_base: str, pack: dict[str, Any]) -> list[dict[str, Any]]:
+    pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
+    action_validations = []
+    for action_id in sorted(CORE_SOCIAL_ACTION_IDS):
+        if action_id not in pack_action_ids:
+            raise SystemExit(f"Social context missing core ActionObject: {action_id}")
+        quoted_action = urllib.parse.quote(action_id, safe="")
+        validation = request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        action_validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"Social ActionObject validation failed: {validation}")
+    return action_validations
 
 
 if __name__ == "__main__":

@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Social Publisher eval hardening, 2026-06-23 02:17 CEST.
+  `wilq-social-publisher` smoke validates
+  `act_prepare_linkedin_social_drafts` and
+  `act_prepare_facebook_social_drafts` through
+  `POST /api/actions/{action_id}/validate`, exposes `action_validations`, and
+  the eval case requires both social draft ActionObjects. Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T021758Z/wilq-social-publisher/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["linkedin","facebook"]`, 2 evidence IDs,
+  `blocked=true`, `operator_usefulness_score=5`, `safety_findings=[]` and two
+  validated review-only social draft action candidates. Product finding:
+  WILQ can prepare the social review path, but it correctly refuses to
+  recommend or publish social content while LinkedIn/Facebook credentials and
+  social evidence are missing.
 - Daily Command eval hardening, 2026-06-23 02:09 CEST.
   `wilq-daily-command` smoke validates the three core daily ActionObjects
   through `POST /api/actions/{action_id}/validate`:

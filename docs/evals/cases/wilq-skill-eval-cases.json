@@ -215,7 +215,15 @@
   {
     "skill": "wilq-social-publisher",
     "task_pl": "Przygotuj review-safe kierunek posta social tylko z dostępnych dowodów. Nie publikuj i nie udawaj uprawnień connectora.",
-    "expected_connectors": ["linkedin", "facebook"]
+    "expected_connectors": ["linkedin", "facebook"],
+    "expected_action_ids": [
+      "act_prepare_linkedin_social_drafts",
+      "act_prepare_facebook_social_drafts"
+    ],
+    "expected_validated_action_ids": [
+      "act_prepare_linkedin_social_drafts",
+      "act_prepare_facebook_social_drafts"
+    ]
   },
   {
     "skill": "wilq-campaign-builder",
