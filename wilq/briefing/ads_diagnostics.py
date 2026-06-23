@@ -41,7 +41,6 @@ from wilq.actions.google_ads.recommendations import (
     RECOMMENDATION_REVIEW_ACTION_ID,
 )
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
-from wilq.actions.service import list_actions
 from wilq.briefing.ads_budget_pacing import build_budget_pacing_read_contract
 from wilq.briefing.ads_change_history import build_change_history_read_contract
 from wilq.briefing.ads_impression_share import build_impression_share_read_contract
@@ -121,6 +120,20 @@ AdsTargetStatus = Literal[
 ]
 ADS_METRIC_FACT_LIMIT = 2500
 ADS_SUMMARY_VIEW_ROW_LIMIT = 5
+GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID = "act_configure_google_ads_env"
+GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS = [
+    GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID,
+    ADS_BUSINESS_CONTEXT_ACTION_ID,
+    ADS_TARGET_CONFIRMATION_ACTION_ID,
+    ADS_STRATEGY_REVIEW_ACTION_ID,
+    KEYWORD_PLANNER_ACCESS_ACTION_ID,
+    CAMPAIGN_REVIEW_ACTION_ID,
+    RECOMMENDATION_REVIEW_ACTION_ID,
+    CHANGE_HISTORY_IMPACT_ACTION_ID,
+    SEARCH_TERM_NGRAM_ACTION_ID,
+    CUSTOM_SEGMENT_ACTION_ID,
+    NEGATIVE_KEYWORD_ACTION_ID,
+]
 CARD_GOAL_001_RULES = "card_goal_001_rules"
 CARD_ADS_SEARCH = "card_google_ads_search_playbook"
 CARD_ADS_BUDGET_REVIEW = "card_google_ads_budget_review_playbook"
@@ -544,10 +557,7 @@ def build_ads_diagnostics(
         latest_refresh,
         account_currency_read_contract.currency_code,
     )
-    action_ids = _google_ads_action_ids(
-        actions if actions is not None else list_actions(),
-        live_data_available=live_data_available,
-    )
+    action_ids = _google_ads_action_ids(actions, live_data_available=live_data_available)
     business_context_read_contract = _business_context_with_action_ids(
         business_context_read_contract,
         action_ids,
@@ -957,15 +967,23 @@ def _latest_google_ads_refresh() -> ConnectorRefreshRun | None:
 
 
 def _google_ads_action_ids(
-    actions: list[ActionObject],
+    actions: list[ActionObject] | None,
     *,
     live_data_available: bool,
 ) -> list[str]:
+    if actions is None:
+        return [
+            action_id
+            for action_id in GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS
+            if not (
+                live_data_available and action_id == GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID
+            )
+        ]
     return [
         action.id
         for action in actions
         if action.connector == GOOGLE_ADS_CONNECTOR_ID
-        and not (live_data_available and action.id == "act_configure_google_ads_env")
+        and not (live_data_available and action.id == GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID)
         and action.id != DEMAND_GEN_READINESS_REVIEW_ACTION_ID
     ]
 

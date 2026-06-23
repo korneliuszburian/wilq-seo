@@ -8971,6 +8971,23 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     assert len(summary_payload["keyword_match_context_read_contract"]["context_rows"]) <= 5
 
 
+def test_ads_diagnostics_uses_lightweight_action_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_full_action_list() -> list[ActionObject]:
+        raise AssertionError("Ads diagnostics must not seed the full ActionObject list")
+
+    monkeypatch.setattr(
+        "wilq.actions.service.list_actions",
+        fail_full_action_list,
+    )
+
+    response = client.get("/api/ads/diagnostics?view=summary")
+
+    assert response.status_code == 200
+    assert response.json()["action_ids"]
+
+
 def test_ads_custom_segment_review_reason_keeps_missing_metrics_unknown() -> None:
     reason = _custom_segment_review_reason(
         source_terms=["bdo szkolenie"],

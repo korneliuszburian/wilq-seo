@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads diagnostics lightweight action IDs, 2026-06-23.
+  `/api/ads/diagnostics` and `/api/ads/diagnostics?view=summary` no longer
+  call the full `list_actions()` path just to discover Google Ads ActionObject
+  IDs. The route uses a typed Google Ads action-ID resolver and keeps the same
+  live-data rule that hides `act_configure_google_ads_env` when Ads has live
+  evidence. Local cProfile before this slice showed Ads summary spending about
+  `0.879s` in `_action_metric_facts` and building `12,717` action metric facts;
+  after the change the same builder has about `0.603s` total runtime with no
+  `_action_metric_facts` entry. Live stack after restart: full Ads diagnostics
+  `0.984s`, `0.503s`, `0.693s`; summary `0.416s`, `0.591s`, `0.718s`, with
+  summary still at 5 decisions, 5 safety rows and 5 keyword-context rows.
+  Focused proof: RED/GREEN API test that monkeypatches full `list_actions`,
+  summary payload test, Python ruff OK and mypy OK.
 - Ads Doctor summary view, 2026-06-23.
   `/api/ads/diagnostics?view=summary` keeps the same
   `AdsDiagnosticsResponse` schema and `operator_summary`, but compacts the

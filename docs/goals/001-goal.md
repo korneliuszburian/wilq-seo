@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 15:05 CEST.
+Last updated: 2026-06-23 15:20 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -95,6 +95,19 @@ rows. Focused proof: RED/GREEN API summary-view test, Ads Doctor route test,
 dashboard lint/typecheck OK, Python ruff OK and mypy OK. Remaining performance
 follow-up: make the summary backend avoid building the full heavy model before
 compaction.
+
+2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
+calls full `list_actions()` just to discover Google Ads ActionObject IDs. It
+uses a typed Google Ads action-ID resolver while preserving the live-data rule
+that hides `act_configure_google_ads_env` after Ads evidence exists. Local
+cProfile before the slice showed Ads summary spending about `0.879s` inside
+`_action_metric_facts`; after the change the same builder is about `0.603s`
+total and no longer enters `_action_metric_facts`. Live stack after restart:
+full Ads diagnostics `0.984s`, `0.503s`, `0.693s`; summary `0.416s`,
+`0.591s`, `0.718s`. Focused proof: RED/GREEN API test that monkeypatches full
+`list_actions`, summary payload test, Python ruff OK and mypy OK. Remaining
+performance follow-up: reduce Ads metric fact parsing for summary paths if the
+route needs another latency pass.
 
 2026-06-23 Actions route cleanup: `/actions` no longer renders the extra
 `Dowody powiązane z akcjami` evidence registry under ActionObject cards. The
