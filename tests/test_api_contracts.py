@@ -9498,6 +9498,11 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert decision["metric_tiles"] == {"zgłoszenia": 23}
     assert decision["cluster_id"] == cluster["id"]
     assert decision["issue_cluster_ids"] == [cluster["id"]]
+    assert decision["sample_product_ids"] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert decision["sample_titles"] == ["Sorbent chemiczny 10 kg"]
     assert decision["count_semantics"] == "reported_issue_occurrences"
     assert decision["action_ids"] == ["act_review_merchant_feed_issues"]
     assert "zgłoszeń problemu" in decision["summary"]

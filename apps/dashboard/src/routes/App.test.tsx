@@ -4011,23 +4011,23 @@ const merchantDiagnostics = {
   },
   unknowns: [
     {
-      id: "merchant_product_examples_missing",
-      title: "Brak przykładowych produktów/SKU w kontrakcie odczytu",
+      id: "merchant_unique_product_count_unknown",
+      title: "Licznik problemów nie jest liczbą unikalnych produktów",
       reason:
-        "Merchant diagnostics ma typ problemu, atrybut, kraj, kontekst raportowania i licznik, ale nie zwraca product IDs, SKU ani tytułów.",
+        "Merchant diagnostics pokazuje wystąpienia problemów w raportach, a nie pełną deduplikowaną listę SKU.",
       impact:
-        "WILQ może przygotować kolejkę review po klastrach, ale nie listę konkretnych produktów do edycji.",
+        "WILQ może przygotować kolejkę review po klastrach i pokazać próbki, ale nie wolno traktować sum raportowych jako unikalnych produktów.",
       next_step:
-        "Dodać osobny read contract dla bezpiecznych przykładów produktów albo otworzyć Merchant Center podczas review.",
+        "Użyj próbek do ręcznego review, a pełną listę produktów potwierdź w Merchant Center albo osobnym read contract.",
       blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
     }
   ],
   product_sample_readiness: {
-    status: "blocked",
-    sample_products_available: false,
-    sample_count: 0,
-    sample_product_ids: [],
-    sample_product_titles: [],
+    status: "ready",
+    sample_products_available: true,
+    sample_count: 2,
+    sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
+    sample_product_titles: ["Sorbent chemiczny 10 kg"],
     current_read_contract: "merchant_aggregate_product_statuses",
     required_read_contracts: [
       "merchant_products_list_product_status",
@@ -4035,9 +4035,9 @@ const merchantDiagnostics = {
     ],
     source_endpoint: "aggregateProductStatuses",
     summary:
-      "Obecny Merchant read contract daje aggregate issue queue, ale nie zwraca product IDs, SKU ani tytułów do pracy produkt-po-produkcie.",
+      "Merchant diagnostics ma przykładowe produkty do review, ale nie jest pełną listą SKU do edycji.",
     next_step:
-      "Dodać osobny read-only contract przez products.list/productStatus albo reports.search product_view z filtrem issue, zanim WILQ pokaże konkretne produkty do poprawy.",
+      "Użyj próbek jako punktu startu review i nie wykonuj zmian feedu bez payload preview.",
     blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
   },
   operator_summary: {
@@ -4078,10 +4078,9 @@ const merchantDiagnostics = {
       reporting_context: "SHOPPING_ADS",
       product_count: 23,
       count_semantics: "reported_issue_occurrences",
-      sample_product_ids: [],
-      sample_titles: [],
-      sample_unavailable_reason:
-        "Obecny kontrakt odczytu Merchant zwraca wymiary problemu i liczbę wystąpień problemu w raportach, ale nie zwraca przykładowych ID produktów ani tytułów.",
+      sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
+      sample_titles: ["Sorbent chemiczny 10 kg"],
+      sample_unavailable_reason: null,
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
@@ -4113,13 +4112,15 @@ const merchantDiagnostics = {
       metric_tiles: {
         zgłoszenia: 23
       },
+      sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
+      sample_titles: ["Sorbent chemiczny 10 kg"],
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       metric_facts: [metricFacts[3]],
       action_ids: ["act_review_merchant_feed_issues"],
       blocked_claims: ["approval restored", "revenue recovered", "automatic feed edit"],
       rationale:
-        "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Obecny odczyt nie zwraca przykładowych ID produktów ani tytułów.",
+        "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Przykładowe produkty służą tylko do ręcznego sprawdzenia problemu.",
       next_step:
         "Przejrzyj tę grupę problemu przez ActionObject review; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu.",
       risk: "medium"
@@ -6286,20 +6287,21 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("dane świeże")).toBeInTheDocument();
     expect(screen.getByText("Czego nie wiemy z Merchant API")).toBeInTheDocument();
     expect(
-      screen.getByText("Brak przykładowych produktów/SKU w kontrakcie odczytu")
+      screen.getByText("Licznik problemów nie jest liczbą unikalnych produktów")
     ).toBeInTheDocument();
     expect(screen.getByText("Gotowość próbek produktów")).toBeInTheDocument();
-    expect(screen.getByText("próbki produktów zablokowane")).toBeInTheDocument();
+    expect(screen.getByText("próbki produktów dostępne")).toBeInTheDocument();
     expect(screen.getByText(/Przykładowe produkty:/)).toBeInTheDocument();
-    expect(screen.getByText(/brak próbek/)).toBeInTheDocument();
+    expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Przykładowe tytuły:/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
     expect(
       screen.getByText(/Obecny odczyt: merchant_aggregate_product_statuses/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/products\.list\/productStatus/)).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
     expect(screen.getByText("Dowody")).toBeInTheDocument();
-    expect(screen.getByText(/nie zwraca przykładowych ID produktów/)).toBeInTheDocument();
+    expect(screen.getByText(/Przykładowe produkty służą tylko do ręcznego/)).toBeInTheDocument();
+    expect(screen.getByText("Przykładowe produkty do review")).toBeInTheDocument();
     expect(screen.getByText(/najpierw przygotuj podgląd payloadu/)).toBeInTheDocument();
     expect(screen.getAllByText(/produkt zatwierdzony ponownie/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();

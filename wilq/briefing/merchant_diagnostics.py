@@ -858,6 +858,12 @@ def _merchant_decision_from_cluster_group(
             "raporty razem": reported_occurrences,
             "konteksty": len(clusters),
         },
+        sample_product_ids=_unique(
+            sample_id for cluster in clusters for sample_id in cluster.sample_product_ids
+        )[:10],
+        sample_titles=_unique(
+            title for cluster in clusters for title in cluster.sample_titles
+        )[:10],
         source_connectors=_unique(
             connector for cluster in clusters for connector in cluster.source_connectors
         ),
@@ -921,6 +927,8 @@ def _merchant_decision_from_cluster(
             cluster.product_count,
         ),
         metric_tiles={"zgłoszenia": cluster.product_count},
+        sample_product_ids=cluster.sample_product_ids,
+        sample_titles=cluster.sample_titles,
         source_connectors=cluster.source_connectors,
         evidence_ids=cluster.evidence_ids,
         metric_facts=cluster_facts[:6],
@@ -929,8 +937,8 @@ def _merchant_decision_from_cluster(
         rationale=(
             "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza "
             "wystąpienia problemu w raportach, nie gwarantowaną liczbę unikalnych "
-            "produktów ani gotową zmianę feedu. Obecny odczyt nie zwraca przykładowych "
-            "ID produktów ani tytułów."
+            "produktów ani gotową zmianę feedu. Przykładowe produkty służą tylko do "
+            "ręcznego sprawdzenia problemu."
         ),
         next_step=cluster.next_step,
         risk=cluster.risk,

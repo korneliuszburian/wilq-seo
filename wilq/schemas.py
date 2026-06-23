@@ -1930,6 +1930,8 @@ class MerchantDecisionItem(BaseModel):
     )
     priority: int = Field(ge=1, le=100)
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
+    sample_product_ids: list[str] = Field(default_factory=list)
+    sample_titles: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)

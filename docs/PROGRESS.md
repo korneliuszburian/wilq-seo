@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Merchant decision sample products, 2026-06-23.
+   `/api/merchant/diagnostics` now carries `sample_product_ids` and
+   `sample_titles` on each `decision_queue` item when Merchant evidence has
+   product examples. `/merchant` renders those samples directly on decision
+   cards as review hints, while still saying they are not a full SKU list or a
+   ready feed mutation. Live proof after `scripts/local_stack.sh restart`:
+   Merchant freshness is `fresh`, `product_sample_readiness.sample_products_available=true`,
+   and decision cards include concrete product IDs/titles for
+   `n:unit_pricing_measure` and `n:availability`. Focused proof: Merchant API
+   contract tests, Merchant route test, shared schema typecheck, dashboard
+   typecheck, Python ruff and mypy.
+
 0. GA4 diagnostics freshness contract, 2026-06-23.
    `/api/ga4/diagnostics` now exposes a typed `freshness_assessment` with
    `fresh/stale/missing/blocked`, `age_hours`, `stale_after_hours=48` and

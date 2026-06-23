@@ -461,6 +461,24 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         </span>
       </div>
       <div className="mt-2 grid gap-1.5 text-xs text-slate-600">
+        {decision.sample_product_ids.length || decision.sample_titles.length ? (
+          <div className="rounded border border-line bg-white p-2">
+            <p className="font-medium text-ink">Przykładowe produkty do review</p>
+            <TraceLine
+              label="ID produktów"
+              values={decision.sample_product_ids.slice(0, 6)}
+              empty="brak próbek"
+            />
+            <TraceLine
+              label="Tytuły"
+              values={decision.sample_titles.slice(0, 4)}
+              empty="brak tytułów"
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              To są przykłady z odczytu Merchant, nie pełna lista SKU ani gotowa zmiana feedu.
+            </p>
+          </div>
+        ) : null}
         <TraceLine
           label="Dowody"
           values={[formatMerchantIdCount(decision.evidence_ids.length, "ID", "ID")]}

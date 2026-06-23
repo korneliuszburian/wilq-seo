@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 19:24 CEST.
+Last updated: 2026-06-23 19:32 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -137,6 +137,17 @@ payload, not only translated in React. Live `/api/dashboard/command-center`
 proof after stack restart: content metric tiles use `zapytania/URL`,
 `dopasowania WordPress`, `ocena Ahrefs`, `luki Ahrefs` and `luki linków`; old
 keys `query/page`, `WP match`, `Ahrefs review` and `link gaps` are absent.
+
+2026-06-23 Merchant decision samples completed. The primary demo path now gives
+the marketer concrete product examples in the Merchant review queue instead of
+only aggregate issue counts. `/api/merchant/diagnostics` exposes
+`sample_product_ids` and `sample_titles` on `decision_queue` items when the
+underlying Merchant issue clusters have product examples, and `/merchant`
+renders them on the decision card as review hints. This does not unlock feed
+mutations: the samples are not a full SKU list, issue counts still use
+`count_semantics=reported_issue_occurrences`, and `act_review_merchant_feed_issues`
+remains review/prepare-only until payload preview, validation, audit and
+operator consent exist.
 
 2026-06-23 Ads Doctor first-flow copy rule: the first Ads Doctor flow must
 show what a Polish marketer can review now, not API slang. Completed slice:
