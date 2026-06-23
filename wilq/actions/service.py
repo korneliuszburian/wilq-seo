@@ -1264,6 +1264,9 @@ def _action_metric_facts() -> list[MetricFact]:
             for connector_id in ACTION_METRIC_CONNECTORS
         },
     )
+    google_ads_latest_facts = _latest_google_ads_metric_facts()
+    if google_ads_latest_facts:
+        facts_by_connector["google_ads"] = google_ads_latest_facts
     for connector_id in ACTION_METRIC_CONNECTORS:
         facts.extend(
             fact
@@ -1271,6 +1274,24 @@ def _action_metric_facts() -> list[MetricFact]:
             if not _is_probe_only_fact(fact)
         )
     return _latest_metric_facts_by_identity(facts)
+
+
+def _latest_google_ads_metric_facts() -> list[MetricFact]:
+    latest_run = _latest_google_ads_vendor_read()
+    if (
+        latest_run is None
+        or latest_run.status != ConnectorRefreshStatus.completed
+        or not latest_run.vendor_data_collected
+        or not latest_run.evidence_ids
+    ):
+        return []
+    return [
+        fact
+        for fact in metric_store().list_metric_facts_by_evidence_ids(
+            latest_run.evidence_ids
+        )
+        if fact.source_connector == "google_ads"
+    ]
 
 
 def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, Any]]:

@@ -37,6 +37,23 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads summary evidence-scoped read, 2026-06-23.
+  `/api/ads/diagnostics?view=summary` now reads Google Ads metric facts from
+  the latest completed `vendor_read` evidence IDs before falling back to a
+  smaller summary limit. This keeps the Ads Doctor first route tied to the
+  current read instead of parsing a broader history window. `/api/actions`
+  now uses the same latest Google Ads evidence for Ads metric-seeded
+  ActionObjects, so diagnostics no longer points at actions missing from the
+  action registry. Live warm HTTP
+  after stack restart: summary `0.352s`, `0.246s`, `0.231s`, `0.227s`,
+  `0.266s`, `500980` bytes, 5 decisions, 5 ready areas, 3 blocked areas and
+  50 search terms; full `/api/ads/diagnostics` stayed available at `3777180`
+  bytes and 14 decisions. Focused proof: RED/GREEN summary evidence-read test,
+  fallback summary limit test, existing summary compaction test, lightweight
+  action-ID test, broader Ads live campaign contract test, Python ruff OK and
+  mypy OK. Stale Ads live-contract expectations for business-context actions,
+  change-history ActionObject registration and safety ActionObject counts were
+  repaired instead of being left as ignored gaps.
 - Demand Gen diagnostics performance, 2026-06-23.
   `/api/demand-gen/diagnostics` and the `wilq-demand-gen-operator` context-pack
   no longer build full GA4 diagnostics. Demand Gen now uses GA4 metric facts for

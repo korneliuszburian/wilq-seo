@@ -119,6 +119,7 @@ AdsTargetStatus = Literal[
     "no_target",
 ]
 ADS_METRIC_FACT_LIMIT = 2500
+ADS_SUMMARY_METRIC_FACT_LIMIT = 2000
 ADS_SUMMARY_VIEW_ROW_LIMIT = 5
 GOOGLE_ADS_OAUTH_REPAIR_ACTION_ID = "act_configure_google_ads_env"
 GOOGLE_ADS_DIAGNOSTIC_ACTION_IDS = [
@@ -312,10 +313,7 @@ def build_ads_diagnostics(
     if connector is None:
         raise RuntimeError("Google Ads connector is not registered.")
     latest_refresh = _latest_google_ads_refresh()
-    metric_facts = metric_store().list_metric_facts(
-        connector_id=GOOGLE_ADS_CONNECTOR_ID,
-        limit=ADS_METRIC_FACT_LIMIT,
-    )
+    metric_facts = _ads_metric_facts_for_view(view, latest_refresh)
     latest_refresh_collected_data = (
         latest_refresh is not None
         and latest_refresh.status == ConnectorRefreshStatus.completed
@@ -964,6 +962,29 @@ def _latest_google_ads_refresh() -> ConnectorRefreshRun | None:
         if run.mode == ConnectorRefreshMode.vendor_read:
             return run
     return None
+
+
+def _ads_metric_facts_for_view(
+    view: Literal["full", "summary"],
+    latest_refresh: ConnectorRefreshRun | None,
+) -> list[MetricFact]:
+    if (
+        view == "summary"
+        and latest_refresh is not None
+        and latest_refresh.status == ConnectorRefreshStatus.completed
+        and latest_refresh.vendor_data_collected
+        and latest_refresh.evidence_ids
+    ):
+        return metric_store().list_metric_facts_by_evidence_ids(
+            latest_refresh.evidence_ids
+        )
+    metric_fact_limit = (
+        ADS_SUMMARY_METRIC_FACT_LIMIT if view == "summary" else ADS_METRIC_FACT_LIMIT
+    )
+    return metric_store().list_metric_facts(
+        connector_id=GOOGLE_ADS_CONNECTOR_ID,
+        limit=metric_fact_limit,
+    )
 
 
 def _google_ads_action_ids(

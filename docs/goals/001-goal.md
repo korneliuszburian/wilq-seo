@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 13:10 CEST.
+Last updated: 2026-06-23 13:35 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -92,9 +92,19 @@ compact row-heavy contracts. Live stack proof: full Ads diagnostics
 `3,776,803` bytes, 14 decisions, 200 safety rows and 211 keyword-context rows;
 summary view `497,698` bytes, 5 decisions, 5 safety rows and 5 keyword-context
 rows. Focused proof: RED/GREEN API summary-view test, Ads Doctor route test,
-dashboard lint/typecheck OK, Python ruff OK and mypy OK. Remaining performance
-follow-up: make the summary backend avoid building the full heavy model before
-compaction.
+dashboard lint/typecheck OK, Python ruff OK and mypy OK. Follow-up completed:
+summary paths now scope Google Ads metric-fact reads to the latest completed
+`vendor_read` evidence IDs before falling back to a smaller summary limit.
+`/api/actions` uses the same latest Google Ads evidence for Ads metric-seeded
+ActionObjects, so Ads diagnostics no longer references change-history or other
+review actions that are absent from the action registry.
+Latest live warm proof after stack restart: summary `0.352s`, `0.246s`,
+`0.231s`, `0.227s`, `0.266s`, `500980` bytes, 5 decisions, 5 ready areas,
+3 blocked areas and 50 search terms; full `/api/ads/diagnostics` stayed
+available at `3777180` bytes and 14 decisions. The stale business-context
+ActionObject expectation, change-history action registration expectation and
+safety ActionObject count in the broader Ads live contract test were repaired;
+do not leave outdated contract assertions as ignored gaps.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

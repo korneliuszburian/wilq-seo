@@ -22,8 +22,10 @@ from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import apply_action
 from wilq.briefing.ads_diagnostics import (
+    ADS_METRIC_FACT_LIMIT,
     _custom_segment_review_reason,
     _custom_segment_source_quality,
+    build_ads_diagnostics,
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
@@ -7168,8 +7170,13 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "target_roas_or_cpa",
         "human_strategy_review",
     ]
+    expected_business_context_actions = [
+        ADS_BUSINESS_CONTEXT_ACTION_ID,
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
     assert business_context_contract["target_interpretation"]["action_ids"] == [
-        ADS_BUSINESS_CONTEXT_ACTION_ID
+        *expected_business_context_actions
     ]
     assert business_context_contract["target_interpretation"]["apply_allowed"] is False
     assert "budget scaling" in business_context_contract["blocked_claims"]
@@ -7178,7 +7185,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         section for section in payload["sections"] if section["id"] == "ads_business_context"
     )
     assert business_context_section["status"] == "blocked"
-    assert business_context_section["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
+    assert business_context_section["action_ids"] == expected_business_context_actions
     business_context_decision = next(
         decision
         for decision in payload["decision_queue"]
@@ -7203,7 +7210,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_context_decision["operator_review_gates"] == (
         business_context_contract["operator_review_gates"]
     )
-    assert business_context_decision["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
+    assert business_context_decision["action_ids"] == expected_business_context_actions
     derived_kpi_contract = payload["derived_kpi_read_contract"]
     assert derived_kpi_contract["status"] == "ready"
     assert derived_kpi_contract["allowed_metrics"] == [
@@ -8582,7 +8589,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert safety_decision["priority"] == 10
-    assert safety_decision["metric_tiles"] == {"ActionObjecty": 7, "blokady": 3}
+    assert safety_decision["metric_tiles"] == {"ActionObjecty": 10, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
     assert payload["blocker_count"] == 2
 
@@ -8870,7 +8877,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     assert business_ready_contract["target_interpretation"]["apply_allowed"] is False
     assert business_ready_contract["target_interpretation"]["action_ids"] == [
-        ADS_STRATEGY_REVIEW_ACTION_ID
+        ADS_BUSINESS_CONTEXT_ACTION_ID,
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     assert business_ready_contract["operator_review_gates"] == [
         "human_strategy_review",
@@ -8921,8 +8930,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert business_ready_decision["operator_review_gates"] == (
         business_ready_contract["operator_review_gates"]
     )
-    assert ADS_TARGET_CONFIRMATION_ACTION_ID not in business_ready_decision["action_ids"]
-    assert ADS_STRATEGY_REVIEW_ACTION_ID in business_ready_decision["action_ids"]
+    assert business_ready_decision["action_ids"] == [
+        ADS_BUSINESS_CONTEXT_ACTION_ID,
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
+    ]
     business_ready_campaign_decision = next(
         decision
         for decision in business_ready_payload["decision_queue"]
@@ -8969,6 +8981,74 @@ def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
     )
     assert len(summary_payload["search_term_safety_read_contract"]["safety_rows"]) <= 5
     assert len(summary_payload["keyword_match_context_read_contract"]["context_rows"]) <= 5
+
+
+def test_ads_diagnostics_summary_view_uses_smaller_metric_fact_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_limits: list[int] = []
+
+    class RecordingMetricStore:
+        def list_metric_facts(self, connector_id: str, limit: int) -> list[MetricFact]:
+            assert connector_id == "google_ads"
+            captured_limits.append(limit)
+            return []
+
+    monkeypatch.setattr(
+        "wilq.briefing.ads_diagnostics.metric_store",
+        lambda: RecordingMetricStore(),
+    )
+    monkeypatch.setattr("wilq.briefing.ads_diagnostics._latest_google_ads_refresh", lambda: None)
+
+    build_ads_diagnostics(view="summary")
+
+    assert captured_limits
+    assert captured_limits[0] < ADS_METRIC_FACT_LIMIT
+    assert captured_limits[0] <= 2000
+
+
+def test_ads_diagnostics_summary_view_reads_latest_refresh_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_evidence_ids: list[list[str]] = []
+    latest_refresh = ConnectorRefreshRun(
+        id="refresh_google_ads_summary_latest_evidence",
+        connector_id="google_ads",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=[
+            "ev_connector_google_ads_status",
+            "ev_refresh_refresh_google_ads_summary_latest_evidence",
+        ],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={"row_count": 1},
+        summary="Latest Google Ads read for summary evidence test.",
+    )
+
+    class RecordingMetricStore:
+        def list_metric_facts(self, connector_id: str, limit: int) -> list[MetricFact]:
+            raise AssertionError("Summary view must read latest evidence facts first")
+
+        def list_metric_facts_by_evidence_ids(
+            self,
+            evidence_ids: list[str],
+        ) -> list[MetricFact]:
+            captured_evidence_ids.append(evidence_ids)
+            return []
+
+    monkeypatch.setattr(
+        "wilq.briefing.ads_diagnostics.metric_store",
+        lambda: RecordingMetricStore(),
+    )
+    monkeypatch.setattr(
+        "wilq.briefing.ads_diagnostics._latest_google_ads_refresh",
+        lambda: latest_refresh,
+    )
+
+    build_ads_diagnostics(view="summary")
+
+    assert captured_evidence_ids == [latest_refresh.evidence_ids]
 
 
 def test_ads_diagnostics_uses_lightweight_action_ids(
