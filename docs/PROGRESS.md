@@ -37,6 +37,12 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Actions dashboard polish, 2026-06-23 07:06 CEST.
+  `/actions` używa nagłówka i kafla `ActionObjecty` zamiast angielskiego
+  `Actions/ActionObjects`. Focused proof: `pnpm --filter @wilq/dashboard test
+  -- --run src/routes/App.test.tsx -t "actions route starts from ActionObjects
+  instead of registry dumps"` passed, dashboard lint OK and dashboard typecheck
+  OK.
 - Connector settings localization, 2026-06-23 07:03 CEST.
   `ConnectorGrid` używa polskich operator-facing labeli:
   `Brakujące credentiale`, `Skonfigurowany`, `Źródło dostępu`. Focused proof:

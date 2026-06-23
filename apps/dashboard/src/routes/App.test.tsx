@@ -5835,7 +5835,7 @@ describe("WILQ dashboard", () => {
   it("actions route starts from ActionObjects instead of registry dumps", async () => {
     renderApp("/actions");
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Actions" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "ActionObjecty" })).toBeInTheDocument()
     );
     expect(screen.getByText("ActionObjecty do przeglądu")).toBeInTheDocument();
     expect(screen.getByText("Dowody powiązane z akcjami")).toBeInTheDocument();
