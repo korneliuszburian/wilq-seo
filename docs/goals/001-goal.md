@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 17:42 CEST.
+Last updated: 2026-06-23 17:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -283,6 +283,21 @@ with `pl-PL`, `api_used=true`, `blocked=false`, validated
 `act_prepare_ads_campaign_review_queue` and
 `act_prepare_google_ads_recommendation_review_queue`,
 `operator_usefulness_score=4` and no safety findings.
+
+Completed at 2026-06-23 17:50 CEST:
+`wilq-localo-operator` partial-evidence proof completed. Localo is no longer a
+simple access blocker: live smoke completed read-only refresh and showed
+`access_ready`, `mcp_initialize_status=200`, `localo_read_contract_count=3`,
+`localo_active_place_count=4`, `localo_tracked_keyword_count=23`,
+`localo_avg_visibility_current=53.1739`, `localo_reviews_count=798` and
+`local_visibility_review_preview_v1`. Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260623T154853Z/wilq-localo-operator/result.json`
+with `pl-PL`, `api_used=true`, `blocked=true`,
+`operator_usefulness_score=5`, no safety findings, source connector `localo`,
+validated `act_review_localo_visibility_facts`, and a blocked apply/publication
+candidate. Interpret `blocked=true` precisely: aggregate Localo facts are
+reviewable, but GBP performance, competitor visibility, local tasks, write/apply
+and local visibility uplift remain blocked until WILQ exposes those contracts.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

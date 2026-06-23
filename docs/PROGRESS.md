@@ -39,7 +39,23 @@ Stan produktu:
 
 ## Last Done
 
-1. `wilq-campaign-builder` landing-context eval, 2026-06-23.
+1. `wilq-localo-operator` partial-evidence eval, 2026-06-23.
+   Localo skill now has current proof that Localo is not a simple access
+   blocker anymore. Live smoke completed a read-only Localo refresh and showed
+   `access_ready`, `mcp_initialize_status=200`, `localo_read_contract_count=3`,
+   `localo_active_place_count=4`, `localo_tracked_keyword_count=23`,
+   `localo_avg_visibility_current=53.1739`, `localo_reviews_count=798` and
+   `local_visibility_review_preview_v1`. Non-interactive eval passed at
+   `.local-lab/evals/codex-skill/20260623T154853Z/wilq-localo-operator/result.json`.
+   Result: `blocked=true`, `pl-PL`, `api_used=true`,
+   `operator_usefulness_score=5`, no safety findings, source connector
+   `localo`, validated `act_review_localo_visibility_facts`, and a blocked
+   apply/publication candidate. The block now means: aggregate Localo facts are
+   reviewable, but GBP performance, competitor visibility, local tasks, write
+   paths and local visibility uplift remain blocked until WILQ exposes those
+   contracts.
+
+2. `wilq-campaign-builder` landing-context eval, 2026-06-23.
    Campaign Builder context-pack now fills `content_landing_context` from
    `/api/content/diagnostics.decision_queue` before falling back to raw metric
    facts. Live proof after stack restart: `live_data_available=true`,
@@ -57,7 +73,7 @@ Stan produktu:
    explicitly tells Codex to use landing candidates before building
    `campaign_candidates`.
 
-2. `wilq-demand-gen-operator` blocked readiness eval, 2026-06-23.
+3. `wilq-demand-gen-operator` blocked readiness eval, 2026-06-23.
    Demand Gen eval is now explicit that the current correct state is a
    blocker/review-only workflow, not a launch or migration recommendation.
    The eval case requires `expected_blocked=true` and keeps blocked claims
@@ -73,7 +89,7 @@ Stan produktu:
    `SEARCH`, but zero Demand Gen campaign/ad/creative/landing/migration rows,
    so launch/migration/creative quality claims stay blocked.
 
-3. `wilq-social-publisher` review-only draft context/eval, 2026-06-23.
+4. `wilq-social-publisher` review-only draft context/eval, 2026-06-23.
    Social Publisher now receives a typed `social_draft_context` in its
    skill-scoped context-pack. It exposes `mode=review_only`,
    `publish_allowed=false`, missing LinkedIn/Facebook permissions,
@@ -87,7 +103,7 @@ Stan produktu:
    `act_prepare_facebook_social_drafts`, plus an explicit blocked publish
    action candidate because `publish_allowed=false`.
 
-4. `wilq-ahrefs-gap-finder` review-only gap eval, 2026-06-23.
+5. `wilq-ahrefs-gap-finder` review-only gap eval, 2026-06-23.
    Ahrefs eval now treats ready gap records as a review workflow, not a global
    blocker. Smoke exposes compact `gap_read_contract` fields:
    `status=ready`, `gap_record_count=8`, `missing_read_contracts=[]`,
@@ -100,7 +116,7 @@ Stan produktu:
    findings, no ActionObject IDs, and review-only recommendations for
    `ahrefs_review_authority_context` plus `ahrefs_review_gap_records`.
 
-5. `wilq-gsc-content-doctor` scoped context-pack/eval, 2026-06-23.
+6. `wilq-gsc-content-doctor` scoped context-pack/eval, 2026-06-23.
    GSC Content Doctor no longer receives/promotes Ahrefs decisions in its
    skill-scoped `POST /api/codex/context-pack`. Full
    `/api/content/diagnostics` can still include Ahrefs for Content Planner and
@@ -116,7 +132,7 @@ Stan produktu:
    `operator_usefulness_score=5`, no safety findings, validated
    `act_prepare_content_refresh_queue`.
 
-6. `wilq-merchant-feed-operator` product-sample eval, 2026-06-23.
+7. `wilq-merchant-feed-operator` product-sample eval, 2026-06-23.
    Non-interactive Codex eval passed against the new Merchant product-sample
    contract:
    `.local-lab/evals/codex-skill/20260623T144931Z/wilq-merchant-feed-operator/result.json`.
@@ -130,7 +146,7 @@ Stan produktu:
    exposes context-pack ActionObject state (`needs_validation/not_validated`)
    alongside current endpoint validation (`valid=true/status=valid`).
 
-7. Merchant product-sample readiness contract, 2026-06-23.
+8. Merchant product-sample readiness contract, 2026-06-23.
    `/api/merchant/diagnostics` exposes `product_sample_readiness`, so WILQ no
    longer implies that aggregate Merchant issue clusters contain concrete
    product IDs, SKU or titles unless the read contract actually supplies them.
@@ -140,7 +156,7 @@ Stan produktu:
    usable only as review examples. `/merchant` shows `Gotowość próbek produktów`
    and the Merchant skill smoke asserts the same field.
 
-8. `wilq-ga4-analyst` decision-sample eval, 2026-06-23.
+9. `wilq-ga4-analyst` decision-sample eval, 2026-06-23.
    GA4 smoke now exposes compact `decision_samples` with `active_users`,
    `sessions`, `engagement_rate` and landing/source/campaign dimensions, so
    non-interactive Codex can cite real GA4 decision metrics instead of only
@@ -152,7 +168,7 @@ Stan produktu:
    `fix_measurement` and `review_traffic_quality`; `review_landing_mapping`
    remains absent, so Codex must not infer landing quality from GA4 rows alone.
 
-9. `wilq-ads-doctor` current API proof, 2026-06-23.
+10. `wilq-ads-doctor` current API proof, 2026-06-23.
    Non-interactive Codex eval passed against the current WILQ API:
    `.local-lab/evals/codex-skill/20260623T130149Z/wilq-ads-doctor/result.json`.
    Result: `pl-PL`, `api_used=true`, evidence count `3`,
@@ -165,7 +181,7 @@ Stan produktu:
    `188143` bytes and rerun passed. If it repeats, fix API context-pack
    compaction/budget stability, not skill references.
 
-10. Merchant product sample enrichment, 2026-06-23.
+11. Merchant product sample enrichment, 2026-06-23.
    Merchant read-only `vendor_read` enriches aggregate issue clusters with
    product samples. It parses `sampleProducts` from `aggregateProductStatuses`
    when present and falls back to `products.list` / product status issue rows
@@ -180,7 +196,7 @@ Stan produktu:
    `unit pricing measure` only for matching; raw evidence dimensions remain
    unchanged.
 
-11. Merchant diagnostics decision contract, 2026-06-23.
+12. Merchant diagnostics decision contract, 2026-06-23.
    `/api/merchant/diagnostics` ma typed pola eliminujące błąd interpretacji z
    live-run `wilq-merchant-feed-operator`: `freshness_assessment`,
    `unknowns`, `operator_summary.decision_source=decision_queue`,
@@ -193,14 +209,14 @@ Stan produktu:
    ruff/mypy, dashboard lint/typecheck, shared-schemas typecheck, browser proof
    `.local-lab/proof/dashboard/merchant-freshness-unknowns.txt`.
 
-12. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
+13. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
    Commit `92febad fix(dashboard): polish ads doctor drilldowns` oczyścił dolne
    sekcje Ads Doctor i Custom Segments z najbardziej mylącego mieszanego copy.
    Keep enum names, endpoint names, field IDs, blocked-claim keys and Google API
    resource names unchanged; marketer-facing summaries/titles/next steps should
    stay Polish.
 
-13. Command Center and Ads first-flow copy cleanup, 2026-06-23.
+14. Command Center and Ads first-flow copy cleanup, 2026-06-23.
    Command Center first-screen daily decision cards compose concise Polish
    marketer copy from typed API fields and metric tiles. Ads Doctor first flow
    shows review-only Ads decisions instead of raw API slang and hides raw
@@ -218,10 +234,15 @@ Stan produktu:
   fixes, feed writes, approval restoration, unique-product counts and full
   SKU-level workflows until payload preview, ActionObject validation and audit
   contracts exist for the exact product rows.
-- Localo access works at OAuth/MCP initialize level, but WILQ still must expose
-  real Localo ranking/GBP/competitor evidence before local SEO recommendations.
+- Localo is partially useful, not fully solved. WILQ has MCP access and
+  aggregate Localo facts for active places, tracked keywords, visibility,
+  grid position and reviews. It still blocks GBP performance, competitor
+  visibility, local tasks, write/apply and local visibility uplift until those
+  exact read/write contracts exist.
 - Skill evals prove API usage, Polish and evidence shape for many routes. The
-  newest Campaign Builder eval proves Ads review actions can be paired with
+  newest Localo eval proves partial Localo facts are reviewable while
+  unsupported local claims stay blocked; Campaign Builder eval proves Ads
+  review actions can be paired with
   GSC landing candidates instead of generic campaign prose; Demand Gen eval
   proves a useful blocker/review-only state instead of fake launch/migration
   readiness; Social eval distinguishes review-only draft preparation from
@@ -236,9 +257,9 @@ Stan produktu:
 
 1. Run the next high-value Codex skill eval against current API contracts and
    record whether it produces real decisions, not only schema-valid output.
-   Recommended next skill: `wilq-localo-operator` if the next demo needs local
-   visibility readiness proof, or revisit `wilq-content-strategist` if the next
-   demo focuses on landing/content-to-campaign handoff.
+   Recommended next skill: revisit `wilq-content-strategist` for the full
+   landing/content-to-campaign handoff, because Localo now has partial-evidence
+   proof and Campaign Builder already consumes content landing context.
 2. If an eval exposes reasoning gaps, fix typed API/dashboard contracts first,
    not skill references.
 3. Keep focused verification. Use full `scripts/verify.sh` only for final

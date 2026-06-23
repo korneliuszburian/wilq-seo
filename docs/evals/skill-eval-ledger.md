@@ -4709,3 +4709,58 @@ Product finding:
   candidates for BDO, Zielony Ład, Remediacja and homepage query/page rows.
   WILQ still blocks campaign performance, conversion uplift, ranking guarantees
   and campaign apply unless a stronger campaign build/apply contract exists.
+
+## 2026-06-23 - wilq-localo-operator partial-evidence eval
+
+Purpose:
+
+- Prove that Localo is no longer treated as a simple access blocker when MCP
+  access and aggregate Localo facts are available.
+- Prove that Codex still blocks unsupported GBP, competitor visibility, local
+  tasks and local visibility uplift claims unless WILQ exposes those contracts.
+- Verify the review-only ActionObject path for Localo visibility facts.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T154853Z/wilq-localo-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `blocked=true`
+- `blocked_reason` says MCP access works and the block applies only to
+  detailed ranking, GBP, competitor and local visibility uplift claims beyond
+  current WILQ facts.
+- `source_connectors=["localo"]`
+- Evidence IDs: `ev_connector_localo_status`,
+  `ev_refresh_refresh_localo_491bf6d4836c`
+- Opportunity: `opp_decision_review_localo_visibility_facts`
+- Expert rules: `localo_block_visibility_claims_without_read_contract`,
+  `localo_review_visibility_facts`
+- `action_candidates` contains validated `act_review_localo_visibility_facts`
+  and a blocked publication/apply candidate.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- Localo live smoke before the eval completed read-only refresh and returned
+  `access_ready`, `mcp_initialize_status=200`, `localo_read_contract_count=3`,
+  `localo_active_place_count=4`, `localo_tracked_keyword_count=23`,
+  `localo_avg_visibility_current=53.1739`, `localo_reviews_count=798` and
+  `local_visibility_review_preview_v1`. These are usable aggregate review
+  facts, not a permission blocker.
+- WILQ still correctly blocks GBP performance, competitor visibility, local
+  tasks, write/apply and local visibility uplift because the corresponding
+  read/write contracts are not exposed as supported Localo evidence.
