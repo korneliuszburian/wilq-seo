@@ -6343,6 +6343,11 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert operator_summary["search_term_count"] == len(
         payload["search_terms_read_contract"]["search_term_rows"]
     )
+    assert operator_summary["total_clicks"] == 9
+    assert operator_summary["total_impressions"] == 90
+    assert operator_summary["total_cost_micros"] == 12000000
+    assert operator_summary["total_conversions"] == 2.5
+    assert operator_summary["total_conversion_value"] == 450.75
     assert operator_summary["ready_area_count"] == payload["optimizer_readiness_contract"][
         "ready_area_count"
     ]

@@ -689,6 +689,7 @@ def _operator_summary(
         decisions,
         key=lambda item: (_ads_decision_status_rank(item), item.priority),
     )[:5]
+    campaign_rows = campaign_read_contract.campaign_rows
     return AdsOperatorSummary(
         title="Co marketer ma sprawdzić teraz w Google Ads",
         summary=(
@@ -703,8 +704,13 @@ def _operator_summary(
             "kontekstu biznesowego."
         ),
         top_decision_ids=[decision.id for decision in top_decisions],
-        campaign_count=len(campaign_read_contract.campaign_rows),
+        campaign_count=len(campaign_rows),
         search_term_count=len(search_terms_read_contract.search_term_rows),
+        total_clicks=sum(row.clicks or 0 for row in campaign_rows),
+        total_impressions=sum(row.impressions or 0 for row in campaign_rows),
+        total_cost_micros=sum(row.cost_micros or 0 for row in campaign_rows),
+        total_conversions=sum(row.conversions or 0.0 for row in campaign_rows),
+        total_conversion_value=sum(row.conversion_value or 0.0 for row in campaign_rows),
         ready_area_count=optimizer_readiness_contract.ready_area_count,
         blocked_area_count=optimizer_readiness_contract.blocked_area_count,
         allowed_metrics=_unique(

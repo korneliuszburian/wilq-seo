@@ -167,7 +167,17 @@ function AdsMarketSnapshot({
         </div>
         <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
       </div>
-      <div className="grid gap-2 text-center text-xs sm:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-3 text-xs font-semibold uppercase tracking-normal text-slate-600">
+        Snapshot wartości Ads
+      </div>
+      <div className="grid gap-2 text-center text-xs sm:grid-cols-2 xl:grid-cols-5">
+        <MetricTile label="Kliknięcia" value={adsNumber(summary.total_clicks)} />
+        <MetricTile label="Wyświetlenia" value={adsNumber(summary.total_impressions)} />
+        <MetricTile label="Koszt" value={adsCost(summary.total_cost_micros, currencyCode)} />
+        <MetricTile label="Konwersje" value={adsNumber(summary.total_conversions)} />
+        <MetricTile label="Wartość konw." value={adsNumber(summary.total_conversion_value)} />
+      </div>
+      <div className="mt-3 grid gap-2 text-center text-xs sm:grid-cols-3 xl:grid-cols-6">
         <MetricTile label="Kampanie" value={summary.campaign_count} />
         <MetricTile label="Zapytania" value={summary.search_term_count} />
         <MetricTile

@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads value snapshot, 2026-06-23 07:53 CEST.
+  `/api/ads/diagnostics.operator_summary` exposes typed top-line campaign
+  totals: `total_clicks`, `total_impressions`, `total_cost_micros`,
+  `total_conversions` and `total_conversion_value`. `/ads-doctor` renders them
+  in the first `Ads snapshot marketera` section under `Snapshot wartości Ads`,
+  before review-count metadata. This gives the marketer immediate live Ads
+  volume/value context while still blocking ROAS, CPA, waste and apply claims.
+  Focused proof: RED/GREEN API contract test
+  `uv run pytest tests/test_api_contracts.py -q -k
+  ads_diagnostics_exposes_live_campaign_metric_facts`, focused dashboard route
+  test `pnpm --filter @wilq/dashboard exec vitest run src/routes/App.test.tsx
+  -t "ads doctor route renders live metric-backed diagnostics"`, Python
+  ruff/mypy, dashboard typecheck and dashboard lint passed.
 - Connector refresh evidence-summary cleanup, 2026-06-23 07:36 CEST.
   `ConnectorRefreshRunList` shows `Dowody: N ID` instead of inline raw
   evidence IDs in refresh-run cards and renders `metric_summary` as a compact

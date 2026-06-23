@@ -1773,6 +1773,11 @@ class AdsOperatorSummary(BaseModel):
     top_decision_ids: list[str] = Field(default_factory=list)
     campaign_count: int = 0
     search_term_count: int = 0
+    total_clicks: int = 0
+    total_impressions: int = 0
+    total_cost_micros: int = 0
+    total_conversions: float = 0.0
+    total_conversion_value: float = 0.0
     ready_area_count: int = 0
     blocked_area_count: int = 0
     allowed_metrics: list[str] = Field(default_factory=list)

@@ -2393,6 +2393,11 @@ const adsDiagnostics = {
     ],
     campaign_count: 1,
     search_term_count: 1,
+    total_clicks: 107,
+    total_impressions: 2783,
+    total_cost_micros: 164591174,
+    total_conversions: 2.5,
+    total_conversion_value: 450.75,
     ready_area_count: 5,
     blocked_area_count: 3,
     allowed_metrics: ["clicks", "impressions", "cost_micros", "conversions"],
@@ -5887,6 +5892,7 @@ describe("WILQ dashboard", () => {
       screen.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Ads snapshot marketera" })).toBeInTheDocument();
+    expect(screen.getByText("Snapshot wartości Ads")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Co można zrobić teraz w Ads" })
     ).toBeInTheDocument();
