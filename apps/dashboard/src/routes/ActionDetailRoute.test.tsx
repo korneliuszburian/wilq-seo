@@ -89,6 +89,56 @@ const actionFixture: ActionObject = {
   audit_events: []
 };
 
+const adsActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_ads",
+  title: "Przygotuj kolejkę przeglądu kampanii Google Ads",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_google_ads"],
+  human_diagnosis: "Google Ads ma kampanie i budżety do review.",
+  recommended_reason: "Przejrzyj budżet bez mutacji kampanii.",
+  payload: {
+    action_type: "campaign_change_review",
+    preview_contract: "budget_apply_preview_v1",
+    budget_payload_preview: [
+      {
+        id: "budget_apply_preview_23704710371_15473121355",
+        campaign_id: "23704710371",
+        campaign_name: "(2026) Ekologus Ogólna",
+        campaign_budget_id: "15473121355",
+        campaign_budget_name: "(2026) Ekologus Ogólna",
+        operation_type: "CampaignBudgetOperation",
+        current_budget_amount_micros: 10000000,
+        proposed_budget_amount_micros: null,
+        proposed_budget_delta_micros: null,
+        reason:
+          "Review-only podgląd CampaignBudgetOperation. Google Ads nie zwrócił recommended budget.",
+        evidence_ids: ["ev_refresh_google_ads"],
+        required_validation: [
+          "review_campaign_activity",
+          "human_budget_goal",
+          "campaign_budget_apply_safety"
+        ],
+        blocked_claims: ["budget scaling", "budget apply", "wasted budget"],
+        safety_review: {
+          safety_contract: "campaign_budget_apply_safety_v1",
+          status: "blocked",
+          reason: "Budget apply zablokowany: brak proponowanej kwoty.",
+          missing_requirements: ["human_budget_goal", "recommended_budget_missing"],
+          apply_allowed: false,
+          api_mutation_ready: false,
+          destructive: false
+        },
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 function mockFetch() {
   vi.stubGlobal(
     "fetch",
@@ -96,6 +146,9 @@ function mockFetch() {
       const url = String(input);
       if (url.endsWith("/api/actions/act_1")) {
         return Promise.resolve(Response.json(actionFixture));
+      }
+      if (url.endsWith("/api/actions/act_ads")) {
+        return Promise.resolve(Response.json(adsActionFixture));
       }
       return Promise.resolve(Response.json({}));
     })
@@ -123,10 +176,13 @@ describe("Action detail route", () => {
     vi.unstubAllGlobals();
   });
 
-  function renderActionDetail() {
+  function renderActionDetail(actionId = "act_1") {
     return render(
       <App
-        appRouter={createWilqRouter({ initialPath: "/actions/act_1", defaultPendingMinMs: 0 })}
+        appRouter={createWilqRouter({
+          initialPath: `/actions/${actionId}`,
+          defaultPendingMinMs: 0
+        })}
         client={testQueryClient}
       />
     );
@@ -145,6 +201,24 @@ describe("Action detail route", () => {
     expect(screen.getByText("availability_updated / n:availability")).toBeInTheDocument();
     expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders Google Ads budget payload preview without requiring raw JSON", async () => {
+    renderActionDetail("act_ads");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj kolejkę przeglądu kampanii Google Ads"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Budżet kampanii do review")).toBeInTheDocument();
+    expect(screen.getByText("CampaignBudgetOperation")).toBeInTheDocument();
+    expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
+    expect(screen.getByText(/Obecny budżet: 10 PLN/)).toBeInTheDocument();
+    expect(screen.getByText(/Propozycja: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Safety: blocked/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 });

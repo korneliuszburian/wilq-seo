@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Google Ads budget ActionObject preview, 2026-06-23.
+   `/actions/act_prepare_ads_campaign_review_queue` now renders review-only
+   Google Ads `budget_payload_preview` cards above the debug payload. The cards
+   show `CampaignBudgetOperation`, campaign name, current budget, missing
+   proposal, safety status and explicit blocked apply/API mutation state. Raw
+   JSON is still available, but hidden behind `Surowy payload debug` instead of
+   dominating the marketer view. Browser proof:
+   `.local-lab/proof/dashboard/action-ads-budget-preview.txt`. Focused proof:
+   dashboard Action detail route tests and dashboard typecheck. This does not
+   unlock budget apply, CPA/ROAS verdicts, wasted-budget claims or campaign
+   mutations; it only makes the existing review contract visible.
+
 0. Command Center refresh-run bundle cleanup, 2026-06-23.
    `/api/dashboard/command-center` now fetches connector refresh runs once in
    the daily path and passes that bundle into `build_command_center_response`.

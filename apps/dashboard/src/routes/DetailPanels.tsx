@@ -68,9 +68,12 @@ function ActionDetail({ action }: { action: ActionObject }) {
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podgląd payloadu" />
         <ActionPayloadPreviewSummary action={action} />
-        <pre className="max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
-          {JSON.stringify(action.payload, null, 2)}
-        </pre>
+        <details className="rounded-md border border-line bg-slate-50 p-3 text-xs text-slate-700">
+          <summary className="cursor-pointer font-medium text-ink">Surowy payload debug</summary>
+          <pre className="mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
+            {JSON.stringify(action.payload, null, 2)}
+          </pre>
+        </details>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Historia audytu" />
@@ -97,9 +100,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
 }
 
 function ActionPayloadPreviewSummary({ action }: { action: ActionObject }) {
-  const previewItems = Array.isArray(action.payload.payload_preview)
-    ? action.payload.payload_preview.filter(isRecord)
-    : [];
+  const previewItems = actionPayloadPreviewItems(action.payload);
   if (previewItems.length === 0) {
     return null;
   }
@@ -107,41 +108,97 @@ function ActionPayloadPreviewSummary({ action }: { action: ActionObject }) {
     <div className="mb-4 grid gap-3">
       {prioritizePayloadPreviewItems(previewItems)
         .slice(0, 4)
-        .map((item, index) => (
-          <article
-            key={payloadPreviewKey(item, index)}
-            className="rounded-md border border-line bg-slate-50 p-3"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">Review-only podgląd</h3>
-                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {previewIssueLabel(item)}
-                </p>
-              </div>
-              <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
-            </div>
-            <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-              <div>
-                Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-                {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-              </div>
-              <PreviewValues
-                label="Przykładowe produkty"
-                values={asStringArray(item.sample_product_ids)}
-              />
-              <PreviewValues label="Tytuły próbek" values={asStringArray(item.sample_titles)} />
-            </div>
-          </article>
+        .map((previewItem, index) => (
+          <PayloadPreviewCard
+            key={payloadPreviewKey(previewItem.item, index)}
+            previewItem={previewItem}
+          />
         ))}
     </div>
   );
 }
 
-function prioritizePayloadPreviewItems(items: Array<Record<string, unknown>>) {
+type PayloadPreviewItem = {
+  kind: "generic" | "budget";
+  item: Record<string, unknown>;
+};
+
+function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPreviewItem[] {
+  const genericItems = Array.isArray(payload.payload_preview)
+    ? payload.payload_preview.filter(isRecord).map((item) => ({ kind: "generic" as const, item }))
+    : [];
+  const budgetItems = Array.isArray(payload.budget_payload_preview)
+    ? payload.budget_payload_preview
+        .filter(isRecord)
+        .map((item) => ({ kind: "budget" as const, item }))
+    : [];
+  return [...genericItems, ...budgetItems];
+}
+
+function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }) {
+  if (previewItem.kind === "budget") {
+    return <BudgetPayloadPreviewCard item={previewItem.item} />;
+  }
+  return <GenericPayloadPreviewCard item={previewItem.item} />;
+}
+
+function GenericPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Review-only podgląd</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {previewIssueLabel(item)}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+        <PreviewValues label="Przykładowe produkty" values={asStringArray(item.sample_product_ids)} />
+        <PreviewValues label="Tytuły próbek" values={asStringArray(item.sample_titles)} />
+      </div>
+    </article>
+  );
+}
+
+function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Budżet kampanii do review</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.operation_type, "CampaignBudgetOperation")}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Kampania: {stringValue(item.campaign_name, stringValue(item.campaign_id, "brak"))}</div>
+        <div>Obecny budżet: {formatMicrosAsPln(item.current_budget_amount_micros)}</div>
+        <div>Propozycja: {formatMicrosAsPln(item.proposed_budget_amount_micros)}</div>
+        <div>Safety: {budgetSafetyStatus(item)}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function prioritizePayloadPreviewItems(items: PayloadPreviewItem[]) {
   return [...items].sort((left, right) => {
-    const leftHasSamples = asStringArray(left.sample_product_ids).length > 0;
-    const rightHasSamples = asStringArray(right.sample_product_ids).length > 0;
+    if (left.kind !== right.kind) {
+      return left.kind === "budget" ? -1 : 1;
+    }
+    const leftHasSamples = asStringArray(left.item.sample_product_ids).length > 0;
+    const rightHasSamples = asStringArray(right.item.sample_product_ids).length > 0;
     if (leftHasSamples === rightHasSamples) return 0;
     return leftHasSamples ? -1 : 1;
   });
@@ -172,6 +229,26 @@ function previewIssueLabel(item: Record<string, unknown>) {
 
 function payloadPreviewKey(item: Record<string, unknown>, index: number) {
   return typeof item.id === "string" ? item.id : `payload-preview-${index}`;
+}
+
+function budgetSafetyStatus(item: Record<string, unknown>) {
+  const safetyReview = item.safety_review;
+  if (!isRecord(safetyReview)) {
+    return "brak";
+  }
+  return stringValue(safetyReview.status, "brak");
+}
+
+function formatMicrosAsPln(value: unknown) {
+  if (typeof value !== "number") {
+    return "brak";
+  }
+  const plnValue = value / 1_000_000;
+  return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(plnValue)} PLN`;
+}
+
+function stringValue(value: unknown, fallback: string) {
+  return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
 function asStringArray(value: unknown): string[] {

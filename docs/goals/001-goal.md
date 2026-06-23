@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 19:53 CEST.
+Last updated: 2026-06-23 20:02 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -128,6 +128,17 @@ stack restart: cold `/api/dashboard/command-center` around `1.19s`, warm
 requests around `0.01s`, 4 decisions, 2 blockers and 37,734 bytes. This fixes
 the repeated-refresh-run-read contract but does not complete all cold-path
 performance work; remaining work is deeper metric/view-model assembly.
+
+Follow-up completed at 2026-06-23 20:02 CEST: the dashboard ActionObject detail
+route now renders Google Ads budget review previews from
+`budget_payload_preview`. `/actions/act_prepare_ads_campaign_review_queue`
+shows `CampaignBudgetOperation`, campaign name, current budget, missing
+proposal, safety status and blocked apply/API mutation state as compact Polish
+review cards. Raw payload remains available only under `Surowy payload debug`.
+This improves the Ads demo path without unlocking budget apply, CPA/ROAS
+verdicts, wasted-budget claims or campaign mutations. Focused proof: Action
+detail route tests, dashboard typecheck and browser proof
+`.local-lab/proof/dashboard/action-ads-budget-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual
