@@ -14,6 +14,9 @@ Pełne archiwa:
   następny krok.
 - Nie dopisuj setek linii historii. Starsze wpisy przenoś do
   `docs/progress/archive/`.
+- Przed dopisaniem nowych zadań usuń albo zastąp rzeczy outdated/done, jeżeli
+  nie zmieniają następnej decyzji operatora. Ten plik ma zostać najmniejszym
+  użytecznym recovery ledgerem.
 - Git, goal i dedykowane ledgery są źródłem długiej historii. Ten plik ma
   pomagać po utracie contextu.
 

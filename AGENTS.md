@@ -14,6 +14,9 @@ After context loss, read:
 4. `docs/evals/skill-eval-ledger.md` - manual and non-interactive skill eval evidence.
 
 Keep progress and skill eval findings in those docs instead of bloating AGENTS.md.
+Keep all recovery docs aggressively pruned: remove or archive outdated/done
+items before adding new ones. The active goal/progress files should be the
+smallest useful source of truth, not an append-only transcript.
 
 ## Product philosophy
 

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 23:27 CEST.
+Last updated: 2026-06-23 23:37 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -21,6 +21,13 @@ Every Codex session working on WILQ must read these files first:
 
 Update this goal only when active blockers, next tasks or quality rules change.
 Do not paste finished logs, command transcripts or old proof blocks here.
+
+## Context Hygiene Rule
+
+Keep this goal, `docs/PROGRESS.md` and task/plan surfaces as small as possible.
+Before adding a task, remove, replace or archive outdated/done text that no
+longer changes the next decision. These docs are recovery maps, not append-only
+logs.
 
 ## Product Target
 
