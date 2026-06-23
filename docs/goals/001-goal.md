@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 19:54 CEST.
+Last updated: 2026-06-23 20:12 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -105,6 +105,14 @@ available at `3777180` bytes and 14 decisions. The stale business-context
 ActionObject expectation, change-history action registration expectation and
 safety ActionObject count in the broader Ads live contract test were repaired;
 do not leave outdated contract assertions as ignored gaps.
+
+2026-06-23 Command Center shared metric read completed. The first-screen
+Command Center path now builds one command-center metric fact bundle and passes
+it into both tactical queue construction and Command Center brief construction,
+instead of reading DuckDB metric facts twice. Live HTTP proof after stack
+restart: cold `/api/dashboard/command-center` returned 4 daily decisions,
+36,919 bytes and `0.667s`; warm requests returned about `0.006-0.007s`.
+Focused proof: daily Command Center API subset, Python ruff and mypy.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual
@@ -4628,12 +4636,14 @@ Commit rules:
    ActionObject IDs while profiling `list_actions` at about `0.51-0.57s` and
    `daily_runtime_base` at about `0.78-0.83s` with caches disabled. Command
    Center first-screen metric reads now also use per-connector limits instead
-   of applying the Merchant-sized limit to Ads, Ahrefs and Localo. Live HTTP
-   after stack restart: cold `/api/dashboard/command-center` returned 4 daily
-   decisions in `1.639s`, then warm responses stayed around `0.022-0.025s`.
+   of applying the Merchant-sized limit to Ads, Ahrefs and Localo. Follow-up:
+   tactical queue and Command Center brief now consume one shared metric bundle
+   instead of repeating DuckDB metric reads. Live HTTP after stack restart:
+   cold `/api/dashboard/command-center` returned 4 daily decisions in
+   `0.667s`, then warm responses stayed around `0.006-0.007s`.
    Next performance bottleneck is deeper in remaining cold Command Center
-   internals: tactical queue/metric-store overlap, connector status reads and
-   any oversized diagnostic payloads that still leak into first-screen paths.
+   internals: connector status reads, local state refresh-run reads and any
+   oversized diagnostic payloads that still leak into first-screen paths.
    Do not hide this with arbitrary frontend loading copy; profile the next cold
    path and move repeated source reads into typed shared read bundles/view-models.
    After backend cold path improves, consider route-level code splitting for

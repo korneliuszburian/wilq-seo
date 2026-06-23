@@ -6,7 +6,10 @@ from dataclasses import dataclass
 from time import monotonic
 
 from wilq.actions.service import list_actions
-from wilq.briefing.command_center import build_command_center_response
+from wilq.briefing.command_center import (
+    build_command_center_response,
+    command_center_metric_fact_limits,
+)
 from wilq.briefing.marketing_brief import build_marketing_brief, core_brief_actions
 from wilq.briefing.tactical_queue import build_tactical_queue
 from wilq.connectors.refresh import list_connector_refresh_runs
@@ -17,8 +20,10 @@ from wilq.schemas import (
     ConnectorRefreshRun,
     ConnectorStatus,
     MarketingBrief,
+    MetricFact,
     TacticalQueueResponse,
 )
+from wilq.storage.metric_store import metric_store
 
 DEFAULT_DAILY_RUNTIME_CACHE_SECONDS = 30.0
 _cached_base: DailyRuntimeBaseCacheEntry | None = None
@@ -32,6 +37,7 @@ class DailyRuntimeBase:
     actions: list[ActionObject]
     refresh_runs: list[ConnectorRefreshRun]
     tactical_queue: TacticalQueueResponse
+    command_center_facts_by_connector: dict[str, list[MetricFact]] | None = None
 
 
 @dataclass(frozen=True)
@@ -90,17 +96,24 @@ def build_daily_runtime_base(use_cache: bool = True) -> DailyRuntimeBase:
         connectors_future = executor.submit(list_connector_statuses)
         actions_future = executor.submit(list_actions)
         refresh_runs_future = executor.submit(list_connector_refresh_runs)
-        tactical_queue_future = executor.submit(build_tactical_queue)
+        command_facts_future = executor.submit(
+            metric_store().list_latest_metric_facts_by_connector_limits,
+            command_center_metric_fact_limits(),
+        )
 
         connectors = connectors_future.result()
         actions = actions_future.result()
         refresh_runs = refresh_runs_future.result()
-        tactical_queue = tactical_queue_future.result()
+        command_center_facts_by_connector = command_facts_future.result()
+        tactical_queue = build_tactical_queue(
+            facts_by_connector=command_center_facts_by_connector
+        )
     base = DailyRuntimeBase(
         connectors=connectors,
         actions=actions,
         refresh_runs=refresh_runs,
         tactical_queue=tactical_queue,
+        command_center_facts_by_connector=command_center_facts_by_connector,
     )
     if use_cache:
         _write_daily_runtime_base_cache(base)
@@ -118,13 +131,20 @@ def build_daily_command_center(
     if base is None:
         with ThreadPoolExecutor(max_workers=2) as executor:
             connectors_future = executor.submit(list_connector_statuses)
-            tactical_queue_future = executor.submit(build_tactical_queue)
+            command_facts_future = executor.submit(
+                metric_store().list_latest_metric_facts_by_connector_limits,
+                command_center_metric_fact_limits(),
+            )
             connectors = connectors_future.result()
-            tactical_queue = tactical_queue_future.result()
+            command_center_facts_by_connector = command_facts_future.result()
+            tactical_queue = build_tactical_queue(
+                facts_by_connector=command_center_facts_by_connector
+            )
         command = build_command_center_response(
             connectors=connectors,
             tactical_queue=tactical_queue,
             actions=None,
+            facts_by_connector=command_center_facts_by_connector,
         )
         if use_cache:
             _write_daily_command_center_cache(command)
@@ -133,6 +153,7 @@ def build_daily_command_center(
         connectors=base.connectors,
         tactical_queue=base.tactical_queue,
         actions=base.actions,
+        facts_by_connector=base.command_center_facts_by_connector,
     )
     if use_cache:
         _write_daily_command_center_cache(command)

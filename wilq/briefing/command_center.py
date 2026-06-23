@@ -11,7 +11,11 @@ from wilq.actions.google_ads.recommendations import RECOMMENDATION_REVIEW_ACTION
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
-from wilq.briefing.tactical_queue import build_tactical_queue
+from wilq.briefing.tactical_queue import (
+    GSC_QUERY_PAGE_FACT_LIMIT,
+    WORDPRESS_INVENTORY_FACT_LIMIT,
+    build_tactical_queue,
+)
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
@@ -76,13 +80,23 @@ def build_command_center_response(
     connectors: list[ConnectorStatus] | None = None,
     tactical_queue: TacticalQueueResponse | None = None,
     actions: list[ActionObject] | None = None,
+    facts_by_connector: dict[str, list[MetricFact]] | None = None,
 ) -> CommandCenterResponse:
     connectors = connectors if connectors is not None else list_connector_statuses()
-    tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
+    if facts_by_connector is None:
+        facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
+            command_center_metric_fact_limits()
+        )
+    tactical_queue = (
+        tactical_queue
+        if tactical_queue is not None
+        else build_tactical_queue(facts_by_connector=facts_by_connector)
+    )
     actions = actions if actions is not None else _command_center_action_stubs()
     operator_brief, primary_next_step, blocker_count = build_command_center_brief(
         tactical_queue=tactical_queue,
         actions=actions,
+        facts_by_connector=facts_by_connector,
     )
     action_plan = build_command_center_action_plan(operator_brief, tactical_queue.items)
     return CommandCenterResponse(
@@ -191,18 +205,14 @@ def _command_center_action_stub(
 def build_command_center_brief(
     tactical_queue: TacticalQueueResponse | None = None,
     actions: list[ActionObject] | None = None,
+    facts_by_connector: dict[str, list[MetricFact]] | None = None,
 ) -> tuple[list[CommandCenterBriefItem], str, int]:
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
-    facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
-        {
-            GOOGLE_ADS_CONNECTOR_ID: GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT,
-            GOOGLE_MERCHANT_CONNECTOR_ID: MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
-            GA4_CONNECTOR_ID: GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
-            AHREFS_CONNECTOR_ID: AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT,
-            "localo": 120,
-        }
-    )
+    if facts_by_connector is None:
+        facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
+            command_center_metric_fact_limits()
+        )
     ads_facts = facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])
     merchant_facts = facts_by_connector.get(GOOGLE_MERCHANT_CONNECTOR_ID, [])
     ga4_facts = facts_by_connector.get(GA4_CONNECTOR_ID, [])
@@ -226,6 +236,19 @@ def build_command_center_brief(
     sorted_items = sorted(items, key=lambda item: item.priority)
     blocker_count = sum(1 for item in sorted_items if item.status == "blocked")
     return sorted_items, _primary_next_step(sorted_items), blocker_count
+
+
+def command_center_metric_fact_limits() -> dict[str, int]:
+    return {
+        GOOGLE_ADS_CONNECTOR_ID: GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        GOOGLE_MERCHANT_CONNECTOR_ID: MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        GA4_CONNECTOR_ID: GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        AHREFS_CONNECTOR_ID: AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT,
+        "localo": 120,
+        "google_search_console": GSC_QUERY_PAGE_FACT_LIMIT,
+        "wordpress_ekologus": WORDPRESS_INVENTORY_FACT_LIMIT,
+        "wordpress_sklep": WORDPRESS_INVENTORY_FACT_LIMIT,
+    }
 
 
 def build_command_center_action_plan(

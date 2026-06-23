@@ -74,13 +74,16 @@ class TacticalQueueCacheEntry:
     queue: TacticalQueueResponse
 
 
-def build_tactical_queue(use_cache: bool = True) -> TacticalQueueResponse:
-    if use_cache:
+def build_tactical_queue(
+    use_cache: bool = True,
+    facts_by_connector: dict[str, list[MetricFact]] | None = None,
+) -> TacticalQueueResponse:
+    if use_cache and facts_by_connector is None:
         cached_queue = _read_tactical_queue_cache()
         if cached_queue is not None:
             return cached_queue
-    queue = _build_tactical_queue()
-    if use_cache:
+    queue = _build_tactical_queue(facts_by_connector=facts_by_connector)
+    if use_cache and facts_by_connector is None:
         _write_tactical_queue_cache(queue)
     return queue
 
@@ -120,10 +123,12 @@ def _cache_seconds() -> float:
         return DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS
 
 
-def _build_tactical_queue() -> TacticalQueueResponse:
+def _build_tactical_queue(
+    facts_by_connector: dict[str, list[MetricFact]] | None = None,
+) -> TacticalQueueResponse:
     facts = [
         fact
-        for fact in _tactical_metric_facts()
+        for fact in _tactical_metric_facts(facts_by_connector=facts_by_connector)
         if fact.dimensions and not _is_probe_only_fact(fact)
     ]
     action_ids_by_connector = _tactical_action_ids_by_connector()
@@ -338,11 +343,14 @@ def _merchant_dimension_label(value: str) -> str:
     return labels.get(value, value.replace("_", " "))
 
 
-def _tactical_metric_facts() -> list[MetricFact]:
-    facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
-        list(TACTICAL_QUEUE_SOURCE_CONNECTORS),
-        limit_per_connector=WORDPRESS_INVENTORY_FACT_LIMIT,
-    )
+def _tactical_metric_facts(
+    facts_by_connector: dict[str, list[MetricFact]] | None = None,
+) -> list[MetricFact]:
+    if facts_by_connector is None:
+        facts_by_connector = metric_store().list_latest_metric_facts_by_connector(
+            list(TACTICAL_QUEUE_SOURCE_CONNECTORS),
+            limit_per_connector=WORDPRESS_INVENTORY_FACT_LIMIT,
+        )
     facts: list[MetricFact] = []
     for connector_id in TACTICAL_QUEUE_SOURCE_CONNECTORS:
         connector_limit = _tactical_connector_fact_limit(connector_id)

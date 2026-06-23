@@ -2583,16 +2583,47 @@ def test_daily_command_center_does_not_build_full_action_payloads(
     def fail_list_actions() -> list[ActionObject]:
         raise AssertionError("Command Center first-screen path must not build full actions")
 
+    shared_facts: dict[str, list[MetricFact]] = {"google_merchant_center": []}
+    seen: dict[str, Any] = {}
+
+    class FakeMetricStore:
+        def list_latest_metric_facts_by_connector_limits(
+            self,
+            limits: dict[str, int],
+        ) -> dict[str, list[MetricFact]]:
+            seen["metric_limits"] = limits
+            return shared_facts
+
+    def fake_tactical_queue(
+        use_cache: bool = True,
+        facts_by_connector: dict[str, list[MetricFact]] | None = None,
+    ) -> TacticalQueueResponse:
+        seen["tactical_facts"] = facts_by_connector
+        return tactical_queue
+
+    def fake_command_center_response(
+        connectors: list[ConnectorStatus] | None = None,
+        tactical_queue: TacticalQueueResponse | None = None,
+        actions: list[ActionObject] | None = None,
+        facts_by_connector: dict[str, list[MetricFact]] | None = None,
+    ) -> CommandCenterResponse:
+        seen["response_facts"] = facts_by_connector
+        return command
+
     monkeypatch.setattr(daily_runtime, "list_actions", fail_list_actions)
     monkeypatch.setattr(daily_runtime, "list_connector_statuses", lambda: [])
-    monkeypatch.setattr(daily_runtime, "build_tactical_queue", lambda: tactical_queue)
+    monkeypatch.setattr(daily_runtime, "metric_store", lambda: FakeMetricStore())
+    monkeypatch.setattr(daily_runtime, "build_tactical_queue", fake_tactical_queue)
     monkeypatch.setattr(
         daily_runtime,
         "build_command_center_response",
-        lambda connectors=None, tactical_queue=None, actions=None: command,
+        fake_command_center_response,
     )
 
     assert daily_runtime.build_daily_command_center(use_cache=False) == command
+    assert seen["tactical_facts"] is shared_facts
+    assert seen["response_facts"] is shared_facts
+    assert "google_merchant_center" in seen["metric_limits"]
 
 
 def test_marketing_brief_endpoint_uses_daily_runtime_cache(
@@ -11895,7 +11926,10 @@ def test_daily_command_center_does_not_build_marketing_brief(
     monkeypatch.setattr(
         daily_runtime,
         "build_command_center_response",
-        lambda connectors=None, tactical_queue=None, actions=None: command,
+        lambda connectors=None,
+        tactical_queue=None,
+        actions=None,
+        facts_by_connector=None: command,
     )
 
     def fail_marketing_brief(*args: object, **kwargs: object) -> MarketingBrief:

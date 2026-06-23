@@ -39,6 +39,19 @@ Stan produktu:
 
 ## Last Done
 
+0. Command Center shared metric read performance slice, 2026-06-23.
+   Cold `/api/dashboard/command-center` no longer performs separate DuckDB
+   metric reads for tactical queue and Command Center brief. Daily runtime now
+   builds one command-center metric bundle and passes it through
+   `build_tactical_queue(...facts_by_connector=...)` and
+   `build_command_center_response(...facts_by_connector=...)`. Response schema
+   did not change. Live proof after `scripts/local_stack.sh restart`:
+   `/api/dashboard/command-center` returned 4 decisions and 36,919 bytes with
+   timings `0.667s`, then warm `0.007s`, `0.006s`, `0.007s`, `0.006s`.
+   Focused proof: `tests/test_api_contracts.py -k 'daily_command_center or
+   command_center_exposes_polish_operator_brief'`, ruff and mypy for
+   `daily_runtime.py`, `command_center.py` and `tactical_queue.py`.
+
 0. Command Center content labels and Merchant skill guardrails, 2026-06-23.
    Command Center content decision metric labels are now Polish at the API
    contract level: `zapytania/URL`, `dopasowania WordPress`, `ocena Ahrefs`,
