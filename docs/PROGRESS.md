@@ -2666,6 +2666,15 @@ Aktualny maintenance:
     to 4 while 11 detailed clusters remain for traceability. Focused proof
     passed: RED/GREEN Merchant API contract tests, Python ruff OK and mypy OK.
 
+18. Command Center Merchant count alignment, 2026-06-23 11:40 CEST.
+    Command Center now uses the same grouped Merchant decision count as
+    `/api/merchant/diagnostics`. The first screen no longer says Merchant has
+    8 decisions when `/merchant` shows 4 grouped operator decisions. Live
+    browser proof on `http://127.0.0.1:5173/command-center`: Merchant card now
+    shows `decyzje=4` with `10900` products and `1887` issue occurrences.
+    Focused proof passed: RED/GREEN Command Center Merchant API test, related
+    Merchant tests, Python ruff OK and mypy OK.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only

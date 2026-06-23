@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 11:25 CEST.
+Last updated: 2026-06-23 11:40 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -157,6 +157,12 @@ preserving detailed clusters for ActionObject payload preview. Live Ekologus
 proof after stack restart: Merchant decision queue is 4 grouped decisions while
 11 detailed issue clusters remain. Focused proof: RED/GREEN Merchant API
 contract tests, Python ruff OK and mypy OK.
+
+2026-06-23 Command Center Merchant alignment: the Command Center first screen
+now uses the same grouped Merchant decision count as `/api/merchant/diagnostics`
+and `/merchant`. Live browser proof: Merchant card shows `decyzje=4`, not the
+old reporting-context count of 8. Focused proof: RED/GREEN Command Center
+Merchant API test, related Merchant tests, Python ruff OK and mypy OK.
 
 2026-06-23 GA4 first-flow cleanup: `/ga4` no longer prints raw `ev_*`
 evidence IDs or raw `act_review_ga4_tracking_quality` in first-flow GA4

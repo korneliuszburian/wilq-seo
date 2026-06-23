@@ -806,7 +806,6 @@ def _merchant_issue_cluster_count(facts: list[MetricFact]) -> int:
             fact.dimensions.get("issue_type", ""),
             fact.dimensions.get("affected_attribute", ""),
             fact.dimensions.get("country", ""),
-            fact.dimensions.get("reporting_context", ""),
             fact.dimensions.get("severity", "UNKNOWN"),
             fact.dimensions.get("resolution", ""),
         )
