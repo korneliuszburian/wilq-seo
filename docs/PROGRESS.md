@@ -67,8 +67,10 @@ Stan produktu:
   missing with explicit blocked claims.
 - Skill hygiene now has a deterministic gate: `scripts/skill_hygiene_check.py`
   runs from `scripts/quality.sh`, blocks `Goal 001`/workaround/bugfix/outdated
-  prose in skill docs and catches English imperative workflow steps in WILQ
-  `SKILL.md` files. Four `Call ...` workflow lines were rewritten to Polish.
+  prose, English safety headings, English `with mode=vendor_read` endpoint notes
+  and English imperative workflow steps in WILQ skill docs. WILQ `SKILL.md` and
+  `references/output-contract.md` files now use Polish operator prose while
+  preserving API IDs, endpoint paths and enum values.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
@@ -91,7 +93,7 @@ Stan produktu:
 
 2. **Skill/reference hygiene audit**
    - Obvious hygiene failures are now guarded by `scripts/skill_hygiene_check.py`.
-   - Remaining: semantic review of references for product logic hidden in prose.
+   - Remaining: deeper semantic review of references for product logic hidden in prose.
    - References should describe contracts and output shape only; product logic,
      workaround rules and bug fixes belong in API/schema/eval.
 
@@ -107,6 +109,5 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Commit/push Localo typed read-contract statuses.
-2. Continue with missing Localo read contracts, semantic skill/reference audit
-   or remaining Ads optimizer value based on live API/browser proof.
+1. Continue with missing Localo read contracts, deeper semantic skill/reference
+   audit or remaining Ads optimizer value based on live API/browser proof.

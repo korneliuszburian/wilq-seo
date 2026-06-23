@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 22:04 CEST.
+Last updated: 2026-06-23 22:09 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -57,11 +57,14 @@ Finish these before claiming the Ekologus demo is done:
 
 2. **Skill/reference hygiene audit**
    - `scripts/skill_hygiene_check.py` now guards obvious hygiene failures:
-     `Goal 001`/workaround/bugfix/outdated/slop prose in skill docs and English
-     imperative workflow steps in WILQ `SKILL.md` files.
-   - Remaining audit: semantic review of `.agents/skills/**/references/*.md`.
-     References may describe API usage, required evidence, output shape and
-     safety rules.
+     `Goal 001`/workaround/bugfix/outdated/slop prose, English safety headings,
+     English `with mode=vendor_read` endpoint notes and English imperative
+     workflow steps in WILQ skill docs.
+   - Current WILQ `SKILL.md` and `references/output-contract.md` files have
+     Polish operator prose with unchanged API IDs, endpoint paths and enum
+     values.
+   - Remaining audit: deeper semantic review of references. References may
+     describe API usage, required evidence, output shape and safety rules.
    - References must not become the place for product behavior, workaround
      rules, dashboard cleanup, dedupe decisions, ranking logic or bug fixes.
    - If a skill needs a smarter decision, implement typed API/schema/view-model
@@ -100,9 +103,8 @@ Finish these before claiming the Ekologus demo is done:
 
 ## Immediate Next Tasks
 
-1. Commit and push Localo typed read-contract statuses.
-2. Continue with missing Localo read contracts, semantic skill/reference audit,
-   or remaining Ads optimizer value,
+1. Continue with missing Localo read contracts, deeper semantic skill/reference
+   audit or remaining Ads optimizer value,
    depending on the strongest remaining demo blocker in live API/browser proof.
 
 ## Stop Condition

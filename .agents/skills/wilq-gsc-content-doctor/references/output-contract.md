@@ -24,9 +24,9 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 
 1. `Status`: zasięg API, gotowość connectorów i znane blockery.
-2. `Dowody`: `content_diagnostics` section IDs, evidence IDs, connector IDs, freshness notes, query/page facts and WordPress inventory match status from WILQ API only.
-3. `Diagnoza`: what the query/page matrix and WordPress inventory support, with uncertainty if the evidence is aggregate, stale or incomplete.
-4. `Kandydaci działań`: tactical queue item IDs and ActionObject IDs, especially `act_prepare_content_refresh_queue`, when available; otherwise describe the missing API/evidence needed to create them.
+2. `Dowody`: `content_diagnostics` section IDs, evidence IDs, connector IDs, freshness notes, query/page facts i WordPress inventory match status wyłącznie z WILQ API.
+3. `Diagnoza`: co wspierają query/page matrix i WordPress inventory, z niepewnością, jeśli evidence jest zagregowane, stare albo niepełne.
+4. `Kandydaci działań`: tactical queue item IDs i ActionObject IDs, szczególnie `act_prepare_content_refresh_queue`, jeśli są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
@@ -44,6 +44,6 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 
 Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak zwalidowanego payload oznacza brak apply. Brak audit event oznacza brak write.
 
-## Content Safety
+## Bezpieczeństwo treści
 
-`act_prepare_content_refresh_queue` is prepare-only. It can support refresh/create/merge/block planning, payload preview and validation. It must not claim WordPress edits, auto-publication, ranking gains, lead uplift or duplicate-free guarantees without future apply support and audit.
+`act_prepare_content_refresh_queue` jest prepare-only. Może wspierać planowanie refresh/create/merge/block, payload preview i walidację. Nie może claimować edycji WordPress, automatycznej publikacji, wzrostu pozycji, lead uplift ani gwarancji braku duplikacji bez przyszłego apply support i audytu.

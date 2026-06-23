@@ -4,7 +4,7 @@
 
 Analiza luk z Ahrefs ograniczona do istniejącego WILQ evidence i content inventory.
 
-Oczekiwany wynik: Gap opportunities with confidence notes, evidence IDs and next validation steps.
+Oczekiwany wynik: okazje gap review z confidence notes, evidence IDs i następnymi krokami walidacji.
 
 ## Wymagany kontekst API
 

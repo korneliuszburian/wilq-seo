@@ -2,7 +2,7 @@
 
 ## Cel
 
-Cross-channel content planning from API evidence, existing inventory and knowledge cards.
+Planowanie treści z API evidence, istniejącego inventory i knowledge cards.
 
 Oczekiwany wynik: priorytetowy content plan z evidence IDs, source connectors, kontrolą istniejących treści i kandydatami działań.
 
@@ -26,8 +26,8 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 
 1. `Status`: zasięg API, gotowość connectorów i znane blockery.
-2. `Dowody`: `content_diagnostics` section IDs, tactical item IDs, evidence IDs, connector IDs, freshness notes, query/page facts and WordPress inventory match status from WILQ API only.
-3. `Diagnoza`: what the evidence supports for refresh/create/merge/block, with uncertainty if the evidence is aggregate, stale or incomplete.
+2. `Dowody`: `content_diagnostics` section IDs, tactical item IDs, evidence IDs, connector IDs, freshness notes, query/page facts i WordPress inventory match status wyłącznie z WILQ API.
+3. `Diagnoza`: co evidence wspiera dla refresh/create/merge/block, z niepewnością, jeśli evidence jest zagregowane, stare albo niepełne.
 4. `Kandydaci działań`: tactical queue item IDs, opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
@@ -52,6 +52,6 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 
 Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak rekomendacji. Brak zwalidowanego payload oznacza brak apply. Brak audit event oznacza brak write.
 
-## Content Safety
+## Bezpieczeństwo treści
 
-Use `act_prepare_content_refresh_queue` as prepare-only. The skill may suggest refresh/create/merge/block planning and payload preview, but must not claim WordPress edits, publication, ranking gains, lead uplift or duplicate-free guarantees without validated apply support and audit.
+Używaj `act_prepare_content_refresh_queue` wyłącznie jako prepare-only. Skill może sugerować planowanie refresh/create/merge/block i payload preview, ale nie może claimować edycji WordPress, publikacji, wzrostu pozycji, lead uplift ani gwarancji braku duplikacji bez zwalidowanego apply support i audytu.

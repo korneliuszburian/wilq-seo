@@ -33,8 +33,8 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 3. Wywołaj najpierw `GET /api/dashboard/command-center`. To jest kanoniczny first-screen view model operatora dla polskiego marketera.
 4. Wywołaj `GET /api/marketing/brief` dla wspierających daily sections i metric summaries.
 5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-daily-command"}`, żeby pobrać szersze evidence, opportunities, actions, expert rules i knowledge cards.
-6. The `command_center` embedded in the context pack is compact by design: use `daily_decisions` as the canonical daily decision list and verify it agrees with `GET /api/dashboard/command-center` on `primary_next_step`, blocker count, tactical item count and daily decision trace fields. Do not rebuild the plan from legacy `operator_brief` or `action_plan` lists.
-7. The embedded `marketing_brief` must agree with `GET /api/marketing/brief` on language, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
+6. Osadzony w context packu `command_center` jest celowo kompaktowy: użyj `daily_decisions` jako kanonicznej daily decision list i potwierdź zgodność z `GET /api/dashboard/command-center` dla `primary_next_step`, blocker count, tactical item count oraz daily decision trace fields. Nie odbudowuj planu z legacy list `operator_brief` albo `action_plan`.
+7. Osadzony `marketing_brief` musi zgadzać się z `GET /api/marketing/brief` dla language, section IDs, blocker count, recommendation count, evidence IDs i action IDs.
 8. Daily Command jest core daily loop, nie pełnym registry. Priorytetyzuj Merchant, Content/GSC/WordPress, GA4 i Ads. Localo pokazuj tylko jako realny blocker albo ograniczenie claimów, nie jako gotowe zadanie dnia bez lokalnych ranking/GBP facts. Social draft ActionObjects pomiń, chyba że użytkownik jawnie prosi o social workflow.
 9. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 10. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
@@ -61,7 +61,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/actions`
 - `GET /api/actions/{action_id}`
 - `POST /api/actions/{action_id}/validate`
-- `POST /api/connectors/{connector}/refresh with mode=vendor_read for explicitly requested read-only refreshes.`
+- `POST /api/connectors/{connector}/refresh` z `mode=vendor_read` dla jawnie żądanych read-only refreshy.
 - `GET /api/knowledge/cards`
 - `GET /api/expert/rules`
 - `GET /api/expert/capabilities`

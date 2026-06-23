@@ -2,9 +2,9 @@
 
 ## Cel
 
-Campaign planning and API payload candidate preparation with validation gates.
+Planowanie kampanii i przygotowanie kandydatów API payload z validation gates.
 
-Oczekiwany wynik: Campaign build candidates with evidence IDs, payload preview notes and validation status.
+Oczekiwany wynik: kandydaci struktury kampanii z evidence IDs, notatkami payload preview i statusem walidacji.
 
 ## Wymagany kontekst API
 

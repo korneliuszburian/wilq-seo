@@ -28,6 +28,14 @@ FORBIDDEN_SKILL_PROSE = {
     "temporary",
     "hack",
     "slop",
+    "Product inspiration:",
+    "MCP Boundary",
+    "Content Safety",
+    "Merchant Safety",
+    "GA4 Safety",
+    "Then fetch",
+    "Do not rebuild",
+    "with mode=vendor_read",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 
