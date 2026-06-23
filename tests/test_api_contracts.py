@@ -7902,6 +7902,8 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     expected_business_context_actions = [
         ADS_BUSINESS_CONTEXT_ACTION_ID,
+        ADS_TARGET_CONFIRMATION_ACTION_ID,
+        ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     assert business_context_contract["target_interpretation"]["action_ids"] == [
         *expected_business_context_actions
@@ -9317,7 +9319,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert safety_decision["priority"] == 10
-    assert safety_decision["metric_tiles"] == {"ActionObjecty": 8, "blokady": 3}
+    assert safety_decision["metric_tiles"] == {"ActionObjecty": 10, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
     assert payload["blocker_count"] == 2
 
