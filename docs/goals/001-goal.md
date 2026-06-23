@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 01:43 CEST.
+Last updated: 2026-06-24 02:06 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -196,6 +196,9 @@ Finish these before claiming the Ekologus demo is done:
      recovery, product ROAS, price impact or unique SKU fixes from aggregate
      issue counts, state-only rows, supplemental-feed candidates or current
      prices alone.
+     `product_performance_readiness` now exposes `missing_read_contracts`, so
+     state-only Ads joins are explicitly separated from missing Ads/GA4 product
+     performance contracts for dashboard and skills.
    - GA4 current source state: live Data API read now requests and stores
      `keyEvents`, `ecommercePurchases`, `purchaseRevenue`, `totalRevenue` and
      `transactions` with landing/source/campaign dimensions, plus `itemId`,

@@ -1654,6 +1654,7 @@ export const MerchantProductPerformanceReadinessSchema = z.object({
   ga4_product_fact_count: z.number(),
   current_read_contracts: z.array(z.string()),
   required_read_contracts: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
   join_key_candidates: z.array(z.string()),
   sample_product_ids: z.array(z.string()),
   performance_rows: z.array(MerchantProductPerformanceRowSchema),

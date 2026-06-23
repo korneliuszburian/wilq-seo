@@ -593,6 +593,10 @@ def _merchant_product_performance_readiness(
         current_read_contracts.append("google_ads_shopping_product_performance")
     if ga4_product_facts:
         current_read_contracts.append("ga4_item_metric_facts")
+    missing_read_contracts = _merchant_product_performance_missing_read_contracts(
+        sample_product_ids=sample_product_ids,
+        current_read_contracts=current_read_contracts,
+    )
 
     if performance_rows:
         rows_with_metrics = [
@@ -630,6 +634,7 @@ def _merchant_product_performance_readiness(
             ga4_product_fact_count=len(ga4_product_facts),
             current_read_contracts=current_read_contracts,
             required_read_contracts=MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS,
+            missing_read_contracts=missing_read_contracts,
             join_key_candidates=PRODUCT_JOIN_DIMENSION_KEYS,
             sample_product_ids=sample_product_ids[:20],
             performance_rows=performance_rows[:20],
@@ -680,6 +685,7 @@ def _merchant_product_performance_readiness(
         ga4_product_fact_count=len(ga4_product_facts),
         current_read_contracts=current_read_contracts,
         required_read_contracts=MERCHANT_PRODUCT_PERFORMANCE_REQUIRED_READ_CONTRACTS,
+        missing_read_contracts=missing_read_contracts,
         join_key_candidates=PRODUCT_JOIN_DIMENSION_KEYS,
         sample_product_ids=sample_product_ids[:20],
         source_connectors=_unique(
@@ -700,6 +706,27 @@ def _merchant_product_performance_readiness(
         next_step=next_step,
         blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
     )
+
+
+def _merchant_product_performance_missing_read_contracts(
+    *,
+    sample_product_ids: list[str],
+    current_read_contracts: list[str],
+) -> list[str]:
+    missing_contracts: list[str] = []
+    if not sample_product_ids:
+        missing_contracts.append("merchant_product_id_join_key")
+    if not any(
+        contract in current_read_contracts
+        for contract in (
+            "google_ads_product_metric_facts",
+            "google_ads_shopping_product_performance",
+        )
+    ):
+        missing_contracts.append("google_ads_shopping_product_performance")
+    if "ga4_item_metric_facts" not in current_read_contracts:
+        missing_contracts.append("ga4_item_product_performance")
+    return missing_contracts
 
 
 def _merchant_price_impact_readiness(

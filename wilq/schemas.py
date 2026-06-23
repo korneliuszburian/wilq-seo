@@ -2043,6 +2043,7 @@ class MerchantProductPerformanceReadiness(BaseModel):
     ga4_product_fact_count: int = 0
     current_read_contracts: list[str] = Field(default_factory=list)
     required_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
     join_key_candidates: list[str] = Field(default_factory=list)
     sample_product_ids: list[str] = Field(default_factory=list)
     performance_rows: list[MerchantProductPerformanceRow] = Field(default_factory=list)

@@ -10293,6 +10293,7 @@ def test_merchant_product_performance_readiness_joins_sample_ids_to_ads_and_ga4(
         "google_ads_product_metric_facts",
         "ga4_item_metric_facts",
     ]
+    assert readiness.missing_read_contracts == []
     assert readiness.source_connectors == [
         "google_merchant_center",
         "google_ads",
@@ -10402,6 +10403,7 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
         "google_ads_shopping_product_performance",
         "ga4_item_metric_facts",
     ]
+    assert readiness.missing_read_contracts == []
     assert readiness.performance_rows[0].missing_metrics == [
         "ads_clicks",
         "ads_cost_micros",
@@ -10501,6 +10503,10 @@ def test_merchant_product_performance_readiness_blocks_state_only_product_join()
     assert readiness.current_read_contracts == [
         "merchant_aggregate_product_statuses",
         "google_ads_shopping_product_state",
+    ]
+    assert readiness.missing_read_contracts == [
+        "google_ads_shopping_product_performance",
+        "ga4_item_product_performance",
     ]
     assert "product-state join" in readiness.summary
     assert "Product ROAS" in readiness.next_step
@@ -10714,6 +10720,10 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert price_preview["products"][0]["has_product_performance_metrics"] is False
     readiness = payload["product_performance_readiness"]
     assert readiness["status"] == "blocked"
+    assert readiness["missing_read_contracts"] == [
+        "google_ads_shopping_product_performance",
+        "ga4_item_product_performance",
+    ]
     row = readiness["performance_rows"][0]
     assert row["product_id"] == "online~pl~PL~SKU-001"
     assert row["issue_type"] == "availability_updated"
