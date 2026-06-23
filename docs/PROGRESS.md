@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Merchant first-flow trace cleanup, 2026-06-23 10:24 CEST.
+  `/merchant` no longer prints raw `ev_*` evidence IDs or raw
+  `act_review_merchant_feed_issues` in first-flow Merchant decision cards or
+  the `Bezpieczny tryb pracy` panel. Those cards now show evidence/action
+  counts and marketer copy says `ActionObject review`; raw trace links remain
+  lower in `Dowody i ograniczenia Merchant` and ActionObject validation.
+  Browser proof with agent-browser on `http://127.0.0.1:5173/merchant`: raw
+  trace links start only under the lower proof/validation sections. Focused
+  proof: RED/GREEN Merchant API contract test, RED/GREEN Merchant route test,
+  Python ruff/mypy OK, dashboard lint OK and dashboard typecheck OK.
 - Custom Segments first-flow trace cleanup, 2026-06-23 10:15 CEST.
   `/ads-doctor/custom-segments` no longer prints raw `ev_*` evidence IDs inside
   marketer-facing custom segment candidate or forecast cards. Those cards now

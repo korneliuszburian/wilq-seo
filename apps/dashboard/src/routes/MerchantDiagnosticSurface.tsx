@@ -285,8 +285,16 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
           <h3 className="text-sm font-semibold text-ink">Bezpieczny tryb pracy</h3>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
             <TraceLine label="Typy problemów" values={summary.issue_types} empty="brak" />
-            <LinkedTraceLine label="Dowody" values={summary.evidence_ids.slice(0, 6)} kind="evidence" />
-            <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
+            <TraceLine
+              label="Dowody"
+              values={[formatMerchantIdCount(summary.evidence_ids.length, "ID", "ID")]}
+              empty="brak"
+            />
+            <TraceLine
+              label="ActionObject"
+              values={[formatMerchantIdCount(actionIds.length, "ActionObject", "ActionObjecty")]}
+              empty="brak"
+            />
             <TraceLine
               label="Nie wolno twierdzić"
               values={merchantBlockedClaimLabels(summary.blocked_claims)}
@@ -350,12 +358,18 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         </span>
       </div>
       <div className="mt-2 grid gap-1.5 text-xs text-slate-600">
-        <LinkedTraceLine
+        <TraceLine
           label="Dowody"
-          values={decision.evidence_ids.slice(0, 4)}
-          kind="evidence"
+          values={[formatMerchantIdCount(decision.evidence_ids.length, "ID", "ID")]}
+          empty="brak"
         />
-        <LinkedTraceLine label="ActionObject" values={decision.action_ids} kind="actions" />
+        <TraceLine
+          label="ActionObject"
+          values={[
+            formatMerchantIdCount(decision.action_ids.length, "ActionObject", "ActionObjecty")
+          ]}
+          empty="brak"
+        />
         <TraceLine
           label="Nie wolno twierdzić"
           values={merchantBlockedClaimLabels(decision.blocked_claims)}
@@ -478,6 +492,12 @@ function merchantBlockedClaimLabels(claims: string[]) {
     "revenue recovered": "odzyskany przychód"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
+}
+
+function formatMerchantIdCount(count: number, singular: string, plural: string) {
+  if (count === 0) return "brak";
+  if (count === 1) return `1 ${singular}`;
+  return `${count} ${plural}`;
 }
 
 function uniqueValues(values: string[]) {

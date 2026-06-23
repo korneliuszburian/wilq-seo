@@ -372,7 +372,7 @@ def _merchant_issue_clusters(
                 action_id=action_id,
                 risk=_merchant_cluster_risk(severity, resolution),
                 next_step=(
-                    "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; "
+                    "Przejrzyj tę grupę problemu przez ActionObject review; "
                     "najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
                 ),
             )

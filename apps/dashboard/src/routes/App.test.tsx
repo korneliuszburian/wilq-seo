@@ -4000,7 +4000,7 @@ const merchantDiagnostics = {
       action_id: "act_review_merchant_feed_issues",
       risk: "medium",
       next_step:
-        "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
+        "Przejrzyj tę grupę problemu przez ActionObject review; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu."
     }
   ],
   decision_queue: [
@@ -4031,7 +4031,7 @@ const merchantDiagnostics = {
       rationale:
         "To jest klaster problemu Merchant do ręcznego review. Liczba oznacza wystąpienia problemu w raportach, nie gotową zmianę feedu. Obecny odczyt nie zwraca przykładowych ID produktów ani tytułów.",
       next_step:
-        "Przejrzyj tę grupę problemu w `act_review_merchant_feed_issues`; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu.",
+        "Przejrzyj tę grupę problemu przez ActionObject review; najpierw przygotuj podgląd payloadu, bez automatycznej zmiany feedu.",
       risk: "medium"
     }
   ],
@@ -6088,6 +6088,12 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
     ).toBeInTheDocument();
+    const merchantDecisionCard = screen
+      .getByText("Merchant: sprawdź zmiana dostępności do sprawdzenia / dostępność")
+      .closest("article");
+    expect(merchantDecisionCard).not.toBeNull();
+    expect(within(merchantDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(within(merchantDecisionCard as HTMLElement).queryByText(/act_/)).not.toBeInTheDocument();
     expect(screen.getByText(/przegląd problemu feedu/)).toBeInTheDocument();
     expect(
       screen.getByText(/23 zgłoszeń problemu NOT_IMPACTED\/MERCHANT_ACTION dla PL \/ SHOPPING_ADS/)
