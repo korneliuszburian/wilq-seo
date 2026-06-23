@@ -4338,7 +4338,12 @@ const contentDiagnostics = {
       risk: "low"
     }
   ],
-  evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory", "ev_refresh_ahrefs_gap_records"],
+  evidence_ids: [
+    "ev_refresh_gsc",
+    "ev_refresh_wordpress_inventory",
+    "ev_refresh_ahrefs_gap_records",
+    "ev_refresh_content_safety"
+  ],
   action_ids: ["act_prepare_content_refresh_queue"],
   blocker_count: 0
 };
@@ -6138,7 +6143,16 @@ describe("WILQ dashboard", () => {
       "href",
       "/actions/act_prepare_content_refresh_queue"
     );
-    expect(screen.getAllByText(/clicks: 12/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/clicks: 12/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("Kliknięcia").length).toBeGreaterThan(0);
+    const contentProofSection = screen
+      .getByText("Dowody i ograniczenia Content")
+      .closest("section");
+    expect(contentProofSection).not.toBeNull();
+    const contentProof = within(contentProofSection as HTMLElement);
+    expect(contentProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
+    expect(contentProof.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(contentProof.queryByText(/ev_refresh_content_safety/)).not.toBeInTheDocument();
   });
 
   it("localo social and content routes render workflow-specific blockers or focus", async () => {

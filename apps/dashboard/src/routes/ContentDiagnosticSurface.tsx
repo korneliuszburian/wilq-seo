@@ -9,7 +9,6 @@ import {
   getContentDiagnostics,
   reviewAction
 } from "../lib/api";
-import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
@@ -20,6 +19,7 @@ import {
 import { shortPath } from "./TacticalQueuePanel";
 
 type ContentDecisionItem = ContentDiagnosticsResponse["decision_queue"][number];
+type ContentMetricFact = ContentDiagnosticsResponse["sections"][number]["metric_facts"][number];
 
 export function ContentDiagnosticSurface({ title }: { title: string }) {
   const diagnostics = useQuery({
@@ -549,13 +549,17 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
         <LinkedTraceLine label="Akcje" values={decision.action_ids} kind="actions" />
         <TraceLine label="Nie wolno twierdzić" values={contentBlockedClaimLabels(decision.blocked_claims)} />
       </div>
-      {decision.metric_facts.length > 0 ? <MetricFactChips facts={decision.metric_facts.slice(0, 4)} /> : null}
+      {decision.metric_facts.length > 0 ? (
+        <ContentMetricTiles facts={decision.metric_facts.slice(0, 4)} />
+      ) : null}
     </article>
   );
 }
 
 function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
+  const visibleMetricFacts = metricFacts.slice(0, 4);
+  const visibleEvidenceIds = data.evidence_ids.slice(0, 3);
   const sourceConnectors = uniqueValues([
     ...data.sections.flatMap((section) => section.source_connectors),
     ...data.decision_queue.flatMap((decision) => decision.source_connectors)
@@ -575,13 +579,13 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Sekcje API" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
-          <MetricTile label="Decyzje" value={data.decision_queue.length} />
+          <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
         </div>
       </div>
-      {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 8)} /> : null}
+      {visibleMetricFacts.length > 0 ? <ContentMetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={data.sections.map((section) => contentSectionLabel(section.id))} />
-        <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
+        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
         <TraceLine label="Źródła" values={sourceConnectors} />
         <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
         <TraceLine
@@ -591,6 +595,39 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
       </div>
     </section>
   );
+}
+
+function ContentMetricTiles({ facts }: { facts: ContentMetricFact[] }) {
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+      {facts.map((fact, index) => (
+        <MetricTile
+          key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
+          label={contentMetricFactLabel(fact.name)}
+          value={formatContentMetricValue(fact.value)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function contentMetricFactLabel(metricName: string) {
+  const labels: Record<string, string> = {
+    ahrefs_content_gap_count: "Luki Ahrefs",
+    average_position: "Pozycja",
+    clicks: "Kliknięcia",
+    content_object_count: "Obiekty WP",
+    ctr: "CTR",
+    impressions: "Wyświetlenia",
+    pages_total: "Strony WP",
+    posts_total: "Wpisy WP"
+  };
+  return labels[metricName] ?? metricName;
+}
+
+function formatContentMetricValue(value: string | number | boolean) {
+  if (typeof value === "boolean") return value ? "tak" : "nie";
+  return value;
 }
 
 function contentDecisionTitle(decision: ContentDecisionItem) {

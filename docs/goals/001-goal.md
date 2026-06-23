@@ -4863,3 +4863,17 @@ Latest Merchant proof compaction slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest Content Planner proof compaction slice:
+
+- `/content-planner` now renders content metric facts as Polish metric tiles
+  instead of raw `MetricFactChips` such as `clicks: 12`.
+- `Dowody i ograniczenia Content` now shows readable metric tiles, section/source
+  labels, example evidence IDs and total evidence counts, while keeping full
+  traceability in decision cards and ActionObject links.
+- This keeps the route focused on refresh/merge/create/block decisions and
+  avoids turning proof into the main marketer-facing content.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "localo social and content routes render workflow-specific blockers or focus"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`

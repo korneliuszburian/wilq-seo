@@ -2278,6 +2278,14 @@ Aktualny maintenance:
     content. Focused proof passed: Merchant route unit test, dashboard lint and
     dashboard typecheck.
 
+11. Content Planner proof compaction, 2026-06-23 05:43 CEST.
+    `/content-planner` now renders content metric facts as Polish metric tiles
+    such as `Kliknięcia`, `Wyświetlenia`, `Obiekty WP` and `Luki Ahrefs` instead
+    of raw `clicks: 12` chips. `Dowody i ograniczenia Content` now shows example
+    evidence IDs and total evidence count instead of turning the proof block into
+    a long trace list. Focused proof passed: content route unit test, dashboard
+    lint and dashboard typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2314,7 +2322,7 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   remaining lower-fold Ads Doctor tables and Content Planner proof/drilldown.
+   remaining lower-fold Ads Doctor tables and Ahrefs/GA4 proof compaction.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.
