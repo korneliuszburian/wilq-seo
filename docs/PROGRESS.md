@@ -94,33 +94,58 @@ Stan produktu:
 
 ## Active Gaps
 
-1. **Localo beyond aggregate read contracts**
+1. **Source contracts and data acquisition**
    - Current Localo supports live place inventory, local rankings and reviews as
      typed aggregate read contracts.
    - Missing: GBP visibility, competitor visibility, local tasks, write/apply
      contracts and uplift claims.
+   - Ads remaining gaps are not OAuth: Keyword Planner is blocked by developer
+     token approval, change history has no rows in the current window, and
+     deeper optimizer value still needs pacing, recommendations safety, forecast
+     and apply/audit contracts.
+   - Merchant and GA4 need deeper product/conversion/commerce contracts before
+     revenue, approval, ROAS or product-fix claims.
 
-2. **Skill/reference hygiene audit**
+2. **Decision API and shared view-models**
+   - Dashboard and skills must consume the same API contracts:
+     command-center, marketing brief, tactical queue, diagnostics and actions.
+   - Do not push decisions into prompt/reference prose; implement typed
+     API/schema/view-model first.
+
+3. **Action safety and apply path**
+   - Current demo is mostly prepare/review-only.
+   - Future writes need dry_run, preview, confirm, audit, SafetyLimits and
+     partial-failure handling before apply claims.
+
+4. **Skill/reference hygiene and eval quality**
    - Obvious hygiene failures are now guarded by `scripts/skill_hygiene_check.py`.
    - Repeated output-contract language wording has been normalized across WILQ
      skills.
    - Remaining: deeper semantic review of references for product logic hidden in prose.
    - References should describe contracts and output shape only; product logic,
      workaround rules and bug fixes belong in API/schema/eval.
+   - Evals now cover basic API/evidence/Polish/safety, but still need stronger
+     decision-quality assertions per skill.
 
-3. **Remaining Ads optimizer value**
-   - Current Ads is review-only for many important paths.
-   - Missing: approved/live Keyword Planner enrichment, forecast/audience size,
-     change-history rows with pre/post performance windows, safe apply/audit
-     contracts.
-
-4. **Code quality where it affects velocity**
+5. **Dashboard usefulness, performance and code quality**
    - Avoid broad aesthetic refactors.
    - Extract large route modules only when they block product work, reviewability
      or focused verification.
+   - Focus performance work on shared daily view-model/cache and duplicated
+     aggregation, not visual churn.
+
+6. **Release/live-test strategy**
+   - Release gates should assert contracts, safety, evidence, Polish output and
+     secret redaction.
+   - Exact changing metric values belong in fixture tests only. Live smokes
+     should assert freshness, nonempty expected facts and correct
+     ready/missing/blocked status.
 
 ## Next Best Queue
 
-1. Continue with missing Localo GBP/competitor/local task read contracts, deeper
-   semantic skill/reference audit or remaining Ads optimizer value based on live
-   API/browser proof.
+1. Work by theme: source contracts -> decision API/view-model -> ActionObject
+   safety -> Codex skill/eval quality -> dashboard usefulness/performance ->
+   release/live-test hardening.
+2. Next concrete slice should come from live proof: Localo missing read
+   contracts, Ads optimizer blockers, semantic skill-reference audit or shared
+   daily view-model/cache.
