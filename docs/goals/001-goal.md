@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 11:55 CEST.
+Last updated: 2026-06-23 12:08 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -169,6 +169,14 @@ Merchant API test, related Merchant tests, Python ruff OK and mypy OK.
 label. Live browser proof: `0 GSC↔WP` and `6 Ahrefs↔WP` render at the top of
 the route. Focused proof: RED/GREEN Content route test, dashboard lint OK and
 dashboard typecheck OK.
+
+2026-06-23 GA4 measurement title cleanup: `/api/ga4/diagnostics` no longer
+emits repeated generic `Napraw problem pomiaru GA4` titles for different
+measurement rows. Titles now include reporting context, for example
+`GA4: napraw pomiar - (not set) / (not set)` and
+`GA4: napraw pomiar - (not set) / google / organic`; `/ga4` renders the same
+distinct labels. Focused proof: RED/GREEN GA4 API title test, existing GA4
+diagnostics contract test, Python ruff OK and mypy OK.
 
 2026-06-23 GA4 first-flow cleanup: `/ga4` no longer prints raw `ev_*`
 evidence IDs or raw `act_review_ga4_tracking_quality` in first-flow GA4

@@ -429,7 +429,7 @@ def _ga4_decision_queue(
         )
         if item.intent == "tracking_gap" or has_missing_reporting_dimension:
             decision_type: Ga4DecisionType = "fix_measurement"
-            title = "Napraw problem pomiaru GA4"
+            title = _ga4_measurement_title(landing_page, source_medium)
             rationale = (
                 "GA4 zwraca brakujące wymiary raportu, więc to jest problem pomiaru "
                 "albo atrybucji, nie gotowa rekomendacja marketingowa."
@@ -523,7 +523,7 @@ def _ga4_decisions_from_dimensioned_facts(
         )
         if has_missing_reporting_dimension:
             decision_type: Ga4DecisionType = "fix_measurement"
-            title = "Napraw problem pomiaru GA4"
+            title = _ga4_measurement_title(landing_page, source_medium)
             rationale = (
                 "GA4 ma wymiar `(not set)`, więc najpierw trzeba sprawdzić pomiar, "
                 "UTM-y i atrybucję zamiast oceniać kampanię lub landing."
@@ -576,6 +576,12 @@ def _ga4_decisions_from_dimensioned_facts(
             )
         )
     return decisions
+
+
+def _ga4_measurement_title(landing_page: str | None, source_medium: str | None) -> str:
+    landing_label = landing_page or "brak landing page"
+    source_label = source_medium or "brak source/medium"
+    return f"GA4: napraw pomiar - {landing_label} / {source_label}"
 
 
 def _ga4_decision_status(decision_type: Ga4DecisionType) -> Literal["ready", "blocked"]:

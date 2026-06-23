@@ -37,6 +37,14 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- GA4 measurement decision titles, 2026-06-23.
+  `/api/ga4/diagnostics` no longer emits repeated generic
+  `Napraw problem pomiaru GA4` titles for different `(not set)` report rows.
+  Measurement decisions now include the reporting context, for example
+  `GA4: napraw pomiar - (not set) / (not set)` and
+  `GA4: napraw pomiar - (not set) / google / organic`. Live `/ga4` browser
+  proof shows the same distinct titles. Focused proof: RED/GREEN GA4 API title
+  test, existing GA4 diagnostics contract test, Python ruff OK and mypy OK.
 - Daily Command compact context hardening, 2026-06-23 11:03 CEST.
   `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` now embeds a
   compact Command Center based on `daily_decisions` only; legacy

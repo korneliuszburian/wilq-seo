@@ -25,6 +25,7 @@ from wilq.briefing.ads_diagnostics import (
     _custom_segment_review_reason,
     _custom_segment_source_quality,
 )
+from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
@@ -2840,6 +2841,19 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
         for decision in payload["decision_queue"]
         if decision["decision_type"] == "fix_measurement"
     )
+    measurement_decisions = [
+        decision
+        for decision in payload["decision_queue"]
+        if decision["decision_type"] == "fix_measurement"
+    ]
+    measurement_titles = [decision["title"] for decision in measurement_decisions]
+    assert len(measurement_titles) == len(set(measurement_titles))
+    assert all(
+        decision["landing_page"] in decision["title"]
+        or decision["source_medium"] in decision["title"]
+        or decision["campaign_name"] in decision["title"]
+        for decision in measurement_decisions
+    )
     assert operator_summary["wordpress_missing_count"] == sum(
         1
         for decision in payload["decision_queue"]
@@ -2858,6 +2872,7 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     ] == "/europejski-zielony-lad-co-to-takiego/"
     assert sections["ga4_tracking_readiness"]["status"] == "missing"
     assert "conversion drop" in sections["ga4_tracking_readiness"]["blocked_claims"]
+
     assert sections["ga4_action_safety"]["status"] == "ready"
     assert readiness_contract["id"] == "ga4_conversion_readiness_contract"
     assert readiness_contract["status"] == "blocked"
@@ -2918,6 +2933,51 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert context_preview["apply_allowed"] is False
     serialized = json.dumps(payload, ensure_ascii=False)
     assert "google_adc.json" not in serialized
+
+
+def test_ga4_measurement_decision_titles_include_reporting_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
+    facts = [
+        MetricFact(
+            name="active_users",
+            value=179,
+            period="last_7_days",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_not_set",
+            dimensions={
+                "landing_page": "(not set)",
+                "source_medium": "(not set)",
+                "campaign_name": "(not set)",
+            },
+        ),
+        MetricFact(
+            name="active_users",
+            value=89,
+            period="last_7_days",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_organic",
+            dimensions={
+                "landing_page": "(not set)",
+                "source_medium": "google / organic",
+                "campaign_name": "(organic)",
+            },
+        ),
+    ]
+
+    payload = build_ga4_diagnostics(tactical_items=[], actions=[], metric_facts=facts)
+
+    decisions = [
+        decision
+        for decision in payload.decision_queue
+        if decision.decision_type == "fix_measurement"
+    ]
+    titles = [decision.title for decision in decisions]
+    assert titles == [
+        "GA4: napraw pomiar - (not set) / (not set)",
+        "GA4: napraw pomiar - (not set) / google / organic",
+    ]
 
 
 def test_command_center_exposes_polish_operator_brief(
