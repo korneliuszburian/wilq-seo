@@ -36,6 +36,7 @@ FORBIDDEN_SKILL_PROSE = {
     "Then fetch",
     "Do not rebuild",
     "with mode=vendor_read",
+    "API identifiers",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 

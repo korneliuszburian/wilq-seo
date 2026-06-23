@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 22:24 CEST.
+Last updated: 2026-06-23 22:37 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -65,10 +65,14 @@ Finish these before claiming the Ekologus demo is done:
    - `scripts/skill_hygiene_check.py` now guards obvious hygiene failures:
      `Goal 001`/workaround/bugfix/outdated/slop prose, English safety headings,
      English `with mode=vendor_read` endpoint notes and English imperative
-     workflow steps in WILQ skill docs.
+     workflow steps in WILQ skill docs, plus mixed-language `API identifiers`
+     wording in output contracts.
    - Current WILQ `SKILL.md` and `references/output-contract.md` files have
      Polish operator prose with unchanged API IDs, endpoint paths and enum
      values.
+   - Current cleanup normalized the repeated language-contract wording across
+     WILQ output contracts and removed leftover English GA4/Merchant contract
+     fragments.
    - Remaining audit: deeper semantic review of references. References may
      describe API usage, required evidence, output shape and safety rules.
    - References must not become the place for product behavior, workaround

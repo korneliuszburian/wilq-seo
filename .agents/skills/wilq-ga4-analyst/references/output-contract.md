@@ -48,6 +48,6 @@ Brak evidence ID oznacza brak rekomendacji. Brak source connector oznacza brak r
 
 Reguły `decision_queue`:
 
-- `fix_measurement` means tracking/reporting review first; do not turn it into a content or campaign recommendation.
-- `review_landing_mapping` means verify URL/WordPress mapping before judging the landing page.
+- `fix_measurement` oznacza najpierw przegląd trackingu/raportowania; nie zamieniaj tego w rekomendację contentową ani kampanijną.
+- `review_landing_mapping` oznacza, że trzeba potwierdzić mapowanie URL/WordPress przed oceną landing page.
 - `review_traffic_quality` oznacza, że evidence może wspierać traffic-quality/message-match review, ale nie claimy ROAS/revenue/profitability.

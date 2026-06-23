@@ -72,7 +72,8 @@ Stan produktu:
 - Skill hygiene now has a deterministic gate: `scripts/skill_hygiene_check.py`
   runs from `scripts/quality.sh`, blocks `Goal 001`/workaround/bugfix/outdated
   prose, English safety headings, English `with mode=vendor_read` endpoint notes
-  and English imperative workflow steps in WILQ skill docs. WILQ `SKILL.md` and
+  English imperative workflow steps in WILQ skill docs and mixed-language
+  `API identifiers` wording. WILQ `SKILL.md` and
   `references/output-contract.md` files now use Polish operator prose while
   preserving API IDs, endpoint paths and enum values.
 - Live Ads blocker distinction: current `change_history_read_contract` is
@@ -101,6 +102,8 @@ Stan produktu:
 
 2. **Skill/reference hygiene audit**
    - Obvious hygiene failures are now guarded by `scripts/skill_hygiene_check.py`.
+   - Repeated output-contract language wording has been normalized across WILQ
+     skills.
    - Remaining: deeper semantic review of references for product logic hidden in prose.
    - References should describe contracts and output shape only; product logic,
      workaround rules and bug fixes belong in API/schema/eval.

@@ -18,7 +18,7 @@ Wymagane connectory:
 
 Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 
-Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. API identifiers, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
+Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. Identyfikatory API, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
 
 
 1. `Status`: zasięg API, gotowość connectorów, `freshness_assessment` i znane blockery. Jeśli `freshness_assessment.requires_refresh=true` albo `state=stale|missing|blocked`, oznacz wynik jako stale/blocker review zamiast aktualnego stanu produkcyjnego.
@@ -37,13 +37,13 @@ Odmów albo obniż odpowiedź do blocker report, gdy:
 
 - WILQ API jest niedostępne.
 - Wymagany connector ma status `missing_credentials`, `disabled` albo failed dla żądanej operacji.
-- `/api/merchant/diagnostics` zwraca `live_data_available=false`, a użytkownik pyta o feed issue actions, approval state, product visibility albo product fixes.
+- `/api/merchant/diagnostics` zwraca `live_data_available=false`, a użytkownik pyta o działania na problemach feedu, stan zatwierdzeń, widoczność produktów albo poprawki produktów.
 - Żądana metryka albo akcja nie występuje w context-pack, evidence, connector refresh runs, expert rules ani action objects.
 - Użytkownik prosi o write execution bez zwalidowanego ActionObject i jawnej zgody.
 
 ## Bezpieczeństwo Merchant
 
-Używaj `act_review_merchant_feed_issues` tylko jako prepare/review candidate, dopóki WILQ API nie wystawi zwalidowanej Merchant action w trybie apply. Nie claimuj, że approval został przywrócony, produkt naprawiony, revenue odzyskane albo primary feed zmieniony bez audit event.
+Używaj `act_review_merchant_feed_issues` tylko jako kandydata prepare/review, dopóki WILQ API nie wystawi zwalidowanej Merchant action w trybie apply. Nie twierdź, że zatwierdzenie zostało przywrócone, produkt naprawiony, revenue odzyskane albo primary feed zmieniony bez audit event.
 
 ## Reguły evidence
 

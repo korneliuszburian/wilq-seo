@@ -1,6 +1,6 @@
 ---
 name: wilq-merchant-feed-operator
-description: Analizuje Merchant Center product/feed evidence dla Ekologus przez WILQ API i przygotowuje bezpieczne feed issue review actions. Użyj, gdy marketer pyta "czy feed produktowy jest OK?", "które produkty mają problemy?", "co blokuje Shopping/PMax produkty?", "sprawdź disapproved products", "przygotuj kolejkę napraw feedu", albo pyta o diagnostykę Merchant, ryzyka widoczności produktów, feed edits, issue types, affected attributes, availability, prices, GTIN/images lub product approvals. Nie wolno zmieniać danych produktu bez zwalidowanych ActionObjects i audytu.
+description: Analizuje Merchant Center product/feed evidence dla Ekologus przez WILQ API i przygotowuje bezpieczne feed issue review actions. Użyj, gdy marketer pyta "czy feed produktowy jest OK?", "które produkty mają problemy?", "co blokuje Shopping/PMax produkty?", "sprawdź disapproved products", "przygotuj kolejkę przeglądu problemów feedu", albo pyta o diagnostykę Merchant, ryzyka widoczności produktów, feed edits, issue types, affected attributes, availability, prices, GTIN/images lub product approvals. Nie wolno zmieniać danych produktu bez zwalidowanych ActionObjects i audytu.
 ---
 
 # WILQ Merchant Feed Operator
