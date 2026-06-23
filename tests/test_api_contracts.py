@@ -3095,6 +3095,60 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "google_adc.json" not in serialized
 
 
+def test_ga4_operator_summary_uses_conversion_ready_copy(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_ready_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ga4_ready_metrics.duckdb"))
+    facts = [
+        MetricFact(
+            name="active_users",
+            value=12,
+            period="connector_refresh",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_ready_conversion",
+            dimensions={
+                "landing_page": "/oferta/",
+                "source_medium": "google / organic",
+                "campaign_name": "(organic)",
+            },
+        ),
+        MetricFact(
+            name="key_events",
+            value=0,
+            period="connector_refresh",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_ready_conversion",
+            dimensions={
+                "landing_page": "/oferta/",
+                "source_medium": "google / organic",
+                "campaign_name": "(organic)",
+            },
+        ),
+        MetricFact(
+            name="purchase_revenue",
+            value=0,
+            period="connector_refresh",
+            source_connector="google_analytics_4",
+            evidence_id="ev_ga4_ready_conversion",
+            dimensions={
+                "landing_page": "/oferta/",
+                "source_medium": "google / organic",
+                "campaign_name": "(organic)",
+            },
+        ),
+    ]
+
+    payload = build_ga4_diagnostics(tactical_items=[], actions=[], metric_facts=facts)
+
+    assert payload.conversion_readiness_contract.status == "ready"
+    assert payload.conversion_readiness_contract.conversion_like_metric_count == 2
+    assert "Brak metryk konwersji" not in payload.operator_summary.summary
+    assert "metryki konwersji" in payload.operator_summary.summary
+    assert "ROAS" in payload.operator_summary.blocked_claims
+
+
 def test_ga4_diagnostics_preserves_dimensioned_landing_facts_after_aggregate_noise(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -3965,7 +4019,7 @@ def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
     )
     monkeypatch.setattr(
         "wilq.briefing.daily_runtime.build_tactical_queue",
-        lambda: empty_tactical_queue,
+        lambda **_kwargs: empty_tactical_queue,
     )
 
     response = client.get("/api/dashboard/command-center")
@@ -4037,7 +4091,7 @@ def test_command_center_ga4_uses_visible_decision_cap(
     )
     monkeypatch.setattr(
         "wilq.briefing.daily_runtime.build_tactical_queue",
-        lambda: TacticalQueueResponse(strict_instruction="empty tactical queue"),
+        lambda **_kwargs: TacticalQueueResponse(strict_instruction="empty tactical queue"),
     )
 
     response = client.get("/api/dashboard/command-center")
@@ -10547,6 +10601,11 @@ def test_ga4_vendor_read_uses_run_report(
             "screenPageViews",
             "eventCount",
             "engagementRate",
+            "keyEvents",
+            "ecommercePurchases",
+            "purchaseRevenue",
+            "totalRevenue",
+            "transactions",
         ]
         assert [dimension["name"] for dimension in body["dimensions"]] == [
             "landingPagePlusQueryString",
@@ -10568,6 +10627,11 @@ def test_ga4_vendor_read_uses_run_report(
                     {"name": "screenPageViews"},
                     {"name": "eventCount"},
                     {"name": "engagementRate"},
+                    {"name": "keyEvents"},
+                    {"name": "ecommercePurchases"},
+                    {"name": "purchaseRevenue"},
+                    {"name": "totalRevenue"},
+                    {"name": "transactions"},
                 ],
                 "rows": [
                     {
@@ -10582,7 +10646,12 @@ def test_ga4_vendor_read_uses_run_report(
                             {"value": "50"},
                             {"value": "75"},
                             {"value": "0.62"},
-                        ]
+                            {"value": "3"},
+                            {"value": "1"},
+                            {"value": "125.50"},
+                            {"value": "150.75"},
+                            {"value": "1"},
+                        ],
                     }
                 ],
             },
@@ -10602,6 +10671,11 @@ def test_ga4_vendor_read_uses_run_report(
     assert result.metric_summary["screen_page_views"] == 50
     assert result.metric_summary["event_count"] == 75
     assert result.metric_summary["engagement_rate"] == 0.62
+    assert result.metric_summary["key_events"] == 3
+    assert result.metric_summary["ecommerce_purchases"] == 1
+    assert result.metric_summary["purchase_revenue"] == 125.50
+    assert result.metric_summary["total_revenue"] == 150.75
+    assert result.metric_summary["transactions"] == 1
     assert result.metric_facts[0].name == "active_users"
     assert result.metric_facts[0].value == 20
     assert result.metric_facts[0].dimensions == {
@@ -10609,6 +10683,12 @@ def test_ga4_vendor_read_uses_run_report(
         "source_medium": "google / cpc",
         "campaign_name": "PMax odpady",
     }
+    facts_by_name = {fact.name: fact for fact in result.metric_facts}
+    assert facts_by_name["key_events"].value == 3
+    assert facts_by_name["ecommerce_purchases"].value == 1
+    assert facts_by_name["purchase_revenue"].value == 125.50
+    assert facts_by_name["total_revenue"].value == 150.75
+    assert facts_by_name["transactions"].value == 1
 
 
 def test_google_first_party_vendor_reads_route_through_refresh_endpoint(

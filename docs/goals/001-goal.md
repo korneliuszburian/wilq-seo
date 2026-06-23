@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 23:03 CEST.
+Last updated: 2026-06-23 23:19 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -63,6 +63,58 @@ becoming dashboard copy, skill prose or test theater:
 6. **Eval and release gates**: `scripts/**`, `tests/**`, `docs/evals/**` prove
    contracts, evidence, Polish output, safety and no invented metrics.
 
+## Current Thematic Stack Assessment
+
+Use these workstreams to pick the next slice. Do not reopen a ready item unless
+fresh API/browser proof shows a regression.
+
+1. **Acquisition/source proof**
+   - Ready: Google Ads OAuth/customer selection and live campaign/search-term
+     reads; Merchant aggregate issues plus product sample readiness; GSC query
+     pages; WordPress inventory matching for current Ekologus URLs; Localo
+     aggregate visibility, rankings, GBP visibility, competitor visibility and
+     reviews; GA4 behavior/landing facts plus key-event/ecommerce/revenue
+     metric facts.
+   - External blockers: Google Ads Keyword Planner is blocked by developer
+     token approval, not missing `.env`; Ads change-history may be empty for a
+     chosen window; Localo `local_tasks` must stay blocked unless a
+     side-effect-free task read exists.
+   - Real gaps: Ads pacing/recommendation/impression-share decision context,
+     Ahrefs granular URL/query/backlink gap evidence and cross-source joins
+     that prove business decisions rather than isolated facts. GA4 still blocks
+     ROAS/profitability/conversion-drop verdicts without cost, attribution and
+     history context even though conversion/ecommerce metrics are now readable.
+2. **Decision contracts**
+   - Ready: core diagnostics, tactical queue, marketing brief, command-center
+     decisions and ActionObject surfaces share WILQ API contracts.
+   - Real gaps: one shared daily decision view-model, stable per-domain queues,
+     explicit freshness/ready/blocked semantics and ranking that favors
+     marketer value over connector readiness.
+3. **Action safety**
+   - Ready: demo-safe prepare/review ActionObjects for Ads, Merchant, Content,
+     GA4 and Localo with blocked apply state where required.
+   - Real gaps: apply path contracts with `dry_run -> preview -> confirm ->
+     audit`, SafetyLimits, partial-failure handling, and write-specific guards
+     for Ads, Merchant, Localo/GBP and social publishing.
+4. **Codex skill layer**
+   - Ready: 12 WILQ skills have API/evidence/Polish/safety smoke and
+     non-interactive eval coverage.
+   - Real gaps: decision-quality evals, semantic reference audit, practical
+     dashboard prompts and tighter context packs for each domain.
+5. **Dashboard/product UI**
+   - Ready: strong demo path exists across command center, Merchant, Content,
+     Ads, GA4, Localo and action details.
+   - Real gaps: route-by-route marketer audit, shared data boundaries to avoid
+     repeated heavy aggregation, removal of leftover technical/meta cards, and
+     targeted extraction of large frontend modules only where it improves
+     velocity/reviewability.
+6. **Testing/release**
+   - Ready: broad `scripts/verify.sh`, focused API/dashboard tests, skill
+     smokes/evals and hygiene/security gates exist.
+   - Real gaps: fixture-vs-live smoke split, smaller pre-demo gate, production
+     readiness checks and operational alerts for stale contracts, missing facts,
+     unsafe apply attempts and secret leakage.
+
 ## Active Demo Backlog
 
 Finish these before claiming the Ekologus demo is done:
@@ -90,26 +142,30 @@ Finish these before claiming the Ekologus demo is done:
      forecast/audience size, budget pacing, change-history impact context,
      campaign recommendations with safety, impression-share/pacing evidence,
      custom segment apply/audit and negative keyword apply/audit.
-   - Merchant remaining source contracts: row-level/product-level payloads where
-     available, product performance joins with Ads/GA4 when evidence exists,
-     supplemental-feed candidate contracts and price-impact snapshots. Do not
-     claim approval restoration, revenue recovery or unique SKU fixes from
-     aggregate issue counts.
-   - GA4 remaining source contracts: conversion/key-event readiness, ecommerce
-     and campaign-to-landing quality evidence before ROAS/revenue/profitability
-     claims.
+   - Merchant current source state: aggregate issue contracts and product
+     sample readiness are available for review-only queues. Remaining Merchant
+     work is deeper product performance joins with Ads/GA4, supplemental-feed
+     candidate contracts, price-impact snapshots and richer payload previews
+     where the vendor API exposes safe read-only details. Do not claim approval
+     restoration, revenue recovery or unique SKU fixes from aggregate issue
+     counts.
+   - GA4 current source state: live Data API read now requests and stores
+     `keyEvents`, `ecommercePurchases`, `purchaseRevenue`, `totalRevenue` and
+     `transactions` with landing/source/campaign dimensions. Current live proof
+     `refresh_google_analytics_4_6acb3a6c9be8` completed and `/api/ga4/diagnostics`
+     reports `conversion_readiness_contract.status=ready` with no missing read
+     contracts. ROAS, profitability, conversion-drop and attribution verdicts
+     remain blocked until cost, history and attribution context exists.
    - Add source-contract slices in this order:
      1. Keep Localo `local_tasks` blocked unless Localo exposes a
         side-effect-free task read. Do not call task endpoints that generate
         new tasks.
-     2. Merchant row-level proof where available: sample product IDs/titles,
-        issue context, payload preview boundaries and freshness status.
-     3. Ads optimizer evidence: budget pacing, recommendation safety,
+     2. Ads optimizer evidence: budget pacing, recommendation safety,
         impression-share context, approved Keyword Planner readiness and
         change-history windows.
-     4. GA4 commerce/conversion readiness: key events, ecommerce revenue
-        availability, campaign-to-landing quality and tracking blockers.
-     5. Ahrefs/content-gap enrichment only where API evidence is granular
+     3. Merchant deepening: product performance joins, supplemental-feed
+        candidates, price-impact snapshots and richer read-only previews.
+     4. Ahrefs/content-gap enrichment only where API evidence is granular
         enough to support URL/query/backlink decisions.
 
 2. **Decision API and view-model quality**
@@ -287,10 +343,12 @@ Finish these before claiming the Ekologus demo is done:
    skill/eval quality -> dashboard usefulness/performance -> release/live-test
    hardening.
 2. Next concrete slice should be one of:
-   - Localo `gbp_visibility` / `competitor_visibility` / `local_tasks` research
-     and read-only contract if the MCP/API exposes it.
-   - Ads Keyword Planner/developer-token readiness and budget/change-history
-     context if Google API state allows it.
+   - Ads budget pacing, recommendation safety, impression-share context or
+     change-history window handling; keep Keyword Planner as developer-token
+     readiness until Google approval changes.
+   - Merchant deepening beyond current product samples: performance joins,
+     supplemental-feed candidates, price-impact snapshots or safer product
+     preview boundaries.
    - Semantic skill-reference audit where references are still carrying
      product behavior instead of API contracts.
    - Dashboard performance/shared daily view-model if command-center latency or

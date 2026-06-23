@@ -12,7 +12,21 @@ from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
 GA4_READONLY_SCOPE = "https://www.googleapis.com/auth/analytics.readonly"
 GA4_API_BASE = "https://analyticsdata.googleapis.com/v1beta"
-GA4_METRICS = ("activeUsers", "sessions", "screenPageViews", "eventCount", "engagementRate")
+GA4_BEHAVIOR_METRICS = (
+    "activeUsers",
+    "sessions",
+    "screenPageViews",
+    "eventCount",
+    "engagementRate",
+)
+GA4_CONVERSION_METRICS = (
+    "keyEvents",
+    "ecommercePurchases",
+    "purchaseRevenue",
+    "totalRevenue",
+    "transactions",
+)
+GA4_METRICS = (*GA4_BEHAVIOR_METRICS, *GA4_CONVERSION_METRICS)
 GA4_DIMENSIONS = (
     "landingPagePlusQueryString",
     "sessionSourceMedium",
@@ -143,6 +157,11 @@ def _summarize_run_report_response(
             "screen_page_views": int(totals.get("screenPageViews", 0.0)),
             "event_count": int(totals.get("eventCount", 0.0)),
             "engagement_rate": round(totals.get("engagementRate", 0.0), 6),
+            "key_events": int(totals.get("keyEvents", 0.0)),
+            "ecommerce_purchases": int(totals.get("ecommercePurchases", 0.0)),
+            "purchase_revenue": round(totals.get("purchaseRevenue", 0.0), 2),
+            "total_revenue": round(totals.get("totalRevenue", 0.0), 2),
+            "transactions": int(totals.get("transactions", 0.0)),
         },
         metric_facts,
     )
@@ -207,6 +226,10 @@ def _snake_case_ga4_metric(value: str) -> str:
         "screenPageViews": "screen_page_views",
         "eventCount": "event_count",
         "engagementRate": "engagement_rate",
+        "keyEvents": "key_events",
+        "ecommercePurchases": "ecommerce_purchases",
+        "purchaseRevenue": "purchase_revenue",
+        "totalRevenue": "total_revenue",
     }
     return mapping.get(value, value)
 

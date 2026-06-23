@@ -85,6 +85,20 @@ Stan produktu:
   reports latest GA4 vendor_read within the 48h freshness window. GA4 still
   blocks conversion/revenue/ROAS claims until conversion/key-event/ecommerce
   contracts exist.
+- Goal 001 now has a thematic stack assessment: acquisition/source proof,
+  decision contracts, action safety, Codex skills, dashboard/UI and
+  testing/release. Current source triage: Merchant product sample readiness and
+  Localo GBP/competitor/reviews/rankings are ready for review-only decisions;
+  the nearest source gaps are now Ads optimizer context, Merchant deepening,
+  Ahrefs granular gaps and cross-source decision joins.
+- GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
+  stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
+  `total_revenue` and `transactions` with landing/source/campaign dimensions.
+  Live proof `refresh_google_analytics_4_6acb3a6c9be8` completed; diagnostics
+  and `wilq-ga4-analyst` context-pack show
+  `conversion_readiness_contract.status=ready`, no missing read contracts, and
+  blocked ROAS/profitability/conversion-drop claims until cost/history/
+  attribution context exists.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
@@ -105,9 +119,9 @@ Stan produktu:
      visibility aggregate read contracts.
    - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
      Localo tasks blocked unless a side-effect-free read exists.
-   - Source-contract queue: Merchant row-level payload proof, Ads
-     pacing/recommendations/Keyword Planner/change history context, GA4
-     conversion/ecommerce readiness and Ahrefs granular gap enrichment.
+   - Source-contract queue: Ads pacing/recommendations/impression-share/change
+     history context, Merchant product-performance/supplemental-feed/
+     price-impact deepening and Ahrefs granular gap enrichment.
    - Ads remaining gaps are not OAuth: Keyword Planner is blocked by developer
      token approval, change history has no rows in the current window, and
      deeper optimizer value still needs pacing, recommendations safety, forecast
@@ -175,8 +189,8 @@ Stan produktu:
    safety -> Codex skill/eval quality -> dashboard usefulness/performance ->
    release/live-test hardening.
 2. Next concrete slice should come from live proof: Localo missing read
-   contracts, Ads optimizer blockers, semantic skill-reference audit or shared
-   daily view-model/cache.
+   `local_tasks` if a read-only contract exists, Ads optimizer blockers,
+   semantic skill-reference audit or shared daily view-model/cache.
 3. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

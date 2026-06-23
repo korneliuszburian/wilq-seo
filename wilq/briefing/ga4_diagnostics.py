@@ -32,6 +32,7 @@ GA4_METRIC_FACT_LIMIT = 2000
 GA4_STALE_AFTER_HOURS = 48
 GA4_CONVERSION_METRIC_NAMES = {
     "conversions",
+    "ecommerce_purchases",
     "key_events",
     "purchase_revenue",
     "total_revenue",
@@ -158,12 +159,12 @@ def _operator_summary(
         if freshness_assessment.requires_refresh
         else ""
     )
+    conversion_note = _operator_conversion_note(conversion_readiness_contract)
     return Ga4OperatorSummary(
         title="Co marketer ma sprawdzić teraz w jakości ruchu",
         summary=(
             "WILQ pokazuje grupy ruchu do kontroli landingów, źródeł i kampanii. "
-            "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, "
-            "revenue, spadku konwersji ani winie kampanii."
+            f"{conversion_note}"
             f"{freshness_note}"
         ),
         next_step=(
@@ -202,6 +203,19 @@ def _operator_summary(
                 *conversion_readiness_contract.blocked_claims,
             ]
         ),
+    )
+
+
+def _operator_conversion_note(contract: Ga4ConversionReadinessContract) -> str:
+    if contract.status == "ready":
+        return (
+            "WILQ ma metryki konwersji/key events w evidence, ale ROAS, "
+            "profitability, spadek konwersji i wina kampanii nadal wymagają "
+            "osobnych dowodów oraz kontekstu kosztów, historii i atrybucji."
+        )
+    return (
+        "Brak metryk konwersji oznacza, że nie wolno wyciągać wniosków o ROAS, "
+        "revenue, spadku konwersji ani winie kampanii."
     )
 
 
