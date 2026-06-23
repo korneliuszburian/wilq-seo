@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 18:04 CEST.
+Last updated: 2026-06-23 18:10 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -328,6 +328,21 @@ ROAS, targeting-applied and campaign-performance claims until
 forecast/audience-size and apply-safety contracts exist. The smoke expectation
 was aligned with the Polish API wording, not with old English workaround
 phrases.
+
+Completed at 2026-06-23 18:10 CEST:
+`wilq-daily-command` cross-surface eval completed. The eval case now requires
+`/command-center`, `daily_decisions`, `primary_next_step`, `/merchant`,
+`/content-planner`, `/ga4`, `/ads-doctor`, and forbids social draft
+ActionObjects plus `act_review_localo_visibility_facts` as daily action
+candidates. Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260623T161009Z/wilq-daily-command/result.json`
+with `pl-PL`, `api_used=true`, `blocked=false`,
+`operator_usefulness_score=5`, no safety findings and all daily source
+connectors in context. The result uses Merchant, Content, GA4 and Ads as the
+core operating loop, validates `act_review_merchant_feed_issues`,
+`act_prepare_content_refresh_queue` and `act_review_ga4_tracking_quality`,
+keeps Ads review-only through `act_prepare_ads_campaign_review_queue`, and
+explicitly says Localo was not promoted as the main daily task.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

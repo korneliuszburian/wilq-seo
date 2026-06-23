@@ -25,6 +25,65 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-daily-command cross-surface eval
+
+Purpose:
+
+- Prove that `wilq-daily-command` uses the same daily view-model as the
+  dashboard: `/api/dashboard/command-center`, `/api/marketing/brief` and the
+  skill-scoped context-pack.
+- Require the response to use canonical `daily_decisions`, `primary_next_step`
+  and the four core daily routes: `/merchant`, `/content-planner`, `/ga4` and
+  `/ads-doctor`.
+- Prevent social draft ActionObjects and Localo review ActionObjects from being
+  promoted as main daily action candidates.
+
+Commands:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run ruff check tests/test_codex_skill_eval_cases.py
+uv run python -m json.tool docs/evals/cases/wilq-skill-eval-cases.json
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T161009Z/wilq-daily-command/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors=["google_ads","google_search_console","google_analytics_4","google_merchant_center","ahrefs","localo","wordpress_ekologus","wordpress_sklep"]`
+- Recommendations cover Merchant, Content, GA4 and Ads with real metric tiles
+  from Command Center evidence.
+- `action_candidates` include validated
+  `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue` and
+  `act_review_ga4_tracking_quality`, plus review-only
+  `act_prepare_ads_campaign_review_queue`.
+- The final JSON includes `/command-center`, `daily_decisions`,
+  `primary_next_step`, `/merchant`, `/content-planner`, `/ga4` and
+  `/ads-doctor`.
+- `Localo nie zostało wypromowane`: `act_review_localo_visibility_facts` and
+  social draft ActionObjects are not present in action candidates.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- Daily Command is now a useful cross-surface operating loop, not a registry
+  dump. It presents Merchant first, then Content, GA4 as blocked/review-only
+  and Ads as review-only without apply.
+- Localo can exist in context as configured evidence, but the daily skill must
+  not promote it as the main task unless the canonical `daily_decisions` view
+  includes it.
+
 ## 2026-06-23 - wilq-custom-segments review-only decision eval
 
 Purpose:

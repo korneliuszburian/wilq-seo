@@ -234,6 +234,35 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "act_prepare_facebook_social_drafts",
             },
         },
+        "wilq-daily-command": {
+            "surface_path": "/command-center",
+            "terms": {
+                "Plan działań",
+                "action_plan",
+                "daily_decisions",
+                "primary_next_step",
+                "/merchant",
+                "/content-planner",
+                "/ga4",
+                "/ads-doctor",
+                "Merchant",
+                "Content",
+                "GA4",
+                "Ads",
+                "Localo nie zostało wypromowane",
+            },
+            "action_ids": {
+                "act_review_merchant_feed_issues",
+                "act_prepare_content_refresh_queue",
+                "act_review_ga4_tracking_quality",
+                "act_prepare_ads_campaign_review_queue",
+            },
+            "validated_action_ids": {
+                "act_review_merchant_feed_issues",
+                "act_prepare_content_refresh_queue",
+                "act_review_ga4_tracking_quality",
+            },
+        },
     }
 
     for skill, contract in expected.items():
@@ -292,6 +321,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     daily_case = cases["wilq-daily-command"]
     assert "localo" in daily_case["expected_connectors"]
     assert "localo" not in daily_case["required_source_connectors"]
+    assert "act_review_localo_visibility_facts" in daily_case["forbidden_action_ids"]
+    assert "act_prepare_linkedin_social_drafts" in daily_case["forbidden_action_ids"]
+    assert "act_prepare_facebook_social_drafts" in daily_case["forbidden_action_ids"]
     assert set(daily_case["required_source_connectors"]) <= set(
         daily_case["expected_connectors"]
     )
@@ -339,13 +371,19 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     for skill in route_skills:
         skill_root = Path(".agents/skills") / skill
         skill_doc = (skill_root / "SKILL.md").read_text(encoding="utf-8")
-        smoke_script = (skill_root / "scripts" / "smoke_skill_contract.py").read_text(
-            encoding="utf-8"
+        smoke_script_name = (
+            "smoke_context_pack.py"
+            if skill == "wilq-daily-command"
+            else "smoke_skill_contract.py"
         )
+        smoke_script = (skill_root / "scripts" / smoke_script_name).read_text(encoding="utf-8")
 
         assert "GET /api/marketing/brief" in skill_doc
         assert 'brief = request_json(args.api_base, "GET", "/api/marketing/brief")' in smoke_script
-        assert '"brief_items": brief_items' in smoke_script
+        if skill == "wilq-daily-command":
+            assert '"brief_items": compact_brief_items(brief)' in smoke_script
+        else:
+            assert '"brief_items": brief_items' in smoke_script
 
     ads_skill_doc = Path(".agents/skills/wilq-ads-doctor/SKILL.md").read_text(
         encoding="utf-8"

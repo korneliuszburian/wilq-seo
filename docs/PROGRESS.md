@@ -39,7 +39,23 @@ Stan produktu:
 
 ## Last Done
 
-1. `wilq-custom-segments` review-only decision eval, 2026-06-23.
+1. `wilq-daily-command` cross-surface eval, 2026-06-23.
+   Daily Command now has a stricter cross-surface eval proving that Codex uses
+   `/api/dashboard/command-center`, `/api/marketing/brief` and the daily
+   context-pack as one product surface. Non-interactive eval passed at
+   `.local-lab/evals/codex-skill/20260623T161009Z/wilq-daily-command/result.json`.
+   Result: `blocked=false`, `pl-PL`, `api_used=true`,
+   `operator_usefulness_score=5`, no safety findings. The response uses
+   `daily_decisions`, `primary_next_step`, `/merchant`, `/content-planner`,
+   `/ga4` and `/ads-doctor`; it gives Merchant, Content, GA4 and Ads decisions
+   with real metric tiles. It validates
+   `act_review_merchant_feed_issues`, `act_prepare_content_refresh_queue` and
+   `act_review_ga4_tracking_quality`; Ads is review-only through
+   `act_prepare_ads_campaign_review_queue`. Social draft ActionObjects and
+   `act_review_localo_visibility_facts` are explicitly forbidden as daily
+   action candidates.
+
+2. `wilq-custom-segments` review-only decision eval, 2026-06-23.
    Custom Segments now has current proof that Codex can use
    `ads_diagnostics.custom_segments_read_contract` as a review queue without
    inventing audience terms. Non-interactive eval passed at
@@ -53,7 +69,7 @@ Stan produktu:
    blocks audience size, ROAS, targeting-applied and campaign-performance
    claims until forecast/audience-size and apply-safety contracts exist.
 
-2. `wilq-content-strategist` freshness-aware eval, 2026-06-23.
+3. `wilq-content-strategist` freshness-aware eval, 2026-06-23.
    Content Strategist now has a stricter eval that requires freshness/stale
    handling, not only valid evidence IDs. Non-interactive eval passed at
    `.local-lab/evals/codex-skill/20260623T155420Z/wilq-content-strategist/result.json`.
@@ -66,7 +82,7 @@ Stan produktu:
    `inventory_check_before_create`, and treats Ahrefs gaps as a separate
    discovery backlog. The eval case now requires `freshness` and `stale`.
 
-3. `wilq-localo-operator` partial-evidence eval, 2026-06-23.
+4. `wilq-localo-operator` partial-evidence eval, 2026-06-23.
    Localo skill now has current proof that Localo is not a simple access
    blocker anymore. Live smoke completed a read-only Localo refresh and showed
    `access_ready`, `mcp_initialize_status=200`, `localo_read_contract_count=3`,
@@ -82,7 +98,7 @@ Stan produktu:
    paths and local visibility uplift remain blocked until WILQ exposes those
    contracts.
 
-4. `wilq-campaign-builder` landing-context eval, 2026-06-23.
+5. `wilq-campaign-builder` landing-context eval, 2026-06-23.
    Campaign Builder context-pack now fills `content_landing_context` from
    `/api/content/diagnostics.decision_queue` before falling back to raw metric
    facts. Live proof after stack restart: `live_data_available=true`,
@@ -100,7 +116,7 @@ Stan produktu:
    explicitly tells Codex to use landing candidates before building
    `campaign_candidates`.
 
-5. `wilq-demand-gen-operator` blocked readiness eval, 2026-06-23.
+6. `wilq-demand-gen-operator` blocked readiness eval, 2026-06-23.
    Demand Gen eval is now explicit that the current correct state is a
    blocker/review-only workflow, not a launch or migration recommendation.
    The eval case requires `expected_blocked=true` and keeps blocked claims
@@ -267,7 +283,9 @@ Stan produktu:
   visibility, local tasks, write/apply and local visibility uplift until those
   exact read/write contracts exist.
 - Skill evals prove API usage, Polish and evidence shape for many routes. The
-  newest Custom Segments eval proves review-only segment candidates from real
+  newest Daily Command eval proves the cross-surface operating loop from
+  `command-center`, `marketing_brief` and context-pack; Custom Segments eval
+  proves review-only segment candidates from real
   Ads `source_terms` while blocking audience size and performance claims;
   Content Strategist eval proves freshness-aware content decisions from
   `content_diagnostics.decision_queue`; Localo eval proves partial Localo facts
@@ -285,13 +303,14 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Run the next high-value Codex skill eval against current API contracts and
-   record whether it produces real decisions, not only schema-valid output.
-   Recommended next skill: `wilq-daily-command` as the cross-surface daily
-   operator proof, or `wilq-ads-doctor` again after the next Ads API contract
-   slice, because Custom Segments, Content Strategist, Campaign Builder and
-   Localo now have current decision-quality proofs.
-2. If an eval exposes reasoning gaps, fix typed API/dashboard contracts first,
-   not skill references.
-3. Keep focused verification. Use full `scripts/verify.sh` only for final
+1. Do a compact all-skill coverage audit: list the 12 WILQ skills, latest eval
+   artifact, usefulness score and remaining blocker type. This should be a
+   short table, not another huge ledger.
+2. Move from skill proof back into product value: choose the next API/dashboard
+   slice that makes the demo stronger, likely Ads business-context guardrails,
+   Ads apply-preview safety, GA4 tracking-quality detail or Merchant product
+   payload preview.
+3. If a future eval exposes reasoning gaps, fix typed API/dashboard contracts
+   first, not skill references.
+4. Keep focused verification. Use full `scripts/verify.sh` only for final
    handoff or broad cross-surface changes.
