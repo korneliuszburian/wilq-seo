@@ -28,6 +28,7 @@ from wilq.briefing.ads_diagnostics import (
     build_ads_diagnostics,
 )
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
+from wilq.briefing.marketing_brief import build_marketing_brief
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import refresh_google_ads_campaign_summary
 from wilq.connectors.google_analytics_4.client import refresh_ga4_behavior_summary
@@ -59,6 +60,7 @@ from wilq.schemas import (
     ConnectorStatus,
     ConnectorStatusValue,
     ConnectorSummary,
+    DailyDecision,
     FreshnessState,
     MarketingBrief,
     MetricFact,
@@ -2805,19 +2807,18 @@ def test_marketing_brief_exposes_metric_backed_prepare_actions(
     response = client.get("/api/marketing/brief")
     assert response.status_code == 200
     brief = response.json()
-    metric_items = {
-        item["source_connectors"][0]: item
-        for section in brief["sections"]
-        if section["id"] == "what_we_know"
-        for item in section["items"]
-        if item["source_connectors"]
-    }
     for connector_id in (
         "google_merchant_center",
         "google_analytics_4",
         "google_search_console",
     ):
-        item = metric_items[connector_id]
+        item = next(
+            item
+            for section in brief["sections"]
+            if section["id"] == "what_we_know"
+            for item in section["items"]
+            if connector_id in item["source_connectors"]
+        )
         assert item["evidence_ids"]
         assert item["summary"]
     action_items = {
@@ -11376,6 +11377,133 @@ def test_codex_context_pack_contains_no_metric_invention_instruction(
     serialized = json.dumps(response.json())
     assert "must not invent metrics" in serialized
     assert "sk-supersecretvalue1234567890" not in serialized
+
+
+def test_marketing_brief_dedupes_command_center_blockers() -> None:
+    blocked_decision = DailyDecision(
+        id="decision_review_ga4_landing_quality",
+        title="GA4: pomiar i jakość ruchu do kontroli",
+        route="/ga4",
+        status="blocked",
+        priority=14,
+        co_widzimy="GA4 ma problemy pomiaru.",
+        dlaczego_to_ma_znaczenie="Brak kontraktu na ROAS i revenue.",
+        bezpieczny_next_step="Otwórz /ga4 i waliduj review GA4.",
+        source_connectors=["google_analytics_4"],
+        evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
+        action_ids=["act_review_ga4_tracking_quality"],
+        blocked_claims=["ROAS", "revenue"],
+        risk=ActionRisk.low,
+    )
+    operator_brief_item = CommandCenterBriefItem(
+        id="daily_ga4_landing_quality",
+        title="GA4: pomiar i jakość ruchu do kontroli",
+        route="/ga4",
+        status="blocked",
+        priority=14,
+        summary="GA4 ma problemy pomiaru.",
+        next_step="Otwórz /ga4 i waliduj review GA4.",
+        source_connectors=["google_analytics_4"],
+        evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
+        action_ids=["act_review_ga4_tracking_quality"],
+        blocked_claims=["ROAS", "revenue"],
+        risk=ActionRisk.low,
+    )
+    command_center = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        primary_next_step="Otwórz /ga4.",
+        blocker_count=1,
+        daily_decisions=[blocked_decision],
+        operator_brief=[operator_brief_item],
+        connector_summary=ConnectorSummary(total=0, configured=0, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[],
+        codex_operator_status={},
+    )
+
+    brief = build_marketing_brief(
+        connectors=[],
+        refresh_runs=[],
+        actions=[],
+        command_center=command_center,
+    )
+
+    blockers = next(section for section in brief.sections if section.id == "what_blocks_us").items
+    assert len(blockers) == 1
+    assert blockers[0].title == "GA4: pomiar i jakość ruchu do kontroli"
+
+
+def test_marketing_brief_localo_metric_headline_is_marketer_friendly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class LocaloMetricStore:
+        def list_metric_facts_by_connector(
+            self,
+            connector_ids: list[str],
+            limit_per_connector: int,
+        ) -> dict[str, list[MetricFact]]:
+            assert connector_ids == ["localo"]
+            assert limit_per_connector > 0
+            return {
+                "localo": [
+                    MetricFact(
+                        name="localo_tracked_keyword_count",
+                        value=23,
+                        period="connector_refresh",
+                        source_connector="localo",
+                        evidence_id="ev_refresh_refresh_localo_test",
+                    ),
+                    MetricFact(
+                        name="localo_avg_visibility_current",
+                        value=53.1739,
+                        period="connector_refresh",
+                        source_connector="localo",
+                        evidence_id="ev_refresh_refresh_localo_test",
+                    ),
+                    MetricFact(
+                        name="localo_reviews_count",
+                        value=798,
+                        period="connector_refresh",
+                        source_connector="localo",
+                        evidence_id="ev_refresh_refresh_localo_test",
+                    ),
+                    MetricFact(
+                        name="localo_total_keyword_volume",
+                        value=69420,
+                        period="connector_refresh",
+                        source_connector="localo",
+                        evidence_id="ev_refresh_refresh_localo_test",
+                    ),
+                ]
+            }
+
+    monkeypatch.setattr("wilq.briefing.marketing_brief.metric_store", LocaloMetricStore)
+    connectors = [
+        ConnectorStatus(
+            id="localo",
+            label="Localo",
+            status=ConnectorStatusValue.configured,
+            configured=True,
+            missing_credentials=[],
+            freshness=FreshnessState(state="fresh"),
+            capabilities=ConnectorCapability(read=True),
+            health_check="configured",
+        )
+    ]
+
+    brief = build_marketing_brief(
+        connectors=connectors,
+        refresh_runs=[],
+        actions=[],
+    )
+
+    what_we_know = next(section for section in brief.sections if section.id == "what_we_know")
+    localo_item = next(item for item in what_we_know.items if item.source_connectors == ["localo"])
+    assert localo_item.title == "Localo: widoczność lokalna i opinie do review"
+    assert "localo_total_keyword_volume =" not in localo_item.title
+    assert "23" in localo_item.summary
+    assert "798" in localo_item.summary
 
 
 def test_codex_context_pack_embeds_marketing_brief_contract(

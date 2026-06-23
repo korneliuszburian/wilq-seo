@@ -39,6 +39,17 @@ Stan produktu:
 
 ## Last Done
 
+0. Marketing brief dedupe and Localo copy cleanup, 2026-06-23.
+   `/api/marketing/brief` no longer duplicates the GA4 blocker when the same
+   blocked daily decision is present both in daily decisions and operator brief.
+   Localo metric facts now render as a Polish review headline
+   `Localo: widoczność lokalna i opinie do review` with tracked keywords,
+   visibility and review counts, instead of a raw technical metric name such as
+   `localo_total_keyword_volume = 69420`. Live proof after
+   `scripts/local_stack.sh restart`: `what_blocks_us` has one GA4 blocker and
+   the Localo item shows `23 monitorowanych fraz`, `53.1739` average visibility
+   and `798 opinii`.
+
 0. Ads diagnostics ActionObject consistency, 2026-06-23.
    `/api/ads/diagnostics?view=summary` no longer emits
    `act_configure_ads_business_context` after the business context is already

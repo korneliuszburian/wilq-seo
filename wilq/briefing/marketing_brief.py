@@ -387,9 +387,30 @@ def _merge_items(
     secondary: list[MarketingBriefItem],
 ) -> list[MarketingBriefItem]:
     items_by_id = {item.id: item for item in primary}
+    semantic_keys = {_item_semantic_key(item) for item in primary}
     for item in secondary:
+        semantic_key = _item_semantic_key(item)
+        if semantic_key in semantic_keys:
+            continue
         items_by_id.setdefault(item.id, item)
+        semantic_keys.add(semantic_key)
     return sorted(items_by_id.values(), key=lambda item: item.priority)
+
+
+def _item_semantic_key(item: MarketingBriefItem) -> tuple[
+    str,
+    str,
+    tuple[str, ...],
+    tuple[str, ...],
+    tuple[str, ...],
+]:
+    return (
+        item.kind,
+        item.title,
+        tuple(sorted(item.source_connectors)),
+        tuple(sorted(item.action_ids)),
+        tuple(sorted(item.evidence_ids)),
+    )
 
 
 def _latest_metric_facts_by_identity(metric_facts: list[MetricFact]) -> list[MetricFact]:
@@ -680,6 +701,8 @@ def _recommendation_items(
 
 
 def _metric_headline(connector_id: str, facts: list[MetricFact]) -> str:
+    if connector_id == "localo":
+        return "Localo: widoczność lokalna i opinie do review"
     interesting = [fact for fact in facts if fact.name not in {"api", "connector_id"}]
     if not interesting:
         return f"{_connector_label(connector_id)}: zapisano metric facts"
@@ -688,10 +711,36 @@ def _metric_headline(connector_id: str, facts: list[MetricFact]) -> str:
 
 
 def _metric_summary(connector_id: str, facts: list[MetricFact]) -> str:
+    if connector_id == "localo":
+        return _localo_metric_summary(facts)
     sample = ", ".join(_metric_summary_parts(facts[:6])[:4])
     return (
         f"WILQ ma realne metric facts z connectora {_connector_label(connector_id)}: "
         f"{sample}. Każda metryka ma evidence ID."
+    )
+
+
+def _localo_metric_summary(facts: list[MetricFact]) -> str:
+    metrics = {fact.name: fact for fact in facts}
+    parts: list[str] = []
+    tracked_keywords = metrics.get("localo_tracked_keyword_count")
+    visibility = metrics.get("localo_avg_visibility_current")
+    reviews = metrics.get("localo_reviews_count")
+    replied_reviews = metrics.get("localo_reviews_replied_count")
+    if tracked_keywords is not None:
+        parts.append(f"{_format_value(tracked_keywords)} monitorowanych fraz")
+    if visibility is not None:
+        parts.append(f"średnia widoczność {_format_value(visibility)}")
+    if reviews is not None:
+        parts.append(f"{_format_value(reviews)} opinii")
+    if replied_reviews is not None:
+        parts.append(f"{_format_value(replied_reviews)} odpowiedzi na opinie")
+    if not parts:
+        parts = _metric_summary_parts(facts[:4])
+    return (
+        "WILQ ma realne Localo facts do review lokalnej widoczności: "
+        f"{', '.join(parts)}. To nie jest claim o wzroście pozycji, GBP performance "
+        "ani przewadze nad konkurencją bez osobnych kontraktów."
     )
 
 
@@ -723,6 +772,11 @@ def _metric_next_step(connector_id: str) -> str:
         return "Połącz inventory z GSC/GA4 i oznacz strony stale/refresh/merge/block."
     if connector_id == "ahrefs":
         return "Użyj Ahrefs jako kontekstu authority/gap, nie jako samodzielnej rekomendacji."
+    if connector_id == "localo":
+        return (
+            "Otwórz /localo i potraktuj fakty Localo jako review lokalnej "
+            "widoczności, nie apply."
+        )
     return "Użyj tych faktów w odpowiednim workflow i nie rozszerzaj ich poza evidence."
 
 

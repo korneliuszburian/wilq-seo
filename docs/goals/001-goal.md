@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 18:24 CEST.
+Last updated: 2026-06-23 18:43 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -378,6 +378,15 @@ optimizer readiness and decision queue to exist and validate through
 `act_configure_ads_business_context` 404, GREEN passed with 7 focused Ads API
 tests, Python ruff OK and mypy OK. Live proof after `scripts/local_stack.sh
 restart`: all Ads summary action IDs returned `200 valid`.
+
+2026-06-23 Marketing brief slop cleanup: `/api/marketing/brief` no longer
+duplicates the same GA4 blocker when it is present as both a blocked daily
+decision and an operator brief item. Localo metric facts now render as a Polish
+review item, not a raw technical metric headline:
+`Localo: widoczność lokalna i opinie do review`. Focused proof: RED/GREEN
+marketing brief contract tests, Python ruff OK, mypy OK. Live proof after
+`scripts/local_stack.sh restart`: `what_blocks_us` has one GA4 blocker; Localo
+shows `23 monitorowanych fraz`, average visibility `53.1739` and `798 opinii`.
 
 2026-06-23 Demand Gen diagnostics performance: `/api/demand-gen/diagnostics`
 and the `wilq-demand-gen-operator` context-pack no longer build full GA4
