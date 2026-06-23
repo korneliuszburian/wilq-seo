@@ -139,6 +139,105 @@ const adsActionFixture: ActionObject = {
   }
 };
 
+const contentActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_content",
+  title: "Przygotuj kolejkę odświeżenia treści ekologus.pl",
+  domain: "content",
+  connector: "wordpress_ekologus",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_gsc"],
+  human_diagnosis: "GSC i WordPress wskazują kandydatów content review.",
+  recommended_reason: "Przejrzyj brief i draft preview bez publikacji.",
+  payload: {
+    action_type: "content_refresh_queue",
+    preview_contract: "content_brief_preview_v1",
+    content_brief_preview: [
+      {
+        preview_contract: "content_brief_preview_v1",
+        candidate_id: "content_brief_gsc_bdo",
+        source_type: "gsc_query_page",
+        mode: "inventory_check",
+        topic: "bdo co to",
+        target_url: "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/",
+        wordpress_inventory_match: "missing",
+        decision_options: ["merge", "create", "block"],
+        metric_snapshot: {
+          queries: 1,
+          clicks: 4,
+          impressions: 4429,
+          ctr: 0.0009031384059607134,
+          average_position: 9.441183111311808
+        },
+        brief_goal:
+          "Sprawdź inventory i duplikaty przed briefem dla `bdo co to`. Bez potwierdzenia URL nie twórz nowej strony.",
+        brief_outline: [
+          {
+            section: "intent",
+            instruction: "Opisz intencję użytkownika dla `bdo co to`."
+          },
+          {
+            section: "cta",
+            instruction: "Dopasuj CTA do usługi Ekologus."
+          }
+        ],
+        required_validation: [
+          "wordpress_inventory_check",
+          "duplicate_or_cannibalization_check",
+          "human_confirm_before_wordpress_write"
+        ],
+        blocked_claims: ["lead uplift", "revenue impact", "automatic WordPress publish"],
+        source_connectors: ["google_search_console"],
+        evidence_ids: ["ev_refresh_gsc"],
+        apply_allowed: false,
+        api_mutation_ready: false,
+        destructive: false
+      },
+      ...Array.from({ length: 4 }, (_, index) => ({
+        preview_contract: "content_brief_preview_v1",
+        candidate_id: `content_brief_extra_${index}`,
+        source_type: "gsc_query_page",
+        mode: "inventory_check",
+        topic: `temat dodatkowy ${index}`,
+        target_url: `https://www.ekologus.pl/extra-${index}/`,
+        wordpress_inventory_match: "missing",
+        decision_options: ["merge", "create", "block"],
+        metric_snapshot: {
+          queries: 1,
+          clicks: index,
+          impressions: 100 + index
+        },
+        brief_goal: "Dodatkowy brief do testu limitu kart.",
+        required_validation: ["wordpress_inventory_check"],
+        blocked_claims: ["lead uplift"],
+        source_connectors: ["google_search_console"],
+        evidence_ids: ["ev_refresh_gsc"],
+        apply_allowed: false,
+        api_mutation_ready: false,
+        destructive: false
+      }))
+    ],
+    wordpress_draft_payload_preview: [
+      {
+        preview_contract: "wordpress_draft_payload_preview_v1",
+        candidate_id: "content_brief_gsc_bdo",
+        operation_type: "prepare_new_content_draft_review",
+        post_status: "draft",
+        topic: "bdo co to",
+        draft_payload: {
+          post_status: "draft",
+          post_title: "Brief: bdo co to",
+          post_excerpt_direction: "Sprawdź inventory i duplikaty przed briefem.",
+          content_blocks: []
+        },
+        apply_allowed: false,
+        api_mutation_ready: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 function mockFetch() {
   vi.stubGlobal(
     "fetch",
@@ -149,6 +248,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_ads")) {
         return Promise.resolve(Response.json(adsActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_content")) {
+        return Promise.resolve(Response.json(contentActionFixture));
       }
       return Promise.resolve(Response.json({}));
     })
@@ -219,6 +321,27 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Obecny budżet: 10 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Propozycja: brak/)).toBeInTheDocument();
     expect(screen.getByText(/Safety: blocked/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders content brief and WordPress draft preview without requiring raw JSON", async () => {
+    renderActionDetail("act_content");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj kolejkę odświeżenia treści ekologus.pl"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getAllByText("Brief treści do review").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Temat: bdo co to/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Tryb: inventory_check/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();
+    expect(screen.getByText(/Wyświetlenia: 4429/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Opcje: merge, create, block/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Walidacje: wordpress_inventory_check/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Draft WordPress do review")).toBeInTheDocument();
+    expect(screen.getByText(/Tytuł draftu: Brief: bdo co to/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 });

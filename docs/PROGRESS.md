@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard content ActionObject brief/draft preview, 2026-06-23.
+   `/actions/act_prepare_content_refresh_queue` now renders `content_brief_preview`
+   and `wordpress_draft_payload_preview` as marketer-reviewable cards above the
+   debug payload. The cards show topic, mode, target URL, GSC clicks/impressions,
+   decision options, required validations and a blocked WordPress draft preview
+   title. The shared Action detail preview selector now keeps at least one
+   WordPress draft card visible even when there are many content brief candidates.
+   Browser proof: `.local-lab/proof/dashboard/action-content-brief-preview.txt`.
+   Focused proof: dashboard Action detail route tests, dashboard typecheck and
+   dashboard lint. This does not publish WordPress content or unlock WordPress
+   mutations; it only exposes the existing review/draft contract.
+
 0. Dashboard Google Ads budget ActionObject preview, 2026-06-23.
    `/actions/act_prepare_ads_campaign_review_queue` now renders review-only
    Google Ads `budget_payload_preview` cards above the debug payload. The cards

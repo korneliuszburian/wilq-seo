@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:02 CEST.
+Last updated: 2026-06-23 20:12 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -139,6 +139,18 @@ This improves the Ads demo path without unlocking budget apply, CPA/ROAS
 verdicts, wasted-budget claims or campaign mutations. Focused proof: Action
 detail route tests, dashboard typecheck and browser proof
 `.local-lab/proof/dashboard/action-ads-budget-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:12 CEST: the same ActionObject detail
+route now renders content brief and WordPress draft previews from
+`content_brief_preview` and `wordpress_draft_payload_preview`.
+`/actions/act_prepare_content_refresh_queue` shows topic, URL, mode, GSC
+clicks/impressions, decision options, required validations and the blocked
+WordPress draft title as Polish review cards. The preview selector keeps a
+WordPress draft card visible even when many brief candidates exist. Raw payload
+stays under `Surowy payload debug`. This improves the content demo path without
+publishing WordPress content or unlocking WordPress mutations. Focused proof:
+Action detail route tests, dashboard typecheck, dashboard lint and browser
+proof `.local-lab/proof/dashboard/action-content-brief-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

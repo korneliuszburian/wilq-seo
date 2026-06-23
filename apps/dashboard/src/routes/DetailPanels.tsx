@@ -106,20 +106,18 @@ function ActionPayloadPreviewSummary({ action }: { action: ActionObject }) {
   }
   return (
     <div className="mb-4 grid gap-3">
-      {prioritizePayloadPreviewItems(previewItems)
-        .slice(0, 4)
-        .map((previewItem, index) => (
-          <PayloadPreviewCard
-            key={payloadPreviewKey(previewItem.item, index)}
-            previewItem={previewItem}
-          />
-        ))}
+      {visiblePayloadPreviewItems(previewItems).map((previewItem, index) => (
+        <PayloadPreviewCard
+          key={payloadPreviewKey(previewItem.item, index)}
+          previewItem={previewItem}
+        />
+      ))}
     </div>
   );
 }
 
 type PayloadPreviewItem = {
-  kind: "generic" | "budget";
+  kind: "generic" | "budget" | "contentBrief" | "wordpressDraft";
   item: Record<string, unknown>;
 };
 
@@ -132,12 +130,28 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "budget" as const, item }))
     : [];
-  return [...genericItems, ...budgetItems];
+  const contentBriefItems = Array.isArray(payload.content_brief_preview)
+    ? payload.content_brief_preview
+        .filter(isRecord)
+        .map((item) => ({ kind: "contentBrief" as const, item }))
+    : [];
+  const wordpressDraftItems = Array.isArray(payload.wordpress_draft_payload_preview)
+    ? payload.wordpress_draft_payload_preview
+        .filter(isRecord)
+        .map((item) => ({ kind: "wordpressDraft" as const, item }))
+    : [];
+  return [...genericItems, ...budgetItems, ...contentBriefItems, ...wordpressDraftItems];
 }
 
 function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }) {
   if (previewItem.kind === "budget") {
     return <BudgetPayloadPreviewCard item={previewItem.item} />;
+  }
+  if (previewItem.kind === "contentBrief") {
+    return <ContentBriefPreviewCard item={previewItem.item} />;
+  }
+  if (previewItem.kind === "wordpressDraft") {
+    return <WordPressDraftPreviewCard item={previewItem.item} />;
   }
   return <GenericPayloadPreviewCard item={previewItem.item} />;
 }
@@ -192,16 +206,96 @@ function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
   );
 }
 
+function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
+  const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Brief treści do review</h3>
+          <p className="mt-1 break-words text-xs text-slate-500">
+            {stringValue(item.target_url, stringValue(item.source_url, "brak URL"))}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Temat: {stringValue(item.topic, "brak")}</div>
+        <div>Tryb: {stringValue(item.mode, "brak")}</div>
+        <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
+        <div>Opcje: {asStringArray(item.decision_options).join(", ") || "brak"}</div>
+        <div>Cel briefu: {stringValue(item.brief_goal, "brak")}</div>
+        <div>
+          Kliknięcia: {formatNumber(metricSnapshot.clicks)}; Wyświetlenia:{" "}
+          {formatNumber(metricSnapshot.impressions)}
+        </div>
+        <div>
+          CTR: {formatPercent(metricSnapshot.ctr)}; Pozycja:{" "}
+          {formatNumber(metricSnapshot.average_position)}
+        </div>
+        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 3).join(", ")}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; publikacja:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) {
+  const draftPayload = isRecord(item.draft_payload) ? item.draft_payload : {};
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Draft WordPress do review</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.operation_type, "wordpress_draft_review")}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Temat: {stringValue(item.topic, "brak")}</div>
+        <div>Status wpisu: {stringValue(item.post_status, stringValue(draftPayload.post_status, "brak"))}</div>
+        <div>Tytuł draftu: {stringValue(draftPayload.post_title, "brak")}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function prioritizePayloadPreviewItems(items: PayloadPreviewItem[]) {
   return [...items].sort((left, right) => {
     if (left.kind !== right.kind) {
-      return left.kind === "budget" ? -1 : 1;
+      return payloadPreviewKindOrder(left.kind) - payloadPreviewKindOrder(right.kind);
     }
     const leftHasSamples = asStringArray(left.item.sample_product_ids).length > 0;
     const rightHasSamples = asStringArray(right.item.sample_product_ids).length > 0;
     if (leftHasSamples === rightHasSamples) return 0;
     return leftHasSamples ? -1 : 1;
   });
+}
+
+function visiblePayloadPreviewItems(items: PayloadPreviewItem[]) {
+  const sortedItems = prioritizePayloadPreviewItems(items);
+  const visibleItems = sortedItems.slice(0, 4);
+  const draftItem = sortedItems.find((item) => item.kind === "wordpressDraft");
+  if (draftItem && !visibleItems.some((item) => item.kind === "wordpressDraft")) {
+    visibleItems.splice(Math.max(visibleItems.length - 1, 0), 1, draftItem);
+  }
+  return visibleItems;
+}
+
+function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
+  if (kind === "budget") return 0;
+  if (kind === "contentBrief") return 1;
+  if (kind === "wordpressDraft") return 2;
+  return 3;
 }
 
 function PreviewValues({ label, values }: { label: string; values: string[] }) {
@@ -245,6 +339,23 @@ function formatMicrosAsPln(value: unknown) {
   }
   const plnValue = value / 1_000_000;
   return `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(plnValue)} PLN`;
+}
+
+function formatNumber(value: unknown) {
+  if (typeof value !== "number") {
+    return "brak";
+  }
+  return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 3 }).format(value);
+}
+
+function formatPercent(value: unknown) {
+  if (typeof value !== "number") {
+    return "brak";
+  }
+  return new Intl.NumberFormat("pl-PL", {
+    maximumFractionDigits: 2,
+    style: "percent"
+  }).format(value);
 }
 
 function stringValue(value: unknown, fallback: string) {
