@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 22:10 CEST.
+Last updated: 2026-06-23 22:24 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -48,12 +48,18 @@ regression.
 
 Finish these before claiming the Ekologus demo is done:
 
-1. **Localo beyond OAuth and aggregate facts**
-   - Current Localo diagnostics expose typed read-contract status:
-     `place_inventory`, `local_rankings` and `reviews` are ready;
-     `gbp_visibility`, `competitor_visibility` and `local_tasks` are missing.
-   - Add those missing typed read contracts before claiming GBP performance,
-     competitor visibility, local tasks, GBP writes or local visibility uplift.
+1. **Localo beyond aggregate read contracts**
+   - Current Localo diagnostics expose live aggregate facts and typed
+     read-contract status after a managed stack restart:
+     `live_data_available=true`, `visibility_fact_count=17`,
+     `act_review_localo_visibility_facts` ready, and `place_inventory`,
+     `local_rankings` and `reviews` ready.
+   - Remaining Localo work is narrower: add `gbp_visibility`,
+     `competitor_visibility` and `local_tasks` typed read contracts before
+     claiming GBP performance, competitor visibility, local task completion, GBP
+     writes or local visibility uplift.
+   - If Localo appears empty while `/api/metrics?connector_id=localo` has facts,
+     restart via `scripts/local_stack.sh restart` before changing product logic.
 
 2. **Skill/reference hygiene audit**
    - `scripts/skill_hygiene_check.py` now guards obvious hygiene failures:
@@ -107,8 +113,8 @@ Finish these before claiming the Ekologus demo is done:
 
 ## Immediate Next Tasks
 
-1. Continue with missing Localo read contracts, deeper semantic skill/reference
-   audit or remaining Ads optimizer value,
+1. Continue with missing Localo GBP/competitor/local task read contracts, deeper
+   semantic skill/reference audit or remaining Ads optimizer value,
    depending on the strongest remaining demo blocker in live API/browser proof.
 
 ## Stop Condition

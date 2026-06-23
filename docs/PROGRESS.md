@@ -61,10 +61,14 @@ Stan produktu:
   `/api/merchant/diagnostics` decision queue entries expose
   `merchant_feed_issue_review_preview_v1`; apply/API mutation/destructive flags
   stay false.
-- Localo diagnostics now expose typed `read_contract_statuses`. Live HTTP proof
-  after stack restart: `place_inventory`, `local_rankings` and `reviews` are
-  ready; `gbp_visibility`, `competitor_visibility` and `local_tasks` are
-  missing with explicit blocked claims.
+- Localo diagnostics now expose live aggregate facts and typed
+  `read_contract_statuses`. Live HTTP proof after managed stack restart:
+  `live_data_available=true`, `visibility_fact_count=17`,
+  `act_review_localo_visibility_facts` ready, `place_inventory`,
+  `local_rankings` and `reviews` ready; `gbp_visibility`,
+  `competitor_visibility` and `local_tasks` missing with explicit blocked
+  claims. If Localo appears empty while metric store has facts, restart the
+  managed stack before changing product logic.
 - Skill hygiene now has a deterministic gate: `scripts/skill_hygiene_check.py`
   runs from `scripts/quality.sh`, blocks `Goal 001`/workaround/bugfix/outdated
   prose, English safety headings, English `with mode=vendor_read` endpoint notes
@@ -89,9 +93,9 @@ Stan produktu:
 
 ## Active Gaps
 
-1. **Localo beyond OAuth and aggregate facts**
-   - Current Localo supports place inventory, local rankings and reviews as
-     typed read contracts.
+1. **Localo beyond aggregate read contracts**
+   - Current Localo supports live place inventory, local rankings and reviews as
+     typed aggregate read contracts.
    - Missing: GBP visibility, competitor visibility, local tasks, write/apply
      contracts and uplift claims.
 
@@ -114,5 +118,6 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Continue with missing Localo read contracts, deeper semantic skill/reference
-   audit or remaining Ads optimizer value based on live API/browser proof.
+1. Continue with missing Localo GBP/competitor/local task read contracts, deeper
+   semantic skill/reference audit or remaining Ads optimizer value based on live
+   API/browser proof.
