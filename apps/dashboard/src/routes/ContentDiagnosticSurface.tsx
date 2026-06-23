@@ -43,6 +43,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
 
   const data = diagnostics.data;
   const routeActions = (actions.data ?? []).filter((action) => data.action_ids.includes(action.id));
+  const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
   const latestStatuses = data.latest_refreshes.map(
     (refresh) => `${refresh.connector_id}: ${contentRefreshStatusLabel(refresh.status)}`
   );
@@ -60,8 +61,8 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Zapytania/URL" value={data.query_page_count} />
-          <MetricTile label="Dopasowania WP" value={data.matched_inventory_count} />
-          <MetricTile label="Dowody" value={data.evidence_ids.length} />
+          <MetricTile label="GSC↔WP" value={data.matched_inventory_count} />
+          <MetricTile label="Ahrefs↔WP" value={ahrefsWordPressOverlapCount} />
         </div>
       </div>
 
@@ -391,6 +392,7 @@ function contentBriefReviewRequest(preview: ContentBriefPreviewItem): ActionRevi
 
 function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
   const summary = data.operator_summary;
+  const ahrefsWordPressOverlapCount = contentAhrefsWordPressOverlapCount(data);
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
   const topDecisions = summary.top_decision_ids
     .map((decisionId) => decisionsById.get(decisionId))
@@ -415,7 +417,8 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Zapytania/URL" value={data.query_page_count} />
-          <MetricTile label="Dopasowania WP" value={data.matched_inventory_count} />
+          <MetricTile label="GSC↔WP" value={data.matched_inventory_count} />
+          <MetricTile label="Ahrefs↔WP" value={ahrefsWordPressOverlapCount} />
           <MetricTile label="Decyzje" value={data.decision_queue.length} />
         </div>
       </div>
@@ -463,6 +466,14 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
       </div>
     </section>
   );
+}
+
+function contentAhrefsWordPressOverlapCount(data: ContentDiagnosticsResponse) {
+  const ahrefsDecision = data.decision_queue.find(
+    (decision) => decision.decision_type === "review_ahrefs_gap_records"
+  );
+  const value = ahrefsDecision?.metric_tiles?.["WP overlap"];
+  return typeof value === "number" ? value : 0;
 }
 
 function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {

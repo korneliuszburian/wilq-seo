@@ -2675,6 +2675,15 @@ Aktualny maintenance:
     Focused proof passed: RED/GREEN Command Center Merchant API test, related
     Merchant tests, Python ruff OK and mypy OK.
 
+19. Content Planner WordPress overlap labeling, 2026-06-23 11:55 CEST.
+    `/content-planner` now separates WordPress overlap sources in top metrics:
+    `GSC↔WP` for GSC URL to WordPress inventory matches and `Ahrefs↔WP` for
+    Ahrefs topic overlap with WordPress inventory. Live browser proof shows
+    `0 GSC↔WP` and `6 Ahrefs↔WP`, removing the confusing generic
+    `Dopasowania WP` label that looked contradictory next to Ahrefs overlap
+    cards. Focused proof passed: RED/GREEN Content route test, dashboard lint
+    OK and dashboard typecheck OK.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only

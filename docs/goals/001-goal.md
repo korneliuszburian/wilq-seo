@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 11:40 CEST.
+Last updated: 2026-06-23 11:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -163,6 +163,12 @@ now uses the same grouped Merchant decision count as `/api/merchant/diagnostics`
 and `/merchant`. Live browser proof: Merchant card shows `decyzje=4`, not the
 old reporting-context count of 8. Focused proof: RED/GREEN Command Center
 Merchant API test, related Merchant tests, Python ruff OK and mypy OK.
+
+2026-06-23 Content Planner overlap labeling: `/content-planner` now separates
+`GSC↔WP` and `Ahrefs↔WP` top metrics instead of the ambiguous `Dopasowania WP`
+label. Live browser proof: `0 GSC↔WP` and `6 Ahrefs↔WP` render at the top of
+the route. Focused proof: RED/GREEN Content route test, dashboard lint OK and
+dashboard typecheck OK.
 
 2026-06-23 GA4 first-flow cleanup: `/ga4` no longer prints raw `ev_*`
 evidence IDs or raw `act_review_ga4_tracking_quality` in first-flow GA4

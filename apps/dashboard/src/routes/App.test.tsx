@@ -6432,6 +6432,9 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Content Planner" })).toBeInTheDocument()
     );
     expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
+    expect(screen.getAllByText("GSC↔WP").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Ahrefs↔WP").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
     expect(
