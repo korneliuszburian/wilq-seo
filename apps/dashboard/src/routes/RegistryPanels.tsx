@@ -196,7 +196,7 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
             <StatusBadge value={action.risk} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Dowody: {action.evidence_ids.join(", ")}</div>
+            <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>
             <div>Zdarzenia audytu: {action.audit_events.length}</div>
           </div>
           <ActionPayloadPreviewToggle
@@ -208,6 +208,10 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
       ))}
     </div>
   );
+}
+
+function formatEvidenceCount(count: number) {
+  return count > 0 ? `${count} ID` : "brak";
 }
 
 export function ExpertRuleList({ rules }: { rules: ExpertRule[] }) {

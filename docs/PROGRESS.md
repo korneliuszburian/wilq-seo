@@ -37,6 +37,13 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Actions evidence-summary cleanup, 2026-06-23 07:31 CEST.
+  `/actions` ActionObject cards show `Dowody: N ID` instead of raw evidence
+  IDs such as `ev_1`. Full evidence trace remains in API/detail surfaces, but
+  the marketer-facing card no longer reads like an internal registry dump.
+  Focused proof: `pnpm --filter @wilq/dashboard test -- --run
+  src/routes/App.test.tsx -t "actions route starts from ActionObjects instead
+  of registry dumps"` passed, dashboard lint OK and dashboard typecheck OK.
 - Custom Segments dashboard cleanup, 2026-06-23 07:27 CEST.
   `/ads-doctor/custom-segments` nie pokazuje już debugowego
   `/api/codex/context-pack skill=wilq-custom-segments`. Widok pokazuje
