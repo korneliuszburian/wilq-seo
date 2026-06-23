@@ -2286,6 +2286,13 @@ Aktualny maintenance:
     a long trace list. Focused proof passed: content route unit test, dashboard
     lint and dashboard typecheck.
 
+12. Ahrefs proof compaction, 2026-06-23 05:47 CEST.
+    `/ahrefs` now renders Ahrefs metric facts as Polish metric tiles such as
+    `Domain Rating`, `Ahrefs Rank`, `Luki treści` and `Luki domen linkujących`
+    instead of raw `domain_rating: 90` chips. `Dowody i ograniczenia Ahrefs`
+    now shows example evidence IDs and total evidence count. Focused proof
+    passed: Ahrefs route unit test, dashboard lint and dashboard typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2322,7 +2329,7 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   remaining lower-fold Ads Doctor tables and Ahrefs/GA4 proof compaction.
+   remaining lower-fold Ads Doctor tables and GA4 proof compaction.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

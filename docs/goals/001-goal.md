@@ -4877,3 +4877,17 @@ Latest Content Planner proof compaction slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "localo social and content routes render workflow-specific blockers or focus"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest Ahrefs proof compaction slice:
+
+- `/ahrefs` now renders Ahrefs metric facts as Polish metric tiles instead of
+  raw `MetricFactChips` such as `domain_rating: 90`.
+- `Dowody i ograniczenia Ahrefs` now shows readable metric tiles, example
+  evidence IDs and total evidence counts while keeping full traceability in
+  decisions and the gap contract.
+- This keeps Ahrefs positioned as authority/gap context for review, not as a
+  generic SEO recommendation generator.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ahrefs route renders authority context and typed gap records"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`

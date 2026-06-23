@@ -2,12 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { ClipboardCheck } from "lucide-react";
 
 import { AhrefsDiagnosticsResponse, getAhrefsDiagnostics } from "../lib/api";
-import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { priorityLabel } from "./marketingLabels";
 
 type AhrefsDecisionItem = AhrefsDiagnosticsResponse["decision_queue"][number];
+type AhrefsMetricFact = AhrefsDiagnosticsResponse["sections"][number]["metric_facts"][number];
 
 export function AhrefsDiagnosticSurface() {
   const diagnostics = useQuery({
@@ -156,7 +156,7 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
         <LinkedTraceLine label="Dowody" values={decision.evidence_ids} kind="evidence" />
       </div>
       {decision.metric_facts.length > 0 ? (
-        <MetricFactChips facts={decision.metric_facts.slice(0, 6)} />
+        <AhrefsMetricTiles facts={decision.metric_facts.slice(0, 6)} />
       ) : null}
     </article>
   );
@@ -222,6 +222,8 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
 
 function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
+  const visibleMetricFacts = metricFacts.slice(0, 4);
+  const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
   return (
     <section className="mt-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3">
@@ -247,9 +249,10 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
           </article>
         ))}
       </div>
-      {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 8)} /> : null}
+      {visibleMetricFacts.length > 0 ? <AhrefsMetricTiles facts={visibleMetricFacts} /> : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Dowody" values={data.evidence_ids.slice(0, 8)} kind="evidence" />
+        <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
+        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
         <TraceLine label="Źródła" values={["ahrefs"]} />
         <TraceLine
           label="Zablokowane claimy"
@@ -262,6 +265,35 @@ function AhrefsDiagnosticProof({ data }: { data: AhrefsDiagnosticsResponse }) {
       </div>
     </section>
   );
+}
+
+function AhrefsMetricTiles({ facts }: { facts: AhrefsMetricFact[] }) {
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+      {facts.map((fact, index) => (
+        <MetricTile
+          key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
+          label={ahrefsMetricFactLabel(fact.name)}
+          value={formatAhrefsMetricValue(fact.value)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ahrefsMetricFactLabel(metricName: string) {
+  const labels: Record<string, string> = {
+    ahrefs_content_gap_count: "Luki treści",
+    ahrefs_rank: "Ahrefs Rank",
+    ahrefs_referring_domain_gap_count: "Luki domen linkujących",
+    domain_rating: "Domain Rating"
+  };
+  return labels[metricName] ?? metricName;
+}
+
+function formatAhrefsMetricValue(value: string | number | boolean) {
+  if (typeof value === "boolean") return value ? "tak" : "nie";
+  return value;
 }
 
 function ahrefsDecisionStatusLabel(status: string) {

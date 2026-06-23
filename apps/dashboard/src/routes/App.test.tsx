@@ -4975,7 +4975,11 @@ const ahrefsDiagnostics = {
       risk: "low"
     }
   ],
-  evidence_ids: ["ev_refresh_refresh_ahrefs_test"],
+  evidence_ids: [
+    "ev_refresh_refresh_ahrefs_test",
+    "ev_refresh_ahrefs_gap_records",
+    "ev_refresh_ahrefs_safety"
+  ],
   action_ids: [],
   blocker_count: 1
 };
@@ -6259,8 +6263,17 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Przejrzyj rekordy luk Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("DR")).toBeInTheDocument();
-    expect(screen.getByText("Ahrefs Rank")).toBeInTheDocument();
+    expect(screen.getAllByText("Ahrefs Rank").length).toBeGreaterThan(0);
     expect(screen.getByText("Gap records")).toBeInTheDocument();
+    expect(screen.queryByText(/domain_rating: 90/)).not.toBeInTheDocument();
+    const ahrefsProofSection = screen
+      .getByText("Dowody i ograniczenia Ahrefs")
+      .closest("section");
+    expect(ahrefsProofSection).not.toBeNull();
+    const ahrefsProof = within(ahrefsProofSection as HTMLElement);
+    expect(ahrefsProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
+    expect(ahrefsProof.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(ahrefsProof.queryByText(/ev_refresh_ahrefs_safety/)).not.toBeInTheDocument();
     expect(screen.getByText("Luka treści: audyt środowiskowy")).toBeInTheDocument();
     expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
     expect(screen.getByText(/wymagane rekordy luk Ahrefs/)).toBeInTheDocument();
