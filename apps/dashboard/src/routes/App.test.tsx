@@ -6224,6 +6224,22 @@ describe("WILQ dashboard", () => {
       screen.getByText(/WILQ łączy zapytania i URL-e z GSC z inventory WordPress/)
     ).toBeInTheDocument();
     expect(screen.getByText(/SEO: odśwież lub scal "bdo"/)).toBeInTheDocument();
+    const contentDecisionCard = screen
+      .getByText(/SEO: odśwież lub scal "bdo"/)
+      .closest("article");
+    expect(contentDecisionCard).not.toBeNull();
+    expect(within(contentDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(
+      within(contentDecisionCard as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
+    ).not.toBeInTheDocument();
+    const contentSafeMode = screen
+      .getByText("Bezpieczny tryb treści")
+      .closest(".rounded-md");
+    expect(contentSafeMode).not.toBeNull();
+    expect(within(contentSafeMode as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(
+      within(contentSafeMode as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/120 wyświetleń/)).toBeInTheDocument();
     expect(screen.getByText(/12 kliknięć/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress: potwierdzony/)).toBeInTheDocument();

@@ -259,8 +259,12 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           label="Blokady claimów"
           values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
         />
-        <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
-        <LinkedTraceLine label="ActionObject" values={[preview.action_id]} kind="actions" />
+        <TraceLine
+          label="Dowody"
+          values={[formatContentEvidenceCount(preview.evidence_ids.length)]}
+          empty="brak"
+        />
+        <TraceLine label="ActionObject" values={["1 ActionObject"]} />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
@@ -355,8 +359,12 @@ function WordPressDraftPayloadPreviewCard({
           label="Blokady claimów"
           values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
         />
-        <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
-        <LinkedTraceLine label="ActionObject" values={[preview.action_id]} kind="actions" />
+        <TraceLine
+          label="Dowody"
+          values={[formatContentEvidenceCount(preview.evidence_ids.length)]}
+          empty="brak"
+        />
+        <TraceLine label="ActionObject" values={["1 ActionObject"]} />
       </div>
     </article>
   );
@@ -434,8 +442,12 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
                 `brak potwierdzenia: ${summary.missing_wordpress_count}`
               ]}
             />
-            <LinkedTraceLine label="Dowody" values={summary.evidence_ids.slice(0, 6)} kind="evidence" />
-            <LinkedTraceLine label="ActionObject" values={actionIds} kind="actions" />
+            <TraceLine
+              label="Dowody"
+              values={[formatContentEvidenceCount(summary.evidence_ids.length)]}
+              empty="brak"
+            />
+            <TraceLine label="ActionObject" values={[formatContentActionCount(actionIds.length)]} />
             <TraceLine
               label="Nie wolno twierdzić"
               values={contentBlockedClaimLabels(summary.blocked_claims)}
@@ -544,9 +556,13 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine
+          label="Dowody"
+          values={[formatContentEvidenceCount(decision.evidence_ids.length)]}
+          empty="brak"
+        />
         <TraceLine label="Źródła" values={decision.source_connectors} />
-        <LinkedTraceLine label="Akcje" values={decision.action_ids} kind="actions" />
+        <TraceLine label="Akcje" values={[formatContentActionCount(decision.action_ids.length)]} />
         <TraceLine label="Nie wolno twierdzić" values={contentBlockedClaimLabels(decision.blocked_claims)} />
       </div>
       {decision.metric_facts.length > 0 ? (
@@ -628,6 +644,18 @@ function contentMetricFactLabel(metricName: string) {
 function formatContentMetricValue(value: string | number | boolean) {
   if (typeof value === "boolean") return value ? "tak" : "nie";
   return value;
+}
+
+function formatContentEvidenceCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ID";
+  return `${count} ID`;
+}
+
+function formatContentActionCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ActionObject";
+  return `${count} ActionObjecty`;
 }
 
 function contentDecisionTitle(decision: ContentDecisionItem) {

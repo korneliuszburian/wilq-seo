@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 09:53 CEST.
+Last updated: 2026-06-23 09:59 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -111,6 +111,17 @@ Browser proof with agent-browser on `http://127.0.0.1:5173/localo`: top Localo
 flow shows status, visibility facts, two Localo decisions, the proof toggle and
 the safety gate without raw evidence links. Focused proof: RED/GREEN Localo
 route test, dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Content Planner first-flow cleanup: `/content-planner` and
+`/seo-gsc` no longer print raw `ev_*` evidence IDs or raw `act_prepare*`
+ActionObject IDs in the first content decision flow. Safe-mode summary, content
+decision cards, content brief preview cards and WordPress draft preview cards
+now show counts such as `Dowody: N ID` and `ActionObject: 1 ActionObject`. Raw
+trace links remain available in lower `Dowody i ograniczenia Content` and
+ActionObject validation sections. Browser proof with agent-browser on
+`http://127.0.0.1:5173/content-planner`: first decisions and preview cards are
+clean, raw links start only in lower proof/validation sections. Focused proof:
+RED/GREEN GSC/content route test, dashboard lint OK and dashboard typecheck OK.
 
 2026-06-23 Ads wording follow-up: `/api/ads/diagnostics` no longer uses
 `snapshot kampanii` in marketer-facing change-impact readiness copy. The
