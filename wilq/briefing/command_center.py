@@ -843,7 +843,7 @@ def _content_item_from_tactical(
             _content_tactical_summary(top_item, "")
             if top_item is not None
             else (
-                "Brak gotowej kolejki contentowej. WILQ potrzebuje GSC query/page "
+                "Brak gotowej kolejki contentowej. WILQ potrzebuje GSC zapytania/URL "
                 "i WordPress inventory."
             )
         )
@@ -889,8 +889,8 @@ def _content_item_from_tactical(
         evidence_ids=evidence_ids,
         action_ids=_unique(action_id for item in content_items for action_id in item.action_ids),
         metric_tiles={
-            "query/page": len(content_items),
-            "WP match": sum(
+            "zapytania/URL": len(content_items),
+            "dopasowania WordPress": sum(
                 1 for item in content_items if item.dimensions.get("wordpress_match") == "found"
             ),
             "decyzje": decision_count,
@@ -957,13 +957,13 @@ def _ahrefs_content_metric_tiles(facts: list[MetricFact]) -> dict[str, int]:
         or fact.dimensions.get("gap_type") == "backlink_gap"
     )
     tiles = {
-        "Ahrefs review": 1,
+        "ocena Ahrefs": 1,
         "rekordy Ahrefs": len(facts),
     }
     if content_gap_count:
         tiles["luki Ahrefs"] = content_gap_count
     if backlink_gap_count:
-        tiles["link gaps"] = backlink_gap_count
+        tiles["luki linków"] = backlink_gap_count
     return tiles
 
 
@@ -976,8 +976,8 @@ def _content_summary_with_ahrefs(
     ahrefs_summary = (
         "Ahrefs ma kolejkę review luk SEO: "
         f"rekordy={ahrefs_metric_tiles.get('rekordy Ahrefs', 0)}, "
-        f"content gaps={ahrefs_metric_tiles.get('luki Ahrefs', 0)}, "
-        f"backlink gaps={ahrefs_metric_tiles.get('link gaps', 0)}. "
+        f"luki treści={ahrefs_metric_tiles.get('luki Ahrefs', 0)}, "
+        f"luki linków={ahrefs_metric_tiles.get('luki linków', 0)}. "
         "To jest materiał do połączenia z GSC/WordPress, nie obietnica wzrostu."
     )
     return f"{ahrefs_summary} {tactical_summary}".strip()
@@ -1408,7 +1408,7 @@ def _action_plan_item(
             priority=12,
             category="Content + SEO",
             why_it_matters=(
-                f"{item.summary} Pełny drilldown query/page i URL jest w /content-planner."
+                f"{item.summary} Pełny drilldown zapytań i URL-i jest w /content-planner."
             ),
             operator_action=item.next_step,
             skill_id="wilq-content-strategist",
@@ -1756,7 +1756,7 @@ def _decision_observation(
             prefix="GSC i WordPress tworzą kolejkę SEO:",
             metric_tiles=brief_item.metric_tiles,
             suffix=(
-                "To jest decyzja refresh/merge/create/block oparta o query/page "
+                "To jest decyzja refresh/merge/create/block oparta o zapytania/URL "
                 "i inventory, nie obietnica leadów ani wzrostów pozycji."
             ),
         )

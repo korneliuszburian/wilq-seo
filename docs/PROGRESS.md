@@ -39,6 +39,22 @@ Stan produktu:
 
 ## Last Done
 
+0. Command Center content labels and Merchant skill guardrails, 2026-06-23.
+   Command Center content decision metric labels are now Polish at the API
+   contract level: `zapytania/URL`, `dopasowania WordPress`, `ocena Ahrefs`,
+   `luki Ahrefs` and `luki linków`. Live proof after
+   `scripts/local_stack.sh restart`: `/api/dashboard/command-center`
+   `decision_prepare_content_refresh_queue.metric_tiles` has no old
+   `query/page`, `WP match`, `Ahrefs review` or `link gaps` keys, and
+   `co_widzimy` says the decision is based on `zapytania/URL`. Merchant skill
+   follow-up from the live user run is captured in the skill contract and smoke:
+   use `freshness_assessment`, group final work by `decision_queue`, treat
+   `issue_clusters` as drilldown, report `unknowns`, and preserve
+   `count_semantics=reported_issue_occurrences` so issue counts are not called
+   unique products/SKU. Focused proof: Command Center API contract test,
+   Command Center route test, `wilq-merchant-feed-operator` smoke,
+   `tests/test_codex_skill_eval_cases.py`, ruff and dashboard typecheck.
+
 0. Daily Ads action focus cleanup, 2026-06-23.
    Command Center Ads daily card no longer carries deep Ads actions such as
    Demand Gen readiness, search-term n-grams or target/strategy review. The

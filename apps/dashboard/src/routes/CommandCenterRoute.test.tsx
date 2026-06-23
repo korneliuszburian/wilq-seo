@@ -30,7 +30,7 @@ const commandCenterFixture: CommandCenterResponse = {
       priority: 10,
       metric_tiles: {
         produkty: 10900,
-        issues: 15
+        zgłoszenia: 15
       },
       co_widzimy:
         "Merchant Center ma evidence `ev_refresh_merchant_feed` i ActionObject `act_review_merchant_feed_issues`.",
@@ -56,15 +56,15 @@ const commandCenterFixture: CommandCenterResponse = {
       status: "ready",
       priority: 12,
       metric_tiles: {
-        "query/page": 10,
-        "WP match": 15,
-        "Ahrefs review": 1,
-        "link gaps": 9,
+        "zapytania/URL": 10,
+        "dopasowania WordPress": 15,
+        "ocena Ahrefs": 1,
+        "luki linków": 9,
         kliknięcia: 138,
         wyświetlenia: 7852
       },
       co_widzimy:
-        "Content evidence jest gotowe: query/page=10, WP match=15, Ahrefs review=1, link gaps=9, ctr=0.0445468509984639, average_position=1.6897081413210446.",
+        "Content evidence jest gotowe: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
       dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać review treści.",
       bezpieczny_next_step: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
@@ -145,7 +145,7 @@ describe("CommandCenter route", () => {
       .toBeInTheDocument();
     expect(screen.getByText("10900")).toBeInTheDocument();
     expect(screen.getByText("zapytania/URL")).toBeInTheDocument();
-    expect(screen.getByText("dopasowania WP")).toBeInTheDocument();
+    expect(screen.getByText("dopasowania WordPress")).toBeInTheDocument();
     expect(screen.getByText("ocena Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("luki linków")).toBeInTheDocument();
     expect(screen.getByText("Codex: feed Merchant")).toBeInTheDocument();

@@ -25,6 +25,45 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-merchant-feed-operator live-run follow-up
+
+Purpose:
+
+- Capture the product finding from a real Codex prompt run of
+  `wilq-merchant-feed-operator`.
+- Prevent future responses from treating Merchant aggregate issue counts as
+  unique products/SKU or as an apply-ready product queue.
+
+Changes:
+
+- `SKILL.md` now requires `freshness_assessment`, stale/blocker labeling, final
+  grouping by `decision_queue`, and `issue_clusters` as drilldown only.
+- `references/output-contract.md` now requires `Czego nie wiemy`, freshness
+  status, and explicit `reported_issue_occurrences` language.
+- `scripts/smoke_skill_contract.py` now verifies `decision_source=decision_queue`,
+  `drilldown_source=issue_clusters`, `count_semantics=reported_issue_occurrences`
+  on operator summary, issue clusters and decisions, plus live ActionObject
+  validation.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run ruff check .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py
+```
+
+Result:
+
+- Smoke passed against live API.
+- Live Merchant diagnostics reported `freshness_assessment.state=fresh`,
+  `requires_refresh=false`, `operator_summary.decision_source=decision_queue`,
+  `operator_summary.drilldown_source=issue_clusters` and
+  `count_semantics=reported_issue_occurrences`.
+- The validated ActionObject remained `act_review_merchant_feed_issues`; this
+  still means prepare/review, not feed write, approval restoration or recovered
+  revenue.
+
 ## 2026-06-23 - wilq-daily-command cross-surface eval
 
 Purpose:

@@ -62,16 +62,20 @@ function actionValidationSummary(count: number) {
 function marketerMetricLabel(label: string) {
   const labels: Record<string, string> = {
     "Ahrefs review": "ocena Ahrefs",
-    "WP match": "dopasowania WP",
+    "dopasowania WordPress": "dopasowania WordPress",
+    "WP match": "dopasowania WordPress",
     "braki kontraktu": "braki danych",
     "jakość ruchu": "jakość ruchu",
+    "luki linków": "luki linków",
     "link gaps": "luki linków",
+    "ocena Ahrefs": "ocena Ahrefs",
     "podgląd budżetu": "budżety do oceny",
     "rekordy Ahrefs": "rekordy Ahrefs",
     "typy problemów": "typy problemów",
     "wartość konw.": "wartość konwersji",
     query: "zapytania",
-    "query/page": "zapytania/URL"
+    "query/page": "zapytania/URL",
+    "zapytania/URL": "zapytania/URL"
   };
   return labels[label] ?? label;
 }
@@ -94,12 +98,16 @@ type DecisionCopy = {
   nextStep: string;
 };
 
-function metricValue(item: DailyDecision, key: string): string | number | undefined {
-  return item.metric_tiles?.[key];
+function metricValue(item: DailyDecision, ...keys: string[]): string | number | undefined {
+  for (const key of keys) {
+    const value = item.metric_tiles?.[key];
+    if (value !== undefined) return value;
+  }
+  return undefined;
 }
 
-function metricNumber(item: DailyDecision, key: string): number {
-  const value = metricValue(item, key);
+function metricNumber(item: DailyDecision, ...keys: string[]): number {
+  const value = metricValue(item, ...keys);
   if (typeof value === "number") return value;
   if (typeof value === "string") {
     const parsed = Number(value);
@@ -108,11 +116,11 @@ function metricNumber(item: DailyDecision, key: string): number {
   return 0;
 }
 
-function metricDisplay(item: DailyDecision, key: string, fallback = "brak danych") {
-  const value = metricValue(item, key);
+function metricDisplay(item: DailyDecision, ...keys: string[]) {
+  const value = metricValue(item, ...keys);
   if (typeof value === "number") return formatNumber(value);
   if (typeof value === "string" && value.length > 0) return value;
-  return fallback;
+  return "brak danych";
 }
 
 function sourceList(item: DailyDecision) {
@@ -137,14 +145,14 @@ function decisionCopy(item: DailyDecision): DecisionCopy {
   }
 
   if (item.id === "decision_prepare_content_refresh_queue") {
-    const queryPages = metricDisplay(item, "query/page");
+    const queryPages = metricDisplay(item, "zapytania/URL", "query/page");
     const clicks = metricDisplay(item, "kliknięcia");
     const impressions = metricDisplay(item, "wyświetlenia");
-    const wpMatches = metricDisplay(item, "WP match");
+    const wpMatches = metricDisplay(item, "dopasowania WordPress", "WP match");
     const ahrefsGaps = metricDisplay(item, "luki Ahrefs");
-    const linkGaps = metricDisplay(item, "link gaps");
+    const linkGaps = metricDisplay(item, "luki linków", "link gaps");
     const matchWarning =
-      metricNumber(item, "WP match") === 0
+      metricNumber(item, "dopasowania WordPress", "WP match") === 0
         ? " Najpierw sprawdź mapowanie WordPress, bo API nie potwierdza dopasowania części adresów."
         : "";
     return {

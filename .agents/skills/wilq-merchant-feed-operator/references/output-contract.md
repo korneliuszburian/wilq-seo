@@ -21,9 +21,9 @@ Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. API identifiers, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość connectorów, `freshness_assessment` i znane blockery.
+1. `Status`: zasięg API, gotowość connectorów, `freshness_assessment` i znane blockery. Jeśli `freshness_assessment.requires_refresh=true` albo `state=stale|missing|blocked`, oznacz wynik jako stale/blocker review zamiast aktualnego stanu produkcyjnego.
 2. `Dowody`: Merchant diagnostics section IDs, evidence IDs, connector IDs, latest refresh state, issue dimensions, metric summaries and product sample readiness from WILQ API only.
-3. `Kolejka review`: grupuj finalne rekomendacje po `decision_queue`. `issue_clusters` pokazuj tylko jako drilldown raportowania, bo suma zgłoszeń nie jest liczbą unikalnych produktów.
+3. `Kolejka review`: grupuj finalne rekomendacje po `decision_queue`. `issue_clusters` pokazuj tylko jako drilldown raportowania. Jeśli `count_semantics=reported_issue_occurrences`, wartości `product_count`, `issue_count`, `max zgłoszeń` i `raporty razem` opisuj jako wystąpienia/zgłoszenia problemu, nie jako unikalne produkty, SKU ani listę produktów do poprawy.
 4. `Przykładowe produkty`: jeśli `product_sample_readiness.sample_products_available=true`, pokaż kilka `sample_product_ids` albo tytułów jako materiał do review. Nie traktuj próbek jako pełnej listy SKU ani zgody na feed write.
 5. `Czego nie wiemy`: opisz `unknowns` z `/api/merchant/diagnostics`, szczególnie brak unikalnej liczby produktów, brak pełnego SKU workflow albo brak próbek dla części klastrów.
 6. `Diagnoza`: co `/api/merchant/diagnostics` wspiera, z uncertainty jeśli evidence jest aggregate, stale, niepełne albo zablokowane permissions.

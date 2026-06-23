@@ -3135,11 +3135,15 @@ def test_command_center_exposes_polish_operator_brief(
     assert "ev_refresh_refresh_ahrefs_action_test" in brief_by_id[
         "daily_content_queue"
     ]["evidence_ids"]
-    assert brief_by_id["daily_content_queue"]["metric_tiles"]["query/page"] >= 1
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["zapytania/URL"] >= 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["decyzje"] >= 2
-    assert brief_by_id["daily_content_queue"]["metric_tiles"]["Ahrefs review"] == 1
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["ocena Ahrefs"] == 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["luki Ahrefs"] == 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["wyświetlenia"] >= 1
+    assert "query/page" not in brief_by_id["daily_content_queue"]["metric_tiles"]
+    assert "WP match" not in brief_by_id["daily_content_queue"]["metric_tiles"]
+    assert "Ahrefs review" not in brief_by_id["daily_content_queue"]["metric_tiles"]
+    assert "link gaps" not in brief_by_id["daily_content_queue"]["metric_tiles"]
     assert "act_prepare_content_refresh_queue" in brief_by_id["daily_content_queue"]["action_ids"]
     assert brief_by_id["daily_ga4_landing_quality"]["status"] == "blocked"
     assert "pomiar i jakość ruchu" in brief_by_id["daily_ga4_landing_quality"]["title"]

@@ -90,6 +90,7 @@ def main() -> int:
     decision_queue = merchant_diagnostics.get("decision_queue") or []
     unknowns = merchant_diagnostics.get("unknowns") or []
     freshness_assessment = merchant_diagnostics.get("freshness_assessment") or {}
+    operator_summary = merchant_diagnostics.get("operator_summary") or {}
     if (
         merchant_diagnostics.get("live_data_available")
         and merchant_diagnostics.get("issue_count", 0) > 0
@@ -104,6 +105,23 @@ def main() -> int:
         raise SystemExit("Live Merchant diagnostics with issue_count must expose decision_queue")
     if merchant_diagnostics.get("live_data_available") and not freshness_assessment:
         raise SystemExit("Live Merchant diagnostics must expose freshness_assessment")
+    if merchant_diagnostics.get("live_data_available"):
+        if "requires_refresh" not in freshness_assessment:
+            raise SystemExit("Merchant freshness_assessment must expose requires_refresh")
+        if operator_summary.get("decision_source") != "decision_queue":
+            raise SystemExit("Merchant operator summary must identify decision_queue as source")
+        if operator_summary.get("drilldown_source") != "issue_clusters":
+            raise SystemExit("Merchant operator summary must identify issue_clusters as drilldown")
+        if operator_summary.get("count_semantics") != "reported_issue_occurrences":
+            raise SystemExit(
+                "Merchant operator summary must expose reported issue occurrence semantics"
+            )
+    for cluster in issue_clusters:
+        if cluster.get("count_semantics") != "reported_issue_occurrences":
+            raise SystemExit("Merchant issue clusters must expose reported issue count semantics")
+    for decision in decision_queue:
+        if decision.get("count_semantics") != "reported_issue_occurrences":
+            raise SystemExit("Merchant decisions must expose reported issue count semantics")
     merchant_action = next(
         (
             action
@@ -204,6 +222,7 @@ def main() -> int:
                     "decision_queue": decision_queue[:5],
                     "unknowns": unknowns,
                     "freshness_assessment": freshness_assessment,
+                    "operator_summary": operator_summary,
                     "blocker_count": merchant_diagnostics.get("blocker_count"),
                     "section_ids": [
                         section.get("id")

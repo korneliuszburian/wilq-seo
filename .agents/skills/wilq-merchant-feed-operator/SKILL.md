@@ -35,6 +35,8 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 5. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 6. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
 7. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
+8. Dla pytań o aktualny stan feedu użyj `freshness_assessment`: `requires_refresh=true` albo `state=stale|missing|blocked` oznacza stale/blocker review, chyba że użytkownik jawnie pozwala na read-only `vendor_read`.
+9. Finalną kolejkę pracy grupuj po `decision_queue`. `issue_clusters` traktuj jako drilldown raportowy; `product_count` przy `count_semantics=reported_issue_occurrences` nie jest liczbą unikalnych SKU ani produktów.
 
 </workflow>
 
@@ -70,6 +72,8 @@ Wymagane powierzchnie connectorów dla tego skilla:
 - `google_merchant_center`
 
 Każda rekomendacja musi zawierać source connector IDs i evidence IDs z WILQ API. Merchant Diagnostics sections i tactical items traktuj jako główne źródło. Jeśli evidence jest zagregowane, stare, niepełne albo zablokowane credentialami, powiedz to wprost.
+
+Jeśli `/api/merchant/diagnostics` zwraca `unknowns` albo `product_sample_readiness.status=blocked`, odpowiedź musi mieć sekcję "Czego nie wiemy" i nie może udawać kolejki produkt-po-produkcie.
 
 </evidence_requirements>
 
