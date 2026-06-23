@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 23:19 CEST.
+Last updated: 2026-06-23 23:27 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -58,10 +58,17 @@ becoming dashboard copy, skill prose or test theater:
    used by dashboard and Codex skills.
 4. **Dashboard**: `apps/dashboard/src/**` renders decision cockpit and
    drilldown routes. It should not invent ranking, grouping or safety logic.
-5. **Codex skills**: `.agents/skills/wilq-*` describe how an operator uses the
+5. **Knowledge and expert rules**: `wilq/expert/**`, `wilq/knowledge/**` and
+   source-lineage docs condense external standards into versioned cards/rules
+   consumed by code. They are not loose prompt notes.
+6. **Codex skills**: `.agents/skills/wilq-*` describe how an operator uses the
    API contracts. They must not repair missing product behavior in references.
-6. **Eval and release gates**: `scripts/**`, `tests/**`, `docs/evals/**` prove
+7. **Eval and release gates**: `scripts/**`, `tests/**`, `docs/evals/**` prove
    contracts, evidence, Polish output, safety and no invented metrics.
+
+When adding tasks, assign them to one of these layers first. If the task needs
+more than dashboard copy or skill prose, create or improve the typed API,
+schema, view-model, expert rule or eval contract in the owning layer.
 
 ## Current Thematic Stack Assessment
 
@@ -81,9 +88,12 @@ fresh API/browser proof shows a regression.
      side-effect-free task read exists.
    - Real gaps: Ads pacing/recommendation/impression-share decision context,
      Ahrefs granular URL/query/backlink gap evidence and cross-source joins
-     that prove business decisions rather than isolated facts. GA4 still blocks
-     ROAS/profitability/conversion-drop verdicts without cost, attribution and
-     history context even though conversion/ecommerce metrics are now readable.
+     that prove business decisions rather than isolated facts. Ads
+     change-history empty reads should be `ready/no changes`; change-impact
+     review stays blocked until change rows and before/after windows exist.
+     GA4 still blocks ROAS/profitability/conversion-drop verdicts without
+     cost, attribution and history context even though conversion/ecommerce
+     metrics are now readable.
 2. **Decision contracts**
    - Ready: core diagnostics, tactical queue, marketing brief, command-center
      decisions and ActionObject surfaces share WILQ API contracts.
@@ -101,14 +111,20 @@ fresh API/browser proof shows a regression.
      non-interactive eval coverage.
    - Real gaps: decision-quality evals, semantic reference audit, practical
      dashboard prompts and tighter context packs for each domain.
-5. **Dashboard/product UI**
+5. **Knowledge compiler and marketing expertise**
+   - Ready: structured expert YAML rules and first knowledge-card/compiler
+     scaffolding exist.
+   - Real gaps: source-ingestion workflow for Google/Ads/SEO/Localo/Merchant
+     standards, source lineage, confidence/freshness scoring, rule/card
+     promotion into code and evals that prove rules influence decisions.
+6. **Dashboard/product UI**
    - Ready: strong demo path exists across command center, Merchant, Content,
      Ads, GA4, Localo and action details.
    - Real gaps: route-by-route marketer audit, shared data boundaries to avoid
      repeated heavy aggregation, removal of leftover technical/meta cards, and
      targeted extraction of large frontend modules only where it improves
      velocity/reviewability.
-6. **Testing/release**
+7. **Testing/release**
    - Ready: broad `scripts/verify.sh`, focused API/dashboard tests, skill
      smokes/evals and hygiene/security gates exist.
    - Real gaps: fixture-vs-live smoke split, smaller pre-demo gate, production
@@ -134,9 +150,10 @@ Finish these before claiming the Ekologus demo is done:
    - If Localo appears empty while `/api/metrics?connector_id=localo` has facts,
      restart via `scripts/local_stack.sh restart` before changing product logic.
    - Current Ads is review-only and intentionally blocks unsupported claims.
-   - Current live Ads blockers are not OAuth setup gaps: `change_history` is
-     blocked because Google Ads returned zero change_event rows for the current
-     window; `keyword_planner_read_contract` is blocked by
+   - Current live Ads blockers are not OAuth setup gaps: empty
+     `change_history` reads mean "ready, no changes in the current window";
+     change-impact review remains blocked until WILQ has change rows and
+     performance windows before/after. `keyword_planner_read_contract` is blocked by
      `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`.
    - Ads remaining source contracts: approved/live Keyword Planner enrichment,
      forecast/audience size, budget pacing, change-history impact context,
@@ -261,7 +278,31 @@ Finish these before claiming the Ekologus demo is done:
      5. Keep skill context packs scoped. Do not send the full system context
         when a narrow diagnostics endpoint and skill-scoped pack are enough.
 
-5. **Dashboard usefulness, performance and code quality**
+5. **Knowledge compiler and source condensation**
+   - Goal: turn external marketing knowledge into versioned, source-linked
+     rules/cards that improve WILQ decisions without bloating prompts.
+   - Required contract for each accepted source: source URL/file, author/vendor,
+     date checked, domain, claims, confidence, freshness, allowed use, forbidden
+     overclaims and linked WILQ rule/card IDs.
+   - Research may use official docs, reputable PPC/SEO/analytics sources,
+     papers and expert playbooks, but nothing becomes product behavior until it
+     is condensed into structured rules/cards and covered by evals.
+   - Do not add a vector database before the knowledge compiler, evidence model
+     and source-lineage contract are working.
+   - Add knowledge/compiler slices:
+     1. Create a compact source-ingestion contract for marketing knowledge:
+        source metadata, extracted claim, applicable connector/domain, risk,
+        evidence requirement and target rule/card.
+     2. Promote only high-confidence items into `wilq/expert/**` or
+        `wilq/knowledge/**`; keep raw research notes out of dashboard and skill
+        prompts.
+     3. Add eval checks that prove selected rules/cards affect decisions while
+        still blocking unsupported claims.
+     4. Build first domain batches in this order: Ads safety/optimizer,
+        Merchant feed diagnostics, GA4 measurement/commerce, GSC/content,
+        Localo/GBP and Ahrefs gap analysis.
+
+6. **Dashboard usefulness, performance and code quality**
    - Command Center must stay a decision cockpit, not a connector registry or
      raw metric dump. First screen should prioritize today's marketer decisions,
      prompts to Codex, action focus and source freshness.
@@ -293,7 +334,7 @@ Finish these before claiming the Ekologus demo is done:
         artifacts. Use `agent-browser` when checking real routes and record
         only concise proof paths.
 
-6. **Release, staging and live-test strategy**
+7. **Release, staging and live-test strategy**
    - Blocking CI/release tests must verify contracts, schemas, evidence IDs,
      source connectors, secret redaction, ActionObject safety, Polish output and
      no invented metrics.
@@ -310,13 +351,16 @@ Finish these before claiming the Ekologus demo is done:
      1. Split deterministic fixture tests from live smoke checks. Fixture tests
         may assert exact values; live checks assert contract state, freshness,
         nonempty facts and correct blockers.
-     2. Define the pre-demo gate: targeted API tests, targeted dashboard route
+     2. Remove brittle release assertions against live metric values such as
+        exact clicks, costs, revenue, reviews, rankings or issue counts. Keep
+        those exact numbers only in fixtures or proof notes.
+     3. Define the pre-demo gate: targeted API tests, targeted dashboard route
         tests, touched skill smoke/eval, secret redaction check and one browser
         walkthrough of the strong demo path.
-     3. Define the production gate separately: full `scripts/verify.sh`, API
+     4. Define the production gate separately: full `scripts/verify.sh`, API
         health, dashboard build, skill smokes/evals, security gate and live
         read-only connector checks.
-     4. Add operational alerts for stale connector contracts, missing expected
+     5. Add operational alerts for stale connector contracts, missing expected
         facts, unsafe apply attempts and secret leakage.
 
 ## Quality Rules For Remaining Work
@@ -340,8 +384,8 @@ Finish these before claiming the Ekologus demo is done:
 
 1. Work in this order unless live proof shows a stronger blocker:
    source contracts -> decision API/view-model -> ActionObject safety -> Codex
-   skill/eval quality -> dashboard usefulness/performance -> release/live-test
-   hardening.
+   skill/eval quality -> knowledge compiler -> dashboard usefulness/performance
+   -> release/live-test hardening.
 2. Next concrete slice should be one of:
    - Ads budget pacing, recommendation safety, impression-share context or
      change-history window handling; keep Keyword Planner as developer-token
