@@ -5897,6 +5897,32 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByRole("heading", { name: "Co można zrobić teraz w Ads" })
     ).toBeInTheDocument();
+    const optimizerPanel = screen
+      .getByRole("heading", { name: "Co można zrobić teraz w Ads" })
+      .closest(".mb-4");
+    expect(optimizerPanel).not.toBeNull();
+    expect(within(optimizerPanel as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(
+      within(optimizerPanel as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
+    ).not.toBeInTheDocument();
+    const safeModePanel = screen
+      .getByRole("heading", { name: "Bezpieczny tryb Ads" })
+      .closest(".rounded-md");
+    expect(safeModePanel).not.toBeNull();
+    expect(within(safeModePanel as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(
+      within(safeModePanel as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
+    ).not.toBeInTheDocument();
+    const campaignReviewDecision = screen
+      .getByRole("heading", { name: "Ustal kolejność review kampanii Ads" })
+      .closest("article");
+    expect(campaignReviewDecision).not.toBeNull();
+    expect(
+      within(campaignReviewDecision as HTMLElement).queryByText(/ev_/)
+    ).not.toBeInTheDocument();
+    expect(
+      within(campaignReviewDecision as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
+    ).not.toBeInTheDocument();
     expect(screen.getByText("kampanie do review")).toBeInTheDocument();
     expect(screen.getByText("historia zmian")).toBeInTheDocument();
     expect(

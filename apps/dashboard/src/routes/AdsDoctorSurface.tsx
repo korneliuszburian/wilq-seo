@@ -282,8 +282,16 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             />
             <TraceLine label="Brakujące kontrakty" values={missingReadContracts} empty="brak" />
             <TraceLine label="Wymagany review" values={operatorReviewGates} empty="brak" />
-            <LinkedTraceLine label="Dowody" values={summary.evidence_ids.slice(0, 6)} kind="evidence" />
-            <LinkedTraceLine label="ActionObjecty" values={summary.action_ids} kind="actions" />
+            <TraceLine
+              label="Dowody"
+              values={[formatTraceIdCount(summary.evidence_ids.length)]}
+              empty="brak"
+            />
+            <TraceLine
+              label="ActionObjecty"
+              values={[formatActionObjectCount(summary.action_ids.length)]}
+              empty="brak"
+            />
             <TraceLine label="Nie wolno twierdzić" values={blockedClaims} empty="brak" />
           </div>
         </div>
@@ -342,21 +350,31 @@ function AdsOptimizerReadinessPanel({
           values={contract.blocked_claims.map(adsBlockedClaimLabel)}
           empty="brak"
         />
-        <LinkedTraceLine
+        <TraceLine
           label="Dowody"
-          values={contract.evidence_ids.slice(0, 6)}
-          kind="evidence"
+          values={[formatTraceIdCount(contract.evidence_ids.length)]}
           empty="brak"
         />
-        <LinkedTraceLine
+        <TraceLine
           label="ActionObjecty"
-          values={contract.action_ids}
-          kind="actions"
+          values={[formatActionObjectCount(contract.action_ids.length)]}
           empty="brak"
         />
       </div>
     </div>
   );
+}
+
+function formatTraceIdCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ID";
+  return `${count} ID`;
+}
+
+function formatActionObjectCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ActionObject";
+  return `${count} ActionObjecty`;
 }
 
 function AdsOptimizerReadinessGroup({
@@ -476,9 +494,17 @@ function AdsDecisionCard({
         </div>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
-        <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine
+          label="Dowody"
+          values={[formatTraceIdCount(decision.evidence_ids.length)]}
+          empty="brak"
+        />
         <TraceLine label="Źródła" values={decision.source_connectors} />
-        <LinkedTraceLine label="ActionObjecty" values={decision.action_ids} kind="actions" />
+        <TraceLine
+          label="ActionObjecty"
+          values={[formatActionObjectCount(decision.action_ids.length)]}
+          empty="brak"
+        />
         {decision.operator_review_gates.length > 0 ? (
           <TraceLine
             label="Wymagany review"
@@ -938,15 +964,15 @@ function AdsCampaignTriageRowsPanel({
                 values={row.missing_read_contracts.map(adsMissingReadContractLabel)}
                 empty="brak"
               />
-              <LinkedTraceLine
+              <TraceLine
                 label="Dowody"
-                values={row.evidence_ids.slice(0, 3)}
-                kind="evidence"
+                values={[formatTraceIdCount(row.evidence_ids.length)]}
+                empty="brak"
               />
-              <LinkedTraceLine
+              <TraceLine
                 label="ActionObjecty"
-                values={row.action_ids}
-                kind="actions"
+                values={[formatActionObjectCount(row.action_ids.length)]}
+                empty="brak"
               />
             </div>
           </article>

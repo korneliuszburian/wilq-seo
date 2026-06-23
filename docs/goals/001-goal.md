@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 11:39 CEST.
+Last updated: 2026-06-23 09:48 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -92,6 +92,16 @@ agent-browser on `http://127.0.0.1:5173/actions`: visible headings are
 `ActionObjecty`, `ActionObjecty do przeglądu` and ActionObject titles/buttons,
 with no raw evidence section below. Focused proof: RED/GREEN dashboard route
 test, dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Ads Doctor first-flow cleanup: `/ads-doctor` no longer prints raw
+`ev_*` evidence IDs or raw `act_prepare/review/configure/apply*` ActionObject
+IDs in the first Ads decision flow. Optimizer readiness, safe-mode summary, top
+decision cards and nested campaign triage cards now show counts such as
+`Dowody: N ID` and `ActionObjecty: N ActionObjecty`. Raw trace links remain
+available in lower evidence/action validation sections. Browser proof with
+agent-browser on `http://127.0.0.1:5173/ads-doctor`: raw links start only after
+the lower `Dowody i ograniczenia Ads` / validation sections. Focused proof:
+RED/GREEN Ads Doctor route test, dashboard lint OK and dashboard typecheck OK.
 
 2026-06-23 Ads wording follow-up: `/api/ads/diagnostics` no longer uses
 `snapshot kampanii` in marketer-facing change-impact readiness copy. The

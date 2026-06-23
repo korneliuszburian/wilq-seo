@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor first-flow trace cleanup, 2026-06-23 09:48 CEST.
+  `/ads-doctor` no longer prints raw `ev_*` evidence IDs or raw
+  `act_prepare/review/configure/apply*` ActionObject IDs in the first Ads
+  decision flow: optimizer readiness, safe-mode summary, top decision cards and
+  nested campaign triage cards now show counts such as `Dowody: N ID` and
+  `ActionObjecty: N ActionObjecty`. Raw trace links remain available lower in
+  dedicated evidence/action validation sections where traceability is the
+  purpose. Browser proof with agent-browser on
+  `http://127.0.0.1:5173/ads-doctor`: raw links start only after the lower
+  `Dowody i ograniczenia Ads` / validation sections. Focused proof:
+  RED/GREEN Ads Doctor route test, dashboard lint OK and dashboard typecheck OK.
 - Actions route evidence-registry cleanup, 2026-06-23.
   `/actions` no longer renders the extra `Dowody powiązane z akcjami` evidence
   registry under ActionObject cards. The route still shows evidence counts on
