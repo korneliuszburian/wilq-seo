@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 07:10 CEST.
+Last updated: 2026-06-23 07:14 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -115,6 +115,13 @@ typecheck OK.
 `Actions/ActionObjects`, and the primary navigation uses Polish labels for
 ActionObjects, knowledge base and settings. Focused proof: actions route unit
 test passed, dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Knowledge follow-up: `/knowledge` now hides raw knowledge card IDs,
+playbook IDs, expert rule IDs, missing contract names and source lineage lists
+from decision cards. It shows marketer-facing counts for available skill,
+evidence, ActionObjects, knowledge cards, playbooks, expert rules, required
+evidence and missing contracts. Focused proof: knowledge route unit test
+passed, dashboard lint OK and dashboard typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

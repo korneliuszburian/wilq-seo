@@ -8,7 +8,7 @@ import { StatusBadge } from "../components/StatusBadge";
 
 export function KnowledgeCardList({ cards }: { cards: KnowledgeCard[] }) {
   if (cards.length === 0) {
-    return <p className="text-sm text-slate-600">No compiled knowledge cards yet.</p>;
+    return <p className="text-sm text-slate-600">Brak skompilowanych kart wiedzy.</p>;
   }
 
   return (
@@ -26,8 +26,8 @@ export function KnowledgeCardList({ cards }: { cards: KnowledgeCard[] }) {
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">{card.summary}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600">
-            <div>Source: {card.source_url_or_path}</div>
-            <div>Lineage: {card.source_lineage.slice(0, 4).join(", ")}</div>
+            <div>Źródło: {card.source_url_or_path}</div>
+            <div>Ślady źródłowe: {formatCount(card.source_lineage.length, "element")}</div>
           </div>
         </article>
       ))}
@@ -89,15 +89,15 @@ export function KnowledgeOperatingMapPanel({ map }: { map: KnowledgeOperatingMap
           ) : null}
           <p className="mt-3 text-sm font-medium text-ink">{binding.next_step}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Skill: {binding.skill_id ?? "brak"}</div>
+            <div>Skill: {binding.skill_id ? "dostępny" : "brak"}</div>
             <div>Źródła: {binding.source_connectors.join(", ") || "brak"}</div>
-            <div>Dowody: {binding.evidence_ids.length || "brak"}</div>
-            <div>ActionObjecty: {binding.action_ids.length || "brak"}</div>
-            <div>Karty wiedzy: {binding.knowledge_card_ids.join(", ") || "brak"}</div>
-            <div>Playbooki: {binding.playbook_ids.join(", ") || "brak"}</div>
-            <div>Reguły: {binding.expert_rule_ids.join(", ") || "brak"}</div>
-            <div>Wymagane dowody: {binding.required_evidence.slice(0, 4).join(", ") || "brak"}</div>
-            <div>Brakujące kontrakty: {binding.missing_contracts.join(", ") || "brak"}</div>
+            <div>Dowody: {formatCount(binding.evidence_ids.length, "ID")}</div>
+            <div>ActionObjecty: {formatCount(binding.action_ids.length, "ID")}</div>
+            <div>Karty wiedzy: {binding.knowledge_card_ids.length}</div>
+            <div>Playbooki: {binding.playbook_ids.length}</div>
+            <div>Reguły eksperckie: {binding.expert_rule_ids.length}</div>
+            <div>Wymagane dowody: {binding.required_evidence.length}</div>
+            <div>Brakujące kontrakty: {binding.missing_contracts.length}</div>
           </div>
           {binding.blocked_claims.length > 0 ? (
             <p className="mt-3 text-xs text-slate-600">
@@ -106,11 +106,15 @@ export function KnowledgeOperatingMapPanel({ map }: { map: KnowledgeOperatingMap
           ) : null}
           {binding.source_lineage.length > 0 ? (
             <p className="mt-3 text-xs text-slate-600">
-              Lineage: {binding.source_lineage.slice(0, 5).join(", ")}
+              Ślady źródłowe: {formatCount(binding.source_lineage.length, "element")}
             </p>
           ) : null}
         </article>
       ))}
     </div>
   );
+}
+
+function formatCount(count: number, unit: string) {
+  return count > 0 ? `${count} ${unit}` : "brak";
 }

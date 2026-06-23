@@ -5978,9 +5978,14 @@ describe("WILQ dashboard", () => {
     renderApp("/knowledge");
     await waitFor(() => expect(screen.getByText("Mapa wiedzy do decyzji")).toBeInTheDocument());
     expect(screen.getByText("Ads daily check")).toBeInTheDocument();
-    expect(screen.getByText(/card_google_ads_search_playbook/)).toBeInTheDocument();
-    expect(screen.getAllByText(/google_ads_search_playbook/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ads_search_terms_v1/).length).toBeGreaterThan(0);
+    expect(screen.getByText("Skill: dostępny")).toBeInTheDocument();
+    expect(screen.getByText("Karty wiedzy: 1")).toBeInTheDocument();
+    expect(screen.getByText("Playbooki: 1")).toBeInTheDocument();
+    expect(screen.getByText("Reguły eksperckie: 1")).toBeInTheDocument();
+    expect(screen.queryByText(/card_google_ads_search_playbook/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/google_ads_search_playbook/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ads_search_terms_v1/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
     expect(screen.getByText("Powiązania")).toBeInTheDocument();
     expect(screen.getByText("Karty źródłowe")).toBeInTheDocument();
     expect(screen.getAllByText("Google Ads search diagnostics").length).toBeGreaterThan(0);

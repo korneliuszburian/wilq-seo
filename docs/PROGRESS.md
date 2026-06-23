@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Knowledge dashboard cleanup, 2026-06-23 07:14 CEST.
+  `/knowledge` nie drukuje już raw `knowledge_card_ids`, `playbook_ids`,
+  `expert_rule_ids`, `missing_contracts` ani source lineage jako list ID na
+  kartach mapy wiedzy. Widok pokazuje marketer-facing liczniki: skill
+  dostępny/brak, liczba dowodów, ActionObjectów, kart wiedzy, playbooków,
+  reguł eksperckich i brakujących kontraktów. Focused proof:
+  `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t
+  "knowledge route renders compiled cards and playbooks"` passed, dashboard
+  lint OK and dashboard typecheck OK.
 - Actions/dashboard navigation polish, 2026-06-23 07:10 CEST.
   `/actions` używa nagłówka i kafla `ActionObjecty` zamiast angielskiego
   `Actions/ActionObjects`, a główna nawigacja ma polskie etykiety
