@@ -1984,6 +1984,8 @@ class MerchantProductSampleReadiness(BaseModel):
     status: Literal["ready", "blocked"]
     sample_products_available: bool = False
     sample_count: int = 0
+    sample_product_ids: list[str] = Field(default_factory=list)
+    sample_product_titles: list[str] = Field(default_factory=list)
     current_read_contract: Literal["merchant_aggregate_product_statuses"] = (
         "merchant_aggregate_product_statuses"
     )

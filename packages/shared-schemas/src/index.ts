@@ -1604,6 +1604,8 @@ export const MerchantProductSampleReadinessSchema = z.object({
   status: z.enum(["ready", "blocked"]),
   sample_products_available: z.boolean(),
   sample_count: z.number(),
+  sample_product_ids: z.array(z.string()),
+  sample_product_titles: z.array(z.string()),
   current_read_contract: z.literal("merchant_aggregate_product_statuses"),
   required_read_contracts: z.array(z.string()),
   source_endpoint: z.string(),

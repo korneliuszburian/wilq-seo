@@ -9161,6 +9161,45 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
                         "resolution": "MERCHANT_ACTION",
                     },
                 ),
+                VendorMetricFact(
+                    "sample_product_id",
+                    "online~pl~PL~SKU-001",
+                    {
+                        "issue_type": "availability_updated",
+                        "affected_attribute": "availability",
+                        "country": "PL",
+                        "reporting_context": "SHOPPING_ADS",
+                        "severity": "NOT_IMPACTED",
+                        "resolution": "MERCHANT_ACTION",
+                        "sample_index": "1",
+                    },
+                ),
+                VendorMetricFact(
+                    "sample_product_id",
+                    "online~pl~PL~SKU-002",
+                    {
+                        "issue_type": "availability_updated",
+                        "affected_attribute": "availability",
+                        "country": "PL",
+                        "reporting_context": "SHOPPING_ADS",
+                        "severity": "NOT_IMPACTED",
+                        "resolution": "MERCHANT_ACTION",
+                        "sample_index": "2",
+                    },
+                ),
+                VendorMetricFact(
+                    "sample_product_title",
+                    "Sorbent chemiczny 10 kg",
+                    {
+                        "issue_type": "availability_updated",
+                        "affected_attribute": "availability",
+                        "country": "PL",
+                        "reporting_context": "SHOPPING_ADS",
+                        "severity": "NOT_IMPACTED",
+                        "resolution": "MERCHANT_ACTION",
+                        "sample_index": "1",
+                    },
+                ),
             ],
         ),
     )
@@ -9184,9 +9223,14 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["freshness_assessment"]["requires_refresh"] is False
     assert payload["freshness_assessment"]["stale_after_hours"] == 48
     sample_readiness = payload["product_sample_readiness"]
-    assert sample_readiness["status"] == "blocked"
-    assert sample_readiness["sample_products_available"] is False
-    assert sample_readiness["sample_count"] == 0
+    assert sample_readiness["status"] == "ready"
+    assert sample_readiness["sample_products_available"] is True
+    assert sample_readiness["sample_count"] == 2
+    assert sample_readiness["sample_product_ids"] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert sample_readiness["sample_product_titles"] == ["Sorbent chemiczny 10 kg"]
     assert sample_readiness["current_read_contract"] == "merchant_aggregate_product_statuses"
     assert sample_readiness["required_read_contracts"] == [
         "merchant_products_list_product_status",
@@ -9194,11 +9238,11 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     ]
     assert sample_readiness["source_endpoint"] == "aggregateProductStatuses"
     assert "products.list" in sample_readiness["next_step"]
-    assert "product-level fix" in sample_readiness["blocked_claims"]
+    assert "feed write" in sample_readiness["blocked_claims"]
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
     assert payload["unknowns"]
     unknown_ids = {unknown["id"] for unknown in payload["unknowns"]}
-    assert "merchant_product_examples_missing" in unknown_ids
+    assert "merchant_product_examples_missing" not in unknown_ids
     assert "merchant_unique_product_count_unknown" in unknown_ids
     assert payload["issue_clusters"]
     cluster = payload["issue_clusters"][0]
@@ -9211,10 +9255,12 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert cluster["product_count"] == 23
     assert cluster["count_semantics"] == "reported_issue_occurrences"
     assert cluster["action_id"] == "act_review_merchant_feed_issues"
-    assert cluster["sample_product_ids"] == []
-    assert cluster["sample_titles"] == []
-    assert "nie zwraca przykładowych ID produktów" in cluster["sample_unavailable_reason"]
-    assert "wystąpień problemu" in cluster["sample_unavailable_reason"]
+    assert cluster["sample_product_ids"] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert cluster["sample_titles"] == ["Sorbent chemiczny 10 kg"]
+    assert cluster["sample_unavailable_reason"] is None
     assert "approval restored" in cluster["blocked_claims"]
     assert payload["decision_queue"]
     operator_summary = payload["operator_summary"]
@@ -10201,6 +10247,10 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
                                 "title": "Missing image",
                                 "attribute": "image_link",
                                 "numProducts": "2",
+                                "sampleProducts": [
+                                    "accounts/123456/products/online~pl~PL~SKU-001",
+                                    "accounts/123456/products/online~pl~PL~SKU-002",
+                                ],
                             },
                             {
                                 "severity": "NOT_IMPACTED",
@@ -10277,6 +10327,116 @@ def test_merchant_vendor_read_uses_aggregate_product_statuses(
         "issue_title": "Missing image",
         "affected_attribute": "image_link",
     }
+    sample_facts = [fact for fact in result.metric_facts if fact.name == "sample_product_id"]
+    assert [fact.value for fact in sample_facts] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert sample_facts[0].dimensions == {
+        "country": "PL",
+        "reporting_context": "SHOPPING_ADS",
+        "severity": "DISAPPROVED",
+        "resolution": "MERCHANT_ACTION",
+        "issue_type": "missing_image",
+        "issue_title": "Missing image",
+        "affected_attribute": "image_link",
+        "sample_index": "1",
+    }
+
+
+def test_merchant_vendor_read_uses_products_list_for_issue_samples(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "accounts/123456")
+    monkeypatch.setattr(
+        "wilq.connectors.google_merchant_center.client.google_access_token",
+        lambda scopes: "merchant-access-token",
+    )
+
+    requested_paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        if request.url.path == "/issueresolution/v1/accounts/123456/aggregateProductStatuses":
+            return httpx.Response(
+                200,
+                json={
+                    "aggregateProductStatuses": [
+                        {
+                            "reportingContext": "SHOPPING_ADS",
+                            "country": "PL",
+                            "statistics": {"approvedCount": "8"},
+                            "issues": [
+                                {
+                                    "severity": "DISAPPROVED",
+                                    "resolution": "MERCHANT_ACTION",
+                                    "issueType": "landing_page_error",
+                                    "attribute": "link",
+                                    "numProducts": "2",
+                                }
+                            ],
+                        }
+                    ]
+                },
+            )
+        if request.url.path == "/products/v1/accounts/123456/products":
+            assert request.url.params["pageSize"] == "1000"
+            return httpx.Response(
+                200,
+                json={
+                    "products": [
+                        {
+                            "name": "accounts/123456/products/online~pl~PL~SKU-LINK-001",
+                            "offerId": "SKU-LINK-001",
+                            "productAttributes": {"title": "Sorbent chemiczny 10 kg"},
+                            "productStatus": {
+                                "itemLevelIssues": [
+                                    {
+                                        "code": "landing_page_error",
+                                        "severity": "DISAPPROVED",
+                                        "resolution": "MERCHANT_ACTION",
+                                        "attribute": "link",
+                                        "reportingContext": "SHOPPING_ADS",
+                                        "applicableCountries": ["PL"],
+                                    }
+                                ]
+                            },
+                        }
+                    ]
+                },
+            )
+        raise AssertionError(f"Unexpected Merchant path: {request.url.path}")
+
+    result = refresh_merchant_product_status_summary(
+        ConnectorRefreshRequest(mode=ConnectorRefreshMode.vendor_read),
+        http_client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert result.status == ConnectorRefreshStatus.completed
+    assert requested_paths == [
+        "/issueresolution/v1/accounts/123456/aggregateProductStatuses",
+        "/products/v1/accounts/123456/products",
+    ]
+    sample_id = next(fact for fact in result.metric_facts if fact.name == "sample_product_id")
+    assert sample_id.value == "online~pl~PL~SKU-LINK-001"
+    assert sample_id.dimensions == {
+        "country": "PL",
+        "reporting_context": "SHOPPING_ADS",
+        "severity": "DISAPPROVED",
+        "resolution": "MERCHANT_ACTION",
+        "issue_type": "landing_page_error",
+        "affected_attribute": "link",
+        "sample_index": "1",
+        "sample_source": "products.list",
+    }
+    sample_title = next(
+        fact for fact in result.metric_facts if fact.name == "sample_product_title"
+    )
+    assert sample_title.value == "Sorbent chemiczny 10 kg"
+    assert sample_title.dimensions == sample_id.dimensions
 
 
 def test_merchant_vendor_read_routes_through_refresh_endpoint(

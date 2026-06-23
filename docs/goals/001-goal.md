@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 16:24 CEST.
+Last updated: 2026-06-23 16:49 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -182,17 +182,29 @@ Merchant gap: add a separate product-level read contract if the marketer needs
 real product IDs/titles/SKU for item-by-item feed work; do not infer those from
 aggregate issue clusters.
 
-2026-06-23 Merchant product-sample readiness completed as a typed blocker, not
-as a fake product list. `/api/merchant/diagnostics.product_sample_readiness`
-now says whether product-level examples are available. Current live state is
-`blocked`, `sample_products_available=false`, because the present Merchant read
-contract is aggregate `aggregateProductStatuses`; required future read
-contracts are `merchant_products_list_product_status` and
-`merchant_reports_product_view_issue_filter`. `/merchant` shows `Gotowość
-próbek produktów`, and the `wilq-merchant-feed-operator` smoke asserts this
-field. This preserves the guardrail: WILQ may recommend aggregate issue review,
-but must not claim concrete product-level fixes until a product/SKU read
-contract exists.
+2026-06-23 Merchant product-sample read completed as a typed API/dashboard
+contract. The Merchant connector now parses `sampleProducts` from
+`aggregateProductStatuses` when present and falls back to read-only
+`products.list` product status issue rows when aggregate samples are absent.
+Live proof after stack restart:
+`refresh_google_merchant_center_a471db43f332`,
+`ev_refresh_refresh_google_merchant_center_a471db43f332`,
+`product_sample_count=20`, `product_sample_read_status=completed`.
+`/api/merchant/diagnostics.product_sample_readiness` is `ready` on the live
+stack and exposes matched sample product IDs plus titles for some issue
+clusters. The diagnostics layer normalizes Merchant attribute names only for
+matching, e.g. `n:unit_pricing_measure` can join to `unit pricing measure`,
+while raw evidence dimensions stay unchanged. Guardrail still applies: samples
+support product review, not feed writes, approval restoration, unique-product
+counts or revenue claims.
+
+Next Merchant skill/eval rule: re-run `wilq-merchant-feed-operator` against
+the new contract. The answer must distinguish `decision_queue` from
+`issue_clusters`, report freshness, say what is still unknown, report both
+context-pack validation state and current ActionObject validation, and use
+sample product IDs/titles only as review examples. Do not patch these business
+rules into skill references unless the typed API contract already exposes the
+needed fields.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

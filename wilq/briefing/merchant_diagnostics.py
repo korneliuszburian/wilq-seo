@@ -243,25 +243,29 @@ def _merchant_unknowns(
 ) -> list[MerchantUnknownFact]:
     unknowns: list[MerchantUnknownFact] = []
     if issue_clusters or decisions:
-        unknowns.append(
-            MerchantUnknownFact(
-                id="merchant_product_examples_missing",
-                title="Brak przykładowych produktów/SKU w kontrakcie odczytu",
-                reason=(
-                    "Merchant diagnostics ma typ problemu, atrybut, kraj, kontekst "
-                    "raportowania i licznik, ale nie zwraca product IDs, SKU ani tytułów."
-                ),
-                impact=(
-                    "WILQ może przygotować kolejkę review po klastrach, ale nie listę "
-                    "konkretnych produktów do edycji."
-                ),
-                next_step=(
-                    "Dodać osobny read contract dla bezpiecznych przykładów produktów "
-                    "albo otworzyć Merchant Center podczas review."
-                ),
-                blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
-            )
+        sample_ids = _unique(
+            sample_id for cluster in issue_clusters for sample_id in cluster.sample_product_ids
         )
+        if not sample_ids:
+            unknowns.append(
+                MerchantUnknownFact(
+                    id="merchant_product_examples_missing",
+                    title="Brak przykładowych produktów/SKU w kontrakcie odczytu",
+                    reason=(
+                        "Merchant diagnostics ma typ problemu, atrybut, kraj, kontekst "
+                        "raportowania i licznik, ale nie zwraca product IDs, SKU ani tytułów."
+                    ),
+                    impact=(
+                        "WILQ może przygotować kolejkę review po klastrach, ale nie listę "
+                        "konkretnych produktów do edycji."
+                    ),
+                    next_step=(
+                        "Dodać osobny read contract dla bezpiecznych przykładów produktów "
+                        "albo otworzyć Merchant Center podczas review."
+                    ),
+                    blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
+                )
+            )
         unknowns.append(
             MerchantUnknownFact(
                 id="merchant_unique_product_count_unknown",
@@ -289,21 +293,32 @@ def _merchant_product_sample_readiness(
     issue_clusters: list[MerchantIssueCluster],
     decisions: list[MerchantDecisionItem],
 ) -> MerchantProductSampleReadiness:
-    samples = [
-        sample
-        for cluster in issue_clusters
-        for sample in [*cluster.sample_product_ids, *cluster.sample_titles]
-        if sample
-    ]
-    if samples:
+    sample_product_ids = _unique(
+        sample_id for cluster in issue_clusters for sample_id in cluster.sample_product_ids
+    )
+    sample_product_titles = _unique(
+        title for cluster in issue_clusters for title in cluster.sample_titles
+    )
+    if sample_product_ids:
         return MerchantProductSampleReadiness(
             status="ready",
             sample_products_available=True,
-            sample_count=len(samples),
-            required_read_contracts=[],
+            sample_count=len(sample_product_ids),
+            sample_product_ids=sample_product_ids[:20],
+            sample_product_titles=sample_product_titles[:20],
+            required_read_contracts=[
+                "merchant_products_list_product_status",
+                "merchant_reports_product_view_issue_filter",
+            ],
             source_endpoint="aggregateProductStatuses",
-            summary="Merchant diagnostics ma przykładowe produkty z obecnego kontraktu.",
-            next_step="Użyj próbek tylko do review; apply nadal wymaga ActionObject i audytu.",
+            summary=(
+                "Merchant read zwraca przykładowe product IDs dla części problemów. "
+                "Tytuły są dostępne tylko wtedy, gdy products.list enrichment je zwróci."
+            ),
+            next_step=(
+                "Użyj próbek do review. Dla tytułów/SKU/statusów dodaj read-only "
+                "products.list/productStatus albo reports.search product_view."
+            ),
             blocked_claims=["feed write", "automatic feed edit"],
         )
 
@@ -532,6 +547,8 @@ def _merchant_issue_clusters(
             for fact in group_facts
             if isinstance(fact.value, int | float)
         )
+        sample_product_ids = _sample_product_ids_for_cluster(facts, key)
+        sample_titles = _sample_titles_for_cluster(facts, key)
         clusters.append(
             MerchantIssueCluster(
                 id=(
@@ -548,7 +565,11 @@ def _merchant_issue_clusters(
                 country=country or None,
                 reporting_context=reporting_context or None,
                 product_count=product_count,
-                sample_unavailable_reason=(
+                sample_product_ids=sample_product_ids,
+                sample_titles=sample_titles,
+                sample_unavailable_reason=None
+                if sample_product_ids
+                else (
                     "Obecny kontrakt odczytu Merchant zwraca wymiary problemu i liczbę "
                     "wystąpień problemu w raportach, ale nie zwraca przykładowych ID "
                     "produktów ani tytułów."
@@ -572,6 +593,67 @@ def _merchant_issue_clusters(
             cluster.issue_type,
         ),
     )
+
+
+def _sample_product_ids_for_cluster(
+    facts: list[MetricFact],
+    key: tuple[str, str, str, str, str, str],
+) -> list[str]:
+    issue_type, affected_attribute, country, reporting_context, severity, resolution = key
+    sample_ids = [
+        str(fact.value)
+        for fact in sorted(
+            facts,
+            key=lambda fact: fact.dimensions.get("sample_index", ""),
+        )
+        if fact.name == "sample_product_id"
+        and fact.dimensions.get("issue_type") == issue_type
+        and _merchant_attribute_matches(
+            fact.dimensions.get("affected_attribute"),
+            affected_attribute,
+        )
+        and (fact.dimensions.get("country") or "") == country
+        and (fact.dimensions.get("reporting_context") or "") == reporting_context
+        and fact.dimensions.get("severity") == severity
+        and (fact.dimensions.get("resolution") or "") == resolution
+        and isinstance(fact.value, str)
+    ]
+    return _unique(sample_ids)[:10]
+
+
+def _sample_titles_for_cluster(
+    facts: list[MetricFact],
+    key: tuple[str, str, str, str, str, str],
+) -> list[str]:
+    issue_type, affected_attribute, country, reporting_context, severity, resolution = key
+    sample_titles = [
+        str(fact.value)
+        for fact in sorted(
+            facts,
+            key=lambda fact: fact.dimensions.get("sample_index", ""),
+        )
+        if fact.name == "sample_product_title"
+        and fact.dimensions.get("issue_type") == issue_type
+        and _merchant_attribute_matches(
+            fact.dimensions.get("affected_attribute"),
+            affected_attribute,
+        )
+        and (fact.dimensions.get("country") or "") == country
+        and (fact.dimensions.get("reporting_context") or "") == reporting_context
+        and fact.dimensions.get("severity") == severity
+        and (fact.dimensions.get("resolution") or "") == resolution
+        and isinstance(fact.value, str)
+    ]
+    return _unique(sample_titles)[:10]
+
+
+def _merchant_attribute_matches(left: str | None, right: str | None) -> bool:
+    return _merchant_attribute_key(left) == _merchant_attribute_key(right)
+
+
+def _merchant_attribute_key(value: str | None) -> str:
+    normalized = (value or "").removeprefix("n:").strip().lower()
+    return normalized.replace("_", " ")
 
 
 def _operator_summary(

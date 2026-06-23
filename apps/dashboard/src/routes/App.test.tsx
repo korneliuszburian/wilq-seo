@@ -4026,6 +4026,8 @@ const merchantDiagnostics = {
     status: "blocked",
     sample_products_available: false,
     sample_count: 0,
+    sample_product_ids: [],
+    sample_product_titles: [],
     current_read_contract: "merchant_aggregate_product_statuses",
     required_read_contracts: [
       "merchant_products_list_product_status",
@@ -6277,6 +6279,9 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Gotowość próbek produktów")).toBeInTheDocument();
     expect(screen.getByText("próbki produktów zablokowane")).toBeInTheDocument();
+    expect(screen.getByText(/Przykładowe produkty:/)).toBeInTheDocument();
+    expect(screen.getByText(/brak próbek/)).toBeInTheDocument();
+    expect(screen.getByText(/Przykładowe tytuły:/)).toBeInTheDocument();
     expect(
       screen.getByText(/Obecny odczyt: merchant_aggregate_product_statuses/)
     ).toBeInTheDocument();

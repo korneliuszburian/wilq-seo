@@ -77,7 +77,22 @@ Stan produktu:
    `188143` bytes and rerun passed. If it repeats, fix API context-pack
    compaction/budget stability, not skill references.
 
-4. Merchant diagnostics decision contract, 2026-06-23.
+4. Merchant product sample enrichment, 2026-06-23.
+   Merchant read-only `vendor_read` enriches aggregate issue clusters with
+   product samples. It parses `sampleProducts` from `aggregateProductStatuses`
+   when present and falls back to `products.list` / product status issue rows
+   when aggregate samples are absent. Live proof:
+   `refresh_google_merchant_center_a471db43f332`,
+   `ev_refresh_refresh_google_merchant_center_a471db43f332`,
+   `product_sample_count=20`, `product_sample_read_status=completed`.
+   `/api/merchant/diagnostics.product_sample_readiness` is now `ready` on the
+   live stack and exposes 12 matched sample product IDs plus titles for
+   `unit_pricing_measure` and `availability` clusters. The diagnostics layer
+   normalizes Merchant attribute names such as `n:unit_pricing_measure` and
+   `unit pricing measure` only for matching; raw evidence dimensions remain
+   unchanged.
+
+5. Merchant diagnostics decision contract, 2026-06-23.
    `/api/merchant/diagnostics` ma typed pola eliminujące błąd interpretacji z
    live-run `wilq-merchant-feed-operator`: `freshness_assessment`,
    `unknowns`, `operator_summary.decision_source=decision_queue`,
@@ -89,14 +104,14 @@ Stan produktu:
    ruff/mypy, dashboard lint/typecheck, shared-schemas typecheck, browser proof
    `.local-lab/proof/dashboard/merchant-freshness-unknowns.txt`.
 
-5. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
+6. Ads Doctor drilldown/API copy cleanup, 2026-06-23.
    Commit `92febad fix(dashboard): polish ads doctor drilldowns` oczyścił dolne
    sekcje Ads Doctor i Custom Segments z najbardziej mylącego mieszanego copy.
    Keep enum names, endpoint names, field IDs, blocked-claim keys and Google API
    resource names unchanged; marketer-facing summaries/titles/next steps should
    stay Polish.
 
-6. Command Center and Ads first-flow copy cleanup, 2026-06-23.
+7. Command Center and Ads first-flow copy cleanup, 2026-06-23.
    Command Center first-screen daily decision cards compose concise Polish
    marketer copy from typed API fields and metric tiles. Ads Doctor first flow
    shows review-only Ads decisions instead of raw API slang and hides raw
@@ -109,11 +124,11 @@ Stan produktu:
   review contracts, but still blocks unsupported claims such as wasted budget,
   profitability, budget scaling, recommendation apply, CPA/ROAS verdicts and
   incrementality without stronger business/target/human confirmation contracts.
-- Merchant item-by-item work is not done. WILQ now explicitly blocks product
-  samples through `product_sample_readiness`, because aggregate
-  `aggregateProductStatuses` evidence gives review clusters, not product
-  IDs/titles/SKU. Add a product-level read contract before claiming specific
-  product fixes.
+- Merchant item-by-item work is partially unblocked. WILQ now has read-only
+  product samples and titles for some issue clusters, but still blocks product
+  fixes, feed writes, approval restoration, unique-product counts and full
+  SKU-level workflows until payload preview, ActionObject validation and audit
+  contracts exist for the exact product rows.
 - Localo access works at OAuth/MCP initialize level, but WILQ still must expose
   real Localo ranking/GBP/competitor evidence before local SEO recommendations.
 - Skill evals prove API usage, Polish and evidence shape, but still need stricter
@@ -123,10 +138,10 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. If Merchant demo needs concrete product rows, implement the read-only
-   product-sample contract behind `merchant_products_list_product_status` or
-   `merchant_reports_product_view_issue_filter`; otherwise keep Merchant as
-   aggregate review and do not pretend it has SKU-level evidence.
+1. Re-run `wilq-merchant-feed-operator` non-interactive eval against the new
+   Merchant product-sample contract and require it to mention sample products,
+   freshness, decision_queue-first grouping, "czego nie wiemy", and review-only
+   ActionObject validation nuance.
 2. Run the next high-value Codex skill eval against current API contracts and
    record whether it produces real decisions, not only schema-valid output.
    Recommended next skill: `wilq-gsc-content-doctor` if the next demo focuses

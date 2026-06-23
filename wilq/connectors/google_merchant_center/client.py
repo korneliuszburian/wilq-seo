@@ -11,6 +11,8 @@ from wilq.schemas import ConnectorRefreshRequest, ConnectorRefreshStatus
 
 MERCHANT_API_SCOPE = "https://www.googleapis.com/auth/content"
 MERCHANT_ISSUE_RESOLUTION_BASE = "https://merchantapi.googleapis.com/issueresolution/v1"
+MERCHANT_PRODUCTS_BASE = "https://merchantapi.googleapis.com/products/v1"
+MERCHANT_PRODUCT_SAMPLE_LIMIT = 20
 
 
 def refresh_merchant_product_status_summary(
@@ -85,7 +87,124 @@ def _fetch_product_status_summary(
         params={"pageSize": 100},
     )
     response.raise_for_status()
-    return _summarize_aggregate_product_statuses(response.json())
+    metric_summary, metric_facts = _summarize_aggregate_product_statuses(response.json())
+    if (
+        _int_metric(metric_summary.get("item_level_issue_count")) > 0
+        and not any(fact.name == "sample_product_id" for fact in metric_facts)
+    ):
+        try:
+            product_sample_facts = _fetch_product_issue_samples(client, account_id, access_token)
+        except httpx.HTTPError as exc:
+            metric_summary["product_sample_read_status"] = f"blocked_{type(exc).__name__}"
+        else:
+            metric_facts.extend(product_sample_facts)
+            metric_summary["product_sample_count"] = len(
+                {fact.value for fact in product_sample_facts if fact.name == "sample_product_id"}
+            )
+            metric_summary["product_sample_read_status"] = "completed"
+    return metric_summary, metric_facts
+
+
+def _fetch_product_issue_samples(
+    client: httpx.Client,
+    account_id: str,
+    access_token: str,
+) -> list[VendorMetricFact]:
+    metric_facts: list[VendorMetricFact] = []
+    seen_product_ids: set[str] = set()
+    page_token: str | None = None
+    while len(seen_product_ids) < MERCHANT_PRODUCT_SAMPLE_LIMIT:
+        params: dict[str, str | int] = {
+            "pageSize": 1000,
+            "fields": (
+                "products(name,offerId,productAttributes/title,"
+                "productStatus/itemLevelIssues),nextPageToken"
+            ),
+        }
+        if page_token:
+            params["pageToken"] = page_token
+        response = client.get(
+            f"{MERCHANT_PRODUCTS_BASE}/accounts/{account_id}/products",
+            headers={"Authorization": f"Bearer {access_token}"},
+            params=params,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        products = payload.get("products", []) if isinstance(payload, dict) else []
+        if isinstance(products, list):
+            for product in products:
+                if not isinstance(product, dict):
+                    continue
+                metric_facts.extend(_product_issue_sample_facts(product, seen_product_ids))
+                if len(seen_product_ids) >= MERCHANT_PRODUCT_SAMPLE_LIMIT:
+                    break
+        page_token_value = payload.get("nextPageToken") if isinstance(payload, dict) else None
+        page_token = (
+            page_token_value
+            if isinstance(page_token_value, str) and page_token_value
+            else None
+        )
+        if not page_token:
+            break
+    return metric_facts
+
+
+def _product_issue_sample_facts(
+    product: dict[str, Any],
+    seen_product_ids: set[str],
+) -> list[VendorMetricFact]:
+    product_id = _sample_product_id(str(product.get("name") or product.get("offerId") or ""))
+    if not product_id or product_id in seen_product_ids:
+        return []
+    status = product.get("productStatus") if isinstance(product.get("productStatus"), dict) else {}
+    issues = status.get("itemLevelIssues", []) if isinstance(status, dict) else []
+    if not isinstance(issues, list) or not issues:
+        return []
+    first_issue = next((issue for issue in issues if isinstance(issue, dict)), None)
+    if first_issue is None:
+        return []
+    seen_product_ids.add(product_id)
+    dimensions = _product_issue_dimensions(first_issue) | {
+        "sample_index": str(len(seen_product_ids)),
+        "sample_source": "products.list",
+    }
+    facts = [VendorMetricFact("sample_product_id", product_id, dimensions)]
+    title = _product_title(product)
+    if title:
+        facts.append(VendorMetricFact("sample_product_title", title, dimensions))
+    return facts
+
+
+def _product_issue_dimensions(issue: dict[str, Any]) -> dict[str, str]:
+    dimensions = _issue_dimensions(issue)
+    severity = issue.get("severity")
+    if isinstance(severity, str) and severity:
+        dimensions["severity"] = severity.upper()
+    resolution = issue.get("resolution")
+    if isinstance(resolution, str) and resolution:
+        dimensions["resolution"] = resolution.upper()
+    country = _first_text(issue.get("applicableCountries"))
+    if country:
+        dimensions["country"] = country
+    return dimensions
+
+
+def _product_title(product: dict[str, Any]) -> str | None:
+    attributes = product.get("productAttributes")
+    if not isinstance(attributes, dict):
+        return None
+    title = attributes.get("title")
+    return _safe_dimension_text(title) if isinstance(title, str) and title else None
+
+
+def _first_text(value: Any) -> str | None:
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, str) and item:
+                return item
+    if isinstance(value, str) and value:
+        return value
+    return None
 
 
 def _summarize_aggregate_product_statuses(
@@ -158,6 +277,7 @@ def _summarize_aggregate_product_statuses(
                         issue_dimensions,
                     )
                 )
+                metric_facts.extend(_sample_product_facts(issue, issue_dimensions))
             if issue.get("resolution") == "MERCHANT_ACTION":
                 merchant_action_issue_count += 1
                 merchant_action_product_count += product_count
@@ -262,7 +382,40 @@ def _issue_dimensions(issue: dict[str, Any]) -> dict[str, str]:
     destination = issue.get("destination")
     if isinstance(destination, str) and destination:
         dimensions["destination"] = _safe_dimension_text(destination)
+    reporting_context = issue.get("reportingContext")
+    if isinstance(reporting_context, str) and reporting_context:
+        dimensions["reporting_context"] = _safe_dimension_text(reporting_context)
     return dimensions
+
+
+def _sample_product_facts(
+    issue: dict[str, Any],
+    issue_dimensions: dict[str, str],
+) -> list[VendorMetricFact]:
+    samples = issue.get("sampleProducts")
+    if not isinstance(samples, list):
+        return []
+    facts: list[VendorMetricFact] = []
+    for index, sample in enumerate(samples[:5], start=1):
+        if not isinstance(sample, str) or not sample:
+            continue
+        product_id = _sample_product_id(sample)
+        if not product_id:
+            continue
+        facts.append(
+            VendorMetricFact(
+                "sample_product_id",
+                product_id,
+                issue_dimensions | {"sample_index": str(index)},
+            )
+        )
+    return facts
+
+
+def _sample_product_id(resource_name: str) -> str:
+    marker = "/products/"
+    product_id = resource_name.split(marker, 1)[1] if marker in resource_name else resource_name
+    return _safe_dimension_text(product_id)
 
 
 def _safe_dimension_text(value: str) -> str:

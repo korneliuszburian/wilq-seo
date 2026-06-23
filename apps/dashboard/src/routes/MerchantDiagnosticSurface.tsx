@@ -393,6 +393,18 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Obecny odczyt" values={[readiness.current_read_contract]} />
         <TraceLine label="Endpoint źródłowy" values={[readiness.source_endpoint]} />
+        <TraceLine
+          label="Przykładowe produkty"
+          values={readiness.sample_product_ids.length ? readiness.sample_product_ids : ["brak próbek"]}
+        />
+        <TraceLine
+          label="Przykładowe tytuły"
+          values={
+            readiness.sample_product_titles.length
+              ? readiness.sample_product_titles
+              : ["brak tytułów"]
+          }
+        />
         <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
         <TraceLine
           label="Blokuje claimy"
