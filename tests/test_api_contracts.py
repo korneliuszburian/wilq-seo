@@ -5866,6 +5866,42 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
                     }
                 ],
             )
+        if "FROM shopping_product" in query:
+            assert "shopping_product.resource_name" in query
+            assert "shopping_product.item_id" in query
+            assert "shopping_product.title" in query
+            assert "shopping_product.status" in query
+            assert "shopping_product.availability" in query
+            assert "shopping_product.price_micros" in query
+            assert "shopping_product.issues" not in query
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "results": [
+                            {
+                                "shoppingProduct": {
+                                    "resourceName": (
+                                        "customers/1234567890/shoppingProducts/"
+                                        "5519957373~ONLINE~pl~PL~SKU-001"
+                                    ),
+                                    "merchantCenterId": "5519957373",
+                                    "channel": "ONLINE",
+                                    "languageCode": "pl",
+                                    "feedLabel": "PL",
+                                    "itemId": "SKU-001",
+                                    "title": "Sorbent chemiczny 10 kg",
+                                    "status": "ELIGIBLE",
+                                    "availability": "IN_STOCK",
+                                    "currencyCode": "PLN",
+                                    "priceMicros": "123450000",
+                                    "targetCountries": ["PL"],
+                                }
+                            }
+                        ]
+                    }
+                ],
+            )
         if "FROM ad_group_criterion" in query:
             assert "ad_group_criterion.keyword.text" in query
             assert "ad_group_criterion.keyword.match_type" in query
@@ -5996,6 +6032,14 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert result.metric_summary["shopping_product_cost_micros"] == 2750000
     assert result.metric_summary["shopping_product_conversions"] == 1.5
     assert result.metric_summary["shopping_product_conversion_value"] == 320.0
+    assert result.metric_summary["shopping_product_state_status"] == "ready"
+    assert result.metric_summary["shopping_product_state_query"] == (
+        "shopping_product_current_state"
+    )
+    assert result.metric_summary["shopping_product_state_row_count"] == 1
+    assert result.metric_summary["shopping_product_state_product_count"] == 1
+    assert result.metric_summary["shopping_product_state_eligible_count"] == 1
+    assert result.metric_summary["shopping_product_state_availability_values"] == "IN_STOCK"
     assert result.metric_summary["recommendation_query"] == "active_recommendations"
     assert result.metric_summary["recommendation_row_count"] == 1
     assert result.metric_summary["recommendation_campaign_count"] == 1
@@ -6041,6 +6085,7 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
     assert any("FROM ad_group_ad\n" in query for query in search_stream_queries)
     assert any("FROM ad_group_ad_asset_view" in query for query in search_stream_queries)
     assert any("FROM shopping_performance_view" in query for query in search_stream_queries)
+    assert any("FROM shopping_product" in query for query in search_stream_queries)
     assert result.metric_facts[0].dimensions == {
         "campaign_id": "101",
         "campaign_name": "Brand Search",
@@ -6140,6 +6185,23 @@ def test_google_ads_vendor_read_uses_oauth_and_search_stream(
         if fact.name == "shopping_product_conversion_value"
     )
     assert shopping_product_value_fact.value == 320.0
+    shopping_product_state_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "shopping_product_state_available"
+    )
+    assert shopping_product_state_fact.value == 1
+    assert shopping_product_state_fact.period == "shopping_product_state"
+    assert shopping_product_state_fact.dimensions["product_item_id"] == "SKU-001"
+    assert shopping_product_state_fact.dimensions["product_status"] == "ELIGIBLE"
+    assert shopping_product_state_fact.dimensions["product_availability"] == "IN_STOCK"
+    assert shopping_product_state_fact.dimensions["target_countries"] == "PL"
+    shopping_product_price_fact = next(
+        fact
+        for fact in result.metric_facts
+        if fact.name == "shopping_product_price_micros"
+    )
+    assert shopping_product_price_fact.value == 123450000
     impression_share_fact = next(
         fact for fact in result.metric_facts if fact.name == "search_impression_share"
     )
@@ -10343,6 +10405,83 @@ def test_merchant_product_performance_readiness_reports_ready_ads_contract_witho
         "ads_cost_micros",
         "ads_conversions",
         "ads_conversion_value",
+        "ga4_purchase_revenue",
+    ]
+
+
+def test_merchant_product_performance_readiness_blocks_state_only_product_join() -> None:
+    product_id = "pl~PL~gla_107365"
+    issue_cluster = MerchantIssueCluster(
+        id="merchant_issue_state_only",
+        issue_type="availability_updated",
+        affected_attribute="n:availability",
+        country="PL",
+        reporting_context="SHOPPING_ADS",
+        severity="NOT_IMPACTED",
+        resolution="MERCHANT_ACTION",
+        product_count=1,
+        sample_product_ids=[product_id],
+        sample_titles=["Dywan sorpcyjny"],
+        source_connectors=["google_merchant_center"],
+        evidence_ids=["ev_merchant_issue"],
+        blocked_claims=["approval restored"],
+        action_id="act_review_merchant_feed_issues",
+        next_step="Review produktu.",
+        risk=ActionRisk.medium,
+    )
+    sample_readiness = MerchantProductSampleReadiness(
+        status="ready",
+        sample_products_available=True,
+        sample_count=1,
+        sample_product_ids=[product_id],
+        sample_product_titles=["Dywan sorpcyjny"],
+        required_read_contracts=["merchant_products_list_product_status"],
+        source_endpoint="aggregateProductStatuses",
+        summary="Merchant read ma sample product ID.",
+        next_step="Review próbki.",
+    )
+    state_facts = [
+        MetricFact(
+            name="shopping_product_state_available",
+            value=1,
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={"product_item_id": "gla_107365"},
+        ),
+        MetricFact(
+            name="shopping_product_status",
+            value="NOT_ELIGIBLE",
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={"product_item_id": "gla_107365"},
+        ),
+    ]
+
+    readiness = _merchant_product_performance_readiness(
+        issue_clusters=[issue_cluster],
+        product_sample_readiness=sample_readiness,
+        product_metric_facts_by_connector={
+            "google_ads": state_facts,
+            "google_analytics_4": [],
+        },
+    )
+
+    assert readiness.status == "blocked"
+    assert readiness.joined_product_count == 1
+    assert readiness.current_read_contracts == [
+        "merchant_aggregate_product_statuses",
+        "google_ads_shopping_product_state",
+    ]
+    assert "product-state join" in readiness.summary
+    assert "Product ROAS" in readiness.next_step
+    assert readiness.performance_rows[0].missing_metrics == [
+        "ads_clicks",
+        "ads_cost_micros",
+        "ads_conversions",
+        "ads_conversion_value",
+        "ga4_ecommerce_purchases",
         "ga4_purchase_revenue",
     ]
 

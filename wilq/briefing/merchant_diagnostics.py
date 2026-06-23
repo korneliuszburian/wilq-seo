@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Literal
 
 from wilq.actions.service import MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT, list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -57,6 +58,12 @@ PRODUCT_JOIN_DIMENSION_KEYS = [
     "sku",
     "item_sku",
 ]
+GOOGLE_ADS_PRODUCT_STATE_FACT_NAMES = {
+    "shopping_product_state_available",
+    "shopping_product_status",
+    "shopping_product_availability",
+    "shopping_product_price_micros",
+}
 MERCHANT_HEALTH_METRIC_NAMES = {
     "total_products",
     "active_products",
@@ -447,6 +454,14 @@ def _merchant_product_performance_readiness(
     ads_product_facts = _product_scoped_metric_facts(
         product_metric_facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])
     )
+    ads_product_state_facts = [
+        fact for fact in ads_product_facts if fact.name in GOOGLE_ADS_PRODUCT_STATE_FACT_NAMES
+    ]
+    ads_product_performance_facts = [
+        fact
+        for fact in ads_product_facts
+        if fact.name not in GOOGLE_ADS_PRODUCT_STATE_FACT_NAMES
+    ]
     ga4_product_facts = _product_scoped_metric_facts(
         product_metric_facts_by_connector.get(GA4_CONNECTOR_ID, [])
     )
@@ -511,16 +526,45 @@ def _merchant_product_performance_readiness(
         )
 
     current_read_contracts = ["merchant_aggregate_product_statuses"]
-    if ads_product_facts:
+    if ads_product_performance_facts:
         current_read_contracts.append("google_ads_product_metric_facts")
+    if ads_product_state_facts:
+        current_read_contracts.append("google_ads_shopping_product_state")
     elif ads_shopping_contract_ready:
         current_read_contracts.append("google_ads_shopping_product_performance")
     if ga4_product_facts:
         current_read_contracts.append("ga4_item_metric_facts")
 
     if performance_rows:
+        rows_with_metrics = [
+            row
+            for row in performance_rows
+            if _has_product_performance_metric(row)
+        ]
+        if rows_with_metrics:
+            status: Literal["ready", "blocked"] = "ready"
+            summary = (
+                "WILQ ma dopasowane product-level facts dla części Merchant sample IDs. "
+                "To wspiera review produktu z metrykami Ads/GA4, ale nie oznacza "
+                "automatycznej naprawy feedu ani efektu po zmianie."
+            )
+            next_step = (
+                "Użyj performance_rows do priorytetyzacji review. Do claimów o efekcie "
+                "naprawy potrzebny jest osobny before/after audit."
+            )
+        else:
+            status = "blocked"
+            summary = (
+                "WILQ ma dopasowany Ads product-state join dla części Merchant sample IDs, "
+                "ale nie ma jeszcze performance metrics Ads/GA4 dla tych produktów."
+            )
+            next_step = (
+                "Użyj product-state rows tylko do potwierdzenia mapowania ID. Product ROAS, "
+                "revenue recovery i fix impact zostają zablokowane do czasu performance "
+                "facts albo before/after audit."
+            )
         return MerchantProductPerformanceReadiness(
-            status="ready",
+            status=status,
             joined_product_count=len(performance_rows),
             merchant_sample_count=len(sample_product_ids),
             ads_product_fact_count=len(ads_product_facts),
@@ -550,15 +594,8 @@ def _merchant_product_performance_readiness(
                     ),
                 ]
             ),
-            summary=(
-                "WILQ ma dopasowane product-level facts dla części Merchant sample IDs. "
-                "To wspiera review produktu z metrykami Ads/GA4, ale nie oznacza "
-                "automatycznej naprawy feedu ani efektu po zmianie."
-            ),
-            next_step=(
-                "Użyj performance_rows do priorytetyzacji review. Do claimów o efekcie "
-                "naprawy potrzebny jest osobny before/after audit."
-            ),
+            summary=summary,
+            next_step=next_step,
             blocked_claims=[
                 "product fix impact",
                 "approval restored",
@@ -795,6 +832,20 @@ def _numeric_metric_value(
         if fact.name in accepted_names and isinstance(fact.value, int | float):
             return fact.value
     return None
+
+
+def _has_product_performance_metric(row: MerchantProductPerformanceRow) -> bool:
+    return any(
+        value is not None
+        for value in (
+            row.ads_clicks,
+            row.ads_cost_micros,
+            row.ads_conversions,
+            row.ads_conversion_value,
+            row.ga4_ecommerce_purchases,
+            row.ga4_purchase_revenue,
+        )
+    )
 
 
 def _missing_product_performance_metrics(

@@ -125,6 +125,25 @@ ORDER BY
 LIMIT 200
 """.strip()
 
+SHOPPING_PRODUCT_STATE_QUERY = """
+SELECT
+  shopping_product.resource_name,
+  shopping_product.merchant_center_id,
+  shopping_product.channel,
+  shopping_product.language_code,
+  shopping_product.feed_label,
+  shopping_product.item_id,
+  shopping_product.title,
+  shopping_product.status,
+  shopping_product.availability,
+  shopping_product.currency_code,
+  shopping_product.price_micros,
+  shopping_product.target_countries
+FROM shopping_product
+ORDER BY shopping_product.item_id ASC
+LIMIT 500
+""".strip()
+
 KEYWORD_MATCH_CONTEXT_QUERY = """
 SELECT
   campaign.id,
@@ -283,6 +302,13 @@ def refresh_google_ads_campaign_summary(
                     access_token,
                 )
             )
+            shopping_product_state_summary, shopping_product_state_facts = (
+                _fetch_optional_shopping_product_state(
+                    client,
+                    credentials,
+                    access_token,
+                )
+            )
             keyword_context_summary, keyword_context_facts = (
                 _fetch_keyword_match_context_summary(
                     client,
@@ -325,6 +351,7 @@ def refresh_google_ads_campaign_summary(
             metric_summary.update(search_term_summary)
             metric_summary.update(search_term_safety_summary)
             metric_summary.update(shopping_product_summary)
+            metric_summary.update(shopping_product_state_summary)
             metric_summary.update(keyword_context_summary)
             metric_summary.update(recommendation_summary)
             metric_summary.update(change_event_summary)
@@ -334,6 +361,7 @@ def refresh_google_ads_campaign_summary(
             metric_facts.extend(search_term_facts)
             metric_facts.extend(search_term_safety_facts)
             metric_facts.extend(shopping_product_facts)
+            metric_facts.extend(shopping_product_state_facts)
             metric_facts.extend(keyword_context_facts)
             metric_facts.extend(recommendation_facts)
             metric_facts.extend(change_event_facts)
@@ -388,6 +416,8 @@ def refresh_google_ads_campaign_summary(
             f"{metric_summary.get('search_term_safety_row_count', 0)}; "
             "shopping product rows: "
             f"{metric_summary.get('shopping_product_performance_row_count', 0)}; "
+            "shopping product state rows: "
+            f"{metric_summary.get('shopping_product_state_row_count', 0)}; "
             "keyword match context rows: "
             f"{metric_summary.get('keyword_match_context_row_count', 0)}; "
             f"recommendation rows: {metric_summary.get('recommendation_row_count', 0)}; "
@@ -678,6 +708,33 @@ def _fetch_optional_shopping_product_performance(
     return latest_summary, []
 
 
+def _fetch_optional_shopping_product_state(
+    client: httpx.Client,
+    credentials: Mapping[str, str | None],
+    access_token: str,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    try:
+        response = _post_google_ads_search_stream(
+            client,
+            credentials,
+            access_token,
+            SHOPPING_PRODUCT_STATE_QUERY,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        return _shopping_product_state_http_failure_summary(exc)
+    except httpx.HTTPError as exc:
+        return (
+            {
+                "shopping_product_state_status": "blocked",
+                "shopping_product_state_blocker": type(exc).__name__,
+                "shopping_product_state_row_count": 0,
+            },
+            [],
+        )
+    return _summarize_shopping_product_state_response(response.json())
+
+
 def _fetch_recommendation_summary(
     client: httpx.Client,
     credentials: Mapping[str, str | None],
@@ -955,6 +1012,20 @@ def _shopping_product_performance_http_failure_summary(
     }
     if detail:
         summary["shopping_product_performance_blocker"] = detail
+    return summary, []
+
+
+def _shopping_product_state_http_failure_summary(
+    exc: httpx.HTTPStatusError,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    detail = _sanitized_http_error_detail(exc.response)
+    summary: dict[str, float | int | str] = {
+        "shopping_product_state_status": "blocked",
+        "shopping_product_state_http_status": exc.response.status_code,
+        "shopping_product_state_row_count": 0,
+    }
+    if detail:
+        summary["shopping_product_state_blocker"] = detail
     return summary, []
 
 
@@ -1716,6 +1787,82 @@ def _summarize_shopping_product_performance_response(
     )
 
 
+def _summarize_shopping_product_state_response(
+    payload: Any,
+) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
+    rows = _search_stream_rows(payload)
+    product_ids: set[str] = set()
+    statuses: Counter[str] = Counter()
+    availability: Counter[str] = Counter()
+    metric_facts: list[VendorMetricFact] = []
+    for row in rows:
+        shopping_product = row.get("shoppingProduct", row.get("shopping_product", {}))
+        if not isinstance(shopping_product, dict):
+            continue
+        dimensions = _shopping_product_state_dimensions(shopping_product)
+        product_id = dimensions.get("product_id")
+        if product_id:
+            product_ids.add(product_id)
+        status = _string_metric(shopping_product.get("status"))
+        if status:
+            statuses[status] += 1
+        product_availability = _string_metric(shopping_product.get("availability"))
+        if product_availability:
+            availability[product_availability] += 1
+        if not dimensions:
+            continue
+        metric_facts.append(
+            VendorMetricFact(
+                "shopping_product_state_available",
+                1,
+                dimensions,
+                period="shopping_product_state",
+            )
+        )
+        if status:
+            metric_facts.append(
+                VendorMetricFact(
+                    "shopping_product_status",
+                    status,
+                    dimensions,
+                    period="shopping_product_state",
+                )
+            )
+        if product_availability:
+            metric_facts.append(
+                VendorMetricFact(
+                    "shopping_product_availability",
+                    product_availability,
+                    dimensions,
+                    period="shopping_product_state",
+                )
+            )
+        price_micros = _int_metric(shopping_product.get("priceMicros"))
+        if price_micros:
+            metric_facts.append(
+                VendorMetricFact(
+                    "shopping_product_price_micros",
+                    price_micros,
+                    dimensions,
+                    period="shopping_product_state",
+                )
+            )
+    return (
+        {
+            "shopping_product_state_status": "ready",
+            "shopping_product_state_query": "shopping_product_current_state",
+            "shopping_product_state_row_count": len(rows),
+            "shopping_product_state_product_count": len(product_ids),
+            "shopping_product_state_eligible_count": statuses.get("ELIGIBLE", 0),
+            "shopping_product_state_limited_count": statuses.get("ELIGIBLE_LIMITED", 0),
+            "shopping_product_state_not_eligible_count": statuses.get("NOT_ELIGIBLE", 0),
+            "shopping_product_state_status_values": ",".join(sorted(statuses)),
+            "shopping_product_state_availability_values": ",".join(sorted(availability)),
+        },
+        metric_facts,
+    )
+
+
 def _summarize_demand_gen_ad_group_ad_response(
     payload: Any,
 ) -> tuple[dict[str, float | int | str], list[VendorMetricFact]]:
@@ -1847,6 +1994,10 @@ def _int_metric(value: Any) -> int:
     if isinstance(value, str) and value.isdigit():
         return int(value)
     return 0
+
+
+def _string_metric(value: Any) -> str:
+    return value.strip() if isinstance(value, str) else ""
 
 
 def _optional_int_metric(value: Any) -> int | None:
@@ -2067,6 +2218,49 @@ def _shopping_product_dimensions(row: dict[str, Any]) -> dict[str, str]:
     product_title = segments.get("productTitle", segments.get("product_title"))
     if isinstance(product_title, str) and product_title.strip():
         dimensions["product_title"] = _clip_dimension(product_title)
+    return dimensions
+
+
+def _shopping_product_state_dimensions(shopping_product: dict[str, Any]) -> dict[str, str]:
+    dimensions: dict[str, str] = {}
+    resource_name = _string_metric(
+        shopping_product.get("resourceName", shopping_product.get("resource_name"))
+    )
+    if resource_name:
+        dimensions["shopping_product_resource_name"] = _clip_dimension(resource_name)
+    item_id = _string_metric(shopping_product.get("itemId", shopping_product.get("item_id")))
+    if item_id:
+        dimensions["product_id"] = item_id
+        dimensions["item_id"] = item_id
+        dimensions["product_item_id"] = item_id
+    merchant_center_id = shopping_product.get(
+        "merchantCenterId",
+        shopping_product.get("merchant_center_id"),
+    )
+    if merchant_center_id is not None:
+        dimensions["merchant_center_id"] = str(merchant_center_id)
+    for api_key, fallback_key, dimension_key in (
+        ("channel", "channel", "product_channel"),
+        ("languageCode", "language_code", "language_code"),
+        ("feedLabel", "feed_label", "feed_label"),
+        ("currencyCode", "currency_code", "currency_code"),
+        ("status", "status", "product_status"),
+        ("availability", "availability", "product_availability"),
+    ):
+        value = _string_metric(shopping_product.get(api_key, shopping_product.get(fallback_key)))
+        if value:
+            dimensions[dimension_key] = value
+    title = _string_metric(shopping_product.get("title"))
+    if title:
+        dimensions["product_title"] = _clip_dimension(title)
+    target_countries = shopping_product.get(
+        "targetCountries",
+        shopping_product.get("target_countries"),
+    )
+    if isinstance(target_countries, list):
+        countries = sorted(str(country) for country in target_countries if country)
+        if countries:
+            dimensions["target_countries"] = ",".join(countries)
     return dimensions
 
 
