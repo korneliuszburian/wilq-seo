@@ -10604,6 +10604,20 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
             evidence_id="ev_ads_product_state",
             dimensions={"product_item_id": "SKU-001"},
         ),
+        MetricFact(
+            name="shopping_product_price_micros",
+            value=123450000,
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={
+                "product_item_id": "SKU-001",
+                "currency_code": "PLN",
+            },
+            previous_value=120000000,
+            delta=3450000,
+            delta_percent=2.875,
+        ),
     ]
     monkeypatch.setattr(
         "wilq.briefing.merchant_diagnostics._product_performance_metric_facts_by_connector",
@@ -10658,10 +10672,25 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     )
     assert supplemental_preview["candidates"][0]["review_fields"] == [
         "availability",
+        "price",
     ]
     assert supplemental_preview["candidates"][0]["candidate_status"] == (
         "requires_human_value_confirmation"
     )
+    price_readiness = payload["price_impact_readiness"]
+    assert price_readiness["status"] == "blocked"
+    assert price_readiness["products_with_current_price"] == 1
+    assert price_readiness["products_with_previous_price"] == 1
+    assert price_readiness["products_with_performance_metrics"] == 0
+    assert price_readiness["missing_read_contracts"] == [
+        "google_ads_or_ga4_product_performance_window"
+    ]
+    price_preview = price_readiness["payload_preview"][0]
+    assert price_preview["preview_contract"] == "merchant_price_impact_readiness_preview_v1"
+    assert price_preview["products"][0]["current_price_micros"] == 123450000
+    assert price_preview["products"][0]["previous_price_micros"] == 120000000
+    assert price_preview["products"][0]["price_delta_micros"] == 3450000
+    assert price_preview["products"][0]["has_product_performance_metrics"] is False
     readiness = payload["product_performance_readiness"]
     assert readiness["status"] == "blocked"
     row = readiness["performance_rows"][0]

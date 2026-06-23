@@ -1632,6 +1632,9 @@ export const MerchantProductPerformanceRowSchema = z.object({
   ads_product_availability: z.string().nullable().optional(),
   ads_product_price_micros: z.number().nullable().optional(),
   ads_product_currency_code: z.string().nullable().optional(),
+  ads_product_previous_price_micros: z.number().nullable().optional(),
+  ads_product_price_delta_micros: z.number().nullable().optional(),
+  ads_product_price_delta_percent: z.number().nullable().optional(),
   ads_clicks: z.number().nullable().optional(),
   ads_cost_micros: z.number().nullable().optional(),
   ads_conversions: z.number().nullable().optional(),
@@ -1661,6 +1664,23 @@ export const MerchantProductPerformanceReadinessSchema = z.object({
   blocked_claims: z.array(z.string())
 });
 
+export const MerchantPriceImpactReadinessSchema = z.object({
+  id: z.literal("merchant_price_impact_readiness"),
+  status: z.enum(["ready", "blocked"]),
+  products_with_current_price: z.number(),
+  products_with_previous_price: z.number(),
+  products_with_performance_metrics: z.number(),
+  current_read_contracts: z.array(z.string()),
+  required_read_contracts: z.array(z.string()),
+  missing_read_contracts: z.array(z.string()),
+  payload_preview: z.array(z.record(z.unknown())).default([]),
+  source_connectors: z.array(z.string()),
+  evidence_ids: z.array(z.string()),
+  summary: z.string(),
+  next_step: z.string(),
+  blocked_claims: z.array(z.string())
+});
+
 export const MerchantDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1674,6 +1694,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   unknowns: z.array(MerchantUnknownFactSchema),
   product_sample_readiness: MerchantProductSampleReadinessSchema,
   product_performance_readiness: MerchantProductPerformanceReadinessSchema,
+  price_impact_readiness: MerchantPriceImpactReadinessSchema,
   operator_summary: MerchantOperatorSummarySchema,
   issue_clusters: z.array(MerchantIssueClusterSchema),
   decision_queue: z.array(MerchantDecisionItemSchema),

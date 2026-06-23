@@ -108,6 +108,8 @@ export function MerchantDiagnosticSurface() {
 
       <MerchantProductPerformanceReadiness data={data} />
 
+      <MerchantPriceImpactReadiness data={data} />
+
       <MerchantUnknowns data={data} />
 
       <MerchantDiagnosticProof data={data} />
@@ -518,6 +520,71 @@ function MerchantProductPerformanceRowCard({
         />
       </div>
     </article>
+  );
+}
+
+function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
+  const readiness = data.price_impact_readiness;
+  const preview = readiness.payload_preview[0];
+  const previewProducts = merchantUnknownArray(preview?.products);
+  const statusLabel =
+    readiness.status === "ready" ? "price impact gotowy do review" : "price impact zablokowany";
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Wpływ ceny produktu
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            {readiness.summary}
+          </p>
+          <p className="mt-2 text-sm font-medium text-ink">{readiness.next_step}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <MetricTile label="Status" value={statusLabel} />
+          <MetricTile label="Ceny teraz" value={readiness.products_with_current_price} />
+          <MetricTile label="Historia cen" value={readiness.products_with_previous_price} />
+        </div>
+      </div>
+      <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine label="Obecne kontrakty" values={readiness.current_read_contracts} />
+        <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
+        <TraceLine
+          label="Brakujące kontrakty"
+          values={readiness.missing_read_contracts}
+          empty="brak"
+        />
+        <TraceLine
+          label="Blokuje claimy"
+          values={merchantBlockedClaimLabels(readiness.blocked_claims)}
+        />
+      </div>
+      {preview ? (
+        <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-600">
+          <p className="font-medium text-ink">Podgląd price-impact</p>
+          <TraceLine
+            label="Kontrakt"
+            values={[merchantString(preview.preview_contract) ?? "brak"]}
+          />
+          <TraceLine
+            label="Produkty"
+            values={[
+              previewProducts.length
+                ? formatMerchantIdCount(previewProducts.length, "wiersz", "wiersze")
+                : "bez wierszy"
+            ]}
+          />
+          <TraceLine
+            label="Apply/API"
+            values={[
+              `apply=${merchantBooleanLabel(preview.apply_allowed)}`,
+              `api=${merchantBooleanLabel(preview.api_mutation_ready)}`
+            ]}
+          />
+        </div>
+      ) : null}
+    </section>
   );
 }
 

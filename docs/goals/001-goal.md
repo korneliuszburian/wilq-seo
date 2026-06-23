@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 01:13 CEST.
+Last updated: 2026-06-24 01:22 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -183,12 +183,17 @@ Finish these before claiming the Ekologus demo is done:
      `merchant_product_state_review_preview_v1` plus review-only
      `merchant_supplemental_feed_review_preview_v1` candidates so the marketer
      can inspect Ads status, availability, price, Merchant issue context and
-     candidate supplemental-feed review fields without apply. Remaining Merchant
-     work is price-impact snapshots, product performance joins and richer
-     read-only previews where vendor APIs expose safe details. Do not claim
-     approval restoration, revenue recovery, product ROAS or unique SKU fixes
-     from aggregate issue counts, state-only rows or supplemental-feed
-     candidates.
+     candidate supplemental-feed review fields without apply. It also exposes
+     `merchant_price_impact_readiness` and
+     `merchant_price_impact_readiness_preview_v1`; live proof sees 3 current
+     Ads prices, 0 previous price snapshots and 0 matching product performance
+     windows, so price-impact remains blocked with explicit missing read
+     contracts. Remaining Merchant work is historical price snapshots,
+     before/after performance windows and richer read-only previews where vendor
+     APIs expose safe details. Do not claim approval restoration, revenue
+     recovery, product ROAS, price impact or unique SKU fixes from aggregate
+     issue counts, state-only rows, supplemental-feed candidates or current
+     prices alone.
    - GA4 current source state: live Data API read now requests and stores
      `keyEvents`, `ecommercePurchases`, `purchaseRevenue`, `totalRevenue` and
      `transactions` with landing/source/campaign dimensions, plus `itemId`,
@@ -203,8 +208,8 @@ Finish these before claiming the Ekologus demo is done:
      1. Keep Localo `local_tasks` blocked unless Localo exposes a
         side-effect-free task read. Do not call task endpoints that generate
         new tasks.
-     2. Merchant deepening: add price-impact snapshots, product performance
-        joins and richer read-only previews.
+     2. Merchant deepening: add historical price snapshots, before/after
+        performance windows and richer read-only previews.
      3. Ahrefs/content-gap enrichment only where API evidence is granular
         enough to support URL/query/backlink decisions.
      4. Return to Ads only when Keyword Planner approval changes, change rows
@@ -249,7 +254,7 @@ Finish these before claiming the Ekologus demo is done:
         payload preview, 90-day safety checks, audit and explicit confirm exist.
      2. Merchant feed actions: review queue and supplemental-feed candidates now
         show row-level evidence when available. Next work must keep
-        primary-feed mutation blocked while adding price-impact or before/after
+        primary-feed mutation blocked while adding before/after price-performance
         proof.
      3. Content actions: refresh/merge/create/block payload previews must
         reference GSC/GA4/WordPress/Ahrefs evidence and show duplicate checks.
@@ -412,7 +417,7 @@ Finish these before claiming the Ekologus demo is done:
    -> release/live-test hardening.
 2. Next concrete slice should be one of:
    - Merchant deepening beyond current product samples: performance joins,
-     price-impact snapshots, before/after proof or safer product preview
+     historical price snapshots, before/after proof or safer product preview
      boundaries.
    - Semantic skill-reference audit where references are still carrying
      product behavior instead of API contracts.

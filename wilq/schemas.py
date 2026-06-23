@@ -2014,6 +2014,9 @@ class MerchantProductPerformanceRow(BaseModel):
     ads_product_availability: str | None = None
     ads_product_price_micros: int | None = None
     ads_product_currency_code: str | None = None
+    ads_product_previous_price_micros: int | None = None
+    ads_product_price_delta_micros: int | None = None
+    ads_product_price_delta_percent: float | None = None
     ads_clicks: int | None = None
     ads_cost_micros: int | None = None
     ads_conversions: float | None = None
@@ -2045,6 +2048,23 @@ class MerchantProductPerformanceReadiness(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
 
+class MerchantPriceImpactReadiness(BaseModel):
+    id: Literal["merchant_price_impact_readiness"] = "merchant_price_impact_readiness"
+    status: Literal["ready", "blocked"]
+    products_with_current_price: int = 0
+    products_with_previous_price: int = 0
+    products_with_performance_metrics: int = 0
+    current_read_contracts: list[str] = Field(default_factory=list)
+    required_read_contracts: list[str] = Field(default_factory=list)
+    missing_read_contracts: list[str] = Field(default_factory=list)
+    payload_preview: list[dict[str, Any]] = Field(default_factory=list)
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    summary: str
+    next_step: str
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class MerchantDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -2058,6 +2078,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     unknowns: list[MerchantUnknownFact] = Field(default_factory=list)
     product_sample_readiness: MerchantProductSampleReadiness
     product_performance_readiness: MerchantProductPerformanceReadiness
+    price_impact_readiness: MerchantPriceImpactReadiness
     operator_summary: MerchantOperatorSummary
     issue_clusters: list[MerchantIssueCluster] = Field(default_factory=list)
     decision_queue: list[MerchantDecisionItem] = Field(default_factory=list)

@@ -20,6 +20,7 @@ from wilq.schemas import (
     MerchantFreshnessAssessment,
     MerchantIssueCluster,
     MerchantOperatorSummary,
+    MerchantPriceImpactReadiness,
     MerchantProductPerformanceReadiness,
     MerchantProductPerformanceRow,
     MerchantProductSampleReadiness,
@@ -54,6 +55,13 @@ MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT = (
 MERCHANT_SUPPLEMENTAL_FEED_REVIEW_PREVIEW_CONTRACT = (
     "merchant_supplemental_feed_review_preview_v1"
 )
+MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT = "merchant_price_impact_readiness_preview_v1"
+MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS = [
+    "google_ads_shopping_product_current_price",
+    "google_ads_shopping_product_price_history",
+    "merchant_price_change_event_or_snapshot",
+    "google_ads_or_ga4_product_performance_window",
+]
 PRODUCT_JOIN_DIMENSION_KEYS = [
     "product_id",
     "item_id",
@@ -162,6 +170,9 @@ def build_merchant_diagnostics(
         issue_clusters=issue_clusters,
         product_sample_readiness=product_sample_readiness,
     )
+    price_impact_readiness = _merchant_price_impact_readiness(
+        product_performance_readiness
+    )
     decision_queue = _merchant_decisions_with_product_state_review(
         decision_queue,
         product_performance_readiness,
@@ -190,6 +201,7 @@ def build_merchant_diagnostics(
         ),
         product_sample_readiness=product_sample_readiness,
         product_performance_readiness=product_performance_readiness,
+        price_impact_readiness=price_impact_readiness,
         operator_summary=_operator_summary(
             decision_queue,
             issue_clusters,
@@ -487,6 +499,7 @@ def _merchant_product_performance_readiness(
         if not ads_facts and not ga4_facts:
             continue
         sample_context = _sample_context_for_product_id(sample_context_map, product_id)
+        price_fact = _metric_fact_by_name(ads_facts, ["shopping_product_price_micros"])
         row = MerchantProductPerformanceRow(
             product_id=product_id,
             sample_title=sample_title_map.get(product_id),
@@ -518,6 +531,9 @@ def _merchant_product_performance_readiness(
                 ["shopping_product_price_micros"],
             ),
             ads_product_currency_code=_dimension_value(ads_facts, ["currency_code"]),
+            ads_product_previous_price_micros=_int_previous_metric_value(price_fact),
+            ads_product_price_delta_micros=_int_delta_metric_value(price_fact),
+            ads_product_price_delta_percent=_delta_percent_metric_value(price_fact),
             ads_clicks=_int_metric_value(
                 ads_facts,
                 ["clicks", "product_clicks", "shopping_product_clicks"],
@@ -682,6 +698,170 @@ def _merchant_product_performance_readiness(
         next_step=next_step,
         blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
     )
+
+
+def _merchant_price_impact_readiness(
+    product_performance_readiness: MerchantProductPerformanceReadiness,
+) -> MerchantPriceImpactReadiness:
+    rows = product_performance_readiness.performance_rows
+    rows_with_current_price = [
+        row for row in rows if row.ads_product_price_micros is not None
+    ]
+    rows_with_previous_price = [
+        row for row in rows_with_current_price if row.ads_product_previous_price_micros is not None
+    ]
+    rows_with_performance = [row for row in rows if _has_product_performance_metric(row)]
+    current_read_contracts = _merchant_price_impact_current_read_contracts(
+        rows_with_current_price=rows_with_current_price,
+        rows_with_previous_price=rows_with_previous_price,
+        rows_with_performance=rows_with_performance,
+    )
+    missing_read_contracts = [
+        contract
+        for contract in MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS
+        if contract not in current_read_contracts
+    ]
+    status: Literal["ready", "blocked"] = (
+        "ready" if not missing_read_contracts else "blocked"
+    )
+    summary = _merchant_price_impact_summary(
+        status=status,
+        rows_with_current_price=len(rows_with_current_price),
+        rows_with_previous_price=len(rows_with_previous_price),
+        rows_with_performance=len(rows_with_performance),
+    )
+    next_step = (
+        "Jeżeli produkt ma cenę bieżącą, historię ceny i metryki performance, "
+        "przygotuj review before/after. W przeciwnym razie pokaż brakujące "
+        "kontrakty i nie oceniaj wpływu ceny."
+    )
+    return MerchantPriceImpactReadiness(
+        status=status,
+        products_with_current_price=len(rows_with_current_price),
+        products_with_previous_price=len(rows_with_previous_price),
+        products_with_performance_metrics=len(rows_with_performance),
+        current_read_contracts=current_read_contracts,
+        required_read_contracts=MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS,
+        missing_read_contracts=missing_read_contracts,
+        payload_preview=[
+            _merchant_price_impact_payload_preview(
+                rows=rows_with_current_price[:8],
+                evidence_ids=product_performance_readiness.evidence_ids,
+                missing_read_contracts=missing_read_contracts,
+            )
+        ],
+        source_connectors=product_performance_readiness.source_connectors,
+        evidence_ids=product_performance_readiness.evidence_ids,
+        summary=summary,
+        next_step=next_step,
+        blocked_claims=[
+            "price change impact",
+            "product ROAS",
+            "product profitability",
+            "revenue recovered",
+            "approval restored",
+            "feed write",
+        ],
+    )
+
+
+def _merchant_price_impact_current_read_contracts(
+    *,
+    rows_with_current_price: list[MerchantProductPerformanceRow],
+    rows_with_previous_price: list[MerchantProductPerformanceRow],
+    rows_with_performance: list[MerchantProductPerformanceRow],
+) -> list[str]:
+    contracts: list[str] = []
+    if rows_with_current_price:
+        contracts.append("google_ads_shopping_product_current_price")
+    if rows_with_previous_price:
+        contracts.append("google_ads_shopping_product_price_history")
+        contracts.append("merchant_price_change_event_or_snapshot")
+    if rows_with_performance:
+        contracts.append("google_ads_or_ga4_product_performance_window")
+    return contracts
+
+
+def _merchant_price_impact_summary(
+    *,
+    status: Literal["ready", "blocked"],
+    rows_with_current_price: int,
+    rows_with_previous_price: int,
+    rows_with_performance: int,
+) -> str:
+    if status == "ready":
+        return (
+            "WILQ ma bieżącą cenę, historię ceny i performance metrics dla "
+            "części produktów Merchant. To pozwala przygotować review "
+            "before/after, ale nadal bez automatycznego claimu o wpływie ceny."
+        )
+    if rows_with_current_price and not rows_with_previous_price:
+        return (
+            f"WILQ widzi bieżącą cenę Ads dla {rows_with_current_price} "
+            "zmapowanych produktów, ale nie ma historii ceny ani zdarzenia "
+            "zmiany ceny. Price impact pozostaje zablokowany."
+        )
+    if rows_with_previous_price and not rows_with_performance:
+        return (
+            f"WILQ widzi historię ceny dla {rows_with_previous_price} produktów, "
+            "ale nie ma dopasowanych metryk performance w oknie before/after."
+        )
+    return (
+        "WILQ nie ma wystarczających price/performance facts, żeby ocenić wpływ "
+        "ceny produktu."
+    )
+
+
+def _merchant_price_impact_payload_preview(
+    *,
+    rows: list[MerchantProductPerformanceRow],
+    evidence_ids: list[str],
+    missing_read_contracts: list[str],
+) -> dict[str, object]:
+    return {
+        "id": "merchant_price_impact_readiness_preview",
+        "preview_contract": MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT,
+        "operation_type": "MerchantPriceImpactReadinessReview",
+        "products": [
+            {
+                "product_id": row.product_id,
+                "title": row.sample_title or row.ads_product_title,
+                "current_price_micros": row.ads_product_price_micros,
+                "previous_price_micros": row.ads_product_previous_price_micros,
+                "price_delta_micros": row.ads_product_price_delta_micros,
+                "price_delta_percent": row.ads_product_price_delta_percent,
+                "currency_code": row.ads_product_currency_code,
+                "has_product_performance_metrics": _has_product_performance_metric(row),
+                "issue_type": row.issue_type,
+                "affected_attribute": row.affected_attribute,
+            }
+            for row in rows
+        ],
+        "missing_read_contracts": missing_read_contracts,
+        "reason": (
+            "Readiness preview dla price-impact. To nie jest rekomendacja zmiany "
+            "ceny ani dowód wpływu na sprzedaż."
+        ),
+        "required_validation": [
+            "confirm_price_snapshot_history",
+            "confirm_price_change_date",
+            "confirm_before_after_performance_window",
+            "exclude_stock_or_approval_confounders",
+            "human_review_before_action",
+        ],
+        "blocked_claims": [
+            "price change impact",
+            "product ROAS",
+            "product profitability",
+            "revenue recovered",
+            "approval restored",
+            "feed write",
+        ],
+        "evidence_ids": evidence_ids,
+        "api_mutation_ready": False,
+        "apply_allowed": False,
+        "destructive": False,
+    }
 
 
 def _google_ads_shopping_product_read_contract_status() -> tuple[bool, int | None]:
@@ -891,6 +1071,35 @@ def _numeric_metric_value(
         if fact.name in accepted_names and isinstance(fact.value, int | float):
             return fact.value
     return None
+
+
+def _metric_fact_by_name(
+    facts: list[MetricFact],
+    names: list[str],
+) -> MetricFact | None:
+    accepted_names = set(names)
+    for fact in facts:
+        if fact.name in accepted_names:
+            return fact
+    return None
+
+
+def _int_previous_metric_value(fact: MetricFact | None) -> int | None:
+    if fact is None or not isinstance(fact.previous_value, int | float):
+        return None
+    return int(fact.previous_value)
+
+
+def _int_delta_metric_value(fact: MetricFact | None) -> int | None:
+    if fact is None or not isinstance(fact.delta, int | float):
+        return None
+    return int(fact.delta)
+
+
+def _delta_percent_metric_value(fact: MetricFact | None) -> float | None:
+    if fact is None or not isinstance(fact.delta_percent, int | float):
+        return None
+    return float(fact.delta_percent)
 
 
 def _text_metric_value(facts: list[MetricFact], names: list[str]) -> str | None:

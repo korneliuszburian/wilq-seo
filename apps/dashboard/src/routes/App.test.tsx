@@ -4082,6 +4082,34 @@ const merchantDiagnostics = {
       "feed write"
     ]
   },
+  price_impact_readiness: {
+    id: "merchant_price_impact_readiness",
+    status: "blocked",
+    products_with_current_price: 0,
+    products_with_previous_price: 0,
+    products_with_performance_metrics: 0,
+    current_read_contracts: ["merchant_aggregate_product_statuses"],
+    required_read_contracts: [
+      "google_ads_shopping_product_current_price",
+      "google_ads_shopping_product_price_history",
+      "merchant_price_change_event_or_snapshot",
+      "google_ads_or_ga4_product_performance_window"
+    ],
+    missing_read_contracts: [
+      "google_ads_shopping_product_current_price",
+      "google_ads_shopping_product_price_history",
+      "merchant_price_change_event_or_snapshot",
+      "google_ads_or_ga4_product_performance_window"
+    ],
+    payload_preview: [],
+    source_connectors: ["google_merchant_center"],
+    evidence_ids: ["ev_refresh_merchant_feed"],
+    summary:
+      "Brak historii ceny i okna performance, więc WILQ nie ocenia wpływu zmian cen na produkt.",
+    next_step:
+      "Dodać read-only historię ceny i product performance window przed oceną price impact.",
+    blocked_claims: ["price impact", "product ROAS", "product revenue recovery"]
+  },
   operator_summary: {
     id: "merchant_operator_summary",
     title: "Co marketer ma zrobić teraz z feedem",
@@ -6343,6 +6371,9 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Join produktów z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("join performance zablokowany")).toBeInTheDocument();
     expect(screen.getByText(/google_ads_shopping_product_performance/)).toBeInTheDocument();
+    expect(screen.getByText("Wpływ ceny produktu")).toBeInTheDocument();
+    expect(screen.getByText("price impact zablokowany")).toBeInTheDocument();
+    expect(screen.getAllByText(/google_ads_shopping_product_price_history/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ROAS produktu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Brak joinu produktów Merchant z Ads/GA4")).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
