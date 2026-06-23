@@ -32,7 +32,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 2. Uruchom `uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
 3. Wywołaj najpierw `GET /api/dashboard/command-center`. To jest kanoniczny first-screen view model operatora dla polskiego marketera.
 4. Wywołaj `GET /api/marketing/brief` dla wspierających daily sections i metric summaries.
-5. Call `POST /api/codex/context-pack` with `{"skill":"wilq-daily-command"}` to get wider evidence, opportunities, actions, expert rules and knowledge cards.
+5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-daily-command"}`, żeby pobrać szersze evidence, opportunities, actions, expert rules i knowledge cards.
 6. The `command_center` embedded in the context pack is compact by design: use `daily_decisions` as the canonical daily decision list and verify it agrees with `GET /api/dashboard/command-center` on `primary_next_step`, blocker count, tactical item count and daily decision trace fields. Do not rebuild the plan from legacy `operator_brief` or `action_plan` lists.
 7. The embedded `marketing_brief` must agree with `GET /api/marketing/brief` on language, section IDs, blocker count, recommendation count, evidence IDs and action IDs.
 8. Daily Command jest core daily loop, nie pełnym registry. Priorytetyzuj Merchant, Content/GSC/WordPress, GA4 i Ads. Localo pokazuj tylko jako realny blocker albo ograniczenie claimów, nie jako gotowe zadanie dnia bez lokalnych ranking/GBP facts. Social draft ActionObjects pomiń, chyba że użytkownik jawnie prosi o social workflow.
