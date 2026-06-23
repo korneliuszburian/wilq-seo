@@ -149,9 +149,13 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">{group.diagnosis}</p>
       <p className="mt-3 text-sm font-medium text-ink">{group.next_step}</p>
       <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-        <LinkedTraceLine label="Dowody" values={group.evidence_ids.slice(0, 4)} kind="evidence" />
+        <TraceLine label="Dowody" values={[`${group.evidence_ids.length} ID`]} />
         <TraceLine label="Źródła" values={group.source_connectors} />
-        <LinkedTraceLine label="Akcje" values={group.action_ids} kind="actions" empty="brak" />
+        <TraceLine
+          label="ActionObjecty"
+          values={group.action_ids.length > 0 ? [`${group.action_ids.length}`] : []}
+          empty="brak"
+        />
         <TraceLine label="Blokady claimów" values={marketerBlockedClaimLabels(group.blocked_claims)} />
       </div>
     </article>

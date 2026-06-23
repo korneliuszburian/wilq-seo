@@ -236,6 +236,7 @@ export function BriefWorkflowSurface({ config }: { config: BriefSurfaceConfig })
             queue={tacticalQueue.data}
             connectorIds={config.connectorIds}
             limit={6}
+            compact
             title="Taktyki z WILQ API"
             isLoading={tacticalQueue.isLoading}
             isError={Boolean(tacticalQueue.error)}

@@ -250,7 +250,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           <MetricTile
             key={`${preview.candidate_id}-${label}`}
             label={label}
-            value={contentBriefMetricValue(value)}
+            value={contentBriefMetricValue(label, value)}
           />
         ))}
       </div>
@@ -631,7 +631,7 @@ function ContentMetricTiles({ facts }: { facts: ContentMetricFact[] }) {
         <MetricTile
           key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
           label={contentMetricFactLabel(fact.name)}
-          value={formatContentMetricValue(fact.value)}
+          value={formatContentMetricValue(fact.name, fact.value)}
         />
       ))}
     </div>
@@ -652,9 +652,22 @@ function contentMetricFactLabel(metricName: string) {
   return labels[metricName] ?? metricName;
 }
 
-function formatContentMetricValue(value: string | number | boolean) {
+export function formatContentMetricValue(
+  metricName: string,
+  value: string | number | boolean | null
+) {
   if (typeof value === "boolean") return value ? "tak" : "nie";
-  return value;
+  if (value === null) return "brak";
+  const numericValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numericValue)) return value;
+  if (metricName === "ctr" || metricName === "engagement_rate") {
+    return `${formatNumber(numericValue * 100, 2)}%`;
+  }
+  if (metricName === "average_position") {
+    return formatNumber(numericValue, 2);
+  }
+  if (Number.isInteger(numericValue)) return numericValue.toLocaleString("pl-PL");
+  return formatNumber(numericValue, 2);
 }
 
 function formatContentEvidenceCount(count: number) {
@@ -763,9 +776,15 @@ function contentDraftOperationLabel(value: string) {
   return labels[value] ?? value;
 }
 
-function contentBriefMetricValue(value: string | number | boolean | null) {
-  if (typeof value === "boolean") return value ? "tak" : "nie";
-  return value ?? "brak";
+function contentBriefMetricValue(metricName: string, value: string | number | boolean | null) {
+  return formatContentMetricValue(metricName, value);
+}
+
+function formatNumber(value: number, fractionDigits: number) {
+  return value.toLocaleString("pl-PL", {
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: 0
+  });
 }
 
 function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_type"]) {

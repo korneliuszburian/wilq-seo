@@ -3914,6 +3914,48 @@ const tacticalQueue = {
       action_ids: ["act_review_merchant_feed_issues"]
     }
   ],
+  compact_groups: [
+    {
+      id: "gsc_seo:content_refresh:https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+      title: "SEO: odśwież /europejski-zielony-lad-co-to-takiego/ (2 query)",
+      meta: "SEO / odświeżenie treści / najpierw",
+      diagnosis:
+        "2 powiązane zapytania prowadzą do tej samej strony. Suma widocznych metryk: clicks=12, impressions=120.",
+      next_step: "Przygotuj refresh istniejącej strony i sprawdź duplikaty w WordPress.",
+      priority: 26,
+      risk: "low",
+      source_connectors: ["google_search_console"],
+      evidence_ids: ["ev_refresh_gsc", "ev_refresh_gsc_second"],
+      action_ids: ["act_prepare_content_refresh_queue"],
+      blocked_claims: ["conversion uplift", "revenue impact"]
+    },
+    {
+      id: "ga4:landing_page_quality:/oferta/:google / cpc",
+      title: "GA4: sprawdź /oferta/ / google / cpc",
+      meta: "GA4 / jakość landing page / najpierw",
+      diagnosis: "1 grupa ruchu GA4 wymaga review jakości landing page.",
+      next_step: "Sprawdź message match, CTA i tracking przed oceną kampanii.",
+      priority: 25,
+      risk: "low",
+      source_connectors: ["google_analytics_4"],
+      evidence_ids: ["ev_refresh_ga4"],
+      action_ids: ["act_review_ga4_tracking_quality"],
+      blocked_claims: ["conversion rate", "ROAS"]
+    },
+    {
+      id: "merchant:merchant_feed_triage:availability_updated:n:availability:",
+      title: "Merchant: sprawdź availability updated / n:availability",
+      meta: "Merchant / triage feedu / najpierw",
+      diagnosis: "1 problem feedu Merchant wymaga review.",
+      next_step: "Przygotuj kolejkę przeglądu bez zmiany głównego feedu.",
+      priority: 27,
+      risk: "medium",
+      source_connectors: ["google_merchant_center"],
+      evidence_ids: ["ev_refresh_merchant_feed"],
+      action_ids: ["act_review_merchant_feed_issues"],
+      blocked_claims: ["automatic feed edit", "approval restored"]
+    }
+  ],
   evidence_ids: ["ev_refresh_ga4", "ev_refresh_gsc", "ev_refresh_merchant_feed"],
   action_ids: [
     "act_review_ga4_tracking_quality",

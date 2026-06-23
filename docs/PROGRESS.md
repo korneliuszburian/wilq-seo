@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content Planner metric formatting, 2026-06-23.
+  `/content-planner` no longer shows raw GSC metric float noise in decision
+  metric tiles such as `1.6897081413210446` or `0.0445468509984639`. The route
+  now renders marketer-facing values such as `1,69` for position and `4,45%`
+  for CTR. The shared `TacticalQueuePanel` compact mode also renders grouped
+  decisions without raw `ev_*` or `act_*` IDs. Live browser proof on
+  `http://127.0.0.1:5173/content-planner` confirmed the formatted values.
+  Focused proof: content formatter test, TacticalQueuePanel compact test,
+  dashboard lint OK and dashboard typecheck OK.
 - GA4 measurement decision titles, 2026-06-23.
   `/api/ga4/diagnostics` no longer emits repeated generic
   `Napraw problem pomiaru GA4` titles for different `(not set)` report rows.
