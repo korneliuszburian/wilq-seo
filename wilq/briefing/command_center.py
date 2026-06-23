@@ -355,9 +355,9 @@ def _ads_item_from_facts(
         "zapytania": search_term_count,
         "kliknięcia": _sum_numeric_facts(facts, "clicks"),
         "wyświetlenia": _sum_numeric_facts(facts, "impressions"),
-        "koszt": _ads_cost_tile(facts),
+        "koszt": _ads_currency_tile(facts, "cost_micros", divide_by_million=True),
         "konwersje": _sum_numeric_facts(facts, "conversions"),
-        "wartość konw.": _sum_numeric_facts(facts, "conversion_value"),
+        "wartość konw.": _ads_currency_tile(facts, "conversion_value"),
         "podgląd budżetu": budget_preview_count,
         "rekomendacje": recommendation_count,
         "wykluczenia": review_term_count,
@@ -463,11 +463,17 @@ def _ads_review_search_term_count(facts: list[MetricFact]) -> int:
     )
 
 
-def _ads_cost_tile(facts: list[MetricFact]) -> str:
-    cost = _sum_numeric_facts(facts, "cost_micros") / 1_000_000
+def _ads_currency_tile(
+    facts: list[MetricFact],
+    metric_name: str,
+    *,
+    divide_by_million: bool = False,
+) -> str:
+    value = _sum_numeric_facts(facts, metric_name)
+    amount = value / 1_000_000 if divide_by_million else value
     currency = _ads_currency_code(facts)
-    cost_label = str(int(cost)) if cost.is_integer() else f"{cost:.2f}"
-    return f"{cost_label} {currency}" if currency else cost_label
+    amount_label = str(int(amount)) if amount.is_integer() else f"{amount:.2f}"
+    return f"{amount_label} {currency}" if currency else amount_label
 
 
 def _ads_currency_code(facts: list[MetricFact]) -> str | None:

@@ -40,8 +40,9 @@ Aktualny proof produktowy:
 - Command Center Ads value tiles, 2026-06-23 07:59 CEST.
   `daily_ads_status.metric_tiles` on `/api/dashboard/command-center` now
   includes live Ads value totals from campaign facts: `kliknięcia`,
-  `wyświetlenia`, `koszt`, `konwersje` and `wartość konw.`. Cost is rendered
-  as account units with the detected currency, not as raw micros. This reuses
+  `wyświetlenia`, `koszt`, `konwersje` and `wartość konw.`. Cost and
+  conversion value are rendered as account units with the detected currency,
+  not as raw micros or unlabelled money-like numbers. This reuses
   the generic Command Center metric tile renderer, so the first screen gets the
   same evidence-backed Ads volume/value context as `/ads-doctor` without React
   owning Ads business logic. Focused proof: RED/GREEN
