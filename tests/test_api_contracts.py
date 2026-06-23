@@ -6484,7 +6484,7 @@ def test_google_ads_vendor_read_endpoint_persists_metric_summary(
     assert run["id"] in context_runs
 
 
-def test_ads_change_history_blocks_empty_read_attempt(
+def test_ads_change_history_treats_empty_read_as_ready_no_changes(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -6624,9 +6624,9 @@ def test_ads_change_history_blocks_empty_read_attempt(
     assert response.status_code == 200
     payload = response.json()
     change_history_contract = payload["change_history_read_contract"]
-    assert change_history_contract["status"] == "blocked"
+    assert change_history_contract["status"] == "ready"
     assert change_history_contract["change_history_rows"] == []
-    assert "change_event_rows" in change_history_contract["missing_read_contracts"]
+    assert "change_event_rows" not in change_history_contract["missing_read_contracts"]
     assert "pre_change_performance_window" in change_history_contract[
         "missing_read_contracts"
     ]
@@ -6641,11 +6641,12 @@ def test_ads_change_history_blocks_empty_read_attempt(
     assert "change impact" in change_impact_contract["blocked_claims"]
     decisions_by_id = {decision["id"]: decision for decision in payload["decision_queue"]}
     change_history_decision = decisions_by_id["ads_review_change_history"]
-    assert change_history_decision["status"] == "blocked"
+    assert change_history_decision["status"] == "ready"
+    assert "brak zdarzeń" in change_history_decision["title"]
     assert change_history_decision["metric_tiles"] == {"zmiany": 0, "kampanie": 0}
-    assert "change_event_rows" in change_history_decision["missing_read_contracts"]
+    assert "change_event_rows" not in change_history_decision["missing_read_contracts"]
     assert change_history_decision["action_ids"] == []
-    assert "impact review zablokowany" in change_history_decision["next_step"]
+    assert "Nie przypisuj wyników kampanii do zmian" in change_history_decision["next_step"]
     optimizer_contract = payload["optimizer_readiness_contract"]
     assert optimizer_contract["id"] == "ads_optimizer_readiness_contract"
     assert optimizer_contract["status"] == "review_ready"

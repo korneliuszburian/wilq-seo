@@ -5435,19 +5435,19 @@ def _ads_decision_queue(
             AdsDecisionItem(
                 id="ads_review_change_history",
                 decision_type="review_change_history",
-                status="ready" if has_change_rows else "blocked",
+                status="ready",
                 title=(
                     "Sprawdź historię zmian Google Ads"
                     if has_change_rows
-                    else "Historia zmian: brak zdarzeń do impact review"
+                    else "Historia zmian: brak zdarzeń w ostatnich 14 dniach"
                 ),
                 summary=change_history_read_contract.summary,
                 rationale=(
                     "Historia zmian mówi, co ostatnio zmieniano w koncie. Jeśli "
-                    "Google Ads nie zwrócił żadnych zdarzeń, WILQ blokuje impact "
-                    "review zamiast pokazywać pusty task. Jeśli zdarzenia istnieją, "
-                    "WILQ nadal blokuje claimy o wpływie zmian na wynik bez "
-                    "porównania przed/po i ręcznego review."
+                    "Google Ads nie zwrócił żadnych zdarzeń, sam odczyt jest "
+                    "poprawny, ale nie wolno przypisywać wyników kampanii do zmian. "
+                    "Jeśli zdarzenia istnieją, WILQ nadal blokuje claimy o wpływie "
+                    "zmian na wynik bez porównania przed/po i ręcznego review."
                 ),
                 next_step=change_history_read_contract.next_step,
                 allowed_metrics=change_history_read_contract.allowed_metrics,

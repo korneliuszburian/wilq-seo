@@ -71,8 +71,8 @@ def build_change_history_read_contract(
         )
     if read_attempted:
         return AdsChangeHistoryReadContract(
-            status="blocked",
-            title="Google Ads: brak zmian do review",
+            status="ready",
+            title="Google Ads: brak zmian w historii zmian",
             summary=(
                 "WILQ wykonał read-only change history read; Google Ads nie zwrócił "
                 "zdarzeń zmian w ostatnich 14 dniach. Nie ma czego wiązać z "
@@ -82,15 +82,16 @@ def build_change_history_read_contract(
                 "change_event_available",
                 "change_event_changed_field_count",
             ],
-            missing_read_contracts=["change_event_rows", *missing_read_contracts],
+            missing_read_contracts=missing_read_contracts,
             blocked_claims=blocked_claims,
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=fallback_evidence_ids,
             change_history_rows=[],
             next_step=(
-                "Zostaw impact review zablokowany. Wróć do tego kontraktu dopiero, "
-                "gdy Google Ads zwróci konkretne change_event rows oraz WILQ będzie "
-                "miał okno wyników przed/po."
+                "Nie przypisuj wyników kampanii do zmian, bo w bieżącym oknie "
+                "Google Ads nie zwrócił zdarzeń change_event. Impact review "
+                "pozostaje zablokowany do czasu pojawienia się zmian i okien "
+                "wyników przed/po."
             ),
         )
     return AdsChangeHistoryReadContract(
