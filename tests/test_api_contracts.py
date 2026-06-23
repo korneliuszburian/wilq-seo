@@ -2663,6 +2663,39 @@ def test_tactical_queue_uses_latest_metric_fact_batch_for_speed(
     assert seen["limit_per_connector"] == tactical_queue.WORDPRESS_INVENTORY_FACT_LIMIT
 
 
+def test_command_center_reuses_batched_localo_facts_before_evidence_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import command_center
+
+    run = ConnectorRefreshRun(
+        id="refresh_localo_latest",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=datetime.now(UTC),
+        completed_at=datetime.now(UTC),
+        evidence_ids=["ev_refresh_localo_latest"],
+        metric_summary={},
+        summary="Localo latest facts.",
+    )
+    fact = MetricFact(
+        name="localo_active_place_count",
+        value=4,
+        period="connector_refresh",
+        source_connector="localo",
+        evidence_id="ev_refresh_localo_latest",
+    )
+
+    class FailingMetricStore:
+        def list_metric_facts_by_evidence_ids(self, *_args: object) -> list[MetricFact]:
+            raise AssertionError("Command Center must reuse batched Localo facts first")
+
+    monkeypatch.setattr(command_center, "metric_store", lambda: FailingMetricStore())
+
+    assert command_center._localo_metric_facts_for_run(run, [fact]) == [fact]
+
+
 def test_marketing_brief_aggregates_metric_facts_and_blockers(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

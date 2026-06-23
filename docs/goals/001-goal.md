@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 13:55 CEST.
+Last updated: 2026-06-23 14:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -255,13 +255,19 @@ marketer decisions that do not need previous-value delta windows. The existing
 full `list_metric_facts_by_connector` remains available for route/detail
 surfaces that need deltas or trends. Local profile with copied DuckDB and cache
 disabled: latest read path `0.666s`, full delta read `0.976s`, tactical queue
-`0.486s`, Command Center `1.483s`. Live HTTP after stack restart:
+`0.486s`, Command Center `1.483s`. Follow-up: Command Center now reuses batched
+Localo facts before falling back to `list_metric_facts_by_evidence_ids`, so the
+same Localo run does not trigger an extra DuckDB read when the batch already
+contains matching evidence. Local copied-DB profile with cache disabled after
+that follow-up: `1.095s`, `1.028s`, `1.050s` for three Command Center builds
+with 4 daily decisions. Live HTTP after stack restart:
 `/api/dashboard/command-center` returned 4 daily decisions; warm cache responses
 were around `0.010-0.015s`. Focused proof: RED/GREEN metric-store latest-read
-test, RED/GREEN tactical queue latest-read test, Command Center brief test,
-Command Center API contract test, Python ruff OK and mypy OK. Remaining
-performance work: cold process/startup and deeper diagnostics/ActionObject reads
-are still separate bottlenecks; do not hide them with frontend loading copy.
+test, RED/GREEN tactical queue latest-read test, RED/GREEN Localo batched-fact
+reuse test, Command Center brief test, Command Center API contract test, Python
+ruff OK and mypy OK. Remaining performance work: cold process/startup and
+deeper diagnostics/ActionObject reads are still separate bottlenecks; do not
+hide them with frontend loading copy.
 
 2026-06-23 Localo diagnostics copy follow-up: `/api/localo/diagnostics` now
 keeps the partial-data story consistent. When Localo has typed aggregate facts,

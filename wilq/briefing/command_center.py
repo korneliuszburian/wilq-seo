@@ -1285,6 +1285,10 @@ def _localo_metric_facts_for_run(
     fallback_facts: list[MetricFact],
 ) -> list[MetricFact]:
     if run and run.evidence_ids:
+        evidence_ids = set(run.evidence_ids)
+        batched_facts = [fact for fact in fallback_facts if fact.evidence_id in evidence_ids]
+        if batched_facts:
+            return batched_facts
         facts = metric_store().list_metric_facts_by_evidence_ids(run.evidence_ids)
         if facts:
             return facts
