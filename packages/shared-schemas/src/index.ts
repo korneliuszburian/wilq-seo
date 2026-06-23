@@ -1532,6 +1532,7 @@ export const MerchantDecisionItemSchema = z.object({
   decision_type: z.enum([
     "review_issue_cluster",
     "review_feed_status",
+    "review_product_state_mapping",
     "block_until_vendor_read"
   ]),
   status: z.enum(["ready", "blocked", "missing"]),
@@ -1619,8 +1620,17 @@ export const MerchantProductSampleReadinessSchema = z.object({
 export const MerchantProductPerformanceRowSchema = z.object({
   product_id: z.string(),
   sample_title: z.string().nullable().optional(),
+  issue_type: z.string().nullable().optional(),
+  affected_attribute: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  reporting_context: z.string().nullable().optional(),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
+  ads_product_title: z.string().nullable().optional(),
+  ads_product_status: z.string().nullable().optional(),
+  ads_product_availability: z.string().nullable().optional(),
+  ads_product_price_micros: z.number().nullable().optional(),
+  ads_product_currency_code: z.string().nullable().optional(),
   ads_clicks: z.number().nullable().optional(),
   ads_cost_micros: z.number().nullable().optional(),
   ads_conversions: z.number().nullable().optional(),

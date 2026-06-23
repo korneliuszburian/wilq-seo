@@ -1910,6 +1910,7 @@ class MerchantDecisionItem(BaseModel):
     decision_type: Literal[
         "review_issue_cluster",
         "review_feed_status",
+        "review_product_state_mapping",
         "block_until_vendor_read",
     ]
     status: Literal["ready", "blocked", "missing"]
@@ -2002,8 +2003,17 @@ class MerchantProductSampleReadiness(BaseModel):
 class MerchantProductPerformanceRow(BaseModel):
     product_id: str
     sample_title: str | None = None
+    issue_type: str | None = None
+    affected_attribute: str | None = None
+    country: str | None = None
+    reporting_context: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    ads_product_title: str | None = None
+    ads_product_status: str | None = None
+    ads_product_availability: str | None = None
+    ads_product_price_micros: int | None = None
+    ads_product_currency_code: str | None = None
     ads_clicks: int | None = None
     ads_cost_micros: int | None = None
     ads_conversions: float | None = None

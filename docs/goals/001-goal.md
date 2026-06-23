@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 00:45 CEST.
+Last updated: 2026-06-24 01:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -178,12 +178,15 @@ Finish these before claiming the Ekologus demo is done:
      and returned 0 product performance rows, then read 500 product-state rows.
      Merchant now joins 3 sample IDs through Ads product state, but keeps
      `product_performance_readiness.status=blocked` because no Ads/GA4
-     performance metrics match those products. Remaining Merchant work is
-     turning state-only rows into a useful review decision, supplemental-feed
-     candidate contracts, price-impact snapshots and richer read-only previews
-     where the vendor API exposes safe details. Do not claim approval
-     restoration, revenue recovery, product ROAS or unique SKU fixes from
-     aggregate issue counts or state-only rows.
+     performance metrics match those products. It also exposes a review-safe
+     `review_product_state_mapping` decision and
+     `merchant_product_state_review_preview_v1` so the marketer can inspect
+     Ads status, availability, price and Merchant issue context without apply.
+     Remaining Merchant work is supplemental-feed candidate contracts,
+     price-impact snapshots and richer read-only previews where the vendor API
+     exposes safe details. Do not claim approval restoration, revenue recovery,
+     product ROAS or unique SKU fixes from aggregate issue counts or state-only
+     rows.
    - GA4 current source state: live Data API read now requests and stores
      `keyEvents`, `ecommercePurchases`, `purchaseRevenue`, `totalRevenue` and
      `transactions` with landing/source/campaign dimensions, plus `itemId`,
@@ -198,9 +201,8 @@ Finish these before claiming the Ekologus demo is done:
      1. Keep Localo `local_tasks` blocked unless Localo exposes a
         side-effect-free task read. Do not call task endpoints that generate
         new tasks.
-     2. Merchant deepening: turn Ads product-state joins into review-safe
-        Merchant decisions, then add supplemental-feed candidates,
-        price-impact snapshots and richer read-only previews.
+     2. Merchant deepening: add supplemental-feed candidates, price-impact
+        snapshots and richer read-only previews.
      3. Ahrefs/content-gap enrichment only where API evidence is granular
         enough to support URL/query/backlink decisions.
      4. Return to Ads only when Keyword Planner approval changes, change rows

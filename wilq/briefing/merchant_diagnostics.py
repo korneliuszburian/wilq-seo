@@ -48,6 +48,9 @@ MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS = [
     "approval restored",
     "feed write",
 ]
+MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT = (
+    "merchant_product_state_review_preview_v1"
+)
 PRODUCT_JOIN_DIMENSION_KEYS = [
     "product_id",
     "item_id",
@@ -155,6 +158,11 @@ def build_merchant_diagnostics(
     product_performance_readiness = _merchant_product_performance_readiness(
         issue_clusters=issue_clusters,
         product_sample_readiness=product_sample_readiness,
+    )
+    decision_queue = _merchant_decisions_with_product_state_review(
+        decision_queue,
+        product_performance_readiness,
+        action_ids,
     )
     return MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
@@ -437,6 +445,7 @@ def _merchant_product_performance_readiness(
 ) -> MerchantProductPerformanceReadiness:
     sample_product_ids = product_sample_readiness.sample_product_ids
     sample_title_map = _merchant_sample_title_map(issue_clusters)
+    sample_context_map = _merchant_sample_context_map(issue_clusters)
     merchant_evidence_ids = _unique(
         evidence_id for cluster in issue_clusters for evidence_id in cluster.evidence_ids
     )
@@ -474,13 +483,38 @@ def _merchant_product_performance_readiness(
         ga4_facts = _facts_for_product_id(ga4_facts_by_product_id, product_id)
         if not ads_facts and not ga4_facts:
             continue
+        sample_context = _sample_context_for_product_id(sample_context_map, product_id)
         row = MerchantProductPerformanceRow(
             product_id=product_id,
             sample_title=sample_title_map.get(product_id),
+            issue_type=sample_context.issue_type if sample_context is not None else None,
+            affected_attribute=(
+                sample_context.affected_attribute if sample_context is not None else None
+            ),
+            country=sample_context.country if sample_context is not None else None,
+            reporting_context=(
+                sample_context.reporting_context if sample_context is not None else None
+            ),
             source_connectors=_unique(
                 fact.source_connector for fact in [*ads_facts, *ga4_facts]
             ),
             evidence_ids=_unique(fact.evidence_id for fact in [*ads_facts, *ga4_facts]),
+            ads_product_title=_dimension_value(ads_facts, ["product_title"]),
+            ads_product_status=_text_metric_value(
+                ads_facts,
+                ["shopping_product_status"],
+            )
+            or _dimension_value(ads_facts, ["product_status"]),
+            ads_product_availability=_text_metric_value(
+                ads_facts,
+                ["shopping_product_availability"],
+            )
+            or _dimension_value(ads_facts, ["product_availability"]),
+            ads_product_price_micros=_int_metric_value(
+                ads_facts,
+                ["shopping_product_price_micros"],
+            ),
+            ads_product_currency_code=_dimension_value(ads_facts, ["currency_code"]),
             ads_clicks=_int_metric_value(
                 ads_facts,
                 ["clicks", "product_clicks", "shopping_product_clicks"],
@@ -754,6 +788,28 @@ def _merchant_sample_title_map(
     return titles_by_product_id
 
 
+def _merchant_sample_context_map(
+    issue_clusters: list[MerchantIssueCluster],
+) -> dict[str, MerchantIssueCluster]:
+    context_by_product_id: dict[str, MerchantIssueCluster] = {}
+    for cluster in issue_clusters:
+        for product_id in cluster.sample_product_ids:
+            for alias in _product_id_aliases(product_id):
+                context_by_product_id.setdefault(alias, cluster)
+    return context_by_product_id
+
+
+def _sample_context_for_product_id(
+    context_by_product_id: dict[str, MerchantIssueCluster],
+    product_id: str,
+) -> MerchantIssueCluster | None:
+    for alias in _product_id_aliases(product_id):
+        context = context_by_product_id.get(alias)
+        if context is not None:
+            return context
+    return None
+
+
 def _product_scoped_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
     return [fact for fact in facts if _metric_fact_product_id(fact) is not None]
 
@@ -834,6 +890,25 @@ def _numeric_metric_value(
     return None
 
 
+def _text_metric_value(facts: list[MetricFact], names: list[str]) -> str | None:
+    accepted_names = set(names)
+    for fact in facts:
+        if fact.name in accepted_names and isinstance(fact.value, str):
+            value = fact.value.strip()
+            if value:
+                return value
+    return None
+
+
+def _dimension_value(facts: list[MetricFact], keys: list[str]) -> str | None:
+    for fact in facts:
+        for key in keys:
+            value = fact.dimensions.get(key)
+            if value and value.strip():
+                return value.strip()
+    return None
+
+
 def _has_product_performance_metric(row: MerchantProductPerformanceRow) -> bool:
     return any(
         value is not None
@@ -844,6 +919,18 @@ def _has_product_performance_metric(row: MerchantProductPerformanceRow) -> bool:
             row.ads_conversion_value,
             row.ga4_ecommerce_purchases,
             row.ga4_purchase_revenue,
+        )
+    )
+
+
+def _has_ads_product_state(row: MerchantProductPerformanceRow) -> bool:
+    return any(
+        value is not None
+        for value in (
+            row.ads_product_title,
+            row.ads_product_status,
+            row.ads_product_availability,
+            row.ads_product_price_micros,
         )
     )
 
@@ -1291,6 +1378,132 @@ def _merchant_decision_queue(
         action_ids,
     )
     return [aggregate_decision] if aggregate_decision is not None else []
+
+
+def _merchant_decisions_with_product_state_review(
+    decisions: list[MerchantDecisionItem],
+    product_performance_readiness: MerchantProductPerformanceReadiness,
+    action_ids: list[str],
+) -> list[MerchantDecisionItem]:
+    product_state_decision = _merchant_product_state_review_decision(
+        product_performance_readiness,
+        action_ids,
+    )
+    if product_state_decision is None:
+        return decisions
+    merged = [product_state_decision, *decisions]
+    return sorted(merged, key=lambda decision: (decision.priority, decision.id))
+
+
+def _merchant_product_state_review_decision(
+    product_performance_readiness: MerchantProductPerformanceReadiness,
+    action_ids: list[str],
+) -> MerchantDecisionItem | None:
+    state_rows = [
+        row
+        for row in product_performance_readiness.performance_rows
+        if _has_ads_product_state(row) and not _has_product_performance_metric(row)
+    ]
+    if not state_rows:
+        return None
+    visible_rows = state_rows[:8]
+    not_eligible_count = sum(
+        1 for row in state_rows if row.ads_product_status == "NOT_ELIGIBLE"
+    )
+    out_of_stock_count = sum(
+        1 for row in state_rows if row.ads_product_availability == "OUT_OF_STOCK"
+    )
+    return MerchantDecisionItem(
+        id="merchant_decision_review_ads_product_state_mapping",
+        decision_type="review_product_state_mapping",
+        status="ready",
+        title="Merchant: zweryfikuj zmapowane produkty z Ads product state",
+        summary=(
+            f"WILQ połączył {len(state_rows)} próbek Merchant z Google Ads "
+            "shopping_product state. To pokazuje status, dostępność i cenę z Ads, "
+            "ale nie zawiera kliknięć, kosztu, przychodu ani efektu naprawy."
+        ),
+        issue_cluster_ids=[],
+        priority=20,
+        metric_tiles=_clean_merchant_metric_tiles(
+            {
+                "zmapowane produkty": len(state_rows),
+                "NOT_ELIGIBLE": not_eligible_count,
+                "OUT_OF_STOCK": out_of_stock_count,
+            }
+        ),
+        sample_product_ids=[row.product_id for row in visible_rows],
+        sample_titles=_unique(
+            title
+            for row in visible_rows
+            for title in [row.sample_title or row.ads_product_title]
+            if title
+        ),
+        payload_preview=[
+            _merchant_product_state_review_payload_preview(
+                visible_rows,
+                product_performance_readiness.evidence_ids,
+            )
+        ],
+        source_connectors=product_performance_readiness.source_connectors,
+        evidence_ids=product_performance_readiness.evidence_ids,
+        action_ids=action_ids,
+        blocked_claims=MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
+        rationale=(
+            "To jest decyzja mapowania i review, nie decyzja performance. "
+            "State-only rows potwierdzają, że Merchant sample ID ma odpowiednik w "
+            "Ads shopping_product, ale bez metryk emisji i sprzedaży nie wolno "
+            "wyciągać wniosków o ROAS, odzyskanym revenue ani skutku naprawy."
+        ),
+        next_step=(
+            "Sprawdź zmapowane produkty w review: status Ads, dostępność, cenę i "
+            "powiązany problem Merchant. Jeżeli trzeba przygotować zmianę feedu, "
+            "zrób osobny supplemental-feed payload preview; primary feed i apply "
+            "pozostają zablokowane."
+        ),
+        risk=ActionRisk.medium,
+    )
+
+
+def _merchant_product_state_review_payload_preview(
+    rows: list[MerchantProductPerformanceRow],
+    evidence_ids: list[str],
+) -> dict[str, object]:
+    return {
+        "id": "merchant_product_state_review_preview",
+        "preview_contract": MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT,
+        "operation_type": "MerchantProductStateReview",
+        "products": [
+            {
+                "product_id": row.product_id,
+                "title": row.sample_title or row.ads_product_title,
+                "issue_type": row.issue_type,
+                "affected_attribute": row.affected_attribute,
+                "ads_product_status": row.ads_product_status,
+                "ads_product_availability": row.ads_product_availability,
+                "ads_product_price_micros": row.ads_product_price_micros,
+                "ads_product_currency_code": row.ads_product_currency_code,
+            }
+            for row in rows
+        ],
+        "reason": (
+            "Review-only podgląd mapowania Merchant sample IDs do Google Ads "
+            "shopping_product state. To nie jest payload zmiany feedu."
+        ),
+        "required_validation": [
+            "review_product_identity_mapping",
+            "review_ads_product_status",
+            "review_merchant_issue_context",
+            "prepare_supplemental_feed_preview_before_any_mutation",
+            "human_confirm_before_apply",
+            "mutation_audit_required",
+        ],
+        "blocked_claims": MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS,
+        "evidence_ids": evidence_ids,
+        "api_mutation_ready": False,
+        "apply_allowed": False,
+        "destructive": False,
+    }
 
 
 def _merchant_decision_cluster_groups(

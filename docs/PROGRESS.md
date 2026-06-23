@@ -66,10 +66,13 @@ Stan produktu:
   `reported_issue_occurrences`; apply/API mutation/destructive flags stay
   false. Product samples are ready; GA4 exposes item-level product facts and
   Ads now has live `shopping_performance_view` and `shopping_product` state
-  read contracts. The latest Ads proof `refresh_google_ads_72dc2a727c45`
-  returned 0 product performance rows, but 500 product-state rows. Merchant
-  joins 3 sample IDs through Ads state and still blocks product ROAS/revenue/fix
-  impact because no Ads/GA4 performance metrics match those products.
+  read contracts. Merchant now promotes state-only Ads joins into a review-safe
+  `review_product_state_mapping` decision with
+  `merchant_product_state_review_preview_v1`. Live HTTP proof after stack
+  restart: `/api/merchant/diagnostics` shows 3 joined products, all
+  `NOT_ELIGIBLE`, with Ads title, availability, price and Merchant issue
+  context; product ROAS/revenue/fix impact and feed write remain blocked because
+  no Ads/GA4 performance metrics match those products.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
@@ -104,7 +107,8 @@ Stan produktu:
   `refresh_google_ads_72dc2a727c45` returned 500 state rows, 500 products,
   `shopping_product_state_status=ready`, `shopping_product_state_not_eligible_count=500`
   and availability values `IN_STOCK,OUT_OF_STOCK`. Merchant diagnostics now
-  show state-only product joins as `blocked`, not performance-ready.
+  show state-only product joins as `blocked`, not performance-ready, and expose
+  a separate state review decision for marketer triage.
 - Goal 001 now has a thematic stack assessment: acquisition/source proof,
   decision contracts, action safety, Codex skills, knowledge/compiler,
   dashboard/UI and testing/release. Current source triage: Ads optimizer review,
@@ -157,19 +161,20 @@ Stan produktu:
      visibility aggregate read contracts.
    - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
      Localo tasks blocked unless a side-effect-free read exists.
-   - Source-contract queue: Merchant state-row review decisions,
-     supplemental-feed/price-impact deepening, Ahrefs granular gap enrichment,
-     Keyword Planner approval/forecast and cross-source decision joins.
+   - Source-contract queue: Merchant supplemental-feed/price-impact deepening,
+     Ahrefs granular gap enrichment, Keyword Planner approval/forecast and
+     cross-source decision joins.
    - Ads remaining gaps are not OAuth: optimizer review is ready/read-only,
      Keyword Planner is blocked by developer token approval, change history
      currently has no rows in the selected window, and apply/audit contracts
      are still required before budget, recommendation, custom-segment or
      negative-keyword mutations.
-   - Merchant now has partial Ads product-state joins for Merchant samples, but
-     still needs performance rows, supplemental-feed candidates or before/after
-     audit before product-performance decisions can become useful. GA4 item
-     facts, state-only Ads rows or zero-row Ads performance reads alone do not
-     justify revenue, approval, ROAS or product-fix claims.
+   - Merchant now has partial Ads product-state joins for Merchant samples and a
+     state-only review decision. It still needs performance rows,
+     supplemental-feed candidates or before/after audit before
+     product-performance decisions can become useful. GA4 item facts,
+     state-only Ads rows or zero-row Ads performance reads alone do not justify
+     revenue, approval, ROAS or product-fix claims.
 
 2. **Decision API and shared view-models**
    - Dashboard and skills must consume the same API contracts:

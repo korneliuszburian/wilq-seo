@@ -7902,8 +7902,6 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     expected_business_context_actions = [
         ADS_BUSINESS_CONTEXT_ACTION_ID,
-        ADS_TARGET_CONFIRMATION_ACTION_ID,
-        ADS_STRATEGY_REVIEW_ACTION_ID,
     ]
     assert business_context_contract["target_interpretation"]["action_ids"] == [
         *expected_business_context_actions
@@ -9319,7 +9317,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     safety_decision = decisions_by_id["ads_block_write_actions_without_actionobject"]
     assert safety_decision["status"] == "blocked"
     assert safety_decision["priority"] == 10
-    assert safety_decision["metric_tiles"] == {"ActionObjecty": 10, "blokady": 3}
+    assert safety_decision["metric_tiles"] == {"ActionObjecty": 8, "blokady": 3}
     assert "campaign creation" in safety_decision["blocked_claims"]
     assert payload["blocker_count"] == 2
 
@@ -10447,11 +10445,37 @@ def test_merchant_product_performance_readiness_blocks_state_only_product_join()
             period="shopping_product_state",
             source_connector="google_ads",
             evidence_id="ev_ads_product_state",
-            dimensions={"product_item_id": "gla_107365"},
+            dimensions={
+                "product_item_id": "gla_107365",
+                "product_title": "Dywan sorpcyjny",
+                "currency_code": "PLN",
+            },
         ),
         MetricFact(
             name="shopping_product_status",
             value="NOT_ELIGIBLE",
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={
+                "product_item_id": "gla_107365",
+                "product_status": "NOT_ELIGIBLE",
+            },
+        ),
+        MetricFact(
+            name="shopping_product_availability",
+            value="OUT_OF_STOCK",
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={
+                "product_item_id": "gla_107365",
+                "product_availability": "OUT_OF_STOCK",
+            },
+        ),
+        MetricFact(
+            name="shopping_product_price_micros",
+            value=123450000,
             period="shopping_product_state",
             source_connector="google_ads",
             evidence_id="ev_ads_product_state",
@@ -10476,6 +10500,16 @@ def test_merchant_product_performance_readiness_blocks_state_only_product_join()
     ]
     assert "product-state join" in readiness.summary
     assert "Product ROAS" in readiness.next_step
+    row = readiness.performance_rows[0]
+    assert row.issue_type == "availability_updated"
+    assert row.affected_attribute == "n:availability"
+    assert row.country == "PL"
+    assert row.reporting_context == "SHOPPING_ADS"
+    assert row.ads_product_title == "Dywan sorpcyjny"
+    assert row.ads_product_status == "NOT_ELIGIBLE"
+    assert row.ads_product_availability == "OUT_OF_STOCK"
+    assert row.ads_product_price_micros == 123450000
+    assert row.ads_product_currency_code == "PLN"
     assert readiness.performance_rows[0].missing_metrics == [
         "ads_clicks",
         "ads_cost_micros",
@@ -10484,6 +10518,139 @@ def test_merchant_product_performance_readiness_blocks_state_only_product_join()
         "ga4_ecommerce_purchases",
         "ga4_purchase_revenue",
     ]
+
+
+def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_state_review.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_state_review.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    adc_json = tmp_path / "adc.json"
+    adc_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(adc_json))
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "5519957373")
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_merchant_product_status_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Merchant Center vendor read completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={
+                "total_products": 10900,
+                "item_level_issue_count": 14,
+                "merchant_action_issue_count": 14,
+            },
+            metric_facts=[
+                VendorMetricFact(
+                    "issue_product_count",
+                    14,
+                    {
+                        "issue_type": "availability_updated",
+                        "affected_attribute": "n:availability",
+                        "country": "PL",
+                        "reporting_context": "SHOPPING_ADS",
+                        "severity": "NOT_IMPACTED",
+                        "resolution": "MERCHANT_ACTION",
+                    },
+                ),
+                VendorMetricFact(
+                    "sample_product_id",
+                    "online~pl~PL~SKU-001",
+                    {
+                        "issue_type": "availability_updated",
+                        "affected_attribute": "n:availability",
+                        "country": "PL",
+                        "reporting_context": "SHOPPING_ADS",
+                        "severity": "NOT_IMPACTED",
+                        "resolution": "MERCHANT_ACTION",
+                        "sample_index": "1",
+                    },
+                ),
+            ],
+        ),
+    )
+    state_facts = [
+        MetricFact(
+            name="shopping_product_state_available",
+            value=1,
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={
+                "product_item_id": "SKU-001",
+                "product_title": "Sorbent chemiczny 10 kg",
+                "currency_code": "PLN",
+            },
+        ),
+        MetricFact(
+            name="shopping_product_status",
+            value="NOT_ELIGIBLE",
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={"product_item_id": "SKU-001"},
+        ),
+        MetricFact(
+            name="shopping_product_availability",
+            value="OUT_OF_STOCK",
+            period="shopping_product_state",
+            source_connector="google_ads",
+            evidence_id="ev_ads_product_state",
+            dimensions={"product_item_id": "SKU-001"},
+        ),
+    ]
+    monkeypatch.setattr(
+        "wilq.briefing.merchant_diagnostics._product_performance_metric_facts_by_connector",
+        lambda _sample_product_ids: {
+            "google_ads": state_facts,
+            "google_analytics_4": [],
+        },
+    )
+
+    refresh_response = client.post(
+        "/api/connectors/google_merchant_center/refresh",
+        json={"mode": "vendor_read", "reason": "merchant state review decision test"},
+    )
+    assert refresh_response.status_code == 200
+
+    response = client.get("/api/merchant/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    decision = next(
+        item
+        for item in payload["decision_queue"]
+        if item["id"] == "merchant_decision_review_ads_product_state_mapping"
+    )
+    assert decision["decision_type"] == "review_product_state_mapping"
+    assert decision["status"] == "ready"
+    assert decision["metric_tiles"] == {
+        "zmapowane produkty": 1,
+        "NOT_ELIGIBLE": 1,
+        "OUT_OF_STOCK": 1,
+    }
+    assert "product ROAS" in decision["blocked_claims"]
+    assert decision["payload_preview"][0]["preview_contract"] == (
+        "merchant_product_state_review_preview_v1"
+    )
+    assert decision["payload_preview"][0]["products"][0]["product_id"] == (
+        "online~pl~PL~SKU-001"
+    )
+    assert decision["payload_preview"][0]["products"][0]["ads_product_status"] == (
+        "NOT_ELIGIBLE"
+    )
+    readiness = payload["product_performance_readiness"]
+    assert readiness["status"] == "blocked"
+    row = readiness["performance_rows"][0]
+    assert row["product_id"] == "online~pl~PL~SKU-001"
+    assert row["issue_type"] == "availability_updated"
+    assert row["ads_product_title"] == "Sorbent chemiczny 10 kg"
+    assert row["ads_product_status"] == "NOT_ELIGIBLE"
+    assert row["ads_product_availability"] == "OUT_OF_STOCK"
 
 
 def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decision(

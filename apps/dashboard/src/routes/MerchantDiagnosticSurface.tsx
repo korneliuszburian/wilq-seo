@@ -479,19 +479,36 @@ function MerchantProductPerformanceRowCard({
 }: {
   row: MerchantProductPerformanceRow;
 }) {
+  const title = row.sample_title ?? row.ads_product_title ?? row.product_id;
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
-      <h3 className="text-sm font-semibold text-ink">{row.sample_title ?? row.product_id}</h3>
-      {row.sample_title ? (
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      {title !== row.product_id ? (
         <p className="mt-1 break-all text-xs text-slate-500">{row.product_id}</p>
       ) : null}
       <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
+        <MetricTile label="Status Ads" value={row.ads_product_status ?? "brak"} />
+        <MetricTile label="Dostępność Ads" value={row.ads_product_availability ?? "brak"} />
+        <MetricTile
+          label="Cena Ads"
+          value={merchantMicrosPrice(row.ads_product_price_micros, row.ads_product_currency_code)}
+        />
         <MetricTile label="Kliknięcia Ads" value={row.ads_clicks ?? "brak"} />
         <MetricTile label="Koszt Ads" value={row.ads_cost_micros ?? "brak"} />
         <MetricTile label="Zakupy GA4" value={row.ga4_ecommerce_purchases ?? "brak"} />
         <MetricTile label="Przychód GA4" value={row.ga4_purchase_revenue ?? "brak"} />
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine
+          label="Problem Merchant"
+          values={[
+            row.issue_type,
+            row.affected_attribute,
+            row.country,
+            row.reporting_context
+          ].filter((value): value is string => Boolean(value))}
+          empty="brak kontekstu problemu"
+        />
         <TraceLine label="Źródła" values={row.source_connectors} />
         <LinkedTraceLine label="Dowody" values={row.evidence_ids.slice(0, 4)} kind="evidence" />
         <TraceLine label="Brakujące metryki" values={row.missing_metrics} empty="brak" />
@@ -592,7 +609,15 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
 function merchantDecisionTypeLabel(decisionType: MerchantDecisionItem["decision_type"]) {
   if (decisionType === "review_issue_cluster") return "przegląd problemu feedu";
   if (decisionType === "review_feed_status") return "przegląd statusu feedu";
+  if (decisionType === "review_product_state_mapping") return "mapowanie produktu Ads";
   return "blocker odczytu Merchant";
+}
+
+function merchantMicrosPrice(value: number | null | undefined, currencyCode?: string | null) {
+  if (value === null || value === undefined) return "brak";
+  const amount = value / 1_000_000;
+  const currency = currencyCode ?? "PLN";
+  return `${amount.toFixed(2)} ${currency}`;
 }
 
 function merchantReportingContextLabel(value: string | null | undefined) {
