@@ -6,7 +6,6 @@ import {
   getMerchantDiagnostics,
   MerchantDiagnosticsResponse
 } from "../lib/api";
-import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
@@ -396,6 +395,8 @@ function formatPolishCount(count: number, one: string, few: string, many: string
 
 function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }) {
   const metricFacts = data.sections.flatMap((section) => section.metric_facts);
+  const visibleMetricFacts = metricFacts.slice(0, 4);
+  const visibleEvidenceIds = data.evidence_ids.slice(0, 2);
   const blockedClaims = merchantBlockedClaimLabels(
     data.sections.flatMap((section) => section.blocked_claims)
   );
@@ -419,19 +420,39 @@ function MerchantDiagnosticProof({ data }: { data: MerchantDiagnosticsResponse }
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Sekcje API" value={data.sections.length} />
           <MetricTile label="Metryki" value={metricFacts.length} />
-          <MetricTile label="Klastry" value={data.issue_clusters.length} />
+          <MetricTile label="Łącznie dowodów" value={data.evidence_ids.length} />
         </div>
       </div>
-      {metricFacts.length > 0 ? <MetricFactChips facts={metricFacts.slice(0, 8)} /> : null}
+      {visibleMetricFacts.length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          {visibleMetricFacts.map((fact, index) => (
+            <MetricTile
+              key={`${fact.source_connector}-${fact.name}-${fact.evidence_id}-${index}`}
+              label={merchantMetricFactLabel(fact.name)}
+              value={fact.value}
+            />
+          ))}
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Sekcje źródłowe" values={sectionTitles} />
-        <LinkedTraceLine label="Dowody" values={data.evidence_ids} kind="evidence" />
+        <LinkedTraceLine label="Przykładowe dowody" values={visibleEvidenceIds} kind="evidence" />
         <TraceLine label="Źródła" values={sourceConnectors} />
         <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
         <TraceLine label="Zablokowane claimy" values={blockedClaims} />
       </div>
     </section>
   );
+}
+
+function merchantMetricFactLabel(metricName: string) {
+  const labels: Record<string, string> = {
+    active_products: "Produkty aktywne",
+    disapproved_products: "Produkty odrzucone",
+    item_level_issue_count: "Zgłoszenia problemów",
+    total_products: "Produkty w feedzie"
+  };
+  return labels[metricName] ?? metricName;
 }
 
 function merchantSectionLabel(sectionId: string) {

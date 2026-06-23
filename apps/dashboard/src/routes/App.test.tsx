@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -109,7 +109,11 @@ const actions = [
     mode: "prepare",
     risk: "medium",
     status: "needs_validation",
-    evidence_ids: ["ev_refresh_merchant_feed"],
+    evidence_ids: [
+      "ev_refresh_merchant_feed",
+      "ev_refresh_merchant_issue_clusters",
+      "ev_refresh_merchant_safety"
+    ],
     metrics: [
       {
         name: "merchant_disapproved_product_count",
@@ -4057,7 +4061,11 @@ const merchantDiagnostics = {
       risk: "medium"
     }
   ],
-  evidence_ids: ["ev_refresh_merchant_feed"],
+  evidence_ids: [
+    "ev_refresh_merchant_feed",
+    "ev_refresh_merchant_issue_clusters",
+    "ev_refresh_merchant_safety"
+  ],
   action_ids: ["act_review_merchant_feed_issues"],
   blocker_count: 0
 };
@@ -6004,8 +6012,17 @@ describe("WILQ dashboard", () => {
       "/actions/act_review_merchant_feed_issues"
     );
     expect(screen.queryByText("Merchant: NOT_IMPACTED / availability_updated / PL")).not.toBeInTheDocument();
-    expect(screen.getAllByText(/total_products: 10900/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/total_products: 10900/)).not.toBeInTheDocument();
+    expect(screen.getByText("Produkty w feedzie")).toBeInTheDocument();
     expect(screen.getAllByText(/ev_refresh_merchant_feed/).length).toBeGreaterThan(0);
+    const merchantProofSection = screen
+      .getByText("Dowody i ograniczenia Merchant")
+      .closest("section");
+    expect(merchantProofSection).not.toBeNull();
+    const merchantProof = within(merchantProofSection as HTMLElement);
+    expect(merchantProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
+    expect(screen.getByText("Łącznie dowodów")).toBeInTheDocument();
+    expect(merchantProof.queryByText(/ev_refresh_merchant_safety/)).not.toBeInTheDocument();
     expect(screen.getByText("ActionObjecty do walidacji")).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")

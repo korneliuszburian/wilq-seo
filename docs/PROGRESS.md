@@ -2270,6 +2270,14 @@ Aktualny maintenance:
    Focused proof passed: Ads Doctor route unit test, dashboard lint and
    dashboard typecheck.
 
+10. Merchant proof compaction, 2026-06-23 05:39 CEST.
+    `/merchant` now keeps the operator issue queue as the primary surface and
+    compacts `Dowody i ograniczenia Merchant` into readable metric tiles,
+    section/source labels, example evidence IDs and counts. The proof section no
+    longer expands every route-level evidence ID as the main marketer-facing
+    content. Focused proof passed: Merchant route unit test, dashboard lint and
+    dashboard typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2306,7 +2314,7 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   Merchant issue clustering and the remaining lower-fold Ads Doctor tables.
+   remaining lower-fold Ads Doctor tables and Content Planner proof/drilldown.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

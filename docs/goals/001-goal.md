@@ -4848,3 +4848,18 @@ Latest Ads Doctor first-screen snapshot slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest Merchant proof compaction slice:
+
+- `/merchant` keeps the issue/decision queue as the primary marketer surface and
+  moves technical proof into a compact `Dowody i ograniczenia Merchant` summary.
+- The proof summary now renders readable metric tiles, section/source labels,
+  example evidence IDs and total evidence counts instead of expanding the full
+  route-level evidence list as main content.
+- This does not hide traceability: evidence and ActionObject links remain
+  available in the decision cards and action focus; the change only reduces
+  default visual noise.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "merchant route renders dedicated feed diagnostics"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`
