@@ -121,7 +121,7 @@ def main() -> int:
     validate_marketing_brief(pack_brief)
     compare_briefs(brief, pack_brief)
     pack_command_center = pack.get("command_center")
-    validate_command_center(pack_command_center)
+    validate_command_center(pack_command_center, compact=True)
     compare_command_centers(command_center, pack_command_center)
     validate_daily_action_scope(command_center, brief, pack)
     action_validations = validate_core_daily_actions(args.api_base, pack)
@@ -174,31 +174,32 @@ def main() -> int:
     return 0
 
 
-def validate_command_center(command_center: Any) -> None:
+def validate_command_center(command_center: Any, *, compact: bool = False) -> None:
     if not isinstance(command_center, dict):
         raise SystemExit("Command center is not an object")
     instruction = str(command_center.get("strict_instruction", "")).lower()
     if "metryki" not in instruction or "evidence" not in instruction:
         raise SystemExit("Command center strict instruction lacks metric/evidence guardrails")
     operator_brief = command_center.get("operator_brief") or []
-    if not isinstance(operator_brief, list) or not operator_brief:
-        raise SystemExit("Command center has no operator_brief")
-    item_ids = {str(item.get("id")) for item in operator_brief if isinstance(item, dict)}
-    missing_ids = sorted(CORE_OPERATOR_ITEM_IDS - item_ids)
-    if missing_ids:
-        raise SystemExit(f"Command center missing operator items: {', '.join(missing_ids)}")
-    ready_forbidden_ids = sorted(
-        str(item.get("id"))
-        for item in operator_brief
-        if isinstance(item, dict)
-        and item.get("id") in FORBIDDEN_READY_OPERATOR_ITEM_IDS
-        and item.get("status") == "ready"
-    )
-    if ready_forbidden_ids:
-        raise SystemExit(
-            "Command center promotes readiness-only Localo item as primary: "
-            + ", ".join(ready_forbidden_ids)
+    if not compact:
+        if not isinstance(operator_brief, list) or not operator_brief:
+            raise SystemExit("Command center has no operator_brief")
+        item_ids = {str(item.get("id")) for item in operator_brief if isinstance(item, dict)}
+        missing_ids = sorted(CORE_OPERATOR_ITEM_IDS - item_ids)
+        if missing_ids:
+            raise SystemExit(f"Command center missing operator items: {', '.join(missing_ids)}")
+        ready_forbidden_ids = sorted(
+            str(item.get("id"))
+            for item in operator_brief
+            if isinstance(item, dict)
+            and item.get("id") in FORBIDDEN_READY_OPERATOR_ITEM_IDS
+            and item.get("status") == "ready"
         )
+        if ready_forbidden_ids:
+            raise SystemExit(
+                "Command center promotes readiness-only Localo item as primary: "
+                + ", ".join(ready_forbidden_ids)
+            )
     if not isinstance(command_center.get("blocker_count"), int):
         raise SystemExit("Command center blocker_count is missing or not numeric")
     if not isinstance(command_center.get("tactical_item_count"), int):
@@ -209,7 +210,7 @@ def validate_command_center(command_center: Any) -> None:
     if not isinstance(demo_script, list):
         raise SystemExit("Command center demo_script must be a list")
     action_plan = command_center.get("action_plan") or []
-    if not isinstance(action_plan, list) or len(action_plan) < 4:
+    if not compact and (not isinstance(action_plan, list) or len(action_plan) < 4):
         raise SystemExit("Command center action_plan is missing or too small")
     daily_decisions = command_center.get("daily_decisions") or []
     if not isinstance(daily_decisions, list) or len(daily_decisions) < 4:
@@ -221,18 +222,30 @@ def validate_command_center(command_center: Any) -> None:
         "plan_prepare_content_refresh_queue",
         "plan_review_ga4_landing_quality",
     }
-    ads_live_ready = any(
-        item.get("id") == "daily_ads_status" and item.get("status") == "ready"
-        for item in operator_brief
-    )
+    if compact:
+        ads_live_ready = any(
+            item.get("id") == "decision_review_ads_campaign_metrics"
+            and item.get("status") == "ready"
+            for item in daily_decisions
+            if isinstance(item, dict)
+        )
+    else:
+        ads_live_ready = any(
+            item.get("id") == "daily_ads_status" and item.get("status") == "ready"
+            for item in operator_brief
+            if isinstance(item, dict)
+        )
     if ads_live_ready:
         required_plan_ids.add("plan_review_ads_campaign_metrics")
     else:
         required_plan_ids.add("plan_fix_ads_oauth_before_spend_analysis")
-    plan_ids = {item.get("id") for item in action_plan if isinstance(item, dict)}
-    missing_plan_ids = sorted(required_plan_ids - plan_ids)
-    if missing_plan_ids:
-        raise SystemExit(f"Command center missing action_plan items: {', '.join(missing_plan_ids)}")
+    if not compact:
+        plan_ids = {item.get("id") for item in action_plan if isinstance(item, dict)}
+        missing_plan_ids = sorted(required_plan_ids - plan_ids)
+        if missing_plan_ids:
+            raise SystemExit(
+                f"Command center missing action_plan items: {', '.join(missing_plan_ids)}"
+            )
     decision_ids = {item.get("id") for item in daily_decisions if isinstance(item, dict)}
     forbidden_decision_ids = {
         "decision_review_localo_visibility_facts",
@@ -252,32 +265,33 @@ def validate_command_center(command_center: Any) -> None:
         raise SystemExit(
             f"Command center missing daily_decisions: {', '.join(missing_decision_ids)}"
         )
-    for item in operator_brief:
-        if not isinstance(item, dict):
-            continue
-        if not item.get("source_connectors"):
-            raise SystemExit(f"Command center item lacks source connectors: {item.get('id')}")
-        if not item.get("evidence_ids"):
-            raise SystemExit(f"Command center item lacks evidence IDs: {item.get('id')}")
-    for item in action_plan:
-        if not isinstance(item, dict):
-            continue
-        if not item.get("source_connectors"):
-            raise SystemExit(
-                f"Command center action_plan item lacks source connectors: {item.get('id')}"
-            )
-        if not item.get("evidence_ids"):
-            raise SystemExit(
-                f"Command center action_plan item lacks evidence IDs: {item.get('id')}"
-            )
-        if (
-            item.get("status") == "ready"
-            and not item.get("action_ids")
-            and not item.get("blocked_claims")
-        ):
-            raise SystemExit(
-                f"Ready action_plan item lacks action IDs or blocked claims: {item.get('id')}"
-            )
+    if not compact:
+        for item in operator_brief:
+            if not isinstance(item, dict):
+                continue
+            if not item.get("source_connectors"):
+                raise SystemExit(f"Command center item lacks source connectors: {item.get('id')}")
+            if not item.get("evidence_ids"):
+                raise SystemExit(f"Command center item lacks evidence IDs: {item.get('id')}")
+        for item in action_plan:
+            if not isinstance(item, dict):
+                continue
+            if not item.get("source_connectors"):
+                raise SystemExit(
+                    f"Command center action_plan item lacks source connectors: {item.get('id')}"
+                )
+            if not item.get("evidence_ids"):
+                raise SystemExit(
+                    f"Command center action_plan item lacks evidence IDs: {item.get('id')}"
+                )
+            if (
+                item.get("status") == "ready"
+                and not item.get("action_ids")
+                and not item.get("blocked_claims")
+            ):
+                raise SystemExit(
+                    f"Ready action_plan item lacks action IDs or blocked claims: {item.get('id')}"
+                )
     for item in daily_decisions:
         if not isinstance(item, dict):
             continue
@@ -418,14 +432,8 @@ def compare_command_centers(
         == pack_command_center.get("blocker_count"),
         "tactical_item_count": command_center.get("tactical_item_count")
         == pack_command_center.get("tactical_item_count"),
-        "operator_brief": _trace_fields(command_center.get("operator_brief"))
-        == _trace_fields(pack_command_center.get("operator_brief")),
-        "demo_script": _trace_fields(command_center.get("demo_script"))
-        == _trace_fields(pack_command_center.get("demo_script")),
         "daily_decisions": _trace_fields(command_center.get("daily_decisions"))
         == _trace_fields(pack_command_center.get("daily_decisions")),
-        "action_plan": _trace_fields(command_center.get("action_plan"))
-        == _trace_fields(pack_command_center.get("action_plan")),
     }
     failed = [name for name, passed in checks.items() if not passed]
     if failed:

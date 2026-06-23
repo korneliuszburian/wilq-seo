@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Daily Command compact context hardening, 2026-06-23 11:03 CEST.
+  `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` now embeds a
+  compact Command Center based on `daily_decisions` only; legacy
+  `operator_brief`, `action_plan` and `demo_script` are omitted from the packed
+  command-center context. Live payload after stack restart:
+  `command_center_daily_decisions_only=true`, `daily_decision_count=4`,
+  payload size `149671` bytes. Non-interactive result:
+  `.local-lab/evals/codex-skill/20260623T090211Z/wilq-daily-command/result.json`.
+  Result: `pl-PL`, `api_used=true`, usefulness score 5, 17 evidence IDs,
+  validated core actions `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue`, `act_review_ga4_tracking_quality`.
+  Focused proof: API context-pack tests, daily smoke script and
+  `scripts/codex_skill_eval.sh --skill wilq-daily-command` passed.
 - Content strategist Codex eval usefulness hardening, 2026-06-23 10:52 CEST.
   `wilq-content-strategist` eval no longer proves only schema/API usage. The
   eval case now requires concrete `content_diagnostics.decision_queue` markers:

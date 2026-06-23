@@ -365,6 +365,7 @@ def _daily_command_context_pack(
             },
             "active_actions_compacted": True,
             "command_center_connector_health_omitted": True,
+            "command_center_daily_decisions_only": True,
             "marketing_brief_metric_facts_compacted": True,
             "full_action_endpoint_template": "/api/actions/{action_id}",
             "full_marketing_brief_endpoint": "/api/marketing/brief",
@@ -484,9 +485,6 @@ def _compact_command_center_for_daily_context(command: CommandCenterResponse) ->
         "blocker_count": dumped["blocker_count"],
         "tactical_item_count": dumped["tactical_item_count"],
         "daily_decisions": dumped["daily_decisions"],
-        "operator_brief": dumped["operator_brief"],
-        "demo_script": dumped["demo_script"],
-        "action_plan": dumped["action_plan"],
         "connector_summary": dumped["connector_summary"],
     }
 

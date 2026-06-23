@@ -25,6 +25,70 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-daily-command compact DailyDecision context
+
+Purpose:
+
+- Make `daily_decisions` the canonical daily command surface for Codex.
+- Remove legacy `operator_brief`, `action_plan` and `demo_script` from the
+  daily command context-pack so the skill cannot rebuild the daily plan from
+  parallel lists.
+
+Changes:
+
+- `POST /api/codex/context-pack {"skill":"wilq-daily-command"}` now embeds a
+  compact `command_center` with `daily_decisions`, `primary_next_step`,
+  blocker/tactical counts and `connector_summary`.
+- The context-pack compaction metadata exposes
+  `command_center_daily_decisions_only=true`.
+- `.agents/skills/wilq-daily-command/SKILL.md`,
+  `.agents/skills/wilq-daily-command/references/output-contract.md` and the
+  smoke script now treat `daily_decisions` as the canonical daily list.
+
+Verification:
+
+```bash
+uv run pytest tests/test_api_contracts.py -q -k 'codex_context_pack_embeds_marketing_brief_contract or daily_context_pack_uses_daily_decisions_for_action_summaries'
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Live payload proof after `scripts/local_stack.sh restart`:
+
+- `command_center` keys:
+  `blocker_count`, `connector_summary`, `daily_decisions`, `generated_at`,
+  `primary_next_step`, `strict_instruction`, `tactical_item_count`.
+- `daily_decision_count=4`.
+- `command_center_daily_decisions_only=true`.
+- Payload size: `149671` bytes.
+
+Passing result:
+
+```text
+.local-lab/evals/codex-skill/20260623T090211Z/wilq-daily-command/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `api_used=true`, `operator_usefulness_score=5`.
+- Source connectors:
+  `google_ads`, `google_search_console`, `google_analytics_4`,
+  `google_merchant_center`, `ahrefs`, `localo`, `wordpress_ekologus`,
+  `wordpress_sklep`.
+- `evidence_count=17`.
+- Validated core daily ActionObjects:
+  `act_review_merchant_feed_issues`, `act_prepare_content_refresh_queue`,
+  `act_review_ga4_tracking_quality`.
+- Recommendations cover Merchant first, Content second, GA4 as measurement
+  control and Ads as review-only queues. Social drafts are not promoted.
+
+Product finding:
+
+- Daily Command now has a cleaner Codex context: one canonical daily decision
+  list plus supporting brief/actions/evidence. This reduces duplicate meaning
+  between dashboard and Codex and makes the demo workflow less likely to drift
+  into old `operator_brief`/`action_plan` language.
+
 ## 2026-06-23 - wilq-content-strategist decision-marker eval hardening
 
 Purpose:

@@ -26,12 +26,14 @@ summaries.
 Then fetch `POST /api/codex/context-pack` with
 `{"skill":"wilq-daily-command"}` for wider context: connector status,
 refresh runs, evidence summaries, opportunities, ActionObjects, expert rules
-and knowledge cards. The embedded `command_center` in the context pack must
-match `GET /api/dashboard/command-center` for `operator_brief`, `demo_script`,
-`action_plan`, `primary_next_step`, blocker count, tactical item count and
-action IDs. The embedded `marketing_brief` in the context pack must match
-`GET /api/marketing/brief` for language, section IDs, blocker count,
-recommendation count, evidence IDs and action IDs.
+and knowledge cards. The embedded `command_center` is compact by design: use
+`daily_decisions` as the canonical daily decision list and verify it matches
+`GET /api/dashboard/command-center` for `primary_next_step`, blocker count,
+tactical item count and daily decision trace fields. Do not rebuild the daily
+plan from legacy `operator_brief` or `action_plan` lists. The embedded
+`marketing_brief` in the context pack must match `GET /api/marketing/brief`
+for language, section IDs, blocker count, recommendation count, evidence IDs
+and action IDs.
 
 Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
@@ -53,10 +55,10 @@ Zwracaj te sekcje, gdy użytkownik uruchamia ten skill:
 Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami. Używaj polskich etykiet operatora: `Status`, `Dowody`, `Diagnoza`, `Kandydaci działań`, `Walidacja` i `Następny krok`. API identifiers, connector IDs, evidence IDs, opportunity IDs i ActionObject IDs zostaw bez zmian.
 
 
-1. `Status`: zasięg API, gotowość connectorów, status `CommandCenter.operator_brief` i `CommandCenter.action_plan` oraz znane blockery.
+1. `Status`: zasięg API, gotowość connectorów, status `CommandCenter.daily_decisions` oraz znane blockery.
 2. `Dowody`: evidence IDs, connector IDs, freshness notes and metric summaries from `CommandCenter`/`MarketingBrief`/WILQ API only.
-3. `Diagnoza`: what the operator brief and action plan support, with uncertainty if the evidence is aggregate, stale or incomplete.
-4. `Kandydaci działań`: `action_plan.action_ids`, `operator_brief.action_ids`, opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
+3. `Diagnoza`: what the daily decisions support, with uncertainty if the evidence is aggregate, stale or incomplete.
+4. `Kandydaci działań`: `daily_decisions.action_ids`, opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 
