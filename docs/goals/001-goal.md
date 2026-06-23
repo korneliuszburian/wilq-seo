@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 14:10 CEST.
+Last updated: 2026-06-23 14:38 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -127,6 +127,24 @@ Doctor route test, dashboard lint/typecheck and browser proof
 `.local-lab/proof/dashboard/ads-doctor-polish-first-flow.txt`. Follow-up:
 lower Ads drilldown sections still contain older mixed Polish/English prose and
 should be cleaned in a separate slice after the first-flow demo path.
+
+2026-06-23 Ads Doctor drilldown/API copy follow-up: lower Ads drilldown and
+shared Ads API contracts are being cleaned so visible marketer-facing copy uses
+Polish terms instead of mixed `review/apply/search terms/custom segments`
+slang. Keep enum names, endpoint names, field IDs, blocked-claim keys and
+Google API resource names unchanged, but translate summaries, titles,
+next_steps, rationale and UI labels. Focused proof in progress: Ads live API
+contract test, Ads Doctor + Custom Segments route tests, dashboard lint/typecheck,
+Python ruff/mypy.
+
+2026-06-23 Merchant skill live-run follow-up: do not patch Merchant behavior by
+stuffing edge-case fixes into skill references. The next Merchant quality slice
+should harden typed API/evals instead: final queue is `decision_queue`-first,
+`issue_clusters` are drilldown, reported issue occurrences are not unique
+products, stale `vendor_read` must trigger read-only refresh or a stale-review
+label, answers must include "Czego nie wiemy" when product IDs/titles/SKU are
+not available, and ActionObject reporting must distinguish context-pack
+`needs_validation` from live `POST /api/actions/{id}/validate` success.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

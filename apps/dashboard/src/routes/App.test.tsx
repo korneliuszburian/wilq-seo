@@ -722,9 +722,9 @@ const adsDiagnostics = {
     strategy_review_readiness_contract: {
       id: "ads_strategy_review_readiness_contract",
       status: "blocked",
-      title: "Google Ads: gotowość human strategy review",
+      title: "Google Ads: gotowość oceny strategii przez człowieka",
       summary:
-        "Human strategy review Ads nie jest zatwierdzone, więc WILQ może tylko przygotować kolejki review.",
+        "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może tylko przygotować kolejki oceny.",
       latest_review_status: "missing",
       latest_review_outcome: null,
       reviewed_by: null,
@@ -5996,11 +5996,15 @@ describe("WILQ dashboard", () => {
 
   it("ads doctor route renders live metric-backed diagnostics", async () => {
     renderApp("/ads-doctor");
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Ads Doctor" })).toBeInTheDocument()
-    );
     expect(
-      screen.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
+      await screen.findByRole("heading", { name: "Ads Doctor" }, { timeout: 5000 })
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Co marketer ma sprawdzić teraz w Google Ads" },
+        { timeout: 5000 }
+      )
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Aktualny odczyt Ads" })).toBeInTheDocument();
     expect(screen.getByText("Wartości Ads")).toBeInTheDocument();
@@ -6090,7 +6094,8 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("brak oceny").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/target KPI verdict/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Source terms:/)).not.toBeInTheDocument();
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Pokaż pełne tabele diagnostyczne" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Podział wspólnych budżetów" })).not.toBeInTheDocument();
@@ -6112,7 +6117,7 @@ describe("WILQ dashboard", () => {
     );
 
     expect(
-      screen.getByText("Status Custom Segments / search terms evidence")
+      screen.getByText("Status segmentów i dowodów z wyszukiwanych haseł")
     ).toBeInTheDocument();
     expect(screen.getByText("Co marketer może przygotować teraz")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia segmentów")).toBeInTheDocument();
@@ -6125,9 +6130,9 @@ describe("WILQ dashboard", () => {
     for (const card of customSegmentCards) {
       expect(within(card).queryByText(/ev_/)).not.toBeInTheDocument();
     }
-    expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Hasła źródłowe:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Brakujące kontrakty/)).toBeInTheDocument();
-    expect(screen.getByText(/Wymaga review/)).toBeInTheDocument();
+    expect(screen.getByText(/Wymaga oceny/)).toBeInTheDocument();
     expect(screen.getByText(/nie twierdzi, że segment ma zasięg/)).toBeInTheDocument();
     expect(screen.getByText(/Tryb Codexa: Custom Segments/)).toBeInTheDocument();
     expect(screen.queryByText(/skill=wilq-custom-segments/)).not.toBeInTheDocument();

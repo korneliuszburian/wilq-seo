@@ -119,9 +119,9 @@ def campaign_review_reason(
         signals.append("nazwa wygląda jak draft/NIE URUCHAMIAĆ")
     signal_text = ", ".join(signals) or "brak aktywności w bieżącym evidence"
     return (
-        f"Kolejność review kampanii wynika z faktów: {signal_text}. "
-        "To nie jest werdykt wasted budget, CPA ani ROAS; przed decyzją potrzebny "
-        "jest review celu, jakości konwersji, budżetu i search terms."
+        f"Kolejność oceny kampanii wynika z faktów: {signal_text}. "
+        "To nie jest werdykt przepalonego budżetu, CPA ani ROAS; przed decyzją potrzebna "
+        "jest ocena celu, jakości konwersji, budżetu i wyszukiwanych haseł."
     )
 
 

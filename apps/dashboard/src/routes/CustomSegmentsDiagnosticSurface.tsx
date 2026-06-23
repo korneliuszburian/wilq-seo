@@ -24,7 +24,7 @@ export function AdsCustomSegmentCandidatesPanel({
 }) {
   if (candidates.length === 0) {
     return compact ? null : (
-      <BlockerNotice message="Brak kandydatów custom segments. WILQ potrzebuje realnych search terms i walidacji Keyword Planner, zanim przygotuje payload." />
+      <BlockerNotice message="Brak kandydatów segmentów. WILQ potrzebuje realnych wyszukiwanych haseł i walidacji Keyword Planner, zanim przygotuje podgląd zmian." />
     );
   }
   return (
@@ -32,11 +32,11 @@ export function AdsCustomSegmentCandidatesPanel({
       {!compact ? (
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-ink">
-            Kandydaci custom segments z search terms
+            Kandydaci segmentów z wyszukiwanych haseł
           </h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            To jest prepare-only kolejka. WILQ nie twierdzi, że segment ma zasięg,
-            ROAS albo wpływ na kampanię bez osobnego forecastu i walidacji.
+            To jest kolejka tylko do przygotowania. WILQ nie twierdzi, że segment
+            ma zasięg, ROAS albo wpływ na kampanię bez osobnej prognozy i walidacji.
           </p>
         </div>
       ) : null}
@@ -82,7 +82,7 @@ export function AdsCustomSegmentCandidatesPanel({
               Walidacja:{" "}
               {candidate.validation_status === "pending_validation"
                 ? "do walidacji"
-                : "blocked"}
+                : "zablokowane"}
             </p>
             <p className="mt-2 text-sm font-medium text-ink">{candidate.next_step}</p>
             {candidate.payload_preview ? (
@@ -95,11 +95,11 @@ export function AdsCustomSegmentCandidatesPanel({
                   Typ wejścia: {candidate.payload_preview.member_type}. Wdrożenie:{" "}
                   {candidate.payload_preview.apply_allowed
                     ? "wymaga walidacji"
-                    : "zablokowany"}
+                    : "zablokowane"}
                   .
                 </div>
                 <div className="mt-1 text-slate-600">
-                  Safety: {candidate.payload_preview.safety_review.safety_contract} /{" "}
+                  Bezpieczeństwo: {candidate.payload_preview.safety_review.safety_contract} /{" "}
                   {candidate.payload_preview.safety_review.audit_required
                     ? "audyt wymagany"
                     : "audyt niewymagany"}
@@ -111,13 +111,13 @@ export function AdsCustomSegmentCandidatesPanel({
                 </div>
                 {candidate.payload_preview.targeting_preview.length > 0 ? (
                   <div className="mt-1 text-slate-600">
-                    Targeting preview:{" "}
+                    Podgląd kierowania:{" "}
                     {candidate.payload_preview.targeting_preview
                       .slice(0, 2)
                       .map((target) =>
                         [
-                          target.campaign_name || target.campaign_id || "kampania do review",
-                          target.apply_allowed ? "apply możliwy" : "apply zablokowany"
+                          target.campaign_name || target.campaign_id || "kampania do oceny",
+                          target.apply_allowed ? "wymaga walidacji" : "wdrożenie zablokowane"
                         ].join(" / ")
                       )
                       .join(", ")}
@@ -128,16 +128,16 @@ export function AdsCustomSegmentCandidatesPanel({
             {candidate.keyword_planner_ideas.length > 0 ? (
               <div className="mt-2 rounded-md border border-emerald-100 bg-emerald-50 p-2 text-xs leading-5 text-slate-700">
                 <div className="font-semibold uppercase tracking-normal text-emerald-700">
-                  Keyword Planner enrichment
+                  Wzbogacenie Keyword Planner
                 </div>
                 <div className="mt-1 grid gap-1">
                   {candidate.keyword_planner_ideas.slice(0, compact ? 2 : 4).map((idea) => (
                     <div key={`${candidate.id}-${idea.idea_text}`} className="text-slate-700">
                       <span className="font-medium text-ink">{idea.idea_text}</span>
                       {typeof idea.avg_monthly_searches === "number" ? (
-                        <span> / avg monthly searches: {idea.avg_monthly_searches}</span>
+                        <span> / średnie miesięczne wyszukiwania: {idea.avg_monthly_searches}</span>
                       ) : null}
-                      {idea.competition ? <span> / competition: {idea.competition}</span> : null}
+                      {idea.competition ? <span> / konkurencja: {idea.competition}</span> : null}
                     </div>
                   ))}
                 </div>
@@ -145,11 +145,11 @@ export function AdsCustomSegmentCandidatesPanel({
             ) : null}
             <div className="mt-2 grid gap-2 text-xs text-slate-600">
               <TraceLine
-                label="Review człowieka"
+                label="Ocena człowieka"
                 values={candidate.human_review_gates}
                 empty="brak"
               />
-              <TraceLine label="Source terms" values={candidate.source_terms.slice(0, 8)} />
+              <TraceLine label="Hasła źródłowe" values={candidate.source_terms.slice(0, 8)} />
               <TraceLine label="Odrzucone" values={candidate.rejected_terms.slice(0, 6)} />
               <TraceLine
                 label="Dowody"
@@ -178,7 +178,7 @@ export function AdsCustomSegmentAudienceForecastPanel({
 }) {
   if (rows.length === 0) {
     return compact ? null : (
-      <BlockerNotice message="Brak wierszy forecast/audience size. WILQ nie może ocenić zasięgu segmentów bez osobnego read contract." />
+      <BlockerNotice message="Brak wierszy prognozy i rozmiaru odbiorców. WILQ nie może ocenić zasięgu segmentów bez osobnego kontraktu odczytu." />
     );
   }
   return (
@@ -186,11 +186,11 @@ export function AdsCustomSegmentAudienceForecastPanel({
       {!compact ? (
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-ink">
-            Forecast i audience size custom segments
+            Prognoza i rozmiar odbiorców segmentów
           </h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            To jest safety contract. Wiersz oznacza, że kandydat został
-            sprawdzony, ale WILQ nadal nie ma dowodu zasięgu ani forecastu.
+            To jest kontrakt bezpieczeństwa. Wiersz oznacza, że kandydat został
+            sprawdzony, ale WILQ nadal nie ma dowodu zasięgu ani prognozy.
           </p>
         </div>
       ) : null}
@@ -203,16 +203,16 @@ export function AdsCustomSegmentAudienceForecastPanel({
                   {row.custom_segment_name}
                 </h4>
                 <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                  {row.status === "ready" ? "forecast ready" : "forecast missing"}
+                  {row.status === "ready" ? "prognoza gotowa" : "brak prognozy"}
                 </p>
               </div>
               <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
-                audience: {typeof row.audience_size === "number" ? row.audience_size : "brak"}
+                odbiorcy: {typeof row.audience_size === "number" ? row.audience_size : "brak"}
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">{row.reason}</p>
             <div className="mt-2 grid gap-2 text-xs text-slate-600">
-              <TraceLine label="Source terms" values={row.source_terms.slice(0, 8)} />
+              <TraceLine label="Hasła źródłowe" values={row.source_terms.slice(0, 8)} />
               <TraceLine
                 label="Dowody"
                 values={[formatCustomSegmentsEvidenceCount(row.evidence_ids.length)]}
@@ -240,7 +240,7 @@ export function CustomSegmentsDiagnosticSurface() {
   if (diagnostics.error || !diagnostics.data) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-        <BlockerNotice message="Nie udało się odczytać /api/ads/diagnostics. Custom segments nie mogą być oceniane bez WILQ API." />
+        <BlockerNotice message="Nie udało się odczytać /api/ads/diagnostics. Segmenty nie mogą być oceniane bez WILQ API." />
       </main>
     );
   }
@@ -267,17 +267,17 @@ export function CustomSegmentsDiagnosticSurface() {
         <div>
           <h1 className="text-2xl font-semibold tracking-normal">Custom Segments</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            Dedykowany widok kandydatów segmentów z Google Ads search terms.
-            WILQ pokazuje tylko source terms z evidence i payload preview do
-            review; zasięg, uplift, ROAS i targeting apply pozostają zablokowane.
+            Dedykowany widok kandydatów segmentów z wyszukiwanych haseł Google Ads.
+            WILQ pokazuje tylko hasła źródłowe z dowodami i podgląd zmian do
+            oceny; zasięg, uplift, ROAS i wdrożenie kierowania pozostają zablokowane.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
           <MetricTile label="Segmenty" value={contract.candidates.length} />
-          <MetricTile label="Source terms" value={sourceTermCount} />
+          <MetricTile label="Hasła źródłowe" value={sourceTermCount} />
           <MetricTile label="Odrzucone" value={rejectedTermCount} />
-          <MetricTile label="KP ideas" value={keywordPlanner.idea_rows.length} />
-          <MetricTile label="Forecast" value={audienceForecast.forecast_row_count} />
+          <MetricTile label="Pomysły KP" value={keywordPlanner.idea_rows.length} />
+          <MetricTile label="Prognoza" value={audienceForecast.forecast_row_count} />
         </div>
       </div>
 
@@ -285,7 +285,7 @@ export function CustomSegmentsDiagnosticSurface() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status Custom Segments / search terms evidence
+              Status segmentów i dowodów z wyszukiwanych haseł
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
               {contract.summary}
@@ -293,10 +293,10 @@ export function CustomSegmentsDiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <StatusBadge value={contract.status === "ready" ? "gotowe" : "zablokowane"} />
-            <StatusBadge value={customDecision?.status === "ready" ? "do review" : "blocked"} />
-            <StatusBadge value={keywordPlanner.status === "ready" ? "KP ready" : "KP blocked"} />
+            <StatusBadge value={customDecision?.status === "ready" ? "do oceny" : "zablokowane"} />
+            <StatusBadge value={keywordPlanner.status === "ready" ? "KP gotowe" : "KP zablokowane"} />
             <StatusBadge
-              value={audienceForecast.status === "ready" ? "forecast ready" : "forecast blocked"}
+              value={audienceForecast.status === "ready" ? "prognoza gotowa" : "prognoza zablokowana"}
             />
           </div>
         </div>
@@ -305,7 +305,7 @@ export function CustomSegmentsDiagnosticSurface() {
           Keyword Planner: {keywordPlanner.summary}
         </p>
         <p className="mt-1 text-xs leading-5 text-slate-600">
-          Forecast/audience size: {audienceForecast.summary}
+          Prognoza i rozmiar odbiorców: {audienceForecast.summary}
         </p>
       </section>
 
@@ -319,9 +319,9 @@ export function CustomSegmentsDiagnosticSurface() {
               Co marketer może przygotować teraz
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-              Użyj kandydatów tylko jako listy do review. Odrzuć frazy brandowe,
-              niskointencyjne lub zbyt szerokie, a przed apply wymagaj Keyword
-              Planner enrichment, forecastu i potwierdzenia człowieka.
+              Użyj kandydatów tylko jako listy do oceny. Odrzuć frazy brandowe,
+              niskointencyjne lub zbyt szerokie, a przed wdrożeniem wymagaj
+              wzbogacenia Keyword Planner, prognozy i potwierdzenia człowieka.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 text-center text-xs">
@@ -330,7 +330,7 @@ export function CustomSegmentsDiagnosticSurface() {
               value={contract.missing_read_contracts.length}
             />
             <MetricTile
-              label="Review gates"
+              label="Bramki oceny"
               value={contract.operator_review_gates.length}
             />
           </div>
@@ -354,8 +354,8 @@ export function CustomSegmentsDiagnosticSurface() {
               Dowody i ograniczenia segmentów
             </h2>
             <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-              Ten ekran nie służy do tworzenia audience bez walidacji. Pokazuje
-              tylko review-only kontrakt z WILQ API.
+              Ten ekran nie służy do tworzenia odbiorców bez walidacji. Pokazuje
+              tylko kontrakt WILQ API do ręcznej oceny.
             </p>
           </div>
         </div>
@@ -368,7 +368,7 @@ export function CustomSegmentsDiagnosticSurface() {
             ]).map(adsMissingReadContractLabel)}
           />
           <TraceLine
-            label="Wymaga review"
+            label="Wymaga oceny"
             values={uniqueValues([
               ...contract.operator_review_gates,
               ...audienceForecast.operator_review_gates
@@ -408,19 +408,19 @@ function adsOperatorReviewGateLabel(value: string) {
     review_campaign_goal: "sprawdzenie celu kampanii",
     review_conversion_quality: "sprawdzenie jakości konwersji",
     review_budget_context: "sprawdzenie kontekstu budżetu",
-    review_search_terms_before_budget_decision: "search terms przed decyzją budżetową",
+    review_search_terms_before_budget_decision: "wyszukiwane hasła przed decyzją budżetową",
     review_conversion_tracking: "sprawdzenie trackingu konwersji",
     review_pmax_asset_feed_context: "sprawdzenie PMax/feed/assets",
     review_draft_campaign_status: "sprawdzenie statusu draftu",
-    recommendation_apply_preview: "podgląd apply rekomendacji",
-    google_ads_rmf_compliance_review: "review Google Ads RMF/compliance",
+    recommendation_apply_preview: "podgląd wdrożenia rekomendacji",
+    google_ads_rmf_compliance_review: "ocena Google Ads RMF/compliance",
     human_confirm_before_apply: "potwierdzenie człowieka przed wdrożeniem",
-    negative_keyword_action_validation: "walidacja ActionObject dla wykluczeń",
-    human_intent_review: "ręczny review intencji",
-    review_source_terms: "sprawdzenie source terms",
-    reject_brand_or_low_intent_terms: "odrzucenie brand/low intent terms",
-    keyword_planner_enrichment: "enrichment Keyword Planner",
-    forecast_or_audience_size: "forecast albo audience size"
+    negative_keyword_action_validation: "walidacja akcji WILQ dla wykluczeń",
+    human_intent_review: "ręczna ocena intencji",
+    review_source_terms: "sprawdzenie haseł źródłowych",
+    reject_brand_or_low_intent_terms: "odrzucenie fraz brandowych albo niskointencyjnych",
+    keyword_planner_enrichment: "wzbogacenie Keyword Planner",
+    forecast_or_audience_size: "prognoza albo rozmiar odbiorców"
   };
   return labels[value] ?? value;
 }

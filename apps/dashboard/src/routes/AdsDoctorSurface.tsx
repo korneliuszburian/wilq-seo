@@ -644,7 +644,7 @@ function AdsMetricEvidencePanel({
           <MetricTile label="N-gramy" value={searchTermNgramRows.length} />
           <MetricTile label="Safety 90d" value={searchTermSafetyRows.length} />
           <MetricTile label="Keywords" value={keywordContextRows.length} />
-          <MetricTile label="Review wykl." value={negativeKeywordCandidates.length} />
+          <MetricTile label="Ocena wykl." value={negativeKeywordCandidates.length} />
           <MetricTile label="Segmenty" value={customSegmentCandidates.length} />
           <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
           <MetricTile
@@ -857,7 +857,7 @@ function AdsCampaignRowsTable({
         <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
           <tr>
             <th className="py-2 pl-3 pr-4 font-semibold">Kampania</th>
-            <th className="py-2 pr-4 font-semibold">Review</th>
+            <th className="py-2 pr-4 font-semibold">Ocena</th>
             <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
             <th className="py-2 pr-4 font-semibold">Wyświetlenia</th>
             <th className="py-2 pr-4 font-semibold">Koszt</th>
@@ -890,7 +890,7 @@ function AdsCampaignRowsTable({
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversions)}</td>
               <td className="py-2 pr-4 text-slate-700">{adsNumber(row.conversion_value)}</td>
               <td className="max-w-md py-2 pr-4 text-xs leading-5 text-slate-600">
-                {row.review_reason}
+                {adsCampaignReviewReason(row, currencyCode)}
               </td>
               <td className="py-2 pr-3 text-xs text-slate-600">{row.evidence_ids.length} ID</td>
             </tr>
@@ -973,8 +973,12 @@ function AdsCampaignTriageRowsPanel({
               />
             </div>
 
-            <p className="mt-3 text-xs leading-5 text-slate-700">{row.review_reason}</p>
-            <p className="mt-2 text-xs font-medium text-ink">{row.next_step}</p>
+            <p className="mt-3 text-xs leading-5 text-slate-700">
+              {adsCampaignTriageReason(row, currencyCode)}
+            </p>
+            <p className="mt-2 text-xs font-medium text-ink">
+              {adsCampaignTriageNextStep(row)}
+            </p>
             <div className="mt-3 grid gap-1 text-xs text-slate-600 md:grid-cols-2">
               <TraceLine
                 label="Wymagana ocena"
@@ -1095,7 +1099,7 @@ function AdsBudgetPacingRowsTable({
             <th className="py-2 pr-4 font-semibold">7-dniowy budżet</th>
             <th className="py-2 pr-4 font-semibold">Wydanie</th>
             <th className="py-2 pr-4 font-semibold">Rekomendacja Google</th>
-            <th className="py-2 pr-4 font-semibold">Preview apply</th>
+            <th className="py-2 pr-4 font-semibold">Podgląd wdrożenia</th>
             <th className="py-2 pr-3 font-semibold">Blokady</th>
           </tr>
         </thead>
@@ -1136,14 +1140,16 @@ function AdsBudgetPacingRowsTable({
                       )}
                     </div>
                     <div>
-                      {row.payload_preview.operation_type} /{" "}
-                      {row.payload_preview.apply_allowed ? "apply możliwy" : "apply zablokowany"}
+                      {adsGoogleOperationLabel(row.payload_preview.operation_type)} /{" "}
+                      {row.payload_preview.apply_allowed
+                        ? "wymaga walidacji"
+                        : "wdrożenie zablokowane"}
                     </div>
                     <div className="mt-1 text-slate-500">
-                      Safety: {row.payload_preview.safety_review.safety_contract} /{" "}
+                      Bezpieczeństwo: {row.payload_preview.safety_review.safety_contract} /{" "}
                       {row.payload_preview.safety_review.apply_allowed
-                        ? "mutation ready"
-                        : "blocked"}
+                        ? "gotowe do walidacji"
+                        : "zablokowane"}
                     </div>
                     <div className="text-slate-500">
                       Braki:{" "}
@@ -1178,8 +1184,8 @@ function AdsSharedBudgetDistributionPanel({
     return (
       <div className="rounded-md border border-line bg-slate-50 p-3 text-sm text-slate-600">
         Brak wspólnych budżetów w bieżącym odczycie albo każda kampania ma osobny
-        budżet. To oznacza, że WILQ nie musi rozdzielać kosztu shared budget między
-        kilka kampanii przed review.
+        budżet. To oznacza, że WILQ nie musi rozdzielać kosztu wspólnego budżetu
+        między kilka kampanii przed oceną.
       </div>
     );
   }
@@ -1190,7 +1196,7 @@ function AdsSharedBudgetDistributionPanel({
           <h3 className="text-sm font-semibold text-ink">Podział wspólnych budżetów</h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             Wspólne budget_id z Google Ads rozbite po kampaniach. To jest kontekst
-            review, nie rekomendacja skalowania ani zmiany budżetu.
+            oceny, nie rekomendacja skalowania ani zmiany budżetu.
           </p>
         </div>
         <MetricTile label="Wspólne budżety" value={rows.length} />
@@ -1276,7 +1282,7 @@ function AdsRecommendationRowsPanel({
 }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak aktywnych rekomendacji Google Ads w ostatnim read-only odczycie albo brak kontraktu recommendations. WILQ nie przyjmuje rekomendacji bez review." />
+      <BlockerNotice message="Brak aktywnych rekomendacji Google Ads w ostatnim odczycie tylko do analizy albo brak kontraktu rekomendacji. WILQ nie przyjmuje rekomendacji bez ręcznej oceny." />
     );
   }
   return (
@@ -1285,10 +1291,11 @@ function AdsRecommendationRowsPanel({
         <div>
           <h3 className="text-sm font-semibold text-ink">Rekomendacje Google Ads</h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            Read-only lista typów rekomendacji do review. Apply pozostaje zablokowany.
+            Lista typów rekomendacji tylko do oceny. Wdrożenie pozostaje
+            zablokowane do czasu walidacji akcji WILQ i audytu.
           </p>
         </div>
-        <MetricTile label="Do review" value={rows.length} />
+        <MetricTile label="Do oceny" value={rows.length} />
       </div>
       <div className="grid gap-2 md:grid-cols-2">
         {rows.slice(0, 6).map((row) => (
@@ -1312,7 +1319,7 @@ function AdsRecommendationRowsPanel({
               </span>
             </div>
             <div className="mt-1 text-xs leading-5 text-slate-600">
-              {row.review_reason}
+              {adsRecommendationReviewReason(row, currencyCode)}
             </div>
             {row.impact_available ? (
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
@@ -1340,12 +1347,12 @@ function AdsRecommendationRowsPanel({
               </div>
             ) : (
               <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-800">
-                Google Ads nie zwrócił impact metrics dla tego typu rekomendacji.
+                Google Ads nie zwrócił metryk wpływu dla tego typu rekomendacji.
               </div>
             )}
             <TraceLine
-              label="Review człowieka"
-              values={row.human_review_gates}
+              label="Ocena człowieka"
+              values={row.human_review_gates.map(adsOperatorReviewGateLabel)}
               empty="brak"
             />
             <TraceLine
@@ -1359,15 +1366,20 @@ function AdsRecommendationRowsPanel({
             />
             {row.payload_preview ? (
               <div className="mt-3 rounded-md border border-line bg-slate-50 px-2 py-2 text-xs text-slate-700">
-                <div className="font-semibold text-ink">Podgląd apply: zablokowany</div>
+                <div className="font-semibold text-ink">Podgląd wdrożenia: zablokowany</div>
                 <div className="mt-1">
-                  Operacja: {row.payload_preview.operation_type}. Wdrożenie:{" "}
+                  Operacja: {adsGoogleOperationLabel(row.payload_preview.operation_type)}.
+                  Wdrożenie:{" "}
                   {row.payload_preview.apply_allowed
                     ? "dozwolone"
-                    : "niedozwolone bez review i audytu"}.
+                    : "niedozwolone bez oceny i audytu"}.
                 </div>
                 <div className="mt-1">
-                  Walidacje: {row.payload_preview.required_validation.slice(0, 4).join(", ")}
+                  Walidacje:{" "}
+                  {row.payload_preview.required_validation
+                    .slice(0, 4)
+                    .map(adsOperatorReviewGateLabel)
+                    .join(", ")}
                 </div>
               </div>
             ) : null}
@@ -1675,7 +1687,7 @@ function AdsSearchTermReviewSummaryPanel({
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine
-          label="Wymaga review"
+          label="Wymaga oceny"
           values={contract.operator_review_gates.map(adsOperatorReviewGateLabel)}
         />
         <TraceLine
@@ -1754,7 +1766,7 @@ function AdsSearchTermNgramRowsTable({
 }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak n-gramów zapytań. WILQ musi najpierw mieć search-term rows z Google Ads." />
+      <BlockerNotice message="Brak n-gramów zapytań. WILQ musi najpierw mieć wiersze wyszukiwanych haseł z Google Ads." />
     );
   }
   const visibleRows = rows.slice(0, compact ? 5 : 12);
@@ -1812,7 +1824,7 @@ function AdsSearchTermSafetyRowsTable({
 }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak 90-dniowego safety read dla zapytań. WILQ nie powinien zdejmować blokady z review wykluczeń bez tego odczytu." />
+      <BlockerNotice message="Brak 90-dniowego odczytu bezpieczeństwa dla zapytań. WILQ nie powinien zdejmować blokady z oceny wykluczeń bez tego odczytu." />
     );
   }
   return (
@@ -1820,7 +1832,7 @@ function AdsSearchTermSafetyRowsTable({
       <table className="min-w-full text-left text-sm">
         <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
           <tr>
-            <th className="py-2 pl-3 pr-4 font-semibold">Safety 90 dni</th>
+            <th className="py-2 pl-3 pr-4 font-semibold">Bezpieczeństwo 90 dni</th>
             <th className="py-2 pr-4 font-semibold">Kampania</th>
             <th className="py-2 pr-4 font-semibold">Grupa reklam</th>
             <th className="py-2 pr-4 font-semibold">Kliknięcia</th>
@@ -1862,7 +1874,7 @@ function AdsSearchTermSafetyRowsTable({
 function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContextRow[] }) {
   if (rows.length === 0) {
     return (
-      <BlockerNotice message="Brak kontekstu istniejących keywords/match types. WILQ nie powinien zdejmować blokady z review wykluczeń bez odczytu ad_group_criterion." />
+      <BlockerNotice message="Brak kontekstu istniejących słów kluczowych i typów dopasowania. WILQ nie powinien zdejmować blokady z oceny wykluczeń bez odczytu ad_group_criterion." />
     );
   }
   return (
@@ -1870,8 +1882,8 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
       <table className="min-w-full text-left text-sm">
         <thead className="border-b border-line bg-slate-50 text-xs uppercase tracking-normal text-slate-500">
           <tr>
-            <th className="py-2 pl-3 pr-4 font-semibold">Keyword</th>
-            <th className="py-2 pr-4 font-semibold">Match type</th>
+            <th className="py-2 pl-3 pr-4 font-semibold">Słowo kluczowe</th>
+            <th className="py-2 pr-4 font-semibold">Typ dopasowania</th>
             <th className="py-2 pr-4 font-semibold">Status</th>
             <th className="py-2 pr-4 font-semibold">Kampania</th>
             <th className="py-2 pr-4 font-semibold">Grupa reklam</th>
@@ -1888,7 +1900,7 @@ function AdsKeywordMatchContextRowsTable({ rows }: { rows: AdsKeywordMatchContex
               <td className="py-2 pl-3 pr-4 font-medium text-ink">{row.keyword_text}</td>
               <td className="py-2 pr-4 text-slate-700">{row.match_type}</td>
               <td className="py-2 pr-4 text-slate-700">
-                {row.negative ? "negative" : row.criterion_status ?? "brak"}
+                {row.negative ? "wykluczające" : row.criterion_status ?? "brak"}
               </td>
               <td className="py-2 pr-4 text-slate-700">
                 {row.campaign_name ?? row.campaign_id ?? "brak"}
@@ -1918,7 +1930,7 @@ function AdsNegativeKeywordCandidatesPanel({
 }) {
   if (candidates.length === 0) {
     return compact ? null : (
-      <BlockerNotice message="Brak kolejki review wykluczeń. WILQ potrzebuje search terms z aktywnością i zerową konwersją, a potem 90-dniowego safety checku." />
+      <BlockerNotice message="Brak kolejki oceny wykluczeń. WILQ potrzebuje wyszukiwanych haseł z aktywnością i zerową konwersją, a potem 90-dniowej kontroli bezpieczeństwa." />
     );
   }
   return (
@@ -1926,12 +1938,12 @@ function AdsNegativeKeywordCandidatesPanel({
       {!compact ? (
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-ink">
-            Review wykluczeń z search terms
+            Ocena wykluczeń z wyszukiwanych haseł
           </h3>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             To jest kolejka bezpieczeństwa. WILQ pokazuje terminy do sprawdzenia,
             ale blokuje wdrożenie wykluczeń bez kontekstu dopasowania, 90-dniowej
-            historii i walidacji ActionObject.
+            historii i walidacji akcji WILQ.
           </p>
         </div>
       ) : null}
@@ -1951,15 +1963,15 @@ function AdsNegativeKeywordCandidatesPanel({
               </span>
             </div>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              {candidate.review_reason}
+              {adsNegativeKeywordReason(candidate, currencyCode)}
             </p>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              Safety:{" "}
+              Bezpieczeństwo:{" "}
               {candidate.safety_status === "needs_90_day_review"
                 ? "wymaga 90 dni"
                 : candidate.safety_status === "read_ready_needs_human_review"
                   ? "90 dni odczytane"
-                  : "blocked"}
+                  : "zablokowane"}
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
               <MetricTile label="Kliknięcia" value={adsNumber(candidate.clicks)} />
@@ -1975,7 +1987,9 @@ function AdsNegativeKeywordCandidatesPanel({
               />
               <MetricTile label="Konw. 90d" value={adsNumber(candidate.conversions_90d)} />
             </div>
-            <p className="mt-2 text-sm leading-6 text-slate-700">{candidate.next_step}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {adsNegativeKeywordNextStep(candidate)}
+            </p>
             {candidate.payload_preview ? (
               <div className="mt-2 rounded-md border border-blue-100 bg-blue-50 p-2 text-xs leading-5 text-slate-700">
                 <div className="font-semibold uppercase tracking-normal text-blue-700">
@@ -1990,31 +2004,31 @@ function AdsNegativeKeywordCandidatesPanel({
                   Wdrożenie:{" "}
                   {candidate.payload_preview.apply_allowed
                     ? "wymaga walidacji"
-                    : "zablokowany"}
-                  . {candidate.payload_preview.reason}
+                    : "zablokowane"}
+                  . {adsNegativeKeywordPayloadReason(candidate.payload_preview.reason)}
                 </div>
               </div>
             ) : null}
             {candidate.keyword_context_rows.length > 0 ? (
               <div className="mt-2 rounded-md border border-line bg-slate-50 p-2 text-xs leading-5 text-slate-700">
                 <div className="font-semibold uppercase tracking-normal text-slate-600">
-                  Istniejące keywords w tej grupie
+                  Istniejące słowa kluczowe w tej grupie
                 </div>
                 {candidate.keyword_context_rows.slice(0, 4).map((row) => (
                   <div key={`${row.criterion_id ?? row.keyword_text}-${row.match_type}`}>
                     {row.keyword_text} / {row.match_type}
-                    {row.negative ? " / negative" : ""}
+                    {row.negative ? " / wykluczające" : ""}
                   </div>
                 ))}
               </div>
             ) : null}
             <div className="mt-2 grid gap-1 text-xs text-slate-600">
               <TraceLine
-                label="Review człowieka"
-                values={candidate.human_review_gates}
+                label="Ocena człowieka"
+                values={candidate.human_review_gates.map(adsOperatorReviewGateLabel)}
                 empty="brak"
               />
-              <TraceLine label="Wymagane checki" values={candidate.required_checks.map(adsMissingReadContractLabel)} />
+              <TraceLine label="Wymagane kontrole" values={candidate.required_checks.map(adsMissingReadContractLabel)} />
               <LinkedTraceLine
                 label="Dowody"
                 values={uniqueValues([
@@ -2071,7 +2085,7 @@ function AdsBlockedHandoffPanel({ handoff }: { handoff: AdsBlockedHandoff }) {
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <LinkedTraceLine label="Dowody" values={handoff.evidence_ids} kind="evidence" />
         <TraceLine label="Źródła" values={handoff.source_connectors} />
-        <LinkedTraceLine label="ActionObjecty" values={handoff.action_ids} kind="actions" />
+        <LinkedTraceLine label="Akcje WILQ" values={handoff.action_ids} kind="actions" />
         <TraceLine label="Nie wolno twierdzić" values={handoff.blocked_claims.map(adsBlockedClaimLabel)} />
       </div>
     </section>
@@ -2273,7 +2287,7 @@ function adsSectionLabel(sectionId: string) {
   if (sectionId === "ads_change_history") return "Historia zmian";
   if (sectionId === "ads_search_terms") return "Zapytania użytkowników";
   if (sectionId === "ads_search_term_ngrams") return "N-gramy zapytań";
-  if (sectionId === "ads_search_term_safety") return "Safety 90 dni";
+  if (sectionId === "ads_search_term_safety") return "Bezpieczeństwo 90 dni";
   if (sectionId === "ads_keyword_match_context") return "Kontekst słów kluczowych";
   if (sectionId === "ads_negative_keyword_safety") return "Ocena wykluczeń";
   if (sectionId === "ads_custom_segments") return "Segmenty niestandardowe";
@@ -2440,6 +2454,93 @@ function adsOperatorReviewGateLabel(value: string) {
     reject_brand_or_low_intent_terms: "odrzucenie brand/low intent terms",
     keyword_planner_enrichment: "wzbogacenie przez Keyword Planner",
     forecast_or_audience_size: "prognoza albo rozmiar odbiorców"
+  };
+  return labels[value] ?? value;
+}
+
+function adsCampaignReviewReason(row: AdsCampaignMetricRow, currencyCode?: string) {
+  const parts = [
+    `${adsNumber(row.clicks)} kliknięć`,
+    `${adsNumber(row.impressions)} wyświetleń`,
+    `${adsCost(row.cost_micros, currencyCode)} kosztu`,
+    `${adsNumber(row.conversions)} konwersji`
+  ];
+  return `Kampania do oceny na podstawie bieżącego odczytu: ${parts.join(
+    ", "
+  )}. Nie jest to werdykt CPA, ROAS ani opłacalności.`;
+}
+
+function adsCampaignTriageReason(row: AdsCampaignTriageRow, currencyCode?: string) {
+  const facts = [
+    `${adsCost(row.cost_micros, currencyCode)} kosztu`,
+    `${adsNumber(row.clicks)} kliknięć`,
+    `${adsNumber(row.conversions)} konwersji`,
+    row.advertising_channel_type ? `kanał ${row.advertising_channel_type}` : null
+  ].filter(Boolean);
+  return `WILQ ustawia tę kampanię w kolejce oceny na podstawie faktów: ${facts.join(
+    ", "
+  )}. To nie jest werdykt o zmarnowanym budżecie, CPA, ROAS ani opłacalności.`;
+}
+
+function adsCampaignTriageNextStep(row: AdsCampaignTriageRow) {
+  const gates = row.human_review_gates.slice(0, 3).map(adsOperatorReviewGateLabel);
+  return `Sprawdź kampanię ręcznie: ${gates.join(
+    ", "
+  ) || "cel kampanii, konwersje, budżet i wyszukiwane hasła"}. Nie wdrażaj zmian bez walidacji akcji WILQ i potwierdzenia człowieka.`;
+}
+
+function adsRecommendationReviewReason(row: AdsRecommendationRow, currencyCode?: string) {
+  if (!row.impact_available) {
+    return "Google Ads zwrócił rekomendację bez metryk wpływu. WILQ może ją pokazać tylko do ręcznej oceny, bez obietnicy poprawy wyniku.";
+  }
+  const facts = [
+    `zmiana kliknięć ${adsSignedNumber(row.delta_clicks)}`,
+    `zmiana wyświetleń ${adsSignedNumber(row.delta_impressions)}`,
+    `zmiana kosztu ${adsSignedCost(row.delta_cost_micros, currencyCode)}`,
+    `zmiana konwersji ${adsSignedNumber(row.delta_conversions)}`
+  ];
+  return `Rekomendacja do ręcznej oceny: ${facts.join(
+    ", "
+  )}. WILQ nie przyjmuje jej automatycznie i nie twierdzi, że poprawi wynik kampanii.`;
+}
+
+function adsNegativeKeywordReason(
+  candidate: AdsNegativeKeywordCandidate,
+  currencyCode?: string
+) {
+  const facts = [
+    `${adsNumber(candidate.clicks)} kliknięć`,
+    `${adsCost(candidate.cost_micros, currencyCode)} kosztu`,
+    `${adsNumber(candidate.conversions)} konwersji`,
+    `${adsNumber(candidate.clicks_90d)} kliknięć w 90 dni`
+  ];
+  return `Termin do ręcznej oceny jako potencjalne wykluczenie: ${facts.join(
+    ", "
+  )}. To nie jest gotowa lista wykluczeń ani dowód marnowania budżetu.`;
+}
+
+function adsNegativeKeywordNextStep(candidate: AdsNegativeKeywordCandidate) {
+  const gates = candidate.human_review_gates.slice(0, 3).map(adsOperatorReviewGateLabel);
+  return `Przed wdrożeniem sprawdź: ${gates.join(
+    ", "
+  ) || "intencję, dopasowanie i historię 90 dni"}. Wykluczenie wymaga walidacji akcji WILQ.`;
+}
+
+function adsNegativeKeywordPayloadReason(reason: string) {
+  if (reason.includes("90-day") || reason.includes("90_day")) {
+    return "wymagana 90-dniowa kontrola bezpieczeństwa i ręczna ocena";
+  }
+  if (reason.includes("human")) return "wymagana ręczna ocena";
+  if (reason.includes("validation")) return "wymagana walidacja akcji WILQ";
+  return reason;
+}
+
+function adsGoogleOperationLabel(value: string) {
+  const labels: Record<string, string> = {
+    apply_recommendation: "wdrożenie rekomendacji",
+    campaign_budget_update: "zmiana budżetu kampanii",
+    create_negative_keyword: "dodanie wykluczenia",
+    create_custom_segment: "utworzenie segmentu"
   };
   return labels[value] ?? value;
 }

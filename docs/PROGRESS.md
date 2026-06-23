@@ -37,6 +37,34 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor drilldown/API copy cleanup, 2026-06-23.
+  Trwa cleanup niższych sekcji Ads Doctor i źródłowych kontraktów Ads API:
+  operator-facing teksty nie powinny mieszać polskiego z `review/apply/search
+  terms/custom segments/payload preview`, jeśli nie jest to nazwa pola, enumu
+  albo endpointu. Focused proof w tym slice: backend
+  `test_ads_diagnostics_exposes_live_campaign_metric_facts`, dashboard focused
+  Ads Doctor + Custom Segments route tests, dashboard lint/typecheck, Python
+  mypy. Ruff złapał tylko długości nowych polskich stringów i został poprawiony.
+  Pozostałe techniczne enumy/blocked_claims typu `negative keyword apply` albo
+  `search_term_view` zostają po angielsku jako kontrakt API. Live browser proof
+  po `scripts/local_stack.sh restart` zapisany w
+  `.local-lab/proof/dashboard/ads-doctor-drilldown-polish-copy.txt`; grep
+  starych fraz Ads/Custom Segments nie zwrócił trafień.
+- Merchant skill live-run finding, 2026-06-23.
+  Manualny przebieg `wilq-merchant-feed-operator` potwierdził, że skill działa
+  jako guardrail, ale produktowo trzeba twardziej rozdzielić
+  `decision_queue`, `issue_clusters` i surowe zgłoszenia raportowe. Wymaganie
+  na przyszły API/eval slice: finalna kolejka Merchant ma być
+  `decision_queue`-first, `issue_clusters` tylko jako drilldown; liczby typu
+  `reported_issue_occurrences` nie są unikalnymi produktami. Skill/API powinny
+  jawnie pokazywać freshness: jeśli ostatni `vendor_read` jest starszy niż
+  24-48h przy pytaniu o current state, wynik ma być oznaczony jako stale review
+  albo trzeba wykonać read-only refresh. Odpowiedź ma mieć sekcję "Czego nie
+  wiemy", zwłaszcza gdy API nie zwraca product IDs/tytułów/SKU do pracy
+  produkt-po-produkcie. Raportowanie walidacji ActionObject musi rozróżniać
+  stan z context-packa (`needs_validation`) i wynik bieżącego
+  `POST /api/actions/{id}/validate` (`valid=true`). Nie przenosić tych reguł
+  jako naprawy do skill references; najpierw typed API/eval/view-model.
 - Ads Doctor first-flow polish copy, 2026-06-23.
   `/ads-doctor` first flow no longer exposes old mixed English/operator slang
   in the main Ads decision path: `Ready/Blocked`, `review`, `apply`, `search

@@ -243,13 +243,13 @@ def _payload_preview_items(groups: list[list[MetricFact]]) -> list[dict[str, Any
         ]
         level = "ad_group" if ad_group_id else "campaign_review_required"
         reason = (
-            "Exact negative keyword review preview zbudowany z search-term facts "
-            "i 90-dniowego safety read. To nie jest gotowa mutacja API."
+            "Podgląd oceny dokładnego wykluczenia zbudowany z faktów wyszukiwanych haseł "
+            "i 90-dniowego odczytu bezpieczeństwa. To nie jest gotowa mutacja API."
         )
         if level == "campaign_review_required":
             reason = (
-                "Brak ad_group_id w evidence, więc WILQ pokazuje tylko review "
-                "preview i wymaga decyzji człowieka o poziomie kampanii/grupy."
+                "Brak ad_group_id w dowodach, więc WILQ pokazuje tylko podgląd "
+                "oceny i wymaga decyzji człowieka o poziomie kampanii/grupy."
             )
         items.append(
             {

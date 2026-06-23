@@ -903,13 +903,13 @@ def _operator_summary(
         title="Co marketer ma sprawdzić teraz w Google Ads",
         summary=(
             "WILQ pokazuje tylko decyzje wynikające z odczytu Google Ads. Kampanie, "
-            "zapytania, KPI i rekomendacje można przeglądać jako evidence-backed review, "
-            "ale apply, waste, CPA/ROAS verdict i skalowanie budżetu pozostają za "
+            "zapytania, KPI i rekomendacje można przeglądać jako ocenę opartą na dowodach, "
+            "ale wdrożenie, waste, werdykt CPA/ROAS i skalowanie budżetu pozostają za "
             "bramkami ActionObject oraz brakującymi kontraktami."
         ),
         next_step=(
             "Przejrzyj top decyzje w tej kolejności. Nie wdrażaj wykluczeń, budżetów "
-            "ani rekomendacji bez payload preview, walidacji ActionObject i review "
+            "ani rekomendacji bez podglądu zmian, walidacji ActionObject i oceny "
             "kontekstu biznesowego."
         ),
         top_decision_ids=[decision.id for decision in top_decisions],
@@ -1397,7 +1397,7 @@ def _business_context_read_contract(
             "target source": "potwierdzony"
             if target_confirmation is not None
             else None,
-            "strategy review": _strategy_review_label(strategy_review_status),
+            "ocena strategii": _strategy_review_label(strategy_review_status),
         }
     )
     blocked_claims = [
@@ -1414,10 +1414,10 @@ def _business_context_read_contract(
                 "WILQ ma wstępny lokalny kontekst biznesowy Ads: marżę, cel "
                 "biznesowy i cel budżetu. Target ROAS/CPA jest celowo pusty, więc "
                 "KPI targetowe pozostają bez werdyktu i nie odblokowują skalowania "
-                "ani apply."
+                "ani wdrożenia."
             )
             next_step = (
-                "Użyj marży i celu budżetu jako kontekstu review kampanii. Jeśli "
+                "Użyj marży i celu budżetu jako kontekstu oceny kampanii. Jeśli "
                 "operator potwierdzi target ROAS albo CPA przez ActionObject, WILQ "
                 "zapisze go w lokalnym state; do tego czasu target verdict zostaje "
                 "zablokowany."
@@ -1429,8 +1429,8 @@ def _business_context_read_contract(
                 "ostrożniej, ale nadal nie odblokowuje automatycznych zmian."
             )
             next_step = (
-                "Użyj potwierdzonego targetu jako kontekstu review kampanii i "
-                "budżetu. Apply nadal wymaga ActionObject, payload preview, "
+                "Użyj potwierdzonego targetu jako kontekstu oceny kampanii i "
+                "budżetu. Wdrożenie nadal wymaga ActionObject, podglądu zmian, "
                 "potwierdzenia i audytu."
             )
     else:
@@ -1545,26 +1545,26 @@ def _strategy_review_readiness_contract(
     }
     if strategy_review_approved:
         summary = (
-            "Human strategy review Ads jest zatwierdzone do prepare. To pozwala "
-            "używać targetu w review, ale nie odblokowuje apply ani automatycznej "
+            "Ocena strategii Ads przez człowieka jest zatwierdzona do przygotowania. To pozwala "
+            "używać targetu w ocenie, ale nie odblokowuje wdrożenia ani automatycznej "
             "optymalizacji."
         )
         next_step = (
-            "Użyj zatwierdzonego review jako kontekstu decyzji. Każdy write path "
-            "nadal wymaga osobnego ActionObject, preview, confirm i audytu."
+            "Użyj zatwierdzonej oceny jako kontekstu decyzji. Każda ścieżka zapisu "
+            "nadal wymaga osobnej akcji WILQ, podglądu, potwierdzenia i audytu."
         )
         status: Literal["ready", "blocked"] = "ready"
         contract_missing: list[str] = []
         action_ids: list[str] = []
     else:
         summary = (
-            "Human strategy review Ads nie jest zatwierdzone, więc WILQ może "
-            "tylko przygotować kolejki review. Target verdict, profitability "
-            "verdict, skalowanie i apply pozostają zablokowane."
+            "Ocena strategii Ads przez człowieka nie jest zatwierdzona, więc WILQ może "
+            "tylko przygotować kolejki do oceny. Werdykt targetu, werdykt "
+            "opłacalności, skalowanie i wdrożenie pozostają zablokowane."
         )
         next_step = (
-            "Otwórz ActionObject strategii, sprawdź marżę, cel biznesowy, cel "
-            "budżetu i target ROAS/CPA, a potem zapisz outcome review."
+            "Otwórz akcję strategii, sprawdź marżę, cel biznesowy, cel "
+            "budżetu i target ROAS/CPA, a potem zapisz wynik oceny."
         )
         status = "blocked"
         contract_missing = _unique(
@@ -1588,7 +1588,7 @@ def _strategy_review_readiness_contract(
     )
     return AdsStrategyReviewReadinessContract(
         status=status,
-        title="Google Ads: gotowość human strategy review",
+        title="Google Ads: gotowość oceny strategii przez człowieka",
         summary=summary,
         latest_review_status=strategy_review_status,
         latest_review_outcome=latest_outcome,
@@ -1669,7 +1669,7 @@ def _business_target_interpretation(
     if target_missing:
         summary = (
             "WILQ może używać marży, celu biznesowego i celu budżetu jako kontekstu "
-            "review, ale blokuje target KPI verdict, profitability verdict i apply "
+            "oceny, ale blokuje werdykt target KPI, werdykt profitability i wdrożenie "
             "do czasu potwierdzenia target ROAS albo CPA."
         )
         blocked_uses = [
@@ -1683,7 +1683,8 @@ def _business_target_interpretation(
     elif not strategy_review_approved:
         summary = (
             "WILQ ma potwierdzony target ROAS albo CPA, ale blokuje target KPI "
-            "verdict i apply, dopóki human strategy review nie będzie zatwierdzone."
+            "verdict i wdrożenie, dopóki ocena strategii przez człowieka nie będzie "
+            "zatwierdzona."
         )
         blocked_uses = [
             "target_kpi_verdict",
@@ -2280,12 +2281,12 @@ def _campaign_triage_read_contract(
         high_rows = sum(1 for row in rows if row.review_priority == "wysokie")
         return AdsCampaignTriageReadContract(
             status="ready",
-            title="Kolejność review kampanii Ads",
+            title="Kolejność oceny kampanii Ads",
             summary=(
-                f"WILQ połączył campaign activity, KPI, budżet, rekomendacje i "
+                f"WILQ połączył aktywność kampanii, KPI, budżet, rekomendacje i "
                 f"impression share dla {len(rows)} kampanii. Pilne={urgent_rows}, "
-                f"wysokie={high_rows}. To nie jest werdyktem wasted budget, "
-                "profitability, CPA ani ROAS; to kolejność ręcznego review."
+                f"wysokie={high_rows}. To nie jest werdykt przepalonego budżetu, "
+                "opłacalności, CPA ani ROAS; to kolejność ręcznej oceny."
             ),
             allowed_metrics=[
                 "clicks",
@@ -2310,14 +2311,14 @@ def _campaign_triage_read_contract(
             action_ids=campaign_review_action_ids,
             next_step=(
                 "Przejrzyj kampanie od góry kolejki. Najpierw sprawdź cel kampanii, "
-                "jakość konwersji, budżet, search terms i rekomendacje; apply i "
+                "jakość konwersji, budżet, wyszukiwane hasła i rekomendacje; wdrożenie i "
                 "skalowanie zostają zablokowane."
             ),
         )
     return AdsCampaignTriageReadContract(
         status="blocked",
-        title="Kolejność review kampanii Ads",
-        summary="WILQ nie ma campaign rows potrzebnych do kolejki review kampanii.",
+        title="Kolejność oceny kampanii Ads",
+        summary="WILQ nie ma wierszy kampanii potrzebnych do kolejki oceny kampanii.",
         allowed_metrics=[],
         missing_read_contracts=["campaign activity"],
         blocked_claims=blocked_claims,
@@ -2325,7 +2326,7 @@ def _campaign_triage_read_contract(
         evidence_ids=campaign_read_contract.evidence_ids,
         triage_rows=[],
         action_ids=[],
-        next_step="Najpierw zbierz read-only Google Ads campaign facts.",
+        next_step="Najpierw zbierz Google Ads campaign facts w trybie tylko do odczytu.",
     )
 
 
@@ -2463,7 +2464,7 @@ def _optimizer_readiness_contract(
     items = [
         _optimizer_readiness_item(
             item_id="campaign_review_queue",
-            title="Kolejność review kampanii",
+            title="Kolejność oceny kampanii",
             status="ready" if campaign_triage_read_contract.triage_rows else "blocked",
             summary=campaign_triage_read_contract.summary,
             next_step=campaign_triage_read_contract.next_step,
@@ -2478,7 +2479,7 @@ def _optimizer_readiness_contract(
         ),
         _optimizer_readiness_item(
             item_id="budget_and_recommendation_review",
-            title="Budżety, rekomendacje i impression share",
+            title="Budżety, rekomendacje i udział w wyświetleniach",
             status=(
                 "ready"
                 if budget_pacing_read_contract.budget_rows
@@ -2487,13 +2488,13 @@ def _optimizer_readiness_contract(
                 else "blocked"
             ),
             summary=(
-                "WILQ ma kontekst budżetu, rekomendacji albo impression share do "
-                "ręcznego review. To nadal nie odblokowuje zmiany budżetu ani "
+                "WILQ ma kontekst budżetu, rekomendacji albo udziału w wyświetleniach do "
+                "ręcznej oceny. To nadal nie odblokowuje zmiany budżetu ani "
                 "automatycznego przyjęcia rekomendacji."
             ),
             next_step=(
-                "Porównaj pacing, rekomendacje i impression share przy kampaniach "
-                "z kolejki triage; apply pozostaje zablokowany."
+                "Porównaj tempo wydatków, rekomendacje i udział w wyświetleniach przy "
+                "kampaniach z kolejki oceny; wdrożenie pozostaje zablokowane."
             ),
             source_contract_ids=[
                 budget_pacing_read_contract.id,
@@ -2530,7 +2531,7 @@ def _optimizer_readiness_contract(
         ),
         _optimizer_readiness_item(
             item_id="search_terms_review_queue",
-            title="Review search terms",
+            title="Ocena wyszukiwanych haseł",
             status=(
                 "ready"
                 if search_term_review_summary_contract.total_search_term_count > 0
@@ -2612,7 +2613,7 @@ def _optimizer_readiness_contract(
         ),
         _optimizer_readiness_item(
             item_id="custom_segments_review_queue",
-            title="Custom segments z search terms",
+            title="Segmenty niestandardowe z wyszukiwanych haseł",
             status="ready" if custom_segments_read_contract.candidates else "blocked",
             summary=custom_segments_read_contract.summary,
             next_step=custom_segments_read_contract.next_step,
@@ -2642,7 +2643,7 @@ def _optimizer_readiness_contract(
         ),
         _optimizer_readiness_item(
             item_id="keyword_planner_enrichment",
-            title="Keyword Planner enrichment",
+            title="Wzbogacenie Keyword Planner",
             status=keyword_planner_read_contract.status,
             summary=keyword_planner_read_contract.summary,
             next_step=keyword_planner_read_contract.next_step,
@@ -2658,7 +2659,7 @@ def _optimizer_readiness_contract(
         ),
         _optimizer_readiness_item(
             item_id="change_history_impact_review",
-            title="Impact review historii zmian",
+            title="Ocena wpływu historii zmian",
             status=change_impact_readiness_contract.status,
             summary=change_impact_readiness_contract.summary,
             next_step=change_impact_readiness_contract.next_step,
@@ -2676,16 +2677,16 @@ def _optimizer_readiness_contract(
         ),
         _optimizer_readiness_item(
             item_id="ads_apply_safety_gate",
-            title="Apply i mutacje Ads",
+            title="Wdrożenia i mutacje Ads",
             status="blocked",
             summary=(
-                "WILQ ma część podglądów review, ale nie ma jeszcze bezpiecznej "
+                "WILQ ma część podglądów do oceny, ale nie ma jeszcze bezpiecznej "
                 "ścieżki wykonania zmian Ads. Każda mutacja pozostaje zablokowana."
             ),
             next_step=(
-                "Zostań w trybie review-only: waliduj ActionObjecty, nie wykonuj "
+                "Zostań w trybie tylko do oceny: waliduj ActionObjecty, nie wykonuj "
                 "budżetów, rekomendacji, wykluczeń ani segmentów bez osobnego "
-                "confirm/audit contract."
+                "kontraktu potwierdzenia i audytu."
             ),
             source_contract_ids=[
                 budget_pacing_read_contract.id,
@@ -2728,12 +2729,12 @@ def _optimizer_readiness_contract(
     )
     return AdsOptimizerReadinessContract(
         status=status,
-        title="Ads Optimizer readiness",
+        title="Gotowość optymalizacji Ads",
         summary=(
-            f"WILQ ma {ready_area_count} obszarów gotowych do review i "
+            f"WILQ ma {ready_area_count} obszarów gotowych do oceny i "
             f"{blocked_area_count} obszarów zablokowanych. To jest tryb "
-            "review-only: kontrakt porządkuje pracę marketera, ale nie "
-            "odblokowuje apply, impact claimów ani decyzji o rentowności."
+            "tylko do oceny: kontrakt porządkuje pracę marketera, ale nie "
+            "odblokowuje wdrożeń, claimów o wpływie ani decyzji o rentowności."
         ),
         ready_area_count=ready_area_count,
         blocked_area_count=blocked_area_count,
@@ -2870,13 +2871,13 @@ def _change_impact_readiness_contract(
             1 for row in rows if row.current_campaign_metrics_available
         )
         summary = (
-            f"WILQ ma {len(rows)} zdarzeń zmian do impact review i "
+            f"WILQ ma {len(rows)} zdarzeń zmian do oceny wpływu i "
             f"{campaign_context_count} powiązanych snapshotów kampanii. To jest "
             "readiness do ręcznego audytu, nie dowód wpływu zmian."
         )
     else:
         summary = (
-            "WILQ nie ma change_event rows do impact review, więc nie może zbudować "
+            "WILQ nie ma wierszy change_event do oceny wpływu, więc nie może zbudować "
             "okien wyników przed/po ani przypisać zmian do kampanii."
         )
     return AdsChangeImpactReadinessContract(
@@ -3146,7 +3147,7 @@ def _search_terms_read_contract(
     return AdsSearchTermsReadContract(
         status="blocked",
         title="Google Ads: brak zapytań użytkowników",
-        summary="WILQ nie ma jeszcze wymiarowych facts z search_term_view.",
+        summary="WILQ nie ma jeszcze wymiarowych faktów z `search_term_view`.",
         allowed_metrics=[],
         missing_read_contracts=["search_term_view", *missing_read_contracts],
         blocked_claims=["search terms", *blocked_claims],
@@ -3154,7 +3155,7 @@ def _search_terms_read_contract(
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         search_term_rows=[],
         next_step=(
-            "Uruchom read-only Google Ads vendor_read po wdrożeniu search_term_view "
+            "Uruchom read-only Google Ads vendor_read po wdrożeniu odczytu `search_term_view` "
             "i zapisz search_term_* metric facts."
         ),
         )
@@ -3175,8 +3176,11 @@ def _search_term_review_summary_contract(
     if not rows:
         return AdsSearchTermReviewSummaryContract(
             status="blocked",
-            title="Google Ads: brak kolejki review zapytań",
-            summary="WILQ nie ma search-term rows, więc nie może wskazać kolejności review.",
+            title="Google Ads: brak kolejki oceny wyszukiwanych haseł",
+            summary=(
+                "WILQ nie ma wierszy wyszukiwanych haseł, więc nie może wskazać "
+                "kolejności oceny."
+            ),
             allowed_metrics=[],
             missing_read_contracts=["search_term_view"],
             operator_review_gates=[],
@@ -3185,7 +3189,7 @@ def _search_term_review_summary_contract(
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             top_cost_search_terms=[],
             campaign_review_rows=[],
-            next_step="Uruchom read-only Google Ads vendor_read z search_term_view.",
+            next_step="Uruchom read-only Google Ads vendor_read z odczytem `search_term_view`.",
         )
 
     total_clicks = sum(row.clicks or 0 for row in rows)
@@ -3196,9 +3200,9 @@ def _search_term_review_summary_contract(
     campaign_review_rows = _search_term_campaign_review_rows(rows)
     return AdsSearchTermReviewSummaryContract(
         status="ready",
-        title="Google Ads: kolejność review zapytań",
+        title="Google Ads: kolejność oceny wyszukiwanych haseł",
         summary=(
-            f"WILQ ma {len(rows)} search-term rows do ręcznego review: "
+            f"WILQ ma {len(rows)} wierszy wyszukiwanych haseł do ręcznej oceny: "
             f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
             f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
             f"konwersje={_format_float(total_conversions)}, "
@@ -3224,8 +3228,8 @@ def _search_term_review_summary_contract(
         campaign_review_rows=campaign_review_rows,
         next_step=(
             "Najpierw przejrzyj kampanie i zapytania z największym kosztem. "
-            "Nie nazywaj ich waste i nie twórz wykluczeń bez review intencji, "
-            "safety checku, payload preview i walidacji ActionObject."
+            "Nie nazywaj ich waste i nie twórz wykluczeń bez oceny intencji, "
+            "kontroli 90 dni, podglądu zmian i walidacji ActionObject."
         ),
     )
 
@@ -3389,7 +3393,7 @@ def _search_term_ngram_read_contract(
             title="Google Ads: n-gramy zapytań",
             summary=(
                 f"WILQ zgrupował {len(rows)} n-gramów z {total_terms} wystąpień "
-                f"search terms: kliknięcia={total_clicks}, "
+                f"wyszukiwanych haseł: kliknięcia={total_clicks}, "
                 f"koszt={_format_money_micros(total_cost_micros, currency_code)}."
             ),
             allowed_metrics=[
@@ -3418,14 +3422,16 @@ def _search_term_ngram_read_contract(
             next_step=(
                 "Użyj n-gramów do znalezienia powtarzających się tematów w "
                 "zapytaniach. Nie traktuj ich jako gotowej listy wykluczeń bez "
-                "review intencji, 90-dniowego safety read i payload preview."
+                "oceny intencji, 90-dniowego odczytu bezpieczeństwa i podglądu zmian."
             ),
         )
 
     return AdsSearchTermNgramReadContract(
         status="blocked",
         title="Google Ads: brak n-gramów zapytań",
-        summary="WILQ nie ma search-term rows, więc nie może zbudować n-gramów.",
+        summary=(
+            "WILQ nie ma wierszy wyszukiwanych haseł, więc nie może zbudować n-gramów."
+        ),
         allowed_metrics=[],
         missing_read_contracts=["search_term_view"],
         operator_review_gates=[],
@@ -3433,7 +3439,7 @@ def _search_term_ngram_read_contract(
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
         ngram_rows=[],
-        next_step="Uruchom read-only Google Ads vendor_read z search_term_view.",
+        next_step="Uruchom read-only Google Ads vendor_read z odczytem `search_term_view`.",
     )
 
 
@@ -3545,9 +3551,9 @@ def _search_term_safety_read_contract(
         total_conversion_value = sum(row.conversion_value_90d or 0 for row in rows)
         return AdsSearchTermSafetyReadContract(
             status="ready",
-            title="Google Ads: 90-dniowy safety read zapytań",
+            title="Google Ads: 90-dniowy odczyt bezpieczeństwa zapytań",
             summary=(
-                f"WILQ ma 90-dniowy read safety dla {len(rows)} zapytań: "
+                f"WILQ ma 90-dniowy odczyt bezpieczeństwa dla {len(rows)} zapytań: "
                 f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
                 f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
                 f"konwersje={_format_float(total_conversions)}, "
@@ -3578,15 +3584,15 @@ def _search_term_safety_read_contract(
             next_step=(
                 "Użyj 90-dniowego odczytu jako hamulca bezpieczeństwa. Jeśli termin "
                 "ma konwersje w 90 dniach, nie kwalifikuj go do wykluczenia; jeśli "
-                "nie ma konwersji, nadal wymagaj review intencji, match context i "
-                "review payload preview."
+                "nie ma konwersji, nadal wymagaj oceny intencji, kontekstu dopasowań "
+                "i podglądu zmian."
             ),
         )
 
     return AdsSearchTermSafetyReadContract(
         status="blocked",
-        title="Google Ads: brak 90-dniowego safety read",
-        summary="WILQ nie ma jeszcze 90-dniowych facts dla search_term_view.",
+        title="Google Ads: brak 90-dniowego odczytu bezpieczeństwa",
+        summary="WILQ nie ma jeszcze 90-dniowych faktów dla `search_term_view`.",
         allowed_metrics=[],
         missing_read_contracts=[
             "search_term_90d_read",
@@ -3946,9 +3952,9 @@ def _search_term_ngram_section(
         status=search_term_ngram_read_contract.status,
         summary=search_term_ngram_read_contract.summary,
         diagnosis=(
-            "N-gramy kondensują powtarzające się tematy w search terms. To pomaga "
-            "szybciej znaleźć obszary do ręcznego review, ale nie jest werdyktem "
-            "o waste ani gotowym negative keyword payloadem."
+            "N-gramy kondensują powtarzające się tematy w wyszukiwanych hasłach. "
+            "To pomaga szybciej znaleźć obszary do ręcznej oceny, ale nie jest "
+            "werdyktem o waste ani gotowym payloadem wykluczeń."
         ),
         next_step=search_term_ngram_read_contract.next_step,
         source_connectors=search_term_ngram_read_contract.source_connectors,
@@ -3970,13 +3976,13 @@ def _search_term_safety_section(
     ]
     return AdsDiagnosticSection(
         id="ads_search_term_safety",
-        title="90-dniowy safety read zapytań",
+        title="90-dniowy odczyt bezpieczeństwa zapytań",
         status=search_term_safety_read_contract.status,
         summary=search_term_safety_read_contract.summary,
         diagnosis=(
             "Ten kontrakt chroni przed pochopnym wykluczeniem zapytań. "
-            "WILQ sprawdza dłuższe okno, ale nadal blokuje apply bez intencji, "
-            "kontekstu dopasowania i payload preview."
+            "WILQ sprawdza dłuższe okno, ale nadal blokuje wdrożenie bez intencji, "
+            "kontekstu dopasowania i podglądu zmian."
         ),
         next_step=search_term_safety_read_contract.next_step,
         source_connectors=search_term_safety_read_contract.source_connectors,
@@ -4042,9 +4048,9 @@ def _keyword_planner_read_contract(
         max_searches = max((row.avg_monthly_searches or 0 for row in rows), default=0)
         return AdsKeywordPlannerReadContract(
             status="ready",
-            title="Keyword Planner: enrichment segmentów",
+            title="Keyword Planner: wzbogacenie segmentów",
             summary=(
-                f"WILQ ma {len(rows)} pomysłów Keyword Planner dla source terms z Ads. "
+                f"WILQ ma {len(rows)} pomysłów Keyword Planner dla haseł źródłowych z Ads. "
                 f"Najwyższe avg_monthly_searches={max_searches}."
             ),
             allowed_metrics=[
@@ -4067,8 +4073,8 @@ def _keyword_planner_read_contract(
             ),
             idea_rows=rows,
             next_step=(
-                "Użyj enrichmentu jako dodatkowego kontekstu przy custom segments. "
-                "Nie traktuj go jako forecastu, audience size ani zgody na apply."
+                "Użyj wzbogacenia jako dodatkowego kontekstu przy segmentach. "
+                "Nie traktuj go jako prognozy, rozmiaru odbiorców ani zgody na wdrożenie."
             ),
         )
     if read_attempted or latest_status == "blocked":
@@ -4087,8 +4093,8 @@ def _keyword_planner_read_contract(
             evidence_ids=_refresh_or_connector_evidence_ids(latest_refresh),
             idea_rows=[],
             next_step=(
-                "Zostaw custom segments w trybie source-term review. Nie dopowiadaj "
-                "zasięgu ani forecastu bez Keyword Planner facts."
+                "Zostaw segmenty w trybie oceny haseł źródłowych. Nie dopowiadaj "
+                "zasięgu ani prognozy bez faktów z Keyword Planner."
             ),
         )
     return AdsKeywordPlannerReadContract(
@@ -4102,7 +4108,7 @@ def _keyword_planner_read_contract(
         idea_rows=[],
         next_step=(
             "Uruchom read-only Google Ads vendor_read z Keyword Planner albo zostaw "
-            "segmenty jako prepare-only source-term review."
+            "segmenty jako przygotowanie do oceny haseł źródłowych."
         ),
     )
 
@@ -4193,13 +4199,13 @@ def _keyword_planner_section(
     ]
     return AdsDiagnosticSection(
         id="ads_keyword_planner",
-        title="Keyword Planner enrichment",
+        title="Wzbogacenie Keyword Planner",
         status=keyword_planner_read_contract.status,
         summary=keyword_planner_read_contract.summary,
         diagnosis=(
-            "Ten kontrakt wzbogaca source terms o pomysły i historyczne metryki "
-            "Keyword Planner. Nie jest forecastem, audience size ani zgodą na "
-            "targeting apply."
+            "Ten kontrakt wzbogaca hasła źródłowe o pomysły i historyczne metryki "
+            "Keyword Planner. Nie jest prognozą, rozmiarem odbiorców ani zgodą na "
+            "wdrożenie targetowania."
         ),
         next_step=keyword_planner_read_contract.next_step,
         source_connectors=keyword_planner_read_contract.source_connectors,
@@ -4227,8 +4233,8 @@ def _custom_segments_read_contract(
     if not search_terms_read_contract.search_term_rows:
         return AdsCustomSegmentsReadContract(
             status="blocked",
-            title="Custom segments z search terms",
-            summary="Brak search-term rows do zbudowania kandydatów custom segments.",
+            title="Segmenty z wyszukiwanych haseł",
+            summary="Brak wierszy wyszukiwanych haseł do zbudowania kandydatów segmentów.",
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=search_terms_read_contract.evidence_ids,
             missing_read_contracts=[
@@ -4239,8 +4245,8 @@ def _custom_segments_read_contract(
             blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
             action_ids=[],
             next_step=(
-                "Najpierw zbierz Google Ads search_term_view metric facts. Nie wymyślaj "
-                "audience terms bez source terms i evidence IDs."
+                "Najpierw zbierz fakty Google Ads z `search_term_view`. Nie wymyślaj "
+                "haseł odbiorców bez haseł źródłowych i evidence IDs."
             ),
         )
 
@@ -4254,9 +4260,9 @@ def _custom_segments_read_contract(
     if not candidates:
         return AdsCustomSegmentsReadContract(
             status="blocked",
-            title="Custom segments z search terms",
+            title="Segmenty z wyszukiwanych haseł",
             summary=(
-                "Search-term rows istnieją, ale wszystkie terminy zostały odrzucone "
+                "Wiersze wyszukiwanych haseł istnieją, ale wszystkie terminy zostały odrzucone "
                 "jako brand, zbyt krótkie albo bez wystarczającego sygnału."
             ),
             source_connectors=search_terms_read_contract.source_connectors,
@@ -4273,7 +4279,7 @@ def _custom_segments_read_contract(
             blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
             action_ids=[],
             next_step=(
-                "Zbierz więcej realnych source terms albo użyj Keyword Planner evidence; "
+                "Zbierz więcej realnych haseł źródłowych albo użyj dowodów Keyword Planner; "
                 "nie twórz segmentu z pustych lub brandowych terminów."
             ),
         )
@@ -4295,12 +4301,12 @@ def _custom_segments_read_contract(
         missing_read_contracts.insert(0, "keyword_planner_enrichment")
     return AdsCustomSegmentsReadContract(
         status="ready",
-        title="Custom segments z realnych search terms",
+        title="Segmenty z realnych wyszukiwanych haseł",
         summary=(
-            f"WILQ ma {len(candidates)} kandydatów custom segments i "
-            f"{source_terms_count} source terms z Google Ads evidence oraz "
-            f"{keyword_planner_idea_count} Keyword Planner ideas oraz "
-            f"{len(payload_preview)} review-only payload preview."
+            f"WILQ ma {len(candidates)} kandydatów segmentów i "
+            f"{source_terms_count} haseł źródłowych z dowodów Google Ads oraz "
+            f"{keyword_planner_idea_count} pomysłów Keyword Planner oraz "
+            f"{len(payload_preview)} podglądów zmian tylko do oceny."
         ),
         candidates=candidates,
         payload_preview=payload_preview,
@@ -4316,9 +4322,9 @@ def _custom_segments_read_contract(
         blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
         action_ids=custom_segment_action_ids,
         next_step=(
-            "Przejrzyj source terms i payload preview, odrzuć nietrafione frazy, "
-            "użyj Keyword Planner enrichment, jeśli jest dostępny, i waliduj "
-            "ActionObject przed apply."
+            "Przejrzyj hasła źródłowe i podgląd zmian, odrzuć nietrafione frazy, "
+            "użyj wzbogacenia Keyword Planner, jeśli jest dostępne, i waliduj "
+            "ActionObject przed wdrożeniem."
         ),
     )
 
@@ -4336,8 +4342,8 @@ def _custom_segment_audience_forecast_read_contract(
             audience_size=None,
             source_terms=candidate.source_terms,
             reason=(
-                "Brak WILQ evidence dla forecast albo audience size tego custom "
-                "segmentu. Kandydat zostaje prepare-only do review."
+                "Brak dowodów WILQ dla prognozy albo rozmiaru odbiorców tego "
+                "segmentu. Kandydat zostaje tylko do przygotowania i oceny."
             ),
             evidence_ids=candidate.evidence_ids,
             blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
@@ -4346,11 +4352,11 @@ def _custom_segment_audience_forecast_read_contract(
     ]
     return AdsCustomSegmentAudienceForecastReadContract(
         status="blocked",
-        title="Forecast i audience size custom segments",
+        title="Prognoza i rozmiar odbiorców segmentów",
         summary=(
-            f"WILQ sprawdził {len(candidates)} kandydatów custom segments, ale "
-            "nie ma evidence forecastu ani audience size. Segmenty można tylko "
-            "przygotować do review."
+            f"WILQ sprawdził {len(candidates)} kandydatów segmentów, ale "
+            "nie ma dowodów prognozy ani rozmiaru odbiorców. Segmenty można tylko "
+            "przygotować do oceny."
         ),
         checked_candidate_count=len(candidates),
         forecast_row_count=len(forecast_rows),
@@ -4455,15 +4461,15 @@ def _custom_segment_candidates(
                     rejected_terms=rejected_terms,
                 ),
                 human_review_gates=[
-                    "sprawdź intencję source terms",
-                    "odrzuć brand, konkurencję i low-intent frazy",
+                    "sprawdź intencję haseł źródłowych",
+                    "odrzuć brand, konkurencję i frazy o niskiej intencji",
                     (
-                        "sprawdź Keyword Planner enrichment"
+                        "sprawdź wzbogacenie Keyword Planner"
                         if has_keyword_planner
-                        else "dodaj Keyword Planner enrichment"
+                        else "dodaj wzbogacenie Keyword Planner"
                     ),
-                    "sprawdź forecast albo audience size",
-                    "zatwierdź segment przed apply",
+                    "sprawdź prognozę albo rozmiar odbiorców",
+                    "zatwierdź segment przed wdrożeniem",
                 ],
                 source_terms=source_terms,
                 rejected_terms=_unique(rejected_terms)[:12],
@@ -4483,9 +4489,9 @@ def _custom_segment_candidates(
                 payload_preview=payload_preview,
                 blocked_claims=CUSTOM_SEGMENT_BLOCKED_CLAIMS,
                 next_step=(
-                    "Użyj tych terminów jako prepare-only candidate. Payload preview "
-                    "jest tylko do review; przed apply wymagaj forecastu, audience "
-                    "size i walidacji ActionObject."
+                    "Użyj tych terminów jako kandydata tylko do przygotowania. Podgląd zmian "
+                    "jest tylko do oceny; przed wdrożeniem wymagaj prognozy, rozmiaru "
+                    "odbiorców i walidacji akcji WILQ."
                 ),
             )
         )
@@ -4549,12 +4555,12 @@ def _custom_segment_review_reason(
     total_clicks = sum(row.clicks or 0 for row in rows)
     total_conversions = sum(row.conversions or 0 for row in rows)
     return (
-        f"Source terms={len(source_terms)}, kliknięcia={total_clicks}, "
+        f"Hasła źródłowe={len(source_terms)}, kliknięcia={total_clicks}, "
         f"wyświetlenia={_search_term_impressions_review_value(rows)}, "
         f"koszt={_search_term_cost_review_value(rows)}, "
         f"konwersje={_format_float(float(total_conversions))}, "
         f"odrzucone terminy={len(_unique(rejected_terms))}. "
-        "To jest kolejność review segmentu, nie dowód audience size, targetowania "
+        "To jest kolejność oceny segmentu, nie dowód rozmiaru odbiorców, targetowania "
         "ani wpływu na kampanię."
     )
 
@@ -4617,8 +4623,8 @@ def _custom_segment_payload_preview(
         campaign_id=campaign_id,
         campaign_name=campaign_name,
         reason=(
-            "Podgląd review-only dla Google Ads custom audience keyword members "
-            "z realnych search terms. To nie jest gotowa mutacja ani targetowanie."
+            "Podgląd tylko do oceny dla segmentu Google Ads opartego na hasłach "
+            "z realnych wyszukiwanych haseł. To nie jest gotowa mutacja ani targetowanie."
         ),
         evidence_ids=evidence_ids,
         source_metric_names=source_metric_names,
@@ -4676,13 +4682,13 @@ def _custom_segments_section(
     ]
     return AdsDiagnosticSection(
         id="ads_custom_segments",
-        title="Custom segments z search terms",
+        title="Segmenty z wyszukiwanych haseł",
         status=custom_segments_read_contract.status,
         summary=custom_segments_read_contract.summary,
         diagnosis=(
-            "WILQ może przygotować kandydatów custom segments tylko z realnych "
-            "source terms. Keyword Planner enrichment jest dodatkowym kontekstem, "
-            "ale audience size i performance pozostają zablokowane bez osobnych "
+            "WILQ może przygotować kandydatów segmentów tylko z realnych "
+            "haseł źródłowych. Wzbogacenie Keyword Planner jest dodatkowym kontekstem, "
+            "ale rozmiar odbiorców i performance pozostają zablokowane bez osobnych "
             "kontraktów."
         ),
         next_step=custom_segments_read_contract.next_step,
@@ -4704,8 +4710,8 @@ def _negative_keywords_read_contract(
     if not search_terms_read_contract.search_term_rows:
         return AdsNegativeKeywordsReadContract(
             status="blocked",
-            title="Review wykluczeń z search terms",
-            summary="Brak search-term rows do kolejki review wykluczeń.",
+            title="Ocena wykluczeń z wyszukiwanych haseł",
+            summary="Brak wierszy wyszukiwanych haseł do kolejki oceny wykluczeń.",
             source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
             evidence_ids=search_terms_read_contract.evidence_ids,
             missing_read_contracts=[
@@ -4720,8 +4726,9 @@ def _negative_keywords_read_contract(
             blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
             action_ids=[],
             next_step=(
-                "Najpierw zbierz Google Ads search_term_view metric facts. Nie twórz "
-                "wykluczeń bez search terms, kontekstu dopasowania i safety checku."
+                "Najpierw zbierz fakty Google Ads z `search_term_view`. Nie twórz "
+                "wykluczeń bez wyszukiwanych haseł, kontekstu dopasowania i kontroli "
+                "bezpieczeństwa."
             ),
         )
 
@@ -4736,10 +4743,10 @@ def _negative_keywords_read_contract(
     if not candidates:
         return AdsNegativeKeywordsReadContract(
             status="blocked",
-            title="Review wykluczeń z search terms",
+            title="Ocena wykluczeń z wyszukiwanych haseł",
             summary=(
-                "Search-term rows istnieją, ale WILQ nie znalazł terminów z kosztem lub "
-                "kliknięciami i zerową konwersją w bieżącym evidence."
+                "Wiersze wyszukiwanych haseł istnieją, ale WILQ nie znalazł terminów z kosztem lub "
+                "kliknięciami i zerową konwersją w bieżących dowodach."
             ),
             source_connectors=search_terms_read_contract.source_connectors,
             evidence_ids=search_terms_read_contract.evidence_ids,
@@ -4759,8 +4766,8 @@ def _negative_keywords_read_contract(
             blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
             action_ids=[],
             next_step=(
-                "Kontynuuj read-only review search terms. Nie twórz negative keyword "
-                "candidates, jeśli bieżące evidence nie pokazuje zerowej konwersji."
+                "Kontynuuj ocenę wyszukiwanych haseł tylko do odczytu. Nie twórz kandydatów "
+                "wykluczeń, jeśli bieżące dowody nie pokazują zerowej konwersji."
             ),
         )
 
@@ -4777,11 +4784,11 @@ def _negative_keywords_read_contract(
 
     return AdsNegativeKeywordsReadContract(
         status="ready",
-        title="Review wykluczeń z search terms",
+        title="Ocena wykluczeń z wyszukiwanych haseł",
         summary=(
-            f"WILQ ma {len(candidates)} terminów do review: mają koszt lub kliknięcia, "
-            "zero konwersji w bieżącym evidence i są sprawdzone przez dostępny "
-            "90-dniowy read, jeśli WILQ ma matching row."
+            f"WILQ ma {len(candidates)} terminów do oceny: mają koszt lub kliknięcia, "
+            "zero konwersji w bieżących dowodach i są sprawdzone przez dostępny "
+            "90-dniowy odczyt, jeśli WILQ ma pasujący wiersz."
         ),
         candidates=candidates,
         payload_preview=[
@@ -4803,9 +4810,9 @@ def _negative_keywords_read_contract(
         blocked_claims=NEGATIVE_KEYWORD_BLOCKED_CLAIMS,
         action_ids=negative_keyword_action_ids,
         next_step=(
-            "Przejrzyj kandydatów jako review-only. Przed jakimkolwiek apply wymagaj "
-            "kontekstu dopasowania, sprawdzenia payload preview i walidacji "
-            "ActionObject."
+            "Przejrzyj kandydatów tylko do oceny. Przed jakimkolwiek wdrożeniem wymagaj "
+            "kontekstu dopasowania, sprawdzenia podglądu zmian i walidacji "
+            "akcji WILQ."
         ),
     )
 
@@ -4867,9 +4874,9 @@ def _negative_keyword_candidates(
                 ),
                 human_review_gates=[
                     "sprawdź intencję zapytania",
-                    "porównaj z istniejącymi keywords i match types",
-                    "sprawdź 90-dniowy safety read",
-                    "zatwierdź poziom wykluczenia przed apply",
+                    "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
+                    "sprawdź 90-dniowy odczyt bezpieczeństwa",
+                    "zatwierdź poziom wykluczenia przed wdrożeniem",
                 ],
                 campaign_id=row.campaign_id,
                 campaign_name=row.campaign_name,
@@ -4967,14 +4974,14 @@ def _negative_keyword_review_reason(
         else "brak dopasowanego 90-dniowego safety row"
     )
     context_part = (
-        f"kontekst keywords={len(keyword_context_rows)} rows"
+        f"kontekst dopasowań słów kluczowych={len(keyword_context_rows)} wierszy"
         if keyword_context_rows
-        else "brak keyword match context dla tej grupy"
+        else "brak kontekstu dopasowań słów kluczowych dla tej grupy"
     )
     return (
         f"Bieżący read: kliknięcia={row.clicks or 0}, koszt={current_cost or '0'}, "
         f"konwersje={current_conversions}; {safety_part}; {context_part}. "
-        "To jest kolejność review, nie werdykt zmarnowanego budżetu."
+        "To jest kolejność oceny, nie werdykt zmarnowanego budżetu."
     )
 
 
@@ -4994,12 +5001,12 @@ def _negative_keyword_payload_preview(
         "ad_group" if row.ad_group_id else "campaign_review_required"
     )
     reason = (
-        "Exact negative keyword review preview zbudowany z 30-dniowych search terms "
-        "i 90-dniowego safety read. To nie jest gotowa mutacja API."
+        "Podgląd oceny dokładnego wykluczenia zbudowany z 30-dniowych wyszukiwanych haseł "
+        "i 90-dniowego odczytu bezpieczeństwa. To nie jest gotowa mutacja API."
     )
     if level == "campaign_review_required":
         reason = (
-            "Brak ad_group_id w evidence, więc WILQ pokazuje tylko review preview "
+            "Brak ad_group_id w dowodach, więc WILQ pokazuje tylko podgląd oceny "
             "i wymaga decyzji człowieka o poziomie kampanii lub grupy reklam."
         )
     return AdsNegativeKeywordPayloadPreview(
@@ -5057,12 +5064,12 @@ def _negative_keywords_section(
     ]
     return AdsDiagnosticSection(
         id="ads_negative_keyword_safety",
-        title="Review wykluczeń z search terms",
+        title="Ocena wykluczeń z wyszukiwanych haseł",
         status=negative_keywords_read_contract.status,
         summary=negative_keywords_read_contract.summary,
         diagnosis=(
-            "WILQ może przygotować tylko kolejkę review. Zero konwersji w bieżącym "
-            "evidence nie jest jeszcze dowodem waste ani zgodą na wykluczenie."
+            "WILQ może przygotować tylko kolejkę oceny. Zero konwersji w bieżących "
+            "dowodach nie jest jeszcze dowodem przepalonego budżetu ani zgodą na wykluczenie."
         ),
         next_step=negative_keywords_read_contract.next_step,
         source_connectors=negative_keywords_read_contract.source_connectors,
@@ -5083,8 +5090,8 @@ def _safe_action_section(
     evidence_ids = _refresh_or_connector_evidence_ids(latest_refresh)
     if live_data_available:
         summary = (
-            "WILQ ma dowody z odczytu Google Ads; ścieżka apply nadal wymaga "
-            "osobnej walidacji, preview, potwierdzenia i audytu."
+            "WILQ ma dowody z odczytu Google Ads; ścieżka wdrożenia nadal wymaga "
+            "osobnej walidacji, podglądu, potwierdzenia i audytu."
         )
         diagnosis = (
             "Odczyt kampanii i zapytań może wspierać analizę, ale zmiany budżetów, "
@@ -5092,19 +5099,19 @@ def _safe_action_section(
             "walidacji, jawnego potwierdzenia i audytu."
         )
         next_step = (
-            "Rozszerz Ads workflow o prepare-only ActionObject dopiero po osobnym evidence "
-            "dla konkretnej zmiany."
+            "Rozszerz workflow Ads o ActionObject tylko do przygotowania dopiero po "
+            "osobnym dowodzie dla konkretnej zmiany."
         )
     else:
-        summary = "WILQ ma tylko prepare-only repair action dla Google Ads access."
+        summary = "WILQ ma tylko akcję naprawy dostępu Google Ads w trybie prepare-only."
         diagnosis = (
             "Żadna zmiana Google Ads nie może przejść do wdrożenia bez podglądu akcji, "
             "walidacji, jawnego potwierdzenia i audytu. Obecnie jedyny sensowny "
             "ActionObject to naprawa dostępu."
         )
         next_step = (
-            "Zweryfikuj `act_configure_google_ads_env`; apply pozostaje zablokowany "
-            "bez explicit support."
+            "Zweryfikuj `act_configure_google_ads_env`; wdrożenie pozostaje zablokowane "
+            "bez jawnego wsparcia w kontrakcie."
         )
     return AdsDiagnosticSection(
         id="ads_action_safety",
@@ -5212,13 +5219,13 @@ def _ads_decision_queue(
                 id="ads_review_campaign_triage",
                 decision_type="review_campaign_triage",
                 status="ready",
-                title="Ustal kolejność review kampanii Ads",
+                title="Ustal kolejność oceny kampanii Ads",
                 summary=campaign_triage_read_contract.summary,
                 rationale=(
                     "Ta kolejka łączy kampanie, KPI, pacing budżetu, rekomendacje "
                     "i impression share w jeden widok decyzyjny. WILQ pokazuje, "
-                    "co sprawdzić najpierw, ale nadal blokuje waste/profitability/"
-                    "budget apply/recommendation apply."
+                    "co sprawdzić najpierw, ale nadal blokuje werdykt waste/"
+                    "profitability, wdrożenie budżetu i wdrożenie rekomendacji."
                 ),
                 next_step=campaign_triage_read_contract.next_step,
                 allowed_metrics=campaign_triage_read_contract.allowed_metrics,
@@ -5543,9 +5550,9 @@ def _ads_decision_queue(
                 title="Sprawdź 90-dniową historię zapytań przed wykluczeniami",
                 summary=search_term_safety_read_contract.summary,
                 rationale=(
-                    "WILQ ma oddzielny 90-dniowy odczyt search terms jako hamulec "
+                    "WILQ ma oddzielny 90-dniowy odczyt wyszukiwanych haseł jako hamulec "
                     "bezpieczeństwa. To nadal nie jest rekomendacja wykluczeń: "
-                    "brakuje kontekstu dopasowania, intencji i payload preview."
+                    "brakuje kontekstu dopasowania, intencji i podglądu zmian."
                 ),
                 next_step=search_term_safety_read_contract.next_step,
                 allowed_metrics=search_term_safety_read_contract.allowed_metrics,
@@ -5590,12 +5597,12 @@ def _ads_decision_queue(
                 id="ads_review_negative_keyword_safety",
                 decision_type="review_negative_keyword_safety",
                 status="ready",
-                title="Przejrzyj kandydatów wykluczeń tylko w trybie safety review",
+                title="Przejrzyj kandydatów wykluczeń tylko w trybie bezpieczeństwa",
                 summary=negative_keywords_read_contract.summary,
                 rationale=(
                     "WILQ widzi terminy z kosztem lub kliknięciami i zerową konwersją "
-                    "w bieżącym evidence oraz review-only payload preview. To jest "
-                    "sygnał do review, nie dowód waste ani zgoda na automatyczne "
+                    "w bieżącym evidence oraz podgląd zmian tylko do oceny. To jest "
+                    "sygnał do oceny, nie dowód waste ani zgoda na automatyczne "
                     "wykluczenie."
                 ),
                 next_step=negative_keywords_read_contract.next_step,
@@ -5654,12 +5661,12 @@ def _ads_decision_queue(
                 id="ads_prepare_custom_segments_from_search_terms",
                 decision_type="prepare_custom_segments",
                 status="ready",
-                title="Przygotuj custom segments z realnych search terms",
+                title="Przygotuj segmenty z realnych wyszukiwanych haseł",
                 summary=custom_segments_read_contract.summary,
                 rationale=(
-                    "WILQ ma source terms z Google Ads evidence, więc może przygotować "
-                    "kandydatów segmentów. To nie jest apply ani obietnica skuteczności: "
-                    "payload preview jest review-only, a forecast, audience size i zgoda "
+                    "WILQ ma hasła źródłowe z dowodów Google Ads, więc może przygotować "
+                    "kandydatów segmentów. To nie jest wdrożenie ani obietnica skuteczności: "
+                    "podgląd zmian jest tylko do oceny, a prognoza, rozmiar odbiorców i zgoda "
                     "człowieka nadal są wymagane."
                 ),
                 next_step=custom_segments_read_contract.next_step,

@@ -474,8 +474,8 @@ def _google_ads_target_confirmation_action() -> ActionObject | None:
         ),
         human_diagnosis=(
             "Google Ads ma live metryki oraz lokalny kontekst biznesowy, ale brakuje "
-            "potwierdzonego targetu ROAS albo CPA. WILQ może robić review kampanii, "
-            "ale nie może wydać target KPI verdict ani uruchamiać budget/recommendation apply."
+            "potwierdzonego targetu ROAS albo CPA. WILQ może robić ocenę kampanii, "
+            "ale nie może wydać werdyktu KPI ani uruchamiać wdrożenia budżetu lub rekomendacji."
         ),
         recommended_reason=(
             "Potwierdź jeden guardrail targetu w repo-local .env. To nadal jest "
@@ -504,7 +504,7 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
         return None
     return ActionObject(
         id=ADS_STRATEGY_REVIEW_ACTION_ID,
-        title="Zapisz human strategy review dla Ads",
+        title="Zapisz ocenę strategii Ads przez człowieka",
         domain=OpportunityDomain.google_ads,
         connector="google_ads",
         mode=ActionMode.prepare,
@@ -518,12 +518,12 @@ def _google_ads_strategy_review_action() -> ActionObject | None:
         ),
         human_diagnosis=(
             "Google Ads ma live metryki i lokalny kontekst biznesowy, ale brakuje "
-            "zapisanego wyniku ludzkiego review strategii. WILQ nie powinien "
+            "zapisanego wyniku ludzkiej oceny strategii. WILQ nie powinien "
             "traktować targetu ani KPI jako decyzji operacyjnej bez tego zapisu."
         ),
         recommended_reason=(
-            "Zapisz outcome review: zatwierdzone do dalszego przygotowania, wymaga "
-            "poprawek, odrzucone albo odłożone. To nadal nie wykonuje apply ani "
+            "Zapisz wynik oceny: zatwierdzone do dalszego przygotowania, wymaga "
+            "poprawek, odrzucone albo odłożone. To nadal nie wykonuje wdrożenia ani "
             "mutacji Google Ads."
         ),
         payload=ads_strategy_review_payload(),
@@ -558,13 +558,14 @@ def _google_ads_keyword_planner_access_action() -> ActionObject | None:
             ]
         ),
         human_diagnosis=(
-            "Google Ads live read działa, ale Keyword Planner enrichment jest "
+            "Google Ads live read działa, ale wzbogacenie Keyword Planner jest "
             f"zablokowany przez Google Ads API: {blocker}. WILQ może używać "
-            "source-term review, ale nie może claimować forecastu ani audience size."
+            "oceny haseł źródłowych, ale nie może twierdzić nic o prognozie ani "
+            "rozmiarze odbiorców."
         ),
         recommended_reason=(
             "Dopóki developer token nie ma zatwierdzonego dostępu Keyword Planner, "
-            "custom segments zostają bez forecast/enrichment. To jest zewnętrzny "
+            "segmenty zostają bez prognozy i wzbogacenia. To jest zewnętrzny "
             "access blocker, nie brak promptu."
         ),
         payload=keyword_planner_access_payload(blocker),
@@ -815,7 +816,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         ][:12]
         action = ActionObject(
             id=RECOMMENDATION_REVIEW_ACTION_ID,
-            title="Przygotuj review rekomendacji Google Ads",
+            title="Przygotuj ocenę rekomendacji Google Ads",
             domain=OpportunityDomain.google_ads,
             connector="google_ads",
             mode=ActionMode.prepare,
@@ -824,15 +825,15 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=recommendation_review_payload["evidence_ids"],
             metrics=recommendation_metrics,
             human_diagnosis=(
-                "Google Ads ma aktywne recommendation facts. WILQ może pokazać "
-                "review-only apply payload preview, ale nie może akceptować "
-                "rekomendacji bez strategii, RMF/compliance review, potwierdzenia "
+                "Google Ads ma aktywne fakty rekomendacji. WILQ może pokazać "
+                "podgląd wdrożenia tylko do oceny, ale nie może akceptować "
+                "rekomendacji bez strategii, oceny RMF/compliance, potwierdzenia "
                 "i audytu."
             ),
             recommended_reason=(
                 "Na /ads-doctor przejrzyj typ rekomendacji, impact preview i "
                 "powiązane kampanie. Traktuj payload jako podgląd operacji, nie "
-                "zgodę na apply."
+                "zgodę na wdrożenie."
             ),
             payload=recommendation_review_payload,
             validation_status="not_validated",
@@ -856,7 +857,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         ][:12]
         action = ActionObject(
             id=CHANGE_HISTORY_IMPACT_ACTION_ID,
-            title="Przygotuj review wpływu zmian Google Ads",
+            title="Przygotuj ocenę wpływu zmian Google Ads",
             domain=OpportunityDomain.google_ads,
             connector="google_ads",
             mode=ActionMode.prepare,
@@ -865,14 +866,14 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=change_history_payload["evidence_ids"],
             metrics=change_history_metrics,
             human_diagnosis=(
-                "Google Ads ma change_event facts. WILQ może przygotować kolejkę "
-                "impact review zmian, ale nie może claimować wpływu na wynik bez "
-                "okna przed/po i ręcznego review."
+                "Google Ads ma fakty change_event. WILQ może przygotować kolejkę "
+                "oceny wpływu zmian, ale nie może twierdzić nic o wpływie na wynik bez "
+                "okna przed/po i ręcznej oceny."
             ),
             recommended_reason=(
                 "Na /ads-doctor sprawdź co zmieniono, na jakim zasobie i które "
-                "pola ruszono. Traktuj payload jako review-only: bez apply, "
-                "bez skalowania i bez performance uplift claimów."
+                "pola ruszono. Traktuj payload jako tylko do oceny: bez wdrożenia, "
+                "bez skalowania i bez claimów o poprawie performance."
             ),
             payload=change_history_payload,
             validation_status="not_validated",
@@ -900,7 +901,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         ][:12]
         action = ActionObject(
             id=SEARCH_TERM_NGRAM_ACTION_ID,
-            title="Przygotuj review tematów z n-gramów search terms",
+            title="Przygotuj ocenę tematów z n-gramów wyszukiwanych haseł",
             domain=OpportunityDomain.google_ads,
             connector="google_ads",
             mode=ActionMode.prepare,
@@ -909,14 +910,14 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=search_term_ngram_payload["evidence_ids"],
             metrics=ngram_metrics,
             human_diagnosis=(
-                "Google Ads ma search-term facts, które tworzą powtarzające się "
-                "tematy n-gram. WILQ może przygotować kolejkę review intencji, ale "
+                "Google Ads ma fakty wyszukiwanych haseł, które tworzą powtarzające się "
+                "tematy n-gram. WILQ może przygotować kolejkę oceny intencji, ale "
                 "nie może traktować n-gramów jako gotowych wykluczeń ani claimować "
-                "waste bez walidacji."
+                "zmarnowanego budżetu bez walidacji."
             ),
             recommended_reason=(
                 "Na /ads-doctor przejrzyj n-gramy z kosztem, kliknięciami i "
-                "przykładowymi search terms. Dopiero po human intent review wróć "
+                "przykładowymi wyszukiwanymi hasłami. Dopiero po ręcznej ocenie intencji wróć "
                 "do negative keyword queue."
             ),
             payload=search_term_ngram_payload,
@@ -935,7 +936,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         ][:12]
         action = ActionObject(
             id=CUSTOM_SEGMENT_ACTION_ID,
-            title="Przygotuj kandydatów custom segments z search terms",
+            title="Przygotuj kandydatów segmentów z wyszukiwanych haseł",
             domain=OpportunityDomain.google_ads,
             connector="google_ads",
             mode=ActionMode.prepare,
@@ -944,13 +945,15 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=custom_segment_payload["evidence_ids"],
             metrics=custom_segment_metrics,
             human_diagnosis=(
-                "Google Ads ma realne search-term metric facts. WILQ może przygotować "
-                "kandydatów custom segments wyłącznie z tych terminów, ale nie może "
-                "twierdzić audience size, ROAS ani performance bez dodatkowych kontraktów."
+                "Google Ads ma realne fakty z wyszukiwanych haseł. WILQ może przygotować "
+                "kandydatów segmentów wyłącznie z tych terminów, ale nie może "
+                "twierdzić nic o rozmiarze odbiorców, ROAS ani performance bez "
+                "dodatkowych kontraktów."
             ),
             recommended_reason=(
-                "Na /ads-doctor przejrzyj source terms, odrzuć brand/low-intent terms, "
-                "dodaj Keyword Planner enrichment i waliduj payload preview przed apply."
+                "Na /ads-doctor przejrzyj hasła źródłowe, odrzuć brandowe i "
+                "niskointencyjne frazy, dodaj wzbogacenie Keyword Planner i waliduj "
+                "podgląd zmian przed wdrożeniem."
             ),
             payload=custom_segment_payload,
             validation_status="not_validated",
@@ -968,7 +971,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
         ][:12]
         action = ActionObject(
             id=NEGATIVE_KEYWORD_ACTION_ID,
-            title="Przygotuj kolejkę review wykluczeń z search terms",
+            title="Przygotuj kolejkę oceny wykluczeń z wyszukiwanych haseł",
             domain=OpportunityDomain.google_ads,
             connector="google_ads",
             mode=ActionMode.prepare,
@@ -977,15 +980,15 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
             evidence_ids=negative_keyword_payload["evidence_ids"],
             metrics=negative_keyword_metrics,
             human_diagnosis=(
-                "Google Ads ma search-term metric facts, które mogą zasilić review "
-                "potencjalnych wykluczeń. WILQ nie może jednak twierdzić waste ani "
-                "wdrażać negative keywords bez 90-dniowego safety checku i ręcznej "
-                "walidacji."
+                "Google Ads ma fakty z wyszukiwanych haseł, które mogą zasilić ocenę "
+                "potencjalnych wykluczeń. WILQ nie może jednak twierdzić nic o "
+                "przepalonym budżecie ani wdrażać wykluczających słów bez "
+                "90-dniowej kontroli bezpieczeństwa i ręcznej walidacji."
             ),
             recommended_reason=(
                 "Na /ads-doctor przejrzyj terminy z kosztem/kliknięciami i zerową "
                 "konwersją w bieżącym evidence, ale potraktuj je wyłącznie jako "
-                "kolejkę review przed 90-day safety check."
+                "kolejkę oceny przed 90-dniową kontrolą bezpieczeństwa."
             ),
             payload=negative_keyword_payload,
             validation_status="not_validated",

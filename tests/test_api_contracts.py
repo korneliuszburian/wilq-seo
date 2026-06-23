@@ -7067,7 +7067,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
         }
     ]
-    assert "Kolejność review kampanii" in read_contract["campaign_rows"][0]["review_reason"]
+    assert "Kolejność oceny kampanii" in read_contract["campaign_rows"][0]["review_reason"]
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "ads_operator_summary"
     assert operator_summary["title"] == "Co marketer ma sprawdzić teraz w Google Ads"
@@ -7584,7 +7584,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ]
     campaign_triage_contract = payload["campaign_triage_read_contract"]
     assert campaign_triage_contract["status"] == "ready"
-    assert campaign_triage_contract["title"] == "Kolejność review kampanii Ads"
+    assert campaign_triage_contract["title"] == "Kolejność oceny kampanii Ads"
     assert campaign_triage_contract["allowed_metrics"] == [
         "clicks",
         "impressions",
@@ -7675,10 +7675,10 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
             ],
         }
     ]
-    assert "Kolejność review kampanii" in campaign_triage_contract["triage_rows"][0][
+    assert "Kolejność oceny kampanii" in campaign_triage_contract["triage_rows"][0][
         "review_reason"
     ]
-    assert "nie jest werdyktem wasted budget" in campaign_triage_contract["summary"]
+    assert "nie jest werdykt przepalonego budżetu" in campaign_triage_contract["summary"]
     optimizer_contract = payload["optimizer_readiness_contract"]
     assert optimizer_contract["status"] == "review_ready"
     assert optimizer_contract["mode"] == "review_only"
@@ -8071,7 +8071,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert keyword_planner_section["status"] == "ready"
     custom_segments_contract = payload["custom_segments_read_contract"]
     assert custom_segments_contract["status"] == "ready"
-    assert custom_segments_contract["title"] == "Custom segments z realnych search terms"
+    assert custom_segments_contract["title"] == "Segmenty z realnych wyszukiwanych haseł"
     assert custom_segments_contract["action_ids"] == [
         "act_prepare_custom_segments_from_search_terms"
     ]
@@ -8113,7 +8113,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert forecast_row["forecast_available"] is False
     assert forecast_row["audience_size"] is None
     assert forecast_row["source_terms"] == ["bdo rejestracja", "odpady cena"]
-    assert "forecast albo audience size" in forecast_row["reason"]
+    assert "prognozy albo rozmiaru odbiorców" in forecast_row["reason"]
     assert forecast_row["evidence_ids"] == [
         refresh_response.json()["evidence_ids"][-1]
     ]
@@ -8130,18 +8130,18 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     }
     assert custom_segments_contract["candidates"][0]["review_priority"] == "pilne"
     assert custom_segments_contract["candidates"][0]["review_score"] == 85
-    assert "kolejność review segmentu" in custom_segments_contract["candidates"][0][
+    assert "kolejność oceny segmentu" in custom_segments_contract["candidates"][0][
         "review_reason"
     ]
-    assert "nie dowód audience size" in custom_segments_contract["candidates"][0][
+    assert "nie dowód rozmiaru odbiorców" in custom_segments_contract["candidates"][0][
         "review_reason"
     ]
     assert custom_segments_contract["candidates"][0]["human_review_gates"] == [
-        "sprawdź intencję source terms",
-        "odrzuć brand, konkurencję i low-intent frazy",
-        "sprawdź Keyword Planner enrichment",
-        "sprawdź forecast albo audience size",
-        "zatwierdź segment przed apply",
+        "sprawdź intencję haseł źródłowych",
+        "odrzuć brand, konkurencję i frazy o niskiej intencji",
+        "sprawdź wzbogacenie Keyword Planner",
+        "sprawdź prognozę albo rozmiar odbiorców",
+        "zatwierdź segment przed wdrożeniem",
     ]
     assert custom_segments_contract["candidates"][0]["keyword_planner_ideas"][0][
         "idea_text"
@@ -8177,7 +8177,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert custom_segments_section["status"] == "ready"
     negative_keywords_contract = payload["negative_keywords_read_contract"]
     assert negative_keywords_contract["status"] == "ready"
-    assert negative_keywords_contract["title"] == "Review wykluczeń z search terms"
+    assert negative_keywords_contract["title"] == "Ocena wykluczeń z wyszukiwanych haseł"
     assert negative_keywords_contract["action_ids"] == [
         "act_prepare_negative_keyword_review_queue"
     ]
@@ -8190,7 +8190,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert negative_keywords_contract["candidates"][0]["search_term"] == "odpady cena"
     assert negative_keywords_contract["candidates"][0]["review_priority"] == "wysokie"
     assert negative_keywords_contract["candidates"][0]["review_score"] == 53
-    assert "kolejność review" in negative_keywords_contract["candidates"][0][
+    assert "kolejność oceny" in negative_keywords_contract["candidates"][0][
         "review_reason"
     ]
     assert "nie werdykt zmarnowanego budżetu" in negative_keywords_contract[
@@ -8198,9 +8198,9 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ][0]["review_reason"]
     assert negative_keywords_contract["candidates"][0]["human_review_gates"] == [
         "sprawdź intencję zapytania",
-        "porównaj z istniejącymi keywords i match types",
-        "sprawdź 90-dniowy safety read",
-        "zatwierdź poziom wykluczenia przed apply",
+            "porównaj z istniejącymi słowami kluczowymi i typami dopasowania",
+            "sprawdź 90-dniowy odczyt bezpieczeństwa",
+            "zatwierdź poziom wykluczenia przed wdrożeniem",
     ]
     assert negative_keywords_contract["candidates"][0]["keyword_context_rows"][0][
         "keyword_text"
@@ -8281,7 +8281,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert campaign_triage_decision["status"] == "ready"
     assert campaign_triage_decision["priority"] == 18
     assert campaign_triage_decision["decision_type"] == "review_campaign_triage"
-    assert campaign_triage_decision["title"] == "Ustal kolejność review kampanii Ads"
+    assert campaign_triage_decision["title"] == "Ustal kolejność oceny kampanii Ads"
     assert campaign_triage_decision["campaign_triage_rows"][0]["campaign_name"] == (
         "Brand Search"
     )
@@ -8665,7 +8665,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     ] == "wysokie"
     assert campaign_review_action["payload"]["campaign_candidates"][0]["review_score"] == 50
     assert (
-        "Kolejność review kampanii"
+        "Kolejność oceny kampanii"
         in campaign_review_action["payload"]["campaign_candidates"][0]["review_reason"]
     )
     assert campaign_review_action["payload"]["campaign_candidates"][0][
@@ -11888,7 +11888,7 @@ def test_codex_context_pack_scopes_ads_doctor_payload(
         "review_priority"
     ]
     assert campaign_candidate["review_score"] == full_campaign_candidate["review_score"]
-    assert "Kolejność review kampanii" in campaign_candidate["review_reason"]
+    assert "Kolejność oceny kampanii" in campaign_candidate["review_reason"]
     assert campaign_candidate["review_reason"] == full_campaign_candidate[
         "review_reason"
     ]
