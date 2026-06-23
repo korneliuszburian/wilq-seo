@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo dashboard cleanup, 2026-06-23 06:53 CEST.
+  `/localo` nie pokazuje już MCP/OAuth jako pierwszoplanowej metryki
+  marketingowej. Top route pokazuje `Fakty lokalne`, `Braki danych` i
+  `Blokady`, a `MCP initialize`, OAuth code, PKCE i token presence są schowane
+  pod przyciskiem `Pokaż techniczny proof Localo`. Focused proof:
+  `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t
+  "localo social and content routes render workflow-specific blockers or focus"`
+  passed, dashboard lint OK and dashboard typecheck OK. Product finding:
+  Localo pozostaje review/access proof bez ranking/GBP/competitor facts, ale
+  dashboard nie myli już marketera technicznym MCP statusem na first screen.
 - Full verify stabilization, 2026-06-23 05:17 CEST.
   `scripts/verify.sh` passes after the validated skill-eval series and clean
   runtime fixes. Final proof: backend API contracts `156 passed`, dashboard

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { ClipboardCheck, ShieldAlert } from "lucide-react";
 
 import { getLocaloDiagnostics, LocaloDiagnosticsResponse } from "../lib/api";
@@ -39,8 +40,8 @@ export function LocaloDiagnosticSurface() {
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="MCP" value={data.access_probe.mcp_initialize_status ?? "brak"} />
-          <MetricTile label="Fakty" value={data.visibility_fact_count} />
+          <MetricTile label="Fakty lokalne" value={data.visibility_fact_count} />
+          <MetricTile label="Braki danych" value={data.operator_summary.missing_read_contracts.length} />
           <MetricTile label="Blokady" value={data.blocker_count} />
         </div>
       </div>
@@ -49,7 +50,7 @@ export function LocaloDiagnosticSurface() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status Localo / MCP access
+              Status Localo / widoczność lokalna
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>
@@ -213,6 +214,10 @@ function LocaloOperatorSummary({ data }: { data: LocaloDiagnosticsResponse }) {
 }
 
 function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
+  const marketerMetricTiles = Object.entries(decision.metric_tiles ?? {}).filter(
+    ([label]) => label !== "dostęp MCP"
+  );
+
   return (
     <article className="rounded-md border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -230,9 +235,9 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
       <p className="mt-3 text-sm leading-6 text-slate-700">{decision.summary}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">{decision.rationale}</p>
       <p className="mt-3 text-sm font-semibold leading-6 text-ink">{decision.next_step}</p>
-      {Object.keys(decision.metric_tiles ?? {}).length > 0 ? (
+      {marketerMetricTiles.length > 0 ? (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {Object.entries(decision.metric_tiles).map(([label, value]) => (
+          {marketerMetricTiles.map(([label, value]) => (
             <MetricTile key={`${decision.id}-${label}`} label={label} value={value} />
           ))}
         </div>
@@ -261,38 +266,55 @@ function LocaloDecisionCard({ decision }: { decision: LocaloDecisionItem }) {
 }
 
 function LocaloDiagnosticProof({ data }: { data: LocaloDiagnosticsResponse }) {
+  const [showTechnicalProof, setShowTechnicalProof] = useState(false);
   const probe = data.access_probe;
   return (
     <section className="mt-6 rounded-md border border-line bg-white p-4">
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-          Dowody i ograniczenia Localo
-        </h2>
-        <p className="mt-1 text-sm leading-6 text-slate-600">
-          WILQ pokazuje access proof osobno od lokalnych facts. Brak facts oznacza
-          brak diagnozy rankingów, nie zaproszenie do zgadywania.
-        </p>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Dowody i ograniczenia Localo
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            WILQ pokazuje access proof osobno od lokalnych facts. Brak facts oznacza
+            brak diagnozy rankingów, nie zaproszenie do zgadywania.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowTechnicalProof((current) => !current)}
+          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100"
+        >
+          {showTechnicalProof ? "Ukryj techniczny proof Localo" : "Pokaż techniczny proof Localo"}
+        </button>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricTile label="MCP initialize" value={probe.mcp_initialize_status ?? "brak"} />
-        <MetricTile label="OAuth code" value={localoBooleanLabel(probe.authorization_code_supported)} />
-        <MetricTile label="PKCE S256" value={localoBooleanLabel(probe.pkce_s256_supported)} />
-        <MetricTile label="Token" value={localoTokenPresenceLabel(probe.access_token_present)} />
-      </div>
-      <div className="mt-4 grid gap-3 xl:grid-cols-3">
-        {data.sections.map((section) => (
-          <article key={section.id} className="rounded-md border border-line p-3">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="text-sm font-semibold">{section.title}</h3>
-              <span className="rounded-md border border-line px-2 py-1 text-xs text-slate-600">
-                {localoSectionStatusLabel(section.status)}
-              </span>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-700">{section.summary}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-600">{section.next_step}</p>
-          </article>
-        ))}
-      </div>
+      {showTechnicalProof ? (
+        <>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="MCP initialize" value={probe.mcp_initialize_status ?? "brak"} />
+            <MetricTile
+              label="OAuth code"
+              value={localoBooleanLabel(probe.authorization_code_supported)}
+            />
+            <MetricTile label="PKCE S256" value={localoBooleanLabel(probe.pkce_s256_supported)} />
+            <MetricTile label="Token" value={localoTokenPresenceLabel(probe.access_token_present)} />
+          </div>
+          <div className="mt-4 grid gap-3 xl:grid-cols-3">
+            {data.sections.map((section) => (
+              <article key={section.id} className="rounded-md border border-line p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-semibold">{section.title}</h3>
+                  <span className="rounded-md border border-line px-2 py-1 text-xs text-slate-600">
+                    {localoSectionStatusLabel(section.status)}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{section.summary}</p>
+                <p className="mt-2 text-xs leading-5 text-slate-600">{section.next_step}</p>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : null}
       {data.visibility_fact_count === 0 ? (
         <BlockerNotice message="Brak Localo ranking/GBP/competitor facts. Ten ekran celowo blokuje lokalne rekomendacje marketingowe." />
       ) : null}
@@ -361,8 +383,8 @@ function localoAllowedEvidenceLabel(value: string) {
     competitor_visibility: "widoczność konkurencji",
     gbp_visibility: "widoczność GBP",
     local_rankings: "rankingi lokalne",
-    mcp_initialize: "MCP initialize",
-    oauth_metadata: "OAuth metadata",
+    mcp_initialize: "potwierdzenie dostępu adaptera",
+    oauth_metadata: "metadane autoryzacji",
     place_inventory: "lista lokalizacji",
     reviews: "opinie"
   };

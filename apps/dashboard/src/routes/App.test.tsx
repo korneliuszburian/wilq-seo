@@ -6176,14 +6176,14 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Status Localo / MCP access")).toBeInTheDocument();
+    expect(screen.getByText("Status Localo / widoczność lokalna")).toBeInTheDocument();
     expect(screen.getByText("Snapshot lokalnej widoczności")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Localo")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Localo")).toBeInTheDocument();
     expect(
       screen.getByText("Localo access działa; brakuje ranking/GBP facts")
     ).toBeInTheDocument();
-    expect(screen.getByText("dostęp MCP")).toBeInTheDocument();
+    expect(screen.queryByText("dostęp MCP")).not.toBeInTheDocument();
     expect(screen.getAllByText("fakty Localo").length).toBeGreaterThan(0);
     expect(screen.getAllByText("braki kontraktu").length).toBeGreaterThan(0);
     expect(screen.getByText("blokady claimów")).toBeInTheDocument();
@@ -6192,6 +6192,9 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("access działa").length).toBeGreaterThan(0);
     expect(screen.getByText("Brama bezpieczeństwa Localo/GBP")).toBeInTheDocument();
+    expect(screen.queryByText("MCP initialize")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż techniczny proof Localo" }));
+    expect(screen.getByText("MCP initialize")).toBeInTheDocument();
     expect(screen.queryByText("Local Visibility Focus")).not.toBeInTheDocument();
     expect(screen.queryByText("Taktyki z WILQ API")).not.toBeInTheDocument();
     expect(screen.queryByText("Metric facts")).not.toBeInTheDocument();

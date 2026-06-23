@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 05:17 CEST.
+Last updated: 2026-06-23 06:53 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -83,6 +83,14 @@ diagnostic modules for Ads Doctor, Custom Segments, Demand Gen, GA4, Localo,
 Ahrefs, Merchant and Content/GSC. `pnpm --filter @wilq/dashboard build`
 emits separate diagnostic chunks and passed together with dashboard typecheck,
 lint and focused route tests.
+
+2026-06-23 Localo route follow-up: `/localo` now treats Localo MCP/OAuth as
+technical proof, not a first-screen marketing metric. The route top metrics are
+`Fakty lokalne`, `Braki danych` and `Blokady`; MCP initialize, OAuth code, PKCE
+and token presence are hidden behind `Pokaż techniczny proof Localo`. Focused
+proof: the Localo route unit test passed, dashboard lint OK and dashboard
+typecheck OK. This keeps Localo honest: access proof is visible on demand, but
+ranking/GBP/competitor claims remain blocked until typed Localo facts exist.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight
