@@ -80,6 +80,11 @@ Stan produktu:
   blocked because Google Ads returned zero change_event rows in the current
   window; current `keyword_planner_read_contract` is blocked by
   `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`, not by missing OAuth.
+- GA4 freshness was refreshed on 2026-06-23:
+  `refresh_google_analytics_4_89801bbfd735` completed, `/api/ga4/diagnostics`
+  reports latest GA4 vendor_read within the 48h freshness window. GA4 still
+  blocks conversion/revenue/ROAS claims until conversion/key-event/ecommerce
+  contracts exist.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
