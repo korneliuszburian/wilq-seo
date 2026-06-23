@@ -296,6 +296,58 @@ def test_metric_store_lists_latest_metric_facts_by_connector_without_delta_cost(
     assert facts_by_connector["missing_connector"] == []
 
 
+def test_metric_store_lists_latest_metric_facts_with_connector_specific_limits(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "metrics.duckdb"))
+    older = datetime.now(UTC) - timedelta(hours=2)
+    newer = datetime.now(UTC) - timedelta(minutes=5)
+    for connector_id in ("google_analytics_4", "google_search_console"):
+        metric_store().save_connector_refresh_metrics(
+            ConnectorRefreshRun(
+                id=f"refresh_{connector_id}_old",
+                connector_id=connector_id,
+                mode=ConnectorRefreshMode.vendor_read,
+                status=ConnectorRefreshStatus.completed,
+                started_at=older,
+                completed_at=older,
+                evidence_ids=[f"ev_{connector_id}_old"],
+                metric_summary={"clicks": 1},
+                summary="Older metric facts.",
+            )
+        )
+        metric_store().save_connector_refresh_metrics(
+            ConnectorRefreshRun(
+                id=f"refresh_{connector_id}_new",
+                connector_id=connector_id,
+                mode=ConnectorRefreshMode.vendor_read,
+                status=ConnectorRefreshStatus.completed,
+                started_at=newer,
+                completed_at=newer,
+                evidence_ids=[f"ev_{connector_id}_new"],
+                metric_summary={"clicks": 2},
+                summary="Newer metric facts.",
+            )
+        )
+
+    facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
+        {
+            "google_analytics_4": 1,
+            "google_search_console": 2,
+            "missing_connector": 1,
+        }
+    )
+
+    assert [
+        fact.evidence_id for fact in facts_by_connector["google_analytics_4"]
+    ] == ["ev_google_analytics_4_new"]
+    assert {
+        fact.evidence_id for fact in facts_by_connector["google_search_console"]
+    } == {"ev_google_search_console_old", "ev_google_search_console_new"}
+    assert facts_by_connector["missing_connector"] == []
+
+
 def test_connector_refresh_persists_detailed_metric_facts_with_dimensions(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

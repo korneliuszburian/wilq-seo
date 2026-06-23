@@ -102,7 +102,7 @@ from wilq.schemas import (
     OpportunityDomain,
 )
 from wilq.storage.local_state import local_state_store
-from wilq.storage.metric_store import MAX_METRIC_FACT_READ_LIMIT, metric_store
+from wilq.storage.metric_store import metric_store
 
 MERCHANT_FEED_ISSUE_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
 
@@ -333,16 +333,15 @@ ACTION_METRIC_CONNECTORS = (
     "ahrefs",
     "localo",
 )
-ACTION_METRIC_FACT_LIMIT = 120
-CONTENT_ACTION_METRIC_FACT_LIMIT = 1200
+ACTION_METRIC_FACT_LIMIT = 500
 ACTION_METRIC_FACT_LIMITS = {
-    "google_ads": MAX_METRIC_FACT_READ_LIMIT,
-    "google_analytics_4": 2000,
-    "google_merchant_center": 2000,
-    "google_search_console": CONTENT_ACTION_METRIC_FACT_LIMIT,
-    "wordpress_ekologus": CONTENT_ACTION_METRIC_FACT_LIMIT,
-    "ahrefs": CONTENT_ACTION_METRIC_FACT_LIMIT,
-    "localo": 2000,
+    "google_ads": ACTION_METRIC_FACT_LIMIT,
+    "google_analytics_4": ACTION_METRIC_FACT_LIMIT,
+    "google_merchant_center": ACTION_METRIC_FACT_LIMIT,
+    "google_search_console": ACTION_METRIC_FACT_LIMIT,
+    "wordpress_ekologus": ACTION_METRIC_FACT_LIMIT,
+    "ahrefs": ACTION_METRIC_FACT_LIMIT,
+    "localo": ACTION_METRIC_FACT_LIMIT,
 }
 
 
@@ -1256,13 +1255,19 @@ def _localo_action_metric_facts(facts: list[MetricFact]) -> list[MetricFact]:
 
 def _action_metric_facts() -> list[MetricFact]:
     facts: list[MetricFact] = []
+    facts_by_connector = metric_store().list_latest_metric_facts_by_connector_limits(
+        {
+            connector_id: ACTION_METRIC_FACT_LIMITS.get(
+                connector_id,
+                ACTION_METRIC_FACT_LIMIT,
+            )
+            for connector_id in ACTION_METRIC_CONNECTORS
+        },
+    )
     for connector_id in ACTION_METRIC_CONNECTORS:
         facts.extend(
             fact
-            for fact in metric_store().list_metric_facts(
-                connector_id=connector_id,
-                limit=ACTION_METRIC_FACT_LIMITS.get(connector_id, ACTION_METRIC_FACT_LIMIT),
-            )
+            for fact in facts_by_connector.get(connector_id, [])
             if not _is_probe_only_fact(fact)
         )
     return _latest_metric_facts_by_identity(facts)

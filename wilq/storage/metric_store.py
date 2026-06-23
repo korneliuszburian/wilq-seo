@@ -260,24 +260,44 @@ class DuckDbMetricStore:
             return {}
         unique_connector_ids = list(dict.fromkeys(connector_ids))
         bounded_group_limit = max(1, min(limit_per_connector, MAX_METRIC_FACT_READ_LIMIT))
-        query = """
-            WITH ranked_metric_fact_groups AS (
+        connector_limits = {
+            connector_id: bounded_group_limit for connector_id in unique_connector_ids
+        }
+        return self.list_latest_metric_facts_by_connector_limits(connector_limits)
+
+    def list_latest_metric_facts_by_connector_limits(
+        self,
+        connector_limits: dict[str, int],
+    ) -> dict[str, list[MetricFact]]:
+        if not connector_limits:
+            return {}
+        unique_connector_limits = {
+            connector_id: max(1, min(limit, MAX_METRIC_FACT_READ_LIMIT))
+            for connector_id, limit in connector_limits.items()
+        }
+        values_placeholders = ", ".join("(?, ?)" for _ in unique_connector_limits)
+        query = f"""
+            WITH connector_limits(connector_id, connector_limit) AS (
+              VALUES {values_placeholders}
+            ),
+            ranked_metric_fact_groups AS (
             SELECT
-              connector_id,
-              evidence_id,
-              dimensions_json,
-              MAX(collected_at) AS group_collected_at,
+              facts.connector_id,
+              facts.evidence_id,
+              facts.dimensions_json,
+              MAX(facts.collected_at) AS group_collected_at,
               ROW_NUMBER() OVER (
-                PARTITION BY connector_id
+                PARTITION BY facts.connector_id
                 ORDER BY
-                  MAX(collected_at) DESC,
-                  connector_id ASC,
-                  dimensions_json ASC,
-                  evidence_id ASC
+                  MAX(facts.collected_at) DESC,
+                  facts.connector_id ASC,
+                  facts.dimensions_json ASC,
+                  facts.evidence_id ASC
               ) AS connector_group_rank
-            FROM connector_metric_facts
-            WHERE connector_id = ANY(?)
-            GROUP BY connector_id, evidence_id, dimensions_json
+            FROM connector_metric_facts facts
+            INNER JOIN connector_limits limits
+              ON facts.connector_id = limits.connector_id
+            GROUP BY facts.connector_id, facts.evidence_id, facts.dimensions_json
             )
             SELECT
               facts.metric_name,
@@ -298,7 +318,9 @@ class DuckDbMetricStore:
               ON facts.connector_id = groups.connector_id
              AND facts.evidence_id = groups.evidence_id
              AND facts.dimensions_json = groups.dimensions_json
-            WHERE groups.connector_group_rank <= ?
+            INNER JOIN connector_limits limits
+              ON facts.connector_id = limits.connector_id
+            WHERE groups.connector_group_rank <= limits.connector_limit
             ORDER BY
               facts.connector_id ASC,
               groups.connector_group_rank ASC,
@@ -306,11 +328,15 @@ class DuckDbMetricStore:
               facts.dimensions_json ASC,
               facts.evidence_id ASC
         """
-        params: list[Any] = [unique_connector_ids, bounded_group_limit]
+        params: list[Any] = [
+            value
+            for connector_id, connector_limit in unique_connector_limits.items()
+            for value in (connector_id, connector_limit)
+        ]
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
             rows = connection.execute(query, params).fetchall()
         facts_by_connector: dict[str, list[MetricFact]] = {
-            connector_id: [] for connector_id in unique_connector_ids
+            connector_id: [] for connector_id in unique_connector_limits
         }
         for row in rows:
             fact = _metric_fact_from_row(row)

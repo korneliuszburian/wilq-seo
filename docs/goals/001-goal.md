@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 14:05 CEST.
+Last updated: 2026-06-23 14:35 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -4287,12 +4287,17 @@ Commit rules:
    that endpoint path; `/api/marketing/brief` uses
    `build_daily_marketing_brief()`, and shared base inputs are cached
    separately. Focused proof includes a test that Command Center does not call
-   `build_marketing_brief`. Next performance bottleneck is deeper in cold
-   Command Center internals: Ads/content/merchant/GA4 diagnostics and
-   metric-store reads. Do not hide this with arbitrary frontend loading copy;
-   profile the next cold path and move repeated source reads into typed shared
-   read bundles/view-models. After backend cold path improves, consider
-   route-level code splitting for dashboard app code.
+   `build_marketing_brief`. The 2026-06-23 action-candidate bottleneck is also
+   reduced: metric-backed ActionObjects now use connector-scoped latest metric
+   reads with compact per-connector limits, preserving the same 12 metric-backed
+   ActionObject IDs while profiling `list_actions` at about `0.51-0.57s` and
+   `daily_runtime_base` at about `0.78-0.83s` with caches disabled. Next
+   performance bottleneck is deeper in cold Command Center internals:
+   Ads/content/merchant/GA4 diagnostics and remaining repeated metric-store
+   reads. Do not hide this with arbitrary frontend loading copy; profile the
+   next cold path and move repeated source reads into typed shared read
+   bundles/view-models. After backend cold path improves, consider route-level
+   code splitting for dashboard app code.
 
 3. **Keep supporting registries out of first-screen decision flow.**
    `/actions` is now ActionObject review, and `/opportunities` is now a

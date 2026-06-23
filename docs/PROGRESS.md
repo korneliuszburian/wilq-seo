@@ -37,6 +37,17 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- ActionObject metric-read performance, 2026-06-23.
+  `/api/actions` and shared daily runtime now use connector-scoped latest metric
+  reads for metric-backed ActionObject candidates. The action candidate path no
+  longer asks DuckDB for one oversized global limit across every connector; it
+  reads the latest groups with the same compact limit per connector and keeps
+  the same 12 metric-backed ActionObjects. Local profile with cache disabled:
+  `_action_metric_facts` about `0.44-0.48s`, `seed_metric_action_candidates`
+  about `0.47-0.50s`, `list_actions` about `0.51-0.57s`, and
+  `daily_runtime_base` about `0.78-0.83s`. Focused proof: RED/GREEN
+  metric-store per-connector limit test, RED/GREEN action metric read test,
+  expected ActionObject ID check, Python ruff OK and mypy OK.
 - Command Center metric read performance, 2026-06-23.
   Command Center and tactical queue now use a faster DuckDB read path,
   `list_latest_metric_facts_by_connector`, for marketer first-screen decisions
