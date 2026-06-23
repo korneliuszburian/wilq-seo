@@ -4899,8 +4899,9 @@ Latest GA4 proof compaction slice:
   `MetricFactChips` such as `active_users: 20`.
 - The proof summary now shows readable metric tiles, section/source labels,
   example evidence IDs and total evidence counts.
-- Remaining raw metric chips can still appear inside shared `ActionObjectFocus`;
-  handle that as a separate shared-component cleanup, not as a GA4 route bug.
+- Shared `MetricFactChips` now localizes common metric and dimension keys, so
+  lower shared surfaces such as `ActionObjectFocus` no longer show raw strings
+  like `active_users: 20` for common WILQ facts.
 - Focused proof passed:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"`
   - `pnpm --filter @wilq/dashboard lint`

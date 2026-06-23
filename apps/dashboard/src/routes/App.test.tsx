@@ -6112,6 +6112,7 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Analytics Safety Gate")).not.toBeInTheDocument();
     expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
     expect(screen.getAllByText("Aktywni użytkownicy").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/active_users: 20/)).not.toBeInTheDocument();
     const ga4ProofSection = screen
       .getByText("Dowody i ograniczenia GA4")
       .closest("section");

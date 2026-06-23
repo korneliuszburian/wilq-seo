@@ -2299,8 +2299,14 @@ Aktualny maintenance:
     `Wyświetlenia stron` instead of raw `active_users: 20` chips. `Dowody i
     ograniczenia GA4` now shows example evidence IDs and total evidence count.
     Focused proof passed: GA4/GSC route unit test, dashboard lint and dashboard
-    typecheck. Remaining raw metric chips can still appear inside shared
-    `ActionObjectFocus`; that is a separate shared-component cleanup.
+    typecheck.
+
+14. Shared MetricFact chip localization, 2026-06-23 05:52 CEST.
+    Shared `MetricFactChips` now maps common metric and dimension keys to
+    readable Polish labels, so lower shared surfaces such as `ActionObjectFocus`
+    no longer show raw strings like `active_users: 20` for common Ads/GA4/GSC/
+    Merchant/Ahrefs facts. Focused proof passed through the GA4 route test,
+    dashboard lint and dashboard typecheck.
 
 ## Active Gaps
 
@@ -2338,8 +2344,7 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   shared ActionObjectFocus metric rendering and remaining lower-fold Ads Doctor
-   tables.
+   remaining lower-fold Ads Doctor tables and payload preview folding.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

@@ -8,7 +8,7 @@ export function MetricFactChips({ facts }: { facts: MetricFact[] }) {
           key={metricFactKey(fact, index)}
           className="rounded border border-line bg-slate-50 px-2 py-1 text-xs text-slate-700"
         >
-          {fact.name}: {formatMetricFactValue(fact)}
+          {metricFactLabel(fact.name)}: {formatMetricFactValue(fact)}
           {Object.keys(fact.dimensions ?? {}).length > 0
             ? ` / ${formatMetricDimensions(fact)}`
             : ""}
@@ -37,6 +37,32 @@ function metricFactKey(fact: MetricFact, index: number) {
   ].join("::");
 }
 
+function metricFactLabel(metricName: string) {
+  const labels: Record<string, string> = {
+    active_products: "Produkty aktywne",
+    active_users: "Aktywni użytkownicy",
+    ahrefs_content_gap_count: "Luki treści Ahrefs",
+    ahrefs_rank: "Ahrefs Rank",
+    ahrefs_referring_domain_gap_count: "Luki domen linkujących",
+    average_position: "Pozycja",
+    clicks: "Kliknięcia",
+    content_object_count: "Obiekty treści",
+    ctr: "CTR",
+    disapproved_products: "Produkty odrzucone",
+    domain_rating: "Domain Rating",
+    engagement_rate: "Zaangażowanie",
+    event_count: "Zdarzenia",
+    impressions: "Wyświetlenia",
+    issue_product_count: "Zgłoszenia problemów",
+    pages_total: "Strony",
+    posts_total: "Wpisy",
+    screen_page_views: "Wyświetlenia stron",
+    sessions: "Sesje",
+    total_products: "Produkty w feedzie"
+  };
+  return labels[metricName] ?? metricName.replaceAll("_", " ");
+}
+
 function formatMetricFactValue(fact: MetricFact) {
   const suffix = fact.unit ? ` ${fact.unit}` : "";
   return `${fact.value}${suffix}`;
@@ -56,6 +82,26 @@ function formatMetricDelta(fact: MetricFact) {
 
 function formatMetricDimensions(fact: MetricFact) {
   return Object.entries(fact.dimensions ?? {})
-    .map(([key, value]) => `${key}=${value}`)
+    .map(([key, value]) => `${metricDimensionLabel(key)}=${value}`)
     .join(", ");
+}
+
+function metricDimensionLabel(dimensionName: string) {
+  const labels: Record<string, string> = {
+    affected_attribute: "atrybut",
+    campaign_name: "kampania",
+    competitor_domain: "konkurent",
+    contract: "kontrakt",
+    country: "kraj",
+    gap_type: "typ luki",
+    issue_type: "problem",
+    keyword: "fraza",
+    landing_page: "landing",
+    page: "strona",
+    query: "zapytanie",
+    source_medium: "źródło",
+    source_url: "URL źródłowy",
+    target_domain: "domena docelowa"
+  };
+  return labels[dimensionName] ?? dimensionName.replaceAll("_", " ");
 }
