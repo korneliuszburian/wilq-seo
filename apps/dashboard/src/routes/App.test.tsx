@@ -6128,13 +6128,14 @@ describe("WILQ dashboard", () => {
       expect(screen.getByRole("heading", { name: "Localo" })).toBeInTheDocument()
     );
     expect(screen.getByText("Status Localo / MCP access")).toBeInTheDocument();
+    expect(screen.getByText("Snapshot lokalnej widoczności")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma wiedzieć o Localo")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Localo")).toBeInTheDocument();
     expect(
       screen.getByText("Localo access działa; brakuje ranking/GBP facts")
     ).toBeInTheDocument();
     expect(screen.getByText("dostęp MCP")).toBeInTheDocument();
-    expect(screen.getByText("fakty Localo")).toBeInTheDocument();
+    expect(screen.getAllByText("fakty Localo").length).toBeGreaterThan(0);
     expect(screen.getAllByText("braki kontraktu").length).toBeGreaterThan(0);
     expect(screen.getByText("blokady claimów")).toBeInTheDocument();
     expect(

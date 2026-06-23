@@ -4808,3 +4808,16 @@ Latest Localo aggregate value facts slice:
   Final verify result: backend API contracts `122 passed`, dashboard unit tests
   `14 passed`, Playwright e2e `11 passed`, skill/API smokes and production
   build passed.
+
+Latest Localo dashboard snapshot slice:
+
+- `/localo` now shows `Snapshot lokalnej widoczności` before the technical
+  Localo proof. This is the marketer-facing summary of Localo facts from
+  `/api/localo/diagnostics`; MCP initialize/OAuth/PKCE details stay lower as
+  adapter proof, not the main product value.
+- The snapshot intentionally consumes existing WILQ API `decision_queue`
+  metric tiles instead of hardcoding changing Localo values.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "localo social and content routes render workflow-specific blockers or focus"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`

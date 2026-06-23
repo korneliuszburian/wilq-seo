@@ -2245,6 +2245,14 @@ Aktualny maintenance:
    capped at 4, full endpoint pointer preserved. The smoke script now fails if
    `wilq-ads-doctor` exceeds 200 KB.
 
+7. Localo marketer snapshot, 2026-06-23 05:23 CEST.
+   `/localo` now renders a dedicated `Snapshot lokalnej widoczności` above the
+   technical MCP/OAuth proof. It uses existing `/api/localo/diagnostics`
+   `decision_queue` metric tiles, so marketer-facing Localo facts appear before
+   adapter proof while blocked claims remain explicit.
+   Focused proof passed: Localo route unit test, dashboard lint and dashboard
+   typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2280,8 +2288,9 @@ Aktualny maintenance:
 Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
-   useful decisions, or persist operator selection/review outcome for content
-   brief previews if Content Planner is the active focus.
+   useful decisions. Current likely candidates from browser/repo audit:
+   Ads Doctor metric hierarchy, Merchant issue clustering and GA4 measurement
+   blocker grouping.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

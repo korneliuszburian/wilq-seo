@@ -75,6 +75,7 @@ export function LocaloDiagnosticSurface() {
         ) : null}
       </section>
 
+      <LocaloVisibilitySnapshot data={data} />
       <LocaloOperatorSummary data={data} />
       <LocaloDiagnosticProof data={data} />
 
@@ -116,6 +117,64 @@ export function LocaloDiagnosticSurface() {
         </div>
       </section>
     </main>
+  );
+}
+
+function LocaloVisibilitySnapshot({ data }: { data: LocaloDiagnosticsResponse }) {
+  const visibilityDecision =
+    data.decision_queue.find((decision) => decision.decision_type === "review_local_visibility") ??
+    data.decision_queue.find((decision) => decision.status === "ready") ??
+    data.decision_queue[0];
+  const metricEntries = Object.entries(visibilityDecision?.metric_tiles ?? {}).filter(
+    ([label]) => label !== "dostęp MCP"
+  );
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+          Snapshot lokalnej widoczności
+        </h2>
+        <p className="mt-1 text-sm leading-6 text-slate-600">
+          To jest marketerowy skrót z Localo facts dostępnych w WILQ API. MCP/OAuth
+          zostają jako techniczny proof niżej, a lokalne claimy pozostają
+          zablokowane, jeśli brakuje ranking/GBP/review evidence.
+        </p>
+      </div>
+      {visibilityDecision ? (
+        <div className="rounded-md border border-line p-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold">Localo facts w WILQ API</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                {visibilityDecision.summary}
+              </p>
+            </div>
+            <span className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink">
+              {localoDecisionStatusLabel(visibilityDecision.status)}
+            </span>
+          </div>
+          {metricEntries.length > 0 ? (
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+              {metricEntries.map(([label, value]) => (
+                <MetricTile
+                  key={`${visibilityDecision.id}-snapshot-${label}`}
+                  label={label}
+                  value={value}
+                />
+              ))}
+            </div>
+          ) : (
+            <BlockerNotice message="Brak Localo facts do snapshotu. WILQ pokazuje tylko stan dostępu i blokuje lokalne rekomendacje." />
+          )}
+          <p className="mt-3 text-sm font-semibold leading-6 text-ink">
+            {visibilityDecision.next_step}
+          </p>
+        </div>
+      ) : (
+        <BlockerNotice message="Brak decyzji Localo z WILQ API. Snapshot lokalny nie może zostać zbudowany." />
+      )}
+    </section>
   );
 }
 
