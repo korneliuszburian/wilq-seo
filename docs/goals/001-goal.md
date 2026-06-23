@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 21:04 CEST.
+Last updated: 2026-06-23 21:11 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -264,6 +264,22 @@ Planner, forecast, audience size, targeting apply, campaign performance, ROAS
 or conversion uplift claims. Focused proof: Action detail route tests,
 dashboard typecheck, dashboard lint and browser proof
 `.local-lab/proof/dashboard/action-keyword-planner-access-preview.txt`.
+
+Follow-up completed at 2026-06-23 21:11 CEST: the ActionObject detail route now
+renders Ads business guardrail previews from
+`action_type=confirm_ads_target_guardrails` and
+`action_type=record_ads_strategy_review`.
+`/actions/act_confirm_ads_target_guardrails` and
+`/actions/act_record_ads_strategy_review` show current Ads business context,
+profit margin, budget goal, missing target ROAS/CPA, target env options,
+strategy review gates, validations, blocked claims and blocked apply/API
+mutation state as Polish review cards. Raw payload stays under
+`Surowy payload debug`. This improves the Ads demo path without unlocking
+CPA/ROAS verdicts, budget scaling/apply, recommendation apply, profitability
+verdict or automatic optimization. Focused proof: Action detail route tests,
+dashboard typecheck, dashboard lint and browser proof
+`.local-lab/proof/dashboard/action-ads-target-guardrail-preview.txt` plus
+`.local-lab/proof/dashboard/action-ads-strategy-review-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

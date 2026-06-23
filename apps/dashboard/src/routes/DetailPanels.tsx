@@ -129,6 +129,7 @@ type PayloadPreviewItem = {
     | "localVisibility"
     | "socialDraftInput"
     | "keywordPlannerAccess"
+    | "adsBusinessGuardrail"
     | "contentBrief"
     | "wordpressDraft";
   item: Record<string, unknown>;
@@ -178,12 +179,18 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
     payload.action_type === "configure_google_ads_keyword_planner_access"
       ? [{ kind: "keywordPlannerAccess" as const, item: payload }]
       : [];
+  const adsBusinessGuardrailItems =
+    payload.action_type === "confirm_ads_target_guardrails" ||
+    payload.action_type === "record_ads_strategy_review"
+      ? [{ kind: "adsBusinessGuardrail" as const, item: payload }]
+      : [];
   return [
     ...genericItems,
     ...budgetItems,
     ...ngramItems,
     ...socialDraftItems,
     ...keywordPlannerAccessItems,
+    ...adsBusinessGuardrailItems,
     ...contentBriefItems,
     ...wordpressDraftItems
   ];
@@ -219,6 +226,9 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "keywordPlannerAccess") {
     return <KeywordPlannerAccessPreviewCard item={previewItem.item} />;
+  }
+  if (previewItem.kind === "adsBusinessGuardrail") {
+    return <AdsBusinessGuardrailPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "contentBrief") {
     return <ContentBriefPreviewCard item={previewItem.item} />;
@@ -573,6 +583,49 @@ function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknow
   );
 }
 
+function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknown> }) {
+  const context = isRecord(item.current_context) ? item.current_context : {};
+  const targetEnvOptions = isRecord(item.target_env_options) ? item.target_env_options : {};
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Guardrail Ads do review</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.action_type, "ads_business_guardrail")}
+          </p>
+        </div>
+        <StatusBadge value="blocked" />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Marża: {formatPercent(context.profit_margin)}</div>
+        <div>Cel biznesowy: {stringValue(context.business_goal, "brak")}</div>
+        <div>Cel budżetu: {stringValue(context.budget_goal, "brak")}</div>
+        <div>Target ROAS: {formatMetricValue(context.target_roas)}</div>
+        <div>Target CPA: {formatMicrosAsPln(context.target_cpa_micros)}</div>
+        <PreviewValues label="Źródła konfiguracji" values={asStringArray(context.configured_sources)} />
+        <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
+        <PreviewValues
+          label="Opcje targetu"
+          values={asStringArray(targetEnvOptions.target_roas_or_cpa)}
+        />
+        <PreviewValues
+          label="Po potwierdzeniu"
+          values={asStringArray(item.allowed_uses_after_confirmation)}
+        />
+        <PreviewValues label="Bramki review" values={asStringArray(item.operator_review_gates)} />
+        <div>Ostatni review strategii: {strategyReviewSummary(item.latest_strategy_review)}</div>
+        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
   const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
   return (
@@ -669,8 +722,9 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "localVisibility") return 7;
   if (kind === "socialDraftInput") return 8;
   if (kind === "keywordPlannerAccess") return 9;
-  if (kind === "contentBrief") return 10;
-  if (kind === "wordpressDraft") return 11;
+  if (kind === "adsBusinessGuardrail") return 10;
+  if (kind === "contentBrief") return 11;
+  if (kind === "wordpressDraft") return 12;
   return 12;
 }
 
@@ -747,6 +801,13 @@ function budgetSafetyStatus(item: Record<string, unknown>) {
     return "brak";
   }
   return stringValue(safetyReview.status, "brak");
+}
+
+function strategyReviewSummary(value: unknown) {
+  if (!isRecord(value)) {
+    return "brak";
+  }
+  return stringValue(value.outcome, "zapisany");
 }
 
 function formatChannelCounts(value: Record<string, unknown>) {

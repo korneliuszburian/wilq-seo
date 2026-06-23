@@ -540,6 +540,115 @@ const keywordPlannerAccessActionFixture: ActionObject = {
   }
 };
 
+const adsTargetGuardrailActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_ads_target_guardrails",
+  title: "Potwierdź target ROAS albo CPA dla Ads",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_google_ads"],
+  human_diagnosis: "WILQ ma Ads facts, ale target ROAS/CPA wymaga potwierdzenia operatora.",
+  recommended_reason: "Potwierdź target zanim WILQ nazwie kampanie opłacalnymi albo nieopłacalnymi.",
+  payload: {
+    action_type: "confirm_ads_target_guardrails",
+    connector: "google_ads",
+    mode: "prepare_only",
+    credential_source: "repo_env",
+    current_context: {
+      profit_margin: 0.3,
+      business_goal: "wstępny review jakości leadów i kosztu pozyskania dla Ekologus",
+      budget_goal: "wstępnie chronić obecny budżet; eskalować tylko po review",
+      target_roas: null,
+      target_cpa_micros: null,
+      configured_sources: [
+        "WILQ_ADS_PROFIT_MARGIN",
+        "WILQ_ADS_BUSINESS_GOAL",
+        "WILQ_ADS_BUDGET_GOAL"
+      ],
+      target_confirmation_id: null
+    },
+    target_env_options: {
+      target_roas_or_cpa: ["WILQ_ADS_TARGET_ROAS", "WILQ_ADS_TARGET_CPA_MICROS"]
+    },
+    missing_read_contracts: ["target_roas_or_cpa", "human_strategy_review"],
+    required_validation: [
+      "review_profit_margin_model",
+      "review_business_goal",
+      "review_human_budget_goal",
+      "confirm_target_roas_or_cpa",
+      "human_strategy_review"
+    ],
+    allowed_uses_after_confirmation: [
+      "target_kpi_review",
+      "campaign_review_context",
+      "budget_review_context"
+    ],
+    blocked_claims: [
+      "target KPI verdict before confirmation",
+      "profitability verdict",
+      "budget scaling",
+      "budget apply",
+      "recommendation apply"
+    ],
+    apply_allowed: false,
+    destructive: false
+  }
+};
+
+const adsStrategyReviewActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_ads_strategy_review",
+  title: "Zapisz ocenę strategii Ads przez człowieka",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_connector_google_ads_status", "ev_refresh_google_ads"],
+  human_diagnosis: "WILQ ma Ads facts, ale strategia wymaga review człowieka.",
+  recommended_reason: "Zapisz ocenę strategii zanim WILQ przejdzie do decyzji budżetowych.",
+  payload: {
+    action_type: "record_ads_strategy_review",
+    connector: "google_ads",
+    mode: "prepare_only",
+    current_context: {
+      profit_margin: 0.3,
+      business_goal: "wstępny review jakości leadów i kosztu pozyskania dla Ekologus",
+      budget_goal: "wstępnie chronić obecny budżet; eskalować tylko po review",
+      target_roas: null,
+      target_cpa_micros: null,
+      configured_sources: [
+        "WILQ_ADS_PROFIT_MARGIN",
+        "WILQ_ADS_BUSINESS_GOAL",
+        "WILQ_ADS_BUDGET_GOAL"
+      ]
+    },
+    latest_strategy_review: null,
+    operator_review_gates: [
+      "human_strategy_review",
+      "review_profit_margin_model",
+      "review_business_goal",
+      "review_human_budget_goal",
+      "review_target_fit"
+    ],
+    required_validation: [
+      "review_profit_margin_model",
+      "review_business_goal",
+      "review_human_budget_goal",
+      "review_target_fit",
+      "record_human_strategy_review_outcome"
+    ],
+    blocked_claims: [
+      "profitability verdict",
+      "budget scaling",
+      "budget apply",
+      "recommendation apply",
+      "automatic optimization"
+    ],
+    apply_allowed: false,
+    destructive: false
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -676,6 +785,12 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_keyword_planner_access")) {
         return Promise.resolve(Response.json(keywordPlannerAccessActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_ads_target_guardrails")) {
+        return Promise.resolve(Response.json(adsTargetGuardrailActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_ads_strategy_review")) {
+        return Promise.resolve(Response.json(adsStrategyReviewActionFixture));
       }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
@@ -941,6 +1056,47 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Kroki: Sprawdź status Google Ads API developer token/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: confirm_developer_token_approval/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: audience size/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders Ads target guardrail preview without requiring raw JSON", async () => {
+    renderActionDetail("act_ads_target_guardrails");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Potwierdź target ROAS albo CPA dla Ads"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Guardrail Ads do review")).toBeInTheDocument();
+    expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
+    expect(screen.getByText(/Cel biznesowy: wstępny review jakości leadów/)).toBeInTheDocument();
+    expect(screen.getByText(/Cel budżetu: wstępnie chronić obecny budżet/)).toBeInTheDocument();
+    expect(screen.getByText(/Target ROAS: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Target CPA: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: target_roas_or_cpa/)).toBeInTheDocument();
+    expect(screen.getByText(/Opcje targetu: WILQ_ADS_TARGET_ROAS/)).toBeInTheDocument();
+    expect(screen.getByText(/Po potwierdzeniu: target_kpi_review/)).toBeInTheDocument();
+    expect(screen.getByText(/Walidacje: review_profit_margin_model/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: target KPI verdict before confirmation/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders Ads strategy review guardrail preview without requiring raw JSON", async () => {
+    renderActionDetail("act_ads_strategy_review");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Zapisz ocenę strategii Ads przez człowieka"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Guardrail Ads do review")).toBeInTheDocument();
+    expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
+    expect(screen.getByText(/Ostatni review strategii: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Bramki review: human_strategy_review/)).toBeInTheDocument();
+    expect(screen.getByText(/Walidacje: review_profit_margin_model/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: profitability verdict/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 

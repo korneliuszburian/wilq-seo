@@ -39,6 +39,19 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Ads business guardrail ActionObject previews, 2026-06-23.
+   `/actions/act_confirm_ads_target_guardrails` and
+   `/actions/act_record_ads_strategy_review` now render current Ads business
+   context, target gaps, strategy review gates, helper target env options,
+   validations, blocked claims and explicit blocked apply/API mutation state
+   above the debug payload. Browser proof:
+   `.local-lab/proof/dashboard/action-ads-target-guardrail-preview.txt` and
+   `.local-lab/proof/dashboard/action-ads-strategy-review-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not unlock CPA/ROAS verdicts, budget scaling/apply,
+   recommendation apply, profitability verdict or automatic optimization; it
+   only exposes the safe review/confirmation path.
+
 0. Dashboard Keyword Planner access blocker ActionObject preview, 2026-06-23.
    `/actions/act_configure_google_ads_keyword_planner_access` now renders the
    Keyword Planner/developer-token blocker as a marketer-reviewable card above
