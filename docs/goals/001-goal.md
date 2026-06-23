@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 01:42 CEST.
+Last updated: 2026-06-23 01:46 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -167,6 +167,17 @@ The result has `operator_usefulness_score=5`,
 no safety findings. It still blocks recommendation apply, negative keyword
 apply, budget scaling, targeting/apply, CPA, ROAS and wasted-budget claims
 without the missing review/apply/audit contracts.
+
+Custom Segments now exposes the same standardized validation proof. The
+`wilq-custom-segments` smoke returns `action_validations` for
+`act_prepare_custom_segments_from_search_terms`, the eval case requires that
+ActionObject in `expected_validated_action_ids`, and the passing artifact is
+`.local-lab/evals/codex-skill/20260623T014325Z/wilq-custom-segments/result.json`.
+The result has `operator_usefulness_score=4`, source connectors `google_ads`
+and `google_search_console`, one validated action candidate and no safety
+findings. Apply remains blocked by `custom_segment_apply_safety_v1` until
+forecast/audience size, Keyword Planner enrichment, Google Ads mutation audit
+and human confirmation exist.
 
 ## Product Bar
 

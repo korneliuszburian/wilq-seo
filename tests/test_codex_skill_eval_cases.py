@@ -155,6 +155,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "ROAS",
             },
             "action_ids": {"act_prepare_custom_segments_from_search_terms"},
+            "validated_action_ids": {"act_prepare_custom_segments_from_search_terms"},
         },
         "wilq-demand-gen-operator": {
             "surface_path": "/ads-doctor/demand-gen",
@@ -310,6 +311,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert '"ads_diagnostics": {' in custom_segments_smoke_script
     assert "custom_segments_read_contract" in custom_segments_smoke_script
     assert "act_prepare_custom_segments_from_search_terms" in custom_segments_smoke_script
+    assert '"action_validations": action_validations' in custom_segments_smoke_script
 
     merchant_skill_doc = Path(
         ".agents/skills/wilq-merchant-feed-operator/SKILL.md"

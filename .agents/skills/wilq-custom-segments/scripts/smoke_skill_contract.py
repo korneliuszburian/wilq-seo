@@ -113,6 +113,7 @@ def main() -> int:
 
     custom_segment_candidates = custom_segments_read_contract.get("candidates") or []
     custom_segment_action_validation: dict[str, Any] | None = None
+    action_validations = []
     safety_review: dict[str, Any] = {}
     if custom_segment_candidates:
         if not audience_forecast_contract.get("forecast_rows"):
@@ -208,6 +209,14 @@ def main() -> int:
             raise SystemExit(
                 "Custom segment ActionObject validation must pass when candidates exist"
             )
+        action_validations.append(
+            {
+                "action_id": custom_segment_action_validation.get("action_id"),
+                "valid": custom_segment_action_validation.get("valid"),
+                "status": custom_segment_action_validation.get("status"),
+                "errors": custom_segment_action_validation.get("errors", []),
+            }
+        )
     elif not custom_segments_read_contract.get("missing_read_contracts"):
         raise SystemExit("Blocked custom segments contract must list missing read contracts")
 
@@ -320,6 +329,7 @@ def main() -> int:
                     for candidate in custom_segment_candidates[:6]
                 ],
                 "custom_segment_action_validation": custom_segment_action_validation,
+                "action_validations": action_validations,
                 "brief_items": brief_items,
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),

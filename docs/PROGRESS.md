@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Custom Segments eval hardening, 2026-06-23 01:43 CEST.
+  `wilq-custom-segments` already validated
+  `act_prepare_custom_segments_from_search_terms`; the smoke output now exposes
+  the standard `action_validations` field and the eval case requires
+  `expected_validated_action_ids=["act_prepare_custom_segments_from_search_terms"]`.
+  Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T014325Z/wilq-custom-segments/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_ads","google_search_console"]`, 2 evidence IDs,
+  `operator_usefulness_score=4`, `safety_findings=[]` and one validated
+  custom-segment action candidate. Product finding: WILQ can prepare
+  source-term-backed custom segment candidates for review, but apply remains
+  blocked by `custom_segment_apply_safety_v1` until forecast/audience size,
+  Keyword Planner enrichment, Google Ads mutation audit and human confirmation
+  exist.
 - Ads Doctor eval hardening, 2026-06-23 01:38 CEST.
   `wilq-ads-doctor` smoke now validates the four marketer-facing Ads
   review-only ActionObjects through `POST /api/actions/{action_id}/validate`:

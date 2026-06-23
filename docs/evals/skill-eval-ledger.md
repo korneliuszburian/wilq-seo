@@ -25,6 +25,57 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-custom-segments validated ActionObject eval hardening
+
+Purpose:
+
+- Standardize the Custom Segments smoke output with the rest of the validated
+  ActionObject eval pattern.
+- Prove `act_prepare_custom_segments_from_search_terms` is a validated
+  review-only action while audience size, targeting apply and campaign
+  performance claims stay blocked.
+
+Changes:
+
+- `.agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py` now
+  exposes `action_validations` for the existing custom-segment ActionObject
+  validation.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids=["act_prepare_custom_segments_from_search_terms"]`
+  for `wilq-custom-segments`.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q \
+  -k 'route_specific_codex_eval_cases_define_surface_markers or route_specific_skill_smokes_expose_marketing_brief_items'
+uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T014325Z/wilq-custom-segments/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors: `google_ads`, `google_search_console`.
+- `evidence_count=2`.
+- `action_candidates` contains
+  `act_prepare_custom_segments_from_search_terms` with
+  `validation_state="validated"`.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- Custom Segments can now prove the review-only candidate path, but apply
+  remains blocked by `custom_segment_apply_safety_v1` until
+  `forecast_or_audience_size`, `keyword_planner_enrichment`,
+  `google_ads_mutation_audit` and `human_confirm_before_apply` exist.
+
 ## 2026-06-23 - wilq-ads-doctor validated ActionObject eval hardening
 
 Purpose:

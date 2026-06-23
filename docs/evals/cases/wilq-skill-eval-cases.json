@@ -244,7 +244,8 @@
       "targeting applied",
       "campaign performance"
     ],
-    "expected_action_ids": ["act_prepare_custom_segments_from_search_terms"]
+    "expected_action_ids": ["act_prepare_custom_segments_from_search_terms"],
+    "expected_validated_action_ids": ["act_prepare_custom_segments_from_search_terms"]
   },
   {
     "skill": "wilq-demand-gen-operator",
