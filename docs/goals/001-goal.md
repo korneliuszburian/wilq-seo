@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 10:46 CEST.
+Last updated: 2026-06-23 10:52 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -425,19 +425,22 @@ revenue, feed-write and automatic-fix claims. Use this as the template for
 hardening the remaining high-value skills; do not solve this by adding
 edge-case prose to skill references.
 
-Content now follows the same validated ActionObject pattern. The
-`wilq-content-strategist` smoke validates
-`act_prepare_content_refresh_queue`, the eval case requires
-`expected_validated_action_ids=["act_prepare_content_refresh_queue"]`, and the
-passing artifact is
-`.local-lab/evals/codex-skill/20260623T012450Z/wilq-content-strategist/result.json`.
+Content now follows both the validated ActionObject pattern and a stronger
+usefulness eval. The `wilq-content-strategist` smoke validates
+`act_prepare_content_refresh_queue`, and the eval case requires
+`expected_validated_action_ids=["act_prepare_content_refresh_queue"]` plus
+concrete `content_diagnostics.decision_queue` markers:
+`review_ahrefs_gap_records`, `inventory_check_before_create`,
+`merge_create_after_inventory_check`, `bdo co to` and `zielony ład`. The latest
+passing result is
+`.local-lab/evals/codex-skill/20260623T085105Z/wilq-content-strategist/result.json`.
 The result has `operator_usefulness_score=4`,
 `action_candidates[0].validation_state="validated"` and source connectors
 `google_search_console`, `google_analytics_4`, `ahrefs`,
-`wordpress_ekologus`, `wordpress_sklep`. This is now the strongest content
-proof path: API decision queue plus WordPress inventory boundaries plus a
-validated prepare/review ActionObject; it still blocks ranking, lead, revenue,
-WordPress write and auto-publish claims.
+`wordpress_ekologus`, `wordpress_sklep`. This proves the content skill can
+return concrete marketer decisions, not only a valid JSON shape: Ahrefs gap
+review, BDO inventory check and Zielony Ład merge/create-after-inventory-check.
+It still blocks ranking, lead, revenue, WordPress write and auto-publish claims.
 
 Ads Doctor now follows the stricter validated ActionObject pattern for its
 main review-only paths. The `wilq-ads-doctor` smoke validates

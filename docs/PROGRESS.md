@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Content strategist Codex eval usefulness hardening, 2026-06-23 10:52 CEST.
+  `wilq-content-strategist` eval no longer proves only schema/API usage. The
+  eval case now requires concrete `content_diagnostics.decision_queue` markers:
+  `review_ahrefs_gap_records`, `inventory_check_before_create`,
+  `merge_create_after_inventory_check`, `bdo co to` and `zielony ład`.
+  Passing non-interactive result:
+  `.local-lab/evals/codex-skill/20260623T085105Z/wilq-content-strategist/result.json`.
+  Result: `pl-PL`, `api_used=true`, usefulness score 4, validated
+  `act_prepare_content_refresh_queue`, recommendations for Ahrefs gap review,
+  BDO inventory check and Zielony Ład merge/create-after-inventory-check.
+  Focused proof: RED/GREEN eval-case test, content strategist smoke script and
+  `scripts/codex_skill_eval.sh --skill wilq-content-strategist` passed.
 - Ahrefs relevance cleanup, 2026-06-23 10:46 CEST.
   `/api/ahrefs/diagnostics` now ranks reviewable Ekologus gap records before
   generic/off-topic Ahrefs records and filters hard noise such as CUK insurance

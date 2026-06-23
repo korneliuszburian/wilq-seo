@@ -25,6 +25,62 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-content-strategist decision-marker eval hardening
+
+Purpose:
+
+- Move `wilq-content-strategist` eval from "schema/API proof only" toward
+  usefulness proof for the Ekologus content demo.
+- Require the eval result to include concrete `content_diagnostics.decision_queue`
+  markers instead of only generic `Content Planner` wording.
+
+Changes:
+
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires the content
+  strategist final JSON to contain:
+  - `decision_queue`
+  - `inventory_check_before_create`
+  - `merge_create_after_inventory_check`
+  - `review_ahrefs_gap_records`
+  - `bdo co to`
+  - `zielony ład`
+- `tests/test_codex_skill_eval_cases.py` now guards those markers so future
+  eval-case edits cannot silently weaken the content strategist contract.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q -k route_specific_codex_eval_cases_define_surface_markers
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Passing result:
+
+```text
+.local-lab/evals/codex-skill/20260623T085105Z/wilq-content-strategist/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `api_used=true`, `operator_usefulness_score=4`.
+- Source connectors:
+  `google_search_console`, `google_analytics_4`, `ahrefs`,
+  `wordpress_ekologus`, `wordpress_sklep`.
+- `action_candidates` contains validated
+  `act_prepare_content_refresh_queue`.
+- Recommendations include:
+  - Ahrefs gap-record review before content brief.
+  - `bdo co to` as `inventory_check_before_create`.
+  - `zielony ład` as `merge_create_after_inventory_check`.
+
+Product finding:
+
+- The skill now proves a useful content decision flow for the demo, not just a
+  valid output shape. Current API did not return `block_as_tracking_not_content`
+  in `decision_types`, and the result correctly says so instead of pretending a
+  GA4 tracking block was present.
+
 ## 2026-06-23 - wilq-localo-operator validated ActionObject eval hardening
 
 Purpose:

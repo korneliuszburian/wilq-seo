@@ -204,9 +204,13 @@
       "WordPress",
       "google_search_console",
       "content_diagnostics",
+      "decision_queue",
       "inventory",
       "inventory_check_before_create",
       "merge_create_after_inventory_check",
+      "review_ahrefs_gap_records",
+      "bdo co to",
+      "zielony ład",
       "block_as_tracking_not_content"
     ],
     "expected_action_ids": ["act_prepare_content_refresh_queue"],
