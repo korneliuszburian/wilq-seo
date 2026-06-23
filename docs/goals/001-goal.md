@@ -99,6 +99,18 @@ route tests OK. Remaining performance work should target tactical metric-store
 read/model construction or route-specific diagnostics only when a measured
 bottleneck justifies it.
 
+2026-06-23 follow-up: Command Center first-screen paths also stopped building
+full ActionObject payloads. `build_daily_command_center` now builds only
+connectors + tactical queue when no full daily base is provided, and
+`build_command_center_response` uses lightweight action stubs for first-screen
+ActionObject IDs. Command Center also uses one batched
+`list_metric_facts_by_connector` read instead of four separate metric fact
+reads. Live proof after stack restart: `/api/dashboard/command-center`
+cold/warm/warm/warm/warm `1.483985s/0.009951s/0.012386s/0.008260s/0.008596s`,
+down from the previous measured `2.54s` cold hit. Tradeoff: the first
+`/api/marketing/brief` after restart now pays the full ActionObject cost
+(`1.741512s`), which is acceptable because Marketing Brief needs full payloads.
+
 Latest skill eval proof: `wilq-ga4-analyst` now has the stricter validated
 ActionObject eval. The smoke script validates `act_review_ga4_tracking_quality`
 through `POST /api/actions/{action_id}/validate` and exposes

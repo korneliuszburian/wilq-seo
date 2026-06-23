@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center cold path action split, 2026-06-23 01:31 CEST.
+  `/api/dashboard/command-center` no longer builds full ActionObject payloads
+  through `list_actions()` on the first-screen path. `build_daily_command_center`
+  now builds only connectors + tactical queue when no full daily base is
+  provided, and `build_command_center_response` uses lightweight action stubs
+  for IDs needed by the first screen. The endpoint also uses one batched
+  `list_metric_facts_by_connector` read instead of four separate metric fact
+  reads. Live proof after stack restart: Command Center cold/warm/warm/warm/warm
+  `1.483985s/0.009951s/0.012386s/0.008260s/0.008596s`, down from the previous
+  measured `2.54s` cold hit. Tradeoff: first `/api/marketing/brief` after
+  restart now pays the full ActionObject payload cost (`1.741512s`) because it
+  genuinely needs the full action model. Focused proof: command-center daily
+  runtime/API tests OK, Python ruff OK and Python mypy OK.
 - Content strategist eval hardening, 2026-06-23 01:24 CEST.
   `wilq-content-strategist` smoke now validates
   `act_prepare_content_refresh_queue` through

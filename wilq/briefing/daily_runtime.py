@@ -115,7 +115,20 @@ def build_daily_command_center(
         cached_command = _read_daily_command_center_cache()
         if cached_command is not None:
             return cached_command
-    base = base if base is not None else build_daily_runtime_base(use_cache=use_cache)
+    if base is None:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            connectors_future = executor.submit(list_connector_statuses)
+            tactical_queue_future = executor.submit(build_tactical_queue)
+            connectors = connectors_future.result()
+            tactical_queue = tactical_queue_future.result()
+        command = build_command_center_response(
+            connectors=connectors,
+            tactical_queue=tactical_queue,
+            actions=None,
+        )
+        if use_cache:
+            _write_daily_command_center_cache(command)
+        return command
     command = build_command_center_response(
         connectors=base.connectors,
         tactical_queue=base.tactical_queue,

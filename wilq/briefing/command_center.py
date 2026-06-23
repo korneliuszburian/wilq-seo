@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Literal
 
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
+from wilq.actions.google_ads.campaign_review import CAMPAIGN_REVIEW_ACTION_ID
+from wilq.actions.google_ads.custom_segments import CUSTOM_SEGMENT_ACTION_ID
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
+from wilq.actions.google_ads.negative_keywords import NEGATIVE_KEYWORD_ACTION_ID
+from wilq.actions.google_ads.recommendations import RECOMMENDATION_REVIEW_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -14,8 +17,10 @@ from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
 from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
+    ActionMode,
     ActionObject,
     ActionRisk,
+    ActionStatus,
     CommandCenterActionPlanItem,
     CommandCenterBriefItem,
     CommandCenterResponse,
@@ -57,6 +62,7 @@ PRIMARY_DAILY_PLAN_IDS = {
     "plan_fix_ads_oauth_before_spend_analysis",
     "plan_ads_business_context_before_budget_decisions",
 }
+CONFIGURE_GOOGLE_ADS_ACTION_ID = "act_configure_google_ads_env"
 
 
 def build_command_center_response(
@@ -66,7 +72,7 @@ def build_command_center_response(
 ) -> CommandCenterResponse:
     connectors = connectors if connectors is not None else list_connector_statuses()
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
-    actions = actions if actions is not None else list_actions()
+    actions = actions if actions is not None else _command_center_action_stubs()
     operator_brief, primary_next_step, blocker_count = build_command_center_brief(
         tactical_queue=tactical_queue,
         actions=actions,
@@ -97,37 +103,109 @@ def _connector_summary(connectors: list[ConnectorStatus]) -> ConnectorSummary:
     )
 
 
+def _command_center_action_stubs() -> list[ActionObject]:
+    return [
+        _command_center_action_stub(
+            CONFIGURE_GOOGLE_ADS_ACTION_ID,
+            connector=GOOGLE_ADS_CONNECTOR_ID,
+            domain=OpportunityDomain.google_ads,
+        ),
+        _command_center_action_stub(
+            CAMPAIGN_REVIEW_ACTION_ID,
+            connector=GOOGLE_ADS_CONNECTOR_ID,
+            domain=OpportunityDomain.google_ads,
+        ),
+        _command_center_action_stub(
+            RECOMMENDATION_REVIEW_ACTION_ID,
+            connector=GOOGLE_ADS_CONNECTOR_ID,
+            domain=OpportunityDomain.google_ads,
+        ),
+        _command_center_action_stub(
+            CUSTOM_SEGMENT_ACTION_ID,
+            connector=GOOGLE_ADS_CONNECTOR_ID,
+            domain=OpportunityDomain.google_ads,
+        ),
+        _command_center_action_stub(
+            NEGATIVE_KEYWORD_ACTION_ID,
+            connector=GOOGLE_ADS_CONNECTOR_ID,
+            domain=OpportunityDomain.google_ads,
+        ),
+        _command_center_action_stub(
+            ADS_BUSINESS_CONTEXT_ACTION_ID,
+            connector=GOOGLE_ADS_CONNECTOR_ID,
+            domain=OpportunityDomain.google_ads,
+        ),
+        _command_center_action_stub(
+            "act_review_merchant_feed_issues",
+            connector=GOOGLE_MERCHANT_CONNECTOR_ID,
+            domain=OpportunityDomain.merchant,
+        ),
+        _command_center_action_stub(
+            "act_review_ga4_tracking_quality",
+            connector=GA4_CONNECTOR_ID,
+            domain=OpportunityDomain.ga4,
+        ),
+        _command_center_action_stub(
+            "act_prepare_content_refresh_queue",
+            connector="wordpress_ekologus",
+            domain=OpportunityDomain.content,
+        ),
+        _command_center_action_stub(
+            LOCALO_VISIBILITY_REVIEW_ACTION_ID,
+            connector="localo",
+            domain=OpportunityDomain.localo,
+        ),
+    ]
+
+
+def _command_center_action_stub(
+    action_id: str,
+    *,
+    connector: str,
+    domain: OpportunityDomain,
+) -> ActionObject:
+    return ActionObject(
+        id=action_id,
+        title=action_id,
+        domain=domain,
+        connector=connector,
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=[connector_evidence_id(connector)],
+        human_diagnosis="Command Center lightweight action reference.",
+        recommended_reason="Use dedicated route for full ActionObject payload.",
+        payload={},
+        validation_status="not_validated",
+        created_by="command_center_stub",
+    )
+
+
 def build_command_center_brief(
     tactical_queue: TacticalQueueResponse | None = None,
     actions: list[ActionObject] | None = None,
 ) -> tuple[list[CommandCenterBriefItem], str, int]:
     tactical_queue = tactical_queue if tactical_queue is not None else build_tactical_queue()
     actions = actions if actions is not None else list_actions()
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        ads_facts_future = executor.submit(
-            metric_store().list_metric_facts,
+    facts_by_connector = metric_store().list_metric_facts_by_connector(
+        [
             GOOGLE_ADS_CONNECTOR_ID,
-            GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT,
-        )
-        merchant_facts_future = executor.submit(
-            metric_store().list_metric_facts,
             GOOGLE_MERCHANT_CONNECTOR_ID,
-            MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
-        )
-        ga4_facts_future = executor.submit(
-            metric_store().list_metric_facts,
             GA4_CONNECTOR_ID,
-            GA4_COMMAND_CENTER_METRIC_FACT_LIMIT,
-        )
-        localo_facts_future = executor.submit(
-            metric_store().list_metric_facts,
             "localo",
-            120,
-        )
-        ads_facts = ads_facts_future.result()
-        merchant_facts = merchant_facts_future.result()
-        ga4_facts = ga4_facts_future.result()
-        localo_facts = localo_facts_future.result()
+        ],
+        limit_per_connector=MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
+    )
+    ads_facts = facts_by_connector.get(GOOGLE_ADS_CONNECTOR_ID, [])[
+        :GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT
+    ]
+    merchant_facts = facts_by_connector.get(GOOGLE_MERCHANT_CONNECTOR_ID, [])[
+        :MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT
+    ]
+    ga4_facts = facts_by_connector.get(GA4_CONNECTOR_ID, [])[
+        :GA4_COMMAND_CENTER_METRIC_FACT_LIMIT
+    ]
+    localo_facts = facts_by_connector.get("localo", [])[:120]
     localo = get_connector_status("localo")
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
@@ -255,15 +333,24 @@ def _ads_item_from_facts(
     budget_preview_count = _ads_distinct_dimension_count(facts, "budget_id")
     recommendation_count = _ads_recommendation_count(facts)
     review_term_count = _ads_review_search_term_count(facts)
-    action_ids = [
-        action_id
-        for action_id in _action_ids_for(actions, connector=GOOGLE_ADS_CONNECTOR_ID)
-        if action_id
-        not in {
-            ADS_BUSINESS_CONTEXT_ACTION_ID,
-            KEYWORD_PLANNER_ACCESS_ACTION_ID,
-        }
-    ]
+    ads_action_ids = _action_ids_for(actions, connector=GOOGLE_ADS_CONNECTOR_ID)
+    if live_data_available:
+        action_ids = [
+            action_id
+            for action_id in ads_action_ids
+            if action_id
+            not in {
+                ADS_BUSINESS_CONTEXT_ACTION_ID,
+                KEYWORD_PLANNER_ACCESS_ACTION_ID,
+                CONFIGURE_GOOGLE_ADS_ACTION_ID,
+            }
+        ]
+    else:
+        action_ids = [
+            action_id
+            for action_id in ads_action_ids
+            if action_id == CONFIGURE_GOOGLE_ADS_ACTION_ID
+        ]
     metric_tiles: dict[str, float | int | str] = {
         "kampanie": campaign_count,
         "zapytania": search_term_count,

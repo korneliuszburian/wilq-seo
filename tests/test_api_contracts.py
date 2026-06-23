@@ -2510,6 +2510,40 @@ def test_command_center_endpoint_uses_daily_runtime_cache(
     assert calls == {"command_center": 1}
 
 
+def test_daily_command_center_does_not_build_full_action_payloads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from wilq.briefing import daily_runtime
+
+    command = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        primary_next_step="Przejrzyj decyzje.",
+        connector_summary=ConnectorSummary(total=0, configured=0, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[],
+        codex_operator_status={},
+    )
+    tactical_queue = TacticalQueueResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        items=[],
+    )
+
+    def fail_list_actions() -> list[ActionObject]:
+        raise AssertionError("Command Center first-screen path must not build full actions")
+
+    monkeypatch.setattr(daily_runtime, "list_actions", fail_list_actions)
+    monkeypatch.setattr(daily_runtime, "list_connector_statuses", lambda: [])
+    monkeypatch.setattr(daily_runtime, "build_tactical_queue", lambda: tactical_queue)
+    monkeypatch.setattr(
+        daily_runtime,
+        "build_command_center_response",
+        lambda connectors=None, tactical_queue=None, actions=None: command,
+    )
+
+    assert daily_runtime.build_daily_command_center(use_cache=False) == command
+
+
 def test_marketing_brief_endpoint_uses_daily_runtime_cache(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -10507,7 +10541,16 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
 
     class EmptyMetricStore:
         def list_metric_facts(self, *_args: object) -> list[object]:
-            return []
+            raise AssertionError("Command Center must use batched metric fact reads")
+
+        def list_metric_facts_by_connector(
+            self,
+            connector_ids: list[str],
+            limit_per_connector: int = 100,
+        ) -> dict[str, list[object]]:
+            seen["metric_connector_ids"] = connector_ids
+            seen["metric_limit_per_connector"] = limit_per_connector
+            return {connector_id: [] for connector_id in connector_ids}
 
     monkeypatch.setattr(command_center, "metric_store", lambda: EmptyMetricStore())
     monkeypatch.setattr(command_center, "get_connector_status", lambda _connector_id: None)
@@ -10526,6 +10569,12 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
     assert seen["ga4_tactical_items"] == tactical_queue.items
     assert seen["ga4_actions"] == [action]
     assert seen["ga4_metric_facts"] == []
+    assert seen["metric_connector_ids"] == [
+        "google_ads",
+        "google_merchant_center",
+        "google_analytics_4",
+        "localo",
+    ]
 
 
 def test_codex_context_pack_full_context_keeps_diagnostic_surfaces(
