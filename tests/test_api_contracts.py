@@ -3742,6 +3742,13 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert "local ranking" not in review_decision["blocked_claims"]
     assert "GBP performance" in review_decision["blocked_claims"]
     assert "competitor visibility" in review_decision["blocked_claims"]
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["visibility_fact_count"] == 4
+    assert "agregaty widoczności" in operator_summary["summary"]
+    assert "Przejrzyj agregaty Localo" in operator_summary["next_step"]
+    assert "dopóki Localo read contract nie dostarczy visibility facts" not in (
+        operator_summary["next_step"]
+    )
     blocked_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
     assert blocked_decision["metric_tiles"]["braki kontraktu"] == 3
     section_by_id = {section["id"]: section for section in payload["sections"]}

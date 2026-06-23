@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 09:49 CEST.
+Last updated: 2026-06-23 10:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -251,6 +251,17 @@ Live proof after stack restart: `gap_status=ready`, `gap_fact_count=100`,
 `Połącz kontekst autorytetu z rekordami luk Ahrefs`. Focused proof:
 RED/GREEN Ahrefs gap-record diagnostics test passed with neighboring Ahrefs
 tests, Python ruff and mypy passed.
+
+2026-06-23 Localo operator-summary visibility-facts fix:
+`/api/localo/diagnostics.operator_summary` now distinguishes ready typed Localo
+aggregate facts from access-only proof. When visibility facts exist, the summary
+sends the marketer to review places, tracked phrases, average visibility and
+reviews, while GBP, competitor visibility and write actions stay blocked. Live
+proof after stack restart: `live_data_available=true`,
+`visibility_fact_count=17`, `blocker_count=1`, next step starts with
+`Przejrzyj agregaty Localo`. Focused proof: RED/GREEN Localo partial-visibility
+diagnostics test passed with access-ready/missing-access Localo tests, Python
+ruff and mypy passed.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

@@ -127,15 +127,8 @@ def _operator_summary(
     top_decisions = decisions[:4]
     return LocaloOperatorSummary(
         title="Co marketer ma wiedzieć o Localo",
-        summary=(
-            "Ten widok pokazuje, czy Localo może już wspierać decyzje lokalnego SEO. "
-            "Dostęp MCP nie jest jeszcze dowodem rankingów, GBP, konkurencji ani "
-            "recenzji, więc WILQ blokuje claimy bez typed visibility facts."
-        ),
-        next_step=(
-            "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań "
-            "SEO ani GBP, dopóki Localo read contract nie dostarczy visibility facts."
-        ),
+        summary=_operator_summary_text(visibility_fact_count),
+        next_step=_operator_summary_next_step(visibility_fact_count),
         top_decision_ids=[decision.id for decision in top_decisions],
         access_status=access_probe.status,
         visibility_fact_count=visibility_fact_count,
@@ -164,6 +157,33 @@ def _operator_summary(
         blocked_claims=_unique(
             claim for decision in top_decisions for claim in decision.blocked_claims
         ),
+    )
+
+
+def _operator_summary_text(visibility_fact_count: int) -> str:
+    if visibility_fact_count:
+        return (
+            "Localo dostarczył typed agregaty widoczności, miejsc, fraz i recenzji. "
+            "WILQ może użyć ich do lokalnego review, ale nadal blokuje GBP, "
+            "konkurencję, write path i claim o wzroście widoczności bez osobnych "
+            "kontraktów."
+        )
+    return (
+        "Ten widok pokazuje, czy Localo może już wspierać decyzje lokalnego SEO. "
+        "Dostęp MCP nie jest jeszcze dowodem rankingów, GBP, konkurencji ani "
+        "recenzji, więc WILQ blokuje claimy bez typed visibility facts."
+    )
+
+
+def _operator_summary_next_step(visibility_fact_count: int) -> str:
+    if visibility_fact_count:
+        return (
+            "Przejrzyj agregaty Localo: miejsca, frazy, średnią widoczność i "
+            "recenzje. Konkurencję, GBP i działania write zostaw zablokowane."
+        )
+    return (
+        "Użyj top decyzji jako statusu źródła. Nie proponuj lokalnych działań "
+        "SEO ani GBP, dopóki Localo read contract nie dostarczy visibility facts."
     )
 
 

@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo operator-summary visibility-facts fix, 2026-06-23.
+  `/api/localo/diagnostics.operator_summary` now distinguishes ready typed
+  Localo aggregate facts from access-only proof. When Localo has visibility
+  facts, the summary directs the marketer to review places, tracked phrases,
+  average visibility and reviews while keeping GBP, competitor visibility and
+  write actions blocked. Live proof after stack restart:
+  `live_data_available=true`, `visibility_fact_count=17`, `blocker_count=1`,
+  next step starts with `Przejrzyj agregaty Localo`. Focused proof: RED/GREEN
+  Localo partial-visibility diagnostics test plus access-ready/missing-access
+  Localo tests, Python ruff OK and mypy OK.
 - Ahrefs operator-summary copy fix, 2026-06-23.
   `/api/ahrefs/diagnostics.operator_summary.next_step` now reflects the ready
   gap-read state. When `gap_status=ready`, it tells the marketer to combine
