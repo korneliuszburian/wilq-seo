@@ -2308,6 +2308,17 @@ Aktualny maintenance:
     Merchant/Ahrefs facts. Focused proof passed through the GA4 route test,
     dashboard lint and dashboard typecheck.
 
+15. Ads Doctor lower-fold compaction, 2026-06-23 06:00 CEST.
+    `/ads-doctor` now keeps heavy diagnostic tables behind the
+    `Pokaż pełne tabele diagnostyczne` toggle. The default marketer view keeps
+    Ads snapshot, operator decisions, campaign triage, strategy readiness,
+    search-term review summary, review-only negative keyword candidates and
+    custom segment candidates, while shared budget, recommendation, campaign
+    rows and other technical drilldown tables do not render on entry. Ads
+    decision cards also stop showing raw knowledge card and expert rule IDs as
+    marketer-facing trace text. Focused proof passed: Ads Doctor route unit
+    test, dashboard lint and dashboard typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2344,7 +2355,9 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   remaining lower-fold Ads Doctor tables and payload preview folding.
+   remaining payload preview folding and route-level monolith extraction in
+   the dashboard, starting with the largest surfaces that still mix marketer
+   view-model rendering with technical registry drilldown.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

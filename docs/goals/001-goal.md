@@ -4906,3 +4906,22 @@ Latest GA4 proof compaction slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest Ads Doctor lower-fold compaction slice:
+
+- `/ads-doctor` now keeps heavy diagnostic tables behind the
+  `Pokaż pełne tabele diagnostyczne` toggle. The default marketer view keeps
+  Ads snapshot, operator decisions, campaign triage, strategy readiness,
+  search-term review summary, review-only negative keyword candidates and
+  custom segment candidates.
+- Shared budget tables, campaign rows, recommendation rows, impression share,
+  change history, keyword context and audience forecast drilldowns no longer
+  render on entry. This reduces default visual noise and avoids treating the
+  route as a registry dump.
+- Ads decision cards no longer show raw knowledge card IDs or expert rule IDs
+  as marketer-facing trace text. Those remain product lineage, not primary
+  operator copy.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`

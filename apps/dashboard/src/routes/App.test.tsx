@@ -5884,23 +5884,21 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText("koszt").length).toBeGreaterThan(0);
     expect(screen.getAllByText("164.6").length).toBeGreaterThan(0);
     expect(screen.getAllByText("podgląd wpływu").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Koszt 7 dni").length).toBeGreaterThan(0);
-    expect(screen.getByText("7-dniowy budżet")).toBeInTheDocument();
+    expect(screen.queryByText("Koszt 7 dni")).not.toBeInTheDocument();
+    expect(screen.queryByText("7-dniowy budżet")).not.toBeInTheDocument();
     expect(screen.getAllByText("78,38%").length).toBeGreaterThan(0);
     expect(
       screen.getAllByRole("heading", { name: "Kolejność review kampanii" }).length
     ).toBeGreaterThan(0);
-    expect(
-      screen.getByRole("heading", { name: "Podział wspólnych budżetów" })
-    ).toBeInTheDocument();
-    expect(screen.getAllByText("Ekologus Generic Search").length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/72,91%/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("CAMPAIGN_BUDGET").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "Podział wspólnych budżetów" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Ekologus Generic Search")).not.toBeInTheDocument();
+    expect(screen.queryByText(/72,91%/)).not.toBeInTheDocument();
+    expect(screen.queryByText("CAMPAIGN_BUDGET")).not.toBeInTheDocument();
     expect(screen.getAllByText(/automatyczne przyjęcie rekomendacji/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Karty wiedzy:/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/card_google_ads_budget_review_playbook/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Reguły:/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/ads_scaling_candidates_v1/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Karty wiedzy:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/card_google_ads_budget_review_playbook/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Reguły:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/ads_scaling_candidates_v1/)).not.toBeInTheDocument();
     expect(screen.getByText(/wartość_konwersji=120/)).toBeInTheDocument();
     expect(screen.getAllByText(/Brakujące kontrakty/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Wymagany review/).length).toBeGreaterThan(0);
@@ -5912,6 +5910,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/target KPI verdict/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Source terms:.*bdo rejestracja/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/90-dniowa kontrola bezpieczeństwa/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Pokaż pełne tabele diagnostyczne" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Podział wspólnych budżetów" })).not.toBeInTheDocument();
     expect(screen.queryByText("Odnow Google Ads OAuth refresh token")).not.toBeInTheDocument();
     expect(screen.queryByText(/wasted spend/)).not.toBeInTheDocument();
     expect(screen.queryByText("Read contract Ads")).not.toBeInTheDocument();

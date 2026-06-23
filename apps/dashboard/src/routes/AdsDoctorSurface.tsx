@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { AdsDiagnosticsResponse, getActions, getAdsDiagnostics } from "../lib/api";
@@ -468,12 +469,6 @@ function AdsDecisionCard({
         <LinkedTraceLine label="Dowody" values={decision.evidence_ids.slice(0, 4)} kind="evidence" />
         <TraceLine label="Źródła" values={decision.source_connectors} />
         <LinkedTraceLine label="ActionObjecty" values={decision.action_ids} kind="actions" />
-        {decision.knowledge_card_ids.length > 0 ? (
-          <TraceLine label="Karty wiedzy" values={decision.knowledge_card_ids} />
-        ) : null}
-        {decision.expert_rule_ids.length > 0 ? (
-          <TraceLine label="Reguły" values={decision.expert_rule_ids} />
-        ) : null}
         {decision.operator_review_gates.length > 0 ? (
           <TraceLine
             label="Wymagany review"
@@ -493,6 +488,7 @@ function AdsMetricEvidencePanel({
   data: AdsDiagnosticsResponse;
   currencyCode?: string;
 }) {
+  const [showDiagnosticTables, setShowDiagnosticTables] = useState(false);
   const campaignRows = data.campaign_read_contract.campaign_rows;
   const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
   const budgetRows = data.budget_pacing_read_contract.budget_rows;
@@ -609,19 +605,6 @@ function AdsMetricEvidencePanel({
           contract={campaignTriage}
           currencyCode={currencyCode}
         />
-        <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
-        <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
-        <AdsBudgetPacingRowsTable rows={budgetRows} currencyCode={currencyCode} />
-        <AdsSharedBudgetDistributionPanel
-          rows={sharedBudgetRows}
-          currencyCode={currencyCode}
-        />
-        <AdsRecommendationRowsPanel
-          rows={recommendationRows}
-          currencyCode={currencyCode}
-        />
-        <AdsImpressionShareRowsTable rows={impressionShareRows} />
-        <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
         <AdsChangeImpactReadinessPanel
           contract={data.change_impact_readiness_contract}
           currencyCode={currencyCode}
@@ -630,23 +613,53 @@ function AdsMetricEvidencePanel({
           contract={searchTermReview}
           currencyCode={currencyCode}
         />
-        <AdsSearchTermRowsTable rows={searchTermRows} currencyCode={currencyCode} />
-        <AdsSearchTermNgramRowsTable
-          rows={searchTermNgramRows}
-          currencyCode={currencyCode}
-        />
-        <AdsSearchTermSafetyRowsTable
-          rows={searchTermSafetyRows}
-          currencyCode={currencyCode}
-        />
-        <AdsKeywordMatchContextRowsTable rows={keywordContextRows} />
         <AdsNegativeKeywordCandidatesPanel
           candidates={negativeKeywordCandidates}
           currencyCode={currencyCode}
         />
         <AdsCustomSegmentCandidatesPanel candidates={customSegmentCandidates} />
-        <AdsCustomSegmentAudienceForecastPanel rows={customSegmentForecastRows} />
       </div>
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => setShowDiagnosticTables((current) => !current)}
+          className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-ink hover:bg-slate-50"
+        >
+          {showDiagnosticTables
+            ? "Ukryj pełne tabele diagnostyczne"
+            : "Pokaż pełne tabele diagnostyczne"}
+        </button>
+      </div>
+
+      {showDiagnosticTables ? (
+        <div className="mt-4 grid gap-4">
+          <AdsCampaignRowsTable rows={campaignRows} currencyCode={currencyCode} />
+          <AdsDerivedKpiRowsTable rows={derivedKpiRows} currencyCode={currencyCode} />
+          <AdsBudgetPacingRowsTable rows={budgetRows} currencyCode={currencyCode} />
+          <AdsSharedBudgetDistributionPanel
+            rows={sharedBudgetRows}
+            currencyCode={currencyCode}
+          />
+          <AdsRecommendationRowsPanel
+            rows={recommendationRows}
+            currencyCode={currencyCode}
+          />
+          <AdsImpressionShareRowsTable rows={impressionShareRows} />
+          <AdsChangeHistoryRowsTable rows={changeHistoryRows} />
+          <AdsSearchTermRowsTable rows={searchTermRows} currencyCode={currencyCode} />
+          <AdsSearchTermNgramRowsTable
+            rows={searchTermNgramRows}
+            currencyCode={currencyCode}
+          />
+          <AdsSearchTermSafetyRowsTable
+            rows={searchTermSafetyRows}
+            currencyCode={currencyCode}
+          />
+          <AdsKeywordMatchContextRowsTable rows={keywordContextRows} />
+          <AdsCustomSegmentAudienceForecastPanel rows={customSegmentForecastRows} />
+        </div>
+      ) : null}
 
       <div className="mt-3 grid gap-2 text-xs text-slate-600 md:grid-cols-2">
         <TraceLine label="Brakujące kontrakty" values={missingReadContracts} />
