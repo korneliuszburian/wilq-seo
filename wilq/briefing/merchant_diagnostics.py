@@ -495,8 +495,8 @@ def _merchant_decision_queue(
         ]
 
     decisions = [
-        _merchant_decision_from_cluster(cluster, facts, action_ids)
-        for cluster in issue_clusters[:8]
+        _merchant_decision_from_cluster_group(cluster_group, facts, action_ids)
+        for cluster_group in _merchant_decision_cluster_groups(issue_clusters)[:8]
     ]
     if decisions:
         return decisions
@@ -514,6 +514,104 @@ def _merchant_decision_queue(
         action_ids,
     )
     return [aggregate_decision] if aggregate_decision is not None else []
+
+
+def _merchant_decision_cluster_groups(
+    issue_clusters: list[MerchantIssueCluster],
+) -> list[list[MerchantIssueCluster]]:
+    grouped: dict[tuple[str, str | None, str | None, str, str | None], list[MerchantIssueCluster]]
+    grouped = {}
+    for cluster in issue_clusters:
+        key = (
+            cluster.issue_type,
+            cluster.affected_attribute,
+            cluster.country,
+            cluster.severity,
+            cluster.resolution,
+        )
+        grouped.setdefault(key, []).append(cluster)
+    return list(grouped.values())
+
+
+def _merchant_decision_from_cluster_group(
+    clusters: list[MerchantIssueCluster],
+    facts: list[MetricFact],
+    action_ids: list[str],
+) -> MerchantDecisionItem:
+    if len(clusters) == 1:
+        return _merchant_decision_from_cluster(clusters[0], facts, action_ids)
+
+    primary_cluster = clusters[0]
+    attribute = primary_cluster.affected_attribute or "atrybut nieznany"
+    issue_type = primary_cluster.issue_type or "unknown_issue"
+    display_issue_type = _merchant_display_label(issue_type)
+    display_attribute = _merchant_display_label(attribute)
+    context_labels = [
+        cluster.reporting_context or "ALL_CONTEXTS"
+        for cluster in sorted(clusters, key=lambda cluster: cluster.reporting_context or "")
+    ]
+    max_reported_count = max(cluster.product_count for cluster in clusters)
+    reported_occurrences = sum(cluster.product_count for cluster in clusters)
+    group_facts = _facts_for_cluster_group(facts, clusters)
+    return MerchantDecisionItem(
+        id=(
+            f"merchant_decision_{_stable_slug(primary_cluster.country or 'global')}_"
+            f"{_stable_slug(primary_cluster.severity)}_{_stable_slug(issue_type)}_"
+            f"{_stable_slug(attribute)}_"
+            f"{_stable_slug(primary_cluster.resolution or 'resolution_unknown')}"
+        ),
+        decision_type="review_issue_cluster",
+        status="ready",
+        title=f"Merchant: sprawdź {display_issue_type} / {display_attribute}",
+        summary=(
+            f"Ten sam problem Merchant występuje w {len(clusters)} raportach: "
+            f"{', '.join(context_labels)}. Największy raport pokazuje "
+            f"{max_reported_count} zgłoszeń, a suma wystąpień raportowych to "
+            f"{reported_occurrences}."
+        ),
+        cluster_id=primary_cluster.id,
+        issue_type=issue_type,
+        severity=primary_cluster.severity,
+        resolution=primary_cluster.resolution,
+        affected_attribute=primary_cluster.affected_attribute,
+        country=primary_cluster.country,
+        reporting_context=None,
+        product_count=max_reported_count,
+        issue_count=reported_occurrences,
+        priority=_merchant_issue_priority(
+            primary_cluster.severity,
+            primary_cluster.resolution,
+            max_reported_count,
+        ),
+        metric_tiles={
+            "max zgłoszeń": max_reported_count,
+            "raporty razem": reported_occurrences,
+            "konteksty": len(clusters),
+        },
+        source_connectors=_unique(
+            connector for cluster in clusters for connector in cluster.source_connectors
+        ),
+        evidence_ids=_unique(
+            evidence_id for cluster in clusters for evidence_id in cluster.evidence_ids
+        ),
+        metric_facts=group_facts[:6],
+        action_ids=action_ids
+        or _unique(cluster.action_id for cluster in clusters if cluster.action_id),
+        blocked_claims=_unique(
+            claim for cluster in clusters for claim in cluster.blocked_claims
+        ),
+        rationale=(
+            "To jest jedna decyzja operatorska, bo typ problemu, atrybut, kraj, "
+            "severity i resolution są takie same. Konteksty raportowania są detalem "
+            "triage. Suma raportów nie jest liczbą unikalnych produktów ani gotową "
+            "zmianą feedu."
+        ),
+        next_step=(
+            "Przejrzyj problem przez ActionObject review, sprawdź konteksty "
+            "raportowania i przygotuj payload preview bez automatycznej zmiany feedu."
+        ),
+        risk=max((cluster.risk for cluster in clusters), key=_action_risk_rank),
+    )
 
 
 def _merchant_decision_from_cluster(
@@ -701,6 +799,26 @@ def _facts_for_cluster(
         and (fact.dimensions.get("reporting_context") or None)
         == cluster.reporting_context
     ]
+
+
+def _facts_for_cluster_group(
+    facts: list[MetricFact],
+    clusters: list[MerchantIssueCluster],
+) -> list[MetricFact]:
+    return [
+        fact
+        for cluster in clusters
+        for fact in _facts_for_cluster(facts, cluster)
+    ]
+
+
+def _action_risk_rank(risk: ActionRisk) -> int:
+    return {
+        ActionRisk.low: 0,
+        ActionRisk.medium: 1,
+        ActionRisk.high: 2,
+        ActionRisk.critical: 3,
+    }[risk]
 
 
 def _merchant_display_label(value: str) -> str:

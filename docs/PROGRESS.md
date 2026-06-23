@@ -2656,6 +2656,16 @@ Aktualny maintenance:
     Focused proof passed: actions route unit test, dashboard lint and dashboard
     typecheck.
 
+17. Merchant decision grouping, 2026-06-23 11:25 CEST.
+    `/api/merchant/diagnostics` now groups the same Merchant issue across
+    reporting contexts into one operator decision. Detailed issue clusters stay
+    available for ActionObject payload preview, but the marketer decision queue
+    no longer shows `ALL_CONTEXTS`, `FREE_LISTINGS` and `SHOPPING_ADS` as
+    separate duplicate decisions for the same issue/attribute/country/severity.
+    Live Ekologus proof after stack restart: Merchant decisions dropped from 8
+    to 4 while 11 detailed clusters remain for traceability. Focused proof
+    passed: RED/GREEN Merchant API contract tests, Python ruff OK and mypy OK.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2692,9 +2702,8 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   route-level monolith extraction in the dashboard, starting with the largest
-   surfaces that still mix marketer view-model rendering with technical
-   registry drilldown.
+   remaining route-specific wording/compaction issues, then the largest route
+   modules that still mix marketer view-model rendering with technical drilldown.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

@@ -8915,6 +8915,87 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "adc.json" not in serialized
 
 
+def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decision(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "merchant_context_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "merchant_context_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    adc_json = tmp_path / "adc.json"
+    adc_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(adc_json))
+    monkeypatch.setenv("GOOGLE_MERCHANT_CENTER_ACCOUNT_ID", "5519957373")
+    issue_dimensions = {
+        "issue_type": "missing_potentially_required_attribute",
+        "affected_attribute": "n:unit_pricing_measure",
+        "country": "PL",
+        "severity": "NOT_IMPACTED",
+        "resolution": "MERCHANT_ACTION",
+    }
+    monkeypatch.setattr(
+        "wilq.connectors.refresh.refresh_merchant_product_status_summary",
+        lambda request: VendorReadResult(
+            status=ConnectorRefreshStatus.completed,
+            summary="Merchant Center vendor read completed through test adapter.",
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={
+                "total_products": 10900,
+                "item_level_issue_count": 15,
+                "merchant_action_issue_count": 15,
+            },
+            metric_facts=[
+                VendorMetricFact(
+                    "issue_product_count",
+                    892,
+                    {**issue_dimensions, "reporting_context": "ALL_CONTEXTS"},
+                ),
+                VendorMetricFact(
+                    "issue_product_count",
+                    446,
+                    {**issue_dimensions, "reporting_context": "FREE_LISTINGS"},
+                ),
+                VendorMetricFact(
+                    "issue_product_count",
+                    446,
+                    {**issue_dimensions, "reporting_context": "SHOPPING_ADS"},
+                ),
+            ],
+        ),
+    )
+
+    refresh_response = client.post(
+        "/api/connectors/google_merchant_center/refresh",
+        json={"mode": "vendor_read", "reason": "merchant reporting context grouping test"},
+    )
+    assert refresh_response.status_code == 200
+
+    response = client.get("/api/merchant/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    issue_decisions = [
+        decision
+        for decision in payload["decision_queue"]
+        if decision["issue_type"] == "missing_potentially_required_attribute"
+        and decision["affected_attribute"] == "n:unit_pricing_measure"
+    ]
+    assert len(issue_decisions) == 1
+    decision = issue_decisions[0]
+    assert decision["reporting_context"] is None
+    assert decision["metric_tiles"] == {
+        "max zgłoszeń": 892,
+        "raporty razem": 1784,
+        "konteksty": 3,
+    }
+    assert "ALL_CONTEXTS, FREE_LISTINGS, SHOPPING_ADS" in decision["summary"]
+    assert "nie jest liczbą unikalnych produktów" in decision["rationale"]
+    assert len(decision["metric_facts"]) == 3
+    assert len(payload["issue_clusters"]) == 3
+
+
 def test_content_diagnostics_exposes_query_page_inventory_queue(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

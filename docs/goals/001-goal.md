@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 11:03 CEST.
+Last updated: 2026-06-23 11:25 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -150,6 +150,13 @@ for raw traceability. Browser proof with agent-browser on
 proof/validation sections. Focused proof: RED/GREEN Merchant API contract test,
 RED/GREEN Merchant route test, Python ruff/mypy OK, dashboard lint OK and
 dashboard typecheck OK.
+
+2026-06-23 Merchant decision grouping: `/api/merchant/diagnostics` groups the
+same feed issue across reporting contexts into one operator decision while
+preserving detailed clusters for ActionObject payload preview. Live Ekologus
+proof after stack restart: Merchant decision queue is 4 grouped decisions while
+11 detailed issue clusters remain. Focused proof: RED/GREEN Merchant API
+contract tests, Python ruff OK and mypy OK.
 
 2026-06-23 GA4 first-flow cleanup: `/ga4` no longer prints raw `ev_*`
 evidence IDs or raw `act_review_ga4_tracking_quality` in first-flow GA4
