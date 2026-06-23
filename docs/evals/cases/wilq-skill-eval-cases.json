@@ -121,7 +121,18 @@
     "surface_path": "/seo-gsc",
     "task_pl": "Na podstawie dostępnego GSC evidence wskaż jedną bezpieczną diagnozę SEO/content i co marketer ma zrobić dalej.",
     "expected_connectors": ["google_search_console", "wordpress_ekologus", "wordpress_sklep"],
-    "expected_terms_pl": ["SEO / GSC", "GSC", "treści", "content_diagnostics", "query/page"],
+    "expected_terms_pl": [
+      "SEO / GSC",
+      "GSC",
+      "treści",
+      "content_diagnostics",
+      "query/page",
+      "decision_queue",
+      "merge_create_after_inventory_check",
+      "inventory_check_before_create",
+      "gsc_content_doctor_context"
+    ],
+    "forbidden_connectors": ["ahrefs"],
     "expected_action_ids": ["act_prepare_content_refresh_queue"],
     "expected_validated_action_ids": ["act_prepare_content_refresh_queue"]
   },

@@ -4479,3 +4479,46 @@ Product finding:
   WILQ still blocks feed writes, approval restoration, revenue recovery,
   unique-product-count claims and any apply path without a separate validated
   ActionObject, payload preview and audit event.
+
+## 2026-06-23 - wilq-gsc-content-doctor scoped context-pack eval
+
+Purpose:
+
+- Prove that the GSC Content Doctor skill uses only GSC/WordPress content
+  evidence and does not inherit Ahrefs gap decisions from the broader
+  `/api/content/diagnostics` Content Planner surface.
+- Harden the eval harness so a route-specific skill can forbid out-of-scope
+  connectors in top-level and recommendation `source_connectors`.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T150248Z/wilq-gsc-content-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `source_connectors=["google_search_console","wordpress_ekologus","wordpress_sklep"]`
+- Evidence includes GSC and WordPress IDs, no Ahrefs IDs.
+- `action_candidates` contains validated
+  `act_prepare_content_refresh_queue`.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- Full `/api/content/diagnostics` may still include Ahrefs decisions for the
+  broader Content Planner and `wilq-content-strategist`. The skill-scoped
+  context-pack for `wilq-gsc-content-doctor` must stay narrower:
+  GSC/WordPress `decision_queue`, no Ahrefs decisions, no Ahrefs evidence IDs,
+  and `context_pack_compaction.purpose=gsc_content_doctor_context`.

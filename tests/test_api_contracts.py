@@ -9734,7 +9734,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
 
     context_response = client.post(
         "/api/codex/context-pack",
-        json={"skill": "wilq-gsc-content-doctor"},
+        json={"skill": "wilq-content-strategist"},
     )
     assert context_response.status_code == 200
     context_payload = context_response.json()
@@ -9771,6 +9771,21 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_ahrefs_decision["ahrefs_candidate_rows"] == ahrefs_decision[
         "ahrefs_candidate_rows"
     ]
+
+    gsc_context_response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-gsc-content-doctor"},
+    )
+    assert gsc_context_response.status_code == 200
+    gsc_context_payload = gsc_context_response.json()
+    assert all(
+        decision["decision_type"] != "review_ahrefs_gap_records"
+        for decision in gsc_context_payload["content_diagnostics"]["decision_queue"]
+    )
+    assert all(
+        "_ahrefs" not in str(evidence_id)
+        for evidence_id in gsc_context_payload["content_diagnostics"]["evidence_ids"]
+    )
     serialized = json.dumps(payload)
     assert "google_adc.json" not in serialized
     assert "app-password" not in serialized
@@ -11891,6 +11906,43 @@ def test_codex_context_pack_scopes_content_strategist_payload() -> None:
         "sections_total": 3,
         "full_endpoint": "/api/content/diagnostics",
     }
+
+
+def test_codex_context_pack_scopes_gsc_content_doctor_without_ahrefs_decisions() -> None:
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-gsc-content-doctor"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["context_scope"]["mode"] == "skill"
+    assert data["context_scope"]["skill"] == "wilq-gsc-content-doctor"
+    assert "content_diagnostics" in data
+    assert "ahrefs_diagnostics" not in data
+    content = data["content_diagnostics"]
+    assert content["language"] == "pl-PL"
+    assert "sections" not in content
+    assert content["decision_queue"]
+    assert all(
+        decision["decision_type"] != "review_ahrefs_gap_records"
+        for decision in content["decision_queue"]
+    )
+    assert all(
+        "ahrefs" not in decision.get("source_connectors", [])
+        for decision in content["decision_queue"]
+    )
+    assert "ahrefs" not in {
+        connector
+        for decision in content["decision_queue"]
+        for connector in decision.get("source_connectors", [])
+    }
+    assert all(
+        "_ahrefs" not in str(evidence_id)
+        for evidence_id in content["evidence_ids"]
+    )
+    assert content["context_pack_compaction"]["purpose"] == "gsc_content_doctor_context"
+    assert content["context_pack_compaction"]["ahrefs_decisions_removed"] is True
 
 
 def test_codex_context_pack_scopes_merchant_payload_preview(

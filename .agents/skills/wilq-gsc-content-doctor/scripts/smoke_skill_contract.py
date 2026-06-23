@@ -63,14 +63,32 @@ def main() -> int:
     if not isinstance(decision_queue, list):
         raise SystemExit("Content diagnostics must expose decision_queue")
     packed_content = pack.get("content_diagnostics", {})
-    if packed_content.get("evidence_ids") != content_diagnostics.get("evidence_ids"):
-        raise SystemExit("Context pack content_diagnostics evidence IDs differ from endpoint")
+    packed_evidence_ids = packed_content.get("evidence_ids") or []
+    endpoint_evidence_ids = content_diagnostics.get("evidence_ids") or []
+    if not set(packed_evidence_ids).issubset(set(endpoint_evidence_ids)):
+        raise SystemExit("Context pack content_diagnostics evidence IDs are not endpoint subset")
+    if any("_ahrefs" in str(evidence_id) for evidence_id in packed_evidence_ids):
+        raise SystemExit("GSC context pack must not include Ahrefs evidence IDs")
     if packed_content.get("action_ids") != content_diagnostics.get("action_ids"):
         raise SystemExit("Context pack content_diagnostics action IDs differ from endpoint")
-    if _decision_trace(packed_content.get("decision_queue")) != _decision_trace(
-        content_diagnostics.get("decision_queue")
+    packed_decision_trace = _decision_trace(packed_content.get("decision_queue"))
+    endpoint_decision_trace = _decision_trace(content_diagnostics.get("decision_queue"))
+    if not packed_decision_trace:
+        raise SystemExit("GSC context pack must expose scoped content decisions")
+    endpoint_decision_ids = {str(item.get("id")) for item in endpoint_decision_trace}
+    if any(str(item.get("id")) not in endpoint_decision_ids for item in packed_decision_trace):
+        raise SystemExit("GSC context pack decision_queue must be endpoint subset")
+    if any(
+        item.get("decision_type") == "review_ahrefs_gap_records"
+        or "ahrefs" in item.get("source_connectors", [])
+        for item in packed_decision_trace
     ):
-        raise SystemExit("Context pack content_diagnostics decision_queue differs from endpoint")
+        raise SystemExit("GSC context pack must not include Ahrefs decisions")
+    compaction = packed_content.get("context_pack_compaction") or {}
+    if compaction.get("purpose") != "gsc_content_doctor_context":
+        raise SystemExit("GSC context pack compaction purpose is missing")
+    if compaction.get("ahrefs_decisions_removed") is not True:
+        raise SystemExit("GSC context pack must mark removed Ahrefs decisions")
 
     gsc_metric_facts = request_json(
         args.api_base,
@@ -201,6 +219,26 @@ def main() -> int:
                         }
                         for item in decision_queue[:5]
                     ],
+                    "context_pack_decision_count": len(packed_decision_trace),
+                    "context_pack_decision_types": sorted(
+                        str(item.get("decision_type"))
+                        for item in packed_decision_trace
+                        if item.get("decision_type")
+                    ),
+                    "context_pack_top_decisions": [
+                        {
+                            "id": item.get("id"),
+                            "decision_type": item.get("decision_type"),
+                            "page": item.get("page"),
+                            "queries": item.get("queries", [])[:4],
+                            "source_connectors": item.get("source_connectors", []),
+                        }
+                        for item in packed_decision_trace[:5]
+                    ],
+                    "context_pack_has_ahrefs_evidence": any(
+                        "_ahrefs" in str(evidence_id)
+                        for evidence_id in packed_evidence_ids
+                    ),
                     "gsc_query_page_metric_fact_count": gsc_query_page_fact_count,
                     "blocker_count": content_diagnostics.get("blocker_count"),
                     "section_ids": [

@@ -81,9 +81,20 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         },
         "wilq-gsc-content-doctor": {
             "surface_path": "/seo-gsc",
-            "terms": {"SEO / GSC", "GSC", "treści", "content_diagnostics", "query/page"},
+            "terms": {
+                "SEO / GSC",
+                "GSC",
+                "treści",
+                "content_diagnostics",
+                "query/page",
+                "decision_queue",
+                "merge_create_after_inventory_check",
+                "inventory_check_before_create",
+                "gsc_content_doctor_context",
+            },
             "action_ids": {"act_prepare_content_refresh_queue"},
             "validated_action_ids": {"act_prepare_content_refresh_queue"},
+            "forbidden_connectors": {"ahrefs"},
         },
         "wilq-ahrefs-gap-finder": {
             "surface_path": "/ahrefs",
@@ -215,6 +226,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         assert expected_action_ids.issuperset(contract["action_ids"])
         assert expected_validated_action_ids.issuperset(
             contract.get("validated_action_ids", set())
+        )
+        assert set(case.get("forbidden_connectors", [])).issuperset(
+            contract.get("forbidden_connectors", set())
         )
         assert case["expected_connectors"]
 

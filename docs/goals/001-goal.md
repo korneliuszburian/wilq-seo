@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 16:50 CEST.
+Last updated: 2026-06-23 17:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -215,6 +215,23 @@ with `pl-PL`, `api_used=true`, evidence count `3`,
 validated `act_review_merchant_feed_issues`. The smoke script now exposes the
 context-pack ActionObject state (`needs_validation/not_validated`) next to
 current endpoint validation (`valid=true/status=valid`).
+
+Completed at 2026-06-23 17:04 CEST:
+`wilq-gsc-content-doctor` scope leak fixed and verified. Full
+`/api/content/diagnostics` can still expose Ahrefs decisions for the broader
+Content Planner and `wilq-content-strategist`, but
+`POST /api/codex/context-pack {"skill":"wilq-gsc-content-doctor"}` now returns
+only the GSC/WordPress content decision subset. Guardrails:
+`context_pack_compaction.purpose=gsc_content_doctor_context`,
+`ahrefs_decisions_removed=true`, smoke asserts no Ahrefs decisions/evidence,
+and `scripts/codex_skill_eval.sh` supports `forbidden_connectors` so the GSC
+eval fails if `ahrefs` appears in top-level or recommendation
+`source_connectors`. Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260623T150248Z/wilq-gsc-content-doctor/result.json`
+with `pl-PL`, `api_used=true`, source connectors
+`google_search_console`, `wordpress_ekologus`, `wordpress_sklep`,
+`operator_usefulness_score=5`, no safety findings and validated
+`act_prepare_content_refresh_queue`.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

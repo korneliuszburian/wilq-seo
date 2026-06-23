@@ -125,6 +125,7 @@ expected_blocked = case.get("expected_blocked")
 expected_no_action_ids = case.get("expected_no_action_ids", False)
 blocked_claim_terms = case.get("blocked_claim_terms", [])
 forbidden_action_ids = case.get("forbidden_action_ids", [])
+forbidden_connectors = case.get("forbidden_connectors", [])
 is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
@@ -194,6 +195,13 @@ forbidden_actions_instruction = (
     if forbidden_action_ids
     else ""
 )
+forbidden_connectors_instruction = (
+    "\n<forbidden_connectors>\nTe connector IDs są poza zakresem workflow i nie mogą trafić "
+    f"do top-level ani recommendation `source_connectors`: {', '.join(forbidden_connectors)}.\n"
+    "</forbidden_connectors>\n"
+    if forbidden_connectors
+    else ""
+)
 print(f"""<task>
 Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
 Zadanie: {case["task_pl"]}
@@ -206,6 +214,7 @@ Zadanie: {case["task_pl"]}
 {expected_blocker_instruction}
 {expected_no_actions_instruction}
 {forbidden_actions_instruction}
+{forbidden_connectors_instruction}
 
 <api>
 WILQ API base: {api_base}
@@ -372,6 +381,14 @@ result_connector_text = " ".join(
 for connector in case.get("required_source_connectors", case.get("expected_connectors", [])):
     if connector not in result_connector_text:
         errors.append(f"expected connector missing from source connectors: {connector}")
+for connector in case.get("forbidden_connectors", []):
+    if connector in data.get("source_connectors", []):
+        errors.append(f"forbidden connector present in top-level source_connectors: {connector}")
+    for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
+        if connector in recommendation.get("source_connectors", []):
+            errors.append(
+                f"forbidden connector present in recommendation {idx} source_connectors: {connector}"
+            )
 
 for idx, recommendation in enumerate(data.get("recommendations", []), start=1):
     if not recommendation.get("blocked_reason"):

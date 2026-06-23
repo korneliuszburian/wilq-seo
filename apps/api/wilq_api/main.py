@@ -876,9 +876,15 @@ def _actions_for_skill_scope(skill: str, actions: list[ActionObject]) -> list[Ac
 
 
 def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
-    if skill in {"wilq-content-strategist", "wilq-gsc-content-doctor"}:
+    if skill == "wilq-content-strategist":
         return {
             "content_diagnostics": _compact_content_diagnostics_for_context(
+                build_content_diagnostics().model_dump(mode="json")
+            )
+        }
+    if skill == "wilq-gsc-content-doctor":
+        return {
+            "content_diagnostics": _compact_gsc_content_diagnostics_for_context(
                 build_content_diagnostics().model_dump(mode="json")
             )
         }
@@ -1239,6 +1245,57 @@ def _compact_content_diagnostics_for_context(
         "full_endpoint": "/api/content/diagnostics",
     }
     return compact
+
+
+def _compact_gsc_content_diagnostics_for_context(
+    content_diagnostics: dict[str, Any],
+) -> dict[str, Any]:
+    compact = _compact_content_diagnostics_for_context(content_diagnostics)
+    decision_queue = compact.get("decision_queue")
+    if isinstance(decision_queue, list):
+        compact["decision_queue"] = [
+            decision
+            for decision in decision_queue
+            if isinstance(decision, dict)
+            and decision.get("decision_type") != "review_ahrefs_gap_records"
+            and "ahrefs" not in decision.get("source_connectors", [])
+        ]
+    compact["evidence_ids"] = [
+        evidence_id
+        for evidence_id in compact.get("evidence_ids", [])
+        if isinstance(evidence_id, str) and not _is_ahrefs_evidence_id(evidence_id)
+    ]
+    operator_summary = compact.get("operator_summary")
+    if isinstance(operator_summary, dict):
+        top_decision_ids = {
+            str(decision.get("id"))
+            for decision in compact.get("decision_queue", [])
+            if isinstance(decision, dict) and decision.get("id")
+        }
+        operator_summary["top_decision_ids"] = [
+            decision_id
+            for decision_id in operator_summary.get("top_decision_ids", [])
+            if decision_id in top_decision_ids
+        ]
+        operator_summary["source_connectors"] = [
+            connector
+            for connector in operator_summary.get("source_connectors", [])
+            if connector != "ahrefs"
+        ]
+        operator_summary["evidence_ids"] = [
+            evidence_id
+            for evidence_id in operator_summary.get("evidence_ids", [])
+            if isinstance(evidence_id, str) and not _is_ahrefs_evidence_id(evidence_id)
+        ]
+    compaction = compact.get("context_pack_compaction")
+    if isinstance(compaction, dict):
+        compaction["purpose"] = "gsc_content_doctor_context"
+        compaction["ahrefs_decisions_removed"] = True
+    return compact
+
+
+def _is_ahrefs_evidence_id(evidence_id: str) -> bool:
+    return "_ahrefs" in evidence_id
 
 
 def _compact_ga4_diagnostics_for_context(
