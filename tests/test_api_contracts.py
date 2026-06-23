@@ -8950,6 +8950,27 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "act_configure_google_ads_env" not in brief_action_ids
 
 
+def test_ads_diagnostics_summary_view_compacts_heavy_payload() -> None:
+    full_response = client.get("/api/ads/diagnostics")
+    summary_response = client.get("/api/ads/diagnostics?view=summary")
+
+    assert full_response.status_code == 200
+    assert summary_response.status_code == 200
+    full_payload = full_response.json()
+    summary_payload = summary_response.json()
+    full_bytes = len(json.dumps(full_payload, ensure_ascii=False).encode())
+    summary_bytes = len(json.dumps(summary_payload, ensure_ascii=False).encode())
+
+    assert summary_bytes < full_bytes
+    assert summary_payload["operator_summary"] == full_payload["operator_summary"]
+    assert len(summary_payload["decision_queue"]) <= len(full_payload["decision_queue"])
+    assert set(summary_payload["operator_summary"]["top_decision_ids"]).issubset(
+        {decision["id"] for decision in summary_payload["decision_queue"]}
+    )
+    assert len(summary_payload["search_term_safety_read_contract"]["safety_rows"]) <= 5
+    assert len(summary_payload["keyword_match_context_read_contract"]["context_rows"]) <= 5
+
+
 def test_ads_custom_segment_review_reason_keeps_missing_metrics_unknown() -> None:
     reason = _custom_segment_review_reason(
         source_terms=["bdo szkolenie"],

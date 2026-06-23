@@ -107,6 +107,10 @@ export function getAdsDiagnostics(): Promise<AdsDiagnosticsResponse> {
   return apiGet("/api/ads/diagnostics", AdsDiagnosticsResponseSchema);
 }
 
+export function getAdsDiagnosticsSummary(): Promise<AdsDiagnosticsResponse> {
+  return apiGet("/api/ads/diagnostics?view=summary", AdsDiagnosticsResponseSchema);
+}
+
 export function getAhrefsDiagnostics(): Promise<AhrefsDiagnosticsResponse> {
   return apiGet("/api/ahrefs/diagnostics", AhrefsDiagnosticsResponseSchema);
 }

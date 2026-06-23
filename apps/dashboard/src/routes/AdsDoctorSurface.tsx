@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { AdsDiagnosticsResponse, getActions, getAdsDiagnostics } from "../lib/api";
+import { AdsDiagnosticsResponse, getActions, getAdsDiagnosticsSummary } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
 import { ActionObjectFocus } from "./ActionObjectPanels";
@@ -47,8 +47,8 @@ type AdsNegativeKeywordCandidate =
 
 export function AdsDoctorSurface() {
   const diagnostics = useQuery({
-    queryKey: ["ads-diagnostics"],
-    queryFn: getAdsDiagnostics
+    queryKey: ["ads-diagnostics", "summary"],
+    queryFn: getAdsDiagnosticsSummary
   });
   const actions = useQuery({
     queryKey: ["actions"],

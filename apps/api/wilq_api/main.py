@@ -3092,8 +3092,8 @@ def marketing_tactical_queue() -> TacticalQueueResponse:
 
 
 @app.get("/api/ads/diagnostics", response_model=AdsDiagnosticsResponse)
-def ads_diagnostics() -> AdsDiagnosticsResponse:
-    return build_ads_diagnostics()
+def ads_diagnostics(view: str | None = None) -> AdsDiagnosticsResponse:
+    return build_ads_diagnostics(view="summary" if view == "summary" else "full")
 
 
 @app.get("/api/merchant/diagnostics", response_model=MerchantDiagnosticsResponse)

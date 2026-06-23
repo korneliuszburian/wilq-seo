@@ -37,6 +37,19 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor summary view, 2026-06-23.
+  `/api/ads/diagnostics?view=summary` keeps the same
+  `AdsDiagnosticsResponse` schema and `operator_summary`, but compacts the
+  heavy marketer-route payload to top decisions and max 5 row-heavy safety /
+  keyword-context rows. The full `/api/ads/diagnostics` contract remains
+  available for drilldown, skills and developer analysis. Live stack proof:
+  full Ads diagnostics `3,776,803` bytes, 14 decisions, 200 safety rows and
+  211 keyword-context rows; summary view `497,698` bytes, 5 decisions, 5
+  safety rows and 5 keyword-context rows. `/ads-doctor` now fetches the summary
+  endpoint. Backend runtime still needs a future optimization because the
+  summary path currently builds the full model before compaction. Focused
+  proof: RED/GREEN API summary-view test, Ads Doctor route test, dashboard
+  lint/typecheck OK, Python ruff OK and mypy OK.
 - ActionObject metric-read performance, 2026-06-23.
   `/api/actions` and shared daily runtime now use connector-scoped latest metric
   reads for metric-backed ActionObject candidates. The action candidate path no

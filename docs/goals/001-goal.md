@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 14:50 CEST.
+Last updated: 2026-06-23 15:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -83,6 +83,18 @@ diagnostic modules for Ads Doctor, Custom Segments, Demand Gen, GA4, Localo,
 Ahrefs, Merchant and Content/GSC. `pnpm --filter @wilq/dashboard build`
 emits separate diagnostic chunks and passed together with dashboard typecheck,
 lint and focused route tests.
+
+2026-06-23 Ads Doctor summary view: `/ads-doctor` now fetches
+`/api/ads/diagnostics?view=summary` instead of the full Ads diagnostics
+payload. The summary response keeps the typed `AdsDiagnosticsResponse` schema
+and `operator_summary`, but limits the first-route payload to top decisions and
+compact row-heavy contracts. Live stack proof: full Ads diagnostics
+`3,776,803` bytes, 14 decisions, 200 safety rows and 211 keyword-context rows;
+summary view `497,698` bytes, 5 decisions, 5 safety rows and 5 keyword-context
+rows. Focused proof: RED/GREEN API summary-view test, Ads Doctor route test,
+dashboard lint/typecheck OK, Python ruff OK and mypy OK. Remaining performance
+follow-up: make the summary backend avoid building the full heavy model before
+compaction.
 
 2026-06-23 Actions route cleanup: `/actions` no longer renders the extra
 `Dowody powiązane z akcjami` evidence registry under ActionObject cards. The

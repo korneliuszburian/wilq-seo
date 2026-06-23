@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from wilq.actions.google_ads.business_context import (
     ADS_BUSINESS_CONTEXT_ACTION_ID,
@@ -120,6 +120,7 @@ AdsTargetStatus = Literal[
     "no_target",
 ]
 ADS_METRIC_FACT_LIMIT = 2500
+ADS_SUMMARY_VIEW_ROW_LIMIT = 5
 CARD_GOAL_001_RULES = "card_goal_001_rules"
 CARD_ADS_SEARCH = "card_google_ads_search_playbook"
 CARD_ADS_BUDGET_REVIEW = "card_google_ads_budget_review_playbook"
@@ -289,7 +290,11 @@ ADS_DECISION_LINEAGE: dict[str, tuple[list[str], list[str]]] = {
 }
 
 
-def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagnosticsResponse:
+def build_ads_diagnostics(
+    actions: list[ActionObject] | None = None,
+    *,
+    view: Literal["full", "summary"] = "full",
+) -> AdsDiagnosticsResponse:
     connector = get_connector_status(GOOGLE_ADS_CONNECTOR_ID)
     if connector is None:
         raise RuntimeError("Google Ads connector is not registered.")
@@ -644,7 +649,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         action_ids,
         account_currency_read_contract.currency_code,
     )
-    return AdsDiagnosticsResponse(
+    response = AdsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
         latest_refresh=latest_refresh,
@@ -683,6 +688,196 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         action_ids=_unique(action_id for section in sections for action_id in section.action_ids),
         blocker_count=sum(1 for decision in decision_queue if decision.status == "blocked"),
     )
+    if view == "summary":
+        return _compact_ads_diagnostics_summary(response)
+    return response
+
+
+def _compact_ads_diagnostics_summary(
+    response: AdsDiagnosticsResponse,
+) -> AdsDiagnosticsResponse:
+    top_decision_ids = set(response.operator_summary.top_decision_ids)
+    compact_decisions = [
+        _compact_ads_decision(decision)
+        for decision in response.decision_queue
+        if decision.id in top_decision_ids
+    ]
+    if not compact_decisions:
+        compact_decisions = [
+            _compact_ads_decision(decision)
+            for decision in response.decision_queue[:ADS_SUMMARY_VIEW_ROW_LIMIT]
+        ]
+    compact_custom_segments = response.custom_segments_read_contract.model_copy(
+        update={
+            "candidates": [
+                _compact_custom_segment_candidate(candidate)
+                for candidate in response.custom_segments_read_contract.candidates[
+                    :ADS_SUMMARY_VIEW_ROW_LIMIT
+                ]
+            ],
+            "payload_preview": response.custom_segments_read_contract.payload_preview[
+                :ADS_SUMMARY_VIEW_ROW_LIMIT
+            ],
+            "audience_forecast_read_contract": (
+                response.custom_segments_read_contract.audience_forecast_read_contract.model_copy(
+                    update={
+                        "forecast_rows": (
+                            response.custom_segments_read_contract
+                            .audience_forecast_read_contract
+                            .forecast_rows[:ADS_SUMMARY_VIEW_ROW_LIMIT]
+                        )
+                    }
+                )
+            ),
+        }
+    )
+    compact_negative_keywords = response.negative_keywords_read_contract.model_copy(
+        update={
+            "candidates": [
+                _compact_negative_keyword_candidate(candidate)
+                for candidate in response.negative_keywords_read_contract.candidates[
+                    :ADS_SUMMARY_VIEW_ROW_LIMIT
+                ]
+            ],
+            "payload_preview": response.negative_keywords_read_contract.payload_preview[
+                :ADS_SUMMARY_VIEW_ROW_LIMIT
+            ],
+        }
+    )
+    return response.model_copy(
+        update={
+            "campaign_read_contract": _copy_limited_model(
+                response.campaign_read_contract,
+                campaign_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "derived_kpi_read_contract": _copy_limited_model(
+                response.derived_kpi_read_contract,
+                kpi_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "budget_pacing_read_contract": _copy_limited_model(
+                response.budget_pacing_read_contract,
+                budget_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+                shared_budget_distribution_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+                payload_preview=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "recommendations_read_contract": _copy_limited_model(
+                response.recommendations_read_contract,
+                recommendation_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+                payload_preview=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "impression_share_read_contract": _copy_limited_model(
+                response.impression_share_read_contract,
+                impression_share_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "campaign_triage_read_contract": _copy_limited_model(
+                response.campaign_triage_read_contract,
+                triage_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "change_history_read_contract": _copy_limited_model(
+                response.change_history_read_contract,
+                change_history_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "change_impact_readiness_contract": _copy_limited_model(
+                response.change_impact_readiness_contract,
+                readiness_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "search_terms_read_contract": _copy_limited_model(
+                response.search_terms_read_contract,
+                search_term_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "search_term_ngram_read_contract": _copy_limited_model(
+                response.search_term_ngram_read_contract,
+                ngram_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "search_term_safety_read_contract": _copy_limited_model(
+                response.search_term_safety_read_contract,
+                safety_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "keyword_match_context_read_contract": _copy_limited_model(
+                response.keyword_match_context_read_contract,
+                context_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "keyword_planner_read_contract": _copy_limited_model(
+                response.keyword_planner_read_contract,
+                idea_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            ),
+            "custom_segments_read_contract": compact_custom_segments,
+            "negative_keywords_read_contract": compact_negative_keywords,
+            "decision_queue": compact_decisions,
+            "sections": [
+                _copy_limited_model(section, metric_facts=ADS_SUMMARY_VIEW_ROW_LIMIT)
+                for section in response.sections
+            ],
+        }
+    )
+
+
+def _compact_ads_decision(decision: AdsDecisionItem) -> AdsDecisionItem:
+    return cast(
+        AdsDecisionItem,
+        _copy_limited_model(
+            decision,
+            metric_facts=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            campaign_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            campaign_triage_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            derived_kpi_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            budget_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            shared_budget_distribution_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            budget_apply_preview=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            recommendation_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            recommendation_apply_preview=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            impression_share_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            change_history_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            search_term_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            search_term_ngram_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            search_term_safety_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            keyword_match_context_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            keyword_planner_idea_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            custom_segment_candidates=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            custom_segment_payload_preview=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            custom_segment_audience_forecast_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            negative_keyword_candidates=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            negative_keyword_payload_preview=ADS_SUMMARY_VIEW_ROW_LIMIT,
+        ),
+    )
+
+
+def _compact_custom_segment_candidate(
+    candidate: AdsCustomSegmentCandidate,
+) -> AdsCustomSegmentCandidate:
+    return cast(
+        AdsCustomSegmentCandidate,
+        _copy_limited_model(
+            candidate,
+            search_term_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            keyword_planner_ideas=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            metric_facts=ADS_SUMMARY_VIEW_ROW_LIMIT,
+        ),
+    )
+
+
+def _compact_negative_keyword_candidate(
+    candidate: AdsNegativeKeywordCandidate,
+) -> AdsNegativeKeywordCandidate:
+    return cast(
+        AdsNegativeKeywordCandidate,
+        _copy_limited_model(
+            candidate,
+            metric_facts=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            safety_metric_facts=ADS_SUMMARY_VIEW_ROW_LIMIT,
+            keyword_context_rows=ADS_SUMMARY_VIEW_ROW_LIMIT,
+        ),
+    )
+
+
+def _copy_limited_model(model: Any, **field_limits: int) -> Any:
+    updates = {}
+    for field_name, limit in field_limits.items():
+        if hasattr(model, field_name):
+            updates[field_name] = getattr(model, field_name)[:limit]
+    if not updates:
+        return model
+    return model.model_copy(update=updates)
 
 
 def _operator_summary(

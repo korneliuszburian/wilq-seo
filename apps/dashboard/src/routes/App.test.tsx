@@ -5637,7 +5637,7 @@ function mockFetch() {
       if (url.endsWith("/api/marketing/tactical-queue")) {
         return Promise.resolve(Response.json(tacticalQueue));
       }
-      if (url.endsWith("/api/ads/diagnostics")) {
+      if (url.includes("/api/ads/diagnostics")) {
         return Promise.resolve(Response.json(adsDiagnostics));
       }
       if (url.endsWith("/api/merchant/diagnostics")) {
