@@ -99,6 +99,21 @@ def main() -> int:
     if issue_clusters and merchant_preview[0].get("apply_allowed") is not False:
         raise SystemExit("Merchant payload preview must keep apply_allowed=false")
 
+    action_validations = []
+    for action_id in merchant_diagnostics.get("action_ids", []):
+        quoted_action = urllib.parse.quote(str(action_id), safe="")
+        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        action_validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"Merchant ActionObject validation failed: {validation}")
+
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
         {
@@ -192,6 +207,7 @@ def main() -> int:
                     for item in (pack.get("top_opportunities") or [])
                     if item.get("id")
                 ][:20],
+                "action_validations": action_validations,
                 "action_ids": [
                     item.get("id")
                     for item in (pack.get("active_action_objects") or [])

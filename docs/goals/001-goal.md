@@ -114,6 +114,19 @@ revenue, ROAS, conversion-drop, profitability and tracking-fixed claims blocked
 because `conversion_readiness_contract.status=blocked` and
 `conversion_like_metric_count=0`.
 
+Merchant now follows the same stricter validated ActionObject pattern. The
+`wilq-merchant-feed-operator` smoke validates
+`act_review_merchant_feed_issues` through
+`POST /api/actions/{action_id}/validate`, the eval case requires
+`expected_validated_action_ids=["act_review_merchant_feed_issues"]`, and the
+passing artifact is
+`.local-lab/evals/codex-skill/20260623T011722Z/wilq-merchant-feed-operator/result.json`.
+The result has `operator_usefulness_score=5`,
+`action_candidates[0].validation_state="validated"` and still blocks approval,
+revenue, feed-write and automatic-fix claims. Use this as the template for
+hardening the remaining high-value skills; do not solve this by adding
+edge-case prose to skill references.
+
 ## Product Bar
 
 WILQ is an API-first marketing operating system for Ekologus, operated by a

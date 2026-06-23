@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Merchant skill eval hardening, 2026-06-23 01:17 CEST.
+  `wilq-merchant-feed-operator` smoke now validates
+  `act_review_merchant_feed_issues` through
+  `POST /api/actions/{action_id}/validate` and exposes
+  `action_validations`. The non-interactive eval case now requires
+  `expected_validated_action_ids=["act_review_merchant_feed_issues"]`.
+  Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T011722Z/wilq-merchant-feed-operator/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_merchant_center"]`, 14 Merchant evidence IDs,
+  `operator_usefulness_score=5`, `safety_findings=[]` and
+  `action_candidates[0].validation_state="validated"`. Product finding: the
+  skill can now prove the Merchant feed review ActionObject is valid while
+  still blocking approval-restored, revenue-recovered, automatic-feed-edit and
+  primary-feed-overwrite claims.
 - GA4 skill eval hardening, 2026-06-23 01:13 CEST.
   `wilq-ga4-analyst` smoke now validates
   `act_review_ga4_tracking_quality` through

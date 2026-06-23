@@ -25,6 +25,56 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-merchant-feed-operator validated ActionObject eval hardening
+
+Purpose:
+
+- Apply the GA4 eval-hardening pattern to Merchant Center: the skill must not
+  only expose `act_review_merchant_feed_issues`, it must prove the review
+  ActionObject validates before presenting it as the safe prepare/review path.
+- Keep Merchant output review-only: no approval restored, revenue recovered,
+  product fixed, automatic feed edit or primary feed overwrite claims.
+
+Changes:
+
+- `.agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py`
+  now validates Merchant action IDs from `/api/merchant/diagnostics` and
+  exposes `action_validations`.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids=["act_review_merchant_feed_issues"]` for
+  `wilq-merchant-feed-operator`.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T011722Z/wilq-merchant-feed-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connector: `google_merchant_center`.
+- `evidence_count=14`.
+- `action_candidates` contains `act_review_merchant_feed_issues` with
+  `validation_state="validated"`.
+- `operator_usefulness_score=5`, `safety_findings=[]`.
+
+Product finding:
+
+- Merchant is now a stronger demo path: live diagnostics show product/feed
+  issue clusters, typed `merchant_feed_issue_review_preview_v1`, blocked unsafe
+  claims and a validated prepare/review ActionObject. It remains read-only;
+  feed mutation/apply requires a separate future action model and audit path.
+
 ## 2026-06-23 - wilq-ga4-analyst validated ActionObject eval hardening
 
 Purpose:

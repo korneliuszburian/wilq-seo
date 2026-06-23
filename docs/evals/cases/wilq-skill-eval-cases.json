@@ -296,6 +296,7 @@
       "act_review_merchant_feed_issues",
       "merchant_feed_issue_review_preview_v1"
     ],
-    "expected_action_ids": ["act_review_merchant_feed_issues"]
+    "expected_action_ids": ["act_review_merchant_feed_issues"],
+    "expected_validated_action_ids": ["act_review_merchant_feed_issues"]
   }
 ]

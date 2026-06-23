@@ -114,6 +114,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "merchant_feed_issue_review_preview_v1",
             },
             "action_ids": {"act_review_merchant_feed_issues"},
+            "validated_action_ids": {"act_review_merchant_feed_issues"},
         },
         "wilq-content-strategist": {
             "surface_path": "/content-planner",
@@ -304,6 +305,11 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         in merchant_smoke_script
     )
     assert '"merchant_diagnostics": {' in merchant_smoke_script
+    merchant_validation_call = (
+        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert merchant_validation_call in merchant_smoke_script
+    assert '"action_validations": action_validations' in merchant_smoke_script
 
     ga4_skill_doc = Path(".agents/skills/wilq-ga4-analyst/SKILL.md").read_text(
         encoding="utf-8"
