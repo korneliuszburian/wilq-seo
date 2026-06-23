@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs diagnostics gap-record visibility fix, 2026-06-23.
+  `/api/ahrefs/diagnostics` no longer loses typed Ahrefs gap records when many
+  newer authority-only reads exist in the metric store. The dedicated Ahrefs
+  diagnostics read now covers enough Ahrefs metric facts to keep content/backlink
+  gap records visible, so `/ahrefs` no longer contradicts `/content/diagnostics`.
+  Live proof after `scripts/local_stack.sh restart`: `live_data_available=true`,
+  `gap_fact_count=100`, `gap_status=ready`, `blocker_count=0`,
+  `missing_read_contracts=[]`, decision IDs
+  `ahrefs_review_authority_context` and `ahrefs_review_gap_records`. Focused
+  proof: RED/GREEN Ahrefs buried-gap regression test plus existing Ahrefs
+  authority/gap diagnostics tests, Python ruff OK and mypy OK for
+  `wilq/briefing/ahrefs_diagnostics.py`.
 - Command Center Content + Ahrefs decision alignment, 2026-06-23.
   `daily_content_queue` on `/api/dashboard/command-center` now includes the
   same Ahrefs gap-review source that `/api/content/diagnostics` exposes in its

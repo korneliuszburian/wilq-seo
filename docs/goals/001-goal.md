@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 09:18 CEST.
+Last updated: 2026-06-23 09:36 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -229,6 +229,18 @@ show `decyzje=5`, `rekordy Ahrefs=31`, `luki Ahrefs=4`, `link gaps=9`,
 `ev_refresh_refresh_google_search_console_554550c44ec7`. Focused proof:
 Command Center operator brief RED/GREEN test passed, lightweight builder test
 passed, Python ruff and mypy passed.
+
+2026-06-23 Ahrefs diagnostics gap-record visibility fix:
+`/api/ahrefs/diagnostics` now reads enough Ahrefs metric facts to keep typed gap
+records visible even when many newer authority-only reads exist in the metric
+store. This removes the contradiction where `/content/diagnostics` could use
+Ahrefs gap records while `/ahrefs` still reported missing contracts/blockers.
+Live proof after stack restart: `live_data_available=true`,
+`gap_fact_count=100`, `gap_status=ready`, `blocker_count=0`,
+`missing_read_contracts=[]`, decision IDs `ahrefs_review_authority_context` and
+`ahrefs_review_gap_records`. Focused proof: RED/GREEN buried-gap regression
+test passed with existing Ahrefs authority/gap diagnostics tests, Python ruff
+and mypy passed.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

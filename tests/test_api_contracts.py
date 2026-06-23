@@ -4166,6 +4166,137 @@ def test_ahrefs_diagnostics_builds_typed_gap_records_from_metric_facts(
     assert context_payload["active_action_objects"] == []
 
 
+def test_ahrefs_diagnostics_keeps_gap_records_when_newer_authority_reads_are_noisy(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ahrefs_buried_gap_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ahrefs_buried_gap.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_ahrefs_env(monkeypatch)
+    monkeypatch.setenv("AHREFS_API_TOKEN", "ahrefs-token-test")
+
+    gap_run = ConnectorRefreshRun(
+        id="refresh_ahrefs_buried_gap_test",
+        connector_id="ahrefs",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        started_at=datetime(2026, 6, 18, 9, 0, tzinfo=UTC),
+        completed_at=datetime(2026, 6, 18, 9, 0, tzinfo=UTC),
+        evidence_ids=["ev_refresh_refresh_ahrefs_buried_gap_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "ahrefs_competitor_page_count": 1,
+            "ahrefs_content_gap_count": 1,
+            "ahrefs_backlink_gap_count": 1,
+            "ahrefs_organic_keyword_gap_count": 1,
+            "ahrefs_top_page_gap_count": 1,
+        },
+        summary="Older Ahrefs gap read that must remain visible.",
+    )
+    local_state_store().save_connector_refresh_run(gap_run)
+    metric_store().save_connector_refresh_metrics(
+        gap_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "ahrefs_competitor_page_count",
+                1,
+                {
+                    "gap_type": "competitor_page",
+                    "competitor_domain": "denios.pl",
+                    "source_url": "https://www.denios.pl/audyt-srodowiskowy/",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_content_gap_count",
+                1,
+                {
+                    "gap_type": "content_gap",
+                    "keyword": "audyt środowiskowy",
+                    "competitor_domain": "denios.pl",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_backlink_gap_count",
+                1,
+                {
+                    "gap_type": "backlink_gap",
+                    "competitor_domain": "denios.pl",
+                    "source_url": "https://www.denios.pl/poradnik/",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_organic_keyword_gap_count",
+                1,
+                {
+                    "gap_type": "organic_keyword_gap",
+                    "keyword": "pozwolenie zintegrowane",
+                    "competitor_domain": "denios.pl",
+                },
+                period="ahrefs_gap",
+            ),
+            VendorMetricFact(
+                "ahrefs_top_page_gap_count",
+                1,
+                {
+                    "gap_type": "top_page_gap",
+                    "competitor_domain": "denios.pl",
+                    "source_url": "https://www.denios.pl/top/",
+                },
+                period="ahrefs_gap",
+            ),
+        ],
+    )
+    for index in range(170):
+        collected_at = datetime(2026, 6, 19, 9, 0, tzinfo=UTC) + timedelta(minutes=index)
+        authority_run = ConnectorRefreshRun(
+            id=f"refresh_ahrefs_noisy_authority_{index}",
+            connector_id="ahrefs",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            started_at=collected_at,
+            completed_at=collected_at,
+            evidence_ids=[f"ev_refresh_refresh_ahrefs_noisy_authority_{index}"],
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"domain_rating": 90, "ahrefs_rank": 1450},
+            summary="Newer authority-only Ahrefs read.",
+        )
+        local_state_store().save_connector_refresh_run(authority_run)
+        metric_store().save_connector_refresh_metrics(
+            authority_run,
+            detailed_facts=[
+                VendorMetricFact("domain_rating", 90, period="ahrefs_site_explorer"),
+                VendorMetricFact("ahrefs_rank", 1450, period="ahrefs_site_explorer"),
+            ],
+        )
+
+    response = client.get("/api/ahrefs/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["live_data_available"] is True
+    assert payload["gap_fact_count"] >= 2
+    assert payload["gap_read_contract"]["status"] == "ready"
+    assert "ev_refresh_refresh_ahrefs_buried_gap_test" in payload["evidence_ids"]
+    assert {
+        record["gap_type"] for record in payload["gap_read_contract"]["gap_records"]
+    } == {
+        "competitor_page",
+        "content_gap",
+        "backlink_gap",
+        "organic_keyword_gap",
+        "top_page_gap",
+    }
+    decision_ids = {decision["id"] for decision in payload["decision_queue"]}
+    assert "ahrefs_review_gap_records" in decision_ids
+    assert "ahrefs_block_gap_claims_without_records" not in decision_ids
+
+
 def test_marketing_tactical_queue_uses_wordpress_host_alias_sitemap_match(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

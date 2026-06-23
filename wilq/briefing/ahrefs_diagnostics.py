@@ -30,7 +30,7 @@ AhrefsGapType = Literal[
 ]
 
 AHREFS_CONNECTOR_ID = "ahrefs"
-AHREFS_METRIC_FACT_LIMIT = 120
+AHREFS_METRIC_FACT_LIMIT = 1000
 AHREFS_AUTHORITY_FACT_NAMES = {"domain_rating", "ahrefs_rank"}
 AHREFS_COMPETITOR_READ_FACT_NAMES = {
     "organic_competitor_read_status",
@@ -644,8 +644,14 @@ def _ahrefs_decision_queue(
                     "autorytetu do SEO/content review. To nadal nie jest analiza luk."
                 ),
                 next_step=(
-                    "Połącz ten kontekst z /content-planner i GSC. Nie twierdź, że "
-                    "Ahrefs wykrył lukę treści/backlinków, dopóki nie ma rekordów luk."
+                    "Połącz ten kontekst z rekordami luk Ahrefs, /content-planner i GSC. "
+                    "Review luk nadal wymaga kontroli GSC/WordPress i nie jest obietnicą "
+                    "wzrostu."
+                    if gap_records
+                    else (
+                        "Połącz ten kontekst z /content-planner i GSC. Nie twierdź, że "
+                        "Ahrefs wykrył lukę treści/backlinków, dopóki nie ma rekordów luk."
+                    )
                 ),
                 priority=25,
                 metric_tiles=_authority_tiles(
