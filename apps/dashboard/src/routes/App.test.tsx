@@ -2,7 +2,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import type { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { ConnectorRefreshRun } from "../lib/api";
 import { App, createWilqQueryClient, createWilqRouter } from "./App";
+import { ConnectorRefreshRunList } from "./RegistryPanels";
 
 const connectors = [
   {
@@ -566,7 +568,7 @@ const connectorRefreshRuns = [
     errors: [],
     redacted: true
   }
-];
+] satisfies ConnectorRefreshRun[];
 
 const adsDiagnostics = {
   generated_at: "2026-06-17T10:00:00Z",
@@ -5851,6 +5853,14 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "OPPORTUNITIES" })).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+  });
+
+  it("connector refresh run cards summarize evidence instead of printing raw IDs", () => {
+    render(<ConnectorRefreshRunList runs={connectorRefreshRuns} />);
+
+    expect(screen.getByText("Dowody: 2 ID")).toBeInTheDocument();
+    expect(screen.queryByText("ev_connector_google_ads_status")).not.toBeInTheDocument();
+    expect(screen.queryByText("ev_refresh_refresh_google_ads_test")).not.toBeInTheDocument();
   });
 
   it("ads doctor route renders live metric-backed diagnostics", async () => {

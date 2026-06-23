@@ -159,7 +159,7 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
             <div>Mode: {run.mode}</div>
             <div>Dane vendora: {run.vendor_data_collected ? "tak" : "nie"}</div>
             <div>Zewnętrzny odczyt: {run.external_call_attempted ? "tak" : "nie"}</div>
-            <div>Dowody: {run.evidence_ids.join(", ")}</div>
+            <div>Dowody: {formatEvidenceCount(run.evidence_ids.length)}</div>
           </div>
           {Object.keys(run.metric_summary).length > 0 ? (
             <pre className="mt-3 max-h-32 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
