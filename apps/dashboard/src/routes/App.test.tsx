@@ -4022,6 +4022,22 @@ const merchantDiagnostics = {
       blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
     }
   ],
+  product_sample_readiness: {
+    status: "blocked",
+    sample_products_available: false,
+    sample_count: 0,
+    current_read_contract: "merchant_aggregate_product_statuses",
+    required_read_contracts: [
+      "merchant_products_list_product_status",
+      "merchant_reports_product_view_issue_filter"
+    ],
+    source_endpoint: "aggregateProductStatuses",
+    summary:
+      "Obecny Merchant read contract daje aggregate issue queue, ale nie zwraca product IDs, SKU ani tytułów do pracy produkt-po-produkcie.",
+    next_step:
+      "Dodać osobny read-only contract przez products.list/productStatus albo reports.search product_view z filtrem issue, zanim WILQ pokaże konkretne produkty do poprawy.",
+    blocked_claims: ["product-level fix", "feed write", "automatic feed edit"]
+  },
   operator_summary: {
     id: "merchant_operator_summary",
     title: "Co marketer ma zrobić teraz z feedem",
@@ -6259,6 +6275,12 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Brak przykładowych produktów/SKU w kontrakcie odczytu")
     ).toBeInTheDocument();
+    expect(screen.getByText("Gotowość próbek produktów")).toBeInTheDocument();
+    expect(screen.getByText("próbki produktów zablokowane")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Obecny odczyt: merchant_aggregate_product_statuses/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/products\.list\/productStatus/)).toBeInTheDocument();
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
     expect(screen.getByText("Dowody")).toBeInTheDocument();
     expect(screen.getByText(/nie zwraca przykładowych ID produktów/)).toBeInTheDocument();
@@ -6301,8 +6323,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Dry-run preview")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Generuj preview" }));
     await waitFor(() => expect(screen.getByText("Audit event: action_preview_generated")).toBeInTheDocument());
-    expect(screen.getByText(/Dry-run: tak; mutacje:/)).toBeInTheDocument();
-    expect(screen.getByText(/zablokowane/)).toBeInTheDocument();
+    expect(screen.getByText(/Dry-run: tak; mutacje:\s*zablokowane/)).toBeInTheDocument();
     expect(screen.getByText("Jawne potwierdzenie preview")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Potwierdź preview" }));
     await waitFor(() => expect(screen.getByText("Audit event: action_apply_confirmed")).toBeInTheDocument());

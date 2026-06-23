@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 16:12 CEST.
+Last updated: 2026-06-23 16:24 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -181,6 +181,18 @@ typecheck and browser proof
 Merchant gap: add a separate product-level read contract if the marketer needs
 real product IDs/titles/SKU for item-by-item feed work; do not infer those from
 aggregate issue clusters.
+
+2026-06-23 Merchant product-sample readiness completed as a typed blocker, not
+as a fake product list. `/api/merchant/diagnostics.product_sample_readiness`
+now says whether product-level examples are available. Current live state is
+`blocked`, `sample_products_available=false`, because the present Merchant read
+contract is aggregate `aggregateProductStatuses`; required future read
+contracts are `merchant_products_list_product_status` and
+`merchant_reports_product_view_issue_filter`. `/merchant` shows `Gotowość
+próbek produktów`, and the `wilq-merchant-feed-operator` smoke asserts this
+field. This preserves the guardrail: WILQ may recommend aggregate issue review,
+but must not claim concrete product-level fixes until a product/SKU read
+contract exists.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

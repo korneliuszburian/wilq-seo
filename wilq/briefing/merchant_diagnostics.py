@@ -19,6 +19,7 @@ from wilq.schemas import (
     MerchantFreshnessAssessment,
     MerchantIssueCluster,
     MerchantOperatorSummary,
+    MerchantProductSampleReadiness,
     MerchantUnknownFact,
     MetricFact,
     OpportunityDomain,
@@ -130,6 +131,10 @@ def build_merchant_diagnostics(
         ),
         freshness_assessment=freshness_assessment,
         unknowns=_merchant_unknowns(issue_clusters, decision_queue),
+        product_sample_readiness=_merchant_product_sample_readiness(
+            issue_clusters,
+            decision_queue,
+        ),
         operator_summary=_operator_summary(
             decision_queue,
             issue_clusters,
@@ -278,6 +283,65 @@ def _merchant_unknowns(
             )
         )
     return unknowns
+
+
+def _merchant_product_sample_readiness(
+    issue_clusters: list[MerchantIssueCluster],
+    decisions: list[MerchantDecisionItem],
+) -> MerchantProductSampleReadiness:
+    samples = [
+        sample
+        for cluster in issue_clusters
+        for sample in [*cluster.sample_product_ids, *cluster.sample_titles]
+        if sample
+    ]
+    if samples:
+        return MerchantProductSampleReadiness(
+            status="ready",
+            sample_products_available=True,
+            sample_count=len(samples),
+            required_read_contracts=[],
+            source_endpoint="aggregateProductStatuses",
+            summary="Merchant diagnostics ma przykładowe produkty z obecnego kontraktu.",
+            next_step="Użyj próbek tylko do review; apply nadal wymaga ActionObject i audytu.",
+            blocked_claims=["feed write", "automatic feed edit"],
+        )
+
+    if issue_clusters or decisions:
+        return MerchantProductSampleReadiness(
+            status="blocked",
+            sample_products_available=False,
+            sample_count=0,
+            required_read_contracts=[
+                "merchant_products_list_product_status",
+                "merchant_reports_product_view_issue_filter",
+            ],
+            source_endpoint="aggregateProductStatuses",
+            summary=(
+                "Obecny Merchant read contract daje aggregate issue queue, ale nie "
+                "zwraca product IDs, SKU ani tytułów do pracy produkt-po-produkcie."
+            ),
+            next_step=(
+                "Dodać osobny read-only contract przez products.list/productStatus "
+                "albo reports.search product_view z filtrem issue, zanim WILQ pokaże "
+                "konkretne produkty do poprawy."
+            ),
+            blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
+        )
+
+    return MerchantProductSampleReadiness(
+        status="blocked",
+        sample_products_available=False,
+        sample_count=0,
+        required_read_contracts=[
+            "merchant_products_list_product_status",
+            "merchant_reports_product_view_issue_filter",
+        ],
+        source_endpoint="aggregateProductStatuses",
+        summary="Brak Merchant issue queue, więc nie ma też próbek produktów.",
+        next_step="Najpierw uruchom read-only Merchant vendor_read.",
+        blocked_claims=["product-level fix", "feed write", "automatic feed edit"],
+    )
 
 
 def _merchant_action_ids(actions: list[ActionObject]) -> list[str]:

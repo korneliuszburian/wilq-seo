@@ -215,6 +215,19 @@ Product finding:
   freshness-aware refresh path for this queue, so the skill can move from
   cluster-level review to payload-preview review without inventing data.
 
+Follow-up implemented:
+
+- `/api/merchant/diagnostics` now exposes `product_sample_readiness`.
+- Current state is `blocked`: `sample_products_available=false`,
+  `current_read_contract=merchant_aggregate_product_statuses`,
+  `required_read_contracts=["merchant_products_list_product_status",
+  "merchant_reports_product_view_issue_filter"]`.
+- `/merchant` renders `Gotowość próbek produktów`, so the dashboard shows that
+  WILQ has aggregate issue review but no product IDs/SKU/titles yet.
+- `wilq-merchant-feed-operator` smoke now asserts this field and reports it in
+  smoke output. This keeps the skill consuming the API contract instead of
+  learning a prompt-only workaround.
+
 ## 2026-06-23 - wilq-daily-command compact DailyDecision context
 
 Purpose:

@@ -65,6 +65,23 @@ def main() -> int:
         raise SystemExit("Context pack merchant_diagnostics evidence IDs differ from endpoint")
     if packed_merchant.get("action_ids") != merchant_diagnostics.get("action_ids"):
         raise SystemExit("Context pack merchant_diagnostics action IDs differ from endpoint")
+    product_sample_readiness = merchant_diagnostics.get("product_sample_readiness")
+    if not isinstance(product_sample_readiness, dict):
+        raise SystemExit("Merchant diagnostics must expose product_sample_readiness")
+    current_read_contract = product_sample_readiness.get("current_read_contract")
+    if current_read_contract != "merchant_aggregate_product_statuses":
+        raise SystemExit("Merchant product_sample_readiness must name the aggregate read contract")
+    required_product_contracts = set(product_sample_readiness.get("required_read_contracts") or [])
+    if not {
+        "merchant_products_list_product_status",
+        "merchant_reports_product_view_issue_filter",
+    }.issubset(required_product_contracts):
+        raise SystemExit("Merchant product_sample_readiness must name product-level read contracts")
+    if product_sample_readiness.get("sample_products_available") is True:
+        if product_sample_readiness.get("sample_count", 0) <= 0:
+            raise SystemExit("Merchant product_sample_readiness ready state must include samples")
+    elif product_sample_readiness.get("status") != "blocked":
+        raise SystemExit("Merchant product_sample_readiness without samples must be blocked")
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
     if (
         merchant_diagnostics.get("live_data_available")
@@ -183,6 +200,7 @@ def main() -> int:
                         for section in merchant_diagnostics.get("sections", [])
                         for claim in section.get("blocked_claims", [])
                     ][:20],
+                    "product_sample_readiness": product_sample_readiness,
                     "latest_refresh_status": (
                         merchant_diagnostics.get("latest_refresh") or {}
                     ).get("status"),

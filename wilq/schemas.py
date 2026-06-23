@@ -1980,6 +1980,20 @@ class MerchantUnknownFact(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
 
+class MerchantProductSampleReadiness(BaseModel):
+    status: Literal["ready", "blocked"]
+    sample_products_available: bool = False
+    sample_count: int = 0
+    current_read_contract: Literal["merchant_aggregate_product_statuses"] = (
+        "merchant_aggregate_product_statuses"
+    )
+    required_read_contracts: list[str] = Field(default_factory=list)
+    source_endpoint: str
+    summary: str
+    next_step: str
+    blocked_claims: list[str] = Field(default_factory=list)
+
+
 class MerchantDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -1991,6 +2005,7 @@ class MerchantDiagnosticsResponse(BaseModel):
     issue_count: int | None = None
     freshness_assessment: MerchantFreshnessAssessment
     unknowns: list[MerchantUnknownFact] = Field(default_factory=list)
+    product_sample_readiness: MerchantProductSampleReadiness
     operator_summary: MerchantOperatorSummary
     issue_clusters: list[MerchantIssueCluster] = Field(default_factory=list)
     decision_queue: list[MerchantDecisionItem] = Field(default_factory=list)

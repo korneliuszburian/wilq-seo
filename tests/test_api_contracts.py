@@ -9183,6 +9183,18 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert payload["freshness_assessment"]["state"] == "fresh"
     assert payload["freshness_assessment"]["requires_refresh"] is False
     assert payload["freshness_assessment"]["stale_after_hours"] == 48
+    sample_readiness = payload["product_sample_readiness"]
+    assert sample_readiness["status"] == "blocked"
+    assert sample_readiness["sample_products_available"] is False
+    assert sample_readiness["sample_count"] == 0
+    assert sample_readiness["current_read_contract"] == "merchant_aggregate_product_statuses"
+    assert sample_readiness["required_read_contracts"] == [
+        "merchant_products_list_product_status",
+        "merchant_reports_product_view_issue_filter",
+    ]
+    assert sample_readiness["source_endpoint"] == "aggregateProductStatuses"
+    assert "products.list" in sample_readiness["next_step"]
+    assert "product-level fix" in sample_readiness["blocked_claims"]
     assert "act_review_merchant_feed_issues" in payload["action_ids"]
     assert payload["unknowns"]
     unknown_ids = {unknown["id"] for unknown in payload["unknowns"]}

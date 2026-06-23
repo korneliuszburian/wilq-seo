@@ -102,6 +102,8 @@ export function MerchantDiagnosticSurface() {
 
       <MerchantOperatorSummary data={data} />
 
+      <MerchantProductSampleReadiness data={data} />
+
       <MerchantUnknowns data={data} />
 
       <MerchantDiagnosticProof data={data} />
@@ -361,6 +363,41 @@ function MerchantUnknowns({ data }: { data: MerchantDiagnosticsResponse }) {
             </div>
           </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
+  const readiness = data.product_sample_readiness;
+  const statusLabel = readiness.sample_products_available
+    ? "próbki produktów dostępne"
+    : "próbki produktów zablokowane";
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Gotowość próbek produktów
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            {readiness.summary}
+          </p>
+          <p className="mt-2 text-sm font-medium text-ink">{readiness.next_step}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs">
+          <MetricTile label="Status" value={statusLabel} />
+          <MetricTile label="Próbki" value={readiness.sample_count} />
+        </div>
+      </div>
+      <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">
+        <TraceLine label="Obecny odczyt" values={[readiness.current_read_contract]} />
+        <TraceLine label="Endpoint źródłowy" values={[readiness.source_endpoint]} />
+        <TraceLine label="Potrzebne kontrakty" values={readiness.required_read_contracts} />
+        <TraceLine
+          label="Blokuje claimy"
+          values={merchantBlockedClaimLabels(readiness.blocked_claims)}
+        />
       </div>
     </section>
   );

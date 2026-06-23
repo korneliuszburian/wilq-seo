@@ -1600,6 +1600,18 @@ export const MerchantUnknownFactSchema = z.object({
   blocked_claims: z.array(z.string())
 });
 
+export const MerchantProductSampleReadinessSchema = z.object({
+  status: z.enum(["ready", "blocked"]),
+  sample_products_available: z.boolean(),
+  sample_count: z.number(),
+  current_read_contract: z.literal("merchant_aggregate_product_statuses"),
+  required_read_contracts: z.array(z.string()),
+  source_endpoint: z.string(),
+  summary: z.string(),
+  next_step: z.string(),
+  blocked_claims: z.array(z.string())
+});
+
 export const MerchantDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1611,6 +1623,7 @@ export const MerchantDiagnosticsResponseSchema = z.object({
   issue_count: z.number().nullable().optional(),
   freshness_assessment: MerchantFreshnessAssessmentSchema,
   unknowns: z.array(MerchantUnknownFactSchema),
+  product_sample_readiness: MerchantProductSampleReadinessSchema,
   operator_summary: MerchantOperatorSummarySchema,
   issue_clusters: z.array(MerchantIssueClusterSchema),
   decision_queue: z.array(MerchantDecisionItemSchema),
