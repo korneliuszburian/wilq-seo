@@ -25,6 +25,60 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-localo-operator validated ActionObject eval hardening
+
+Purpose:
+
+- Apply the validated ActionObject eval pattern to Localo.
+- Prove Localo MCP access and the review-only visibility ActionObject are wired
+  while detailed ranking, GBP, competitor visibility and uplift claims stay
+  blocked without additional WILQ facts.
+
+Changes:
+
+- `.agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py` now
+  validates `act_review_localo_visibility_facts` and exposes
+  `action_validations`.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids=["act_review_localo_visibility_facts"]` for
+  `wilq-localo-operator`.
+- The Localo eval marker now uses stable ActionObject ID
+  `act_review_localo_visibility_facts` instead of the brittle internal decision
+  marker.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q \
+  -k 'route_specific_codex_eval_cases_define_surface_markers or route_specific_skill_smokes_expose_marketing_brief_items'
+uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T015753Z/wilq-localo-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors: `localo`.
+- `evidence_count=2`.
+- `blocked=true`.
+- `action_candidates` contains `act_review_localo_visibility_facts` with
+  `validation_state="validated"` plus a blocked candidate for unsupported
+  ranking/GBP/competitor/uplift claims.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- Localo access/review wiring is proven, but this is still not a detailed
+  local visibility analytics proof. WILQ must keep ranking, GBP performance,
+  competitor visibility and local visibility uplift claims blocked until the
+  Localo API exposes those facts through typed WILQ contracts.
+
 ## 2026-06-23 - wilq-demand-gen-operator validated ActionObject eval hardening
 
 Purpose:

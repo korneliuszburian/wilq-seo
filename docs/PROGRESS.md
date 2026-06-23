@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Localo eval hardening, 2026-06-23 01:57 CEST.
+  `wilq-localo-operator` smoke now validates
+  `act_review_localo_visibility_facts` through
+  `POST /api/actions/{action_id}/validate`, exposes `action_validations`, and
+  the eval case requires
+  `expected_validated_action_ids=["act_review_localo_visibility_facts"]`.
+  Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T015753Z/wilq-localo-operator/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["localo"]`, 2 evidence IDs, `blocked=true`,
+  `operator_usefulness_score=4`, `safety_findings=[]` and a validated Localo
+  review ActionObject. Product finding: Localo MCP access/review proof exists,
+  but detailed ranking, GBP performance, competitor visibility and local
+  visibility uplift claims remain blocked without additional WILQ facts.
 - Demand Gen eval hardening, 2026-06-23 01:51 CEST.
   `wilq-demand-gen-operator` smoke now validates
   `act_review_demand_gen_readiness` through

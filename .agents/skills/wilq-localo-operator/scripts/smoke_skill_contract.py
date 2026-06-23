@@ -224,6 +224,23 @@ def main() -> int:
     instruction = str(pack.get("strict_instruction", "")).lower()
     if "must not invent metrics" not in instruction or "evidence" not in instruction:
         raise SystemExit("Context pack strict instruction does not include evidence guardrails")
+    action_validations = []
+    active_action_ids = [
+        action.get("id") for action in pack.get("active_action_objects", [])
+    ]
+    if LOCALO_VISIBILITY_REVIEW_ACTION_ID in active_action_ids:
+        quoted_action = urllib.parse.quote(LOCALO_VISIBILITY_REVIEW_ACTION_ID, safe="")
+        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        action_validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"Localo ActionObject validation failed: {validation}")
 
     print(
         json.dumps(
@@ -244,6 +261,7 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "action_validations": action_validations,
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])

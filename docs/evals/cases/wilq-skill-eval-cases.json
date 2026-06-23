@@ -167,14 +167,15 @@
     "expected_terms_pl": [
       "Localo",
       "mcp_initialize_status",
-      "localo_review_visibility_facts",
+      "act_review_localo_visibility_facts",
       "local_visibility_review_preview_v1",
       "ranking",
       "GBP",
       "local visibility",
       "blocked claims"
     ],
-    "expected_action_ids": ["act_review_localo_visibility_facts"]
+    "expected_action_ids": ["act_review_localo_visibility_facts"],
+    "expected_validated_action_ids": ["act_review_localo_visibility_facts"]
   },
   {
     "skill": "wilq-content-strategist",

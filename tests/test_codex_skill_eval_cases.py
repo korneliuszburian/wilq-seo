@@ -185,6 +185,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "blocked claims",
             },
             "action_ids": {"act_review_localo_visibility_facts"},
+            "validated_action_ids": {"act_review_localo_visibility_facts"},
         },
     }
 
@@ -396,3 +397,12 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     )
     assert demand_gen_validation_call in demand_gen_smoke_script
     assert '"action_validations": action_validations' in demand_gen_smoke_script
+
+    localo_smoke_script = Path(
+        ".agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    localo_validation_call = (
+        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert localo_validation_call in localo_smoke_script
+    assert '"action_validations": action_validations' in localo_smoke_script

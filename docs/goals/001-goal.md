@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 01:54 CEST.
+Last updated: 2026-06-23 02:00 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -200,6 +200,16 @@ connectors `google_ads` and `google_analytics_4`, one validated action
 candidate and no safety findings. This is not a Demand Gen launch proof; it is
 an honest readiness/review gate while campaign migration, creative quality and
 performance claims remain blocked.
+
+Localo now has validated review-only visibility proof. The
+`wilq-localo-operator` smoke validates `act_review_localo_visibility_facts`,
+the eval case requires it in `expected_validated_action_ids`, and the passing
+artifact is
+`.local-lab/evals/codex-skill/20260623T015753Z/wilq-localo-operator/result.json`.
+The result has `blocked=true`, `operator_usefulness_score=4`,
+`source_connectors=["localo"]`, one validated action candidate and no safety
+findings. This proves Localo MCP access/review wiring, not detailed ranking,
+GBP, competitor visibility or local visibility uplift.
 
 ## Product Bar
 
