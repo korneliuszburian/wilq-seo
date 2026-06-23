@@ -118,7 +118,10 @@ export function DemandGenDiagnosticSurface() {
                   <MetricTile label="Konwersje" value={row.conversions ?? "brak"} />
                 </div>
                 <div className="mt-3 text-xs text-slate-600">
-                  <LinkedTraceLine label="Dowody" values={row.evidence_ids.slice(0, 3)} kind="evidence" />
+                  <TraceLine
+                    label="Dowody"
+                    values={[formatDemandGenIdCount(row.evidence_ids.length, "ID", "ID")]}
+                  />
                 </div>
               </article>
             ))}
@@ -181,7 +184,16 @@ export function DemandGenDiagnosticSurface() {
                 label="Walidacja"
                 values={previewValidation.map(demandGenContractLabel)}
               />
-              <LinkedTraceLine label="Akcje" values={data.action_ids} kind="actions" />
+              <TraceLine
+                label="ActionObjecty"
+                values={[
+                  formatDemandGenIdCount(
+                    data.action_ids.length,
+                    "ActionObject",
+                    "ActionObjecty"
+                  )
+                ]}
+              />
             </div>
           </article>
         ) : null}
@@ -206,7 +218,10 @@ export function DemandGenDiagnosticSurface() {
                   <MetricTile label="Engagement" value={adsPercent(row.engagement_rate)} />
                 </div>
                 <div className="mt-3 text-xs text-slate-600">
-                  <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" />
+                  <TraceLine
+                    label="Dowody"
+                    values={[formatDemandGenIdCount(row.evidence_ids.length, "ID", "ID")]}
+                  />
                 </div>
               </article>
             ))}
@@ -236,7 +251,10 @@ export function DemandGenDiagnosticSurface() {
                   <MetricTile label="Powód" value={demandGenContractLabel(row.reason)} />
                 </div>
                 <div className="mt-3 text-xs text-slate-600">
-                  <LinkedTraceLine label="Dowody" values={row.evidence_ids} kind="evidence" />
+                  <TraceLine
+                    label="Dowody"
+                    values={[formatDemandGenIdCount(row.evidence_ids.length, "ID", "ID")]}
+                  />
                 </div>
               </article>
             ))}
@@ -332,6 +350,11 @@ function demandGenBlockedClaimLabels(claims: string[]) {
     "performance uplift": "wzrost performance"
   };
   return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
+}
+
+function formatDemandGenIdCount(count: number, singular: string, plural: string) {
+  if (count === 1) return `1 ${singular}`;
+  return `${count} ${plural}`;
 }
 
 function adsCost(value: number | null | undefined, currencyCode?: string) {

@@ -6583,6 +6583,14 @@ describe("WILQ dashboard", () => {
     expect(screen.getAllByText(/wiersze assetów kreacji/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/review-only ActionObject/).length).toBeGreaterThan(0);
     expect(screen.getByText("Podgląd walidacji gotowości Demand Gen")).toBeInTheDocument();
+    const demandGenOperatorSection = screen
+      .getByText("Co marketer ma wiedzieć przed planem Demand Gen")
+      .closest("section");
+    expect(demandGenOperatorSection).not.toBeNull();
+    expect(within(demandGenOperatorSection as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    expect(
+      within(demandGenOperatorSection as HTMLElement).queryByText(/act_(prepare|review|configure|apply)/)
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/review kanałów kampanii Ads/)).toBeInTheDocument();
     expect(screen.getByText(/rekomendacja launchu Demand Gen/)).toBeInTheDocument();
     expect(screen.queryByText("API-backed operating surface")).not.toBeInTheDocument();

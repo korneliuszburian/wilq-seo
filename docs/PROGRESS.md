@@ -37,6 +37,16 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Demand Gen first-flow cleanup, 2026-06-23.
+  `/ads-doctor/demand-gen` no longer prints raw `ev_*` evidence IDs or raw
+  `act_review_demand_gen_readiness` inside the marketer-facing first flow.
+  Demand Gen campaign, landing-quality, migration-constraint and readiness
+  preview cards now show counts such as `Dowody: N ID` and `ActionObjecty: N
+  ActionObjecty`; lower `Dowody i ograniczenia Demand Gen` remains the place
+  for raw evidence/action traceability. Browser proof with agent-browser on
+  `http://127.0.0.1:5173/ads-doctor/demand-gen`: raw trace links appear after
+  the lower proof heading. Focused proof: RED/GREEN Demand Gen route test,
+  dashboard lint OK and dashboard typecheck OK.
 - Command Center operator guidance cleanup, 2026-06-23 13:20 CEST.
   `/api/dashboard/command-center` no longer puts raw ActionObject IDs such as
   `act_review_ga4_tracking_quality`, `act_confirm_ads_target_guardrails` or

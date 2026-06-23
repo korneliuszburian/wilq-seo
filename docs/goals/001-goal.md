@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 13:20 CEST.
+Last updated: 2026-06-23 13:35 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -237,6 +237,17 @@ Focused proof: RED/GREEN Command Center API contract, Python ruff OK and mypy
 OK. The same test now also reflects the current scoped `wilq-daily-command`
 context-pack contract: `command_center` carries compact `daily_decisions`, not
 full `operator_brief`, `action_plan` or `demo_script`.
+
+2026-06-23 Demand Gen first-flow cleanup: `/ads-doctor/demand-gen` no longer
+prints raw `ev_*` evidence IDs or raw `act_review_demand_gen_readiness` inside
+the marketer-facing first flow. Demand Gen campaign, landing-quality,
+migration-constraint and readiness preview cards now show counts such as
+`Dowody: N ID` and `ActionObjecty: N ActionObjecty`; lower `Dowody i
+ograniczenia Demand Gen` remains the traceability section for raw links.
+Browser proof with agent-browser: raw `ev_*` and `act_*` links appear after the
+lower proof heading, not in the first Demand Gen operator section. Focused
+proof: RED/GREEN Demand Gen route test, dashboard lint OK and dashboard
+typecheck OK.
 
 2026-06-23 Localo diagnostics copy follow-up: `/api/localo/diagnostics` now
 keeps the partial-data story consistent. When Localo has typed aggregate facts,
