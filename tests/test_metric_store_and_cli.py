@@ -115,6 +115,8 @@ def test_metrics_api_exposes_metric_store_status_and_facts(
             "unit": None,
             "collected_at": refresh_response.json()["completed_at"],
             "previous_value": None,
+            "previous_evidence_id": None,
+            "previous_collected_at": None,
             "delta": None,
             "delta_percent": None,
             "trend": "unknown",
