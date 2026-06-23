@@ -4155,6 +4155,10 @@ def test_ahrefs_diagnostics_builds_typed_gap_records_from_metric_facts(
     assert gap_decision["missing_read_contracts"] == []
     assert "traffic uplift" in gap_decision["blocked_claims"]
     assert "ahrefs_block_gap_claims_without_records" not in decision_by_id
+    operator_summary = payload["operator_summary"]
+    assert operator_summary["gap_read_status"] == "ready"
+    assert "rekordami luk Ahrefs" in operator_summary["next_step"]
+    assert "bez rekordów" not in operator_summary["next_step"]
 
     context_response = client.post(
         "/api/codex/context-pack",

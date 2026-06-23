@@ -160,11 +160,7 @@ def _operator_summary(
             "Autorytet domeny może być kontekstem, ale claimy o lukach contentowych "
             "lub backlinkowych wymagają typed gap records."
         ),
-        next_step=(
-            "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. "
-            "Nie twierdź o content gap, backlink gap ani wzroście widoczności bez "
-            "rekordów z gap read contract."
-        ),
+        next_step=_operator_summary_next_step(gap_read_contract),
         top_decision_ids=[decision.id for decision in top_decisions],
         gap_read_status=gap_read_contract.status,
         authority_fact_count=authority_fact_count,
@@ -200,6 +196,19 @@ def _operator_summary(
                 *gap_read_contract.blocked_claims,
             ]
         ),
+    )
+
+
+def _operator_summary_next_step(gap_read_contract: AhrefsGapReadContract) -> str:
+    if gap_read_contract.status == "ready":
+        return (
+            "Połącz kontekst autorytetu z rekordami luk Ahrefs, /content-planner i GSC. "
+            "Przygotuj review treści/linków bez obietnic wzrostu widoczności."
+        )
+    return (
+        "Użyj top decyzji Ahrefs jako kontekstu dla /content-planner. "
+        "Nie twierdź o content gap, backlink gap ani wzroście widoczności bez "
+        "rekordów z gap read contract."
     )
 
 

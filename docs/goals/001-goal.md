@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 09:36 CEST.
+Last updated: 2026-06-23 09:49 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -241,6 +241,16 @@ Live proof after stack restart: `live_data_available=true`,
 `ahrefs_review_gap_records`. Focused proof: RED/GREEN buried-gap regression
 test passed with existing Ahrefs authority/gap diagnostics tests, Python ruff
 and mypy passed.
+
+2026-06-23 Ahrefs operator-summary copy fix:
+when `/api/ahrefs/diagnostics` has `gap_status=ready`, the operator summary now
+tells the marketer to combine authority context with Ahrefs gap records,
+`/content-planner` and GSC, instead of warning as if gap records were missing.
+Live proof after stack restart: `gap_status=ready`, `gap_fact_count=100`,
+`blocker_count=0`, next step starts with
+`Połącz kontekst autorytetu z rekordami luk Ahrefs`. Focused proof:
+RED/GREEN Ahrefs gap-record diagnostics test passed with neighboring Ahrefs
+tests, Python ruff and mypy passed.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

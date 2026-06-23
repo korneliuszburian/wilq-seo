@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs operator-summary copy fix, 2026-06-23.
+  `/api/ahrefs/diagnostics.operator_summary.next_step` now reflects the ready
+  gap-read state. When `gap_status=ready`, it tells the marketer to combine
+  authority context with Ahrefs gap records, `/content-planner` and GSC instead
+  of warning as if records were still missing. Live proof after stack restart:
+  `gap_status=ready`, `gap_fact_count=100`, `blocker_count=0`, next step starts
+  with `Połącz kontekst autorytetu z rekordami luk Ahrefs`. Focused proof:
+  RED/GREEN Ahrefs gap-record diagnostics test plus neighboring Ahrefs tests,
+  Python ruff OK and mypy OK.
 - Ahrefs diagnostics gap-record visibility fix, 2026-06-23.
   `/api/ahrefs/diagnostics` no longer loses typed Ahrefs gap records when many
   newer authority-only reads exist in the metric store. The dedicated Ahrefs
