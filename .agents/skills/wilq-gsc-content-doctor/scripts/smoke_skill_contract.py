@@ -10,6 +10,7 @@ from typing import Any
 
 SKILL_NAME = "wilq-gsc-content-doctor"
 REQUIRED_CONNECTORS = ["google_search_console", "wordpress_ekologus", "wordpress_sklep"]
+CONTENT_ACTION_ID = "act_prepare_content_refresh_queue"
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
     "connector_status",
@@ -110,6 +111,27 @@ def main() -> int:
         if not any(item.get("page") and item.get("queries") for item in decision_queue):
             raise SystemExit("Content decisions must include concrete page and query values")
 
+    action_ids = content_diagnostics.get("action_ids") or []
+    if (
+        content_diagnostics.get("live_data_available") is True
+        and CONTENT_ACTION_ID not in action_ids
+    ):
+        raise SystemExit("Live GSC content diagnostics must expose content refresh ActionObject")
+    action_validations = []
+    if CONTENT_ACTION_ID in action_ids:
+        quoted_action = urllib.parse.quote(CONTENT_ACTION_ID, safe="")
+        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        action_validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"GSC content ActionObject validation failed: {validation}")
+
     brief = request_json(args.api_base, "GET", "/api/marketing/brief")
     brief_items = [
         {
@@ -158,6 +180,7 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "action_validations": action_validations,
                 "content_diagnostics": {
                     "live_data_available": content_diagnostics.get("live_data_available"),
                     "query_page_count": content_diagnostics.get("query_page_count"),

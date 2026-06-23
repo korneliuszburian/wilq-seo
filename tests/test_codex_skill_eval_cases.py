@@ -83,6 +83,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "surface_path": "/seo-gsc",
             "terms": {"SEO / GSC", "GSC", "treści", "content_diagnostics", "query/page"},
             "action_ids": {"act_prepare_content_refresh_queue"},
+            "validated_action_ids": {"act_prepare_content_refresh_queue"},
         },
         "wilq-ahrefs-gap-finder": {
             "surface_path": "/ahrefs",
@@ -361,7 +362,7 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             in content_smoke_script
         )
         assert '"content_diagnostics": {' in content_smoke_script
-        if skill == "wilq-content-strategist":
+        if skill in {"wilq-gsc-content-doctor", "wilq-content-strategist"}:
             content_validation_call = (
                 'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
             )

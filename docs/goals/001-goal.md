@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 01:46 CEST.
+Last updated: 2026-06-23 01:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -178,6 +178,17 @@ and `google_search_console`, one validated action candidate and no safety
 findings. Apply remains blocked by `custom_segment_apply_safety_v1` until
 forecast/audience size, Keyword Planner enrichment, Google Ads mutation audit
 and human confirmation exist.
+
+GSC Content Doctor also follows the validated ActionObject pattern. The
+`wilq-gsc-content-doctor` smoke validates `act_prepare_content_refresh_queue`,
+the eval case requires it in `expected_validated_action_ids`, and the passing
+artifact is
+`.local-lab/evals/codex-skill/20260623T014727Z/wilq-gsc-content-doctor/result.json`.
+The result has `operator_usefulness_score=4`, source connectors
+`google_search_console`, `wordpress_ekologus`, `wordpress_sklep`, one
+validated action candidate and no safety findings. It is the route-specific
+GSC/query-page proof; broader content planning still belongs to
+`wilq-content-strategist`.
 
 ## Product Bar
 

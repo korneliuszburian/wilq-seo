@@ -25,6 +25,57 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-gsc-content-doctor validated ActionObject eval hardening
+
+Purpose:
+
+- Apply the validated ActionObject eval pattern to the route-specific GSC
+  content skill.
+- Prove the skill can prepare a review-only content refresh queue from GSC
+  query/page evidence and WordPress inventory without ranking, lead or revenue
+  promises.
+
+Changes:
+
+- `.agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py`
+  now validates `act_prepare_content_refresh_queue` and exposes
+  `action_validations`.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids=["act_prepare_content_refresh_queue"]` for
+  `wilq-gsc-content-doctor`.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q \
+  -k 'route_specific_codex_eval_cases_define_surface_markers or route_specific_skill_smokes_expose_marketing_brief_items'
+uv run python .agents/skills/wilq-gsc-content-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-gsc-content-doctor --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T014727Z/wilq-gsc-content-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors:
+  `google_search_console`, `wordpress_ekologus`, `wordpress_sklep`.
+- `evidence_count=4`.
+- `action_candidates` contains `act_prepare_content_refresh_queue` with
+  `validation_state="validated"`.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- The GSC-specific skill now has the same safe content review ActionObject proof
+  as the broader content strategist, scoped to `/seo-gsc` and query/page
+  evidence. Unsupported ranking, lead and revenue claims remain blocked by the
+  eval and skill contract.
+
 ## 2026-06-23 - wilq-custom-segments validated ActionObject eval hardening
 
 Purpose:

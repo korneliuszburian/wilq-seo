@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- GSC Content Doctor eval hardening, 2026-06-23 01:47 CEST.
+  `wilq-gsc-content-doctor` smoke now validates
+  `act_prepare_content_refresh_queue` through
+  `POST /api/actions/{action_id}/validate`, exposes `action_validations`, and
+  the eval case requires
+  `expected_validated_action_ids=["act_prepare_content_refresh_queue"]`.
+  Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T014727Z/wilq-gsc-content-doctor/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_search_console","wordpress_ekologus","wordpress_sklep"]`,
+  4 evidence IDs, `operator_usefulness_score=4`, `safety_findings=[]` and a
+  validated content refresh queue candidate. Product finding: the GSC-specific
+  skill now proves the same safe content review ActionObject as
+  `wilq-content-strategist`, but scoped to `/seo-gsc` and query/page evidence.
 - Custom Segments eval hardening, 2026-06-23 01:43 CEST.
   `wilq-custom-segments` already validated
   `act_prepare_custom_segments_from_search_terms`; the smoke output now exposes
