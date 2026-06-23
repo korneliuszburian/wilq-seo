@@ -265,6 +265,7 @@
       "blocked claims"
     ],
     "expected_action_ids": ["act_review_demand_gen_readiness"],
+    "expected_validated_action_ids": ["act_review_demand_gen_readiness"],
     "forbidden_action_ids": [
       "act_review_ga4_tracking_quality",
       "act_prepare_ads_campaign_review_queue",

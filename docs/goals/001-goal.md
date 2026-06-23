@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 01:50 CEST.
+Last updated: 2026-06-23 01:54 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -189,6 +189,17 @@ The result has `operator_usefulness_score=4`, source connectors
 validated action candidate and no safety findings. It is the route-specific
 GSC/query-page proof; broader content planning still belongs to
 `wilq-content-strategist`.
+
+Demand Gen now has validated review-only readiness proof. The
+`wilq-demand-gen-operator` smoke validates `act_review_demand_gen_readiness`,
+the eval case requires it in `expected_validated_action_ids`, and the passing
+artifact is
+`.local-lab/evals/codex-skill/20260623T015108Z/wilq-demand-gen-operator/result.json`.
+The result has `blocked=true`, `operator_usefulness_score=4`, source
+connectors `google_ads` and `google_analytics_4`, one validated action
+candidate and no safety findings. This is not a Demand Gen launch proof; it is
+an honest readiness/review gate while campaign migration, creative quality and
+performance claims remain blocked.
 
 ## Product Bar
 

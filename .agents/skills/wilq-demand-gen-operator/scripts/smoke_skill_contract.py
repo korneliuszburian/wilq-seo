@@ -186,6 +186,18 @@ def main() -> int:
     ads_diagnostics = pack.get("ads_diagnostics") or {}
     if ads_diagnostics.get("action_ids"):
         raise SystemExit("Demand Gen Ads diagnostics must not expose scoped action IDs")
+    quoted_action = urllib.parse.quote(EXPECTED_ACTION_ID, safe="")
+    validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+    action_validations = [
+        {
+            "action_id": validation.get("action_id"),
+            "valid": validation.get("valid"),
+            "status": validation.get("status"),
+            "errors": validation.get("errors", []),
+        }
+    ]
+    if validation.get("valid") is not True or validation.get("status") != "valid":
+        raise SystemExit(f"Demand Gen ActionObject validation failed: {validation}")
 
     print(
         json.dumps(
@@ -221,6 +233,7 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "action_validations": action_validations,
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])

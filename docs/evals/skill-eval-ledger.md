@@ -25,6 +25,55 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-demand-gen-operator validated ActionObject eval hardening
+
+Purpose:
+
+- Apply the validated ActionObject eval pattern to the Demand Gen readiness
+  skill.
+- Prove the review-only readiness ActionObject validates while Demand Gen
+  launch, migration, creative quality and performance claims stay blocked.
+
+Changes:
+
+- `.agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py`
+  now validates `act_review_demand_gen_readiness` and exposes
+  `action_validations`.
+- `docs/evals/cases/wilq-skill-eval-cases.json` now requires
+  `expected_validated_action_ids=["act_review_demand_gen_readiness"]` for
+  `wilq-demand-gen-operator`.
+
+Verification:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q \
+  -k 'route_specific_codex_eval_cases_define_surface_markers or route_specific_skill_smokes_expose_marketing_brief_items'
+uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-demand-gen-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```text
+.local-lab/evals/codex-skill/20260623T015108Z/wilq-demand-gen-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`, `polish_diacritics_present=true`, `api_used=true`.
+- Source connectors: `google_ads`, `google_analytics_4`.
+- `evidence_count=16`.
+- `blocked=true`.
+- `action_candidates` contains `act_review_demand_gen_readiness` with
+  `validation_state="validated"`.
+- `operator_usefulness_score=4`, `safety_findings=[]`.
+
+Product finding:
+
+- Demand Gen is still not a launch/migration recommendation. The useful product
+  behavior is a validated review-only readiness gate that explains missing
+  evidence and blocks unsupported performance or creative claims.
+
 ## 2026-06-23 - wilq-gsc-content-doctor validated ActionObject eval hardening
 
 Purpose:

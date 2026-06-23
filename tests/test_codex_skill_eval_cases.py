@@ -172,6 +172,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "blocked claims",
             },
             "action_ids": {"act_review_demand_gen_readiness"},
+            "validated_action_ids": {"act_review_demand_gen_readiness"},
         },
         "wilq-localo-operator": {
             "surface_path": "/localo",
@@ -224,6 +225,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     demand_gen_case = cases["wilq-demand-gen-operator"]
     assert demand_gen_case["expected_connectors"] == ["google_ads", "google_analytics_4"]
     assert "act_review_demand_gen_readiness" in demand_gen_case["expected_action_ids"]
+    assert "act_review_demand_gen_readiness" in demand_gen_case[
+        "expected_validated_action_ids"
+    ]
     assert "google_merchant_center" not in demand_gen_case["expected_connectors"]
     custom_segments_case = cases["wilq-custom-segments"]
     assert "audience size" in custom_segments_case["blocked_claim_terms"]
@@ -383,3 +387,12 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     assert "ahrefs_diagnostics" in ahrefs_smoke_script
     assert "ahrefs_review_gap_records" in ahrefs_smoke_script
     assert "Context pack ahrefs_diagnostics must be an object" in ahrefs_smoke_script
+
+    demand_gen_smoke_script = Path(
+        ".agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py"
+    ).read_text(encoding="utf-8")
+    demand_gen_validation_call = (
+        'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert demand_gen_validation_call in demand_gen_smoke_script
+    assert '"action_validations": action_validations' in demand_gen_smoke_script

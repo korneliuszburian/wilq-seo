@@ -37,6 +37,20 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Demand Gen eval hardening, 2026-06-23 01:51 CEST.
+  `wilq-demand-gen-operator` smoke now validates
+  `act_review_demand_gen_readiness` through
+  `POST /api/actions/{action_id}/validate`, exposes `action_validations`, and
+  the eval case requires
+  `expected_validated_action_ids=["act_review_demand_gen_readiness"]`. Passing
+  artifact:
+  `.local-lab/evals/codex-skill/20260623T015108Z/wilq-demand-gen-operator/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`,
+  `source_connectors=["google_ads","google_analytics_4"]`, 16 evidence IDs,
+  `blocked=true`, `operator_usefulness_score=4`, `safety_findings=[]` and a
+  validated readiness review ActionObject. Product finding: Demand Gen remains
+  honestly blocked for launch/migration/performance claims, but WILQ can now
+  prove the review-only readiness ActionObject.
 - GSC Content Doctor eval hardening, 2026-06-23 01:47 CEST.
   `wilq-gsc-content-doctor` smoke now validates
   `act_prepare_content_refresh_queue` through
