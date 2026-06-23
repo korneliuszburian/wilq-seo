@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ahrefs first-flow trace cleanup, 2026-06-23 10:07 CEST.
+  `/ahrefs` no longer prints raw `ev_*` evidence IDs in the marketer-facing
+  first flow: Ahrefs decision cards and the Ahrefs gap contract panel now show
+  evidence counts such as `Dowody: N ID`. Raw trace links remain available
+  lower in `Dowody i ograniczenia Ahrefs`, where proof/traceability is the
+  purpose. Browser proof with agent-browser on `http://127.0.0.1:5173/ahrefs`:
+  raw evidence links start only under the lower Ahrefs proof section. Focused
+  proof: RED/GREEN Ahrefs route test, dashboard lint OK and dashboard typecheck
+  OK.
 - Content Planner first-flow trace cleanup, 2026-06-23 09:59 CEST.
   `/content-planner` and `/seo-gsc` no longer print raw `ev_*` evidence IDs or
   raw `act_prepare*` ActionObject IDs in the first content decision flow:

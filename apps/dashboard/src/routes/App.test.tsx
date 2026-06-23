@@ -6383,7 +6383,18 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")
     ).toBeInTheDocument();
+    const ahrefsAuthorityCard = screen
+      .getByText("Użyj Ahrefs tylko jako kontekstu autorytetu")
+      .closest("article");
+    expect(ahrefsAuthorityCard).not.toBeNull();
+    expect(within(ahrefsAuthorityCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(screen.getByText("Przejrzyj rekordy luk Ahrefs")).toBeInTheDocument();
+    const ahrefsGapCard = screen.getByText("Przejrzyj rekordy luk Ahrefs").closest("article");
+    expect(ahrefsGapCard).not.toBeNull();
+    expect(within(ahrefsGapCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
+    const ahrefsGapContract = screen.getByText("Kontrakt luk Ahrefs").closest("section");
+    expect(ahrefsGapContract).not.toBeNull();
+    expect(within(ahrefsGapContract as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
     expect(screen.getByText("DR")).toBeInTheDocument();
     expect(screen.getAllByText("Ahrefs Rank").length).toBeGreaterThan(0);
     expect(screen.getByText("Gap records")).toBeInTheDocument();

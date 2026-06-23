@@ -153,7 +153,11 @@ function AhrefsDecisionCard({ decision }: { decision: AhrefsDecisionItem }) {
           label="Blokady claimów"
           values={decision.blocked_claims.map(ahrefsBlockedClaimLabel)}
         />
-        <LinkedTraceLine label="Dowody" values={decision.evidence_ids} kind="evidence" />
+        <TraceLine
+          label="Dowody"
+          values={[formatAhrefsEvidenceCount(decision.evidence_ids.length)]}
+          empty="brak"
+        />
       </div>
       {decision.metric_facts.length > 0 ? (
         <AhrefsMetricTiles facts={decision.metric_facts.slice(0, 6)} />
@@ -196,7 +200,11 @@ function AhrefsGapContractPanel({ data }: { data: AhrefsDiagnosticsResponse }) {
           label="Blokady claimów"
           values={contract.blocked_claims.map(ahrefsBlockedClaimLabel)}
         />
-        <LinkedTraceLine label="Dowody" values={contract.evidence_ids} kind="evidence" />
+        <TraceLine
+          label="Dowody"
+          values={[formatAhrefsEvidenceCount(contract.evidence_ids.length)]}
+          empty="brak"
+        />
       </div>
       {contract.gap_records.length === 0 ? (
         <BlockerNotice message="Brak typed gap records. Ahrefs może wspierać content review tylko jako kontekst autorytetu, nie jako lista luk konkurencji." />
@@ -294,6 +302,12 @@ function ahrefsMetricFactLabel(metricName: string) {
 function formatAhrefsMetricValue(value: string | number | boolean) {
   if (typeof value === "boolean") return value ? "tak" : "nie";
   return value;
+}
+
+function formatAhrefsEvidenceCount(count: number) {
+  if (count === 0) return "brak";
+  if (count === 1) return "1 ID";
+  return `${count} ID`;
 }
 
 function ahrefsDecisionStatusLabel(status: string) {
