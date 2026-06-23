@@ -39,6 +39,17 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Google Ads recommendation ActionObject preview, 2026-06-23.
+   `/actions/act_prepare_google_ads_recommendation_review_queue` now renders
+   Google Ads `ApplyRecommendationOperation` preview rows as marketer-reviewable
+   cards above the debug payload. The cards show recommendation type, campaign
+   ID, campaign budget ID, required validations, blocked claims and explicit
+   blocked apply/API mutation state. Browser proof:
+   `.local-lab/proof/dashboard/action-ads-recommendation-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not accept recommendations, mutate campaigns, apply budgets
+   or claim performance uplift; it only exposes the existing review contract.
+
 0. Dashboard content ActionObject brief/draft preview, 2026-06-23.
    `/actions/act_prepare_content_refresh_queue` now renders `content_brief_preview`
    and `wordpress_draft_payload_preview` as marketer-reviewable cards above the

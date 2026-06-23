@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:12 CEST.
+Last updated: 2026-06-23 20:17 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -151,6 +151,18 @@ stays under `Surowy payload debug`. This improves the content demo path without
 publishing WordPress content or unlocking WordPress mutations. Focused proof:
 Action detail route tests, dashboard typecheck, dashboard lint and browser
 proof `.local-lab/proof/dashboard/action-content-brief-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:17 CEST: the ActionObject detail route now
+renders Google Ads recommendation apply previews from `payload_preview` records
+with `operation_type=ApplyRecommendationOperation`.
+`/actions/act_prepare_google_ads_recommendation_review_queue` shows
+recommendation type, campaign ID, campaign budget ID, required validations,
+blocked claims and blocked apply/API mutation state as Polish review cards.
+Raw payload stays under `Surowy payload debug`. This improves the Ads demo path
+without accepting Google recommendations, mutating campaigns, applying budgets
+or claiming performance uplift. Focused proof: Action detail route tests,
+dashboard typecheck, dashboard lint and browser proof
+`.local-lab/proof/dashboard/action-ads-recommendation-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

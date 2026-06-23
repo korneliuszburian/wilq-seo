@@ -139,6 +139,45 @@ const adsActionFixture: ActionObject = {
   }
 };
 
+const adsRecommendationActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_ads_recommendation",
+  title: "Przygotuj ocenę rekomendacji Google Ads",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_google_ads"],
+  human_diagnosis: "Google Ads ma rekomendacje do review, ale apply jest zablokowany.",
+  recommended_reason: "Przejrzyj typ rekomendacji bez akceptowania jej w Google Ads.",
+  payload: {
+    action_type: "google_ads_recommendation_review",
+    preview_contract: "recommendation_apply_preview_v1",
+    payload_preview: [
+      {
+        id: "recommendation_apply_preview_display",
+        recommendation_type: "DISPLAY_EXPANSION_OPT_IN",
+        campaign_id: "23848569273",
+        campaign_budget_id: "15587163334",
+        operation_type: "ApplyRecommendationOperation",
+        required_validation: [
+          "review_recommendation_type",
+          "review_impact_metrics",
+          "review_change_history",
+          "review_business_goal"
+        ],
+        blocked_claims: [
+          "recommendation apply",
+          "automatic recommendation accept",
+          "performance uplift"
+        ],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -249,6 +288,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_ads")) {
         return Promise.resolve(Response.json(adsActionFixture));
       }
+      if (url.endsWith("/api/actions/act_ads_recommendation")) {
+        return Promise.resolve(Response.json(adsRecommendationActionFixture));
+      }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
       }
@@ -321,6 +363,25 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Obecny budżet: 10 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Propozycja: brak/)).toBeInTheDocument();
     expect(screen.getByText(/Safety: blocked/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders Google Ads recommendation payload preview without requiring raw JSON", async () => {
+    renderActionDetail("act_ads_recommendation");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj ocenę rekomendacji Google Ads"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Rekomendacja Google Ads do review")).toBeInTheDocument();
+    expect(screen.getByText("ApplyRecommendationOperation")).toBeInTheDocument();
+    expect(screen.getByText(/Typ: DISPLAY_EXPANSION_OPT_IN/)).toBeInTheDocument();
+    expect(screen.getByText(/Kampania: 23848569273/)).toBeInTheDocument();
+    expect(screen.getByText(/Budżet kampanii: 15587163334/)).toBeInTheDocument();
+    expect(screen.getByText(/Walidacje: review_recommendation_type/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: recommendation apply/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 
