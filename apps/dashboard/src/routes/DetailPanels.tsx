@@ -126,6 +126,7 @@ type PayloadPreviewItem = {
     | "searchTermNgram"
     | "demandGenReadiness"
     | "ga4TrackingQuality"
+    | "localVisibility"
     | "contentBrief"
     | "wordpressDraft";
   item: Record<string, unknown>;
@@ -188,6 +189,9 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "ga4TrackingQuality") {
     return <Ga4TrackingQualityPreviewCard item={previewItem.item} />;
+  }
+  if (previewItem.kind === "localVisibility") {
+    return <LocalVisibilityPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "contentBrief") {
     return <ContentBriefPreviewCard item={previewItem.item} />;
@@ -445,6 +449,41 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
   );
 }
 
+function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> }) {
+  const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Localo widoczność lokalna do review</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.operation_type, "local_visibility_review")}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Widoczność: {formatNumber(metricSnapshot.localo_avg_visibility_current)}</div>
+        <div>Zmiana widoczności: {formatPercent(metricSnapshot.localo_avg_visibility_change)}</div>
+        <div>Średnia pozycja grid: {formatNumber(metricSnapshot.localo_avg_latest_grid_position)}</div>
+        <div>Monitorowane frazy: {formatNumber(metricSnapshot.localo_tracked_keyword_count)}</div>
+        <div>Aktywne miejsca: {formatNumber(metricSnapshot.localo_active_place_count)}</div>
+        <div>Ocena: {formatNumber(metricSnapshot.localo_avg_rating)}</div>
+        <div>Opinie: {formatNumber(metricSnapshot.localo_reviews_count)}</div>
+        <div>Reply rate: {formatPercent(metricSnapshot.localo_review_reply_rate)}</div>
+        <PreviewValues label="Dozwolone kontrakty" values={asStringArray(item.allowed_contracts)} />
+        <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
+        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
   const metricSnapshot = isRecord(item.metric_snapshot) ? item.metric_snapshot : {};
   return (
@@ -538,9 +577,10 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "searchTermNgram") return 4;
   if (kind === "demandGenReadiness") return 5;
   if (kind === "ga4TrackingQuality") return 6;
-  if (kind === "contentBrief") return 7;
-  if (kind === "wordpressDraft") return 8;
-  return 9;
+  if (kind === "localVisibility") return 7;
+  if (kind === "contentBrief") return 8;
+  if (kind === "wordpressDraft") return 9;
+  return 10;
 }
 
 function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewItem["kind"] {
@@ -573,6 +613,12 @@ function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewIt
     stringValue(item.preview_contract, "") === "ga4_tracking_quality_review_v1"
   ) {
     return "ga4TrackingQuality";
+  }
+  if (
+    stringValue(item.operation_type, "") === "local_visibility_review" ||
+    stringValue(item.preview_contract, "") === "local_visibility_review_preview_v1"
+  ) {
+    return "localVisibility";
   }
   return "generic";
 }

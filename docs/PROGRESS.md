@@ -39,6 +39,20 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Localo visibility ActionObject preview, 2026-06-23.
+   `/actions/act_review_localo_visibility_facts` now renders
+   `local_visibility_review_preview_v1` as a marketer-reviewable card above the
+   debug payload. The card shows Localo aggregate visibility, visibility
+   change, average grid position, tracked keywords, active places, rating,
+   reviews, reply rate, allowed contracts, missing read contracts, required
+   validations, blocked claims and explicit blocked apply/API mutation state.
+   Browser proof:
+   `.local-lab/proof/dashboard/action-localo-visibility-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not claim GBP performance, competitor visibility, completed
+   local tasks, GBP writes or local visibility uplift; it only exposes the
+   Localo aggregate review contract.
+
 0. Dashboard Ads search-term n-gram ActionObject preview, 2026-06-23.
    `/actions/act_review_ads_search_term_ngrams` now renders
    `search_term_ngram_review_v1` rows from `ngram_preview` as

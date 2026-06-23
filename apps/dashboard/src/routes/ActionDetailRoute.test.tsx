@@ -412,6 +412,51 @@ const ga4TrackingActionFixture: ActionObject = {
   }
 };
 
+const localoActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_localo",
+  title: "Przygotuj review widoczności lokalnej Localo",
+  domain: "localo",
+  connector: "localo",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_localo"],
+  human_diagnosis: "Localo ma aggregate facts do review lokalnej widoczności.",
+  recommended_reason: "Przejrzyj metryki Localo bez claimów GBP i konkurencji.",
+  payload: {
+    action_type: "local_visibility_task",
+    preview_contract: "local_visibility_review_preview_v1",
+    payload_preview: [
+      {
+        id: "localo_visibility_review",
+        preview_contract: "local_visibility_review_preview_v1",
+        operation_type: "local_visibility_review",
+        metric_snapshot: {
+          localo_avg_latest_grid_position: 3.2632,
+          localo_avg_visibility_change: 0.6957,
+          localo_avg_visibility_current: 53.1739,
+          localo_tracked_keyword_count: 23,
+          localo_active_place_count: 4,
+          localo_avg_rating: 4.75,
+          localo_review_reply_rate: 0.813283,
+          localo_reviews_count: 798,
+          localo_read_contract_count: 3
+        },
+        allowed_contracts: ["local_rankings", "place_inventory", "reviews"],
+        missing_read_contracts: ["gbp_visibility", "competitor_visibility", "local_tasks"],
+        required_validation: [
+          "review_place_inventory",
+          "review_local_rankings_aggregate",
+          "review_reviews_aggregate"
+        ],
+        blocked_claims: ["GBP performance", "competitor visibility", "local visibility uplift"],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 const contentActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_content",
@@ -539,6 +584,9 @@ function mockFetch() {
       }
       if (url.endsWith("/api/actions/act_ga4_tracking")) {
         return Promise.resolve(Response.json(ga4TrackingActionFixture));
+      }
+      if (url.endsWith("/api/actions/act_localo")) {
+        return Promise.resolve(Response.json(localoActionFixture));
       }
       if (url.endsWith("/api/actions/act_content")) {
         return Promise.resolve(Response.json(contentActionFixture));
@@ -737,6 +785,30 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Eventy: 1190/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_landing_page_dimension/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: conversion rate/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders Localo visibility preview without requiring raw JSON", async () => {
+    renderActionDetail("act_localo");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj review widoczności lokalnej Localo"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("Localo widoczność lokalna do review")).toBeInTheDocument();
+    expect(screen.getByText(/Widoczność: 53,174/)).toBeInTheDocument();
+    expect(screen.getByText(/Zmiana widoczności: 69,57%/)).toBeInTheDocument();
+    expect(screen.getByText(/Średnia pozycja grid: 3,263/)).toBeInTheDocument();
+    expect(screen.getByText(/Monitorowane frazy: 23/)).toBeInTheDocument();
+    expect(screen.getByText(/Aktywne miejsca: 4/)).toBeInTheDocument();
+    expect(screen.getByText(/Ocena: 4,75/)).toBeInTheDocument();
+    expect(screen.getByText(/Opinie: 798/)).toBeInTheDocument();
+    expect(screen.getByText(/Reply rate: 81,33%/)).toBeInTheDocument();
+    expect(screen.getByText(/Dozwolone kontrakty: local_rankings/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: gbp_visibility/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: GBP performance/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 

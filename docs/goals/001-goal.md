@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:40 CEST.
+Last updated: 2026-06-23 20:43 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -226,6 +226,20 @@ apply/API mutation state as Polish review cards. Raw payload stays under
 search-term waste, applying negative keywords, conversion loss, CPA or ROAS.
 Focused proof: Action detail route tests, dashboard typecheck, dashboard lint
 and browser proof `.local-lab/proof/dashboard/action-ads-ngram-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:43 CEST: the ActionObject detail route now
+renders Localo visibility previews from
+`preview_contract=local_visibility_review_preview_v1`.
+`/actions/act_review_localo_visibility_facts` shows aggregate visibility,
+visibility change, average grid position, tracked keywords, active places,
+rating, reviews, reply rate, allowed contracts, missing read contracts,
+required validations, blocked claims and blocked apply/API mutation state as a
+Polish review card. Raw payload stays under `Surowy payload debug`. This
+improves the Localo demo path without claiming GBP performance, competitor
+visibility, completed local tasks, GBP writes or local visibility uplift.
+Focused proof: Action detail route tests, dashboard typecheck, dashboard lint
+and browser proof
+`.local-lab/proof/dashboard/action-localo-visibility-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual
