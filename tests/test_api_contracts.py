@@ -9552,7 +9552,13 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert merchant_preview["issue_type"] == "availability_updated"
     assert merchant_preview["affected_attribute"] == "n:availability"
     assert merchant_preview["metric_snapshot"] == {"issue_product_count": 23}
-    assert merchant_preview["sample_products_available"] is False
+    assert merchant_preview["sample_products_available"] is True
+    assert merchant_preview["sample_product_ids"] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert merchant_preview["sample_titles"] == ["Sorbent chemiczny 10 kg"]
+    assert merchant_preview["sample_unavailable_reason"] is None
     assert merchant_preview["apply_allowed"] is False
     assert merchant_preview["api_mutation_ready"] is False
     assert merchant_preview["destructive"] is False
@@ -9564,6 +9570,14 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     preview_payload = preview_response.json()
     assert preview_payload["preview_contract"] == "merchant_feed_issue_review_preview_v1"
     assert "payload_preview_missing" not in preview_payload["blockers"]
+    assert preview_payload["preview_items"][0]["sample_product_ids"] == [
+        "online~pl~PL~SKU-001",
+        "online~pl~PL~SKU-002",
+    ]
+    assert preview_payload["preview_items"][0]["sample_titles"] == [
+        "Sorbent chemiczny 10 kg"
+    ]
+    assert preview_payload["preview_items"][0]["apply_allowed"] is False
     serialized = json.dumps(payload)
     assert "5519957373" not in serialized
     assert "adc.json" not in serialized

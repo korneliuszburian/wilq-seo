@@ -602,7 +602,7 @@ def seed_metric_action_candidates() -> dict[str, ActionObject]:
     merchant_issue_facts = _merchant_issue_metric_facts(merchant_facts)
     if merchant_issue_facts:
         merchant_action_metrics = merchant_issue_facts[:8]
-        merchant_issue_clusters = _merchant_issue_clusters_payload(merchant_issue_facts)
+        merchant_issue_clusters = _merchant_issue_clusters_payload(merchant_facts)
         merchant_payload_preview = _merchant_issue_payload_preview(merchant_issue_clusters)
         action = ActionObject(
             id="act_review_merchant_feed_issues",
@@ -1318,6 +1318,16 @@ def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, 
     clusters: list[dict[str, Any]] = []
     for key, group_facts in grouped.items():
         issue_type, affected_attribute, country, reporting_context, severity, resolution = key
+        sample_product_ids = _merchant_sample_values_for_cluster(
+            facts,
+            key,
+            fact_name="sample_product_id",
+        )
+        sample_titles = _merchant_sample_values_for_cluster(
+            facts,
+            key,
+            fact_name="sample_product_title",
+        )
         clusters.append(
             {
                 "issue_type": issue_type,
@@ -1332,7 +1342,9 @@ def _merchant_issue_clusters_payload(facts: list[MetricFact]) -> list[dict[str, 
                     if isinstance(fact.value, int | float)
                 ),
                 "evidence_ids": _unique(fact.evidence_id for fact in group_facts),
-                "sample_products_available": False,
+                "sample_products_available": bool(sample_product_ids),
+                "sample_product_ids": sample_product_ids,
+                "sample_titles": sample_titles,
             }
         )
     return sorted(
@@ -1365,8 +1377,12 @@ def _merchant_issue_payload_preview(
                 "severity": cluster.get("severity"),
                 "resolution": cluster.get("resolution"),
                 "metric_snapshot": {"issue_product_count": product_count},
-                "sample_products_available": False,
-                "sample_unavailable_reason": (
+                "sample_products_available": bool(cluster.get("sample_product_ids")),
+                "sample_product_ids": cluster.get("sample_product_ids", []),
+                "sample_titles": cluster.get("sample_titles", []),
+                "sample_unavailable_reason": None
+                if cluster.get("sample_product_ids")
+                else (
                     "Obecny kontrakt Merchant zwraca wymiary problemu i liczbę "
                     "wystąpień, ale nie zwraca przykładowych ID produktów ani tytułów."
                 ),
@@ -1398,6 +1414,43 @@ def _merchant_issue_payload_preview(
             }
         )
     return preview_items
+
+
+def _merchant_sample_values_for_cluster(
+    facts: list[MetricFact],
+    key: tuple[str, str, str, str, str, str],
+    *,
+    fact_name: str,
+) -> list[str]:
+    issue_type, affected_attribute, country, reporting_context, severity, resolution = key
+    values = [
+        str(fact.value)
+        for fact in sorted(
+            facts,
+            key=lambda fact: fact.dimensions.get("sample_index", ""),
+        )
+        if fact.name == fact_name
+        and fact.dimensions.get("issue_type") == issue_type
+        and _merchant_attribute_matches(
+            fact.dimensions.get("affected_attribute"),
+            affected_attribute,
+        )
+        and (fact.dimensions.get("country") or "") == country
+        and (fact.dimensions.get("reporting_context") or "") == reporting_context
+        and fact.dimensions.get("severity") == severity
+        and (fact.dimensions.get("resolution") or "") == resolution
+        and isinstance(fact.value, str)
+    ]
+    return _unique(values)[:10]
+
+
+def _merchant_attribute_matches(left: str | None, right: str | None) -> bool:
+    return _merchant_attribute_key(left) == _merchant_attribute_key(right)
+
+
+def _merchant_attribute_key(value: str | None) -> str:
+    normalized = (value or "").removeprefix("n:").strip().lower()
+    return normalized.replace("_", " ")
 
 
 def _merchant_issue_cluster_id(cluster: dict[str, Any]) -> str:

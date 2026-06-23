@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 19:32 CEST.
+Last updated: 2026-06-23 19:36 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -148,6 +148,13 @@ mutations: the samples are not a full SKU list, issue counts still use
 `count_semantics=reported_issue_occurrences`, and `act_review_merchant_feed_issues`
 remains review/prepare-only until payload preview, validation, audit and
 operator consent exist.
+
+Follow-up completed at 2026-06-23 19:36 CEST: the Merchant ActionObject preview
+now uses the same sample product facts as Merchant diagnostics. `act_review_merchant_feed_issues`
+`payload.payload_preview` and `POST /api/actions/{id}/preview` include
+`sample_product_ids` and `sample_titles` for issue clusters such as
+`n:unit_pricing_measure` and `n:availability`, while keeping
+`mutation_allowed=false`, `apply_allowed=false` and `api_mutation_ready=false`.
 
 2026-06-23 Ads Doctor first-flow copy rule: the first Ads Doctor flow must
 show what a Polish marketer can review now, not API slang. Completed slice:

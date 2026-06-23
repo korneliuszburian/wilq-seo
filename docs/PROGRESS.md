@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Merchant ActionObject sample preview, 2026-06-23.
+   `act_review_merchant_feed_issues` now carries Merchant sample product IDs
+   and titles into its review-only `payload_preview` and dry-run
+   `/api/actions/{id}/preview` response when those samples exist in metric
+   facts. This keeps `/merchant`, `/api/merchant/diagnostics`,
+   `/api/actions` and Codex context-pack aligned. Live proof after stack
+   restart: preview items for `n:unit_pricing_measure` and `n:availability`
+   include concrete sample product IDs/titles while `mutation_allowed=false`,
+   `apply_allowed=false` and `api_mutation_ready=false`. Focused proof:
+   Merchant API/action contract subset, merchant context-pack subset, Python
+   ruff and mypy.
+
 0. Merchant decision sample products, 2026-06-23.
    `/api/merchant/diagnostics` now carries `sample_product_ids` and
    `sample_titles` on each `decision_queue` item when Merchant evidence has
