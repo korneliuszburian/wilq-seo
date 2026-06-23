@@ -39,6 +39,19 @@ Stan produktu:
 
 ## Last Done
 
+0. Daily Ads action focus cleanup, 2026-06-23.
+   Command Center Ads daily card no longer carries deep Ads actions such as
+   Demand Gen readiness, search-term n-grams or target/strategy review. The
+   daily Ads card now exposes only the four first-flow review actions:
+   campaign review, recommendation review, custom segments and negative keyword
+   review. Because `/api/marketing/brief` now filters safe actions through
+   daily decisions, live `safe_next_actions` dropped from 13 to 7. Live proof
+   after `scripts/local_stack.sh restart`: Ads daily decision action IDs are
+   `act_prepare_ads_campaign_review_queue`,
+   `act_prepare_google_ads_recommendation_review_queue`,
+   `act_prepare_custom_segments_from_search_terms`,
+   `act_prepare_negative_keyword_review_queue`.
+
 0. Marketing brief dedupe and Localo copy cleanup, 2026-06-23.
    `/api/marketing/brief` no longer duplicates the GA4 blocker when the same
    blocked daily decision is present both in daily decisions and operator brief.

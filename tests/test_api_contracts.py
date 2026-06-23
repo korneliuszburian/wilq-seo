@@ -3308,6 +3308,10 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "negative keyword candidates" not in ads_item["blocked_claims"]
     assert "act_prepare_ads_campaign_review_queue" in ads_item["action_ids"]
     assert "act_prepare_google_ads_recommendation_review_queue" in ads_item["action_ids"]
+    assert "act_review_demand_gen_readiness" not in ads_item["action_ids"]
+    assert "act_review_ads_search_term_ngrams" not in ads_item["action_ids"]
+    assert ADS_TARGET_CONFIRMATION_ACTION_ID not in ads_item["action_ids"]
+    assert ADS_STRATEGY_REVIEW_ACTION_ID not in ads_item["action_ids"]
     ads_business_item = brief_by_id["daily_ads_business_context"]
     assert ads_business_item["status"] == "blocked"
     assert ads_business_item["priority"] == 18
@@ -3350,6 +3354,7 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_decision["metric_tiles"]["rekomendacje"] == 1
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
     assert "read-only kolejki" in ads_decision["co_widzimy"]
+    assert ads_decision["action_ids"] == ads_item["action_ids"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
     assert "decision_ads_business_context_before_budget_decisions" not in decisions_by_id
 
@@ -3363,6 +3368,55 @@ def test_command_center_ads_plan_uses_live_review_queues(
         action_id for item in blockers["items"] for action_id in item["action_ids"]
     }
     assert ADS_BUSINESS_CONTEXT_ACTION_ID in blocker_action_ids
+
+
+def test_command_center_ads_daily_card_filters_deep_ads_actions(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from wilq.briefing import command_center
+
+    clear_google_ads_env(monkeypatch)
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+
+    def ads_action(action_id: str) -> ActionObject:
+        return ActionObject(
+            id=action_id,
+            title=f"Ads action {action_id}",
+            domain=OpportunityDomain.google_ads,
+            connector="google_ads",
+            mode=ActionMode.prepare,
+            risk=ActionRisk.medium,
+            status=ActionStatus.needs_validation,
+            evidence_ids=["ev_refresh_refresh_google_ads_command_center_live"],
+            human_diagnosis="Ads action test.",
+            recommended_reason="Review only.",
+            payload={"action_type": action_id},
+            validation_status="not_validated",
+            created_by="test",
+        )
+
+    item = command_center._ads_item_from_facts(
+        metric_store().list_metric_facts("google_ads", limit=100),
+        [
+            ads_action("act_review_demand_gen_readiness"),
+            ads_action("act_prepare_ads_campaign_review_queue"),
+            ads_action("act_prepare_google_ads_recommendation_review_queue"),
+            ads_action("act_review_ads_search_term_ngrams"),
+            ads_action("act_prepare_custom_segments_from_search_terms"),
+            ads_action("act_prepare_negative_keyword_review_queue"),
+            ads_action(ADS_TARGET_CONFIRMATION_ACTION_ID),
+            ads_action(ADS_STRATEGY_REVIEW_ACTION_ID),
+        ],
+    )
+
+    assert item.status == "ready"
+    assert item.action_ids == [
+        "act_prepare_ads_campaign_review_queue",
+        "act_prepare_google_ads_recommendation_review_queue",
+        "act_prepare_custom_segments_from_search_terms",
+        "act_prepare_negative_keyword_review_queue",
+    ]
 
 
 def test_command_center_ads_totals_use_latest_refresh_summary(
@@ -11432,6 +11486,78 @@ def test_marketing_brief_dedupes_command_center_blockers() -> None:
     blockers = next(section for section in brief.sections if section.id == "what_blocks_us").items
     assert len(blockers) == 1
     assert blockers[0].title == "GA4: pomiar i jakość ruchu do kontroli"
+
+
+def test_marketing_brief_daily_context_limits_safe_actions_to_daily_decisions() -> None:
+    daily_decision = DailyDecision(
+        id="decision_review_ga4_landing_quality",
+        title="GA4: pomiar i jakość ruchu do kontroli",
+        route="/ga4",
+        status="blocked",
+        priority=14,
+        co_widzimy="GA4 ma problemy pomiaru.",
+        dlaczego_to_ma_znaczenie="Brak kontraktu na ROAS i revenue.",
+        bezpieczny_next_step="Otwórz /ga4 i waliduj review GA4.",
+        source_connectors=["google_analytics_4"],
+        evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
+        action_ids=["act_review_ga4_tracking_quality"],
+        blocked_claims=["ROAS", "revenue"],
+        risk=ActionRisk.low,
+    )
+    command_center = CommandCenterResponse(
+        strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
+        primary_next_step="Otwórz /ga4.",
+        blocker_count=1,
+        daily_decisions=[daily_decision],
+        connector_summary=ConnectorSummary(total=0, configured=0, missing_credentials=0),
+        sections={},
+        active_actions=[],
+        connector_health=[],
+        codex_operator_status={},
+    )
+    daily_action = ActionObject(
+        id="act_review_ga4_tracking_quality",
+        title="Sprawdź jakość pomiaru GA4 przed oceną kampanii",
+        domain=OpportunityDomain.ga4,
+        connector="google_analytics_4",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.low,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
+        human_diagnosis="GA4 wymaga review.",
+        recommended_reason="Sprawdź pomiar GA4.",
+        payload={"action_type": "ga4_review"},
+        validation_status="not_validated",
+        created_by="test",
+    )
+    noisy_action = ActionObject(
+        id="act_review_demand_gen_readiness",
+        title="Przygotuj review gotowości Demand Gen",
+        domain=OpportunityDomain.google_ads,
+        connector="google_ads",
+        mode=ActionMode.prepare,
+        risk=ActionRisk.medium,
+        status=ActionStatus.needs_validation,
+        evidence_ids=["ev_refresh_refresh_google_ads_test"],
+        human_diagnosis="Demand Gen nie należy do daily decision.",
+        recommended_reason="Nie promuj w daily brief.",
+        payload={"action_type": "demand_gen_review"},
+        validation_status="not_validated",
+        created_by="test",
+    )
+
+    brief = build_marketing_brief(
+        connectors=[],
+        refresh_runs=[],
+        actions=[daily_action, noisy_action],
+        command_center=command_center,
+    )
+
+    action_items = next(
+        section for section in brief.sections if section.id == "safe_next_actions"
+    ).items
+    action_ids = [item.action_ids[0] for item in action_items]
+    assert action_ids == ["act_review_ga4_tracking_quality"]
 
 
 def test_marketing_brief_localo_metric_headline_is_marketer_friendly(

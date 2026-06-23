@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 18:43 CEST.
+Last updated: 2026-06-23 19:02 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -387,6 +387,17 @@ review item, not a raw technical metric headline:
 marketing brief contract tests, Python ruff OK, mypy OK. Live proof after
 `scripts/local_stack.sh restart`: `what_blocks_us` has one GA4 blocker; Localo
 shows `23 monitorowanych fraz`, average visibility `53.1739` and `798 opinii`.
+
+2026-06-23 Daily Ads action focus cleanup: Command Center Ads daily card no
+longer promotes deep Ads actions such as Demand Gen readiness, search-term
+n-grams or target/strategy review. It keeps only first-flow review actions:
+campaign review, recommendation review, custom segments and negative keyword
+review. Because marketing brief safe actions are scoped through daily
+decisions, live `safe_next_actions` dropped from 13 to 7. Focused proof:
+RED/GREEN Command Center Ads action test, 11 focused Command Center/marketing
+brief tests, Python ruff OK and mypy OK. Live proof after
+`scripts/local_stack.sh restart`: Ads daily decision action IDs are the four
+first-flow review actions.
 
 2026-06-23 Demand Gen diagnostics performance: `/api/demand-gen/diagnostics`
 and the `wilq-demand-gen-operator` context-pack no longer build full GA4

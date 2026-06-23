@@ -119,6 +119,11 @@ def build_marketing_brief(
         )
     core_actions = core_brief_actions(actions)
     stateful_actions = _stateful_brief_actions(core_actions, blocker_items)
+    if command_center is not None:
+        stateful_actions = _actions_for_daily_decisions(
+            stateful_actions,
+            command_center.daily_decisions,
+        )
     action_items = _action_items(
         stateful_actions,
         command_center.daily_decisions if command_center is not None else None,
@@ -587,6 +592,20 @@ def _action_items(
             )
         )
     return items
+
+
+def _actions_for_daily_decisions(
+    actions: list[ActionObject],
+    decisions: list[DailyDecision],
+) -> list[ActionObject]:
+    daily_action_ids = {
+        action_id
+        for decision in decisions
+        for action_id in decision.action_ids
+    }
+    if not daily_action_ids:
+        return []
+    return [action for action in actions if action.id in daily_action_ids]
 
 
 def _decisions_by_action_id(decisions: list[DailyDecision]) -> dict[str, DailyDecision]:

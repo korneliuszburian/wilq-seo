@@ -6,7 +6,6 @@ from typing import Any, Literal
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
 from wilq.actions.google_ads.campaign_review import CAMPAIGN_REVIEW_ACTION_ID
 from wilq.actions.google_ads.custom_segments import CUSTOM_SEGMENT_ACTION_ID
-from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.negative_keywords import NEGATIVE_KEYWORD_ACTION_ID
 from wilq.actions.google_ads.recommendations import RECOMMENDATION_REVIEW_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
@@ -65,6 +64,12 @@ PRIMARY_DAILY_PLAN_IDS = {
     "plan_fix_ads_oauth_before_spend_analysis",
 }
 CONFIGURE_GOOGLE_ADS_ACTION_ID = "act_configure_google_ads_env"
+DAILY_ADS_REVIEW_ACTION_IDS = {
+    CAMPAIGN_REVIEW_ACTION_ID,
+    RECOMMENDATION_REVIEW_ACTION_ID,
+    CUSTOM_SEGMENT_ACTION_ID,
+    NEGATIVE_KEYWORD_ACTION_ID,
+}
 
 
 def build_command_center_response(
@@ -338,12 +343,7 @@ def _ads_item_from_facts(
         action_ids = [
             action_id
             for action_id in ads_action_ids
-            if action_id
-            not in {
-                ADS_BUSINESS_CONTEXT_ACTION_ID,
-                KEYWORD_PLANNER_ACCESS_ACTION_ID,
-                CONFIGURE_GOOGLE_ADS_ACTION_ID,
-            }
+            if action_id in DAILY_ADS_REVIEW_ACTION_IDS
         ]
     else:
         action_ids = [
