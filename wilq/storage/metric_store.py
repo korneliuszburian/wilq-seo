@@ -275,10 +275,9 @@ class DuckDbMetricStore:
             connector_id: max(1, min(limit, MAX_METRIC_FACT_READ_LIMIT))
             for connector_id, limit in connector_limits.items()
         }
-        values_placeholders = ", ".join("(?, ?)" for _ in unique_connector_limits)
-        query = f"""
+        query = """
             WITH connector_limits(connector_id, connector_limit) AS (
-              VALUES {values_placeholders}
+              SELECT unnest(?) AS connector_id, unnest(?) AS connector_limit
             ),
             ranked_metric_fact_groups AS (
             SELECT
@@ -329,9 +328,8 @@ class DuckDbMetricStore:
               facts.evidence_id ASC
         """
         params: list[Any] = [
-            value
-            for connector_id, connector_limit in unique_connector_limits.items()
-            for value in (connector_id, connector_limit)
+            list(unique_connector_limits.keys()),
+            list(unique_connector_limits.values()),
         ]
         with _DUCKDB_LOCK, self._connect(read_only=True) as connection:
             rows = connection.execute(query, params).fetchall()
