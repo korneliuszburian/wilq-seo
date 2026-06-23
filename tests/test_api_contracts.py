@@ -12103,6 +12103,30 @@ def test_codex_context_pack_scopes_demand_gen_payload() -> None:
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
 
 
+def test_codex_context_pack_scopes_demand_gen_without_full_ga4_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_full_ga4_builder(*_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("Demand Gen context must not build full GA4 diagnostics")
+
+    monkeypatch.setattr(
+        "apps.api.wilq_api.main.build_ga4_diagnostics",
+        fail_full_ga4_builder,
+    )
+
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-demand-gen-operator"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "demand_gen_readiness" in data
+    assert data["ga4_diagnostics"]["context_pack_compaction"][
+        "full_endpoint"
+    ] == "/api/ga4/diagnostics"
+
+
 def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     response = client.get("/api/demand-gen/diagnostics")
 
@@ -12143,6 +12167,23 @@ def test_demand_gen_diagnostics_exposes_honest_readiness_contract() -> None:
     assert "demand_gen_readiness_review_action_object" in data["available_read_contracts"]
     assert "demand_gen_action_object" not in data["missing_read_contracts"]
     assert "Demand Gen launch recommendation" in data["blocked_claims"]
+
+
+def test_demand_gen_diagnostics_does_not_require_full_ga4_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_full_ga4_builder(*_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("Demand Gen diagnostics must not build full GA4 diagnostics")
+
+    monkeypatch.setattr(
+        "apps.api.wilq_api.main.build_ga4_diagnostics",
+        fail_full_ga4_builder,
+    )
+
+    response = client.get("/api/demand-gen/diagnostics")
+
+    assert response.status_code == 200
+    assert response.json()["source_connectors"] == ["google_ads", "google_analytics_4"]
 
 
 def test_demand_gen_diagnostics_uses_empty_read_ad_and_asset_contracts(

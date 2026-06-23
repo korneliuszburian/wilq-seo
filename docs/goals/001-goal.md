@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 15:20 CEST.
+Last updated: 2026-06-23 13:10 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -108,6 +108,21 @@ full Ads diagnostics `0.984s`, `0.503s`, `0.693s`; summary `0.416s`,
 `list_actions`, summary payload test, Python ruff OK and mypy OK. Remaining
 performance follow-up: reduce Ads metric fact parsing for summary paths if the
 route needs another latency pass.
+
+2026-06-23 Demand Gen diagnostics performance: `/api/demand-gen/diagnostics`
+and the `wilq-demand-gen-operator` context-pack no longer build full GA4
+diagnostics. Demand Gen uses GA4 metric facts for evidence/freshness and
+landing-quality rows, while Ads diagnostics remains the source for campaign
+channel rows. Local cProfile improved `_build_demand_gen_readiness_contract`
+from about `1.607s` to `1.134s` after replacing full GA4 diagnostics and
+recursive evidence collection. Warm live HTTP after stack restart:
+`/api/demand-gen/diagnostics` `0.729s`, `0.688s`, `0.690s`; Demand Gen
+context-pack first warm run `2.212s`, then `0.086s`, `0.086s`. Focused proof:
+RED/GREEN API and context-pack tests that monkeypatch full
+`build_ga4_diagnostics`, Demand Gen contract tests, Python ruff OK and mypy OK.
+Important measurement gotcha: the first post-restart HTTP calls can be noisy
+because DuckDB/API warms up; compare warmed repeated route calls before drawing
+performance conclusions.
 
 2026-06-23 Actions route cleanup: `/actions` no longer renders the extra
 `Dowody powiązane z akcjami` evidence registry under ActionObject cards. The

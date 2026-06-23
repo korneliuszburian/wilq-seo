@@ -37,6 +37,21 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Demand Gen diagnostics performance, 2026-06-23.
+  `/api/demand-gen/diagnostics` and the `wilq-demand-gen-operator` context-pack
+  no longer build full GA4 diagnostics. Demand Gen now uses GA4 metric facts for
+  evidence/freshness and landing-quality rows, while Ads diagnostics remains the
+  source for campaign channel rows. Local cProfile after the first patch showed
+  `_build_demand_gen_readiness_contract` dropping from about `1.607s` to
+  `1.134s` after replacing recursive evidence collection with top-level
+  diagnostics evidence. Live warm HTTP after stack restart:
+  `/api/demand-gen/diagnostics` `0.729s`, `0.688s`, `0.690s`; Demand Gen
+  context-pack first warm run `2.212s`, then `0.086s`, `0.086s`. The first
+  post-restart measurement was noisy (`2.620s`, `6.112s`, `4.341s`) and should
+  be treated as cold DuckDB/API warmup, not steady-state route latency. Focused
+  proof: RED/GREEN API test and context-pack test monkeypatching full
+  `build_ga4_diagnostics`, Demand Gen contract tests, Python ruff OK and mypy
+  OK.
 - Ads diagnostics lightweight action IDs, 2026-06-23.
   `/api/ads/diagnostics` and `/api/ads/diagnostics?view=summary` no longer
   call the full `list_actions()` path just to discover Google Ads ActionObject

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from time import monotonic
 from typing import Any
@@ -935,13 +934,10 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
 
 
 def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        ads_future = executor.submit(build_ads_diagnostics)
-        ga4_future = executor.submit(build_ga4_diagnostics)
-        ads_diagnostics = ads_future.result().model_dump(mode="json")
-        ga4_diagnostics = ga4_future.result().model_dump(mode="json")
     demand_gen_metric_facts = _demand_gen_google_ads_metric_facts()
     ga4_metric_facts = _demand_gen_ga4_metric_facts()
+    ads_diagnostics = build_ads_diagnostics().model_dump(mode="json")
+    ga4_diagnostics = _demand_gen_ga4_diagnostics_from_metric_facts(ga4_metric_facts)
     return {
         "ads_diagnostics": _compact_ads_diagnostics_for_lite_context(
             ads_diagnostics,
@@ -963,17 +959,37 @@ def _demand_gen_diagnostics_for_context() -> dict[str, Any]:
 
 
 def _build_demand_gen_readiness_contract() -> DemandGenReadinessContract:
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        ads_future = executor.submit(build_ads_diagnostics)
-        ga4_future = executor.submit(build_ga4_diagnostics)
-        ads_diagnostics = ads_future.result().model_dump(mode="json")
-        ga4_diagnostics = ga4_future.result().model_dump(mode="json")
+    demand_gen_metric_facts = _demand_gen_google_ads_metric_facts()
+    ga4_metric_facts = _demand_gen_ga4_metric_facts()
+    ads_diagnostics = build_ads_diagnostics().model_dump(mode="json")
+    ga4_diagnostics = _demand_gen_ga4_diagnostics_from_metric_facts(ga4_metric_facts)
     return _demand_gen_readiness_contract(
         ads_diagnostics,
         ga4_diagnostics,
-        _demand_gen_google_ads_metric_facts(),
-        _demand_gen_ga4_metric_facts(),
+        demand_gen_metric_facts,
+        ga4_metric_facts,
     )
+
+
+def _demand_gen_ga4_diagnostics_from_metric_facts(
+    ga4_metric_facts: list[MetricFact],
+) -> dict[str, Any]:
+    evidence_ids = list(
+        dict.fromkeys(
+            fact.evidence_id for fact in ga4_metric_facts if fact.evidence_id
+        )
+    )
+    return {
+        "source_connectors": ["google_analytics_4"],
+        "evidence_ids": evidence_ids,
+        "metric_fact_count": len(ga4_metric_facts),
+        "context_pack_compaction": {
+            "metric_facts_removed": True,
+            "sections_omitted": True,
+            "sections_total": 0,
+            "full_endpoint": "/api/ga4/diagnostics",
+        },
+    }
 
 
 def _demand_gen_readiness_contract(
@@ -1034,8 +1050,8 @@ def _demand_gen_readiness_contract(
                 ),
                 connector_evidence_id("google_ads"),
                 connector_evidence_id("google_analytics_4"),
-                *_collect_values_by_key(ads_diagnostics, "evidence_ids"),
-                *_collect_values_by_key(ga4_diagnostics, "evidence_ids"),
+                *_top_level_evidence_ids(ads_diagnostics),
+                *_top_level_evidence_ids(ga4_diagnostics),
             ]
         )
     )[:12]
@@ -1158,6 +1174,13 @@ def _demand_gen_readiness_contract(
             "read contracts landing quality i migration constraints."
         ),
     )
+
+
+def _top_level_evidence_ids(diagnostics: dict[str, Any]) -> list[str]:
+    evidence_ids = diagnostics.get("evidence_ids")
+    if not isinstance(evidence_ids, list):
+        return []
+    return [str(evidence_id) for evidence_id in evidence_ids if evidence_id]
 
 
 def _demand_gen_google_ads_metric_facts() -> list[MetricFact]:
