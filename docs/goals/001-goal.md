@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 08:54 CEST.
+Last updated: 2026-06-23 09:18 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -215,6 +215,20 @@ stack restart: Command Center shows `grupy ruchu=10`, `decyzje=6`,
 `decision_count=6`, `blocked=2`, `ready=4`. Focused proof: GA4 visible
 decision cap RED/GREEN test passed with existing Command Center GA4/operator
 tests, Python ruff and mypy passed.
+
+2026-06-23 Command Center Content + Ahrefs alignment:
+`daily_content_queue` now includes the Ahrefs gap-review signal that
+`/api/content/diagnostics` already exposes as a top content decision. It does
+not build full content diagnostics on the first screen; it uses the latest
+Ahrefs gap metric facts alongside the tactical GSC/WordPress queue. Live proof
+after stack restart: source connectors include `ahrefs`,
+`google_search_console`, `wordpress_ekologus`, `wordpress_sklep`; metric tiles
+show `decyzje=5`, `rekordy Ahrefs=31`, `luki Ahrefs=4`, `link gaps=9`,
+`wyświetlenia=7852`, `kliknięcia=138`, and evidence includes
+`ev_refresh_refresh_ahrefs_cb31460610d3` plus
+`ev_refresh_refresh_google_search_console_554550c44ec7`. Focused proof:
+Command Center operator brief RED/GREEN test passed, lightweight builder test
+passed, Python ruff and mypy passed.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

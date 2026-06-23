@@ -37,6 +37,18 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center Content + Ahrefs decision alignment, 2026-06-23.
+  `daily_content_queue` on `/api/dashboard/command-center` now includes the
+  same Ahrefs gap-review source that `/api/content/diagnostics` exposes in its
+  top content decisions. Live proof after `scripts/local_stack.sh restart`:
+  source connectors include `ahrefs`, `google_search_console`,
+  `wordpress_ekologus`, `wordpress_sklep`; metric tiles show `decyzje=5`,
+  `rekordy Ahrefs=31`, `luki Ahrefs=4`, `link gaps=9`,
+  `wyświetlenia=7852`, `kliknięcia=138`; evidence sample includes
+  `ev_refresh_refresh_ahrefs_cb31460610d3` and
+  `ev_refresh_refresh_google_search_console_554550c44ec7`. Focused proof:
+  RED/GREEN `test_command_center_exposes_polish_operator_brief`, lightweight
+  builder test, Python ruff OK and mypy OK for `wilq/briefing/command_center.py`.
 - Command Center Ads value tiles, 2026-06-23 08:31 CEST.
   `daily_ads_status.metric_tiles` on `/api/dashboard/command-center` now
   includes live Ads value totals from campaign facts: `kliknięcia`,

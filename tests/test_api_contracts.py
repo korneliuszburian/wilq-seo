@@ -2951,8 +2951,14 @@ def test_command_center_exposes_polish_operator_brief(
     assert "WordPress potwierdza istniejącą stronę" in brief_by_id[
         "daily_content_queue"
     ]["summary"]
+    assert "ahrefs" in brief_by_id["daily_content_queue"]["source_connectors"]
+    assert "ev_refresh_refresh_ahrefs_action_test" in brief_by_id[
+        "daily_content_queue"
+    ]["evidence_ids"]
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["query/page"] >= 1
-    assert brief_by_id["daily_content_queue"]["metric_tiles"]["decyzje"] >= 1
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["decyzje"] >= 2
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["Ahrefs review"] == 1
+    assert brief_by_id["daily_content_queue"]["metric_tiles"]["luki Ahrefs"] == 1
     assert brief_by_id["daily_content_queue"]["metric_tiles"]["wyświetlenia"] >= 1
     assert "act_prepare_content_refresh_queue" in brief_by_id["daily_content_queue"]["action_ids"]
     assert brief_by_id["daily_ga4_landing_quality"]["status"] == "blocked"
@@ -10748,8 +10754,12 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
             next_step="Otwórz /merchant.",
         )
 
-    def content_item_builder(queue: TacticalQueueResponse) -> CommandCenterBriefItem:
+    def content_item_builder(
+        queue: TacticalQueueResponse,
+        ahrefs_facts: list[object],
+    ) -> CommandCenterBriefItem:
         seen["content_tactical_queue"] = queue
+        seen["content_ahrefs_facts"] = ahrefs_facts
         return CommandCenterBriefItem(
             id="daily_content_queue",
             title="Content",
@@ -10815,6 +10825,7 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
     assert seen["merchant_actions"] == [action]
     assert seen["merchant_metric_facts"] == []
     assert seen["content_tactical_queue"] == tactical_queue
+    assert seen["content_ahrefs_facts"] == []
     assert seen["ga4_tactical_items"] == tactical_queue.items
     assert seen["ga4_actions"] == [action]
     assert seen["ga4_metric_facts"] == []
@@ -10822,6 +10833,7 @@ def test_command_center_brief_uses_lightweight_daily_item_builders(
         "google_ads",
         "google_merchant_center",
         "google_analytics_4",
+        "ahrefs",
         "localo",
     ]
 

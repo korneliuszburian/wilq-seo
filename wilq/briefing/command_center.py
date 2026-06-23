@@ -44,10 +44,12 @@ STRICT_DAILY_INSTRUCTION = (
 GA4_CONNECTOR_ID = "google_analytics_4"
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
 GOOGLE_MERCHANT_CONNECTOR_ID = "google_merchant_center"
+AHREFS_CONNECTOR_ID = "ahrefs"
 GA4_COMMAND_CENTER_DECISION_LIMIT = 6
 GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT = 1200
 MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
 GA4_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
+AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT = 400
 LOCALO_PROBE_METRIC_NAMES = {
     "access_token_present",
     "api",
@@ -192,6 +194,7 @@ def build_command_center_brief(
             GOOGLE_ADS_CONNECTOR_ID,
             GOOGLE_MERCHANT_CONNECTOR_ID,
             GA4_CONNECTOR_ID,
+            AHREFS_CONNECTOR_ID,
             "localo",
         ],
         limit_per_connector=MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT,
@@ -205,13 +208,16 @@ def build_command_center_brief(
     ga4_facts = facts_by_connector.get(GA4_CONNECTOR_ID, [])[
         :GA4_COMMAND_CENTER_METRIC_FACT_LIMIT
     ]
+    ahrefs_facts = facts_by_connector.get(AHREFS_CONNECTOR_ID, [])[
+        :AHREFS_COMMAND_CENTER_METRIC_FACT_LIMIT
+    ]
     localo_facts = facts_by_connector.get("localo", [])[:120]
     localo = get_connector_status("localo")
     localo_runs = local_state_store().list_connector_refresh_runs("localo")
     items = [
         _ads_item_from_facts(ads_facts, actions),
         _merchant_item_from_tactical(tactical_queue.items, actions, merchant_facts),
-        _content_item_from_tactical(tactical_queue),
+        _content_item_from_tactical(tactical_queue, ahrefs_facts),
         _ga4_item_from_tactical(tactical_queue.items, actions, ga4_facts),
     ]
     ads_business_item = _ads_business_context_item_from_facts(ads_facts, actions)
@@ -817,7 +823,10 @@ def _merchant_item_product_count(item: TacticalQueueItem) -> float:
     return 0.0
 
 
-def _content_item_from_tactical(queue: TacticalQueueResponse) -> CommandCenterBriefItem:
+def _content_item_from_tactical(
+    queue: TacticalQueueResponse,
+    ahrefs_facts: list[MetricFact],
+) -> CommandCenterBriefItem:
     content_groups = [
         group
         for group in queue.compact_groups
@@ -826,12 +835,19 @@ def _content_item_from_tactical(queue: TacticalQueueResponse) -> CommandCenterBr
     content_items = [
         item for item in queue.items if item.domain == OpportunityDomain.gsc_seo
     ]
+    latest_ahrefs_refresh = _latest_connector_refresh(AHREFS_CONNECTOR_ID)
+    ahrefs_facts = _facts_for_latest_refresh(latest_ahrefs_refresh, ahrefs_facts)
+    ahrefs_gap_facts = _ahrefs_gap_facts(ahrefs_facts)
+    ahrefs_metric_tiles = _ahrefs_content_metric_tiles(ahrefs_gap_facts)
+    ahrefs_available = bool(ahrefs_gap_facts)
     live_data_available = bool(content_items)
+    content_decision_count = len(content_groups) or len(content_items)
+    decision_count = content_decision_count + (1 if ahrefs_available else 0)
     top_group = content_groups[0] if content_groups else None
     top_item = content_items[0] if content_items else None
     total_clicks = _sum_tactical_metric(content_items, "clicks")
     total_impressions = _sum_tactical_metric(content_items, "impressions")
-    summary = (
+    tactical_summary = (
         _content_tactical_summary(top_item, top_group.diagnosis)
         if top_group is not None
         else (
@@ -843,10 +859,30 @@ def _content_item_from_tactical(queue: TacticalQueueResponse) -> CommandCenterBr
             )
         )
     )
+    summary = _content_summary_with_ahrefs(tactical_summary, ahrefs_metric_tiles)
     next_step = (
         top_group.next_step
         if top_group is not None
         else "Otwórz /content-planner i odśwież GSC oraz WordPress inventory."
+    )
+    source_connectors = [
+        *(
+            [AHREFS_CONNECTOR_ID]
+            if ahrefs_available
+            else []
+        ),
+        "google_search_console",
+        "wordpress_ekologus",
+        "wordpress_sklep",
+    ]
+    evidence_ids = _limited_ids(
+        _unique(
+            [
+                *(fact.evidence_id for fact in ahrefs_gap_facts),
+                *(evidence_id for item in content_items for evidence_id in item.evidence_ids),
+            ]
+        )
+        or [connector_evidence_id("google_search_console")]
     )
     return CommandCenterBriefItem(
         id="daily_content_queue",
@@ -860,24 +896,18 @@ def _content_item_from_tactical(queue: TacticalQueueResponse) -> CommandCenterBr
         priority=12 if live_data_available else 40,
         summary=summary,
         next_step=next_step,
-        source_connectors=[
-            "google_search_console",
-            "wordpress_ekologus",
-            "wordpress_sklep",
-        ],
-        evidence_ids=_limited_ids(
-            _unique(evidence_id for item in content_items for evidence_id in item.evidence_ids)
-            or [connector_evidence_id("google_search_console")]
-        ),
+        source_connectors=source_connectors,
+        evidence_ids=evidence_ids,
         action_ids=_unique(action_id for item in content_items for action_id in item.action_ids),
         metric_tiles={
             "query/page": len(content_items),
             "WP match": sum(
                 1 for item in content_items if item.dimensions.get("wordpress_match") == "found"
             ),
-            "decyzje": len(content_groups) or len(content_items),
+            "decyzje": decision_count,
             "wyświetlenia": total_impressions,
             "kliknięcia": total_clicks,
+            **ahrefs_metric_tiles,
             "blockery": 0 if live_data_available else 1,
         },
         blocked_claims=_unique(
@@ -886,6 +916,82 @@ def _content_item_from_tactical(queue: TacticalQueueResponse) -> CommandCenterBr
         or ["lead uplift", "revenue impact", "ranking guarantee"],
         risk=ActionRisk.low if live_data_available else ActionRisk.medium,
     )
+
+
+def _ahrefs_gap_facts(facts: list[MetricFact]) -> list[MetricFact]:
+    gap_fact_names = {
+        "ahrefs_content_gap_count",
+        "ahrefs_organic_keyword_gap_count",
+        "ahrefs_top_page_gap_count",
+        "ahrefs_competitor_page_count",
+        "ahrefs_referring_domain_gap_count",
+        "ahrefs_backlink_gap_count",
+    }
+    record_facts = [
+        fact
+        for fact in facts
+        if fact.source_connector == AHREFS_CONNECTOR_ID
+        and fact.name in gap_fact_names
+        and any(
+            fact.dimensions.get(key)
+            for key in (
+                "gap_type",
+                "keyword",
+                "source_url",
+                "target_url",
+                "competitor_domain",
+            )
+        )
+    ]
+    if record_facts:
+        return record_facts
+    return [
+        fact
+        for fact in facts
+        if fact.source_connector == AHREFS_CONNECTOR_ID and fact.name in gap_fact_names
+    ]
+
+
+def _ahrefs_content_metric_tiles(facts: list[MetricFact]) -> dict[str, int]:
+    if not facts:
+        return {}
+    content_gap_count = sum(
+        1
+        for fact in facts
+        if fact.name == "ahrefs_content_gap_count"
+        or fact.dimensions.get("gap_type") == "content_gap"
+    )
+    backlink_gap_count = sum(
+        1
+        for fact in facts
+        if fact.name in {"ahrefs_backlink_gap_count", "ahrefs_referring_domain_gap_count"}
+        or fact.dimensions.get("gap_type") == "backlink_gap"
+    )
+    tiles = {
+        "Ahrefs review": 1,
+        "rekordy Ahrefs": len(facts),
+    }
+    if content_gap_count:
+        tiles["luki Ahrefs"] = content_gap_count
+    if backlink_gap_count:
+        tiles["link gaps"] = backlink_gap_count
+    return tiles
+
+
+def _content_summary_with_ahrefs(
+    tactical_summary: str,
+    ahrefs_metric_tiles: dict[str, int],
+) -> str:
+    if not ahrefs_metric_tiles:
+        return tactical_summary
+    ahrefs_summary = (
+        "Ahrefs ma kolejkę review luk SEO: "
+        f"rekordy={ahrefs_metric_tiles.get('rekordy Ahrefs', 0)}, "
+        f"content gaps={ahrefs_metric_tiles.get('luki Ahrefs', 0)}, "
+        f"backlink gaps={ahrefs_metric_tiles.get('link gaps', 0)}. "
+        "To jest materiał do połączenia z GSC/WordPress, nie obietnica wzrostu."
+    )
+    return f"{ahrefs_summary} {tactical_summary}".strip()
 
 
 def _content_tactical_summary(
