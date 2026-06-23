@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 12:47 CEST.
+Last updated: 2026-06-23 13:15 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -215,6 +215,16 @@ claim boundary for change impact until current campaign readout, change rows
 and pre/post windows are available. Live proof after stack restart:
 `contains_snapshot_kampanii=false`, `contains_aktualny_odczyt=true`. Focused
 proof: RED/GREEN Ads diagnostics test, Python ruff OK and mypy OK.
+
+2026-06-23 Ads cost formatting follow-up: `/api/ads/diagnostics` no longer
+puts raw `koszt_micros=...` in marketer-facing summaries for campaign
+activity, search terms, search-term review, n-grams or 90-day safety reads.
+Decision metric tiles use account currency labels, e.g. live Ekologus proof
+showed `koszt=154 PLN`, `koszt=46 PLN`, `koszt=513 PLN` and `koszt=138 PLN`.
+Technical `*_micros` schema fields stay intact for typed Google Ads contracts
+and ActionObject payload previews. Focused proof: RED/GREEN Ads diagnostics
+API contract, Python ruff OK, mypy OK and live `/api/ads/diagnostics` grep for
+`koszt_micros=` returned no operator-facing matches.
 
 2026-06-23 Localo diagnostics copy follow-up: `/api/localo/diagnostics` now
 keeps the partial-data story consistent. When Localo has typed aggregate facts,

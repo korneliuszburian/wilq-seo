@@ -314,6 +314,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         trusted_metric_facts,
         latest_refresh,
         business_context_read_contract,
+        account_currency_read_contract.currency_code,
     )
     derived_kpi_read_contract = _derived_kpi_read_contract(
         campaign_read_contract,
@@ -487,10 +488,12 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     search_terms_read_contract = _search_terms_read_contract(
         trusted_metric_facts,
         latest_refresh,
+        account_currency_read_contract.currency_code,
     )
     search_term_safety_read_contract = _search_term_safety_read_contract(
         trusted_metric_facts,
         latest_refresh,
+        account_currency_read_contract.currency_code,
     )
     keyword_match_context_read_contract = _keyword_match_context_read_contract(
         trusted_metric_facts,
@@ -529,10 +532,12 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
     search_term_review_summary_contract = _search_term_review_summary_contract(
         search_terms_read_contract,
         latest_refresh,
+        account_currency_read_contract.currency_code,
     )
     search_term_ngram_read_contract = _search_term_ngram_read_contract(
         search_terms_read_contract,
         latest_refresh,
+        account_currency_read_contract.currency_code,
     )
     action_ids = _google_ads_action_ids(
         actions if actions is not None else list_actions(),
@@ -637,6 +642,7 @@ def build_ads_diagnostics(actions: list[ActionObject] | None = None) -> AdsDiagn
         sections,
         blocked_handoff,
         action_ids,
+        account_currency_read_contract.currency_code,
     )
     return AdsDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
@@ -942,6 +948,7 @@ def _campaign_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
     business_context_read_contract: AdsBusinessContextReadContract,
+    currency_code: str | None,
 ) -> AdsCampaignReadContract:
     rows = _campaign_metric_rows(metric_facts, business_context_read_contract)
     missing_read_contracts = [
@@ -969,7 +976,8 @@ def _campaign_read_contract(
             title="Google Ads: aktywność kampanii",
             summary=(
                 f"WILQ ma {len(rows)} wierszy kampanii: kliknięcia={total_clicks}, "
-                f"wyświetlenia={total_impressions}, koszt_micros={total_cost_micros}, "
+                f"wyświetlenia={total_impressions}, "
+                f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
                 f"konwersje={_format_float(total_conversions)}, "
                 f"wartość_konwersji={_format_float(total_conversion_value)}."
             ),
@@ -2845,6 +2853,7 @@ def _format_signed_number(value: int | float | None) -> str:
 def _search_terms_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
+    currency_code: str | None,
 ) -> AdsSearchTermsReadContract:
     rows = _search_term_metric_rows(metric_facts)
     missing_read_contracts = [
@@ -2871,7 +2880,8 @@ def _search_terms_read_contract(
             title="Google Ads: zapytania użytkowników",
             summary=(
                 f"WILQ ma {len(rows)} wierszy zapytań: kliknięcia={total_clicks}, "
-                f"wyświetlenia={total_impressions}, koszt_micros={total_cost_micros}, "
+                f"wyświetlenia={total_impressions}, "
+                f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
                 f"konwersje={_format_float(total_conversions)}, "
                 f"wartość_konwersji={_format_float(total_conversion_value)}."
             ),
@@ -2919,6 +2929,7 @@ def _search_terms_read_contract(
 def _search_term_review_summary_contract(
     search_terms_read_contract: AdsSearchTermsReadContract,
     latest_refresh: ConnectorRefreshRun | None,
+    currency_code: str | None,
 ) -> AdsSearchTermReviewSummaryContract:
     rows = search_terms_read_contract.search_term_rows
     blocked_claims = [
@@ -2955,7 +2966,7 @@ def _search_term_review_summary_contract(
         summary=(
             f"WILQ ma {len(rows)} search-term rows do ręcznego review: "
             f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
-            f"koszt_micros={total_cost_micros}, "
+            f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
             f"konwersje={_format_float(total_conversions)}, "
             f"wiersze_bez_konwersji={zero_conversion_count}."
         ),
@@ -3124,6 +3135,7 @@ def _search_term_row_sort_key(row: AdsSearchTermMetricRow) -> tuple[int, int, st
 def _search_term_ngram_read_contract(
     search_terms_read_contract: AdsSearchTermsReadContract,
     latest_refresh: ConnectorRefreshRun | None,
+    currency_code: str | None,
 ) -> AdsSearchTermNgramReadContract:
     rows = _search_term_ngram_rows(search_terms_read_contract.search_term_rows)
     blocked_claims = [
@@ -3144,7 +3156,7 @@ def _search_term_ngram_read_contract(
             summary=(
                 f"WILQ zgrupował {len(rows)} n-gramów z {total_terms} wystąpień "
                 f"search terms: kliknięcia={total_clicks}, "
-                f"koszt_micros={total_cost_micros}."
+                f"koszt={_format_money_micros(total_cost_micros, currency_code)}."
             ),
             allowed_metrics=[
                 "ngram",
@@ -3277,6 +3289,7 @@ def _search_term_ngram_sort_key(
 def _search_term_safety_read_contract(
     metric_facts: list[MetricFact],
     latest_refresh: ConnectorRefreshRun | None,
+    currency_code: str | None,
 ) -> AdsSearchTermSafetyReadContract:
     rows = _search_term_safety_rows(metric_facts)
     read_attempted = _latest_refresh_has_summary_metric(
@@ -3302,7 +3315,7 @@ def _search_term_safety_read_contract(
             summary=(
                 f"WILQ ma 90-dniowy read safety dla {len(rows)} zapytań: "
                 f"kliknięcia={total_clicks}, wyświetlenia={total_impressions}, "
-                f"koszt_micros={total_cost_micros}, "
+                f"koszt={_format_money_micros(total_cost_micros, currency_code)}, "
                 f"konwersje={_format_float(total_conversions)}, "
                 f"wartość_konwersji={_format_float(total_conversion_value)}."
             ),
@@ -4893,6 +4906,7 @@ def _ads_decision_queue(
     sections: list[AdsDiagnosticSection],
     blocked_handoff: AdsBlockedHandoff | None,
     action_ids: list[str],
+    currency_code: str | None,
 ) -> list[AdsDecisionItem]:
     if blocked_handoff is not None:
         return [
@@ -4909,7 +4923,7 @@ def _ads_decision_queue(
                 action_ids=blocked_handoff.action_ids,
                 blocked_claims=blocked_handoff.blocked_claims,
                 risk=ActionRisk.medium,
-            ))
+            ), currency_code)
         ]
 
     decisions: list[AdsDecisionItem] = []
@@ -5468,7 +5482,7 @@ def _ads_decision_queue(
             )
         )
 
-    return [_with_ads_decision_lineage(decision) for decision in decisions]
+    return [_with_ads_decision_lineage(decision, currency_code) for decision in decisions]
 
 
 def _campaign_review_action_ids(action_ids: list[str]) -> list[str]:
@@ -5620,12 +5634,15 @@ def _with_ads_section_lineage(section: AdsDiagnosticSection) -> AdsDiagnosticSec
     )
 
 
-def _with_ads_decision_lineage(decision: AdsDecisionItem) -> AdsDecisionItem:
+def _with_ads_decision_lineage(
+    decision: AdsDecisionItem,
+    currency_code: str | None,
+) -> AdsDecisionItem:
     knowledge_card_ids, expert_rule_ids = ADS_DECISION_LINEAGE.get(decision.id, ([], []))
     return decision.model_copy(
         update={
             "priority": _ads_decision_priority(decision),
-            "metric_tiles": _ads_decision_metric_tiles(decision),
+            "metric_tiles": _ads_decision_metric_tiles(decision, currency_code),
             "knowledge_card_ids": _unique([*decision.knowledge_card_ids, *knowledge_card_ids]),
             "expert_rule_ids": _unique([*decision.expert_rule_ids, *expert_rule_ids]),
         }
@@ -5653,7 +5670,10 @@ def _ads_decision_priority(decision: AdsDecisionItem) -> int:
     return type_priority.get(decision.decision_type, 90)
 
 
-def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | float | str]:
+def _ads_decision_metric_tiles(
+    decision: AdsDecisionItem,
+    currency_code: str | None,
+) -> dict[str, int | float | str]:
     if decision.decision_type == "review_campaign_activity":
         urgent_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "pilne")
         high_rows = sum(1 for row in decision.campaign_rows if row.review_priority == "wysokie")
@@ -5666,7 +5686,10 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
             "wysokie": high_rows,
             "kliknięcia": _sum_attr(decision.campaign_rows, "clicks"),
             "wyświetlenia": _sum_attr(decision.campaign_rows, "impressions"),
-            "koszt": _format_micros(_sum_attr(decision.campaign_rows, "cost_micros")),
+            "koszt": _format_money_micros(
+                _sum_attr(decision.campaign_rows, "cost_micros"),
+                currency_code,
+            ),
             "konwersje": _round_metric(_sum_attr(decision.campaign_rows, "conversions")),
         }
         if target_context_rows:
@@ -5749,8 +5772,9 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
         budget_tiles: dict[str, int | float | str | None] = {
             "budżety": len(decision.budget_rows),
             "podgląd budżetu": len(decision.budget_apply_preview),
-            "koszt 7 dni": _format_micros(
-                _sum_attr(decision.budget_rows, "cost_micros_7d")
+            "koszt 7 dni": _format_money_micros(
+                _sum_attr(decision.budget_rows, "cost_micros_7d"),
+                currency_code,
             ),
         }
         if decision.shared_budget_distribution_rows:
@@ -5789,7 +5813,10 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
             "top kliknięcia": max_clicks,
         }
         if max_cost_micros:
-            ngram_tiles["top koszt"] = _format_micros(max_cost_micros)
+            ngram_tiles["top koszt"] = _format_money_micros(
+                max_cost_micros,
+                currency_code,
+            )
         return _clean_metric_tiles(ngram_tiles)
     if decision.decision_type == "review_impression_share":
         return _clean_metric_tiles(
@@ -5816,7 +5843,10 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
             {
                 "zapytania": len(decision.search_term_rows),
                 "kliknięcia": _sum_attr(decision.search_term_rows, "clicks"),
-                "koszt": _format_micros(_sum_attr(decision.search_term_rows, "cost_micros")),
+                "koszt": _format_money_micros(
+                    _sum_attr(decision.search_term_rows, "cost_micros"),
+                    currency_code,
+                ),
             }
         )
     if decision.decision_type == "review_search_term_safety":
@@ -5824,8 +5854,9 @@ def _ads_decision_metric_tiles(decision: AdsDecisionItem) -> dict[str, int | flo
             {
                 "90 dni": len(decision.search_term_safety_rows),
                 "kliknięcia": _sum_attr(decision.search_term_safety_rows, "clicks_90d"),
-                "koszt": _format_micros(
-                    _sum_attr(decision.search_term_safety_rows, "cost_micros_90d")
+                "koszt": _format_money_micros(
+                    _sum_attr(decision.search_term_safety_rows, "cost_micros_90d"),
+                    currency_code,
                 ),
             }
         )
@@ -5902,6 +5933,17 @@ def _format_micros(value: float | None) -> str | None:
     if account_units >= 10:
         return f"{account_units:.1f}"
     return f"{account_units:.2f}"
+
+
+def _format_money_micros(value: float | None, currency_code: str | None) -> str | None:
+    formatted_value = _format_micros(value)
+    if formatted_value is None:
+        return None
+    if formatted_value.endswith(".0"):
+        formatted_value = formatted_value[:-2]
+    if not currency_code:
+        return formatted_value
+    return f"{formatted_value} {currency_code}"
 
 
 def _format_ratio_percent(value: float | None) -> str | None:

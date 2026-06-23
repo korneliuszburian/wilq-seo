@@ -6983,6 +6983,30 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert "ROAS" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
+    marketer_text = "\n".join(
+        [
+            payload["campaign_read_contract"]["summary"],
+            payload["search_terms_read_contract"]["summary"],
+            payload["search_term_review_summary_contract"]["summary"],
+            payload["search_term_ngram_read_contract"]["summary"],
+            payload["search_term_safety_read_contract"]["summary"],
+            *[decision["summary"] for decision in payload["decision_queue"]],
+        ]
+    )
+    assert "koszt_micros=" not in marketer_text
+    assert "koszt=12 PLN" in marketer_text
+    campaign_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_campaign_activity"
+    )
+    assert campaign_decision["metric_tiles"]["koszt"] == "12 PLN"
+    budget_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["id"] == "ads_review_budget_context"
+    )
+    assert budget_decision["metric_tiles"]["koszt 7 dni"] == "12 PLN"
     currency_contract = payload["account_currency_read_contract"]
     assert currency_contract["status"] == "ready"
     assert currency_contract["currency_code"] == "PLN"
@@ -8112,7 +8136,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
         "wysokie": 1,
         "kliknięcia": 9,
         "wyświetlenia": 90,
-        "koszt": "12.0",
+        "koszt": "12 PLN",
         "konwersje": 2.5,
     }
     assert campaign_decision["title"] == "Przejrzyj aktywność kampanii Google Ads"
@@ -8168,7 +8192,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert budget_decision["metric_tiles"] == {
         "budżety": 1,
         "podgląd budżetu": 1,
-        "koszt 7 dni": "12.0",
+        "koszt 7 dni": "12 PLN",
     }
     assert budget_decision["decision_type"] == "review_budget_context"
     assert budget_decision["budget_rows"][0]["campaign_name"] == "Brand Search"
@@ -8325,7 +8349,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert search_terms_decision["metric_tiles"] == {
         "zapytania": 2,
         "kliknięcia": 10,
-        "koszt": "12.0",
+        "koszt": "12 PLN",
     }
     assert search_terms_decision["search_term_rows"][0]["search_term"] == "bdo rejestracja"
     assert search_terms_decision["missing_read_contracts"] == []
@@ -8339,7 +8363,7 @@ def test_ads_diagnostics_exposes_live_campaign_metric_facts(
     assert search_term_safety_decision["metric_tiles"] == {
         "90 dni": 1,
         "kliknięcia": 10,
-        "koszt": "8.00",
+        "koszt": "8.00 PLN",
     }
     assert search_term_safety_decision["decision_type"] == "review_search_term_safety"
     assert search_term_safety_decision["search_term_safety_rows"][0]["search_term"] == (

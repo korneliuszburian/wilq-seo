@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Ads Doctor cost formatting, 2026-06-23.
+  `/api/ads/diagnostics` no longer exposes raw `koszt_micros=...` in
+  marketer-facing summaries for campaign activity, search terms, n-grams or
+  90-day safety reads. Decision tiles now use account currency labels such as
+  `154 PLN`, `46 PLN` and `138 PLN` while technical schema fields like
+  `cost_micros` remain available for Google Ads contracts and ActionObject
+  payloads. Live API proof after stack restart showed no `koszt_micros=` in
+  operator summaries. Focused proof: RED/GREEN Ads diagnostics API contract,
+  Python ruff OK and mypy OK.
 - Content Planner metric formatting, 2026-06-23.
   `/content-planner` no longer shows raw GSC metric float noise in decision
   metric tiles such as `1.6897081413210446` or `0.0445468509984639`. The route
