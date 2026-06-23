@@ -44,6 +44,7 @@ STRICT_DAILY_INSTRUCTION = (
 GA4_CONNECTOR_ID = "google_analytics_4"
 GOOGLE_ADS_CONNECTOR_ID = "google_ads"
 GOOGLE_MERCHANT_CONNECTOR_ID = "google_merchant_center"
+GA4_COMMAND_CENTER_DECISION_LIMIT = 6
 GOOGLE_ADS_COMMAND_CENTER_METRIC_FACT_LIMIT = 1200
 MERCHANT_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
 GA4_COMMAND_CENTER_METRIC_FACT_LIMIT = 2000
@@ -971,10 +972,23 @@ def _ga4_item_from_tactical(
     ga4_items = [item for item in tactical_items if item.domain == OpportunityDomain.ga4]
     dimensioned_facts = _dimensioned_ga4_facts(ga4_facts)
     landing_group_count = max(len(ga4_items), _ga4_landing_group_count(dimensioned_facts))
-    decision_count = max(len(ga4_items), landing_group_count)
-    low_engagement_items = [
-        item for item in ga4_items if item.intent == "landing_page_quality"
-    ]
+    measurement_issue_count = max(
+        sum(1 for item in ga4_items if item.intent == "tracking_gap"),
+        _ga4_measurement_issue_count(dimensioned_facts),
+    )
+    decision_count = min(
+        max(len(ga4_items), landing_group_count),
+        GA4_COMMAND_CENTER_DECISION_LIMIT,
+    )
+    traffic_quality_count = max(
+        sum(1 for item in ga4_items if item.intent == "landing_page_quality"),
+        _ga4_traffic_quality_count(dimensioned_facts),
+    )
+    measurement_issue_count = min(measurement_issue_count, decision_count)
+    traffic_quality_count = min(
+        traffic_quality_count,
+        max(decision_count - measurement_issue_count, 0),
+    )
     matched_items = [
         item for item in ga4_items if item.dimensions.get("wordpress_match") == "found"
     ]
@@ -995,7 +1009,8 @@ def _ga4_item_from_tactical(
         priority=14 if live_data_available else 42,
         summary=(
             f"GA4 ma {landing_group_count} grup landing/source/campaign, "
-            f"{len(low_engagement_items)} grup niskiego zaangażowania i "
+            f"{measurement_issue_count} problemów pomiaru, "
+            f"{traffic_quality_count} decyzji jakości ruchu i "
             f"{len(matched_items)} dopasowań WordPress. "
             "Status blocked oznacza brak kontraktu na ROAS/revenue/conversion "
             "drop/tracking fixed, nie awarię connectora."
@@ -1014,8 +1029,8 @@ def _ga4_item_from_tactical(
         metric_tiles={
             "grupy ruchu": landing_group_count,
             "decyzje": decision_count,
-            "pomiar": sum(1 for item in ga4_items if item.intent == "tracking_gap"),
-            "jakość ruchu": len(low_engagement_items),
+            "pomiar": measurement_issue_count,
+            "jakość ruchu": traffic_quality_count,
             "braki kontraktu": 1,
         },
         blocked_claims=["ROAS", "revenue", "conversion drop", "tracking fixed"],
@@ -1033,16 +1048,34 @@ def _dimensioned_ga4_facts(facts: Iterable[MetricFact]) -> list[MetricFact]:
 
 
 def _ga4_landing_group_count(facts: Iterable[MetricFact]) -> int:
-    return len(
-        {
-            (
-                fact.dimensions.get("landing_page", ""),
-                fact.dimensions.get("source_medium", ""),
-                fact.dimensions.get("campaign_name", ""),
-            )
-            for fact in facts
-        }
+    return len(_ga4_landing_group_keys(facts))
+
+
+def _ga4_measurement_issue_count(facts: Iterable[MetricFact]) -> int:
+    return sum(
+        1
+        for landing_page, source_medium, campaign_name in _ga4_landing_group_keys(facts)
+        if "(not set)" in {landing_page, source_medium, campaign_name}
     )
+
+
+def _ga4_traffic_quality_count(facts: Iterable[MetricFact]) -> int:
+    return sum(
+        1
+        for landing_page, source_medium, campaign_name in _ga4_landing_group_keys(facts)
+        if "(not set)" not in {landing_page, source_medium, campaign_name}
+    )
+
+
+def _ga4_landing_group_keys(facts: Iterable[MetricFact]) -> set[tuple[str, str, str]]:
+    return {
+        (
+            fact.dimensions.get("landing_page", ""),
+            fact.dimensions.get("source_medium", ""),
+            fact.dimensions.get("campaign_name", ""),
+        )
+        for fact in facts
+    }
 
 
 def _localo_item(

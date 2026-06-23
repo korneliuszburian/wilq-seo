@@ -83,6 +83,18 @@ Aktualny proof produktowy:
   command_center_ads_totals_use_latest_refresh_summary or
   command_center_ads_plan_uses_live_review_queues or
   command_center_exposes_polish_operator_brief'`, Python ruff OK and mypy OK.
+- Command Center GA4 decision-category fix, 2026-06-23 08:54 CEST.
+  `daily_ga4_landing_quality` now counts the same visible decision categories
+  as `/api/ga4/diagnostics`: missing reporting dimensions are `pomiar`, normal
+  landing/source/campaign groups are `jakość ruchu`, and the first-screen
+  decision count is capped to the visible GA4 queue. Live proof after
+  `scripts/local_stack.sh restart`: Command Center shows `grupy ruchu=10`,
+  `decyzje=6`, `pomiar=2`, `jakość ruchu=4`, matching `/api/ga4/diagnostics`
+  `decision_count=6`, `blocked=2`, `ready=4`. Focused proof: RED/GREEN
+  `uv run pytest tests/test_api_contracts.py -q -k
+  'command_center_ga4_uses_visible_decision_cap or
+  command_center_uses_ga4_metric_facts_without_ga4_tactical_items or
+  command_center_exposes_polish_operator_brief'`, Python ruff OK and mypy OK.
 - Ads value readout, 2026-06-23 07:53 CEST.
   `/api/ads/diagnostics.operator_summary` exposes typed top-line campaign
   totals: `total_clicks`, `total_impressions`, `total_cost_micros`,

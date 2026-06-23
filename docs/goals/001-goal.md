@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 08:48 CEST.
+Last updated: 2026-06-23 08:54 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -204,6 +204,17 @@ after stack restart: Command Center now shows `produkty=10900`,
 `reported_issue_occurrences=1887`. Focused proof: Merchant latest-refresh
 RED/GREEN test passed with the existing Command Center Ads/operator tests,
 Python ruff and mypy passed.
+
+2026-06-23 Command Center GA4 decision-category fix:
+`daily_ga4_landing_quality` now mirrors the visible GA4 diagnostics queue:
+`(not set)` reporting rows count as measurement issues, normal
+landing/source/campaign rows count as traffic-quality review, and the first
+screen decision count is capped to the visible GA4 queue. Live proof after
+stack restart: Command Center shows `grupy ruchu=10`, `decyzje=6`,
+`pomiar=2`, `jakość ruchu=4`, matching `/api/ga4/diagnostics`
+`decision_count=6`, `blocked=2`, `ready=4`. Focused proof: GA4 visible
+decision cap RED/GREEN test passed with existing Command Center GA4/operator
+tests, Python ruff and mypy passed.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

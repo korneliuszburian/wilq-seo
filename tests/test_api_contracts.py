@@ -3356,6 +3356,24 @@ def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
                     "campaign_name": "(organic)",
                 },
             ),
+            VendorMetricFact(
+                name="active_users",
+                value=8,
+                dimensions={
+                    "landing_page": "(not set)",
+                    "source_medium": "(not set)",
+                    "campaign_name": "(not set)",
+                },
+            ),
+            VendorMetricFact(
+                name="sessions",
+                value=8,
+                dimensions={
+                    "landing_page": "(not set)",
+                    "source_medium": "(not set)",
+                    "campaign_name": "(not set)",
+                },
+            ),
         ],
     )
     empty_tactical_queue = TacticalQueueResponse(
@@ -3374,14 +3392,83 @@ def test_command_center_uses_ga4_metric_facts_without_ga4_tactical_items(
     ga4_item = brief_by_id["daily_ga4_landing_quality"]
     assert ga4_item["status"] == "blocked"
     assert "pomiar i jakość ruchu" in ga4_item["title"]
-    assert ga4_item["metric_tiles"]["grupy ruchu"] == 1
-    assert ga4_item["metric_tiles"]["decyzje"] == 1
-    assert "GA4 ma 1 grup" in ga4_item["summary"]
+    assert ga4_item["metric_tiles"]["grupy ruchu"] == 2
+    assert ga4_item["metric_tiles"]["decyzje"] == 2
+    assert ga4_item["metric_tiles"]["pomiar"] == 1
+    assert ga4_item["metric_tiles"]["jakość ruchu"] == 1
+    assert "GA4 ma 2 grup" in ga4_item["summary"]
+    assert "1 problemów pomiaru" in ga4_item["summary"]
+    assert "1 decyzji jakości ruchu" in ga4_item["summary"]
     assert (
         "ev_refresh_refresh_google_analytics_4_command_center_fallback"
         in ga4_item["evidence_ids"]
     )
     assert "grupy ruchu=0" not in json.dumps(payload, ensure_ascii=False)
+
+
+def test_command_center_ga4_uses_visible_decision_cap(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_decision_cap.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ga4_decision_cap.duckdb"))
+    facts: list[VendorMetricFact] = []
+    for index in range(8):
+        facts.append(
+            VendorMetricFact(
+                name="active_users",
+                value=10 + index,
+                dimensions={
+                    "landing_page": f"/landing-{index}/",
+                    "source_medium": "google / organic",
+                    "campaign_name": "(organic)",
+                },
+            )
+        )
+    for index in range(2):
+        facts.append(
+            VendorMetricFact(
+                name="active_users",
+                value=5 + index,
+                dimensions={
+                    "landing_page": "(not set)",
+                    "source_medium": "(not set)",
+                    "campaign_name": f"missing-{index}",
+                },
+            )
+        )
+    metric_store().save_connector_refresh_metrics(
+        ConnectorRefreshRun(
+            id="refresh_google_analytics_4_command_center_cap",
+            connector_id="google_analytics_4",
+            mode=ConnectorRefreshMode.vendor_read,
+            status=ConnectorRefreshStatus.completed,
+            evidence_ids=["ev_refresh_refresh_google_analytics_4_command_center_cap"],
+            external_call_attempted=True,
+            vendor_data_collected=True,
+            metric_summary={"active_users": 100},
+            summary="GA4 command center decision cap seed.",
+        ),
+        detailed_facts=facts,
+    )
+    monkeypatch.setattr(
+        "wilq.briefing.daily_runtime.build_tactical_queue",
+        lambda: TacticalQueueResponse(strict_instruction="empty tactical queue"),
+    )
+
+    response = client.get("/api/dashboard/command-center")
+
+    assert response.status_code == 200
+    payload = response.json()
+    ga4_item = {
+        item["id"]: item for item in payload["operator_brief"]
+    }["daily_ga4_landing_quality"]
+    assert ga4_item["metric_tiles"]["grupy ruchu"] == 10
+    assert ga4_item["metric_tiles"]["decyzje"] == 6
+    assert ga4_item["metric_tiles"]["pomiar"] == 2
+    assert ga4_item["metric_tiles"]["jakość ruchu"] == 4
+    assert "2 problemów pomiaru" in ga4_item["summary"]
+    assert "4 decyzji jakości ruchu" in ga4_item["summary"]
 
 
 def test_command_center_demotes_localo_access_ready_without_visibility_facts(
