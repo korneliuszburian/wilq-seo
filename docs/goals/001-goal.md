@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 07:06 CEST.
+Last updated: 2026-06-23 07:10 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -110,10 +110,11 @@ labels for missing credentials, configured state and access source. Focused
 proof: settings route unit test passed, dashboard lint OK and dashboard
 typecheck OK.
 
-2026-06-23 Actions follow-up: `/actions` now uses the Polish `ActionObjecty`
-route heading and metric label instead of English `Actions/ActionObjects`.
-Focused proof: actions route unit test passed, dashboard lint OK and dashboard
-typecheck OK.
+2026-06-23 Actions/navigation follow-up: `/actions` now uses the Polish
+`ActionObjecty` route heading and metric label instead of English
+`Actions/ActionObjects`, and the primary navigation uses Polish labels for
+ActionObjects, knowledge base and settings. Focused proof: actions route unit
+test passed, dashboard lint OK and dashboard typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

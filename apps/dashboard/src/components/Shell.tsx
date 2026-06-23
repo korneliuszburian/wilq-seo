@@ -5,9 +5,9 @@ export const primaryRoutes = [
   { to: "/command-center", label: "Command Center", icon: Activity },
   { to: "/workflows", label: "Workflowy", icon: Boxes },
   { to: "/opportunities", label: "Szanse", icon: AlertTriangle },
-  { to: "/actions", label: "Actions", icon: ClipboardList },
-  { to: "/knowledge", label: "Knowledge", icon: Database },
-  { to: "/settings", label: "Settings", icon: Settings }
+  { to: "/actions", label: "ActionObjecty", icon: ClipboardList },
+  { to: "/knowledge", label: "Baza wiedzy", icon: Database },
+  { to: "/settings", label: "Ustawienia", icon: Settings }
 ];
 
 export function Shell() {

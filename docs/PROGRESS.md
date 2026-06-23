@@ -37,9 +37,11 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
-- Actions dashboard polish, 2026-06-23 07:06 CEST.
+- Actions/dashboard navigation polish, 2026-06-23 07:10 CEST.
   `/actions` używa nagłówka i kafla `ActionObjecty` zamiast angielskiego
-  `Actions/ActionObjects`. Focused proof: `pnpm --filter @wilq/dashboard test
+  `Actions/ActionObjects`, a główna nawigacja ma polskie etykiety
+  `ActionObjecty`, `Baza wiedzy`, `Ustawienia`. Focused proof:
+  `pnpm --filter @wilq/dashboard test
   -- --run src/routes/App.test.tsx -t "actions route starts from ActionObjects
   instead of registry dumps"` passed, dashboard lint OK and dashboard typecheck
   OK.
