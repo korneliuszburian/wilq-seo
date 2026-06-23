@@ -263,8 +263,26 @@
   },
   {
     "skill": "wilq-campaign-builder",
+    "surface_path": "/ads-doctor",
     "task_pl": "Oceń, czy można przygotować kandydat kampanii lub payload preview. Nie proponuj apply bez validated ActionObject.",
     "expected_connectors": ["google_ads", "google_analytics_4", "google_search_console"],
+    "expected_terms_pl": [
+      "Campaign Builder",
+      "ads_diagnostics",
+      "content_landing_context",
+      "query_page_candidates",
+      "campaign_candidates",
+      "payload preview",
+      "review-only",
+      "blocked claims"
+    ],
+    "expected_blocked": false,
+    "blocked_claim_terms": [
+      "campaign performance",
+      "conversion uplift",
+      "ranking guarantee",
+      "campaign apply"
+    ],
     "expected_action_ids": [
       "act_prepare_ads_campaign_review_queue",
       "act_prepare_google_ads_recommendation_review_queue"

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 17:33 CEST.
+Last updated: 2026-06-23 17:42 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -269,6 +269,20 @@ findings. The blocker is useful product behavior: WILQ sees Ads/GA4 evidence
 and 18 Ads campaign rows, but zero Demand Gen campaign/ad/creative/landing/
 migration rows, so launch, migration, creative-quality, apply and performance
 uplift claims remain blocked.
+
+Completed at 2026-06-23 17:42 CEST:
+`wilq-campaign-builder` context-pack now exposes `content_landing_context`
+from `/api/content/diagnostics.decision_queue`, not only raw metric facts. Live
+proof after stack restart: `live_data_available=true`,
+`query_page_candidate_count=4`, `source=content_decision_queue`, with GSC
+landing candidates for BDO, Zielony Ład, Remediacja and homepage rows. Smoke
+and eval now require `content_landing_context`/`query_page_candidates`.
+Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260623T154147Z/wilq-campaign-builder/result.json`
+with `pl-PL`, `api_used=true`, `blocked=false`, validated
+`act_prepare_ads_campaign_review_queue` and
+`act_prepare_google_ads_recommendation_review_queue`,
+`operator_usefulness_score=4` and no safety findings.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

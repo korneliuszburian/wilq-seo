@@ -12345,6 +12345,10 @@ def test_codex_context_pack_scopes_custom_segments_payload(
 
 
 def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
+    content_response = client.get("/api/content/diagnostics")
+    assert content_response.status_code == 200
+    content_payload = content_response.json()
+
     response = client.post(
         "/api/codex/context-pack",
         json={"skill": "wilq-campaign-builder"},
@@ -12378,6 +12382,13 @@ def test_codex_context_pack_scopes_campaign_builder_payload() -> None:
     assert data["content_landing_context"]["context_pack_compaction"][
         "purpose"
     ] == "landing_context"
+    if content_payload["query_page_count"] > 0:
+        assert data["content_landing_context"]["live_data_available"] is True
+        assert data["content_landing_context"]["query_page_candidates"]
+        first_candidate = data["content_landing_context"]["query_page_candidates"][0]
+        assert first_candidate["page"]
+        assert first_candidate["query"]
+        assert first_candidate["evidence_ids"]
     if data["content_landing_context"]["live_data_available"]:
         assert data["content_landing_context"]["query_page_candidates"]
         first_candidate = data["content_landing_context"]["query_page_candidates"][0]

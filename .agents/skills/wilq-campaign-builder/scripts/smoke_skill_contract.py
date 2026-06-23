@@ -92,6 +92,15 @@ def main() -> int:
     if "must not invent metrics" not in instruction or "evidence" not in instruction:
         raise SystemExit("Context pack strict instruction does not include evidence guardrails")
 
+    content_landing_context = pack.get("content_landing_context")
+    if not isinstance(content_landing_context, dict):
+        raise SystemExit("Context pack must expose content_landing_context")
+    landing_candidates = content_landing_context.get("query_page_candidates")
+    if not isinstance(landing_candidates, list):
+        raise SystemExit("content_landing_context must expose query_page_candidates")
+    if content_landing_context.get("live_data_available") is True and not landing_candidates:
+        raise SystemExit("Live content_landing_context must expose landing candidates")
+
     action_validations = validate_core_campaign_actions(args.api_base, pack)
 
     print(
@@ -105,6 +114,19 @@ def main() -> int:
                 "evidence_count": len(pack.get("evidence_summaries") or []),
                 "opportunity_count": len(pack.get("top_opportunities") or []),
                 "action_count": len(pack.get("active_action_objects") or []),
+                "content_landing_context": {
+                    "live_data_available": content_landing_context.get(
+                        "live_data_available"
+                    ),
+                    "query_page_candidate_count": content_landing_context.get(
+                        "query_page_candidate_count"
+                    ),
+                    "query_page_candidates": landing_candidates[:4],
+                    "blocked_claims": content_landing_context.get("blocked_claims", []),
+                    "context_pack_compaction": content_landing_context.get(
+                        "context_pack_compaction"
+                    ),
+                },
                 "evidence_ids": [
                     item.get("id")
                     for item in (pack.get("evidence_summaries") or [])

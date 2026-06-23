@@ -1408,6 +1408,38 @@ def _compact_merchant_diagnostics_for_context(
 
 
 def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
+    diagnostics = build_content_diagnostics().model_dump(mode="json")
+    diagnostic_candidates = [
+        _campaign_builder_content_decision_candidate(decision)
+        for decision in diagnostics.get("decision_queue", [])
+        if isinstance(decision, dict)
+        and "google_search_console" in decision.get("source_connectors", [])
+        and decision.get("page")
+        and (decision.get("primary_query") or decision.get("queries"))
+        and decision.get("evidence_ids")
+    ]
+    if diagnostic_candidates:
+        diagnostic_candidates.sort(
+            key=lambda item: (
+                _numeric_or_zero(item.get("impressions")),
+                _numeric_or_zero(item.get("clicks")),
+            ),
+            reverse=True,
+        )
+        evidence_ids = sorted(
+            {
+                evidence_id
+                for candidate in diagnostic_candidates
+                for evidence_id in candidate["evidence_ids"]
+            }
+        )
+        return _campaign_builder_landing_context(
+            candidates=diagnostic_candidates,
+            evidence_ids=evidence_ids,
+            total_count=diagnostics.get("query_page_count", len(diagnostic_candidates)),
+            source="content_decision_queue",
+        )
+
     facts = [
         fact
         for fact in metric_store().list_metric_facts(
@@ -1441,6 +1473,21 @@ def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
             for evidence_id in candidate["evidence_ids"]
         }
     )
+    return _campaign_builder_landing_context(
+        candidates=candidates,
+        evidence_ids=evidence_ids,
+        total_count=len(candidates),
+        source="metric_facts",
+    )
+
+
+def _campaign_builder_landing_context(
+    *,
+    candidates: list[dict[str, Any]],
+    evidence_ids: list[str],
+    total_count: int,
+    source: str,
+) -> dict[str, Any]:
     return {
         "language": "pl-PL",
         "strict_instruction": (
@@ -1462,9 +1509,37 @@ def _content_landing_context_for_campaign_builder() -> dict[str, Any]:
             "full_endpoint": "/api/content/diagnostics",
             "metric_facts_removed": True,
             "purpose": "landing_context",
-            "query_page_candidates_total": len(candidates),
+            "source": source,
+            "query_page_candidates_total": total_count,
             "query_page_candidates_included": len(candidates[:8]),
         },
+    }
+
+
+def _campaign_builder_content_decision_candidate(decision: dict[str, Any]) -> dict[str, Any]:
+    queries = decision.get("queries")
+    query = decision.get("primary_query")
+    if not query and isinstance(queries, list) and queries:
+        query = queries[0]
+    return {
+        "page": decision.get("page"),
+        "query": query,
+        "queries": queries if isinstance(queries, list) else [],
+        "query_count": decision.get("query_count"),
+        "decision_type": decision.get("decision_type"),
+        "status": decision.get("status"),
+        "next_step": decision.get("next_step"),
+        "clicks": decision.get("total_clicks"),
+        "impressions": decision.get("total_impressions"),
+        "ctr": decision.get("aggregate_ctr"),
+        "average_position": decision.get("best_average_position"),
+        "wordpress_match": decision.get("wordpress_match"),
+        "evidence_ids": decision.get("evidence_ids", []),
+        "source_connectors": ["google_search_console"],
+        "blocked_claims": decision.get(
+            "blocked_claims",
+            ["campaign performance", "conversion uplift", "ranking guarantee"],
+        ),
     }
 
 

@@ -4661,3 +4661,51 @@ Product finding:
   That is a useful blocker for the marketer: Demand Gen can be reviewed, but
   WILQ must not claim launch readiness, migration readiness, creative quality,
   asset performance, campaign apply or performance uplift.
+
+## 2026-06-23 - wilq-campaign-builder landing-context eval
+
+Purpose:
+
+- Prove that Campaign Builder can combine validated Ads review ActionObjects
+  with GSC landing candidates from WILQ evidence.
+- Prevent the skill from staying as a generic Ads review smoke: it must expose
+  `content_landing_context.query_page_candidates` before talking about campaign
+  candidates or payload preview.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-campaign-builder --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T154147Z/wilq-campaign-builder/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors=["google_ads","google_analytics_4","google_search_console"]`
+- Evidence count: `3`
+- `recommendations` includes a review-only Ads payload direction and a separate
+  instruction to use `content_landing_context` / `query_page_candidates`.
+- `action_candidates` contains validated `act_prepare_ads_campaign_review_queue`
+  and `act_prepare_google_ads_recommendation_review_queue`.
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- `POST /api/codex/context-pack {"skill":"wilq-campaign-builder"}` now builds
+  `content_landing_context` from `/api/content/diagnostics.decision_queue`.
+  Live context after stack restart had `live_data_available=true`,
+  `query_page_candidate_count=4`, `source=content_decision_queue` and GSC
+  candidates for BDO, Zielony Ład, Remediacja and homepage query/page rows.
+  WILQ still blocks campaign performance, conversion uplift, ranking guarantees
+  and campaign apply unless a stronger campaign build/apply contract exists.

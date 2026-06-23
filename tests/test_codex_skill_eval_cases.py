@@ -511,6 +511,9 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         "act_prepare_ads_campaign_review_queue",
         "act_prepare_google_ads_recommendation_review_queue",
     }
+    assert "content_landing_context" in campaign_case["expected_terms_pl"]
+    assert "query_page_candidates" in campaign_case["expected_terms_pl"]
+    assert "campaign performance" in campaign_case["blocked_claim_terms"]
     campaign_smoke_script = Path(
         ".agents/skills/wilq-campaign-builder/scripts/smoke_skill_contract.py"
     ).read_text(encoding="utf-8")
@@ -519,3 +522,5 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     )
     assert campaign_validation_call in campaign_smoke_script
     assert '"action_validations": action_validations' in campaign_smoke_script
+    assert '"content_landing_context": {' in campaign_smoke_script
+    assert '"query_page_candidates": landing_candidates[:4]' in campaign_smoke_script
