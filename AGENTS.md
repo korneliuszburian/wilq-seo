@@ -194,7 +194,22 @@ credential values, token prefixes, JSON bodies, or copied OAuth redirect codes.
 
 ## Testing instructions
 
-Run the narrow test for changed surfaces first, then the full quality gate:
+Use risk-based verification. Do not run broad suites by habit after every tiny
+edit.
+
+- Docs-only, copy-only or goal/progress updates: run `git diff --check`; no
+  product test is required unless the text change affects generated contracts.
+- API/schema/action changes: run the smallest affected pytest subset first.
+- Dashboard route/component changes: run the touched route/component test; add
+  dashboard typecheck/lint only when props, route contracts or shared types move.
+- Skill contract changes: run the deterministic smoke for the touched skill and
+  targeted `scripts/codex_skill_eval.sh --skill <skill>` only when the eval
+  contract or skill behavior changed.
+- `scripts/verify.sh` is a final or broad-risk gate: use it before final
+  handoff, before claiming cross-surface completion, after broad API/dashboard/
+  skill changes, or when focused checks reveal shared regression risk.
+
+Common commands:
 
 ```bash
 uv run pytest
