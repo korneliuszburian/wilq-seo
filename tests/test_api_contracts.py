@@ -3092,6 +3092,169 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "google_adc.json" not in serialized
 
 
+def test_ga4_diagnostics_preserves_dimensioned_landing_facts_after_aggregate_noise(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "ga4_wide_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "ga4_wide_metrics.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_google_service_env(monkeypatch)
+    clear_wordpress_env(monkeypatch)
+    service_account_json = tmp_path / "google_adc.json"
+    service_account_json.write_text('{"type":"authorized_user"}', encoding="utf-8")
+    monkeypatch.setenv("GOOGLE_APPLICATION_CREDENTIALS", str(service_account_json))
+    monkeypatch.setenv("GA4_PROPERTY_ID", "411974093")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_PUBLIC_URL", "https://www.ekologus.pl")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_USERNAME", "editor")
+    monkeypatch.setenv("WORDPRESS_EKOLOGUS_APP_PASSWORD", "app-password")
+    landing_path = "/europejski-zielony-lad-co-to-takiego/"
+    landing_url = f"https://www.ekologus.pl{landing_path}"
+    homepage_path = "/"
+    homepage_url = "https://www.ekologus.pl/"
+    completed_at = datetime(2026, 6, 23, 8, 0, tzinfo=UTC)
+    ga4_dimensioned_run = ConnectorRefreshRun(
+        id="refresh_google_analytics_4_wide_dimensioned_test",
+        connector_id="google_analytics_4",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_google_analytics_4_wide_dimensioned_test"],
+        completed_at=completed_at,
+        metric_summary={},
+        vendor_data_collected=True,
+        summary="GA4 wide dimensioned test seed.",
+    )
+    wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_ekologus_ga4_wide_match_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wordpress_ekologus_ga4_wide_match_test"],
+        metric_summary={"content_object_count": 1},
+        vendor_data_collected=True,
+        summary="WordPress GA4 wide match seed.",
+    )
+    local_state_store().save_connector_refresh_run(ga4_dimensioned_run)
+    local_state_store().save_connector_refresh_run(wordpress_run)
+    metric_store().save_connector_refresh_metrics(
+        ga4_dimensioned_run,
+        detailed_facts=[
+            *[
+                VendorMetricFact(
+                    name="noise_metric",
+                    value=index,
+                    dimensions={"aaa_noise": f"{index:03d}"},
+                )
+                for index in range(350)
+            ],
+            VendorMetricFact(
+                name="active_users",
+                value=41,
+                dimensions={
+                    "landing_page": landing_path,
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+            VendorMetricFact(
+                name="sessions",
+                value=54,
+                dimensions={
+                    "landing_page": landing_path,
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+            VendorMetricFact(
+                name="engagement_rate",
+                value=0.12,
+                dimensions={
+                    "landing_page": landing_path,
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+            VendorMetricFact(
+                name="active_users",
+                value=80,
+                dimensions={
+                    "landing_page": homepage_path,
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+            VendorMetricFact(
+                name="sessions",
+                value=100,
+                dimensions={
+                    "landing_page": homepage_path,
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+            VendorMetricFact(
+                name="engagement_rate",
+                value=0.42,
+                dimensions={
+                    "landing_page": homepage_path,
+                    "source_medium": "google / cpc",
+                    "campaign_name": "Ekologus Ogólna",
+                },
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "sitemap",
+                    "content_url": landing_url,
+                    "status": "indexed",
+                    "inventory_source": "public_sitemap",
+                },
+            ),
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "sitemap",
+                    "content_url": homepage_url,
+                    "status": "indexed",
+                    "inventory_source": "public_sitemap",
+                },
+            )
+        ],
+    )
+
+    response = client.get("/api/ga4/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["wordpress_match_count"] >= 1
+    decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["landing_page"] == landing_path
+    )
+    assert decision["wordpress_match"] == "found"
+    assert decision["wordpress_match_confidence"] == "path_fallback"
+    assert decision["wordpress_content_url"] == landing_url
+    homepage_decision = next(
+        decision
+        for decision in payload["decision_queue"]
+        if decision["landing_page"] == homepage_path
+    )
+    assert homepage_decision["wordpress_match"] == "found"
+    assert homepage_decision["wordpress_match_confidence"] == "path_fallback"
+    assert homepage_decision["wordpress_content_url"] == homepage_url
+
+
 def test_ga4_diagnostics_marks_stale_refresh_as_stale_review(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

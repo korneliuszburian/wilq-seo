@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 21:32 CEST.
+Last updated: 2026-06-23 21:44 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -70,20 +70,12 @@ Finish these before claiming the Ekologus demo is done:
    - Do not claim product fixes, approval restoration, feed writes or recovered
      revenue without exact row-level payload, validation and audit contracts.
 
-2. **GA4 landing inventory matching**
-   - GSC/content diagnostics now match real WordPress inventory for the current
-     Ekologus URLs after wide inventory reads.
-   - Remaining gap: GA4 diagnostics must also preserve landing -> WordPress
-     match evidence when enough dimensioned GA4 facts exist.
-   - Keep `(not set)` rows as measurement blockers, but do not mark real
-     landing paths as unmapped just because tactical selection dropped GA4 items.
-
-3. **Localo beyond OAuth and aggregate facts**
+2. **Localo beyond OAuth and aggregate facts**
    - Current Localo evidence supports aggregate review only.
    - Add typed read contracts before claiming rankings, GBP performance,
      competitor visibility, local tasks, GBP writes or local visibility uplift.
 
-4. **Skill/reference hygiene audit**
+3. **Skill/reference hygiene audit**
    - Audit `.agents/skills/**/SKILL.md` and `.agents/skills/**/references/*.md`.
    - References may describe API usage, required evidence, output shape and
      safety rules.
@@ -92,7 +84,7 @@ Finish these before claiming the Ekologus demo is done:
    - If a skill needs a smarter decision, implement typed API/schema/view-model
      and eval contract first, then make the skill consume it.
 
-5. **Remaining Ads optimizer value**
+4. **Remaining Ads optimizer value**
    - Current Ads is review-only and intentionally blocks unsupported claims.
    - Next value contracts: approved/live Keyword Planner enrichment,
      forecast/audience size, budget pacing, change-history impact context,
@@ -101,7 +93,7 @@ Finish these before claiming the Ekologus demo is done:
    - Do not claim wasted budget, profitability, CPA/ROAS verdicts, budget
      scaling or apply until these contracts exist.
 
-6. **Dashboard code quality only where it helps velocity**
+5. **Dashboard code quality only where it helps velocity**
    - `App.tsx` shell has been reduced, but large route modules still exist.
    - Do not spend time on aesthetic refactors. Extract only when a file blocks
      product velocity, focused tests, browser QA or reviewability.
@@ -125,9 +117,9 @@ Finish these before claiming the Ekologus demo is done:
 
 ## Immediate Next Tasks
 
-1. Commit and push the content inventory matching fix.
-2. Continue with GA4 landing inventory matching or Merchant product-row issue
-   payload previews, depending on the strongest remaining demo blocker in live
+1. Commit and push the GA4 landing inventory matching fix.
+2. Continue with Merchant product-row issue payload previews or Localo typed
+   read contracts, depending on the strongest remaining demo blocker in live
    API/browser proof.
 
 ## Stop Condition

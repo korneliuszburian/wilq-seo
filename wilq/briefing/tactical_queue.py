@@ -29,6 +29,7 @@ TACTICAL_QUEUE_SOURCE_CONNECTORS = (
 )
 TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT = 300
 GSC_QUERY_PAGE_FACT_LIMIT = 1200
+GA4_LANDING_FACT_LIMIT = 2000
 WORDPRESS_INVENTORY_FACT_LIMIT = 5000
 TacticalIntent = Literal[
     "content_refresh",
@@ -362,6 +363,8 @@ def _tactical_metric_facts(
 def _tactical_connector_fact_limit(connector_id: str) -> int:
     if connector_id == "google_search_console":
         return GSC_QUERY_PAGE_FACT_LIMIT
+    if connector_id == "google_analytics_4":
+        return GA4_LANDING_FACT_LIMIT
     if connector_id.startswith("wordpress"):
         return WORDPRESS_INVENTORY_FACT_LIMIT
     return TACTICAL_QUEUE_CONNECTOR_FACT_LIMIT
@@ -697,8 +700,7 @@ def _wordpress_content_index(facts: list[MetricFact]) -> WordPressContentIndex:
             continue
         _set_wordpress_index(exact_urls, _normalize_url_key(content_url), fact)
         path_key = _normalize_path_key(content_url)
-        if path_key != "/":
-            paths.setdefault(path_key, []).append(fact)
+        paths.setdefault(path_key, []).append(fact)
     return WordPressContentIndex(exact_urls=exact_urls, paths=paths)
 
 
@@ -713,14 +715,22 @@ def _find_wordpress_match(index: WordPressContentIndex, page_or_path: str) -> Wo
             requested_url_key=requested_url_key,
             requested_path_key=path_key,
         )
-    if path_key == "/":
+    path_candidates = index.paths.get(path_key, [])
+    if path_key == "/" and not _url_host(page_or_path):
+        path_match = _preferred_wordpress_path_match(path_candidates)
+        if path_match:
+            return WordPressMatch(
+                fact=path_match,
+                confidence="path_fallback",
+                requested_url_key=requested_url_key,
+                requested_path_key=path_key,
+            )
         return WordPressMatch(
             fact=None,
             confidence="missing",
             requested_url_key=requested_url_key,
             requested_path_key=path_key,
         )
-    path_candidates = index.paths.get(path_key, [])
     alias_match = _host_alias_sitemap_match(page_or_path, path_candidates)
     if alias_match:
         return WordPressMatch(
@@ -756,14 +766,18 @@ def _set_wordpress_index(
 
 
 def _preferred_wordpress_path_match(candidates: list[MetricFact]) -> MetricFact | None:
-    preferred: MetricFact | None = None
-    for fact in candidates:
-        if preferred is None:
-            preferred = fact
-            continue
-        if fact.source_connector == "wordpress_ekologus":
-            preferred = fact
-    return preferred
+    return max(candidates, key=_wordpress_path_match_score, default=None)
+
+
+def _wordpress_path_match_score(fact: MetricFact) -> tuple[int, int, int]:
+    dimensions = fact.dimensions
+    inventory_source = dimensions.get("inventory_source")
+    host = _url_host(dimensions.get("content_url", ""))
+    return (
+        1 if fact.source_connector == "wordpress_ekologus" else 0,
+        1 if inventory_source in {"public_sitemap", "sitemap"} else 0,
+        1 if host in {"www.ekologus.pl", "ekologus.pl"} else 0,
+    )
 
 
 def _host_alias_sitemap_match(
