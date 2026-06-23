@@ -6056,7 +6056,8 @@ describe("WILQ dashboard", () => {
   it("ga4 and gsc routes render workflow-specific brief focus", async () => {
     renderApp("/ga4");
     await waitFor(() => expect(screen.getByRole("heading", { name: /^GA4$/ })).toBeInTheDocument());
-    expect(screen.getByText("Status GA4 / Landing Quality")).toBeInTheDocument();
+    expect(screen.getByText("Status GA4 / pomiar i jakość ruchu")).toBeInTheDocument();
+    expect(screen.getByText("Problemy pomiaru GA4")).toBeInTheDocument();
     expect(screen.getByText("Co marketer ma sprawdzić teraz w jakości ruchu")).toBeInTheDocument();
     expect(screen.getByText("Bezpieczny tryb analityki")).toBeInTheDocument();
     expect(screen.getByText(/Brak metryk konwersji oznacza/)).toBeInTheDocument();

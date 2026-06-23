@@ -2253,6 +2253,14 @@ Aktualny maintenance:
    Focused proof passed: Localo route unit test, dashboard lint and dashboard
    typecheck.
 
+8. GA4 measurement-first route cleanup, 2026-06-23 05:26 CEST.
+   `/ga4` now labels the first status section as `pomiar i jakość ruchu` and
+   renders `Problemy pomiaru GA4` as a separate block above operator decisions.
+   `(not set)`/tracking-gap decisions are treated as measurement/attribution
+   review, not as landing quality or campaign-performance conclusions.
+   Focused proof passed: GA4 route unit test, dashboard lint and dashboard
+   typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2289,8 +2297,7 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   Ads Doctor metric hierarchy, Merchant issue clustering and GA4 measurement
-   blocker grouping.
+   Ads Doctor metric hierarchy and Merchant issue clustering.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

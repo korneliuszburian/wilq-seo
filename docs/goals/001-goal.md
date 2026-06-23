@@ -4821,3 +4821,15 @@ Latest Localo dashboard snapshot slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "localo social and content routes render workflow-specific blockers or focus"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest GA4 dashboard measurement slice:
+
+- `/ga4` now names the top status area `Status GA4 / pomiar i jakość ruchu`
+  and shows `Problemy pomiaru GA4` before the main operator decision queue.
+- `(not set)` and `tracking_gap` rows remain measurement/attribution review
+  signals. They must not be displayed as landing-quality wins/losses or
+  campaign-performance verdicts.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`

@@ -80,8 +80,8 @@ export function Ga4DiagnosticSurface() {
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Grupy ruchu" value={data.landing_group_count} />
-          <MetricTile label="Do pomiaru" value={data.low_engagement_count} />
-          <MetricTile label="Dopasowania WP" value={data.wordpress_match_count} />
+          <MetricTile label="Problemy pomiaru" value={data.operator_summary.measurement_issue_count} />
+          <MetricTile label="Brak WP" value={data.operator_summary.wordpress_missing_count} />
         </div>
       </div>
 
@@ -89,7 +89,7 @@ export function Ga4DiagnosticSurface() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
-              Status GA4 / Landing Quality
+              Status GA4 / pomiar i jakość ruchu
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">{data.strict_instruction}</p>
           </div>
@@ -114,6 +114,7 @@ export function Ga4DiagnosticSurface() {
         ) : null}
       </section>
 
+      <Ga4MeasurementIssues data={data} />
       <Ga4OperatorSummary data={data} />
 
       <Ga4DiagnosticProof data={data} />
@@ -168,6 +169,39 @@ export function Ga4DiagnosticSurface() {
         />
       </section>
     </main>
+  );
+}
+
+function Ga4MeasurementIssues({ data }: { data: Ga4DiagnosticsResponse }) {
+  const measurementDecisions = data.decision_queue.filter(
+    (decision) => decision.decision_type === "fix_measurement"
+  );
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Problemy pomiaru GA4
+          </h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Wiersze `(not set)` i tracking gaps są problemem pomiaru lub
+            atrybucji. WILQ pokazuje je osobno, żeby nie mieszać ich z oceną
+            jakości landingu albo kampanii.
+          </p>
+        </div>
+        <MetricTile label="Do kontroli" value={measurementDecisions.length} />
+      </div>
+      {measurementDecisions.length > 0 ? (
+        <div className="grid gap-3 xl:grid-cols-2">
+          {measurementDecisions.slice(0, 4).map((decision) => (
+            <Ga4DecisionCard key={`measurement-${decision.id}`} decision={decision} />
+          ))}
+        </div>
+      ) : (
+        <BlockerNotice message="Brak aktywnych `(not set)`/tracking-gap decyzji w top kolejce GA4. Wnioski o konwersjach, ROAS i revenue nadal pozostają zablokowane bez właściwych metryk." />
+      )}
+    </section>
   );
 }
 
