@@ -3334,12 +3334,22 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert ads_item["metric_tiles"]["wartość konw."] == "150 PLN"
     assert ads_item["metric_tiles"]["podgląd budżetu"] == 1
     assert ads_item["metric_tiles"]["rekomendacje"] == 1
+    assert ads_item["metric_tiles"]["KPI do review"] == 1
+    assert ads_item["metric_tiles"]["wiersze CPA"] == 1
+    assert ads_item["metric_tiles"]["wiersze ROAS"] == 1
     assert "kolejki tylko do oceny" in ads_item["summary"]
     assert "kliknięcia=12" in ads_item["summary"]
     assert "koszt=12 PLN" in ads_item["summary"]
     assert "konwersje=1" in ads_item["summary"]
+    assert "KPI do review=1" in ads_item["summary"]
+    assert "KPI są tylko do review" in ads_item["summary"]
     assert "apply" in ads_item["next_step"]
+    assert "KPI kampanii" in ads_item["next_step"]
     assert "budget apply" in ads_item["blocked_claims"]
+    assert "CPA" in ads_item["blocked_claims"]
+    assert "ROAS" in ads_item["blocked_claims"]
+    assert "profitability" in ads_item["blocked_claims"]
+    assert "wasted budget" in ads_item["blocked_claims"]
     assert "negative keyword candidates" not in ads_item["blocked_claims"]
     assert "act_prepare_ads_campaign_review_queue" in ads_item["action_ids"]
     assert "act_prepare_google_ads_recommendation_review_queue" in ads_item["action_ids"]
@@ -3366,8 +3376,11 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "koszt=12 PLN" in ads_plan["why_it_matters"]
     assert "konwersje=1" in ads_plan["why_it_matters"]
     assert "wartość konw.=150 PLN" in ads_plan["why_it_matters"]
+    assert "KPI do review=1" in ads_plan["why_it_matters"]
+    assert "werdykt opłacalności" in ads_plan["why_it_matters"]
     assert "aktualny odczyt" in ads_plan["operator_action"]
     assert "podgląd budżetów" in ads_plan["operator_action"]
+    assert "KPI kampanii" in ads_plan["operator_action"]
     assert "nie wdrażaj zmian" in ads_plan["operator_action"]
     assert "Użyj skilla wilq-ads-doctor" in ads_plan["codex_prompt"]
     assert "zablokowanymi claimami" in ads_plan["expected_codex_output"]
@@ -3387,8 +3400,13 @@ def test_command_center_ads_plan_uses_live_review_queues(
     ads_decision = decisions_by_id["decision_review_ads_campaign_metrics"]
     assert ads_decision["metric_tiles"]["podgląd budżetu"] == 1
     assert ads_decision["metric_tiles"]["rekomendacje"] == 1
+    assert ads_decision["metric_tiles"]["KPI do review"] == 1
+    assert ads_decision["metric_tiles"]["wiersze CPA"] == 1
+    assert ads_decision["metric_tiles"]["wiersze ROAS"] == 1
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
+    assert "KPI do review=1" in ads_decision["co_widzimy"]
     assert "read-only kolejki" in ads_decision["co_widzimy"]
+    assert "werdykty o CPA/ROAS" in ads_decision["co_widzimy"]
     assert ads_decision["action_ids"] == ads_item["action_ids"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
     assert "decision_ads_business_context_before_budget_decisions" not in decisions_by_id

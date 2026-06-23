@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:12 CEST.
+Last updated: 2026-06-23 20:34 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -113,6 +113,13 @@ instead of reading DuckDB metric facts twice. Live HTTP proof after stack
 restart: cold `/api/dashboard/command-center` returned 4 daily decisions,
 36,919 bytes and `0.667s`; warm requests returned about `0.006-0.007s`.
 Focused proof: daily Command Center API subset, Python ruff and mypy.
+Follow-up completed: Ads daily decision now exposes review-only campaign KPI
+availability on the first screen (`KPI do review`, `wiersze CPA`,
+`wiersze ROAS`) from the same Google Ads metric facts. Live proof after stack
+restart: `decision_review_ads_campaign_metrics` shows `KPI do review=18`,
+`wiersze CPA=1`, `wiersze ROAS=2`, while `CPA`, `ROAS`, `profitability` and
+`wasted budget` remain blocked as verdicts. Focused proof: Ads Command Center
+API contract subset, Python ruff and mypy.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

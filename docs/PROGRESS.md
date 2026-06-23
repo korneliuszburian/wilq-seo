@@ -39,6 +39,19 @@ Stan produktu:
 
 ## Last Done
 
+0. Command Center Ads KPI review tiles, 2026-06-23.
+   Command Center Ads daily decision now surfaces review-only campaign KPI
+   availability from the same Google Ads metric facts already loaded for the
+   first screen: `KPI do review`, `wiersze CPA` and `wiersze ROAS`. This gives
+   the marketer a clearer reason to open `/ads-doctor` without pretending that
+   CPA/ROAS, profitability or wasted-budget verdicts are unlocked. Live proof
+   after `scripts/local_stack.sh restart`: `decision_review_ads_campaign_metrics`
+   shows `KPI do review=18`, `wiersze CPA=1`, `wiersze ROAS=2` and still blocks
+   `CPA`, `ROAS`, `profitability` and `wasted budget`. Focused proof:
+   `tests/test_api_contracts.py -k 'command_center_ads_plan_uses_live_review_queues
+   or command_center_ads_totals_use_latest_refresh_summary'`, ruff and mypy for
+   `wilq/briefing/command_center.py`.
+
 0. Command Center shared metric read performance slice, 2026-06-23.
    Cold `/api/dashboard/command-center` no longer performs separate DuckDB
    metric reads for tactical queue and Command Center brief. Daily runtime now

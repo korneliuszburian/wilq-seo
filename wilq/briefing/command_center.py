@@ -361,6 +361,7 @@ def _ads_item_from_facts(
     budget_preview_count = _ads_distinct_dimension_count(facts, "budget_id")
     recommendation_count = _ads_recommendation_count(facts)
     review_term_count = _ads_review_search_term_count(facts)
+    derived_kpi_tiles = _ads_derived_kpi_metric_tiles(facts)
     ads_action_ids = _action_ids_for(actions, connector=GOOGLE_ADS_CONNECTOR_ID)
     if live_data_available:
         action_ids = [
@@ -420,6 +421,7 @@ def _ads_item_from_facts(
         "wykluczenia": review_term_count,
         "segmenty": review_term_count,
     }
+    metric_tiles.update(derived_kpi_tiles)
     return CommandCenterBriefItem(
         id="daily_ads_status",
         title=(
@@ -518,6 +520,69 @@ def _ads_review_search_term_count(facts: list[MetricFact]) -> int:
             and fact.value > 0
         }
     )
+
+
+def _ads_derived_kpi_metric_tiles(facts: list[MetricFact]) -> dict[str, int]:
+    campaign_rows = _ads_campaign_metric_rows(facts)
+    if not campaign_rows:
+        return {}
+    cpa_rows = sum(
+        1
+        for row in campaign_rows.values()
+        if _ratio_or_none(row.get("cost_micros"), row.get("conversions")) is not None
+    )
+    roas_rows = sum(
+        1
+        for row in campaign_rows.values()
+        if _ratio_or_none(row.get("conversion_value"), _micros_to_units(row.get("cost_micros")))
+        is not None
+    )
+    tiles = {"KPI do review": len(campaign_rows)}
+    if cpa_rows:
+        tiles["wiersze CPA"] = cpa_rows
+    if roas_rows:
+        tiles["wiersze ROAS"] = roas_rows
+    return tiles
+
+
+def _ads_campaign_metric_rows(
+    facts: list[MetricFact],
+) -> dict[tuple[str | None, str], dict[str, float]]:
+    rows: dict[tuple[str | None, str], dict[str, float]] = {}
+    seen_metric_keys: set[tuple[str | None, str, str]] = set()
+    for fact in facts:
+        if fact.name not in {
+            "clicks",
+            "impressions",
+            "cost_micros",
+            "conversions",
+            "conversion_value",
+        }:
+            continue
+        campaign_id = fact.dimensions.get("campaign_id")
+        campaign_name = fact.dimensions.get("campaign_name") or (
+            f"campaign {campaign_id}" if campaign_id else None
+        )
+        if campaign_name is None:
+            continue
+        metric_key = (campaign_id, campaign_name, fact.name)
+        if metric_key in seen_metric_keys or not isinstance(fact.value, int | float):
+            continue
+        seen_metric_keys.add(metric_key)
+        rows.setdefault((campaign_id, campaign_name), {})[fact.name] = float(fact.value)
+    return rows
+
+
+def _ratio_or_none(numerator: float | None, denominator: float | None) -> float | None:
+    if numerator is None or denominator is None or denominator == 0:
+        return None
+    return numerator / denominator
+
+
+def _micros_to_units(value: float | None) -> float | None:
+    if value is None:
+        return None
+    return value / 1_000_000
 
 
 def _ads_currency_tile(
@@ -1043,9 +1108,14 @@ def _ads_ready_summary(metric_tiles: dict[str, float | int | str]) -> str:
         f"wartość konw.={metric_tiles.get('wartość konw.', 'brak')}, "
         f"podgląd budżetu={metric_tiles.get('podgląd budżetu', 0)}, "
         f"rekomendacje={metric_tiles.get('rekomendacje', 0)}, "
+        f"KPI do review={metric_tiles.get('KPI do review', 0)}, "
+        f"wiersze CPA={metric_tiles.get('wiersze CPA', 0)}, "
+        f"wiersze ROAS={metric_tiles.get('wiersze ROAS', 0)}, "
         f"wykluczenia={metric_tiles.get('wykluczenia', 0)}, "
         f"segmenty={metric_tiles.get('segmenty', 0)}. "
-        "To są kolejki tylko do oceny z evidence i ActionObjectami, nie ścieżka apply."
+        "To są kolejki tylko do oceny z evidence i ActionObjectami. KPI są "
+        "tylko do review z bieżących metric facts; to nadal nie jest werdykt "
+        "opłacalności, CPA/ROAS ani ścieżka apply."
     )
 
 
@@ -1055,6 +1125,8 @@ def _ads_ready_next_step(metric_tiles: dict[str, float | int | str]) -> str:
         review_parts.append("budżety")
     if _numeric_tile(metric_tiles, "rekomendacje") > 0:
         review_parts.append("rekomendacje")
+    if _numeric_tile(metric_tiles, "KPI do review") > 0:
+        review_parts.append("KPI kampanii")
     if _numeric_tile(metric_tiles, "wykluczenia") > 0:
         review_parts.append("wykluczenia")
     if _numeric_tile(metric_tiles, "segmenty") > 0:
@@ -1547,14 +1619,16 @@ def _action_plan_item(
                 operator_action=(
                     "Otwórz /ads-doctor: aktualny odczyt wartości Ads jest na górze, "
                     "a potem przejrzyj: podgląd budżetów, podgląd rekomendacji, "
-                    "przegląd wykluczeń i podgląd segmentów. "
-                    "Waliduj ActionObjecty, ale nie wdrażaj zmian."
+                    "KPI kampanii, przegląd wykluczeń i podgląd segmentów. "
+                    "Waliduj ActionObjecty, ale nie traktuj KPI jako werdyktu "
+                    "opłacalności i nie wdrażaj zmian."
                 ),
                 skill_id="wilq-ads-doctor",
                 codex_prompt=(
                     "Użyj skilla wilq-ads-doctor. Przejrzyj aktualny odczyt Google "
                     "Ads dla Ekologus oraz kolejkę oceny: budżety, rekomendacje, "
-                    "zapytania wyszukiwane, wykluczenia i segmenty niestandardowe. "
+                    "KPI kampanii, zapytania wyszukiwane, wykluczenia i segmenty "
+                    "niestandardowe. "
                     "Cytuj evidence IDs i "
                     "ActionObject IDs. Nie twierdź opłacalności, zmarnowanego budżetu "
                     "ani wdrożenia zmian; wskaż tylko bezpieczne decyzje tylko do "
@@ -1801,8 +1875,9 @@ def _decision_observation(
             metric_tiles=brief_item.metric_tiles,
             suffix=(
                 "To są read-only kolejki budżetu, rekomendacji, wykluczeń i "
-                "segmentów. Wdrożenie zmian, ocena rentowności i werdykty o "
-                "przepalonym budżecie pozostają zablokowane."
+                "segmentów oraz KPI kampanii do review. Wdrożenie zmian, ocena "
+                "rentowności i werdykty o CPA/ROAS albo przepalonym budżecie "
+                "pozostają zablokowane."
             ),
         )
     if item.id == "plan_review_localo_visibility_facts" and brief_item is not None:
