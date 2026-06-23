@@ -10,6 +10,7 @@ from wilq.evidence.registry import connector_evidence_id
 from wilq.schemas import (
     ActionObject,
     ActionRisk,
+    CommandCenterBriefItem,
     CommandCenterResponse,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
@@ -111,6 +112,10 @@ def build_marketing_brief(
         blocker_items = _merge_items(
             blocker_items,
             _decision_blocker_items(command_center.daily_decisions),
+        )
+        blocker_items = _merge_items(
+            blocker_items,
+            _operator_brief_blocker_items(command_center.operator_brief),
         )
     core_actions = core_brief_actions(actions)
     stateful_actions = _stateful_brief_actions(core_actions, blocker_items)
@@ -299,6 +304,39 @@ def _decision_blocker_items(decisions: list[DailyDecision]) -> list[MarketingBri
         for index, decision in enumerate(
             sorted(
                 (decision for decision in decisions if decision.status == "blocked"),
+                key=lambda item: item.priority,
+            ),
+            start=1,
+        )
+    ]
+
+
+def _operator_brief_blocker_items(
+    operator_brief: list[CommandCenterBriefItem],
+) -> list[MarketingBriefItem]:
+    return [
+        MarketingBriefItem(
+            id=f"brief_blocker_{item.id}",
+            title=item.title,
+            kind="blocker",
+            priority=min(10 + index, 19),
+            source_connectors=item.source_connectors,
+            evidence_ids=item.evidence_ids,
+            action_ids=item.action_ids,
+            summary=item.summary,
+            next_step=item.next_step,
+            risk=item.risk,
+            blocker_reason=", ".join(item.blocked_claims[:4]) or "brak kontraktu",
+        )
+        for index, item in enumerate(
+            sorted(
+                (
+                    item
+                    for item in operator_brief
+                    if item.status == "blocked"
+                    and item.action_ids
+                    and item.id not in {"daily_localo_readiness"}
+                ),
                 key=lambda item: item.priority,
             ),
             start=1,

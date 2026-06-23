@@ -15,6 +15,11 @@
       "act_prepare_content_refresh_queue",
       "act_review_ga4_tracking_quality"
     ],
+    "expected_validated_action_ids": [
+      "act_review_merchant_feed_issues",
+      "act_prepare_content_refresh_queue",
+      "act_review_ga4_tracking_quality"
+    ],
   "expected_connectors": [
     "google_ads",
     "google_search_console",

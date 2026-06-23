@@ -239,6 +239,11 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert set(daily_case["required_source_connectors"]) <= set(
         daily_case["expected_connectors"]
     )
+    assert set(daily_case["expected_validated_action_ids"]) == {
+        "act_review_merchant_feed_issues",
+        "act_prepare_content_refresh_queue",
+        "act_review_ga4_tracking_quality",
+    }
     ahrefs_case = cases["wilq-ahrefs-gap-finder"]
     assert ahrefs_case["expected_blocked"] is True
     assert ahrefs_case["expected_no_action_ids"] is True
@@ -406,3 +411,12 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     )
     assert localo_validation_call in localo_smoke_script
     assert '"action_validations": action_validations' in localo_smoke_script
+
+    daily_smoke_script = Path(
+        ".agents/skills/wilq-daily-command/scripts/smoke_context_pack.py"
+    ).read_text(encoding="utf-8")
+    daily_validation_call = (
+        'request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")'
+    )
+    assert daily_validation_call in daily_smoke_script
+    assert '"action_validations": action_validations' in daily_smoke_script

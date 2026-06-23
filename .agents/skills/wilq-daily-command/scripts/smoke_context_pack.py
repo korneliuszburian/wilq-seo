@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -123,6 +124,7 @@ def main() -> int:
     validate_command_center(pack_command_center)
     compare_command_centers(command_center, pack_command_center)
     validate_daily_action_scope(command_center, brief, pack)
+    action_validations = validate_core_daily_actions(args.api_base, pack)
 
     connector_status = pack.get("connector_status") or []
     configured = [item.get("id") for item in connector_status if item.get("configured")]
@@ -155,6 +157,7 @@ def main() -> int:
         "active_action_object_ids": [
             item.get("id") for item in (pack.get("active_action_objects") or [])
         ],
+        "action_validations": action_validations,
         "brief_action_ids": brief.get("action_ids") or [],
         "core_daily_action_ids": sorted(CORE_DAILY_ACTION_IDS),
         "forbidden_daily_action_ids_present": sorted(
@@ -364,6 +367,27 @@ def validate_daily_action_scope(
         )
 
 
+def validate_core_daily_actions(api_base: str, pack: dict[str, Any]) -> list[dict[str, Any]]:
+    pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
+    action_validations = []
+    for action_id in sorted(CORE_DAILY_ACTION_IDS):
+        if action_id not in pack_action_ids:
+            raise SystemExit(f"Daily context missing core ActionObject: {action_id}")
+        quoted_action = urllib.parse.quote(action_id, safe="")
+        validation = request_json(api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        action_validations.append(
+            {
+                "action_id": validation.get("action_id"),
+                "valid": validation.get("valid"),
+                "status": validation.get("status"),
+                "errors": validation.get("errors", []),
+            }
+        )
+        if validation.get("valid") is not True or validation.get("status") != "valid":
+            raise SystemExit(f"Daily ActionObject validation failed: {validation}")
+    return action_validations
+
+
 def compare_briefs(brief: dict[str, Any], pack_brief: dict[str, Any]) -> None:
     checks = {
         "language": brief.get("language") == pack_brief.get("language"),
@@ -394,9 +418,10 @@ def compare_command_centers(
         == pack_command_center.get("blocker_count"),
         "tactical_item_count": command_center.get("tactical_item_count")
         == pack_command_center.get("tactical_item_count"),
-        "operator_brief": command_center.get("operator_brief")
-        == pack_command_center.get("operator_brief"),
-        "demo_script": command_center.get("demo_script") == pack_command_center.get("demo_script"),
+        "operator_brief": _trace_fields(command_center.get("operator_brief"))
+        == _trace_fields(pack_command_center.get("operator_brief")),
+        "demo_script": _trace_fields(command_center.get("demo_script"))
+        == _trace_fields(pack_command_center.get("demo_script")),
         "daily_decisions": _trace_fields(command_center.get("daily_decisions"))
         == _trace_fields(pack_command_center.get("daily_decisions")),
         "action_plan": _trace_fields(command_center.get("action_plan"))

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 02:00 CEST.
+Last updated: 2026-06-23 02:16 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -210,6 +210,21 @@ The result has `blocked=true`, `operator_usefulness_score=4`,
 `source_connectors=["localo"]`, one validated action candidate and no safety
 findings. This proves Localo MCP access/review wiring, not detailed ranking,
 GBP, competitor visibility or local visibility uplift.
+
+Daily Command now has validated core daily ActionObject proof. The
+`wilq-daily-command` smoke validates `act_review_merchant_feed_issues`,
+`act_prepare_content_refresh_queue` and `act_review_ga4_tracking_quality`
+through `POST /api/actions/{action_id}/validate`, and the eval case requires
+those three in `expected_validated_action_ids`. Passing artifact:
+`.local-lab/evals/codex-skill/20260623T020946Z/wilq-daily-command/result.json`.
+The result has `operator_usefulness_score=5`, source connectors across Ads,
+GSC, GA4, Merchant, Ahrefs, Localo and WordPress, 26 evidence IDs, three
+validated action candidates and no safety findings. Command Center
+`daily_decisions` is intentionally capped to the four core daily decisions:
+Merchant, Content, GA4 and Ads. Ads business-context and Localo review items
+may remain in operator brief/action plan/route-specific surfaces, but must not
+inflate the first-screen daily decision list unless they become the actual top
+blocker or a real evidence-backed decision.
 
 ## Product Bar
 

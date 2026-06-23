@@ -3151,21 +3151,14 @@ def test_command_center_ads_plan_uses_live_review_queues(
     assert "podgląd budżetu=1" in ads_decision["co_widzimy"]
     assert "read-only kolejki" in ads_decision["co_widzimy"]
     assert ads_decision["blocked_claims"] == ads_item["blocked_claims"]
-    ads_business_decision = decisions_by_id[
-        "decision_ads_business_context_before_budget_decisions"
-    ]
-    assert ads_business_decision["status"] == "blocked"
-    assert ads_business_decision["metric_tiles"]["braki"] == 5
-    assert "Bez tego KPI są tylko triage" in ads_business_decision["co_widzimy"]
-    assert ads_business_decision["blocked_claims"] == ads_business_item["blocked_claims"]
-    assert ads_business_decision["action_ids"] == [ADS_BUSINESS_CONTEXT_ACTION_ID]
+    assert "decision_ads_business_context_before_budget_decisions" not in decisions_by_id
 
     brief_response = client.get("/api/marketing/brief")
     assert brief_response.status_code == 200
     sections_by_id = {section["id"]: section for section in brief_response.json()["sections"]}
     blockers = sections_by_id["what_blocks_us"]
     blocker_titles = {item["title"] for item in blockers["items"]}
-    assert "Uzupełnij kontekst biznesowy Ads przed decyzjami budżetowymi" in blocker_titles
+    assert "Ads: brakuje kontekstu biznesowego do decyzji budżetowych" in blocker_titles
     blocker_action_ids = {
         action_id for item in blockers["items"] for action_id in item["action_ids"]
     }

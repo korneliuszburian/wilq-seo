@@ -60,7 +60,6 @@ PRIMARY_DAILY_PLAN_IDS = {
     "plan_review_ga4_landing_quality",
     "plan_review_ads_campaign_metrics",
     "plan_fix_ads_oauth_before_spend_analysis",
-    "plan_ads_business_context_before_budget_decisions",
 }
 CONFIGURE_GOOGLE_ADS_ACTION_ID = "act_configure_google_ads_env"
 

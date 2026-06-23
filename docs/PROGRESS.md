@@ -37,6 +37,22 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Daily Command eval hardening, 2026-06-23 02:09 CEST.
+  `wilq-daily-command` smoke validates the three core daily ActionObjects
+  through `POST /api/actions/{action_id}/validate`:
+  `act_review_merchant_feed_issues`,
+  `act_prepare_content_refresh_queue` and
+  `act_review_ga4_tracking_quality`. The eval case requires those
+  `expected_validated_action_ids`. Passing artifact:
+  `.local-lab/evals/codex-skill/20260623T020946Z/wilq-daily-command/result.json`.
+  Result has `language=pl-PL`, Polish diacritics, `api_used=true`, source
+  connectors across Ads, GSC, GA4, Merchant, Ahrefs, Localo and WordPress, 26
+  evidence IDs, 3 validated ActionObject candidates,
+  `operator_usefulness_score=5` and `safety_findings=[]`. Product finding:
+  daily-command now proves the shared dashboard/Codex daily loop for Merchant,
+  Content and GA4 review actions while keeping social drafts out of the daily
+  path and Localo out of primary work unless concrete visibility facts or a
+  real blocker exist.
 - Localo eval hardening, 2026-06-23 01:57 CEST.
   `wilq-localo-operator` smoke now validates
   `act_review_localo_visibility_facts` through

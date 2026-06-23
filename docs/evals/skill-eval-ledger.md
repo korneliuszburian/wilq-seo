@@ -3984,3 +3984,47 @@ Product finding:
 - Final `scripts/verify.sh` passed after this slice: backend `149 passed`,
   dashboard unit `17 passed`, Skill API smoke, Playwright e2e `14 passed` and
   dashboard production build passed.
+
+## 2026-06-23 - wilq-daily-command validated daily ActionObject eval
+
+Purpose:
+
+- Prove that the main daily command skill is not only a Polish brief: it must
+  use the same Command Center/API evidence as the dashboard and validate the
+  core daily review ActionObjects before recommending the operator path.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T020946Z/wilq-daily-command/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `source_connectors=["google_ads","google_search_console","google_analytics_4","google_merchant_center","ahrefs","localo","wordpress_ekologus","wordpress_sklep"]`
+- Evidence count: `26`
+- `action_candidates` contain validated
+  `act_review_merchant_feed_issues`, `act_prepare_content_refresh_queue` and
+  `act_review_ga4_tracking_quality`.
+- `operator_usefulness_score=5`
+- `safety_findings=[]`
+
+Product finding:
+
+- Daily Command is now the strongest proof of the dashboard/Codex daily loop:
+  it reads WILQ API, follows the same Command Center decisions, validates the
+  review-only ActionObjects and returns a Polish operator plan.
+- Command Center must stay focused: first-screen `daily_decisions` are capped
+  to core Merchant, Content, GA4 and Ads. Social drafts stay out of the daily
+  path, and Localo/Ads business-context items should live in operator brief,
+  action plan or route-specific surfaces unless they become the actual top
+  blocker/evidence-backed decision.
