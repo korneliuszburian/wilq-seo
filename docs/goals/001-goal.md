@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 17:56 CEST.
+Last updated: 2026-06-23 18:04 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -312,6 +312,22 @@ connectors and validated `act_prepare_content_refresh_queue`. The answer uses
 `stale`, prioritizes Zielony Ład as `merge_create_after_inventory_check`, keeps
 `bdo co to` as `inventory_check_before_create`, and treats Ahrefs gaps as a
 separate discovery backlog.
+
+Completed at 2026-06-23 18:04 CEST:
+`wilq-custom-segments` review-only decision eval completed. Non-interactive
+eval passed at
+`.local-lab/evals/codex-skill/20260623T160335Z/wilq-custom-segments/result.json`
+with `pl-PL`, `api_used=true`, `blocked=false`,
+`operator_usefulness_score=4`, no safety findings and source connectors
+`google_ads` plus `google_search_console`. The response uses
+`ads_diagnostics.custom_segments_read_contract`, real `source_terms`,
+`review_priority=pilne`, `review_score=75`, `validation_status=pending_validation`
+and the API `review_reason`. It explicitly keeps
+`audience_forecast_read_contract.status=blocked` and blocks audience size,
+ROAS, targeting-applied and campaign-performance claims until
+forecast/audience-size and apply-safety contracts exist. The smoke expectation
+was aligned with the Polish API wording, not with old English workaround
+phrases.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

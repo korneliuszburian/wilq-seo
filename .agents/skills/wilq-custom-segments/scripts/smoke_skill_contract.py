@@ -146,8 +146,8 @@ def main() -> int:
             raise SystemExit("Custom segment candidate review_score must be 0-100")
         review_reason = str(first_candidate.get("review_reason") or "")
         if (
-            "kolejność review segmentu" not in review_reason
-            or "nie dowód audience size" not in review_reason
+            "kolejność oceny segmentu" not in review_reason
+            or "nie dowód rozmiaru odbiorców" not in review_reason
         ):
             raise SystemExit("Custom segment candidate must explain review-only triage")
         if not first_candidate.get("human_review_gates"):

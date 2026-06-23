@@ -35,6 +35,9 @@ Dla każdego kandydata z `custom_segments_read_contract.candidates` pokaż:
 
 - nazwę i intent z API;
 - `source_terms` bez dopisywania nowych fraz;
+- `review_priority`, `review_score` i dokładny sens `review_reason`, żeby operator
+  widział, że ranking kolejki review nie jest dowodem audience size ani wpływu
+  na kampanię;
 - `payload_preview` jako review-only podgląd, z informacją że `apply_allowed=false`;
 - `evidence_ids` i `source_connectors`;
 - `confidence` oraz `validation_status`;

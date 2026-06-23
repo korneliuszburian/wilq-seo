@@ -25,6 +25,63 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-23 - wilq-custom-segments review-only decision eval
+
+Purpose:
+
+- Prove that `wilq-custom-segments` can use the current
+  `ads_diagnostics.custom_segments_read_contract` instead of inventing audience
+  terms.
+- Require the response to report `review_priority`, `review_score` and the
+  meaning of `review_reason`, so the marketer sees review triage rather than a
+  claim about audience size or campaign impact.
+- Keep `audience_forecast_read_contract` blocked until forecast/audience-size
+  evidence exists.
+
+Commands:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+bash -n scripts/codex_skill_eval.sh
+uv run ruff check .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run python .agents/skills/wilq-custom-segments/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-custom-segments --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T160335Z/wilq-custom-segments/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors=["google_ads","google_search_console"]`
+- Evidence IDs include `ev_connector_google_ads_status` and
+  `ev_refresh_refresh_google_ads_dc9e77806e9c`.
+- Recommendation uses `Search terms: Kompendium PPWR`, real `source_terms`,
+  `review_priority=pilne`, `review_score=75`, `confidence=medium` and
+  `validation_status=pending_validation`.
+- `notes` explicitly report `audience_forecast_read_contract.status=blocked`,
+  `missing_read_contracts=[forecast_or_audience_size]` and the API
+  `review_reason`.
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- Custom Segments is useful as a review queue, not as apply-ready targeting.
+  The current API can propose one review candidate from Google Ads search-term
+  evidence, but it must still block audience size, ROAS, targeting applied and
+  campaign-performance claims until forecast/audience-size and apply safety
+  contracts exist.
+- The smoke expectation was aligned with the Polish API wording
+  `kolejność oceny segmentu` / `nie dowód rozmiaru odbiorców`; this keeps the
+  product standard Polish without adding English workaround phrases.
+
 ## 2026-06-23 - wilq-ga4-analyst decision-sample eval
 
 Purpose:

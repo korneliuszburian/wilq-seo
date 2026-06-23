@@ -324,6 +324,9 @@ errors = []
 def _has_structured_blocked_claims(result: dict) -> bool:
     if result.get("blocked_reason"):
         return True
+    notes = str(result.get("notes") or "").lower()
+    if any(term.lower() in notes for term in case.get("blocked_claim_terms", [])):
+        return True
     if any(item.get("blocked_reason") for item in result.get("recommendations", [])):
         return True
     return any(

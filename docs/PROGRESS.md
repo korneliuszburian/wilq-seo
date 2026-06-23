@@ -39,7 +39,21 @@ Stan produktu:
 
 ## Last Done
 
-1. `wilq-content-strategist` freshness-aware eval, 2026-06-23.
+1. `wilq-custom-segments` review-only decision eval, 2026-06-23.
+   Custom Segments now has current proof that Codex can use
+   `ads_diagnostics.custom_segments_read_contract` as a review queue without
+   inventing audience terms. Non-interactive eval passed at
+   `.local-lab/evals/codex-skill/20260623T160335Z/wilq-custom-segments/result.json`.
+   Result: `blocked=false`, `pl-PL`, `api_used=true`,
+   `operator_usefulness_score=4`, no safety findings, source connectors
+   `google_ads` and `google_search_console`. The response recommends only one
+   review candidate, `Search terms: Kompendium PPWR`, with real `source_terms`,
+   `review_priority=pilne`, `review_score=75` and `validation_status=pending_validation`.
+   It explicitly keeps `audience_forecast_read_contract.status=blocked` and
+   blocks audience size, ROAS, targeting-applied and campaign-performance
+   claims until forecast/audience-size and apply-safety contracts exist.
+
+2. `wilq-content-strategist` freshness-aware eval, 2026-06-23.
    Content Strategist now has a stricter eval that requires freshness/stale
    handling, not only valid evidence IDs. Non-interactive eval passed at
    `.local-lab/evals/codex-skill/20260623T155420Z/wilq-content-strategist/result.json`.
@@ -52,7 +66,7 @@ Stan produktu:
    `inventory_check_before_create`, and treats Ahrefs gaps as a separate
    discovery backlog. The eval case now requires `freshness` and `stale`.
 
-2. `wilq-localo-operator` partial-evidence eval, 2026-06-23.
+3. `wilq-localo-operator` partial-evidence eval, 2026-06-23.
    Localo skill now has current proof that Localo is not a simple access
    blocker anymore. Live smoke completed a read-only Localo refresh and showed
    `access_ready`, `mcp_initialize_status=200`, `localo_read_contract_count=3`,
@@ -68,7 +82,7 @@ Stan produktu:
    paths and local visibility uplift remain blocked until WILQ exposes those
    contracts.
 
-3. `wilq-campaign-builder` landing-context eval, 2026-06-23.
+4. `wilq-campaign-builder` landing-context eval, 2026-06-23.
    Campaign Builder context-pack now fills `content_landing_context` from
    `/api/content/diagnostics.decision_queue` before falling back to raw metric
    facts. Live proof after stack restart: `live_data_available=true`,
@@ -86,7 +100,7 @@ Stan produktu:
    explicitly tells Codex to use landing candidates before building
    `campaign_candidates`.
 
-4. `wilq-demand-gen-operator` blocked readiness eval, 2026-06-23.
+5. `wilq-demand-gen-operator` blocked readiness eval, 2026-06-23.
    Demand Gen eval is now explicit that the current correct state is a
    blocker/review-only workflow, not a launch or migration recommendation.
    The eval case requires `expected_blocked=true` and keeps blocked claims
@@ -102,7 +116,7 @@ Stan produktu:
    `SEARCH`, but zero Demand Gen campaign/ad/creative/landing/migration rows,
    so launch/migration/creative quality claims stay blocked.
 
-5. `wilq-social-publisher` review-only draft context/eval, 2026-06-23.
+6. `wilq-social-publisher` review-only draft context/eval, 2026-06-23.
    Social Publisher now receives a typed `social_draft_context` in its
    skill-scoped context-pack. It exposes `mode=review_only`,
    `publish_allowed=false`, missing LinkedIn/Facebook permissions,
@@ -116,7 +130,7 @@ Stan produktu:
    `act_prepare_facebook_social_drafts`, plus an explicit blocked publish
    action candidate because `publish_allowed=false`.
 
-6. `wilq-ahrefs-gap-finder` review-only gap eval, 2026-06-23.
+7. `wilq-ahrefs-gap-finder` review-only gap eval, 2026-06-23.
    Ahrefs eval now treats ready gap records as a review workflow, not a global
    blocker. Smoke exposes compact `gap_read_contract` fields:
    `status=ready`, `gap_record_count=8`, `missing_read_contracts=[]`,
@@ -129,7 +143,7 @@ Stan produktu:
    findings, no ActionObject IDs, and review-only recommendations for
    `ahrefs_review_authority_context` plus `ahrefs_review_gap_records`.
 
-7. `wilq-gsc-content-doctor` scoped context-pack/eval, 2026-06-23.
+8. `wilq-gsc-content-doctor` scoped context-pack/eval, 2026-06-23.
    GSC Content Doctor no longer receives/promotes Ahrefs decisions in its
    skill-scoped `POST /api/codex/context-pack`. Full
    `/api/content/diagnostics` can still include Ahrefs for Content Planner and
@@ -145,7 +159,7 @@ Stan produktu:
    `operator_usefulness_score=5`, no safety findings, validated
    `act_prepare_content_refresh_queue`.
 
-8. `wilq-merchant-feed-operator` product-sample eval, 2026-06-23.
+9. `wilq-merchant-feed-operator` product-sample eval, 2026-06-23.
    Non-interactive Codex eval passed against the new Merchant product-sample
    contract:
    `.local-lab/evals/codex-skill/20260623T144931Z/wilq-merchant-feed-operator/result.json`.
@@ -253,7 +267,9 @@ Stan produktu:
   visibility, local tasks, write/apply and local visibility uplift until those
   exact read/write contracts exist.
 - Skill evals prove API usage, Polish and evidence shape for many routes. The
-  newest Content Strategist eval proves freshness-aware content decisions from
+  newest Custom Segments eval proves review-only segment candidates from real
+  Ads `source_terms` while blocking audience size and performance claims;
+  Content Strategist eval proves freshness-aware content decisions from
   `content_diagnostics.decision_queue`; Localo eval proves partial Localo facts
   are reviewable while unsupported local claims stay blocked; Campaign Builder eval proves Ads
   review actions can be paired with
@@ -271,10 +287,10 @@ Stan produktu:
 
 1. Run the next high-value Codex skill eval against current API contracts and
    record whether it produces real decisions, not only schema-valid output.
-   Recommended next skill: `wilq-custom-segments` or another Ads-adjacent skill
-   that still needs stricter quality-of-decision assertions, because Content
-   Strategist, Campaign Builder and Localo now have current decision-quality
-   proofs.
+   Recommended next skill: `wilq-daily-command` as the cross-surface daily
+   operator proof, or `wilq-ads-doctor` again after the next Ads API contract
+   slice, because Custom Segments, Content Strategist, Campaign Builder and
+   Localo now have current decision-quality proofs.
 2. If an eval exposes reasoning gaps, fix typed API/dashboard contracts first,
    not skill references.
 3. Keep focused verification. Use full `scripts/verify.sh` only for final
