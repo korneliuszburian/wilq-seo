@@ -38,7 +38,7 @@ def localo_visibility_review_payload_from_metric_facts(
     visibility_facts = [fact for fact in facts if fact.source_connector == "localo"]
     if not visibility_facts:
         return None
-    present_contracts = _unique(
+    present_contracts = _ordered_contracts(
         str(fact.dimensions.get("contract", ""))
         for fact in visibility_facts
         if fact.dimensions.get("contract")
@@ -156,3 +156,8 @@ def _unique(items: Iterable[str]) -> list[str]:
         if item and item not in unique_items:
             unique_items.append(item)
     return unique_items
+
+
+def _ordered_contracts(items: Iterable[str]) -> list[str]:
+    present = set(items)
+    return [contract for contract in LOCALO_VISIBILITY_CONTRACTS if contract in present]

@@ -4310,6 +4310,30 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
         "competitor_visibility",
         "local_tasks",
     ]
+    contract_status_by_id = {
+        item["id"]: item for item in payload["read_contract_statuses"]
+    }
+    assert contract_status_by_id["place_inventory"]["status"] == "ready"
+    assert contract_status_by_id["local_rankings"]["status"] == "ready"
+    assert contract_status_by_id["reviews"]["status"] == "ready"
+    assert contract_status_by_id["gbp_visibility"]["status"] == "missing"
+    assert contract_status_by_id["gbp_visibility"]["blocked_claims"] == [
+        "GBP performance",
+        "GBP write",
+        "local visibility uplift",
+    ]
+    assert contract_status_by_id["competitor_visibility"]["status"] == "missing"
+    assert contract_status_by_id["competitor_visibility"]["blocked_claims"] == [
+        "competitor visibility",
+        "local visibility uplift",
+    ]
+    assert contract_status_by_id["local_tasks"]["status"] == "missing"
+    assert contract_status_by_id["local_tasks"]["blocked_claims"] == [
+        "local task completed",
+        "GBP write",
+        "local visibility uplift",
+    ]
+    assert review_decision["read_contract_statuses"] == payload["read_contract_statuses"]
     assert review_decision["metric_tiles"]["miejsca"] == 4
     assert review_decision["metric_tiles"]["frazy"] == 23
     assert review_decision["metric_tiles"]["średnia widoczność"] == 52.8261

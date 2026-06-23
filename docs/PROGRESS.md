@@ -61,6 +61,10 @@ Stan produktu:
   `/api/merchant/diagnostics` decision queue entries expose
   `merchant_feed_issue_review_preview_v1`; apply/API mutation/destructive flags
   stay false.
+- Localo diagnostics now expose typed `read_contract_statuses`. Live HTTP proof
+  after stack restart: `place_inventory`, `local_rankings` and `reviews` are
+  ready; `gbp_visibility`, `competitor_visibility` and `local_tasks` are
+  missing with explicit blocked claims.
 - Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
   `/actions/act_confirm_ads_target_guardrails` and
   `/actions/act_record_ads_strategy_review` render Ads business context,
@@ -76,9 +80,10 @@ Stan produktu:
 ## Active Gaps
 
 1. **Localo beyond OAuth and aggregate facts**
-   - Current Localo supports aggregate visibility/reviews review.
-   - Rankings, GBP performance, competitors, local tasks, writes and uplift
-     claims still require typed read/write contracts.
+   - Current Localo supports place inventory, local rankings and reviews as
+     typed read contracts.
+   - Missing: GBP visibility, competitor visibility, local tasks, write/apply
+     contracts and uplift claims.
 
 2. **Skill/reference hygiene audit**
    - Audit `.agents/skills/**/SKILL.md` and `references/*.md`.
@@ -97,6 +102,6 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Commit/push Merchant product-row issue payload previews.
-2. Continue with Localo typed read contracts or skill/reference hygiene audit
+1. Commit/push Localo typed read-contract statuses.
+2. Continue with missing Localo read contracts or skill/reference hygiene audit
    based on live API/browser proof.

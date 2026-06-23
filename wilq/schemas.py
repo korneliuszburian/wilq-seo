@@ -2281,6 +2281,22 @@ class LocaloDiagnosticSection(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class LocaloReadContractStatus(BaseModel):
+    id: Literal[
+        "place_inventory",
+        "local_rankings",
+        "gbp_visibility",
+        "competitor_visibility",
+        "reviews",
+        "local_tasks",
+    ]
+    status: Literal["ready", "missing"]
+    evidence_kind: str
+    metric_fact_names: list[str] = Field(default_factory=list)
+    blocked_claims: list[str] = Field(default_factory=list)
+    next_step: str
+
+
 class LocaloDecisionItem(BaseModel):
     id: str
     decision_type: Literal[
@@ -2299,6 +2315,7 @@ class LocaloDecisionItem(BaseModel):
     metric_tiles: dict[str, int | float | str] = Field(default_factory=dict)
     allowed_evidence: list[str] = Field(default_factory=list)
     missing_read_contracts: list[str] = Field(default_factory=list)
+    read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)
@@ -2316,6 +2333,7 @@ class LocaloOperatorSummary(BaseModel):
     access_status: Literal["access_ready", "access_blocked", "unknown"]
     visibility_fact_count: int = 0
     missing_read_contracts: list[str] = Field(default_factory=list)
+    read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
@@ -2331,6 +2349,7 @@ class LocaloDiagnosticsResponse(BaseModel):
     access_probe: LocaloAccessProbe
     live_data_available: bool
     visibility_fact_count: int = 0
+    read_contract_statuses: list[LocaloReadContractStatus] = Field(default_factory=list)
     operator_summary: LocaloOperatorSummary
     decision_queue: list[LocaloDecisionItem] = Field(default_factory=list)
     sections: list[LocaloDiagnosticSection] = Field(default_factory=list)
