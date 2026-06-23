@@ -39,6 +39,18 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard Ads search-term n-gram ActionObject preview, 2026-06-23.
+   `/actions/act_review_ads_search_term_ngrams` now renders
+   `search_term_ngram_review_v1` rows from `ngram_preview` as
+   marketer-reviewable cards above the debug payload. The cards show n-gram,
+   n-gram size, source search-term count, sample search terms, clicks,
+   impressions, cost, conversions, missing read contracts, required
+   validations, blocked claims and explicit blocked apply/API mutation state.
+   Browser proof: `.local-lab/proof/dashboard/action-ads-ngram-preview.txt`.
+   Focused proof: Action detail route tests, dashboard typecheck and dashboard
+   lint. This does not claim search-term waste, apply negative keywords,
+   conversion loss, CPA or ROAS; it only exposes the n-gram review contract.
+
 0. Dashboard GA4 tracking-quality ActionObject preview, 2026-06-23.
    `/actions/act_review_ga4_tracking_quality` now renders
    `ga4_tracking_quality_review_v1` rows as marketer-reviewable cards above

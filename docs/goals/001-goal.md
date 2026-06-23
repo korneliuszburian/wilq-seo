@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 20:36 CEST.
+Last updated: 2026-06-23 20:40 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -214,6 +214,18 @@ conversion rate, ROAS, revenue, funnel diagnosis, attribution verdict,
 tracking fixed or GA4 writes. Focused proof: Action detail route tests,
 dashboard typecheck, dashboard lint and browser proof
 `.local-lab/proof/dashboard/action-ga4-tracking-quality-preview.txt`.
+
+Follow-up completed at 2026-06-23 20:40 CEST: the ActionObject detail route now
+renders Ads search-term n-gram previews from
+`preview_contract=search_term_ngram_review_v1`.
+`/actions/act_review_ads_search_term_ngrams` shows n-gram, n-gram size, source
+search-term count, sample search terms, clicks, impressions, cost, conversions,
+missing read contracts, required validations, blocked claims and blocked
+apply/API mutation state as Polish review cards. Raw payload stays under
+`Surowy payload debug`. This improves the Ads review path without claiming
+search-term waste, applying negative keywords, conversion loss, CPA or ROAS.
+Focused proof: Action detail route tests, dashboard typecheck, dashboard lint
+and browser proof `.local-lab/proof/dashboard/action-ads-ngram-preview.txt`.
 
 2026-06-23 Command Center first-screen copy rule: the first Command Center
 screen must not render technical API prose by regex-translating individual

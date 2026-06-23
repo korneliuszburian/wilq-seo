@@ -123,6 +123,7 @@ type PayloadPreviewItem = {
     | "recommendation"
     | "customSegment"
     | "negativeKeyword"
+    | "searchTermNgram"
     | "demandGenReadiness"
     | "ga4TrackingQuality"
     | "contentBrief"
@@ -142,6 +143,11 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "budget" as const, item }))
     : [];
+  const ngramItems = Array.isArray(payload.ngram_preview)
+    ? payload.ngram_preview
+        .filter(isRecord)
+        .map((item) => ({ kind: "searchTermNgram" as const, item }))
+    : [];
   const contentBriefItems = Array.isArray(payload.content_brief_preview)
     ? payload.content_brief_preview
         .filter(isRecord)
@@ -152,7 +158,13 @@ function actionPayloadPreviewItems(payload: Record<string, unknown>): PayloadPre
         .filter(isRecord)
         .map((item) => ({ kind: "wordpressDraft" as const, item }))
     : [];
-  return [...genericItems, ...budgetItems, ...contentBriefItems, ...wordpressDraftItems];
+  return [
+    ...genericItems,
+    ...budgetItems,
+    ...ngramItems,
+    ...contentBriefItems,
+    ...wordpressDraftItems
+  ];
 }
 
 function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }) {
@@ -167,6 +179,9 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   }
   if (previewItem.kind === "negativeKeyword") {
     return <NegativeKeywordPayloadPreviewCard item={previewItem.item} />;
+  }
+  if (previewItem.kind === "searchTermNgram") {
+    return <SearchTermNgramPreviewCard item={previewItem.item} />;
   }
   if (previewItem.kind === "demandGenReadiness") {
     return <DemandGenReadinessPreviewCard item={previewItem.item} />;
@@ -228,6 +243,39 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
         <div>
           Grupa reklam: {stringValue(item.ad_group_name, stringValue(item.ad_group_id, "brak"))}
         </div>
+        <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
+        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> }) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">N-gram search terms do review</h3>
+          <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+            {stringValue(item.operation_type, "SearchTermNgramReview")}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>N-gram: {stringValue(item.ngram, "brak")}</div>
+        <div>Rozmiar: {formatNumber(item.ngram_size)}</div>
+        <div>Search terms: {formatNumber(item.source_search_term_count)}</div>
+        <PreviewValues label="Przykłady" values={asStringArray(item.sample_search_terms)} />
+        <div>Kliknięcia: {formatNumber(item.clicks)}</div>
+        <div>Wyświetlenia: {formatNumber(item.impressions)}</div>
+        <div>Koszt: {formatMicrosAsPln(item.cost_micros)}</div>
+        <div>Konwersje: {formatNumber(item.conversions)}</div>
+        <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
         <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
         <div>
@@ -487,11 +535,12 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "recommendation") return 1;
   if (kind === "customSegment") return 2;
   if (kind === "negativeKeyword") return 3;
-  if (kind === "demandGenReadiness") return 4;
-  if (kind === "ga4TrackingQuality") return 5;
-  if (kind === "contentBrief") return 6;
-  if (kind === "wordpressDraft") return 7;
-  return 8;
+  if (kind === "searchTermNgram") return 4;
+  if (kind === "demandGenReadiness") return 5;
+  if (kind === "ga4TrackingQuality") return 6;
+  if (kind === "contentBrief") return 7;
+  if (kind === "wordpressDraft") return 8;
+  return 9;
 }
 
 function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewItem["kind"] {

@@ -269,6 +269,52 @@ const negativeKeywordActionFixture: ActionObject = {
   }
 };
 
+const ngramActionFixture: ActionObject = {
+  ...actionFixture,
+  id: "act_ngrams",
+  title: "Przygotuj ocenę tematów z n-gramów wyszukiwanych haseł",
+  domain: "google_ads",
+  connector: "google_ads",
+  risk: "medium",
+  evidence_ids: ["ev_refresh_google_ads"],
+  human_diagnosis: "Search terms mają n-gramy do review intencji.",
+  recommended_reason: "Przejrzyj tematy zanim powstanie negative keyword payload.",
+  payload: {
+    action_type: "google_ads_search_term_ngram_review",
+    preview_contract: "search_term_ngram_review_v1",
+    ngram_preview: [
+      {
+        id: "search_term_ngram_review_asekol_1",
+        ngram: "asekol",
+        ngram_size: 1,
+        source_search_term_count: 1,
+        sample_search_terms: [
+          "asekol pl organizacja odzysku sprzętu elektrycznego i elektronicznego s a"
+        ],
+        clicks: 1,
+        impressions: 1,
+        cost_micros: 24173334,
+        conversions: 0,
+        conversion_value: 0,
+        operation_type: "SearchTermNgramReview",
+        missing_read_contracts: [
+          "human_intent_review",
+          "ngram_to_negative_keyword_payload_preview"
+        ],
+        required_validation: [
+          "review_ngram_intent",
+          "review_source_search_terms",
+          "compare_90_day_safety_read"
+        ],
+        blocked_claims: ["search-term waste", "negative keyword apply", "CPA", "ROAS"],
+        api_mutation_ready: false,
+        apply_allowed: false,
+        destructive: false
+      }
+    ]
+  }
+};
+
 const demandGenActionFixture: ActionObject = {
   ...actionFixture,
   id: "act_demand_gen",
@@ -485,6 +531,9 @@ function mockFetch() {
       if (url.endsWith("/api/actions/act_negative_keywords")) {
         return Promise.resolve(Response.json(negativeKeywordActionFixture));
       }
+      if (url.endsWith("/api/actions/act_ngrams")) {
+        return Promise.resolve(Response.json(ngramActionFixture));
+      }
       if (url.endsWith("/api/actions/act_demand_gen")) {
         return Promise.resolve(Response.json(demandGenActionFixture));
       }
@@ -623,6 +672,29 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Grupa reklam: Grupa reklam 1/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_search_term_context/)).toBeInTheDocument();
     expect(screen.getByText(/Blokady: negative keyword apply/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+  });
+
+  it("renders search-term n-gram preview without requiring raw JSON", async () => {
+    renderActionDetail("act_ngrams");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", {
+          name: "Przygotuj ocenę tematów z n-gramów wyszukiwanych haseł"
+        })
+      ).toBeInTheDocument()
+    );
+    expect(screen.getByText("N-gram search terms do review")).toBeInTheDocument();
+    expect(screen.getByText(/N-gram: asekol/)).toBeInTheDocument();
+    expect(screen.getByText(/Rozmiar: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Search terms: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Przykłady: asekol pl organizacja odzysku/)).toBeInTheDocument();
+    expect(screen.getByText(/Kliknięcia: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Wyświetlenia: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Koszt: 24,17 PLN/)).toBeInTheDocument();
+    expect(screen.getByText(/Konwersje: 0/)).toBeInTheDocument();
+    expect(screen.getByText(/Braki: human_intent_review/)).toBeInTheDocument();
+    expect(screen.getByText(/Blokady: search-term waste/)).toBeInTheDocument();
     expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 
