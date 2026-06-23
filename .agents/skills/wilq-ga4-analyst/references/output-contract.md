@@ -23,7 +23,7 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 1. `Status`: zasięg API, gotowość connectorów i znane blockery.
 2. `Dowody`: `ga4_diagnostics.decision_queue`, `ga4_diagnostics.sections`, evidence IDs, connector IDs, landing/source/campaign metric facts, tactical item IDs i freshness notes wyłącznie z WILQ API.
-3. `Diagnoza`: użyj najpierw `decision_queue`. Klasyfikuj każdy item jako `fix_measurement`, `review_landing_mapping` albo `review_traffic_quality`, potem wyjaśnij, co evidence wspiera. Dodaj niepewność, gdy evidence jest zagregowane, stare, nie ma conversion-like facts albo ma tylko behavior metrics.
+3. `Diagnoza`: użyj najpierw `decision_queue`. Raportuj typ, status i następny krok zwrócony przez WILQ API, np. `fix_measurement`, `review_landing_mapping` albo `review_traffic_quality`; nie klasyfikuj itemów samodzielnie w prose. Wyjaśnij, co evidence wspiera, i dodaj niepewność, gdy evidence jest zagregowane, stare, nie ma conversion-like facts albo ma tylko behavior metrics.
 4. `Kandydaci działań`: decision IDs, opportunity IDs, tactical queue IDs i ActionObject IDs, jeśli są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.

@@ -37,6 +37,8 @@ FORBIDDEN_SKILL_PROSE = {
     "Do not rebuild",
     "with mode=vendor_read",
     "API identifiers",
+    "Priorytetyzuj Merchant",
+    "Klasyfikuj każdy item",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 

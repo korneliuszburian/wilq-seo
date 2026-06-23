@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 01:37 CEST.
+Last updated: 2026-06-24 01:43 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -282,6 +282,11 @@ Finish these before claiming the Ekologus demo is done:
      prose. Its smoke checks endpoint/context-pack consistency, required
      historical price/performance read contracts, review-only preview flags and
      blocked product ROAS/profitability/price-impact claims.
+   - First semantic reference audit removed two prompt-side product behaviors:
+     Daily Command no longer hardcodes domain ranking, and GA4 Analyst no
+     longer classifies decision items in prose. Both must use WILQ API
+     decision order/types. `scripts/skill_hygiene_check.py` blocks those exact
+     regressions.
    - Remaining audit: deeper semantic review of references. References may
      describe API usage, required evidence, output shape and safety rules.
    - References must not become the place for product behavior, workaround

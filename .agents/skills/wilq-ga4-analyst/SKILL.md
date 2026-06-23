@@ -31,7 +31,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 1. Przeczytaj `references/output-contract.md` przed finalną odpowiedzią lub planem działania.
 2. Uruchom `uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000` przy walidacji ścieżki skill/API.
 3. Wywołaj `GET /api/ga4/diagnostics` przed podsumowaniem GA4 behavior, jakości landingów, conversion readiness lub tracking blockers.
-4. Użyj `ga4_diagnostics.decision_queue` jako głównej kolejki decyzji: `fix_measurement`, `review_landing_mapping`, `review_traffic_quality`.
+4. Użyj `ga4_diagnostics.decision_queue` jako głównej kolejki decyzji i zachowaj typy/statusy zwrócone przez API, np. `fix_measurement`, `review_landing_mapping`, `review_traffic_quality`. Nie klasyfikuj GA4 itemów samodzielnie poza kontraktem API.
 5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-ga4-analyst"}` i potwierdź, że osadzony kontrakt `ga4_diagnostics` zgadza się z route.
 6. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 7. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.

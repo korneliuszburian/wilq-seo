@@ -104,7 +104,10 @@ Stan produktu:
   English imperative workflow steps in WILQ skill docs and mixed-language
   `API identifiers` wording. WILQ `SKILL.md` and
   `references/output-contract.md` files now use Polish operator prose while
-  preserving API IDs, endpoint paths and enum values.
+  preserving API IDs, endpoint paths and enum values. Semantic audit also
+  removed hardcoded Daily Command domain ranking and GA4 prompt-side item
+  classification; both now consume WILQ API decision order/types, and the
+  hygiene gate blocks those exact regressions.
 - Live Ads optimizer review is ready but review-only. `/api/ads/diagnostics`
   exposes ready campaign triage, budget pacing, recommendation review,
   impression-share context, search terms, search-term safety, custom-segment

@@ -35,7 +35,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-daily-command"}`, żeby pobrać szersze evidence, opportunities, actions, expert rules i knowledge cards.
 6. Osadzony w context packu `command_center` jest celowo kompaktowy: użyj `daily_decisions` jako kanonicznej daily decision list i potwierdź zgodność z `GET /api/dashboard/command-center` dla `primary_next_step`, blocker count, tactical item count oraz daily decision trace fields. Nie odbudowuj planu z legacy list `operator_brief` albo `action_plan`.
 7. Osadzony `marketing_brief` musi zgadzać się z `GET /api/marketing/brief` dla language, section IDs, blocker count, recommendation count, evidence IDs i action IDs.
-8. Daily Command jest core daily loop, nie pełnym registry. Priorytetyzuj Merchant, Content/GSC/WordPress, GA4 i Ads. Localo pokazuj tylko jako realny blocker albo ograniczenie claimów, nie jako gotowe zadanie dnia bez lokalnych ranking/GBP facts. Social draft ActionObjects pomiń, chyba że użytkownik jawnie prosi o social workflow.
+8. Daily Command jest core daily loop, nie pełnym registry. Zachowaj kolejność, statusy i `primary_next_step` z WILQ API; nie nadawaj własnego rankingu domen ani nie promuj connector readiness jako zadania marketingowego. Social workflow pokaż tylko wtedy, gdy API zwraca go w daily decyzjach albo użytkownik jawnie o niego prosi.
 9. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 10. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
 11. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
@@ -51,7 +51,6 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 - `GET /api/dashboard/command-center`
 - `GET /api/marketing/brief`
 - `POST /api/codex/context-pack`
-- `GET /api/marketing/brief`
 - `GET /api/connectors`
 - `GET /api/connectors/{connector}/status`
 - `GET /api/connectors/{connector}/refresh-runs`
