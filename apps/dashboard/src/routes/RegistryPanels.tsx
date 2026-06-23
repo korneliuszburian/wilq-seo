@@ -27,18 +27,18 @@ export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] })
           <div className="mt-4 text-xs text-slate-600">
             {connector.missing_credentials.length > 0 ? (
               <div>
-                <div className="mb-1 font-medium text-wait">Missing credentials</div>
+                <div className="mb-1 font-medium text-wait">Brakujące credentiale</div>
                 <div className="break-words">{connector.missing_credentials.join(", ")}</div>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-signal">
                 <CheckCircle2 aria-hidden="true" size={16} />
-                Configured
+                Skonfigurowany
               </div>
             )}
             {connector.available_credential_sources.length > 0 ? (
               <div className="mt-2 break-words text-slate-500">
-                Source: {connector.available_credential_sources.join(", ")}
+                Źródło dostępu: {connector.available_credential_sources.join(", ")}
               </div>
             ) : null}
           </div>

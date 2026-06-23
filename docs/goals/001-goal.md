@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 07:00 CEST.
+Last updated: 2026-06-23 07:03 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -104,6 +104,11 @@ missing contract names from workflow cards. It shows whether a skill is
 available and how many contracts are missing, keeping the route useful as an
 operator workflow map instead of a schema dump. Focused proof: workflow route
 unit test passed, dashboard lint OK and dashboard typecheck OK.
+
+2026-06-23 Settings follow-up: connector cards now use Polish operator-facing
+labels for missing credentials, configured state and access source. Focused
+proof: settings route unit test passed, dashboard lint OK and dashboard
+typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

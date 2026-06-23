@@ -37,6 +37,12 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Connector settings localization, 2026-06-23 07:03 CEST.
+  `ConnectorGrid` używa polskich operator-facing labeli:
+  `Brakujące credentiale`, `Skonfigurowany`, `Źródło dostępu`. Focused proof:
+  `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t
+  "connector status renders"` passed, dashboard lint OK and dashboard
+  typecheck OK.
 - Workflows dashboard cleanup, 2026-06-23 07:00 CEST.
   `/workflows` nie drukuje już raw `skill_id` ani nazw brakujących kontraktów
   na kartach workflowów. Widok pokazuje, czy skill jest dostępny, oraz licznik
