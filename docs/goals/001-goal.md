@@ -4833,3 +4833,18 @@ Latest GA4 dashboard measurement slice:
   - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ga4 and gsc routes render workflow-specific brief focus"`
   - `pnpm --filter @wilq/dashboard lint`
   - `pnpm --filter @wilq/dashboard typecheck`
+
+Latest Ads Doctor first-screen snapshot slice:
+
+- `/ads-doctor` now shows `Ads snapshot marketera` before detailed operator
+  decisions. This is the marketer-facing readout for what WILQ can honestly
+  inspect in Ads today.
+- The snapshot condenses campaign count, search-term count, recommendations,
+  budget rows, ready/blocked areas, missing read contracts and blocked claims
+  from `/api/ads/diagnostics`.
+- `Operator Ads` top metric grid was reduced to the core review counts; deeper
+  read contracts and technical tables remain lower on the route for drilldown.
+- Focused proof passed:
+  - `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t "ads doctor route renders live metric-backed diagnostics"`
+  - `pnpm --filter @wilq/dashboard lint`
+  - `pnpm --filter @wilq/dashboard typecheck`

@@ -5832,6 +5832,7 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ads snapshot marketera" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Co można zrobić teraz w Ads" })
     ).toBeInTheDocument();

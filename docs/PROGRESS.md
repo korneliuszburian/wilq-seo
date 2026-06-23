@@ -2261,6 +2261,15 @@ Aktualny maintenance:
    Focused proof passed: GA4 route unit test, dashboard lint and dashboard
    typecheck.
 
+9. Ads Doctor first-screen snapshot cleanup, 2026-06-23 05:31 CEST.
+   `/ads-doctor` now renders `Ads snapshot marketera` before the detailed
+   operator decision queue. The snapshot condenses campaigns, search terms,
+   recommendations, budgets, ready/blocked areas, missing contracts and blocked
+   claims. The `Operator Ads` metric grid was reduced from the broad technical
+   inventory to the core review counts; deeper contracts remain available below.
+   Focused proof passed: Ads Doctor route unit test, dashboard lint and
+   dashboard typecheck.
+
 ## Active Gaps
 
 - Content now has typed Ahrefs candidate rows and review-only
@@ -2297,7 +2306,7 @@ Continue with Goal 001 in this order unless live state shows a stronger blocker:
 
 1. Improve the next marketer-facing cockpit surface that still repeats or hides
    useful decisions. Current likely candidates from browser/repo audit:
-   Ads Doctor metric hierarchy and Merchant issue clustering.
+   Merchant issue clustering and the remaining lower-fold Ads Doctor tables.
 2. Continue Ads optimizer read contracts toward safe, review-only decisions.
 3. Add or strengthen non-interactive skill evals only when they test real
    product usefulness, not just schema compliance.

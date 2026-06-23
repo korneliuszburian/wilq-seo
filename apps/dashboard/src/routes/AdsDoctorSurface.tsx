@@ -128,6 +128,7 @@ export function AdsDoctorSurface() {
 
       {data.blocked_handoff ? <AdsBlockedHandoffPanel handoff={data.blocked_handoff} /> : null}
 
+      <AdsMarketSnapshot data={data} currencyCode={currencyCode} />
       <AdsOperatorSummary data={data} />
 
       <AdsMetricEvidencePanel data={data} currencyCode={currencyCode} />
@@ -142,9 +143,58 @@ export function AdsDoctorSurface() {
   );
 }
 
+function AdsMarketSnapshot({
+  data,
+  currencyCode
+}: {
+  data: AdsDiagnosticsResponse;
+  currencyCode: string | undefined;
+}) {
+  const summary = data.operator_summary;
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-normal text-slate-700">
+            Ads snapshot marketera
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            Szybki obraz tego, co WILQ może dziś uczciwie przejrzeć w Ads.
+            Apply, waste, CPA/ROAS verdict i skalowanie budżetu pozostają
+            zablokowane do czasu walidacji ActionObject i brakujących kontraktów.
+          </p>
+        </div>
+        <MetricTile label="Waluta" value={currencyCode ?? "brak"} />
+      </div>
+      <div className="grid gap-2 text-center text-xs sm:grid-cols-3 xl:grid-cols-6">
+        <MetricTile label="Kampanie" value={summary.campaign_count} />
+        <MetricTile label="Zapytania" value={summary.search_term_count} />
+        <MetricTile
+          label="Rekom."
+          value={data.recommendations_read_contract.recommendation_rows.length}
+        />
+        <MetricTile label="Budżety" value={data.budget_pacing_read_contract.budget_rows.length} />
+        <MetricTile label="Ready" value={summary.ready_area_count} />
+        <MetricTile label="Blocked" value={summary.blocked_area_count} />
+      </div>
+      <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+        <TraceLine
+          label="Brakujące kontrakty"
+          values={summary.missing_read_contracts.map(adsMissingReadContractLabel)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Nie wolno twierdzić"
+          values={summary.blocked_claims.map(adsBlockedClaimLabel).slice(0, 8)}
+          empty="brak"
+        />
+      </div>
+    </section>
+  );
+}
+
 function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
   const currencyCode = data.account_currency_read_contract.currency_code ?? undefined;
-  const searchTermReview = data.search_term_review_summary_contract;
   const optimizer = data.optimizer_readiness_contract;
   const summary = data.operator_summary;
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
@@ -188,31 +238,6 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
             label="Zapytania"
             value={summary.search_term_count}
           />
-          <MetricTile
-            label="Zero conv."
-            value={searchTermReview.zero_conversion_search_term_count}
-          />
-          <MetricTile
-            label="N-gramy"
-            value={data.search_term_ngram_read_contract.ngram_rows.length}
-          />
-          <MetricTile
-            label="Waluta"
-            value={data.account_currency_read_contract.currency_code ?? "brak"}
-          />
-          <MetricTile
-            label="Biznes"
-            value={adsBusinessContextStatusValue(data.business_context_read_contract)}
-          />
-          <MetricTile
-            label="90 dni"
-            value={data.search_term_safety_read_contract.safety_rows.length}
-          />
-          <MetricTile
-            label="Keywords"
-            value={data.keyword_match_context_read_contract.context_rows.length}
-          />
-          <MetricTile label="Decyzje" value={decisions.length} />
           <MetricTile label="Ready" value={summary.ready_area_count} />
           <MetricTile label="Blocked" value={summary.blocked_area_count} />
         </div>
