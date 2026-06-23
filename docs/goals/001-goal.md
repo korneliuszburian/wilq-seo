@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 17:50 CEST.
+Last updated: 2026-06-23 17:56 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -298,6 +298,20 @@ validated `act_review_localo_visibility_facts`, and a blocked apply/publication
 candidate. Interpret `blocked=true` precisely: aggregate Localo facts are
 reviewable, but GBP performance, competitor visibility, local tasks, write/apply
 and local visibility uplift remain blocked until WILQ exposes those contracts.
+
+Completed at 2026-06-23 17:56 CEST:
+`wilq-content-strategist` freshness-aware eval completed. The eval case now
+requires `freshness` and `stale`, because current content evidence can be
+usable for review while still too old for confident publication planning.
+Non-interactive eval passed at
+`.local-lab/evals/codex-skill/20260623T155420Z/wilq-content-strategist/result.json`
+with `pl-PL`, `api_used=true`, `blocked=false`,
+`operator_usefulness_score=4`, no safety findings, all expected content source
+connectors and validated `act_prepare_content_refresh_queue`. The answer uses
+`content_diagnostics.decision_queue`, explicitly calls GSC/Ahrefs freshness
+`stale`, prioritizes Zielony Ład as `merge_create_after_inventory_check`, keeps
+`bdo co to` as `inventory_check_before_create`, and treats Ahrefs gaps as a
+separate discovery backlog.
 
 2026-06-23 Ads diagnostics action-ID performance: Ads diagnostics no longer
 calls full `list_actions()` just to discover Google Ads ActionObject IDs. It

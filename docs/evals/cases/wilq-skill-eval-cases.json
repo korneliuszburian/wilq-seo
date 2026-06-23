@@ -219,6 +219,8 @@
       "google_search_console",
       "content_diagnostics",
       "decision_queue",
+      "freshness",
+      "stale",
       "inventory",
       "inventory_check_before_create",
       "merge_create_after_inventory_check",

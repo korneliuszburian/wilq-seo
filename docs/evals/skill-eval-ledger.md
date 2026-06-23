@@ -4764,3 +4764,54 @@ Product finding:
 - WILQ still correctly blocks GBP performance, competitor visibility, local
   tasks, write/apply and local visibility uplift because the corresponding
   read/write contracts are not exposed as supported Localo evidence.
+
+## 2026-06-23 - wilq-content-strategist freshness-aware eval
+
+Purpose:
+
+- Prove that Content Strategist uses `content_diagnostics.decision_queue` as
+  the canonical content queue instead of rebuilding classifications in prompt
+  prose.
+- Force the response to report freshness/stale evidence, because current GSC
+  and Ahrefs reads can be usable for review while still too old for confident
+  publication planning.
+- Verify the content ActionObject remains prepare/review only.
+
+Command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260623T155420Z/wilq-content-strategist/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `polish_diacritics_present=true`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors=["google_search_console","google_analytics_4","ahrefs","wordpress_ekologus","wordpress_sklep"]`
+- Evidence includes GSC, Ahrefs, WordPress and connector status IDs.
+- `recommendations` explicitly mention `freshness` and `stale` for GSC/Ahrefs,
+  `merge_create_after_inventory_check` for Zielony Ład,
+  `inventory_check_before_create` for `bdo co to`, and
+  `review_ahrefs_gap_records` as a separate discovery backlog.
+- `action_candidates` contains validated `act_prepare_content_refresh_queue`.
+- `operator_usefulness_score=4`
+- `safety_findings=[]`
+
+Product finding:
+
+- Current Content diagnostics are useful but not publication-ready:
+  `live_data_available=true`, decision types include
+  `review_ahrefs_gap_records`, `merge_create_after_inventory_check` and
+  `inventory_check_before_create`, while GSC/Ahrefs freshness is stale and
+  WordPress inventory checks remain required before create/merge decisions.
+- The eval case now requires `freshness` and `stale`, so future content skill
+  runs should not silently present stale evidence as current content direction.

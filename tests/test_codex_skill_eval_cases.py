@@ -269,6 +269,8 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     content_case = cases["wilq-content-strategist"]
     assert "wordpress_sklep" in content_case["expected_connectors"]
     assert "wordpress_sklep" not in content_case["required_source_connectors"]
+    assert "freshness" in content_case["expected_terms_pl"]
+    assert "stale" in content_case["expected_terms_pl"]
     assert set(content_case["required_source_connectors"]) <= set(
         content_case["expected_connectors"]
     )
