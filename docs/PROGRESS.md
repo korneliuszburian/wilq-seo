@@ -42,7 +42,10 @@ Aktualny proof produktowy:
   `expert_rule_ids`, `missing_contracts` ani source lineage jako list ID na
   kartach mapy wiedzy. Widok pokazuje marketer-facing liczniki: skill
   dostępny/brak, liczba dowodów, ActionObjectów, kart wiedzy, playbooków,
-  reguł eksperckich i brakujących kontraktów. Focused proof:
+  reguł eksperckich i brakujących kontraktów. `/knowledge` nie dokleja już
+  ogólnych registry dumpów (`Evidence Registry`, refresh runs, actions,
+  expert rules, connector status) i nie pobiera tych rejestrów w tym widoku.
+  Focused proof:
   `pnpm --filter @wilq/dashboard test -- --run src/routes/App.test.tsx -t
   "knowledge route renders compiled cards and playbooks"` passed, dashboard
   lint OK and dashboard typecheck OK.

@@ -120,8 +120,11 @@ test passed, dashboard lint OK and dashboard typecheck OK.
 playbook IDs, expert rule IDs, missing contract names and source lineage lists
 from decision cards. It shows marketer-facing counts for available skill,
 evidence, ActionObjects, knowledge cards, playbooks, expert rules, required
-evidence and missing contracts. Focused proof: knowledge route unit test
-passed, dashboard lint OK and dashboard typecheck OK.
+evidence and missing contracts. `/knowledge` no longer appends generic registry
+dumps (`Evidence Registry`, connector refresh runs, actions, expert rules,
+connector status) and no longer fetches those registries for this route.
+Focused proof: knowledge route unit test passed, dashboard lint OK and
+dashboard typecheck OK.
 
 Current API performance slice: Command Center first-screen paths must not build
 full route diagnostics. `/api/dashboard/command-center` now uses lightweight

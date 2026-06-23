@@ -5992,6 +5992,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Playbooki maszynowe")).toBeInTheDocument();
     expect(screen.queryByText("Knowledge Cards")).not.toBeInTheDocument();
     expect(screen.queryByText("Machine-Readable Playbooks")).not.toBeInTheDocument();
+    expect(screen.queryByText("Evidence Registry")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
+    expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connector Status")).not.toBeInTheDocument();
   });
 
   it("merchant route renders dedicated feed diagnostics", async () => {

@@ -32,18 +32,49 @@ import {
 import { WorkflowRunList } from "./WorkflowPanels";
 
 export function GenericSurface({ routeName }: { routeName: string }) {
-  const connectors = useQuery({ queryKey: ["connectors"], queryFn: getConnectors });
+  const isKnowledgeRoute = routeName.startsWith("/knowledge");
+  const isWorkflowRoute = routeName.startsWith("/workflows");
+  const shouldLoadGenericRegistries = !isKnowledgeRoute;
+  const connectors = useQuery({
+    queryKey: ["connectors"],
+    queryFn: getConnectors,
+    enabled: shouldLoadGenericRegistries
+  });
   const connectorRefreshRuns = useQuery({
     queryKey: ["connector-refresh-runs"],
-    queryFn: getConnectorRefreshRuns
+    queryFn: getConnectorRefreshRuns,
+    enabled: shouldLoadGenericRegistries
   });
-  const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
-  const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
-  const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
-  const workflows = useQuery({ queryKey: ["workflows"], queryFn: getWorkflows });
-  const workflowRuns = useQuery({ queryKey: ["workflow-runs"], queryFn: getWorkflowRuns });
-  const expertRules = useQuery({ queryKey: ["expert-rules"], queryFn: getExpertRules });
-  const isKnowledgeRoute = routeName.startsWith("/knowledge");
+  const opportunities = useQuery({
+    queryKey: ["opportunities"],
+    queryFn: getOpportunities,
+    enabled: shouldLoadGenericRegistries
+  });
+  const actions = useQuery({
+    queryKey: ["actions"],
+    queryFn: getActions,
+    enabled: shouldLoadGenericRegistries
+  });
+  const evidence = useQuery({
+    queryKey: ["evidence"],
+    queryFn: getEvidence,
+    enabled: shouldLoadGenericRegistries
+  });
+  const workflows = useQuery({
+    queryKey: ["workflows"],
+    queryFn: getWorkflows,
+    enabled: shouldLoadGenericRegistries || isWorkflowRoute
+  });
+  const workflowRuns = useQuery({
+    queryKey: ["workflow-runs"],
+    queryFn: getWorkflowRuns,
+    enabled: shouldLoadGenericRegistries || isWorkflowRoute
+  });
+  const expertRules = useQuery({
+    queryKey: ["expert-rules"],
+    queryFn: getExpertRules,
+    enabled: shouldLoadGenericRegistries
+  });
   const knowledgeMap = useQuery({
     queryKey: ["knowledge-operating-map"],
     queryFn: getKnowledgeOperatingMap,
@@ -59,7 +90,6 @@ export function GenericSurface({ routeName }: { routeName: string }) {
     queryFn: getKnowledgePlaybooks,
     enabled: isKnowledgeRoute
   });
-  const isWorkflowRoute = routeName.startsWith("/workflows");
   const isWorkflowLoading = isWorkflowRoute && (workflows.isLoading || workflowRuns.isLoading);
   const hasWorkflowError = isWorkflowRoute && (workflows.error || workflowRuns.error);
   const isKnowledgeLoading =
@@ -167,30 +197,34 @@ export function GenericSurface({ routeName }: { routeName: string }) {
             </section>
           </>
         ) : null}
-        <section>
-          <SectionHeading title="Opportunities" />
-          <OpportunityList opportunities={opportunities.data ?? []} />
-        </section>
-        <section>
-          <SectionHeading title="Evidence Registry" />
-          <EvidenceList evidenceItems={(evidence.data ?? []).slice(0, 8)} />
-        </section>
-        <section>
-          <SectionHeading title="Connector Refresh Runs" />
-          <ConnectorRefreshRunList runs={(connectorRefreshRuns.data ?? []).slice(0, 8)} />
-        </section>
-        <section>
-          <SectionHeading title="Actions" />
-          <ActionList actions={actions.data ?? []} />
-        </section>
-        <section>
-          <SectionHeading title="Expert Rules" />
-          <ExpertRuleList rules={mappedRules} />
-        </section>
-        <section>
-          <SectionHeading title="Connector Status" />
-          <ConnectorGrid connectors={connectors.data ?? []} />
-        </section>
+        {shouldLoadGenericRegistries ? (
+          <>
+            <section>
+              <SectionHeading title="Opportunities" />
+              <OpportunityList opportunities={opportunities.data ?? []} />
+            </section>
+            <section>
+              <SectionHeading title="Evidence Registry" />
+              <EvidenceList evidenceItems={(evidence.data ?? []).slice(0, 8)} />
+            </section>
+            <section>
+              <SectionHeading title="Connector Refresh Runs" />
+              <ConnectorRefreshRunList runs={(connectorRefreshRuns.data ?? []).slice(0, 8)} />
+            </section>
+            <section>
+              <SectionHeading title="Actions" />
+              <ActionList actions={actions.data ?? []} />
+            </section>
+            <section>
+              <SectionHeading title="Expert Rules" />
+              <ExpertRuleList rules={mappedRules} />
+            </section>
+            <section>
+              <SectionHeading title="Connector Status" />
+              <ConnectorGrid connectors={connectors.data ?? []} />
+            </section>
+          </>
+        ) : null}
       </div>
     </main>
   );
