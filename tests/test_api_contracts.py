@@ -3105,6 +3105,16 @@ def test_command_center_exposes_polish_operator_brief(
     assert "grup landing/source/campaign" in ga4_decision["co_widzimy"]
     assert "Status blocked oznacza" in ga4_decision["co_widzimy"]
     assert ga4_decision["co_widzimy"].count("Status blocked oznacza") == 1
+    operator_guidance_text = "\n".join(
+        [
+            *[item["next_step"] for item in payload["operator_brief"] if item["next_step"]],
+            *[item["operator_action"] for item in payload["action_plan"]],
+            *[item["bezpieczny_next_step"] for item in payload["daily_decisions"]],
+        ]
+    )
+    assert "`act_" not in operator_guidance_text
+    assert "act_review_ga4_tracking_quality" not in operator_guidance_text
+    assert "act_confirm_ads_target_guardrails" not in operator_guidance_text
 
     context_response = client.post(
         "/api/codex/context-pack",
@@ -3112,8 +3122,9 @@ def test_command_center_exposes_polish_operator_brief(
     )
     assert context_response.status_code == 200
     context_command = context_response.json()["command_center"]
-    assert context_command["operator_brief"] == payload["operator_brief"]
-    assert context_command["demo_script"] == []
+    assert "operator_brief" not in context_command
+    assert "action_plan" not in context_command
+    assert "demo_script" not in context_command
     assert [
         {
             "id": item["id"],
@@ -3139,16 +3150,6 @@ def test_command_center_exposes_polish_operator_brief(
         }
         for item in payload["daily_decisions"]
     ]
-    context_plan_by_id = {item["id"]: item for item in context_command["action_plan"]}
-    assert set(context_plan_by_id) == set(plan_by_id)
-    for item_id, item in plan_by_id.items():
-        context_item = context_plan_by_id[item_id]
-        assert context_item["route"] == item["route"]
-        assert context_item["status"] == item["status"]
-        assert context_item["skill_id"] == item["skill_id"]
-        assert context_item["codex_prompt"] == item["codex_prompt"]
-        assert context_item["evidence_ids"] == item["evidence_ids"]
-        assert context_item["action_ids"] == item["action_ids"]
     assert context_command["primary_next_step"] == payload["primary_next_step"]
 
 

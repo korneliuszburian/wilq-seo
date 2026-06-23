@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 13:15 CEST.
+Last updated: 2026-06-23 13:20 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -225,6 +225,18 @@ Technical `*_micros` schema fields stay intact for typed Google Ads contracts
 and ActionObject payload previews. Focused proof: RED/GREEN Ads diagnostics
 API contract, Python ruff OK, mypy OK and live `/api/ads/diagnostics` grep for
 `koszt_micros=` returned no operator-facing matches.
+
+2026-06-23 Command Center guidance cleanup: `/api/dashboard/command-center`
+no longer puts raw ActionObject IDs such as `act_review_ga4_tracking_quality`,
+`act_confirm_ads_target_guardrails` or `act_configure_google_ads_env` inside
+operator-facing guidance text. The IDs remain in structured `action_ids` for
+traceability, while marketer copy says `ActionObject`, `review GA4` and
+`target guardrails`. Live proof after stack restart: grep over `next_step`,
+`operator_action` and `bezpieczny_next_step` returned no raw `act_*` matches.
+Focused proof: RED/GREEN Command Center API contract, Python ruff OK and mypy
+OK. The same test now also reflects the current scoped `wilq-daily-command`
+context-pack contract: `command_center` carries compact `daily_decisions`, not
+full `operator_brief`, `action_plan` or `demo_script`.
 
 2026-06-23 Localo diagnostics copy follow-up: `/api/localo/diagnostics` now
 keeps the partial-data story consistent. When Localo has typed aggregate facts,

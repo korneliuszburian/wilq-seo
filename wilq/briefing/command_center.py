@@ -424,7 +424,7 @@ def _ads_item_from_facts(
         next_step=(
             _ads_ready_next_step(metric_tiles)
             if live_data_available
-            else "Otwórz /ads-doctor i napraw OAuth przez `act_configure_google_ads_env`."
+            else "Otwórz /ads-doctor i wykonaj bezpieczny repair path OAuth przez ActionObject."
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -608,10 +608,9 @@ def _ads_business_context_item_from_facts(
             "nie werdyktem opłacalności."
         ),
         next_step=(
-            "Otwórz /ads-doctor i uzupełnij WILQ_ADS_PROFIT_MARGIN, cel "
-            "biznesowy, cel budżetu oraz target CPA/ROAS. Potem zwaliduj "
-            "`act_confirm_ads_target_guardrails` i review strategii zanim "
-            "ocenisz profitability albo skalowanie budżetu."
+            "Otwórz /ads-doctor i uzupełnij marżę, cel biznesowy, cel budżetu "
+            "oraz target CPA/ROAS. Potem zwaliduj target guardrails i review "
+            "strategii zanim ocenisz profitability albo skalowanie budżetu."
         ),
         source_connectors=[GOOGLE_ADS_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -1121,8 +1120,8 @@ def _ga4_item_from_tactical(
             "drop/tracking fixed, nie awarię connectora."
         ),
         next_step=(
-            "Otwórz /ga4, sprawdź kolejkę jakości ruchu i waliduj "
-            "`act_review_ga4_tracking_quality`."
+            "Otwórz /ga4, sprawdź kolejkę jakości ruchu i waliduj review GA4 "
+            "jako ActionObject."
         ),
         source_connectors=[GA4_CONNECTOR_ID],
         evidence_ids=_limited_ids(
@@ -1454,8 +1453,8 @@ def _action_plan_item(
             ),
             operator_action=(
                 "Otwórz /ga4, przejdź przez kolejkę decyzji pomiaru i jakości "
-                "ruchu, a potem waliduj `act_review_ga4_tracking_quality` jako "
-                "review-only. Nie wdrażaj zmian ani nie oceniaj opłacalności."
+                "ruchu, a potem waliduj review GA4 jako ActionObject review-only. "
+                "Nie wdrażaj zmian ani nie oceniaj opłacalności."
             ),
             skill_id="wilq-ga4-analyst",
             codex_prompt=(

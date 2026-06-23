@@ -37,6 +37,15 @@ Stan produktu:
 
 Aktualny proof produktowy:
 
+- Command Center operator guidance cleanup, 2026-06-23 13:20 CEST.
+  `/api/dashboard/command-center` no longer puts raw ActionObject IDs such as
+  `act_review_ga4_tracking_quality`, `act_confirm_ads_target_guardrails` or
+  `act_configure_google_ads_env` inside operator-facing `next_step`,
+  `operator_action` or `bezpieczny_next_step` text. Those IDs remain in
+  structured `action_ids` fields for traceability. Live API proof after stack
+  restart: grep over Command Center guidance returned no raw `act_*` matches.
+  Focused proof: RED/GREEN Command Center API contract, Python ruff OK and
+  mypy OK.
 - Ads Doctor cost formatting, 2026-06-23.
   `/api/ads/diagnostics` no longer exposes raw `koszt_micros=...` in
   marketer-facing summaries for campaign activity, search terms, n-grams or
