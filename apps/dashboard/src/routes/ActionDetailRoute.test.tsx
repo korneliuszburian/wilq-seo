@@ -7,18 +7,51 @@ import { App, createWilqQueryClient, createWilqRouter } from "./App";
 
 const actionFixture: ActionObject = {
   id: "act_1",
-  title: "Odnow Google Ads OAuth refresh token",
-  domain: "google_ads",
-  connector: "google_ads",
+  title: "Przygotuj kolejkę przeglądu feedu Merchant Center",
+  domain: "merchant",
+  connector: "google_merchant_center",
   mode: "prepare",
-  risk: "low",
+  risk: "medium",
   status: "needs_validation",
-  evidence_ids: ["ev_1"],
+  evidence_ids: ["ev_refresh_merchant_feed"],
   metrics: [],
   validation_status: "not_validated",
-  human_diagnosis: "Google Ads refresh token returns oauth_error=invalid_grant.",
-  recommended_reason: "OAuth repair unlocks reads.",
-  payload: { action_type: "repair_google_ads_oauth" },
+  human_diagnosis: "Merchant Center ma issue facts i próbki produktów do review.",
+  recommended_reason: "Przejrzyj preview bez mutacji feedu.",
+  payload: {
+    action_type: "merchant_feed_issue",
+    preview_contract: "merchant_feed_issue_review_preview_v1",
+    payload_preview: [
+      ...Array.from({ length: 4 }, (_, index) => ({
+        id: `merchant_feed_issue_review_empty_${index}`,
+        preview_contract: "merchant_feed_issue_review_preview_v1",
+        operation_type: "MerchantIssueClusterReview",
+        issue_type: "landing_page_error",
+        affected_attribute: "n:link",
+        metric_snapshot: { issue_product_count: 2 },
+        sample_products_available: false,
+        sample_product_ids: [],
+        sample_titles: [],
+        apply_allowed: false,
+        api_mutation_ready: false,
+        destructive: false
+      })),
+      {
+        id: "merchant_feed_issue_review_1",
+        preview_contract: "merchant_feed_issue_review_preview_v1",
+        operation_type: "MerchantIssueClusterReview",
+        issue_type: "availability_updated",
+        affected_attribute: "n:availability",
+        metric_snapshot: { issue_product_count: 23 },
+        sample_products_available: true,
+        sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
+        sample_titles: ["Sorbent chemiczny 10 kg"],
+        apply_allowed: false,
+        api_mutation_ready: false,
+        destructive: false
+      }
+    ]
+  },
   review_gate: {
     status: "pending_validation",
     summary: "Wymaga walidacji ActionObject; apply pozostaje zablokowany.",
@@ -103,8 +136,15 @@ describe("Action detail route", () => {
     renderActionDetail();
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: "Odnow Google Ads OAuth refresh token" })
+        screen.getByRole("heading", {
+          name: "Przygotuj kolejkę przeglądu feedu Merchant Center"
+        })
       ).toBeInTheDocument()
     );
+    expect(screen.getAllByText("Review-only podgląd").length).toBeGreaterThan(0);
+    expect(screen.getByText("availability_updated / n:availability")).toBeInTheDocument();
+    expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
   });
 });

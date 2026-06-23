@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-23 19:36 CEST.
+Last updated: 2026-06-23 19:45 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. When a task is done, move it to the short completed
@@ -155,6 +155,14 @@ now uses the same sample product facts as Merchant diagnostics. `act_review_merc
 `sample_product_ids` and `sample_titles` for issue clusters such as
 `n:unit_pricing_measure` and `n:availability`, while keeping
 `mutation_allowed=false`, `apply_allowed=false` and `api_mutation_ready=false`.
+
+Follow-up completed at 2026-06-23 19:45 CEST: the dashboard ActionObject detail
+route now renders a compact review-only preview above raw JSON for Merchant
+payloads. `/actions/act_review_merchant_feed_issues` prioritizes preview cards
+with product samples, shows sample product IDs/titles from the ActionObject
+payload, and keeps apply/API mutation blocked. This turns the Merchant action
+from a raw technical payload into a marketer-reviewable queue while preserving
+the safety contract.
 
 2026-06-23 Ads Doctor first-flow copy rule: the first Ads Doctor flow must
 show what a Polish marketer can review now, not API slang. Completed slice:

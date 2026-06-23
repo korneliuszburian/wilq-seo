@@ -39,6 +39,20 @@ Stan produktu:
 
 ## Last Done
 
+0. Dashboard ActionObject review preview cards, 2026-06-23.
+   `/actions/act_review_merchant_feed_issues` now renders a compact
+   review-only `payload_preview` summary above the raw JSON payload. Preview
+   cards prioritize items with `sample_product_ids`, show concrete Merchant
+   sample product IDs/titles when available, and keep the safety state explicit:
+   `Apply zablokowany`, `mutacja API: zablokowana`. Browser proof:
+   `.local-lab/proof/dashboard/action-merchant-preview-samples-full.txt`
+   shows product samples for `n:unit_pricing_measure` and `n:availability`.
+   Focused proof: dashboard Action detail route tests and dashboard typecheck.
+   The user's live Merchant skill feedback stays as an API/contract rule:
+   final queues should be `decision_queue`-first, `issue_clusters` are
+   drilldown, freshness and unknowns must be explicit, and validation state
+   from context-pack must be distinguished from current endpoint validation.
+
 0. Merchant ActionObject sample preview, 2026-06-23.
    `act_review_merchant_feed_issues` now carries Merchant sample product IDs
    and titles into its review-only `payload_preview` and dry-run

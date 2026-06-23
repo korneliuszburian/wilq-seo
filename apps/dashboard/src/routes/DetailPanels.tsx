@@ -67,6 +67,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
         <SectionHeading title="Podgląd payloadu" />
+        <ActionPayloadPreviewSummary action={action} />
         <pre className="max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
           {JSON.stringify(action.payload, null, 2)}
         </pre>
@@ -93,6 +94,94 @@ function ActionDetail({ action }: { action: ActionObject }) {
       </section>
     </main>
   );
+}
+
+function ActionPayloadPreviewSummary({ action }: { action: ActionObject }) {
+  const previewItems = Array.isArray(action.payload.payload_preview)
+    ? action.payload.payload_preview.filter(isRecord)
+    : [];
+  if (previewItems.length === 0) {
+    return null;
+  }
+  return (
+    <div className="mb-4 grid gap-3">
+      {prioritizePayloadPreviewItems(previewItems)
+        .slice(0, 4)
+        .map((item, index) => (
+          <article
+            key={payloadPreviewKey(item, index)}
+            className="rounded-md border border-line bg-slate-50 p-3"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Review-only podgląd</h3>
+                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                  {previewIssueLabel(item)}
+                </p>
+              </div>
+              <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+            </div>
+            <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+              <div>
+                Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+                {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+              </div>
+              <PreviewValues
+                label="Przykładowe produkty"
+                values={asStringArray(item.sample_product_ids)}
+              />
+              <PreviewValues label="Tytuły próbek" values={asStringArray(item.sample_titles)} />
+            </div>
+          </article>
+        ))}
+    </div>
+  );
+}
+
+function prioritizePayloadPreviewItems(items: Array<Record<string, unknown>>) {
+  return [...items].sort((left, right) => {
+    const leftHasSamples = asStringArray(left.sample_product_ids).length > 0;
+    const rightHasSamples = asStringArray(right.sample_product_ids).length > 0;
+    if (leftHasSamples === rightHasSamples) return 0;
+    return leftHasSamples ? -1 : 1;
+  });
+}
+
+function PreviewValues({ label, values }: { label: string; values: string[] }) {
+  if (values.length === 0) {
+    return (
+      <div>
+        {label}: <span className="text-slate-500">brak</span>
+      </div>
+    );
+  }
+  return (
+    <div>
+      {label}: {values.slice(0, 4).join(", ")}
+      {values.length > 4 ? ` +${values.length - 4}` : ""}
+    </div>
+  );
+}
+
+function previewIssueLabel(item: Record<string, unknown>) {
+  const issueType = typeof item.issue_type === "string" ? item.issue_type : "problem";
+  const attribute =
+    typeof item.affected_attribute === "string" ? item.affected_attribute : "atrybut";
+  return `${issueType} / ${attribute}`;
+}
+
+function payloadPreviewKey(item: Record<string, unknown>, index: number) {
+  return typeof item.id === "string" ? item.id : `payload-preview-${index}`;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function EvidenceDetailSurface({ evidenceId }: { evidenceId: string }) {
