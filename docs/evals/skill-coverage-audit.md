@@ -34,10 +34,10 @@ decyzję produktową: co działa, co jest review-only, co blokuje demo.
 - 3/12 are intentionally blocked or partial: Localo, Demand Gen and social publishing.
 - The strongest demo path today is:
   `wilq-daily-command` -> `/merchant` -> `/content-planner` -> `/ads-doctor` -> optional `/ga4`.
-- The next product slice should move from skill proof to dashboard/API value.
-  Best candidate: Ads business-context guardrails and apply-preview safety,
-  because the daily loop and Ads Doctor already expose real Ads data but still
-  block profitability, wasted-budget, CPA/ROAS and budget decisions.
+- The next product slice should move from skill proof to remaining API/source
+  value. Ads optimizer context is review-ready but apply remains blocked; best
+  candidates are Merchant deepening, Ahrefs granular evidence or the semantic
+  skill-reference audit.
 
 ## Guardrail
 

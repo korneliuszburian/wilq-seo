@@ -79,20 +79,22 @@ Stan produktu:
   `API identifiers` wording. WILQ `SKILL.md` and
   `references/output-contract.md` files now use Polish operator prose while
   preserving API IDs, endpoint paths and enum values.
-- Live Ads blocker distinction: empty `change_history_read_contract` should be
-  treated as a successful read with no changes in the current window. Impact
-  review stays blocked until WILQ has change rows plus before/after performance
-  windows. Current `keyword_planner_read_contract` is blocked by
+- Live Ads optimizer review is ready but review-only. `/api/ads/diagnostics`
+  exposes ready campaign triage, budget pacing, recommendation review,
+  impression-share context, search terms, search-term safety, custom-segment
+  review and negative-keyword review. Apply/API mutation remains blocked.
+  Current `keyword_planner_read_contract` is blocked by
   `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`, not by missing OAuth.
-  Focused proof: 9 Ads API contract tests pass, and live `/api/ads/diagnostics`
-  returns `change_history_read_contract.status=ready` while
-  `change_impact_readiness_contract.status=blocked`.
+  Empty `change_history_read_contract` means "ready, no changes in the selected
+  window"; `change_impact_readiness_contract` remains blocked until WILQ has
+  change rows plus before/after performance windows.
 - Goal 001 now has a thematic stack assessment: acquisition/source proof,
   decision contracts, action safety, Codex skills, knowledge/compiler,
-  dashboard/UI and testing/release. Current source triage: Merchant product
-  sample readiness and Localo GBP/competitor/reviews/rankings are ready for
-  review-only decisions; the nearest source gaps are now Ads optimizer context,
-  Merchant deepening, Ahrefs granular gaps and cross-source decision joins.
+  dashboard/UI and testing/release. Current source triage: Ads optimizer review,
+  Merchant product sample readiness and Localo GBP/competitor/reviews/rankings
+  are ready for review-only decisions; the nearest source gaps are Merchant
+  deepening, Ahrefs granular gaps, Keyword Planner approval/forecast and
+  cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
   stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
   `total_revenue` and `transactions` with landing/source/campaign dimensions.
@@ -105,11 +107,16 @@ Stan produktu:
   ingestion, lineage, confidence/freshness, rule/card promotion and evals that
   prove external marketing standards improve WILQ decisions without turning
   skills into long prompt dumps.
-- Latest pushed slice: `41735b4 fix(dashboard): surface ads business guardrails`.
-  `/actions/act_confirm_ads_target_guardrails` and
-  `/actions/act_record_ads_strategy_review` render Ads business context,
-  missing target ROAS/CPA, target env options, strategy gates, validations,
-  blocked claims and blocked apply/API mutation state as Polish review cards.
+- Lightweight live contract smoke now exists at `scripts/live_contract_smoke.py`.
+  It checks API health, command center, marketing brief and Ads/Merchant/
+  Content/GA4/Localo diagnostics for shape, evidence IDs, Polish language and
+  ready/blocked state without asserting exact changing metric values. Live
+  proof on 2026-06-23 returned `status=completed`, `errors=[]`.
+- Command Center now uses shared `daily_decisions` as the first-screen
+  decision view-model. Live `/api/dashboard/command-center` returns Merchant,
+  Content, GA4 and Ads daily decisions with Polish Codex prompts, evidence IDs,
+  ActionObject IDs and blocked claims; raw sections are empty on the first
+  screen.
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.
@@ -125,13 +132,14 @@ Stan produktu:
      visibility aggregate read contracts.
    - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
      Localo tasks blocked unless a side-effect-free read exists.
-   - Source-contract queue: Ads pacing/recommendations/impression-share/change
-     history context, Merchant product-performance/supplemental-feed/
-     price-impact deepening and Ahrefs granular gap enrichment.
-   - Ads remaining gaps are not OAuth: Keyword Planner is blocked by developer
-     token approval, change history currently has no rows in the selected
-     window, and deeper optimizer value still needs pacing, recommendations
-     safety, forecast, change-impact windows and apply/audit contracts.
+   - Source-contract queue: Merchant product-performance/supplemental-feed/
+     price-impact deepening, Ahrefs granular gap enrichment, Keyword Planner
+     approval/forecast and cross-source decision joins.
+   - Ads remaining gaps are not OAuth: optimizer review is ready/read-only,
+     Keyword Planner is blocked by developer token approval, change history
+     currently has no rows in the selected window, and apply/audit contracts
+     are still required before budget, recommendation, custom-segment or
+     negative-keyword mutations.
    - Merchant and GA4 need deeper product/conversion/commerce contracts before
      revenue, approval, ROAS or product-fix claims.
 
@@ -140,9 +148,10 @@ Stan produktu:
      command-center, marketing brief, tactical queue, diagnostics and actions.
    - Do not push decisions into prompt/reference prose; implement typed
      API/schema/view-model first.
-   - Next decision/API work should add a shared daily decision view-model,
-     stable domain queues and explicit ready/stale/blocked semantics. Avoid
-     showing connector readiness as a marketing decision.
+   - Shared `daily_decisions` are now the canonical first-screen view-model.
+     Next decision/API work should harden stable domain queues and explicit
+     ready/stale/blocked semantics. Avoid showing connector readiness as a
+     marketing decision.
 
 3. **Action safety and apply path**
    - Current demo is mostly prepare/review-only.
@@ -208,8 +217,9 @@ Stan produktu:
    safety -> Codex skill/eval quality -> knowledge compiler -> dashboard
    usefulness/performance -> release/live-test hardening.
 2. Next concrete slice should come from live proof: Localo missing read
-   `local_tasks` if a read-only contract exists, Ads optimizer blockers,
-   semantic skill-reference audit or shared daily view-model/cache.
+   `local_tasks` only if a read-only contract exists, Merchant deepening,
+   Ahrefs granular gaps, semantic skill-reference audit or route-level
+   dashboard usefulness/performance.
 3. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

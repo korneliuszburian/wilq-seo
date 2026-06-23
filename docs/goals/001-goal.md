@@ -83,30 +83,30 @@ Use these workstreams to pick the next slice. Do not reopen a ready item unless
 fresh API/browser proof shows a regression.
 
 1. **Acquisition/source proof**
-   - Ready: Google Ads OAuth/customer selection and live campaign/search-term
-     reads; Merchant aggregate issues plus product sample readiness; GSC query
+   - Ready: Google Ads OAuth/customer selection, live campaign/search-term
+     reads, budget pacing, recommendation review, impression-share context,
+     search-term safety, negative-keyword review queue and custom-segment review
+     queue; Merchant aggregate issues plus product sample readiness; GSC query
      pages; WordPress inventory matching for current Ekologus URLs; Localo
      aggregate visibility, rankings, GBP visibility, competitor visibility and
      reviews; GA4 behavior/landing facts plus key-event/ecommerce/revenue
      metric facts.
    - External blockers: Google Ads Keyword Planner is blocked by developer
-     token approval, not missing `.env`; Ads change-history may be empty for a
-     chosen window; Localo `local_tasks` must stay blocked unless a
-     side-effect-free task read exists.
-   - Real gaps: Ads pacing/recommendation/impression-share decision context,
-     Ahrefs granular URL/query/backlink gap evidence and cross-source joins
-     that prove business decisions rather than isolated facts. Ads
-     change-history empty reads should be `ready/no changes`; change-impact
-     review stays blocked until change rows and before/after windows exist.
-     GA4 still blocks ROAS/profitability/conversion-drop verdicts without
-     cost, attribution and history context even though conversion/ecommerce
-     metrics are now readable.
+     token approval, not missing `.env`; Localo `local_tasks` must stay blocked
+     unless a side-effect-free task read exists.
+   - Real gaps: Ads change-impact windows and apply/audit contracts, approved
+     Keyword Planner enrichment, forecast/audience size, Ahrefs granular
+     URL/query/backlink gap evidence and cross-source joins that prove business
+     decisions rather than isolated facts. Empty Ads change-history reads are
+     `ready/no changes`; change-impact review stays blocked until change rows
+     and before/after windows exist. GA4 still blocks ROAS/profitability/
+     conversion-drop verdicts without cost, attribution and history context
+     even though conversion/ecommerce metrics are now readable.
 2. **Decision contracts**
    - Ready: core diagnostics, tactical queue, marketing brief, command-center
-     decisions and ActionObject surfaces share WILQ API contracts.
-   - Real gaps: one shared daily decision view-model, stable per-domain queues,
-     explicit freshness/ready/blocked semantics and ranking that favors
-     marketer value over connector readiness.
+     `daily_decisions` and ActionObject surfaces share WILQ API contracts.
+   - Real gaps: stable per-domain queues, explicit freshness/ready/blocked
+     semantics and ranking that favors marketer value over connector readiness.
 3. **Action safety**
    - Ready: demo-safe prepare/review ActionObjects for Ads, Merchant, Content,
      GA4 and Localo with blocked apply state where required.
@@ -157,15 +157,17 @@ Finish these before claiming the Ekologus demo is done:
    - If Localo appears empty while `/api/metrics?connector_id=localo` has facts,
      restart via `scripts/local_stack.sh restart` before changing product logic.
    - Current Ads is review-only and intentionally blocks unsupported claims.
-   - Current live Ads blockers are not OAuth setup gaps: empty
-     `change_history` reads mean "ready, no changes in the current window";
-     change-impact review remains blocked until WILQ has change rows and
-     performance windows before/after. `keyword_planner_read_contract` is blocked by
+     Live diagnostics expose optimizer review context across campaign triage,
+     budget pacing, recommendations, impression share, search-term safety,
+     custom segments and negative-keyword review. Empty `change_history` reads
+     mean "ready, no changes in the current window"; change-impact review
+     remains blocked until WILQ has change rows and performance windows
+     before/after. `keyword_planner_read_contract` is blocked by
      `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`.
-   - Ads remaining source contracts: approved/live Keyword Planner enrichment,
-     forecast/audience size, budget pacing, change-history impact context,
-     campaign recommendations with safety, impression-share/pacing evidence,
-     custom segment apply/audit and negative keyword apply/audit.
+   - Ads remaining source/action work: approved/live Keyword Planner enrichment,
+     forecast/audience size, change-impact windows and mutation apply/audit
+     contracts for budget, recommendations, custom segments and negative
+     keywords.
    - Merchant current source state: aggregate issue contracts and product
      sample readiness are available for review-only queues. Remaining Merchant
      work is deeper product performance joins with Ads/GA4, supplemental-feed
@@ -184,13 +186,12 @@ Finish these before claiming the Ekologus demo is done:
      1. Keep Localo `local_tasks` blocked unless Localo exposes a
         side-effect-free task read. Do not call task endpoints that generate
         new tasks.
-     2. Ads optimizer evidence: budget pacing, recommendation safety,
-        impression-share context, approved Keyword Planner readiness and
-        change-history windows.
-     3. Merchant deepening: product performance joins, supplemental-feed
+     2. Merchant deepening: product performance joins, supplemental-feed
         candidates, price-impact snapshots and richer read-only previews.
-     4. Ahrefs/content-gap enrichment only where API evidence is granular
+     3. Ahrefs/content-gap enrichment only where API evidence is granular
         enough to support URL/query/backlink decisions.
+     4. Return to Ads only when Keyword Planner approval changes, change rows
+        appear, or apply/audit contracts are the active slice.
 
 2. **Decision API and view-model quality**
    - Keep `/api/dashboard/command-center`, `/api/marketing/brief`,
@@ -206,15 +207,13 @@ Finish these before claiming the Ekologus demo is done:
      implement it in typed API/schema/view-model first, then make the UI/skill
      consume it.
    - Add decision/view-model slices:
-     1. One shared daily decision view-model for command center and marketing
-        brief, so the same decisions are not rebuilt or phrased twice.
-     2. Domain-specific decision queues for Ads, Merchant, Content, GA4 and
+     1. Domain-specific decision queues for Ads, Merchant, Content, GA4 and
         Localo with stable fields: `why_it_matters`, `operator_action`,
         `evidence_ids`, `source_connectors`, `metric_facts`,
         `blocked_claims`, `action_ids`, `freshness`.
-     3. Decision-quality ranking that prefers high-value marketer actions over
+     2. Decision-quality ranking that prefers high-value marketer actions over
         connector readiness or technical status.
-     4. Explicit stale/ready/blocked semantics per contract, so `ready` never
+     3. Explicit stale/ready/blocked semantics per contract, so `ready` never
         hides missing conversion, GBP, product or Ads safety evidence.
 
 3. **Action safety and apply path**
@@ -394,9 +393,6 @@ Finish these before claiming the Ekologus demo is done:
    skill/eval quality -> knowledge compiler -> dashboard usefulness/performance
    -> release/live-test hardening.
 2. Next concrete slice should be one of:
-   - Ads budget pacing, recommendation safety, impression-share context or
-     change-history window handling; keep Keyword Planner as developer-token
-     readiness until Google approval changes.
    - Merchant deepening beyond current product samples: performance joins,
      supplemental-feed candidates, price-impact snapshots or safer product
      preview boundaries.
