@@ -1536,11 +1536,150 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert "Inventory potwierdza target URL" in preview[
         "target_site_inventory_summary"
     ]
-    assert preview["inventory_gate_status"] == "confirmed_target_inventory"
-    assert preview["canonical_gate_status"] == "needs_target_canonical_review"
+
+
+def test_content_diagnostics_suggests_dev_site_alternatives_without_confirming_mapping(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv(
+        "WILQ_STATE_DB",
+        str(tmp_path / "content_target_alternative_state.sqlite3"),
+    )
+    monkeypatch.setenv(
+        "WILQ_METRIC_DB",
+        str(tmp_path / "content_target_alternative.duckdb"),
+    )
+    source_url = (
+        "https://www.ekologus.pl/"
+        "remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana/"
+    )
+    migration_candidate_url = (
+        "https://ekologus.dev.proudsite.pl/"
+        "remediacja-czym-jest-na-czym-polega-kiedy-jest-wymagana/"
+    )
+    alternative_url = (
+        "https://ekologus.dev.proudsite.pl/uslugi/ekodokumentacje/"
+        "remediacje-monitoring-gruntow-i-wod-podziemnych/"
+    )
+    normalized_alternative_url = alternative_url.rstrip("/")
+    gsc_run = ConnectorRefreshRun(
+        id="refresh_gsc_content_target_alternative_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_gsc_content_target_alternative_test"],
+        metric_summary={"query_page_rows": 1},
+        summary="GSC source URL for target-site alternative mapping.",
+    )
+    wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_content_target_alternative_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wordpress_content_target_alternative_test"],
+        metric_summary={"content_object_count": 2},
+        summary="WordPress inventory with current URL and one dev-site alternative.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=11,
+                dimensions={"query": "remediacja co to", "page": source_url},
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=440,
+                dimensions={"query": "remediacja co to", "page": source_url},
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "post",
+                    "content_url": source_url,
+                    "status": "publish",
+                    "inventory_source": "wordpress_rest",
+                    "modified_gmt": "2024-05-01T08:00:00+00:00",
+                    "title_or_h1": "Remediacja - czym jest?",
+                    "canonical_url": source_url,
+                },
+            ),
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "uslugi",
+                    "content_url": alternative_url,
+                    "status": "indexed",
+                    "inventory_source": "public_sitemap",
+                    "modified_gmt": "2025-09-05T09:13:12+00:00",
+                    "title_or_h1": (
+                        "Remediacje, monitoring gruntów i wód podziemnych"
+                    ),
+                    "canonical_url": alternative_url,
+                },
+            ),
+        ],
+    )
+
+    diagnostics_response = client.get("/api/content/diagnostics")
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+
+    assert diagnostics_response.status_code == 200
+    assert action_response.status_code == 200
+    diagnostics = diagnostics_response.json()
+    decision = next(
+        item
+        for item in diagnostics["decision_queue"]
+        if item["page"] == source_url
+    )
+    assert decision["target_site_migration_candidate_url"] == migration_candidate_url
+    assert decision["target_site_migration_status"] == "needs_review"
+    assert (
+        decision["target_site_migration_candidate_inventory_status"]
+        == "missing_target_inventory"
+    )
+    assert (
+        normalized_alternative_url
+        in decision["target_site_alternative_candidate_urls"]
+    )
+    assert "alternatywne URL-e" in decision["target_site_alternative_candidate_summary"]
+    assert (
+        diagnostics["operator_summary"]["target_site_confirmed_candidate_inventory_count"]
+        == 0
+    )
+    assert diagnostics["operator_summary"]["target_site_missing_candidate_inventory_count"] == 1
+
+    action = action_response.json()
+    preview = next(
+        item
+        for item in action["payload"]["content_brief_preview"]
+        if item["target_url"] == source_url
+    )
+    assert preview["target_site_migration_status"] == "needs_review"
+    assert (
+        preview["target_site_migration_candidate_inventory_status"]
+        == "missing_target_inventory"
+    )
+    assert (
+        normalized_alternative_url
+        in preview["target_site_alternative_candidate_urls"]
+    )
+    assert "nie potwierdzają" in preview["target_site_alternative_candidate_summary"]
+    assert preview["inventory_gate_status"] == "confirmed_current_inventory"
+    assert preview["canonical_gate_status"] == "current_url_confirmed"
     assert preview["duplicate_gate_status"] == "refresh_or_merge_required"
-    assert "canonical" in preview["content_gate_summary"]
-    assert "duplikaty" in preview["content_gate_summary"]
+    assert "duplik" in preview["content_gate_summary"]
     assert preview["seo_title_direction"]
     assert preview["meta_description_direction"]
     assert preview["schema_direction"]

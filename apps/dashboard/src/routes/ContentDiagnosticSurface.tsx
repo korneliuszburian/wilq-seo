@@ -154,6 +154,8 @@ type ContentBriefPreviewItem = {
   target_site_migration_status?: string | null;
   target_site_migration_candidate_inventory_status?: string | null;
   target_site_migration_candidate_inventory_summary?: string | null;
+  target_site_alternative_candidate_urls?: string[];
+  target_site_alternative_candidate_summary?: string | null;
   target_site_review_requirements?: string[];
   target_site_inventory_content_type?: string | null;
   target_site_inventory_status?: string | null;
@@ -422,6 +424,8 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_migration_summary?: string | null;
   target_site_migration_candidate_inventory_status?: string | null;
   target_site_migration_candidate_inventory_summary?: string | null;
+  target_site_alternative_candidate_urls?: string[];
+  target_site_alternative_candidate_summary?: string | null;
   target_site_review_requirements?: string[];
   target_site_inventory_content_type?: string | null;
   target_site_inventory_status?: string | null;
@@ -793,6 +797,20 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
           {decision.target_site_migration_candidate_inventory_summary}
         </p>
       ) : null}
+      {decision.target_site_alternative_candidate_summary ? (
+        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
+          {decision.target_site_alternative_candidate_summary}
+        </p>
+      ) : null}
+      {decision.target_site_alternative_candidate_urls?.length ? (
+        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+          {decision.target_site_alternative_candidate_urls.slice(0, 3).map((url) => (
+            <span key={url} className="rounded border border-line bg-white px-2 py-1">
+              Alternatywa: {shortPath(url)}
+            </span>
+          ))}
+        </div>
+      ) : null}
       {decision.target_site_inventory_summary ? (
         <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
           {decision.target_site_inventory_summary}
@@ -1092,6 +1110,8 @@ function contentTargetSiteValues(
     | "target_site_migration_candidate_url"
     | "target_site_migration_status"
     | "target_site_migration_candidate_inventory_status"
+    | "target_site_alternative_candidate_urls"
+    | "target_site_alternative_candidate_summary"
   >
 ) {
   const values: string[] = [];
@@ -1116,6 +1136,16 @@ function contentTargetSiteValues(
     values.push(
       candidateInventoryStatusLabel(preview.target_site_migration_candidate_inventory_status)
     );
+  }
+  if (preview.target_site_alternative_candidate_urls?.length) {
+    values.push(
+      `alternatywy: ${preview.target_site_alternative_candidate_urls
+        .slice(0, 3)
+        .map(shortPath)
+        .join(", ")}`
+    );
+  } else if (preview.target_site_alternative_candidate_summary) {
+    values.push(preview.target_site_alternative_candidate_summary);
   }
   return values;
 }

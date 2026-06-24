@@ -1772,6 +1772,8 @@ export const ContentDecisionItemSchema = z.object({
   target_site_migration_summary: z.string().nullable().optional(),
   target_site_migration_candidate_inventory_status: z.string().nullable().optional(),
   target_site_migration_candidate_inventory_summary: z.string().nullable().optional(),
+  target_site_alternative_candidate_urls: z.array(z.string()).default([]),
+  target_site_alternative_candidate_summary: z.string().nullable().optional(),
   target_site_review_requirements: z.array(z.string()).default([]),
   target_site_inventory_content_type: z.string().nullable().optional(),
   target_site_inventory_status: z.string().nullable().optional(),

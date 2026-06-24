@@ -218,9 +218,18 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   `content_type`, `status`, `inventory_source`, `modified_gmt`, plus missing
   fields such as `title_or_h1` and `canonical_url`. This increases migration
   review confidence without unlocking draft, staging or publish.
-- `task`: Confirm explicit old-to-new URL mapping against dev-site inventory
-  when both old/current and `ekologus.dev.proudsite.pl` inventory exist for
-  related content.
+- `ready`: When the exact old-to-new migration candidate is missing from
+  `ekologus.dev.proudsite.pl` inventory, content diagnostics, content
+  ActionObject previews, reviewed draft previews, dashboard cards and the
+  content-strategist smoke contract now expose
+  `target_site_alternative_candidate_urls` plus a Polish manual-mapping
+  summary. Live proof after stack restart found alternatives for BDO and
+  remediacja while keeping `target_site_migration_candidate_inventory_status`
+  as `missing_target_inventory`, so alternatives do not confirm migration or
+  unlock draft/staging/publish.
+- `task`: Confirm, reject or override explicit old-to-new URL mappings against
+  dev-site inventory. The next content slice should turn reviewed alternatives
+  into a typed mapping decision, not rerun discovery.
 - `ready`: Content ActionObject payload, reviewed draft preview and
   content-strategist context-pack preserve target-site migration candidate,
   status and summary fields. Current old-site rows are `needs_review`, so draft
@@ -506,6 +515,12 @@ Use these rules before every implementation slice:
   detail cards. Proof:
   `.local-lab/proof/dashboard/content-intent/action-content-intent.txt`;
   focused API tests, dashboard route tests and content-strategist smoke passed.
+- [x] Expose alternative dev-site mapping candidates when the exact old-to-new
+  URL is missing. Proof:
+  `.local-lab/proof/content-target-alternatives/live-content-alternatives.json`,
+  `.local-lab/proof/content-target-alternatives/content-strategist-smoke.json`
+  and
+  `.local-lab/proof/dashboard/content-target-alternatives/content-planner-alternatives.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

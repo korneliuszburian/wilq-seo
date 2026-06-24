@@ -189,18 +189,28 @@ Stan produktu:
   `.local-lab/proof/dashboard/content-intent/action-content-intent.txt`;
   smoke proof:
   `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
+- Content diagnostics, `act_prepare_content_refresh_queue`, reviewed draft
+  previews, dashboard cards and the content-strategist smoke contract now
+  expose alternative `ekologus.dev.proudsite.pl` mapping candidates when the
+  exact old-to-new URL is missing. Live proof found alternatives for BDO and
+  remediacja while preserving `missing_target_inventory`, so this is manual
+  mapping evidence, not migration confirmation or draft/staging readiness.
+  Proof:
+  `.local-lab/proof/content-target-alternatives/live-content-alternatives.json`,
+  `.local-lab/proof/content-target-alternatives/content-strategist-smoke.json`
+  and
+  `.local-lab/proof/dashboard/content-target-alternatives/content-planner-alternatives.txt`.
 
 ## Active Gaps
 
 - Real marketer UAT has not been collected. Simulated operator UAT says the
   core path is useful, but it does not prove that the marketer saves time or
   knows what to do without explanation.
-- Content workflow still lacks confirmed old-to-new mapping against full
-  dev-site inventory, staging handoff, publishing and post-publication
-  measurement loop for `ekologus.dev.proudsite.pl`. Target metadata and
-  migration candidate inventory status support are implemented, and active live
-  candidates are currently aggregated as 0 confirmed and 4 missing target
-  inventory candidates.
+- Content workflow still lacks reviewed old-to-new mapping decisions, staging
+  handoff, publishing and post-publication measurement loop for
+  `ekologus.dev.proudsite.pl`. Exact missing candidates and alternative
+  dev-site URLs are now exposed; they do not confirm mapping or resolve
+  draft/staging/publish readiness.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
@@ -218,9 +228,10 @@ Stan produktu:
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.
 3. If content depth is next, continue from the existing source/target,
-   duplicate/canonical, ActionObject migration status and target-site review
-   requirements plus typed intent toward confirmed dev-site inventory mapping
-   and draft/staging handoff, without publish/apply claims.
+   duplicate/canonical, ActionObject migration status, target-site review
+   requirements, typed intent and alternative candidate URLs toward a typed
+   mapping-review decision, then draft/staging handoff without publish/apply
+   claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

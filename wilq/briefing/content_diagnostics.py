@@ -825,6 +825,14 @@ def _gsc_content_decisions(
             )
         )
         metrics = _content_decision_metrics(metric_facts, queries)
+        alternative_candidate_context = _content_target_site_alternative_candidate_context(
+            topic=metrics.primary_query or (queries[0] if queries else page),
+            source_url=page,
+            migration_candidate_url=target_site_context.get(
+                "target_site_migration_candidate_url"
+            ),
+            inventory_details_by_url=inventory_details_by_url,
+        )
         decision_type: ContentDecisionType
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
@@ -895,6 +903,7 @@ def _gsc_content_decisions(
                 **target_site_context,
                 **target_site_inventory_context,
                 **migration_candidate_inventory_context,
+                **alternative_candidate_context,
                 **_content_gate_status(
                     decision_type=decision_type,
                     wordpress_match=wordpress_match,
@@ -1153,6 +1162,117 @@ def _content_target_site_migration_candidate_inventory_context(
             f"Kandydat old-to-new jest w target-site inventory{suffix}"
         ),
     }
+
+
+def _content_target_site_alternative_candidate_context(
+    *,
+    topic: str,
+    source_url: str,
+    migration_candidate_url: str | None,
+    inventory_details_by_url: dict[str, dict[str, str]],
+) -> dict[str, object]:
+    if not migration_candidate_url:
+        return {
+            "target_site_alternative_candidate_urls": [],
+            "target_site_alternative_candidate_summary": None,
+        }
+    if _content_normalized_url(migration_candidate_url) in inventory_details_by_url:
+        return {
+            "target_site_alternative_candidate_urls": [],
+            "target_site_alternative_candidate_summary": (
+                "Dokładny kandydat old-to-new jest potwierdzony; alternatywne "
+                "kandydaty nie są potrzebne."
+            ),
+        }
+    candidates = _content_target_site_alternative_candidate_urls(
+        topic=topic,
+        source_url=source_url,
+        migration_candidate_url=migration_candidate_url,
+        inventory_details_by_url=inventory_details_by_url,
+    )
+    if not candidates:
+        return {
+            "target_site_alternative_candidate_urls": [],
+            "target_site_alternative_candidate_summary": (
+                "Brak alternatywnego kandydata w target-site inventory. Wymagane "
+                "ręczne mapowanie przed draftem albo stagingiem."
+            ),
+        }
+    return {
+        "target_site_alternative_candidate_urls": candidates,
+        "target_site_alternative_candidate_summary": (
+            "Dokładny kandydat old-to-new nie istnieje w target-site inventory. "
+            "WILQ znalazł alternatywne URL-e do ręcznego mapowania; nie "
+            "potwierdzają one jeszcze migracji ani gotowości draftu."
+        ),
+    }
+
+
+def _content_target_site_alternative_candidate_urls(
+    *,
+    topic: str,
+    source_url: str,
+    migration_candidate_url: str,
+    inventory_details_by_url: dict[str, dict[str, str]],
+) -> list[str]:
+    tokens = _content_mapping_tokens(topic, source_url)
+    if not tokens:
+        return []
+    exact_candidate = _content_normalized_url(migration_candidate_url)
+    scored: list[tuple[int, str]] = []
+    for normalized_url, details in inventory_details_by_url.items():
+        if normalized_url == exact_candidate:
+            continue
+        if CONTENT_TARGET_SITE_HOST not in normalized_url:
+            continue
+        text = _normalize_text(
+            " ".join(
+                [
+                    normalized_url,
+                    details.get("title_or_h1", ""),
+                    details.get("canonical_url", ""),
+                ]
+            )
+        )
+        score = sum(1 for token in tokens if _content_mapping_token_matches(token, text))
+        if score > 0:
+            scored.append((score, normalized_url))
+    return [
+        url
+        for _score, url in sorted(scored, key=lambda item: (-item[0], item[1]))[:3]
+    ]
+
+
+def _content_mapping_tokens(topic: str, source_url: str) -> set[str]:
+    text = _normalize_text(f"{topic} {_content_normalized_path(source_url)}")
+    tokens = {
+        token
+        for token in re.split(r"[^a-z0-9]+", text)
+        if len(token) >= 4
+    }
+    stopwords = {
+        "https",
+        "www",
+        "ekologus",
+        "musi",
+        "wiedziec",
+        "wszystko",
+        "kiedy",
+        "czym",
+        "jest",
+        "polega",
+        "taki",
+        "takiego",
+    }
+    return tokens - stopwords
+
+
+def _content_mapping_token_matches(token: str, normalized_text: str) -> bool:
+    if token in normalized_text:
+        return True
+    if len(token) >= 6 and token[:6] in normalized_text:
+        return True
+    return False
 
 
 def _content_target_site_migration_candidate_url(

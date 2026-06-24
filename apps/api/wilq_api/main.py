@@ -2745,6 +2745,8 @@ def _compact_content_brief_preview_for_context(
         "target_site_migration_summary",
         "target_site_migration_candidate_inventory_status",
         "target_site_migration_candidate_inventory_summary",
+        "target_site_alternative_candidate_urls",
+        "target_site_alternative_candidate_summary",
         "target_site_review_requirements",
         "target_site_inventory_content_type",
         "target_site_inventory_status",
@@ -2805,6 +2807,7 @@ def _compact_content_brief_preview_for_context(
                 ("missing_evidence", 3),
                 ("forbidden_claims", 5),
                 ("target_site_review_requirements", 4),
+                ("target_site_alternative_candidate_urls", 3),
                 ("target_site_inventory_missing_fields", 6),
                 ("required_validation", 4),
                 ("blocked_claims", 5),
@@ -2844,6 +2847,8 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "target_site_migration_summary",
         "target_site_migration_candidate_inventory_status",
         "target_site_migration_candidate_inventory_summary",
+        "target_site_alternative_candidate_urls",
+        "target_site_alternative_candidate_summary",
         "target_site_review_requirements",
         "target_site_inventory_content_type",
         "target_site_inventory_status",
@@ -2873,6 +2878,12 @@ def _compact_wordpress_draft_payload_preview_for_context(
         if not isinstance(item, dict):
             continue
         compact_item = {key: item[key] for key in keep_keys if key in item}
+        alternative_urls = compact_item.get("target_site_alternative_candidate_urls")
+        if isinstance(alternative_urls, list):
+            compact_item["target_site_alternative_candidate_urls"] = alternative_urls[:3]
+            compact_item["target_site_alternative_candidate_urls_total"] = len(
+                alternative_urls
+            )
         draft_generation_contract = compact_item.get("draft_generation_contract")
         if isinstance(draft_generation_contract, dict):
             for key, limit in (
