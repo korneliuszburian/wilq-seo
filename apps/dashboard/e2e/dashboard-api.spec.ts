@@ -221,7 +221,8 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await page.goto("/actions");
 
     await expectApiBackedRouteHeading(page, "ActionObjecty", { exact: true });
-    await expect(page.getByRole("heading", { name: "ActionObjecty do przeglądu" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Najważniejsze ActionObjecty demo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pełna lista ActionObjectów - szczegóły" })).toBeVisible();
     await expect(page.getByText("Do walidacji", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Odnow Google Ads OAuth refresh token")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "OPPORTUNITIES" })).toHaveCount(0);

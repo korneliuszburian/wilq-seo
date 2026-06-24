@@ -41,6 +41,23 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Solid Ekologus demo gate passed on 2026-06-24. `scripts/pre_demo_gate.sh`
+  completed managed stack status, API health, live contract smoke, shared live
+  schemas, dashboard API-backed route smoke 13/13 and sequential core WILQ skill
+  smokes. The only gate issue found during the final pass was a stale e2e
+  heading expectation on `/actions`; product already used
+  "Najważniejsze ActionObjecty demo", and the API-backed route smoke now passes.
+  Current demo task map has no active `task`, `suspicious` or `blocked` items;
+  remaining source/apply depth and BDOS production items are deliberately
+  deferred, not demo blockers.
+- Semantic skill-reference audit moved to current-demo ready on 2026-06-24.
+  `scripts/skill_hygiene_check.py` passed and manual semantic review of the 12
+  `references/output-contract.md` files found short contract/output guidance,
+  not workaround prose or product logic. The only quick-scan hits were strong
+  `SKILL.md` rules tied to typed API fields (`decision_queue`, `unknowns`,
+  readiness contracts), so they remain valid skill operating rules. Next
+  checklist item: final pre-demo gate if the goal is being closed; reopen
+  references only with concrete proof of product behavior hidden in prose.
 - Decision-quality evals moved to current-demo ready on 2026-06-24. The eval
   schema/harness already required `decision_quality` across skills; this slice
   tightened `wilq-content-strategist` so content eval proof now includes

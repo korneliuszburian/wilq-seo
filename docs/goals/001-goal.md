@@ -793,7 +793,12 @@ out of the active queue unless fresh API/browser proof reopens them.
      `.local-lab/evals/codex-skill/20260624T103515Z/wilq-content-strategist/result.json`.
    - Reopen only if a skill eval passes without a concrete workflow decision,
      safe next step, evidence-backed reasoning or blocked-claim handling.
-6. **suspicious - semantic skill references**
+6. **ready - semantic skill references**
+   - `scripts/skill_hygiene_check.py` passed and manual semantic pass over 12
+     `references/output-contract.md` files found contract/output guidance, not
+     product workaround logic. The remaining strong rules in `SKILL.md` point
+     to typed API fields such as `decision_queue`, `unknowns` and readiness
+     contracts.
    - Reopen only with proof that a reference hides product behavior, workaround
      prose, ranking/dedupe logic or dashboard cleanup that belongs in typed
      API/schema/view-model/eval code.
@@ -820,6 +825,19 @@ write/apply safety, alerts, agency operations and long-term knowledge memory.
 The deferred production backlog is preserved in
 `docs/goals/archive/bdos-deferred-backlog.md`; promote items from that file one
 at a time only when they become the next evidence-backed slice.
+
+2026-06-24 13:05 CEST proof: the compact demo task map has no active `task`,
+`suspicious` or `blocked` items left. Current-demo items are `ready`; source/
+apply depth and BDOS production stay explicitly `deferred`. Final focused gate
+passed with managed stack status, API health, live contract smoke, shared live
+schemas, dashboard API-backed route smoke 13/13 and sequential core skill
+smokes:
+
+```bash
+scripts/pre_demo_gate.sh
+```
+
+This proves the solid Ekologus demo path, not full BDOS production automation.
 
 ## Final A-Z Audit Checklist
 
