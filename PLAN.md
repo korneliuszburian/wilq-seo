@@ -499,6 +499,12 @@ Skills are operator workflows over WILQ API. They are not the product brain.
   `fix_measurement`, no campaign/landing blame from measurement gaps, no
   invented `review_landing_mapping`, and ROAS/revenue/profitability/tracking
   fixed claims blocked.
+- `ready`: The Localo messy-prompt runtime proof passed. Artifact:
+  `.local-lab/evals/codex-skill/20260624T211506Z/wilq-localo-operator/result.json`.
+  Result: `operator_usefulness_score=5`, all `decision_quality` booleans true,
+  `act_review_localo_visibility_facts` validated, Localo described as working
+  for read-only place/rankings/GBP/competitor/review aggregates, and local
+  tasks, GBP write, write/apply and local visibility uplift claims blocked.
 - `task`: Add decision-quality rubrics that check usefulness, prioritization,
   blocked-claim handling and safe next steps, not only output shape.
 - `task`: Add a human usefulness rubric after marketer UAT: "Czy wiem co

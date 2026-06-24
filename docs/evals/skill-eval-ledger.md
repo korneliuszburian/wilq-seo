@@ -202,6 +202,44 @@ Product finding:
 - GA4 is demo-useful as measurement and traffic-quality review. It is still not
   a revenue attribution or campaign-performance verdict engine.
 
+## 2026-06-24 - wilq-localo-operator messy marketer prompt eval
+
+Purpose:
+
+- Verify the current Localo answer to the user's recurring question: "does
+  Localo work or not?"
+- Preserve the distinction between read-only Localo visibility evidence and
+  blocked local tasks, GBP writes and visibility uplift claims.
+
+Proof:
+
+```bash
+rtk scripts/codex_skill_eval.sh --skill wilq-localo-operator
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T211506Z/wilq-localo-operator/result.json
+```
+
+Result:
+
+- `operator_usefulness_score=5`
+- `decision_quality` booleans all passed and `safety_findings=[]`.
+- The output says Localo works for read-only evidence: `mcp_initialize_status=200`,
+  access ready, place inventory, local rankings, GBP visibility, competitor
+  visibility and reviews.
+- `act_review_localo_visibility_facts` is validated.
+- The output keeps local task completed, GBP write, local visibility uplift,
+  write/apply, `apply_allowed=true` and `api_mutation_ready=true` blocked until
+  WILQ API exposes the required contracts.
+
+Product finding:
+
+- Localo is demo-useful as read-only local visibility review. It is not a local
+  SEO task executor, GBP writer or uplift proof.
+
 ## 2026-06-24 - wilq-content-strategist target-site boundary eval case
 
 Purpose:
