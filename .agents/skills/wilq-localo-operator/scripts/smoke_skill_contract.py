@@ -40,9 +40,35 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         raise SystemExit(f"Could not reach WILQ API at {api_base}: {exc.reason}") from exc
 
 
+def latest_localo_run_from_pack(
+    pack: dict[str, Any],
+    localo_diagnostics: dict[str, Any],
+) -> tuple[dict[str, Any] | None, str]:
+    diagnostics_run = localo_diagnostics.get("latest_refresh")
+    if isinstance(diagnostics_run, dict) and diagnostics_run.get("connector_id") == "localo":
+        return diagnostics_run, "localo_diagnostics.latest_refresh"
+
+    localo_refresh_runs = [
+        run
+        for run in pack.get("connector_refresh_runs", [])
+        if run.get("connector_id") == "localo"
+    ]
+    if localo_refresh_runs:
+        return localo_refresh_runs[0], "context_pack.connector_refresh_runs"
+    return None, "missing"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help=(
+            "Run an explicit read-only Localo vendor refresh before validating "
+            "the skill contract."
+        ),
+    )
     args = parser.parse_args()
 
     health = request_json(args.api_base, "GET", "/api/health")
@@ -54,13 +80,20 @@ def main() -> int:
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
-    request_json(
-        args.api_base,
-        "POST",
-        "/api/connectors/localo/refresh",
-        {"mode": "vendor_read", "reason": "Localo skill smoke MCP OAuth blocker proof"},
-    )
-    pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
+    refresh_attempt = None
+    if args.refresh:
+        refresh_attempt = request_json(
+            args.api_base,
+            "POST",
+            "/api/connectors/localo/refresh",
+            {"mode": "vendor_read", "reason": "Localo skill smoke MCP contract proof"},
+        )
+        if refresh_attempt.get("status") == "failed":
+            raise SystemExit(
+                "Explicit Localo refresh failed before skill contract validation: "
+                f"{refresh_attempt.get('summary')}"
+            )
+        pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
     localo_diagnostics = pack.get("localo_diagnostics") or {}
     access_probe = localo_diagnostics.get("access_probe") or {}
     decision_queue = localo_diagnostics.get("decision_queue") or []
@@ -107,12 +140,10 @@ def main() -> int:
     if any(item.get("metric_facts") for item in localo_blockers):
         raise SystemExit("Localo blocker must not expose Localo ranking metric facts")
 
-    localo_refresh_runs = [
-        run
-        for run in pack.get("connector_refresh_runs", [])
-        if run.get("connector_id") == "localo"
-    ]
-    latest_localo_run = localo_refresh_runs[0] if localo_refresh_runs else None
+    latest_localo_run, latest_localo_run_source = latest_localo_run_from_pack(
+        pack,
+        localo_diagnostics,
+    )
     if latest_localo_run is None:
         raise SystemExit("Context pack does not expose any Localo refresh run")
     if latest_localo_run.get("status") not in {"blocked", "completed"}:
@@ -257,6 +288,10 @@ def main() -> int:
                 "required_connectors": connector_results,
                 "brief_items": brief_items,
                 "localo_refresh_status": latest_localo_run.get("status"),
+                "localo_refresh_source": latest_localo_run_source,
+                "localo_refresh_attempt_status": (
+                    refresh_attempt.get("status") if refresh_attempt else None
+                ),
                 "localo_metric_summary": metric_summary,
                 "localo_access_status": access_probe.get("status"),
                 "localo_decision_ids": sorted(

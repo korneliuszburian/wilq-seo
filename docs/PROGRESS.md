@@ -131,6 +131,13 @@ Stan produktu:
   `competitor_visibility` and `reviews` ready; `local_tasks` remains missing
   with explicit blocked claims. If Localo appears empty while metric store has
   facts, restart the managed stack before changing product logic.
+- `wilq-localo-operator` deterministic smoke now validates
+  `localo_diagnostics.latest_refresh` by default and does not force a live
+  `/api/connectors/localo/refresh`. Use `--refresh` only for explicit vendor
+  read proof. This prevents transient Localo OAuth discovery HTTP 503 from
+  being misread as broken Localo evidence. Focused proof passed on 2026-06-24:
+  Localo smoke used `localo_diagnostics.latest_refresh`, refresh status
+  `completed`, `act_review_localo_visibility_facts` validation `valid`.
 - Skill hygiene now has a deterministic gate: `scripts/skill_hygiene_check.py`
   runs from `scripts/quality.sh`, blocks `Goal 001`/workaround/bugfix/outdated
   prose, English safety headings, English `with mode=vendor_read` endpoint notes

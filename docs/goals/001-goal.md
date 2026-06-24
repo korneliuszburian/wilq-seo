@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 05:16 CEST.
+Last updated: 2026-06-24 05:29 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -200,6 +200,12 @@ Finish these before claiming the Ekologus demo is done:
      facts.
    - If Localo appears empty while `/api/metrics?connector_id=localo` has facts,
      restart via `scripts/local_stack.sh restart` before changing product logic.
+   - Deterministic `wilq-localo-operator` smoke must validate
+     `localo_diagnostics.latest_refresh` by default. Do not force a live
+     Localo vendor refresh in the default smoke path; use `--refresh` only for
+     explicit live proof. A transient Localo OAuth discovery HTTP 503 is a
+     vendor refresh failure, not proof that existing Localo diagnostics/evidence
+     are broken.
    - Current Ads is review-only and intentionally blocks unsupported claims.
      Live diagnostics expose optimizer review context across campaign triage,
      budget pacing, recommendations, impression share, search-term safety,

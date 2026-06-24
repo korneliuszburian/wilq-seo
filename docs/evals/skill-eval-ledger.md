@@ -25,6 +25,50 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-24 - wilq-localo-operator deterministic smoke no-refresh default
+
+Purpose:
+
+- Prevent the Localo deterministic smoke from treating a transient live vendor
+  refresh failure as proof that Localo diagnostics or the skill contract are
+  broken.
+- Keep the default smoke aligned with other WILQ skills: validate typed
+  diagnostics/context-pack output, and make live vendor refresh an explicit
+  operator action.
+
+Change:
+
+- `.agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py` now
+  uses `localo_diagnostics.latest_refresh` as the primary refresh proof.
+- The script no longer posts `/api/connectors/localo/refresh` by default.
+- New `--refresh` flag runs an explicit read-only vendor refresh before
+  validation when live proof is intentionally requested.
+- `references/output-contract.md` now points to `read_contract_statuses`
+  instead of implying Localo has only `place_inventory`, `local_rankings` and
+  `reviews`.
+
+Proof:
+
+```bash
+uv run pytest tests/test_localo_skill_smoke.py -q
+uv run ruff check .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py tests/test_localo_skill_smoke.py
+uv run mypy .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py tests/test_localo_skill_smoke.py
+uv run python scripts/skill_hygiene_check.py
+uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Outcome:
+
+- Focused pytest, ruff, mypy, skill hygiene and Localo live smoke passed.
+- Live smoke reported `localo_refresh_source=localo_diagnostics.latest_refresh`,
+  `localo_refresh_status=completed`, `localo_refresh_attempt_status=null`,
+  evidence IDs `ev_connector_localo_status` and
+  `ev_refresh_refresh_localo_c41b348c5292`, and validated
+  `act_review_localo_visibility_facts`.
+- If future work needs fresh Localo proof, use `--refresh`; if that explicit
+  refresh fails with vendor HTTP 503, report it as a vendor refresh failure, not
+  as a broken deterministic skill contract.
+
 ## 2026-06-24 - wilq-merchant-feed-operator price-impact decision smoke
 
 Purpose:

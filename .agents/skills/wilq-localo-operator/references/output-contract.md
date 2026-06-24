@@ -4,7 +4,7 @@
 
 Gotowość lokalnej widoczności oraz kandydaci działań Localo/GBP.
 
-Oczekiwany wynik: status Localo access, lokalne blockery widoczności i bezpieczne następne kroki. Jeśli OAuth działa, ale brakuje facts, powiedz to wprost. Jeśli są tylko agregaty Localo (`place_inventory`, `local_rankings`, `reviews`), użyj ich jako read-only evidence i nadal blokuj claimy wymagające `gbp_visibility`, `competitor_visibility`, `local_tasks` albo write path.
+Oczekiwany wynik: status Localo access, lokalne blockery widoczności i bezpieczne następne kroki. Jeśli OAuth działa, ale brakuje facts, powiedz to wprost. Korzystaj z `read_contract_statuses`: claim wolno oprzeć tylko na kontrakcie ze statusem `ready`. Gotowe kontrakty Localo traktuj jako read-only evidence, a `local_tasks`, write path i każdy kontrakt bez statusu `ready` trzymaj jako blocker.
 
 ## Wymagany kontekst API
 
