@@ -12114,11 +12114,29 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert [item["decision_id"] for item in migration_map] == [
         decision["id"] for decision in expected_migration_decisions
     ]
+    mapping_review_inputs = operator_summary["target_site_mapping_review_inputs"]
+    expected_mapping_review_decisions = [
+        decision
+        for decision in expected_migration_decisions
+        if decision.get("target_site_mapping_review_status")
+        in {"manual_mapping_required", "review_alternative_candidates"}
+    ]
+    assert [item["decision_id"] for item in mapping_review_inputs] == [
+        decision["id"] for decision in expected_mapping_review_decisions
+    ]
     assert migration_map
+    assert mapping_review_inputs
     assert migration_map[0]["source_url"] == (
         expected_migration_decisions[0].get("source_url")
         or expected_migration_decisions[0].get("page")
     )
+    assert mapping_review_inputs[0]["candidate_id"].startswith("content_brief_gsc_")
+    assert mapping_review_inputs[0]["candidate_target_urls"]
+    assert "mapping_outcome:<wybierz allowed_outcome>" in mapping_review_inputs[0][
+        "required_checked_items"
+    ]
+    assert "wordpress_publish" in mapping_review_inputs[0]["blocked_outputs"]
+    assert "review" in mapping_review_inputs[0]["review_notes_prompt"].lower()
     assert migration_map[0]["migration_candidate_url"] == (
         expected_migration_decisions[0]["target_site_migration_candidate_url"]
     )

@@ -4367,6 +4367,52 @@ const contentDiagnostics = {
     current_site_match_count: 1,
     target_site_mapping_review_count: 1,
     target_site_mapping_status: "target_site_mapping_review_needed",
+    target_site_confirmed_candidate_inventory_count: 0,
+    target_site_missing_candidate_inventory_count: 1,
+    target_site_migration_map: [
+      {
+        decision_id: "content_decision_https_www_ekologus_pl_bdo",
+        candidate_id: "content_brief_gsc_bdo",
+        title: 'SEO: odśwież lub scal "bdo" (1 zapytanie)',
+        source_url: "https://www.ekologus.pl/bdo/",
+        target_site_host: "ekologus.dev.proudsite.pl",
+        migration_candidate_url: "https://ekologus.dev.proudsite.pl/bdo/",
+        candidate_inventory_status: "missing_target_inventory",
+        candidate_inventory_summary:
+          "Kandydat migracji nie występuje w aktualnym inventory nowej strony.",
+        status_summary:
+          "Kandydat migracji nie występuje w aktualnym inventory nowej strony.",
+        mapping_review_status: "manual_mapping_required",
+        mapping_review_candidate_urls: ["https://ekologus.dev.proudsite.pl/bdo/"],
+        next_required_gate: "target_site_mapping_review"
+      }
+    ],
+    target_site_mapping_review_inputs: [
+      {
+        decision_id: "content_decision_https_www_ekologus_pl_bdo",
+        candidate_id: "content_brief_gsc_bdo",
+        title: 'SEO: odśwież lub scal "bdo" (1 zapytanie)',
+        source_url: "https://www.ekologus.pl/bdo/",
+        current_migration_candidate_url: "https://ekologus.dev.proudsite.pl/bdo/",
+        candidate_target_urls: ["https://ekologus.dev.proudsite.pl/bdo/"],
+        mapping_review_status: "manual_mapping_required",
+        allowed_outcomes: ["manual_mapping_required", "reject_all_candidates"],
+        required_checked_items: [
+          "candidate:content_brief_gsc_bdo",
+          "mapping_outcome:<wybierz allowed_outcome>",
+          "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
+          "mapping_notes:<krótka decyzja marketera>"
+        ],
+        review_notes_prompt:
+          "Review mapowania: wskaż docelowy URL na nowej stronie albo odrzuć kandydatów. Bez tej decyzji draft i staging zostają zablokowane.",
+        blocked_outputs: [
+          "wordpress_staging_write",
+          "wordpress_publish",
+          "migration_confirmed_without_human_review",
+          "ranking_or_lead_uplift_claim"
+        ]
+      }
+    ],
     decision_type_labels: ["review luk Ahrefs", "refresh/merge"],
     source_connectors: ["ahrefs", "google_search_console", "wordpress_ekologus"],
     evidence_ids: [
@@ -6617,9 +6663,9 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/WILQ łączy zapytania i URL-e z GSC z inventory WordPress/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/SEO: odśwież lub scal "bdo"/)).toBeInTheDocument();
+    expect(screen.getAllByText(/SEO: odśwież lub scal "bdo"/).length).toBeGreaterThan(0);
     const contentDecisionCard = screen
-      .getByText(/SEO: odśwież lub scal "bdo"/)
+      .getAllByText(/SEO: odśwież lub scal "bdo"/)[0]
       .closest("article");
     expect(contentDecisionCard).not.toBeNull();
     expect(within(contentDecisionCard as HTMLElement).queryByText(/ev_/)).not.toBeInTheDocument();
@@ -6735,6 +6781,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/status: wymaga mapowania/)).toBeInTheDocument();
     expect(screen.getByText("Migracja: /bdo/")).toBeInTheDocument();
     expect(screen.getByText("Mapowanie: wymaga mapowania")).toBeInTheDocument();
+    expect(screen.getByText("Input do review mapowania")).toBeInTheDocument();
+    expect(screen.getByText(/Kandydat: content_brief_gsc_/)).toBeInTheDocument();
     expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();

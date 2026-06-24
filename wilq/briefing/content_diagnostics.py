@@ -350,6 +350,9 @@ def _operator_summary(
         target_site_migration_map=_content_operator_target_site_migration_map(
             decisions
         ),
+        target_site_mapping_review_inputs=(
+            _content_operator_target_site_mapping_review_inputs(decisions)
+        ),
         decision_type_labels=_unique(
             _content_decision_type_summary_label(decision.decision_type)
             for decision in decisions
@@ -384,6 +387,7 @@ def _content_operator_target_site_migration_map(
     return [
         {
             "decision_id": decision.id,
+            "candidate_id": _content_operator_candidate_id(decision),
             "title": decision.title,
             "source_url": decision.source_url or decision.page,
             "target_site_host": CONTENT_TARGET_SITE_HOST,
@@ -407,6 +411,117 @@ def _content_operator_target_site_migration_map(
         }
         for decision in migration_decisions[:8]
     ]
+
+
+def _content_operator_target_site_mapping_review_inputs(
+    decisions: list[ContentDecisionItem],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "decision_id": decision.id,
+            "candidate_id": _content_operator_candidate_id(decision),
+            "title": decision.title,
+            "source_url": decision.source_url or decision.page,
+            "current_migration_candidate_url": (
+                decision.target_site_migration_candidate_url
+            ),
+            "candidate_target_urls": (
+                decision.target_site_mapping_review_candidate_urls
+                or [
+                    url
+                    for url in [decision.target_site_migration_candidate_url]
+                    if url
+                ]
+            ),
+            "mapping_review_status": decision.target_site_mapping_review_status,
+            "allowed_outcomes": _content_operator_mapping_allowed_outcomes(decision),
+            "required_checked_items": _content_operator_mapping_checked_items(
+                decision
+            ),
+            "review_notes_prompt": _content_operator_mapping_notes_prompt(decision),
+            "blocked_outputs": [
+                "wordpress_staging_write",
+                "wordpress_publish",
+                "migration_confirmed_without_human_review",
+                "ranking_or_lead_uplift_claim",
+            ],
+        }
+        for decision in _content_operator_mapping_review_decisions(decisions)[:8]
+    ]
+
+
+def _content_operator_mapping_review_decisions(
+    decisions: list[ContentDecisionItem],
+) -> list[ContentDecisionItem]:
+    return [
+        decision
+        for decision in decisions
+        if (
+            decision.target_site_migration_candidate_url
+            or decision.target_site_mapping_review_status
+            or decision.target_site_mapping_review_candidate_urls
+        )
+        and _content_operator_target_site_next_gate(decision)
+        == "target_site_mapping_review"
+    ]
+
+
+def _content_operator_candidate_id(decision: ContentDecisionItem) -> str:
+    source_url = decision.source_url or decision.page or decision.id
+    return f"content_brief_gsc_{_candidate_slug_for_page(source_url)}"
+
+
+def _candidate_slug_for_page(value: str) -> str:
+    path = _content_normalized_path(value)
+    if path and path != "/":
+        return _slug(path) or "homepage"
+    host = _content_url_host(value)
+    if host:
+        return _slug(host) or "homepage"
+    return _slug(value) or "homepage"
+
+
+def _content_operator_mapping_allowed_outcomes(
+    decision: ContentDecisionItem,
+) -> list[str]:
+    status = decision.target_site_mapping_review_status
+    if status == "confirm_exact_candidate":
+        return ["confirm_exact_candidate", "manual_mapping_required"]
+    if status == "review_alternative_candidates":
+        return [
+            "confirm_alternative_candidate",
+            "manual_mapping_required",
+            "reject_all_candidates",
+        ]
+    return ["manual_mapping_required", "reject_all_candidates"]
+
+
+def _content_operator_mapping_checked_items(
+    decision: ContentDecisionItem,
+) -> list[str]:
+    candidate_id = _content_operator_candidate_id(decision)
+    candidate_urls = decision.target_site_mapping_review_candidate_urls or []
+    selected_url = candidate_urls[0] if candidate_urls else ""
+    return [
+        f"candidate:{candidate_id}",
+        "mapping_outcome:<wybierz allowed_outcome>",
+        f"selected_target_url:{selected_url or '<wpisz target URL albo zostaw puste>'}",
+        "mapping_notes:<krótka decyzja marketera>",
+    ]
+
+
+def _content_operator_mapping_notes_prompt(decision: ContentDecisionItem) -> str:
+    status = decision.target_site_mapping_review_status
+    if status == "review_alternative_candidates":
+        return (
+            "Review mapowania: wybierz alternatywny URL nowej strony albo oznacz, "
+            "że potrzebne jest ręczne mapowanie. Bez tej decyzji draft i staging "
+            "zostają zablokowane."
+        )
+    return (
+        "Review mapowania: wskaż docelowy URL na nowej stronie albo odrzuć "
+        "kandydatów. Bez tej decyzji draft i staging zostają zablokowane."
+    )
 
 
 def _content_operator_target_site_next_gate(decision: ContentDecisionItem) -> str:

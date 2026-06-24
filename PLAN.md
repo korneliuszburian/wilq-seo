@@ -257,6 +257,16 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   required fields and blocked outputs. Required validation includes
   `target_site_mapping_review`; queue steps include `review_target_site_mapping`.
   Live proof shows `apply_allowed=false` and `api_mutation_ready=false`.
+- `ready`: Content operator summary and Content Planner now expose a concrete
+  `target_site_mapping_review_inputs` packet for the marketer. Each review item
+  includes `candidate_id`, source URL, current migration candidate URL,
+  candidate target URLs, allowed outcomes, required checked items, review notes
+  prompt and blocked outputs. Live proof:
+  `.local-lab/proof/content-mapping-review-input/live-mapping-review-input-summary.json`.
+  Focused proof: API contract test, dashboard typecheck, shared-schema test and
+  content-strategist smoke with extended context-pack timeout. This converts the
+  mapping blocker into exact human input needed, but does not confirm mapping,
+  staging, publish, ranking gain, lead gain or uplift.
 - `ready`: Existing `/api/actions/act_prepare_content_refresh_queue/review`
   now records target-site mapping review through structured `AuditEvent.details`
   instead of unsafe free-text summary parsing. The reviewed WordPress draft

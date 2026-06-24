@@ -1843,6 +1843,7 @@ export const ContentOperatorSummarySchema = z.object({
     .array(
       z.object({
         decision_id: z.string(),
+        candidate_id: z.string().nullable().optional(),
         title: z.string(),
         source_url: z.string().nullable().optional(),
         target_site_host: z.string().nullable().optional(),
@@ -1856,6 +1857,23 @@ export const ContentOperatorSummarySchema = z.object({
         status_summary: z.string(),
         source_connectors: z.array(z.string()).default([]),
         evidence_ids: z.array(z.string()).default([]),
+        blocked_outputs: z.array(z.string()).default([])
+      })
+    )
+    .default([]),
+  target_site_mapping_review_inputs: z
+    .array(
+      z.object({
+        decision_id: z.string(),
+        candidate_id: z.string(),
+        title: z.string(),
+        source_url: z.string().nullable().optional(),
+        current_migration_candidate_url: z.string().nullable().optional(),
+        candidate_target_urls: z.array(z.string()).default([]),
+        mapping_review_status: z.string().nullable().optional(),
+        allowed_outcomes: z.array(z.string()).default([]),
+        required_checked_items: z.array(z.string()).default([]),
+        review_notes_prompt: z.string(),
         blocked_outputs: z.array(z.string()).default([])
       })
     )

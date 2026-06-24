@@ -62,6 +62,13 @@ Stan produktu:
   `post_publication_measurement_plan_v1`, and a read-only
   `target_site_migration_map` rendered in Content Planner as
   "Mapa migracji do review".
+- Content workflow now also exposes concrete
+  `target_site_mapping_review_inputs` for the marketer: candidate IDs, source
+  URLs, candidate target URLs, allowed outcomes, checked-item templates, review
+  notes prompt and blocked outputs. Live proof:
+  `.local-lab/proof/content-mapping-review-input/live-mapping-review-input-summary.json`.
+  This turns the mapping blocker into exact human input needed, but still does
+  not unlock staging, publish, ranking/lead uplift or content-success claims.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -79,9 +86,9 @@ Stan produktu:
 - Real marketer UAT has not been collected. Simulated operator UAT says the
   core path is useful, but it does not prove that the marketer saves time or
   knows what to do without explanation.
-- Content workflow now has a read-only old-to-new migration map for the active
-  decisions, but it still lacks confirmed human mapping for every row,
-  publishing and real post-publication follow-up data for
+- Content workflow now has a read-only old-to-new migration map and review
+  input packet for the active decisions, but it still lacks confirmed human
+  mapping for every row, publishing and real post-publication follow-up data for
   `ekologus.dev.proudsite.pl`. Mapping and draft-readiness review decisions can
   be recorded and audited; staging handoff and post-publication measurement now
   have blocked preview contracts, and Command Center exposes the review-only
@@ -106,12 +113,10 @@ Stan produktu:
 3. If demo UX is the next priority, change one confirmed blocker at a time
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.
-4. If content depth is next, continue from the read-only migration map,
-   audited mapping, draft-readiness and blocked staging-handoff previews plus
-   the review-only staging draft ActionObject and blocked post-publication
-   measurement plan toward confirmed human mapping for every row or actual
-   follow-up measurement after publish. Do not unlock staging, publish or
-   uplift claims without typed preview, human confirmation and audit.
+4. If content depth is next, continue from the
+   `target_site_mapping_review_inputs` packet toward confirmed human mapping
+   for every row, then audited draft-readiness. Do not unlock staging, publish
+   or uplift claims without typed preview, human confirmation and audit.
 5. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

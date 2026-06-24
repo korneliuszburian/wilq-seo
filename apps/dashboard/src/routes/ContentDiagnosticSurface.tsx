@@ -735,6 +735,30 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
                 </div>
               </div>
             ) : null}
+            {summary.target_site_mapping_review_inputs.length > 0 ? (
+              <div className="rounded border border-line bg-white px-3 py-2">
+                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  Input do review mapowania
+                </div>
+                <div className="mt-2 grid gap-2">
+                  {summary.target_site_mapping_review_inputs.slice(0, 4).map((item) => (
+                    <div key={item.decision_id} className="grid gap-1 text-xs text-slate-700">
+                      <div className="font-medium text-ink">{item.title}</div>
+                      <div>
+                        Kandydat: {item.candidate_id}; outcome:{" "}
+                        {item.allowed_outcomes.slice(0, 3).join(", ") || "brak"}
+                      </div>
+                      <div>
+                        Target:{" "}
+                        {item.candidate_target_urls.slice(0, 2).map(shortPath).join(", ") ||
+                          "wymaga ręcznego URL"}
+                      </div>
+                      <div className="text-slate-500">{item.review_notes_prompt}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <TraceLine
               label="Dowody"
               values={[formatContentEvidenceCount(summary.evidence_ids.length)]}

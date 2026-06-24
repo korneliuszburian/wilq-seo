@@ -2224,6 +2224,7 @@ class ContentDecisionItem(BaseModel):
 
 class ContentTargetSiteMigrationMapItem(BaseModel):
     decision_id: str
+    candidate_id: str | None = None
     title: str
     source_url: str | None = None
     target_site_host: str | None = None
@@ -2237,6 +2238,20 @@ class ContentTargetSiteMigrationMapItem(BaseModel):
     status_summary: str
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
+    blocked_outputs: list[str] = Field(default_factory=list)
+
+
+class ContentTargetSiteMappingReviewInputItem(BaseModel):
+    decision_id: str
+    candidate_id: str
+    title: str
+    source_url: str | None = None
+    current_migration_candidate_url: str | None = None
+    candidate_target_urls: list[str] = Field(default_factory=list)
+    mapping_review_status: str | None = None
+    allowed_outcomes: list[str] = Field(default_factory=list)
+    required_checked_items: list[str] = Field(default_factory=list)
+    review_notes_prompt: str
     blocked_outputs: list[str] = Field(default_factory=list)
 
 
@@ -2258,6 +2273,9 @@ class ContentOperatorSummary(BaseModel):
     target_site_migration_map: list[ContentTargetSiteMigrationMapItem] = Field(
         default_factory=list
     )
+    target_site_mapping_review_inputs: list[
+        ContentTargetSiteMappingReviewInputItem
+    ] = Field(default_factory=list)
     decision_type_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

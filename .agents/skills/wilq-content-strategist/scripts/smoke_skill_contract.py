@@ -35,7 +35,14 @@ CONTENT_ACTION_DECISION_TYPES = {
 }
 
 
-def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
+def request_json(
+    api_base: str,
+    method: str,
+    path: str,
+    body: dict[str, Any] | None = None,
+    *,
+    timeout_seconds: float,
+) -> Any:
     data = None if body is None else json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
         f"{api_base.rstrip('/')}{path}",
@@ -44,7 +51,7 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=20) as response:
+        with urllib.request.urlopen(req, timeout=timeout_seconds) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         message = exc.read().decode("utf-8", errors="replace")[:500]
@@ -56,18 +63,35 @@ def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | N
 def main() -> int:
     parser = argparse.ArgumentParser(description=f"Smoke test {SKILL_NAME} WILQ API contract")
     parser.add_argument("--api-base", default="http://127.0.0.1:8000")
+    parser.add_argument("--timeout-seconds", type=float, default=45.0)
     args = parser.parse_args()
 
-    health = request_json(args.api_base, "GET", "/api/health")
+    health = request_json(
+        args.api_base,
+        "GET",
+        "/api/health",
+        timeout_seconds=args.timeout_seconds,
+    )
     if health.get("status") != "ok":
         raise SystemExit(f"WILQ API health is not ok: {health}")
 
-    pack = request_json(args.api_base, "POST", "/api/codex/context-pack", {"skill": SKILL_NAME})
+    pack = request_json(
+        args.api_base,
+        "POST",
+        "/api/codex/context-pack",
+        {"skill": SKILL_NAME},
+        timeout_seconds=args.timeout_seconds,
+    )
     missing = sorted(REQUIRED_CONTEXT_KEYS - set(pack))
     if missing:
         raise SystemExit(f"Context pack missing required keys: {', '.join(missing)}")
 
-    content_diagnostics = request_json(args.api_base, "GET", "/api/content/diagnostics")
+    content_diagnostics = request_json(
+        args.api_base,
+        "GET",
+        "/api/content/diagnostics",
+        timeout_seconds=args.timeout_seconds,
+    )
     if content_diagnostics.get("language") != "pl-PL":
         raise SystemExit("Content diagnostics language must be pl-PL")
     sections = content_diagnostics.get("sections")
@@ -100,7 +124,12 @@ def main() -> int:
     action_validations = []
     for action_id in content_diagnostics.get("action_ids", []):
         quoted_action = urllib.parse.quote(str(action_id), safe="")
-        validation = request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")
+        validation = request_json(
+            args.api_base,
+            "POST",
+            f"/api/actions/{quoted_action}/validate",
+            timeout_seconds=args.timeout_seconds,
+        )
         action_validations.append(
             {
                 "action_id": validation.get("action_id"),
@@ -112,7 +141,12 @@ def main() -> int:
         if validation.get("valid") is not True or validation.get("status") != "valid":
             raise SystemExit(f"Content ActionObject validation failed: {validation}")
 
-    brief = request_json(args.api_base, "GET", "/api/marketing/brief")
+    brief = request_json(
+        args.api_base,
+        "GET",
+        "/api/marketing/brief",
+        timeout_seconds=args.timeout_seconds,
+    )
     brief_items = [
         {
             "id": item.get("id"),
@@ -134,7 +168,12 @@ def main() -> int:
     connector_results = []
     for connector in REQUIRED_CONNECTORS:
         quoted = urllib.parse.quote(connector, safe="")
-        status = request_json(args.api_base, "GET", f"/api/connectors/{quoted}/status")
+        status = request_json(
+            args.api_base,
+            "GET",
+            f"/api/connectors/{quoted}/status",
+            timeout_seconds=args.timeout_seconds,
+        )
         connector_results.append(
             {
                 "id": status.get("id"),
@@ -288,6 +327,36 @@ def validate_content_operator_summary(content_diagnostics: dict[str, Any]) -> No
         raise SystemExit(
             "Content operator_summary missing candidate inventory count differs from decision_queue"
         )
+    migration_map = summary.get("target_site_migration_map")
+    if not isinstance(migration_map, list):
+        raise SystemExit("Content operator_summary target_site_migration_map must be a list")
+    mapping_inputs = summary.get("target_site_mapping_review_inputs")
+    if not isinstance(mapping_inputs, list):
+        raise SystemExit(
+            "Content operator_summary target_site_mapping_review_inputs must be a list"
+        )
+    if migration_map and not mapping_inputs:
+        raise SystemExit(
+            "Content operator_summary lacks mapping review input packet for migration map"
+        )
+    for item in mapping_inputs[:4]:
+        if not isinstance(item, dict):
+            raise SystemExit("Content mapping review input item must be an object")
+        if not str(item.get("candidate_id") or "").startswith("content_brief_gsc_"):
+            raise SystemExit("Content mapping review input lacks traceable candidate_id")
+        if not isinstance(item.get("candidate_target_urls"), list):
+            raise SystemExit("Content mapping review input candidate_target_urls must be a list")
+        checked_items = item.get("required_checked_items")
+        if not isinstance(checked_items, list) or not any(
+            str(value).startswith("mapping_outcome:")
+            for value in checked_items
+        ):
+            raise SystemExit("Content mapping review input lacks mapping_outcome checked item")
+        blocked_outputs = set(item.get("blocked_outputs") or [])
+        if not {"wordpress_publish", "ranking_or_lead_uplift_claim"}.issubset(
+            blocked_outputs
+        ):
+            raise SystemExit("Content mapping review input must block publish/uplift")
 
 
 def validate_content_action_preview(
