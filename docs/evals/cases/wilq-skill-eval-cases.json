@@ -58,6 +58,7 @@
     "skill": "wilq-ads-doctor",
     "surface_path": "/ads-doctor",
     "task_pl": "Sprawdź aktualne Google Ads evidence dla Ekologus: pokaż co wolno powiedzieć o live campaign facts, campaign review queue, search terms read-only rows, 90-day search-term safety read, keyword match context read-only rows, read-only recommendations review, impression share review, custom segments review, Keyword Planner enrichment i negative keyword safety review queue, a jasno zablokuj CPA, ROAS, search-term waste, wasted budget, budget scaling, recommendation apply, targeting/apply oraz negative keyword apply bez human review, potwierdzenia i apply/audit contract.",
+    "messy_task_pl": "Stary, powiedz mi po ludzku co przepala budżet w Adsach i co kliknąć najpierw, ale bez wciskania CPA/ROAS, jeśli WILQ nie ma targetów albo change history.",
     "expected_connectors": ["google_ads"],
     "expected_terms_pl": [
       "Ads Doctor",
@@ -205,6 +206,7 @@
     "skill": "wilq-localo-operator",
     "surface_path": "/localo",
     "task_pl": "Oceń aktualne Localo evidence dla Ekologus: pokaż MCP access oraz read-only agregaty place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ API je zwraca. Jasno oddziel review agregatów od brakującego local_tasks contract, GBP write i local visibility uplift; nie twierdź, że zadania lokalne, write path albo wzrost widoczności są odblokowane.",
+    "messy_task_pl": "Localo finalnie działa czy nie działa? Daj mi konkretnie co wiemy o lokalnej widoczności i czego nadal nie wolno obiecać.",
     "expected_connectors": ["localo"],
     "expected_terms_pl": [
       "Localo",
@@ -241,6 +243,7 @@
     "skill": "wilq-content-strategist",
     "surface_path": "/content-planner",
     "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników. Użyj content_diagnostics.decision_queue oraz operator_summary.target_site_migration_map z WILQ API, w tym inventory_check_before_create, merge_create_after_inventory_check albo block_as_tracking_not_content, gdy API je zwraca. Jeśli pojawia się ekologus.dev.proudsite.pl, traktuj go jako target context/adaptation target, nie jako źródło historycznej skuteczności; pokaż source_url, target_site_url, target_site_adaptation_status, target_site_migration_map, target_site_mapping_review_status, next_required_gate, inventory/canonical/duplicate check oraz zablokuj claimy publish/staging/ranking/lead uplift bez validated write/apply evidence.",
+    "messy_task_pl": "Co mamy pisać na nową stronę Ekologus, żeby nie robić SEO slopu? Weź BDO/Zielony Ład, sprawdź czy to refresh, merge czy nowe, i powiedz czego brakuje do draftu.",
     "expected_connectors": [
       "google_search_console",
       "google_analytics_4",
@@ -446,6 +449,7 @@
     "skill": "wilq-ga4-analyst",
     "surface_path": "/ga4",
     "task_pl": "Użyj ga4_diagnostics.decision_queue i zrób krótką diagnozę GA4 dla Ekologus: rozdziel fix_measurement, review_landing_mapping i review_traffic_quality, pokaż evidence IDs, ActionObject oraz claimy, których nie wolno mówić.",
+    "messy_task_pl": "Czy te landing pages są słabe, czy tracking jest rozwalony? Nie zwalaj winy na kampanie, jeśli widzisz tylko not set albo braki pomiaru.",
     "expected_connectors": ["google_analytics_4"],
     "expected_terms_pl": [
       "GA4",
@@ -464,6 +468,7 @@
     "skill": "wilq-merchant-feed-operator",
     "surface_path": "/merchant",
     "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczny kandydat działania bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że product ROAS, product revenue recovery, price change impact, approval restored oraz feed write są zablokowane bez odpowiednich kontraktów.",
+    "messy_task_pl": "Czy feed jest do naprawy i ile produktów realnie boli? Nie myl zgłoszeń problemów z unikalnymi SKU i nie obiecuj odzyskania approval/revenue.",
     "expected_connectors": ["google_merchant_center"],
     "expected_terms_pl": [
       "Merchant Center",

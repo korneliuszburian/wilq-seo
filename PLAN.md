@@ -465,8 +465,12 @@ Skills are operator workflows over WILQ API. They are not the product brain.
 
 - `ready`: The current 12-skill baseline has deterministic smoke/eval coverage
   and current core-skill adversarial proofs.
-- `task`: Add marketer-style messy prompts to eval cases, not only clean
-  operator prompts. The skill must fetch WILQ API and refuse unsupported claims.
+- `ready`: Core demo eval cases now include `messy_task_pl` prompts for
+  Content, Ads, Merchant, GA4 and Localo, and `scripts/codex_skill_eval.sh`
+  injects them into the generated eval prompt as `messy_marketer_prompt`. This
+  hardens future non-interactive evals against natural, imprecise marketer
+  questions without changing skill references or product logic. Focused proof:
+  `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`.
 - `task`: Add decision-quality rubrics that check usefulness, prioritization,
   blocked-claim handling and safe next steps, not only output shape.
 - `task`: Add a human usefulness rubric after marketer UAT: "Czy wiem co

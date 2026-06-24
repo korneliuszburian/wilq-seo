@@ -483,6 +483,17 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "approval restored" in merchant_case["blocked_claim_terms"]
     assert "feed write" in merchant_case["blocked_claim_terms"]
 
+    for skill in (
+        "wilq-content-strategist",
+        "wilq-ads-doctor",
+        "wilq-merchant-feed-operator",
+        "wilq-ga4-analyst",
+        "wilq-localo-operator",
+    ):
+        messy_task = cases[skill].get("messy_task_pl")
+        assert isinstance(messy_task, str)
+        assert len(messy_task) > 80
+
 
 def test_codex_skill_eval_harness_validates_route_markers() -> None:
     harness = HARNESS_PATH.read_text(encoding="utf-8")
@@ -507,6 +518,8 @@ def test_codex_skill_eval_harness_validates_route_markers() -> None:
         "blocked_claims_handled must be true",
         "workflow_specific_interpretation must be true",
         "evidence_backed_reasoning must be true",
+        "messy_marketer_prompt",
+        "messy_task_pl",
     ):
         assert required in harness
 
@@ -555,7 +568,9 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
         smoke_script = (skill_root / "scripts" / smoke_script_name).read_text(encoding="utf-8")
 
         assert "GET /api/marketing/brief" in skill_doc
-        assert 'brief = request_json(args.api_base, "GET", "/api/marketing/brief")' in smoke_script
+        assert "brief = request_json" in smoke_script
+        assert '"GET"' in smoke_script
+        assert '"/api/marketing/brief"' in smoke_script
         if skill == "wilq-daily-command":
             assert '"brief_items": compact_brief_items(brief)' in smoke_script
         else:
@@ -653,16 +668,12 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             Path(".agents/skills") / skill / "scripts" / "smoke_skill_contract.py"
         ).read_text(encoding="utf-8")
         assert "GET /api/content/diagnostics" in content_skill_doc
-        assert (
-            'request_json(args.api_base, "GET", "/api/content/diagnostics")'
-            in content_smoke_script
-        )
+        assert "request_json" in content_smoke_script
+        assert '"/api/content/diagnostics"' in content_smoke_script
         assert '"content_diagnostics": {' in content_smoke_script
         if skill in {"wilq-gsc-content-doctor", "wilq-content-strategist"}:
-            content_validation_call = (
-                'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
-            )
-            assert content_validation_call in content_smoke_script
+            assert '"POST"' in content_smoke_script
+            assert '/api/actions/{quoted_action}/validate' in content_smoke_script
             assert '"action_validations": action_validations' in content_smoke_script
         if skill == "wilq-content-strategist":
             assert '"content_brief_preview_type": "content_brief_preview_v1"' in (

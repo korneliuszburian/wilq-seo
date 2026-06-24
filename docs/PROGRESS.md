@@ -84,6 +84,10 @@ Stan produktu:
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
   Localo read-only visibility. Detailed artifact paths live in `PLAN.md`.
+- Core demo eval cases now also include messy marketer prompts for Content,
+  Ads, Merchant, GA4 and Localo, and `scripts/codex_skill_eval.sh` injects them
+  into future `codex exec` eval prompts. Focused contract proof:
+  `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`.
 - Content strategist eval hardening now requires the current
   `operator_summary.target_site_migration_map`, mapping-review gate markers and
   blocked staging/ranking outputs, so the eval cannot pass on generic

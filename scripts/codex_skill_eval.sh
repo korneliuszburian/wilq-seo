@@ -126,6 +126,7 @@ expected_no_action_ids = case.get("expected_no_action_ids", False)
 blocked_claim_terms = case.get("blocked_claim_terms", [])
 forbidden_action_ids = case.get("forbidden_action_ids", [])
 forbidden_connectors = case.get("forbidden_connectors", [])
+messy_task_pl = case.get("messy_task_pl")
 is_daily_command = skill == "wilq-daily-command"
 script_name = "smoke_context_pack.py" if is_daily_command else "smoke_skill_contract.py"
 smoke_command = f"uv run python .agents/skills/{skill}/scripts/{script_name} --api-base {api_base}"
@@ -143,6 +144,15 @@ surface_instruction = (
     "Finalny JSON musi odzwierciedlać ten route w `notes`, `operator_next_step`, "
     "rekomendacjach albo kandydatach działań.\n</surface>\n"
     if surface_path
+    else ""
+)
+messy_task_instruction = (
+    "\n<messy_marketer_prompt>\n"
+    "To jest realistyczne, nieprecyzyjne pytanie marketera. Skill ma je "
+    "obsłużyć przez WILQ API evidence, bez zmyślania danych i bez overclaimów: "
+    f"{messy_task_pl}\n"
+    "</messy_marketer_prompt>\n"
+    if messy_task_pl
     else ""
 )
 expected_terms_instruction = (
@@ -216,6 +226,7 @@ Użyj ${skill}. Przetestuj skill w trybie operatorskim WILQ dla Ekologus.
 Zadanie: {case["task_pl"]}
 </task>
 {surface_instruction}
+{messy_task_instruction}
 {expected_terms_instruction}
 {expected_actions_instruction}
 {expected_validated_actions_instruction}
