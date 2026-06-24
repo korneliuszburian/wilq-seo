@@ -317,6 +317,10 @@ def validate_content_action_preview(
             raise SystemExit(f"Content brief preview lacks {field}")
     if "ranking guarantee" not in set(first_preview.get("forbidden_claims") or []):
         raise SystemExit("Content brief preview forbidden_claims must block ranking guarantee")
+    if "target_site_migration_status" not in first_preview:
+        raise SystemExit("Content brief preview lacks target_site_migration_status")
+    if "target_site_migration_summary" not in first_preview:
+        raise SystemExit("Content brief preview lacks target_site_migration_summary")
     gsc_preview = next(
         (
             item

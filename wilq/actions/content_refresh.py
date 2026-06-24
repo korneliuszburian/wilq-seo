@@ -9,6 +9,13 @@ from wilq.schemas import MetricFact
 CONTENT_REFRESH_ACTION_TYPE = "wordpress_content_refresh"
 CONTENT_BRIEF_PREVIEW_CONTRACT = "content_brief_preview_v1"
 WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT = "wordpress_draft_payload_preview_v1"
+CONTENT_TARGET_SITE_HOST = "ekologus.dev.proudsite.pl"
+CONTENT_TARGET_SITE_SCHEME = "https"
+CONTENT_SOURCE_SITE_HOSTS = {
+    "www.ekologus.pl",
+    "ekologus.pl",
+    "sklep.ekologus.pl",
+}
 
 CONTENT_SOURCE_CONNECTORS = {
     "google_search_console",
@@ -244,6 +251,11 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         if isinstance(preview.get("target_site_url"), str)
         else None
     )
+    migration_candidate_url = (
+        preview.get("target_site_migration_candidate_url")
+        if isinstance(preview.get("target_site_migration_candidate_url"), str)
+        else None
+    )
     candidate_id = str(preview["candidate_id"])
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -266,6 +278,13 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         else None,
         "target_site_adaptation_status": preview.get("target_site_adaptation_status")
         if isinstance(preview.get("target_site_adaptation_status"), str)
+        else None,
+        "target_site_migration_candidate_url": migration_candidate_url,
+        "target_site_migration_status": preview.get("target_site_migration_status")
+        if isinstance(preview.get("target_site_migration_status"), str)
+        else None,
+        "target_site_migration_summary": preview.get("target_site_migration_summary")
+        if isinstance(preview.get("target_site_migration_summary"), str)
         else None,
         "draft_payload": {
             "post_status": "draft",
@@ -447,13 +466,82 @@ def _target_site_context(
         status = "target_site_alias_match"
     else:
         status = "current_site_match"
+    migration_candidate_url = _target_site_migration_candidate_url(
+        source_url=source_url,
+        target_site_url=target_site_url,
+        target_site_adaptation_status=status,
+    )
+    migration_status = _target_site_migration_status(
+        target_site_adaptation_status=status,
+        migration_candidate_url=migration_candidate_url,
+    )
     return {
         "source_url": source_url,
         "source_site_host": source_host,
         "target_site_url": target_site_url,
         "target_site_host": target_host,
         "target_site_adaptation_status": status,
+        "target_site_migration_candidate_url": migration_candidate_url,
+        "target_site_migration_status": migration_status,
+        "target_site_migration_summary": _target_site_migration_summary(
+            migration_status,
+            migration_candidate_url,
+        ),
     }
+
+
+def _target_site_migration_candidate_url(
+    *,
+    source_url: str,
+    target_site_url: str | None,
+    target_site_adaptation_status: str,
+) -> str | None:
+    if target_site_adaptation_status == "target_site_alias_match":
+        return target_site_url
+    parsed = urlparse(source_url)
+    source_host = parsed.netloc.lower()
+    if source_host not in CONTENT_SOURCE_SITE_HOSTS:
+        return None
+    path = parsed.path or "/"
+    query = f"?{parsed.query}" if parsed.query else ""
+    return f"{CONTENT_TARGET_SITE_SCHEME}://{CONTENT_TARGET_SITE_HOST}{path}{query}"
+
+
+def _target_site_migration_status(
+    *,
+    target_site_adaptation_status: str,
+    migration_candidate_url: str | None,
+) -> str:
+    if target_site_adaptation_status == "target_site_alias_match":
+        return "confirmed_target_inventory"
+    if target_site_adaptation_status == "needs_inventory_match":
+        return "blocked_missing_inventory"
+    if migration_candidate_url:
+        return "needs_review"
+    return "not_applicable"
+
+
+def _target_site_migration_summary(
+    migration_status: str,
+    migration_candidate_url: str | None,
+) -> str:
+    if migration_status == "confirmed_target_inventory":
+        return (
+            "Inventory potwierdza URL na target site; przed draftem nadal sprawdź "
+            "canonical, duplikaty i review."
+        )
+    if migration_status == "needs_review" and migration_candidate_url:
+        return (
+            "WILQ wskazuje kandydata old-to-new na target site, ale inventory go "
+            "nie potwierdza w tym payloadzie. Wymagane ręczne mapowanie przed "
+            "draftem albo stagingiem."
+        )
+    if migration_status == "blocked_missing_inventory":
+        return (
+            "Brak potwierdzenia inventory. Nie twórz draftu ani nowej strony przed "
+            "kontrolą sitemap, canonical i duplikatów."
+        )
+    return "Brak kandydata migracji na target site dla tej pozycji."
 
 
 def _gsc_metric_snapshot(page_facts: list[MetricFact]) -> dict[str, int | float | str]:

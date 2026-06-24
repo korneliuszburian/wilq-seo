@@ -1473,6 +1473,11 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert preview["target_site_url"] == target_site_url
     assert preview["target_site_host"] == "ekologus.dev.proudsite.pl"
     assert preview["target_site_adaptation_status"] == "target_site_alias_match"
+    assert preview["target_site_migration_candidate_url"] == target_site_url
+    assert preview["target_site_migration_status"] == "confirmed_target_inventory"
+    assert "Inventory potwierdza URL na target site" in preview[
+        "target_site_migration_summary"
+    ]
     assert preview["wordpress_inventory_match"] == "present"
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
@@ -1830,6 +1835,9 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["missing_evidence"]
     assert "ranking guarantee" in brief_preview["forbidden_claims"]
     assert "target_site_adaptation_status" in brief_preview
+    assert "target_site_migration_candidate_url" in brief_preview
+    assert "target_site_migration_status" in brief_preview
+    assert "target_site_migration_summary" in brief_preview
     assert payload["wordpress_draft_payload_preview_total"] == 1
     assert payload["wordpress_draft_payload_preview_included"] == 1
     draft_preview = payload["wordpress_draft_payload_preview"][0]
@@ -1838,6 +1846,9 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["candidate_id"] == candidate_id
     assert draft_preview["post_status"] == "draft"
     assert "target_site_adaptation_status" in draft_preview
+    assert "target_site_migration_candidate_url" in draft_preview
+    assert "target_site_migration_status" in draft_preview
+    assert "target_site_migration_summary" in draft_preview
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["evidence_ids"]

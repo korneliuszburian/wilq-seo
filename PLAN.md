@@ -168,9 +168,13 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
 - `task`: Confirm explicit old-to-new URL mapping against dev-site inventory
   when both old/current and `ekologus.dev.proudsite.pl` inventory exist for
   related content.
-- `task`: Promote the duplicate/canonical gate into the content ActionObject
-  payload and skill eval so `create` is blocked or downgraded when refresh/merge
-  is safer.
+- `ready`: Content ActionObject payload, reviewed draft preview and
+  content-strategist context-pack preserve target-site migration candidate,
+  status and summary fields. Current old-site rows are `needs_review`, so draft
+  or staging work remains blocked until mapping is confirmed.
+- `task`: Promote the duplicate/canonical gate into a stricter content
+  ActionObject and skill eval decision rule so `create` is blocked or downgraded
+  when refresh/merge is safer.
 - `task`: Define a publication-quality brief schema with title/meta, H1/H2/FAQ,
   CTA, internal links, source facts, objection handling, legal/factual
   validation, missing evidence and forbidden claims.
@@ -379,6 +383,13 @@ Use these rules before every implementation slice:
   `.local-lab/proof/dashboard/content-migration-map/content-planner-snapshot.txt`
   shows `do mapowania: 4`, `status: wymaga mapowania` plus migration chips on
   `/content-planner`.
+- [x] Carry content target-site migration status into
+  `act_prepare_content_refresh_queue`, reviewed draft previews and the
+  content-strategist context-pack. Proof:
+  `.local-lab/proof/dashboard/content-action-migration/action-payload-summary.json`;
+  focused tests passed for content API contracts/context-pack and
+  `wilq-content-strategist/scripts/smoke_skill_contract.py` passed after stack
+  restart.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

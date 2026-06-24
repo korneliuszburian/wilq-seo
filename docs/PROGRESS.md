@@ -58,6 +58,12 @@ Stan produktu:
   this is a migration-review queue, not a completed migration map. Proof:
   `.local-lab/proof/dashboard/content-migration-map/api-summary.json` and
   `.local-lab/proof/dashboard/content-migration-map/content-planner-snapshot.txt`.
+- `act_prepare_content_refresh_queue` now carries the same target-site migration
+  candidate/status/summary into content brief previews, reviewed draft previews
+  and the content-strategist context-pack. Current old-site candidates stay
+  `needs_review`, so draft/staging remains blocked until mapping is confirmed.
+  Proof:
+  `.local-lab/proof/dashboard/content-action-migration/action-payload-summary.json`.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
@@ -104,8 +110,9 @@ Stan produktu:
    likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
    drilldown IDs behind technical details.
 3. If content depth is next, continue from the existing source/target,
-   duplicate/canonical and migration-candidate status toward confirmed dev-site
-   inventory mapping and draft/staging handoff, without publish/apply claims.
+   duplicate/canonical and ActionObject migration status toward confirmed
+   dev-site inventory mapping and draft/staging handoff, without publish/apply
+   claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.
