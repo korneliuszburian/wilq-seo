@@ -302,6 +302,10 @@ def validate_content_action_preview(
         "schema_direction",
         "cta_direction",
         "publication_readiness_status",
+        "inventory_gate_status",
+        "canonical_gate_status",
+        "duplicate_gate_status",
+        "content_gate_summary",
     ]
     for field in required_string_fields:
         if not str(first_preview.get(field) or "").strip():
@@ -378,6 +382,10 @@ def validate_content_action_preview(
             "h2_direction": (preview.get("h2_direction") or [])[:4],
             "faq_direction": (preview.get("faq_direction") or [])[:4],
             "schema_direction": preview.get("schema_direction"),
+            "inventory_gate_status": preview.get("inventory_gate_status"),
+            "canonical_gate_status": preview.get("canonical_gate_status"),
+            "duplicate_gate_status": preview.get("duplicate_gate_status"),
+            "content_gate_summary": preview.get("content_gate_summary"),
             "cta_direction": preview.get("cta_direction"),
             "publication_readiness_status": preview.get(
                 "publication_readiness_status"

@@ -1508,6 +1508,11 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert "Inventory potwierdza target URL" in preview[
         "target_site_inventory_summary"
     ]
+    assert preview["inventory_gate_status"] == "confirmed_target_inventory"
+    assert preview["canonical_gate_status"] == "needs_target_canonical_review"
+    assert preview["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert "canonical" in preview["content_gate_summary"]
+    assert "duplikaty" in preview["content_gate_summary"]
     assert preview["seo_title_direction"]
     assert preview["meta_description_direction"]
     assert preview["schema_direction"]
@@ -1788,6 +1793,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["destructive"] is False
     assert draft_preview["draft_generation_status"] in {
         "blocked_pending_target_mapping",
+        "blocked_pending_canonical_duplicate_review",
         "blocked_missing_target_inventory",
         "ready_for_review",
     }
@@ -1795,6 +1801,16 @@ def test_content_brief_candidate_review_persists_audit_event(
     if draft_preview["target_site_migration_status"] == "needs_review":
         assert draft_preview["draft_generation_status"] == "blocked_pending_target_mapping"
         assert "target_site_inventory_mapping_review" in draft_preview["draft_blockers"]
+    if draft_preview["target_site_migration_status"] == "confirmed_target_inventory":
+        assert draft_preview["draft_generation_status"] == (
+            "blocked_pending_canonical_duplicate_review"
+        )
+        assert "target_site_canonical_review" in draft_preview["draft_blockers"]
+        assert "duplicate_or_cannibalization_check" in draft_preview["draft_blockers"]
+    assert draft_preview["inventory_gate_status"]
+    assert draft_preview["canonical_gate_status"]
+    assert draft_preview["duplicate_gate_status"]
+    assert draft_preview["content_gate_summary"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[
@@ -1911,12 +1927,23 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "target_site_review_requirements" in draft_preview
     assert draft_preview["draft_generation_status"] in {
         "blocked_pending_target_mapping",
+        "blocked_pending_canonical_duplicate_review",
         "blocked_missing_target_inventory",
         "ready_for_review",
     }
     if draft_preview["target_site_migration_status"] == "needs_review":
         assert draft_preview["draft_generation_status"] == "blocked_pending_target_mapping"
         assert "target_site_inventory_mapping_review" in draft_preview["draft_blockers"]
+    if draft_preview["target_site_migration_status"] == "confirmed_target_inventory":
+        assert draft_preview["draft_generation_status"] == (
+            "blocked_pending_canonical_duplicate_review"
+        )
+        assert "target_site_canonical_review" in draft_preview["draft_blockers"]
+        assert "duplicate_or_cannibalization_check" in draft_preview["draft_blockers"]
+    assert draft_preview["inventory_gate_status"]
+    assert draft_preview["canonical_gate_status"]
+    assert draft_preview["duplicate_gate_status"]
+    assert draft_preview["content_gate_summary"]
     assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
     assert (
         "duplicate_or_cannibalization_check"

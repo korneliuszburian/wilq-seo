@@ -186,9 +186,12 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   and `draft_blockers`. A reviewed candidate with `needs_review` target mapping
   stays `blocked_pending_target_mapping`; preview/review is allowed for audit,
   but staging, publish and apply remain blocked.
-- `task`: Promote the duplicate/canonical gate into a stricter content
-  ActionObject and skill eval decision rule so `create` is blocked or downgraded
-  when refresh/merge is safer.
+- `ready`: Duplicate/canonical gates are promoted into content ActionObject
+  brief previews, reviewed draft previews, dashboard draft cards and
+  content-strategist context-pack. Draft preview readiness now stays blocked for
+  canonical/duplicate review instead of becoming ready just because target
+  inventory is found. Proof:
+  `.local-lab/proof/content-draft-gates/content-strategist-smoke.json`.
 - `ready`: Content ActionObject brief previews, reviewed draft previews,
   dashboard cards and content-strategist context-pack expose publication-quality
   review fields: title/meta/schema directions, legal/factual review notes,

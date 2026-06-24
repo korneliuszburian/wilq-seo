@@ -83,6 +83,10 @@ Stan produktu:
   title/meta/schema directions, legal/factual review notes, brand voice notes,
   publication readiness and publication blockers. This improves the content
   handoff while keeping staging, publish and apply blocked.
+- Duplicate/canonical gates now flow through content ActionObject brief
+  previews, reviewed draft previews, dashboard draft cards and the
+  content-strategist context-pack. Draft preview readiness remains blocked for
+  canonical/duplicate review instead of implying publish or staging readiness.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;

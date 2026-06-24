@@ -197,6 +197,16 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
             target_site_url=target_site_context.get("target_site_url"),
             inventory_details=wordpress_details,
         )
+        content_gate_status = _content_gate_status_for_brief(
+            source_type="gsc_query_page",
+            mode=mode,
+            wordpress_match=wordpress_match,
+            target_site_adaptation_status=target_site_context.get(
+                "target_site_adaptation_status"
+            )
+            if isinstance(target_site_context.get("target_site_adaptation_status"), str)
+            else None,
+        )
         previews.append(
             {
                 "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
@@ -207,6 +217,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "target_url": page,
                 **target_site_context,
                 **target_site_inventory_context,
+                **content_gate_status,
                 "wordpress_inventory_match": "present" if wordpress_match else "missing",
                 "decision_options": decision_options,
                 "metric_snapshot": _gsc_metric_snapshot(page_facts),
@@ -278,7 +289,26 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         if isinstance(preview.get("target_site_migration_status"), str)
         else None
     )
-    draft_generation_status = _draft_generation_status(migration_status)
+    inventory_gate_status = (
+        preview.get("inventory_gate_status")
+        if isinstance(preview.get("inventory_gate_status"), str)
+        else None
+    )
+    canonical_gate_status = (
+        preview.get("canonical_gate_status")
+        if isinstance(preview.get("canonical_gate_status"), str)
+        else None
+    )
+    duplicate_gate_status = (
+        preview.get("duplicate_gate_status")
+        if isinstance(preview.get("duplicate_gate_status"), str)
+        else None
+    )
+    draft_generation_status = _draft_generation_status(
+        migration_status,
+        canonical_gate_status=canonical_gate_status,
+        duplicate_gate_status=duplicate_gate_status,
+    )
     candidate_id = str(preview["candidate_id"])
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -336,6 +366,12 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         "target_site_inventory_summary": preview.get("target_site_inventory_summary")
         if isinstance(preview.get("target_site_inventory_summary"), str)
         else None,
+        "inventory_gate_status": inventory_gate_status,
+        "canonical_gate_status": canonical_gate_status,
+        "duplicate_gate_status": duplicate_gate_status,
+        "content_gate_summary": preview.get("content_gate_summary")
+        if isinstance(preview.get("content_gate_summary"), str)
+        else None,
         "draft_generation_status": draft_generation_status,
         "draft_blockers": _draft_blockers(draft_generation_status),
         "draft_payload": {
@@ -390,8 +426,23 @@ def _wordpress_draft_operation(mode: str) -> str:
     return "prepare_new_content_draft_review"
 
 
-def _draft_generation_status(migration_status: str | None) -> str:
+def _draft_generation_status(
+    migration_status: str | None,
+    *,
+    canonical_gate_status: str | None,
+    duplicate_gate_status: str | None,
+) -> str:
     if migration_status == "confirmed_target_inventory":
+        if canonical_gate_status in {
+            "needs_target_canonical_review",
+            "blocked_until_mapping_review",
+            "blocked_until_inventory_review",
+        } or duplicate_gate_status in {
+            "refresh_or_merge_required",
+            "manual_merge_or_create_review",
+            "create_blocked_until_duplicate_check",
+        }:
+            return "blocked_pending_canonical_duplicate_review"
         return "ready_for_review"
     if migration_status == "needs_review":
         return "blocked_pending_target_mapping"
@@ -415,6 +466,12 @@ def _draft_blockers(draft_generation_status: str) -> list[str]:
     if draft_generation_status == "blocked_pending_target_mapping":
         return [
             "target_site_inventory_mapping_review",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            *blockers,
+        ]
+    if draft_generation_status == "blocked_pending_canonical_duplicate_review":
+        return [
             "target_site_canonical_review",
             "duplicate_or_cannibalization_check",
             *blockers,
@@ -461,6 +518,56 @@ def _draft_content_blocks(preview: dict[str, Any]) -> list[dict[str, str]]:
     return blocks
 
 
+def _content_gate_status_for_brief(
+    *,
+    source_type: str,
+    mode: str,
+    wordpress_match: bool,
+    target_site_adaptation_status: str | None,
+) -> dict[str, str]:
+    if source_type == "gsc_query_page" and mode == "refresh" and wordpress_match:
+        if target_site_adaptation_status == "target_site_alias_match":
+            return {
+                "inventory_gate_status": "confirmed_target_inventory",
+                "canonical_gate_status": "needs_target_canonical_review",
+                "duplicate_gate_status": "refresh_or_merge_required",
+                "content_gate_summary": (
+                    "Inventory potwierdza docelową stronę na target site. Brief może "
+                    "iść do refresh/merge review, ale canonical i duplikaty wymagają "
+                    "ręcznego potwierdzenia przed draftem albo stagingiem."
+                ),
+            }
+        return {
+            "inventory_gate_status": "confirmed_current_inventory",
+            "canonical_gate_status": "current_url_confirmed",
+            "duplicate_gate_status": "refresh_or_merge_required",
+            "content_gate_summary": (
+                "Inventory potwierdza istniejący URL. WILQ traktuje to jako "
+                "refresh/merge, nie nowy artykuł; create pozostaje zablokowane "
+                "przed kontrolą duplikacji."
+            ),
+        }
+    if source_type == "gsc_query_page":
+        return {
+            "inventory_gate_status": "missing_inventory_match",
+            "canonical_gate_status": "blocked_until_inventory_review",
+            "duplicate_gate_status": "create_blocked_until_duplicate_check",
+            "content_gate_summary": (
+                "GSC pokazuje popyt, ale WordPress nie potwierdza URL. Brief create "
+                "jest zablokowany do czasu kontroli inventory, canonical i duplikatów."
+            ),
+        }
+    return {
+        "inventory_gate_status": "not_applicable",
+        "canonical_gate_status": "blocked_until_relevance_review",
+        "duplicate_gate_status": "manual_merge_or_create_review",
+        "content_gate_summary": (
+            "To jest kandydat z Ahrefs do review, nie decyzja create. Najpierw "
+            "potwierdź popyt GSC, inventory WordPress i duplikaty."
+        ),
+    }
+
+
 def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str, Any]]:
     previews: list[dict[str, Any]] = []
     scored_facts = [
@@ -487,6 +594,12 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "competitor_domain": fact.dimensions.get("competitor_domain") or None,
                 "source_url": fact.dimensions.get("source_url") or None,
                 "target_url": fact.dimensions.get("target_url") or None,
+                **_content_gate_status_for_brief(
+                    source_type="ahrefs_gap_review",
+                    mode="review",
+                    wordpress_match=False,
+                    target_site_adaptation_status=None,
+                ),
                 "wordpress_inventory_match": "unknown",
                 "gsc_demand": "unknown",
                 "decision_options": ["refresh", "merge", "create", "block"],

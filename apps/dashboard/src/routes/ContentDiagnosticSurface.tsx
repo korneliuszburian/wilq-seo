@@ -418,6 +418,10 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_inventory_modified_gmt?: string | null;
   target_site_inventory_missing_fields?: string[];
   target_site_inventory_summary?: string | null;
+  inventory_gate_status?: string | null;
+  canonical_gate_status?: string | null;
+  duplicate_gate_status?: string | null;
+  content_gate_summary?: string | null;
   draft_generation_status?: string | null;
   draft_blockers?: string[];
   draft_payload: {
@@ -484,6 +488,7 @@ function WordPressDraftPayloadPreviewCard({
           values={(preview.target_site_inventory_missing_fields ?? []).slice(0, 6)}
           empty="brak"
         />
+        <TraceLine label="Gate treści" values={contentDraftGateValues(preview)} empty="brak" />
         <TraceLine
           label="Blockery draftu"
           values={(preview.draft_blockers ?? []).slice(0, 6)}
@@ -1004,6 +1009,7 @@ function contentDraftGenerationStatusLabel(value: string) {
   const labels: Record<string, string> = {
     ready_for_review: "gotowy tylko do review",
     blocked_pending_target_mapping: "zablokowany do mapowania targetu",
+    blocked_pending_canonical_duplicate_review: "zablokowany do canonical i duplikatów",
     blocked_missing_target_inventory: "zablokowany bez inventory targetu",
     blocked_until_content_review: "zablokowany do review treści"
   };
@@ -1087,6 +1093,23 @@ function contentTargetSiteMigrationStatusLabel(value: string) {
     not_applicable: "nie dotyczy"
   };
   return labels[value] ?? value;
+}
+
+function contentDraftGateValues(
+  item: Pick<
+    ContentBriefPreviewItem,
+    | "inventory_gate_status"
+    | "canonical_gate_status"
+    | "duplicate_gate_status"
+    | "content_gate_summary"
+  >
+): string[] {
+  return [
+    item.inventory_gate_status ? `inventory: ${contentGateStatusLabel(item.inventory_gate_status)}` : "",
+    item.canonical_gate_status ? `canonical: ${contentGateStatusLabel(item.canonical_gate_status)}` : "",
+    item.duplicate_gate_status ? `duplikaty: ${contentGateStatusLabel(item.duplicate_gate_status)}` : "",
+    item.content_gate_summary ?? ""
+  ].filter((value) => value.trim().length > 0);
 }
 
 function contentGateStatusLabel(value: string) {
