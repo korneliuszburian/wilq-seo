@@ -362,9 +362,9 @@ Command Center decision:
 - `suspicious`: `/actions` is useful as a registry, but it is still a long
   undifferentiated ActionObject list. Demo path should add/keep a prioritized
   ActionObject focus elsewhere and treat `/actions` as drilldown.
-- `suspicious`: `/knowledge` correctly maps source knowledge to decisions, but
-  many visible card/playbook headings are English. Decide whether these are
-  internal rule IDs or translate display labels for the Polish operator.
+- `ready`: `/knowledge` keeps API IDs/source fields intact but renders
+  card/playbook display headings in Polish for the operator. Proof:
+  `.local-lab/proof/dashboard/route-audit/knowledge-after-polish-labels.txt`.
 - `deferred`: `/settings` is a technical connector/status route and can stay
   technical unless it is promoted into the marketer demo path.
 

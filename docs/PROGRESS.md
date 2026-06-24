@@ -50,13 +50,14 @@ Stan produktu:
   the operator section; measurement issues stay in "PROBLEMY POMIARU GA4" and
   the operator section shows separate quality decisions. Proof:
   focused GA4 route test passed and live
-  `.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`. Remaining
-  cockpit findings: `/actions` is still a long undifferentiated ActionObject
-  registry and should stay drilldown or gain prioritized focus; `/knowledge`
-  has many English card/playbook display headings in a Polish operator UI.
+  `.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`. `/knowledge`
+  now keeps API IDs/source fields intact while rendering card/playbook display
+  headings in Polish; proof:
+  `.local-lab/proof/dashboard/route-audit/knowledge-after-polish-labels.txt`.
+  Remaining cockpit finding: `/actions` is still a long undifferentiated
+  ActionObject registry and should stay drilldown or gain prioritized focus.
   Recorded in `docs/handoffs/dashboard-audit-active-slice.md`. Next checklist
-  item: choose either `/actions` prioritization or `/knowledge` display-label
-  cleanup.
+  item: `/actions` prioritization or explicit drilldown positioning.
 - Pre-demo gate slice completed on 2026-06-24. Added
   `scripts/pre_demo_gate.sh` as the small demo readiness gate for the managed
   local stack. It checks stack status, API health, live contract smoke, shared

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 11:36 CEST.
+Last updated: 2026-06-24 11:43 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -759,11 +759,11 @@ out of the active queue unless fresh API/browser proof reopens them.
      `/settings` from the marketer perspective.
    - Classify cards as keep, rewrite, move to drilldown, delete or suspicious.
      Verification: browser/API proof and targeted route tests only.
-   - Current suspicious findings: `/actions` remains a long undifferentiated
-     ActionObject registry; `/knowledge` exposes many English card/playbook
-     display headings inside a Polish operator UI. `/ga4` duplicate
-     measurement cards were fixed and verified by focused route test plus live
-     `agent-browser` proof.
+   - Current suspicious finding: `/actions` remains a long undifferentiated
+     ActionObject registry. `/ga4` duplicate measurement cards were fixed and
+     verified by focused route test plus live `agent-browser` proof.
+     `/knowledge` now renders Polish card/playbook display headings while
+     keeping API IDs/source fields intact.
 3. **task - content generation usefulness**
    - Harden existing content flow, not a new pipeline:
      evidence pack -> intent/query cluster -> inventory/canonical check ->

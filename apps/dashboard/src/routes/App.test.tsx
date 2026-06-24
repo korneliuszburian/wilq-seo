@@ -6339,7 +6339,10 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText(/local_ranking_rows/)).not.toBeInTheDocument();
     expect(screen.getByText("Powiązania")).toBeInTheDocument();
     expect(screen.getByText("Karty źródłowe")).toBeInTheDocument();
-    expect(screen.getAllByText("Google Ads search diagnostics").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Diagnostyka wyszukiwanych haseł Google Ads").length
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText("Google Ads search diagnostics")).not.toBeInTheDocument();
     expect(screen.getByText("Playbooki maszynowe")).toBeInTheDocument();
     expect(screen.queryByText("Knowledge Cards")).not.toBeInTheDocument();
     expect(screen.queryByText("Machine-Readable Playbooks")).not.toBeInTheDocument();

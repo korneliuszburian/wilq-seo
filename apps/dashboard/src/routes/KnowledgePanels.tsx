@@ -17,9 +17,9 @@ export function KnowledgeCardList({ cards }: { cards: KnowledgeCard[] }) {
         <article key={card.id} className="rounded-md border border-line bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold">{card.title}</h3>
+              <h3 className="text-sm font-semibold">{knowledgeCardDisplayTitle(card)}</h3>
               <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
-                {card.card_type} / {card.source_type}
+                {knowledgeCardTypeLabel(card.card_type)} / {knowledgeSourceTypeLabel(card.source_type)}
               </p>
             </div>
             <StatusBadge value={`confidence ${Math.round(card.confidence * 100)}%`} />
@@ -44,7 +44,7 @@ export function PlaybookList({ playbooks }: { playbooks: MarketingPlaybook[] }) 
     <div className="grid gap-3 xl:grid-cols-2">
       {playbooks.map((playbook) => (
         <article key={playbook.id} className="rounded-md border border-line bg-white p-4">
-          <h3 className="text-sm font-semibold">{playbook.title}</h3>
+          <h3 className="text-sm font-semibold">{playbookDisplayTitle(playbook)}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-700">{playbook.output_contract}</p>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Wymagane dowody: {playbook.required_evidence.slice(0, 4).join(", ")}</div>
@@ -118,3 +118,53 @@ export function KnowledgeOperatingMapPanel({ map }: { map: KnowledgeOperatingMap
 function formatCount(count: number, unit: string) {
   return count > 0 ? `${count} ${unit}` : "brak";
 }
+
+function knowledgeCardDisplayTitle(card: KnowledgeCard) {
+  return KNOWLEDGE_DISPLAY_LABELS[card.source_id] ?? KNOWLEDGE_DISPLAY_LABELS[card.id] ?? card.title;
+}
+
+function playbookDisplayTitle(playbook: MarketingPlaybook) {
+  return KNOWLEDGE_DISPLAY_LABELS[playbook.id] ?? playbook.title;
+}
+
+function knowledgeCardTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    ads_pattern_card: "wzorzec Ads",
+    campaign_card: "kampanie",
+    competitor_card: "konkurencja",
+    content_card: "treści",
+    keyword_cluster_card: "klastry słów",
+    local_visibility_card: "widoczność lokalna",
+    negative_keyword_pattern_card: "wykluczenia",
+    service_card: "feed i usługi",
+    social_pattern_card: "social",
+    voice_rule: "reguła głosu"
+  };
+  return labels[value] ?? value;
+}
+
+function knowledgeSourceTypeLabel(value: string) {
+  const labels: Record<string, string> = {
+    marketing_playbook: "playbook marketingowy",
+    repo_goal: "reguła projektu"
+  };
+  return labels[value] ?? value;
+}
+
+const KNOWLEDGE_DISPLAY_LABELS: Record<string, string> = {
+  card_goal_001_rules: "Zakaz wymyślania metryk",
+  google_ads_search_playbook: "Diagnostyka wyszukiwanych haseł Google Ads",
+  google_ads_budget_review_playbook: "Przegląd budżetów Google Ads",
+  google_ads_demand_gen_playbook: "Gotowość Demand Gen",
+  google_ads_pmax_playbook: "Gotowość PMax i sprzedaży produktowej",
+  google_ads_negative_keywords_playbook: "Przegląd wykluczeń Google Ads",
+  google_ads_custom_segments_playbook: "Segmenty niestandardowe z wyszukiwanych haseł",
+  gsc_seo_content_playbook: "Okazje SEO i content z GSC",
+  ahrefs_content_gap_playbook: "Luki contentowe i konkurencja z Ahrefs",
+  localo_local_seo_playbook: "Widoczność lokalna Localo",
+  ga4_behavior_diagnostics_playbook: "Diagnostyka zachowania GA4",
+  merchant_feed_optimization_playbook: "Diagnostyka feedu Merchant",
+  linkedin_content_playbook: "Publikacje LinkedIn",
+  facebook_content_playbook: "Publikacje Facebook",
+  wordpress_content_refresh_playbook: "Odświeżanie treści WordPress"
+};
