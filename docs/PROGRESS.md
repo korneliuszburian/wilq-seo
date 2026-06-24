@@ -72,8 +72,13 @@ Stan produktu:
   dashboard typecheck passed. Remaining `decision_queue.find(...)` usages in
   Content and Localo are presentational focus/readout helpers, not fake
   ActionObject or decision generation; reopen only with a failing route proof.
-  Remaining domain workflow audit queue: proceed to skill/Codex workflow audit
-  and reference hygiene.
+  Skill/Codex workflow audit checkpoint is current: `docs/evals/skill-coverage-audit.md`
+  records 12/12 WILQ skills with non-interactive eval artifacts, Polish output,
+  WILQ API usage and no safety findings; `scripts/skill_hygiene_check.py`
+  passed with only valid typed-contract references in GA4/Merchant skills.
+  Next checklist item: content-generation pipeline inventory and hardening,
+  starting from existing diagnostics, ActionObject payloads, dashboard content
+  route and content skills instead of rebuilding the pipeline from scratch.
 - Final A-Z dashboard route audit moved forward on 2026-06-24. Current
   checklist item completed: dashboard API-backed smoke for marketer routes.
   Previous suspicious failures were reclassified with current proof:
