@@ -113,7 +113,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("Budżety").first()).toBeVisible();
     await expect(page.getByText("Rekom.").first()).toBeVisible();
     await expect(page.getByText("Zablokowane wnioski i wdrożenia")).toBeVisible();
-    await expect(page.getByText("ActionObjecty").first()).toBeVisible();
+    await expect(page.getByText(/akcj/i).first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Ads" })).toBeVisible();
     await expect(page.getByText("Brakujące kontrakty:").first()).toBeVisible();
     await expect(page.getByText("Konwersje").first()).toBeVisible();
@@ -151,7 +151,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Demand Gen" })).toBeVisible();
     await expect(page.getByText("kampanie Ads")).toBeVisible();
     await expect(page.getByText("Brakujące kontrakty").first()).toBeVisible();
-    await expect(page.getByText("Review-only ActionObject", { exact: true })).toBeVisible();
+    await expect(page.getByText(/review-only akcj|akcj/i).first()).toBeVisible();
     await expect(page.getByText("Podgląd walidacji gotowości Demand Gen")).toBeVisible();
     await expect(page.getByText("rekomendacja launchu Demand Gen").first()).toBeVisible();
     await expect(page.getByText("API-backed operating surface")).toHaveCount(0);
@@ -191,7 +191,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
 
     await expectApiBackedRouteHeading(page, "Content Planner", { exact: true });
     await expect(page.getByRole("heading", { name: "Status SEO / Content" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "ActionObjecty do walidacji" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Akcje do walidacji" })).toBeVisible();
   });
 
   test("action detail route shows validation, evidence and payload preview", async ({ page }) => {
@@ -217,12 +217,12 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText(/Apply nadal: zablokowany/)).toHaveCount(2);
   });
 
-  test("actions route starts with ActionObjects instead of registry dumps", async ({ page }) => {
+  test("actions route starts with actions instead of registry dumps", async ({ page }) => {
     await page.goto("/actions");
 
-    await expectApiBackedRouteHeading(page, "ActionObjecty", { exact: true });
-    await expect(page.getByRole("heading", { name: "Najważniejsze ActionObjecty demo" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Pełna lista ActionObjectów - szczegóły" })).toBeVisible();
+    await expectApiBackedRouteHeading(page, "Akcje do walidacji", { exact: true });
+    await expect(page.getByRole("heading", { name: "Najważniejsze akcje demo" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pełna lista akcji - szczegóły" })).toBeVisible();
     await expect(page.getByText("Do walidacji", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("Odnow Google Ads OAuth refresh token")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "OPPORTUNITIES" })).toHaveCount(0);
@@ -281,7 +281,7 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByText("metryki feedu dostępne")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Wpływ ceny produktu" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "ActionObjecty do walidacji" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Akcje do walidacji" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Przygotuj kolejkę przeglądu feedu Merchant Center" }).first()
     ).toBeVisible();

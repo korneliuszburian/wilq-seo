@@ -174,7 +174,7 @@ export function ConnectorRefreshRunList({ runs }: { runs: ConnectorRefreshRun[] 
 
 export function ActionList({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
-    return <p className="text-sm text-slate-600">Brak ActionObjectów dla tej powierzchni.</p>;
+    return <p className="text-sm text-slate-600">Brak akcji dla tej powierzchni.</p>;
   }
 
   return (

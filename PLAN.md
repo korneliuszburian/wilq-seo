@@ -255,11 +255,12 @@ Skills are operator workflows over WILQ API. They are not the product brain.
 Dashboard is the marketer cockpit. Registry and debug details are allowed only
 after the first decision layer is clear.
 
-- `hardening`: Finish the marketer-facing rename from `ActionObjecty` to
-  action wording across remaining secondary/technical routes, while preserving
-  route names, IDs and technical traceability.
-- `task`: Hide raw payload/debug blocks behind technical toggles where they are
-  not already hidden.
+- `ready`: Marketer-facing action wording now avoids `ActionObjecty` on the
+  core runtime routes and route smoke surfaces while preserving route names,
+  IDs and technical traceability. Fresh proof:
+  `WILQ_E2E_API_PORT=8876 WILQ_E2E_DASHBOARD_PORT=5374 rtk pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`.
+- `ready`: Raw payload debug wording is hidden behind a technical payload
+  toggle on Action detail instead of first-screen debug language.
 - `task`: Keep route cards action-oriented: "what happened", "what to do next",
   "what claim is blocked", "where to click".
 - `task`: Add a core-domain quick switcher or improve Command Center links if
@@ -594,10 +595,11 @@ understanding. Do not do broad visual cleanup.
 
 Candidate fixes:
 
-- Rename marketer-facing nav `ActionObjecty` to a clearer label such as
-  `Akcje do walidacji`, while preserving ActionObject IDs and route names.
-- Hide raw IDs or payload/debug details behind technical drilldowns on first
-  screens.
+- Done 2026-06-24: marketer-facing action labels use `Akcje do walidacji` /
+  action wording in the core route smoke path, while ActionObject IDs and route
+  names remain stable for traceability.
+- Done 2026-06-24: Action detail no longer exposes `Surowy payload debug` copy;
+  payload inspection is a technical toggle.
 - Add clearer CTA copy to core route cards when a marketer cannot tell what to
   click next.
 - Keep Command Center, Merchant, Content Planner, Ads Doctor and GA4 as the

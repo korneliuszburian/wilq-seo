@@ -115,6 +115,11 @@ Stan produktu:
 - Core demo route language hardening continued: Content, Merchant and GA4
   first-screen links/cards now use `akcja/akcje` copy instead of marketer-facing
   `ActionObject` labels. Focused dashboard tests passed.
+- Dashboard action copy hardening is now browser-smoke verified on fresh test
+  ports: `/actions` expects `Akcje do walidacji`, action lists say `akcje`,
+  Action detail uses `Pokaż payload techniczny` instead of raw debug wording,
+  and the API-backed demo path passed 14/14 e2e checks with
+  `WILQ_E2E_API_PORT=8876 WILQ_E2E_DASHBOARD_PORT=5374 rtk pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`.
 
 ## Active Gaps
 
@@ -127,18 +132,19 @@ Stan produktu:
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
-- Dashboard still has marketer-facing technical language in secondary routes,
-  fixtures and technical drilldowns. Change only with browser proof that it
-  blocks demo comprehension.
+- Dashboard may still have technical language in secondary routes, fixtures and
+  deep drilldowns. The core demo route smoke no longer exposes the known
+  `ActionObjecty`/raw-debug blocker; change remaining copy only with browser
+  proof that it blocks demo comprehension.
 
 ## Next Best Queue
 
 1. Run or defer the short marketer UAT script: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record whether the marketer knew
    what to do next and where they got confused.
-2. If demo UX is the next priority, change one confirmed blocker at a time:
-   likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
-   drilldown IDs behind technical details.
+2. If demo UX is the next priority, change one confirmed blocker at a time
+   from browser/UAT evidence. Do not repeat the completed action-copy cleanup
+   unless a fresh route proof finds a remaining marketer-facing leak.
 3. If content depth is next, continue from the existing source/target,
    duplicate/canonical, ActionObject migration status and target-site review
    requirements toward confirmed dev-site inventory mapping and draft/staging

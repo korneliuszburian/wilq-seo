@@ -71,7 +71,7 @@ function ActionDetail({ action }: { action: ActionObject }) {
         <SectionHeading title="Podgląd payloadu" />
         <ActionPayloadPreviewSummary action={action} />
         <details className="rounded-md border border-line bg-slate-50 p-3 text-xs text-slate-700">
-          <summary className="cursor-pointer font-medium text-ink">Surowy payload debug</summary>
+          <summary className="cursor-pointer font-medium text-ink">Pokaż payload techniczny</summary>
           <pre className="mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
             {JSON.stringify(action.payload, null, 2)}
           </pre>
