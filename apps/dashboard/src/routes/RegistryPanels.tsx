@@ -80,7 +80,7 @@ export function OpportunityList({ opportunities }: { opportunities: Opportunity[
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Dowody: {opportunity.evidence_ids.length} ID</div>
             <div>Źródła: {opportunity.source_connectors.map(opportunityConnectorLabel).join(", ")}</div>
-            <div>ActionObjecty: {opportunity.action_ids.length}</div>
+            <div>Akcje: {opportunity.action_ids.length}</div>
             <div>
               Kontrakty wiedzy: {opportunity.expert_rule_ids.length + opportunity.playbook_ids.length}
             </div>

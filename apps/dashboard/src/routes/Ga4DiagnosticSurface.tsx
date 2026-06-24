@@ -576,8 +576,8 @@ function formatGa4EvidenceCount(count: number) {
 
 function formatGa4ActionCount(count: number) {
   if (count === 0) return "brak";
-  if (count === 1) return "1 ActionObject";
-  return `${count} ActionObjecty`;
+  if (count === 1) return "1 akcja";
+  return `${count} akcji`;
 }
 
 function ga4DecisionTypeLabel(decisionType: Ga4DecisionItem["decision_type"]) {

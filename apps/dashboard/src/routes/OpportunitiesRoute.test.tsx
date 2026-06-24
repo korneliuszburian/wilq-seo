@@ -130,7 +130,7 @@ describe("Opportunities route", () => {
     expect(opportunityCard).not.toBeNull();
     const card = within(opportunityCard as HTMLElement);
     expect(card.getByText("Dowody: 1 ID")).toBeInTheDocument();
-    expect(card.getByText("ActionObjecty: 2")).toBeInTheDocument();
+    expect(card.getByText("Akcje: 2")).toBeInTheDocument();
     expect(card.queryByText(/ev_refresh_refresh_google_ads_test/)).not.toBeInTheDocument();
     expect(card.queryByText(/Playbooki:/)).not.toBeInTheDocument();
     expect(screen.queryByText("Rejestr kart opportunities")).not.toBeInTheDocument();
@@ -160,7 +160,7 @@ describe("Opportunities route", () => {
     );
     expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
     expect(screen.getByText("Kolejka decyzji z WILQ API")).toBeInTheDocument();
-    expect(screen.getByText("Powiązane ActionObjecty")).toBeInTheDocument();
+    expect(screen.getByText("Powiązane akcje")).toBeInTheDocument();
     expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
     expect(screen.getAllByText("Ładowanie stanu WILQ API").length).toBeGreaterThan(0);
   });

@@ -99,6 +99,209 @@ Still incomplete:
 - Localo read evidence must not be inflated into tasks, writes or uplift.
 - Full BDOS/agency-grade production remains deferred.
 
+## Completion Definition
+
+This goal is complete only when a requirement-by-requirement audit can prove all
+of the following from the current checkout:
+
+- the local stack is healthy and the core pre-demo gate passes;
+- the dashboard path `Command Center -> Merchant -> Content Planner -> Ads
+  Doctor -> GA4` works from live WILQ API contracts;
+- each core route tells a Polish marketer what to do next without requiring raw
+  JSON, raw IDs or internal model names on the first screen;
+- one content workflow for the new-site context shows source evidence,
+  target context, inventory/canonical/duplicate gates, brief or draft-plan
+  fields, missing evidence, forbidden claims, evidence IDs and source
+  connectors;
+- focused adversarial skill evals prove that Content, Ads, Merchant, GA4 and
+  Localo do not overclaim from partial evidence;
+- any remaining missing contract is labelled as blocked or deferred, not hidden;
+- marketer UAT is captured, or explicitly deferred by the owner with the
+  remaining confusion converted into tasks;
+- this `PLAN.md` and short `docs/PROGRESS.md` identify the exact next item so a
+  future continuation does not repeat completed checks.
+
+Do not mark the goal complete only because tests pass. Test and browser proof
+must support a useful marketer workflow, and unsafe product claims must remain
+blocked.
+
+## Full Task Inventory
+
+Use this inventory to prevent task loss after compaction. Reclassify tasks as
+`ready`, `hardening`, `task`, `blocked`, `deferred_bdos` or `obsolete` before
+touching code. Remove items from the active queue once proof says they are
+ready.
+
+### A. Solid Ekologus Demo Must-Haves
+
+Active demo work is narrow and depth-first.
+
+- `task`: Run or explicitly defer the marketer UAT script. This is the only
+  remaining proof gap between browser/eval readiness and "marketer gets value".
+- `hardening`: Keep `ActionObject`/raw payload/technical ID language out of
+  first-screen marketer copy while preserving traceability in details.
+- `hardening`: Keep Command Center CTAs aligned to the narrow path:
+  `/merchant`, `/content-planner`, `/ads-doctor`, `/ga4`.
+- `ready`: Pre-demo gate passed after current hardening; rerun only after a
+  material API/dashboard/skill slice.
+- `ready`: Content, Ads, Merchant, GA4 and Localo adversarial evals have fresh
+  2026-06-24 proof artifacts.
+
+### B. Content Generation And New-Site Workflow
+
+This is the highest-value product direction after the current demo proof. It
+must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
+
+- `ready`: Content Planner exposes source/target context plus inventory,
+  canonical and duplicate gate fields.
+- `task`: Add a minimal dev-site inventory/read contract for
+  `ekologus.dev.proudsite.pl` that records URL, template/section, title/H1,
+  canonical/status and freshness without treating staging as source demand.
+- `task`: Add old-to-new URL mapping for `ekologus.pl` and `sklep.ekologus.pl`
+  to `ekologus.dev.proudsite.pl`.
+- `task`: Promote the duplicate/canonical gate into the content ActionObject
+  payload and skill eval so `create` is blocked or downgraded when refresh/merge
+  is safer.
+- `task`: Define a publication-quality brief schema with title/meta, H1/H2/FAQ,
+  CTA, internal links, source facts, objection handling, legal/factual
+  validation, missing evidence and forbidden claims.
+- `task`: Add a draft-generation contract that produces reviewable Polish
+  drafts only after the brief passes evidence and duplicate gates. The first
+  implementation should be preview/review-only.
+- `blocked`: WordPress/staging handoff remains blocked until there is a typed
+  staging ActionObject with preview, human confirmation, audit and no automatic
+  publish.
+- `deferred_bdos`: Post-publication measurement loop is after staging handoff:
+  compare GSC/GA4 windows, detect refresh/merge/kill follow-ups and feed the
+  result back into knowledge cards.
+
+### C. Data Contracts Required For Deeper Claims
+
+These are not all demo blockers, but they are why WILQ must not overclaim.
+
+- `task`: Ads target CPA/ROAS and business guardrail confirmation are required
+  before profitability, wasted-budget or scaling verdicts.
+- `task`: Ads change history, pacing windows and recommendation impact checks
+  are required before optimizer language.
+- `blocked`: Keyword Planner/custom segments remain limited by developer-token
+  approval/readiness until the Google Ads read contract is ready.
+- `task`: Merchant product IDs/SKU and unique-product semantics must become a
+  first-class product queue before product-by-product review claims.
+- `task`: Merchant price/performance windows and product joins with Ads/GA4 are
+  required before product ROAS, revenue recovery or price-impact claims.
+- `task`: GA4 conversion/key event mapping and attribution confidence are
+  required before funnel, revenue, ROAS or campaign-quality verdicts.
+- `task`: Localo detailed rankings, GBP, competitor and review facts can inform
+  local review, but local tasks/write/uplift contracts are still separate.
+
+### D. Skills, Evals And Prompt Quality
+
+Skills are operator workflows over WILQ API. They are not the product brain.
+
+- `ready`: The current 12-skill baseline has deterministic smoke/eval coverage
+  and current core-skill adversarial proofs.
+- `task`: Add marketer-style messy prompts to eval cases, not only clean
+  operator prompts. The skill must fetch WILQ API and refuse unsupported claims.
+- `task`: Add decision-quality rubrics that check usefulness, prioritization,
+  blocked-claim handling and safe next steps, not only output shape.
+- `task`: Add a human usefulness rubric after marketer UAT: "Czy wiem co
+  zrobić?", "Czy to oszczędza czas?", "Gdzie copy jest techniczne?".
+- `hardening`: Keep skill references as API usage/output contracts. Any smarter
+  decision must first be added to API/schema/view-model/expert rules and then
+  consumed by the skill.
+- `deferred_bdos`: New skills for full content drafting, campaign building,
+  social publishing and Demand Gen should stay review-only until their data and
+  write contracts are implemented.
+
+### E. Dashboard Product UX
+
+Dashboard is the marketer cockpit. Registry and debug details are allowed only
+after the first decision layer is clear.
+
+- `task`: Finish the marketer-facing rename from `ActionObjecty` to actions on
+  first-screen copy while preserving route names, IDs and technical traceability.
+- `task`: Hide raw payload/debug blocks behind technical toggles where they are
+  not already hidden.
+- `task`: Keep route cards action-oriented: "what happened", "what to do next",
+  "what claim is blocked", "where to click".
+- `task`: Add a core-domain quick switcher or improve Command Center links if
+  marketer UAT shows navigation confusion.
+- `hardening`: Do not redesign the visual system broadly before UAT. Fix one
+  proven blocker at a time.
+- `deferred_bdos`: Split very large dashboard modules after the demo path is
+  stable; do not refactor them just to make line counts smaller during demo
+  hardening.
+
+### F. Knowledge Compiler And Memory Layer
+
+Knowledge must be structured, sourced and freshness-aware before it influences
+recommendations.
+
+- `task`: Add a source registry with source type, owner, URL/path, checked date,
+  confidence and freshness state for official docs, industry sources, Ekologus
+  history and marketer feedback.
+- `task`: Add freshness/confidence lifecycle for knowledge cards so outdated
+  cards lower confidence or become blockers.
+- `task`: Add rule-to-decision lineage tests showing that a decision exposes the
+  knowledge cards, playbooks or expert rules that shaped it.
+- `task`: Add marketer feedback as a knowledge source after UAT and after real
+  review decisions.
+- `deferred_bdos`: External source ingestion, benchmark libraries and broader
+  RAG/vector storage wait until the typed knowledge compiler is useful.
+
+### G. Infrastructure, Security And Productionization
+
+These tasks matter for production but should not steal focus from the Ekologus
+demo unless they block proof.
+
+- `task`: Keep secret handling redacted and never commit `.env`, tokens,
+  credential JSON, redirect codes or raw vendor response bodies.
+- `task`: Keep connector refreshes read-only and persisted with sanitized
+  summaries, freshness, evidence IDs and status.
+- `task`: Add observability for long-running jobs and connector refreshes before
+  production deployment.
+- `deferred_bdos`: Production auth/permissions, account isolation, deployment,
+  monitoring and multi-client operations come after Ekologus works deeply.
+
+### H. Better BDOS / Agency-Grade Backlog
+
+Archive these as real future work, not active demo blockers.
+
+- `deferred_bdos`: Full Ads apply path with SafetyLimits, mutation adapters,
+  rollback/partial-failure handling and audit.
+- `deferred_bdos`: Budget optimizer using confirmed business targets, change
+  history, attribution and impact windows.
+- `deferred_bdos`: Demand Gen builder and creative quality loop.
+- `deferred_bdos`: Social publishing apply path.
+- `deferred_bdos`: Merchant feed write/repair automation and approval recovery.
+- `deferred_bdos`: Localo/GBP write, review response workflow and local uplift
+  measurement.
+- `deferred_bdos`: Multi-client, permissions, production auth, deployment,
+  monitoring and agency operations.
+
+## Quality Control Rules
+
+Use these rules before every implementation slice:
+
+- Search first and read enough context before editing. Prefer existing helpers
+  and contracts over new abstractions.
+- If a task is already ready, mark it ready and move to the next useful risk.
+  Do not rerun the same test unless the touched slice could have regressed it.
+- If a test checks only shape, call it a smoke test. Do not treat it as
+  marketer value proof.
+- If a live metric can change, assert shape, freshness, evidence and blocked
+  claims rather than exact clicks, cost, rank or revenue.
+- For docs-only updates, `rtk git diff --check` is enough unless generated
+  contracts are affected.
+- For dashboard copy/component edits, run the focused route/component test and
+  typecheck only when TS props/contracts changed.
+- For API/schema/action edits, run the smallest affected pytest subset first.
+- For skill/eval edits, run the touched deterministic smoke and targeted
+  `scripts/codex_skill_eval.sh --skill <skill>` when behavior changed.
+- Use browser proof when the claim is UX comprehension or route behavior.
+- Update `PLAN.md` and short `docs/PROGRESS.md` before committing a slice that
+  changes task status.
+
 ## Progress
 
 - [x] Capture external 2nd-opinion synthesis in
@@ -152,6 +355,10 @@ Still incomplete:
   duplicate/canonical gate change.
 - [x] Produce a short marketer UAT script:
   `docs/handoffs/2026-06-24-marketer-uat-script.md`.
+- [x] Start dashboard language hardening by replacing first-screen
+  `ActionObjecty` copy with marketer-facing action wording while preserving
+  technical IDs and routes. Proof:
+  `.local-lab/proof/dashboard/action-labels/actions-route-snapshot.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
@@ -482,4 +689,4 @@ When the full demo goal is complete, add a final retrospective here with:
 
 Use this prompt in a fresh thread if you want a clean continuation:
 
-    /goal Doprowadź WILQ Marketing Operating System do solidnego, uczciwego demo dla marketera Ekologus, zweryfikowanego aktualnym repo, live WILQ API, dashboardem, focused tests, browser proof i skill smokes/evals. Demo ma prowadzić przez Command Center -> Merchant -> Content Planner -> Ads Doctor -> GA4 oraz pokazać jeden mocny content workflow: current Ekologus evidence z ekologus.pl/sklep.ekologus.pl/GSC/GA4/Ahrefs/Ads/Merchant/Localo/WordPress -> target context dla ekologus.dev.proudsite.pl -> inventory/canonical/duplicate gate -> polski brief lub draft plan z source facts, intent, audience, H1/H2/FAQ/CTA, internal links, missing evidence, forbidden claims, evidence IDs, source connectors i review state. Zweryfikuj wynik przez PLAN.md, docs/PROGRESS.md, live API endpoints, browser walkthrough, focused tests i skill eval artifacts, zachowując WILQ API jako mózg systemu. Nie naprawiaj product logic w skill references ani dashboard copy; jeśli decyzja ma być mądrzejsza, dodaj typed API/schema/view-model/expert-rule/eval contract. Nie claimuj pełnego BDOS, Ads optimizera, feed repair, Localo uplift, publish/apply automation, approval recovery, revenue recovery, CPA/ROAS/wasted-budget verdict ani ranking gain bez validated ActionObject, preview, human confirmation, audit i wymaganych source contracts. Po każdym slice sprawdź, czy capability już istnieje, klasyfikuj findings jako ready/hardening/task/blocked/deferred_bdos/obsolete, uruchamiaj najmniejszy sensowny check, zapisuj postęp w PLAN.md i krótkim docs/PROGRESS.md, commituj zielone slice'y. Jeśli zablokowane, zapisz próby, dowody, dokładny blocker, zablokowane claimy i jeden input odblokowujący dalszą pracę; nie oznaczaj celu complete, dopóki requirement-by-requirement audit nie potwierdzi całego demo.
+    /goal Doprowadź WILQ Marketing Operating System do solidnego, uczciwego demo dla marketera Ekologus, zweryfikowanego aktualnym repo, live WILQ API, dashboardem, focused tests, browser proof i skill smokes/evals, używając PLAN.md jako kanonicznego ExecPlanu i docs/PROGRESS.md jako krótkiego recovery ledgeru. Najpierw przeczytaj PLAN.md, docs/PROGRESS.md, docs/CONTEXT.md i git status, potem wybierz następny nieukończony slice z Full Task Inventory zamiast powtarzać skończone testy. Demo ma prowadzić przez Command Center -> Merchant -> Content Planner -> Ads Doctor -> GA4 oraz pokazać jeden mocny content workflow: current Ekologus evidence z ekologus.pl/sklep.ekologus.pl/GSC/GA4/Ahrefs/Ads/Merchant/Localo/WordPress -> target context dla ekologus.dev.proudsite.pl -> inventory/canonical/duplicate gate -> polski brief albo draft plan z source facts, intent, audience, H1/H2/FAQ/CTA, internal links, missing evidence, forbidden claims, evidence IDs, source connectors i review state. Zweryfikuj wynik przez live API endpoints, browser walkthrough, focused tests, skill eval artifacts i requirement-by-requirement audit z Completion Definition w PLAN.md, zachowując WILQ API jako mózg systemu. Nie naprawiaj product logic w skill references ani dashboard copy; jeśli decyzja ma być mądrzejsza, dodaj typed API/schema/view-model/expert-rule/eval contract. Nie claimuj pełnego BDOS, Ads optimizera, feed repair, Localo uplift, publish/apply automation, approval recovery, revenue recovery, CPA/ROAS/wasted-budget verdict ani ranking gain bez validated ActionObject, preview, human confirmation, audit i wymaganych source contracts. Po każdym slice sprawdź, czy capability już istnieje, klasyfikuj findings jako ready/hardening/task/blocked/deferred_bdos/obsolete, uruchamiaj najmniejszy sensowny check, zapisuj postęp w PLAN.md i krótkim docs/PROGRESS.md, commituj zielone slice'y. Jeśli zablokowane, zapisz próby, dowody, dokładny blocker, zablokowane claimy i jeden input odblokowujący dalszą pracę; nie oznaczaj celu complete, dopóki requirement-by-requirement audit nie potwierdzi całego demo albo owner jawnie deferuje brak marketer UAT.

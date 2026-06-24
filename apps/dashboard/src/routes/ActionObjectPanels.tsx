@@ -31,13 +31,13 @@ import { adsBlockedClaimLabel, adsMissingReadContractLabel } from "./marketingLa
 export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
     return (
-      <BlockerNotice message="Brak ActionObject dla tego workflow. WILQ może pokazać evidence, ale nie powinien sugerować wykonania bez payload preview." />
+      <BlockerNotice message="Brak akcji dla tego workflow. WILQ może pokazać evidence, ale nie powinien sugerować wykonania bez payload preview." />
     );
   }
 
   return (
     <section>
-      <SectionHeading title="ActionObjecty do walidacji" />
+      <SectionHeading title="Akcje do walidacji" />
       <div className="grid gap-3 xl:grid-cols-2">
         {actions.map((action) => (
           <article key={action.id} className="rounded-md border border-line bg-white p-4">
@@ -57,7 +57,7 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             </div>
             {action.mode !== "apply" ? (
               <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-wait">
-                Apply zablokowany: ten ActionObject jest w trybie przygotowania.
+                Apply zablokowany: ta akcja jest w trybie przygotowania.
                 Najpierw walidacja, podgląd payloadu i jawna zgoda operatora.
               </div>
             ) : null}
@@ -65,7 +65,7 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             <ActionHumanReviewControls action={action} />
             <ActionPreviewControls action={action} />
             <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-              <LinkedTraceLine label="ActionObject" values={[action.id]} kind="actions" />
+              <LinkedTraceLine label="Akcja" values={[action.id]} kind="actions" />
               <LinkedTraceLine label="Dowody" values={action.evidence_ids} kind="evidence" />
             </div>
             {action.metrics.length > 0 ? <MetricFactChips facts={action.metrics.slice(0, 5)} /> : null}
@@ -154,11 +154,11 @@ function ActionPreviewResultPanel({
 export function ActionObjectIdFocus({ actionIds, note }: { actionIds: string[]; note: string }) {
   return (
     <section>
-      <SectionHeading title="ActionObjecty do walidacji" />
+      <SectionHeading title="Akcje do walidacji" />
       <div className="rounded-md border border-line bg-white p-4 text-sm leading-6 text-slate-700">
         <p>{note}</p>
         <div className="mt-3">
-          <LinkedTraceLine label="ActionObjecty" values={actionIds} kind="actions" empty="brak" />
+          <LinkedTraceLine label="Akcje" values={actionIds} kind="actions" empty="brak" />
         </div>
       </div>
     </section>
@@ -352,7 +352,7 @@ function actionGateLabel(value: string) {
   }
   const labels: Record<string, string> = {
     action_mode_prepare_only: "tryb prepare-only",
-    action_validation_required: "wymagana walidacja ActionObject",
+    action_validation_required: "wymagana walidacja akcji",
     payload_apply_allowed_false: "payload nie pozwala na apply",
     destructive_actions_blocked: "destructive actions zablokowane",
     preview_acknowledgement_required: "wymagane potwierdzenie preview",
@@ -362,7 +362,7 @@ function actionGateLabel(value: string) {
     evidence_ids_required: "wymagane evidence IDs",
     impact_sanity_check_required: "wymagany impact sanity check",
     vendor_mutation_adapter_required: "brak adaptera mutacji vendorowej",
-    validate_action_object: "walidacja ActionObject",
+    validate_action_object: "walidacja akcji",
     human_review_before_apply: "review człowieka przed apply",
     human_confirm_before_apply: "potwierdzenie człowieka przed apply"
   };
@@ -397,7 +397,7 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-600">
-            Walidacja ActionObject
+            Walidacja akcji
           </div>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             Walidacja sprawdza payload, connector, evidence IDs i tryb działania. Nie wykonuje

@@ -92,7 +92,7 @@ export function KnowledgeOperatingMapPanel({ map }: { map: KnowledgeOperatingMap
             <div>Skill: {binding.skill_id ? "dostępny" : "brak"}</div>
             <div>Źródła: {binding.source_connectors.join(", ") || "brak"}</div>
             <div>Dowody: {formatCount(binding.evidence_ids.length, "ID")}</div>
-            <div>ActionObjecty: {formatCount(binding.action_ids.length, "ID")}</div>
+            <div>Akcje: {formatCount(binding.action_ids.length, "ID")}</div>
             <div>Karty wiedzy: {binding.knowledge_card_ids.length}</div>
             <div>Playbooki: {binding.playbook_ids.length}</div>
             <div>Reguły eksperckie: {binding.expert_rule_ids.length}</div>

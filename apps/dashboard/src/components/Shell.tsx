@@ -5,7 +5,7 @@ export const primaryRoutes = [
   { to: "/command-center", label: "Command Center", icon: Activity },
   { to: "/workflows", label: "Workflowy", icon: Boxes },
   { to: "/opportunities", label: "Szanse", icon: AlertTriangle },
-  { to: "/actions", label: "ActionObjecty", icon: ClipboardList },
+  { to: "/actions", label: "Akcje", icon: ClipboardList },
   { to: "/knowledge", label: "Baza wiedzy", icon: Database },
   { to: "/settings", label: "Ustawienia", icon: Settings }
 ];

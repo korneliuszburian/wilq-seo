@@ -104,7 +104,7 @@ export function TacticalQueuePanel({
           <p className="mt-1 text-sm leading-6 text-slate-600">
             {compact
               ? "Skondensowana kolejka decyzji z WILQ API. Duplikaty zapytań i URL-i są zgrupowane; pełny drilldown jest w dedykowanych widokach."
-              : "Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródła, dowody, ActionObjecty i claimy, których WILQ nie wolno dopowiadać."}
+              : "Gotowe taktyki z wymiarowych metric facts. Każda karta pokazuje źródła, dowody, akcje i claimy, których WILQ nie wolno dopowiadać."}
           </p>
           <p className="mt-1 text-xs text-slate-500">{queue.strict_instruction}</p>
         </div>
@@ -152,7 +152,7 @@ function CompactTacticalCard({ group }: { group: CompactTacticalGroup }) {
         <TraceLine label="Dowody" values={[`${group.evidence_ids.length} ID`]} />
         <TraceLine label="Źródła" values={group.source_connectors} />
         <TraceLine
-          label="ActionObjecty"
+          label="Akcje"
           values={group.action_ids.length > 0 ? [`${group.action_ids.length}`] : []}
           empty="brak"
         />

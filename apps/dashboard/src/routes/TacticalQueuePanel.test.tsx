@@ -93,6 +93,6 @@ describe("TacticalQueuePanel", () => {
     expect(scope.queryByText(/act_prepare_content_refresh_queue/)).not.toBeInTheDocument();
     expect(scope.getAllByText("Dowody").length).toBeGreaterThan(0);
     expect(section?.textContent).toContain("2 ID");
-    expect(section?.textContent).toContain("ActionObjecty");
+    expect(section?.textContent).toContain("Akcje");
   });
 });

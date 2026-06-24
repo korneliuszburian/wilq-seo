@@ -55,7 +55,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
           <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok SEO i treści z WILQ API. Łączy zapytania i URL-e z GSC,
-            inventory WordPress i ActionObjecty, żeby marketer wiedział co odświeżyć,
+            inventory WordPress i akcje do walidacji, żeby marketer wiedział co odświeżyć,
             połączyć, utworzyć albo zablokować bez duplikowania treści.
           </p>
         </div>
@@ -303,7 +303,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           values={[formatContentEvidenceCount(preview.evidence_ids.length)]}
           empty="brak"
         />
-        <TraceLine label="ActionObject" values={["1 ActionObject"]} />
+        <TraceLine label="Akcja" values={["1 akcja"]} />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
@@ -412,7 +412,7 @@ function WordPressDraftPayloadPreviewCard({
           values={[formatContentEvidenceCount(preview.evidence_ids.length)]}
           empty="brak"
         />
-        <TraceLine label="ActionObject" values={["1 ActionObject"]} />
+        <TraceLine label="Akcja" values={["1 akcja"]} />
       </div>
     </article>
   );
@@ -755,8 +755,8 @@ function formatContentEvidenceCount(count: number) {
 
 function formatContentActionCount(count: number) {
   if (count === 0) return "brak";
-  if (count === 1) return "1 ActionObject";
-  return `${count} ActionObjecty`;
+  if (count === 1) return "1 akcja";
+  return `${count} akcji`;
 }
 
 function contentDecisionTitle(decision: ContentDecisionItem) {

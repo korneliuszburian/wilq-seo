@@ -58,7 +58,7 @@ export function MerchantDiagnosticSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">Merchant Center</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Dedykowany widok feedu i produktów oparty o Merchant Diagnostics z WILQ API.
-            Pokazuje metryki produktów, kolejkę problemów i bezpieczne ActionObjecty
+            Pokazuje metryki produktów, kolejkę problemów i bezpieczne akcje
             bez surowych dumpów produktów i bez obietnic naprawy feedu.
           </p>
         </div>
@@ -271,7 +271,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
                   ) : null}
                   {cluster.action_id ? (
                     <span className="rounded border border-line bg-white px-2 py-1">
-                      ActionObject: {cluster.action_id}
+                      Akcja: {cluster.action_id}
                     </span>
                   ) : null}
                 </div>
@@ -315,8 +315,8 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
               empty="brak"
             />
             <TraceLine
-              label="ActionObject"
-              values={[formatMerchantIdCount(actionIds.length, "ActionObject", "ActionObjecty")]}
+              label="Akcje"
+              values={[formatMerchantIdCount(actionIds.length, "akcja", "akcji")]}
               empty="brak"
             />
             <TraceLine
@@ -664,9 +664,9 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
           empty="brak"
         />
         <TraceLine
-          label="ActionObject"
+          label="Akcje"
           values={[
-            formatMerchantIdCount(decision.action_ids.length, "ActionObject", "ActionObjecty")
+            formatMerchantIdCount(decision.action_ids.length, "akcja", "akcji")
           ]}
           empty="brak"
         />

@@ -185,12 +185,12 @@ export function DemandGenDiagnosticSurface() {
                 values={previewValidation.map(demandGenContractLabel)}
               />
               <TraceLine
-                label="ActionObjecty"
+                label="Akcje"
                 values={[
                   formatDemandGenIdCount(
                     data.action_ids.length,
-                    "ActionObject",
-                    "ActionObjecty"
+                    "akcja",
+                    "akcji"
                   )
                 ]}
               />

@@ -59,11 +59,11 @@ export function OpportunitiesSurface() {
           {opportunities.isLoading ? <LoadingBand /> : <OpportunityList opportunities={items} />}
         </section>
         <section>
-          <SectionHeading title="Powiązane ActionObjecty" />
+          <SectionHeading title="Powiązane akcje" />
           {actions.isLoading ? (
             <LoadingBand />
           ) : actions.error ? (
-            <InlineErrorState message="Nie udało się pobrać powiązanych ActionObjectów." />
+            <InlineErrorState message="Nie udało się pobrać powiązanych akcji." />
           ) : (
             <ActionList
               actions={(actions.data ?? []).filter(
@@ -113,15 +113,15 @@ export function ActionsSurface() {
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">ActionObjecty</h1>
+          <h1 className="text-2xl font-semibold tracking-normal">Akcje do walidacji</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            ActionObjecty z WILQ API. To jest kolejka bezpiecznych kandydatów działań:
-            każda karta ma dowody, tryb, ryzyko, status walidacji i payload preview.
+            Kolejka bezpiecznych kandydatów działań z WILQ API. Każda karta ma
+            dowody, tryb, ryzyko, status walidacji i podgląd payloadu.
             Apply pozostaje zablokowany bez walidacji, jawnej zgody i audytu.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="ActionObjecty" value={items.length} />
+          <MetricTile label="Akcje" value={items.length} />
           <MetricTile label="Do walidacji" value={needsValidation.length} />
           <MetricTile label="Dowody" value={evidenceIds.size} />
         </div>
@@ -129,7 +129,7 @@ export function ActionsSurface() {
 
       <div className="grid gap-8">
         <section>
-          <SectionHeading title="Najważniejsze ActionObjecty demo" />
+          <SectionHeading title="Najważniejsze akcje demo" />
           <p className="mb-3 max-w-3xl text-sm leading-6 text-slate-600">
             To są pierwsze akcje do pokazania marketerowi: Merchant, Content,
             GA4 i przegląd Ads. Pełna lista zostaje niżej jako szczegóły.
@@ -137,7 +137,7 @@ export function ActionsSurface() {
           <ActionDemoFocus actions={demoFocusActions} />
         </section>
         <section>
-          <SectionHeading title="Pełna lista ActionObjectów - szczegóły" />
+          <SectionHeading title="Pełna lista akcji - szczegóły" />
           <ActionList actions={remainingActions} />
         </section>
       </div>
@@ -155,7 +155,7 @@ function getDemoFocusActions(actions: ActionObject[]) {
 function ActionDemoFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
     return (
-      <BlockerNotice message="Brak priorytetowych ActionObjectów demo w /api/actions. Pełna lista niżej nadal pokazuje dostępne kandydaty review." />
+      <BlockerNotice message="Brak priorytetowych akcji demo w /api/actions. Pełna lista niżej nadal pokazuje dostępne kandydaty review." />
     );
   }
 
@@ -186,7 +186,7 @@ function ActionDemoFocus({ actions }: { actions: ActionObject[] }) {
             params={{ actionId: action.id }}
             className="mt-4 inline-flex min-h-9 items-center rounded-md border border-action bg-white px-3 py-2 text-xs font-medium text-action hover:bg-action/10"
           >
-            Otwórz ActionObject
+            Otwórz akcję
           </Link>
         </article>
       ))}
@@ -226,7 +226,7 @@ export function WorkflowsSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">Workflowy WILQ</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Mapa workflowów operatora oparta o WILQ API. Gotowe workflowy prowadzą do
-            decyzji, dowodów i ActionObjectów; planowane pokazują brakujące kontrakty
+            decyzji, dowodów i akcji; planowane pokazują brakujące kontrakty
             zamiast udawać automatyzację.
           </p>
         </div>
@@ -259,7 +259,7 @@ export function WorkflowsSurface() {
               />
             </article>
             <article className="rounded-md border border-line bg-white p-4 text-sm text-slate-700">
-              <h3 className="font-semibold text-ink">ActionObjecty z workflowów</h3>
+              <h3 className="font-semibold text-ink">Akcje z workflowów</h3>
               <LinkedTraceLine
                 label="Akcje"
                 values={[...workflowActionIds].slice(0, 12)}
@@ -270,7 +270,7 @@ export function WorkflowsSurface() {
           </div>
         </section>
         <section>
-          <SectionHeading title="Powiązane ActionObjecty" />
+          <SectionHeading title="Powiązane akcje" />
           <ActionList
             actions={(actions.data ?? []).filter((action) => workflowActionIds.has(action.id))}
           />

@@ -16,7 +16,7 @@ export function ActionPayloadPreviewToggle({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
-            Payload ActionObject
+            Payload techniczny
           </div>
           <p className="mt-1 text-xs leading-5 text-slate-600">
             {intro} Klucze: {payloadKeys.slice(0, 5).join(", ") || "brak"}
@@ -28,7 +28,7 @@ export function ActionPayloadPreviewToggle({
           onClick={() => setShowPayload((current) => !current)}
           className="rounded-md border border-line bg-white px-3 py-2 text-xs font-medium text-ink hover:bg-slate-100"
         >
-          {showPayload ? "Ukryj payload ActionObject" : "Pokaż payload ActionObject"}
+          {showPayload ? "Ukryj payload techniczny" : "Pokaż payload techniczny"}
         </button>
       </div>
       {showPayload ? (

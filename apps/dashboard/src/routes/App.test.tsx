@@ -6115,13 +6115,13 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
   });
 
-  it("actions route starts from ActionObjects instead of registry dumps", async () => {
+  it("actions route starts from marketer-facing actions instead of registry dumps", async () => {
     renderApp("/actions");
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "ActionObjecty" })).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "Akcje do walidacji" })).toBeInTheDocument()
     );
-    expect(screen.getByText("Najważniejsze ActionObjecty demo")).toBeInTheDocument();
-    expect(screen.getByText("Pełna lista ActionObjectów - szczegóły")).toBeInTheDocument();
+    expect(screen.getByText("Najważniejsze akcje demo")).toBeInTheDocument();
+    expect(screen.getByText("Pełna lista akcji - szczegóły")).toBeInTheDocument();
     expect(screen.getByText(/pierwsze akcje do pokazania marketerowi/i)).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")).toBeInTheDocument();
     expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument();
@@ -6129,8 +6129,8 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Dowody powiązane z akcjami")).not.toBeInTheDocument();
     expect(screen.getByText("Do walidacji")).toBeInTheDocument();
     expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Otwórz ActionObject" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("button", { name: "Pokaż payload ActionObject" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Pokaż payload techniczny" }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Dowody: 1 ID").length).toBeGreaterThan(0);
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
@@ -6472,14 +6472,14 @@ describe("WILQ dashboard", () => {
     expect(merchantProof.getByText(/Przykładowe dowody/)).toBeInTheDocument();
     expect(screen.getByText("Łącznie dowodów")).toBeInTheDocument();
     expect(merchantProof.queryByText(/ev_refresh_merchant_safety/)).not.toBeInTheDocument();
-    expect(screen.getByText("ActionObjecty do walidacji")).toBeInTheDocument();
+    expect(screen.getByText("Akcje do walidacji")).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
     ).toBeInTheDocument();
     expect(screen.getByText(/Apply zablokowany/)).toBeInTheDocument();
     expect(screen.getByText("Warunki przeglądu")).toBeInTheDocument();
     expect(screen.getByText("czeka na walidację")).toBeInTheDocument();
-    expect(screen.getByText(/wymagana walidacja ActionObject/)).toBeInTheDocument();
+    expect(screen.getByText(/wymagana walidacja akcji/)).toBeInTheDocument();
     expect(screen.getByText(/payload nie pozwala na apply/)).toBeInTheDocument();
     expect(screen.getByText("Ostatni mutation audit")).toBeInTheDocument();
     expect(screen.getByText(/Mutation blocked before any vendor API call/)).toBeInTheDocument();

@@ -70,6 +70,10 @@ Stan produktu:
 - Short marketer UAT script is ready at
   `docs/handoffs/2026-06-24-marketer-uat-script.md`; real marketer feedback is
   not collected yet.
+- Dashboard action language hardening started: `/actions` now shows
+  marketer-facing `Akcje`, `Akcje do walidacji`, `Otwórz akcję` and
+  `Pokaż payload techniczny` while preserving technical route/API IDs. Proof:
+  `.local-lab/proof/dashboard/action-labels/actions-route-snapshot.txt`.
 
 ## Active Gaps
 
