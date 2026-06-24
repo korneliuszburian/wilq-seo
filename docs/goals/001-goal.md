@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:37 CEST.
+Last updated: 2026-06-24 04:44 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -69,6 +69,11 @@ GSC/WordPress confirmation fields and no uplift/ranking claims; remaining
 Ahrefs work is freshness and stronger cross-source scoring, not raw gap
 visibility. Command Center daily content metric facts use the same reviewable
 Ahrefs filter, so off-topic raw gaps do not leak onto the first screen.
+Daily runtime now passes preloaded metric facts into Marketing Brief instead
+of making the brief repeat its own metric-store read after Command Center has
+already built the daily base. Focused proof: daily runtime API contract test,
+ruff, mypy and live warm-cache checks for `/api/dashboard/command-center`,
+`/api/marketing/brief` and `/api/marketing/tactical-queue`.
 
 ## Current Stack Map
 
@@ -409,6 +414,9 @@ Finish these before claiming the Ekologus demo is done:
      confusion.
    - Performance work should target shared daily view-model/cache and route
      split points that reduce repeated heavy aggregation.
+   - Current daily runtime already shares Command Center and Marketing Brief
+     inputs. Next performance work should be based on fresh latency proof and
+     should not recreate a second cache layer.
    - `App.tsx` shell has been reduced, but large route modules still exist.
    - Do not spend time on aesthetic refactors. Extract only when a file blocks
      product velocity, focused tests, browser QA or reviewability.

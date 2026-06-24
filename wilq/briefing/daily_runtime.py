@@ -183,6 +183,7 @@ def build_daily_marketing_brief(
         refresh_runs=base.refresh_runs,
         actions=base.actions,
         command_center=command_center,
+        metric_facts_by_connector=base.command_center_facts_by_connector,
     )
     if use_cache:
         _write_daily_marketing_brief_cache(brief)

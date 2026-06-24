@@ -220,7 +220,13 @@ Stan produktu:
   Daily decisions now expose canonical `decision_state`, and dashboard badges
   use it directly instead of reconstructing ready/stale/blocked state. Live
   smoke on 2026-06-24 returned Merchant/Ads `ready`, Content `stale` and GA4
-  `blocked`; scoped daily-command context-pack preserved the same states.
+  `blocked`; scoped daily-command context-pack preserved the same states. Daily
+  runtime now reuses the preloaded metric facts for Marketing Brief instead of
+  making the brief repeat its own metric-store read after Command Center built
+  the daily base. Focused live proof after stack restart: cold
+  `/api/marketing/brief` returned 200, then warm-cache checks for
+  `/api/dashboard/command-center`, `/api/marketing/brief` and
+  `/api/marketing/tactical-queue` returned in single-digit milliseconds.
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.

@@ -82,10 +82,14 @@ def build_marketing_brief(
     refresh_runs: list[ConnectorRefreshRun] | None = None,
     actions: list[ActionObject] | None = None,
     command_center: CommandCenterResponse | None = None,
+    metric_facts_by_connector: dict[str, list[MetricFact]] | None = None,
 ) -> MarketingBrief:
     connectors = connectors if connectors is not None else list_connector_statuses()
     refresh_runs = refresh_runs if refresh_runs is not None else list_connector_refresh_runs()
-    metric_facts = _marketing_brief_metric_facts(connectors)
+    metric_facts = _marketing_brief_metric_facts(
+        connectors,
+        metric_facts_by_connector=metric_facts_by_connector,
+    )
     actions = actions if actions is not None else list_actions()
     latest_runs = _latest_run_by_connector(refresh_runs)
     latest_runs = _prefer_successful_localo_access_probe(latest_runs, refresh_runs)
@@ -178,7 +182,19 @@ def build_marketing_brief(
     )
 
 
-def _marketing_brief_metric_facts(connectors: list[ConnectorStatus]) -> list[MetricFact]:
+def _marketing_brief_metric_facts(
+    connectors: list[ConnectorStatus],
+    *,
+    metric_facts_by_connector: dict[str, list[MetricFact]] | None = None,
+) -> list[MetricFact]:
+    if metric_facts_by_connector is not None:
+        return [
+            fact
+            for connector in connectors
+            for fact in metric_facts_by_connector.get(connector.id, [])[
+                :MARKETING_BRIEF_CONNECTOR_FACT_LIMIT
+            ]
+        ]
     facts_by_connector = metric_store().list_metric_facts_by_connector(
         [connector.id for connector in connectors],
         limit_per_connector=MARKETING_BRIEF_CONNECTOR_FACT_LIMIT,

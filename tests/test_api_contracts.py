@@ -13476,6 +13476,24 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
         strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
         items=[],
     )
+    metric_fact = MetricFact(
+        name="issue_product_count",
+        value=3,
+        period="connector_refresh",
+        source_connector="google_merchant_center",
+        evidence_id="ev_merchant",
+    )
+    facts_by_connector = {"google_merchant_center": [metric_fact]}
+
+    class FakeMetricStore:
+        def list_latest_metric_facts_by_connector_limits(
+            self,
+            limits: dict[str, int],
+        ) -> dict[str, list[MetricFact]]:
+            seen["metric_fact_limits"] = limits
+            return facts_by_connector
+
+    monkeypatch.setattr(daily_runtime, "metric_store", lambda: FakeMetricStore())
     command = CommandCenterResponse(
         strict_instruction="WILQ pokazuje tylko metryki z API/evidence.",
         primary_next_step="Przejrzyj Merchant.",
@@ -13520,11 +13538,13 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
         refresh_runs: list[ConnectorRefreshRun] | None = None,
         actions: list[ActionObject] | None = None,
         command_center: CommandCenterResponse | None = None,
+        metric_facts_by_connector: dict[str, list[MetricFact]] | None = None,
     ) -> MarketingBrief:
         seen["brief_connectors"] = connectors
         seen["brief_refresh_runs"] = refresh_runs
         seen["brief_actions"] = actions
         seen["brief_command_center"] = command_center
+        seen["brief_metric_facts_by_connector"] = metric_facts_by_connector
         return brief
 
     monkeypatch.setattr(daily_runtime, "build_command_center_response", command_builder)
@@ -13541,11 +13561,13 @@ def test_daily_runtime_reuses_preloaded_daily_inputs(
     assert seen["command_connectors"] == [connector]
     assert seen["command_tactical_queue"] == tactical_queue
     assert seen["command_actions"] == [action]
+    assert seen["command_facts_by_connector"] == facts_by_connector
     assert seen["command_refresh_runs"] == [refresh_run]
     assert seen["brief_connectors"] == [connector]
     assert seen["brief_refresh_runs"] == [refresh_run]
     assert seen["brief_actions"] == [action]
     assert seen["brief_command_center"] == command
+    assert seen["brief_metric_facts_by_connector"] == facts_by_connector
 
 
 def test_daily_command_center_does_not_build_marketing_brief(
