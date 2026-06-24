@@ -25,6 +25,41 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-24 - wilq-content-strategist target-site boundary eval case
+
+Purpose:
+
+- Harden the content strategist eval against a likely demo failure: treating
+  `ekologus.dev.proudsite.pl` as source evidence instead of target context for
+  adaptation.
+- Require the content path to mention source/target URLs, target-site
+  adaptation state, inventory/canonical/duplicate checks and blocked publish/
+  ranking/lead/revenue claims.
+
+Change:
+
+- `docs/evals/cases/wilq-skill-eval-cases.json` now asks the content skill to
+  treat `ekologus.dev.proudsite.pl` as target context only and adds expected
+  terms for `source_url`, `target_site_url`,
+  `target_site_adaptation_status`, `canonical` and `duplicate`.
+- The same case now blocks `ekologus.dev.proudsite.pl source evidence`,
+  `WordPress publish`, `duplicate-free guarantee`, `ranking guarantee`,
+  `lead uplift` and `revenue impact` as recommendation claims unless they are
+  explicitly handled as blocked.
+
+Proof:
+
+```bash
+uv run python -m json.tool docs/evals/cases/wilq-skill-eval-cases.json >/dev/null
+uv run pytest tests/test_codex_skill_eval_cases.py -k route_specific_codex_eval_cases_define_surface_markers
+```
+
+Outcome:
+
+- Focused JSON and contract tests passed.
+- This is an adversarial eval-contract slice; the full non-interactive Codex
+  eval was not rerun because no skill/API behavior changed.
+
 ## 2026-06-24 - wilq-content-strategist H1/H2/FAQ decision-quality eval
 
 Purpose:

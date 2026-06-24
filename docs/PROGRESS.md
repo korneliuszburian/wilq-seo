@@ -85,8 +85,11 @@ Stan produktu:
   found contract/output guidance rather than workaround prose, and the eval
   harness requires `decision_quality`. Content strategist proof now includes
   `content_brief_preview_v1`, H1/H2/FAQ fields and non-interactive eval score 5.
-  Reopen this area only with a concrete skill that passes while making a bad or
-  unsupported decision.
+  The content eval case now also guards the new-site boundary:
+  `ekologus.dev.proudsite.pl` must be treated as target context, not source
+  evidence, and publish/ranking/lead/revenue/duplicate-free claims stay blocked
+  without validated write/apply evidence. Reopen this area only with a concrete
+  skill that passes while making a bad or unsupported decision.
 
 ## Active Gaps
 
@@ -97,8 +100,9 @@ Stan produktu:
    - Current status: content decisions and ActionObject previews expose useful
      source/target and H1/H2/FAQ/CTA/source-fact fields, but full staging
      handoff, publishing and post-publication measurement remain deferred.
-   - Next risk to test: whether a new-site target case can be reviewed without
-     treating the dev site as source evidence or creating duplicate SEO content.
+   - Next risk to test: whether live content diagnostics and non-interactive
+     skill output satisfy the new target-site eval contract, not just the static
+     case definition.
 
 2. **Marketer UAT and route usefulness**
    - Browser proof shows the narrow demo path is usable, but no real marketer
@@ -135,7 +139,8 @@ Stan produktu:
 ## Next Best Queue
 
 1. Run one adversarial eval slice for overclaims that matters to the demo:
-   Content new-site target-not-source, Ads no CPA/ROAS without targets, Merchant
+   either execute the updated content target-site case through non-interactive
+   Codex, or pick Ads no CPA/ROAS without targets, Merchant
    occurrences-not-unique-products, GA4 `(not set)` measurement blocker or
    Localo access-not-ranking. Pick the smallest one with current proof.
 2. If demo UX is the next priority, change only one confirmed blocker at a time:

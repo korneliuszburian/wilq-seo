@@ -222,7 +222,7 @@
   {
     "skill": "wilq-content-strategist",
     "surface_path": "/content-planner",
-    "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników. Użyj content_diagnostics.decision_queue z WILQ API, w tym inventory_check_before_create, merge_create_after_inventory_check albo block_as_tracking_not_content, gdy API je zwraca.",
+    "task_pl": "Zbuduj krótki plan contentowy z dostępnych evidence IDs i inventory boundaries, bez duplikowania treści i bez ogólników. Użyj content_diagnostics.decision_queue z WILQ API, w tym inventory_check_before_create, merge_create_after_inventory_check albo block_as_tracking_not_content, gdy API je zwraca. Jeśli pojawia się ekologus.dev.proudsite.pl, traktuj go jako target context/adaptation target, nie jako źródło historycznej skuteczności; pokaż source_url, target_site_url, target_site_adaptation_status, inventory/canonical/duplicate check oraz zablokuj claimy publish/ranking/lead uplift bez validated write/apply evidence.",
     "expected_connectors": [
       "google_search_console",
       "google_analytics_4",
@@ -255,6 +255,13 @@
       "h1_direction",
       "h2_direction",
       "faq_direction",
+      "source_url",
+      "target_site_url",
+      "target_site_adaptation_status",
+      "ekologus.dev.proudsite.pl",
+      "target context",
+      "canonical",
+      "duplicate",
       "source_facts",
       "missing_evidence",
       "forbidden_claims",
@@ -263,7 +270,16 @@
       "block_as_tracking_not_content"
     ],
     "expected_action_ids": ["act_prepare_content_refresh_queue"],
-    "expected_validated_action_ids": ["act_prepare_content_refresh_queue"]
+    "expected_validated_action_ids": ["act_prepare_content_refresh_queue"],
+    "expected_blocked": false,
+    "blocked_claim_terms": [
+      "ekologus.dev.proudsite.pl source evidence",
+      "WordPress publish",
+      "duplicate-free guarantee",
+      "ranking guarantee",
+      "lead uplift",
+      "revenue impact"
+    ]
   },
   {
     "skill": "wilq-social-publisher",

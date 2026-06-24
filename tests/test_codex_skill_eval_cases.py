@@ -191,6 +191,13 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "h1_direction",
                 "h2_direction",
                 "faq_direction",
+                "source_url",
+                "target_site_url",
+                "target_site_adaptation_status",
+                "ekologus.dev.proudsite.pl",
+                "target context",
+                "canonical",
+                "duplicate",
                 "source_facts",
                 "missing_evidence",
                 "forbidden_claims",
@@ -347,11 +354,28 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "h1_direction",
         "h2_direction",
         "faq_direction",
+        "source_url",
+        "target_site_url",
+        "target_site_adaptation_status",
+        "ekologus.dev.proudsite.pl",
+        "target context",
+        "canonical",
+        "duplicate",
         "source_facts",
         "missing_evidence",
         "forbidden_claims",
     ):
         assert term in content_case["expected_terms_pl"]
+    assert content_case["expected_blocked"] is False
+    for term in (
+        "ekologus.dev.proudsite.pl source evidence",
+        "WordPress publish",
+        "duplicate-free guarantee",
+        "ranking guarantee",
+        "lead uplift",
+        "revenue impact",
+    ):
+        assert term in content_case["blocked_claim_terms"]
     assert set(content_case["required_source_connectors"]) <= set(
         content_case["expected_connectors"]
     )
