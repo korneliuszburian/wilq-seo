@@ -168,6 +168,10 @@ Active demo work is narrow and depth-first.
   contracts, dashboard API-backed route smoke 13/13 and core skill smokes.
 - `ready`: Content, Ads, Merchant, GA4 and Localo adversarial evals have fresh
   2026-06-24 proof artifacts.
+- `ready`: The content strategist eval case now requires the current
+  `operator_summary.target_site_migration_map`, mapping-review status, next
+  required gate and blocked staging/ranking outputs. This prevents the eval
+  from passing with only the older generic target-site context wording.
 
 ### B. Content Generation And New-Site Workflow
 
@@ -670,6 +674,11 @@ Use these rules before every implementation slice:
   `.local-lab/proof/dashboard/content-migration-map-summary/content-planner-body.txt`
   and
   `.local-lab/proof/dashboard/content-migration-map-summary/content-strategist-smoke.json`.
+- [x] Harden the `wilq-content-strategist` eval case so it requires the current
+  target-site migration map, mapping-review gates and blocked staging/ranking
+  outputs. Proof: `rtk uv run python -m json.tool
+  docs/evals/cases/wilq-skill-eval-cases.json >/dev/null` and
+  `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
