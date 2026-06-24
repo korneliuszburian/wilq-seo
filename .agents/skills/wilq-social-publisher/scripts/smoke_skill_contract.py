@@ -99,7 +99,11 @@ def main() -> int:
         raise SystemExit("Social draft context must be review_only")
     if social_draft_context.get("publish_allowed") is not False:
         raise SystemExit("Social draft context must keep publish_allowed=false")
-    if not social_draft_context.get("candidate_inputs"):
+    candidate_inputs = social_draft_context.get("candidate_inputs") or []
+    draft_action_ids = set(social_draft_context.get("draft_action_ids") or [])
+    pack_action_ids = {str(item.get("id")) for item in (pack.get("active_action_objects") or [])}
+    active_social_action_ids = CORE_SOCIAL_ACTION_IDS & pack_action_ids
+    if (draft_action_ids or active_social_action_ids) and not candidate_inputs:
         raise SystemExit("Social draft context must expose candidate_inputs")
     if not social_draft_context.get("missing_publish_permissions"):
         raise SystemExit("Social draft context must expose missing publish permissions")
