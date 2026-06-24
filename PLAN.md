@@ -127,6 +127,14 @@ Still incomplete:
   not as full product queue, validated `act_review_merchant_feed_issues` and
   blocked product ROAS, product revenue recovery, price change impact, approval
   restored and feed write claims.
+- [x] Verify GA4 measurement-boundary eval proof. Proof:
+  `.local-lab/evals/codex-skill/20260624T132845Z/wilq-ga4-analyst/result.json`;
+  passed with `operator_usefulness_score=5`, `fix_measurement` for `(not set)`
+  rows, explicit "do not judge campaign/page" handling, validated
+  `act_review_ga4_tracking_quality`, no invented `review_landing_mapping` item
+  when API did not return it, and blocked GA4 write, ROAS, attribution verdict,
+  conversion drop, conversion rate, profitability, revenue and tracking fixed
+  claims.
 - [x] Add or verify a target-site duplicate/canonical gate for content. Proof:
   API decisions now expose `inventory_gate_status`, `canonical_gate_status`,
   `duplicate_gate_status` and `content_gate_summary`; browser snapshot
@@ -425,6 +433,10 @@ unless explicitly promoted:
 - The 2026-06-24 Merchant eval passed with usefulness score 5 on live API. It
   proves safe feed issue review wording and count semantics, not product-level
   performance, approval recovery, price impact, revenue recovery or feed write
+  readiness.
+- The 2026-06-24 GA4 eval passed with usefulness score 5 on live API. It proves
+  measurement-vs-traffic-quality separation, not GA4 write, tracking repair,
+  attribution verdict, ROAS, revenue, profitability or conversion-drop
   readiness.
 
 ## Decision Log

@@ -5527,3 +5527,56 @@ Product finding:
   revenue recovery, product ROAS, price impact or feed write readiness; those
   remain dependent on product-level contracts, performance windows, write/apply
   validation and audit.
+
+## 2026-06-24 - wilq-ga4-analyst measurement boundary proof
+
+Purpose:
+
+- Re-verify GA4 Analyst against the current live API after the latest demo and
+  eval slices.
+- Prove that `(not set)` rows remain measurement/attribution blockers, not
+  campaign or page quality verdicts, while GA4 write, ROAS, attribution verdict,
+  conversion drop, conversion rate, profitability, revenue and tracking fixed
+  claims stay blocked.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-ga4-analyst/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ga4-analyst --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T132845Z/wilq-ga4-analyst/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `operator_usefulness_score=5`
+- `source_connectors=["google_analytics_4","wordpress_ekologus"]`
+- Evidence IDs include current GA4 refresh evidence and WordPress context:
+  `ev_refresh_refresh_google_analytics_4_42dfb0741e79`,
+  `ev_refresh_refresh_google_analytics_4_33a4b3fda0db` and
+  `ev_refresh_refresh_wordpress_ekologus_f6640ce71a13`.
+- Recommendations treat `(not set)` rows as `fix_measurement` with
+  `status=blocked` and explicitly say not to judge campaign or page quality
+  from those rows.
+- Recommendations use `review_traffic_quality` only where API returned it and
+  do not invent a `review_landing_mapping` decision when
+  `ga4_diagnostics.decision_queue` did not return one.
+- Validated review-only action: `act_review_ga4_tracking_quality`.
+- Blocked claims include GA4 write, ROAS, attribution verdict, conversion drop,
+  conversion rate, conversion setup applied, funnel diagnosis, profitability,
+  revenue and tracking fixed.
+- `decision_quality` booleans all passed and `safety_findings=[]`.
+
+Product finding:
+
+- GA4 Analyst is current-demo useful as a measurement and traffic-quality review
+  tool. This does not unlock GA4 write, tracking repair, attribution verdicts,
+  ROAS, revenue, profitability or conversion-drop readiness.

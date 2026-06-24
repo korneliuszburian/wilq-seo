@@ -69,6 +69,16 @@ Stan produktu:
   queue and blocked claims for product ROAS, product revenue recovery, price
   change impact, approval restored and feed write. This proves Merchant review
   safety, not feed repair/apply readiness.
+- GA4 measurement-boundary eval was verified through real non-interactive Codex
+  on 2026-06-24. Proof:
+  `.local-lab/evals/codex-skill/20260624T132845Z/wilq-ga4-analyst/result.json`.
+  Result passed with `operator_usefulness_score=5`, live GA4 evidence,
+  `fix_measurement` for `(not set)` rows, explicit campaign/page judgment block,
+  validated `act_review_ga4_tracking_quality`, no invented
+  `review_landing_mapping` decision when API did not return one and blocked
+  claims for GA4 write, ROAS, attribution verdict, conversion drop, conversion
+  rate, profitability, revenue and tracking fixed. This proves GA4 review
+  safety, not write/tracking-repair/performance verdict readiness.
 - Content duplicate/canonical gate slice completed on 2026-06-24. Content
   decisions now expose `inventory_gate_status`, `canonical_gate_status`,
   `duplicate_gate_status` and `content_gate_summary`; `/content-planner` renders
