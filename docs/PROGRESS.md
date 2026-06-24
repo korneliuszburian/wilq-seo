@@ -294,6 +294,12 @@ Stan produktu:
   API health, live contract smoke, shared live schemas, dashboard route smoke
   13/13 and core skill smokes. Proof:
   `.local-lab/proof/pre-demo-gate-after-command-center-staging-action.txt`.
+- Simulated browser walkthrough of the core marketer path found that Command
+  Center, Content, Merchant and GA4 now read as usable review-first surfaces.
+  Ads Doctor is useful but still the densest route and may need a prioritized
+  "start here" strip or action-card collapse before real marketer UAT. This is
+  not a replacement for human marketer feedback. Proof:
+  `.local-lab/proof/marketer-walkthrough/summary.md`.
 
 ## Active Gaps
 
@@ -320,14 +326,17 @@ Stan produktu:
 1. Run or defer the short marketer UAT script: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record whether the marketer knew
    what to do next and where they got confused.
-2. If demo UX is the next priority, change one confirmed blocker at a time
+2. If demo UX is the next priority, verify whether Ads Doctor's dense action
+   list confuses the marketer. If yes, add a prioritized "start here" strip or
+   collapse lower-priority action cards.
+3. If demo UX is the next priority, change one confirmed blocker at a time
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.
-3. If content depth is next, continue from audited mapping, draft-readiness and
+4. If content depth is next, continue from audited mapping, draft-readiness and
    blocked staging-handoff previews plus the review-only staging draft
    ActionObject toward a complete per-URL migration map or post-publication
    measurement design. Do not unlock staging, publish or uplift claims without
    typed preview, human confirmation and audit.
-4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
+5. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

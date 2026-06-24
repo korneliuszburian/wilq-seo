@@ -349,6 +349,12 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   budget after staging action exposure by compacting latest audit events to
   trace fields and recording `evidence_summaries_limit=40`. Proof:
   `.local-lab/proof/command-center-staging-action/daily-context-pack-budget.json`.
+- `hardening`: Simulated browser walkthrough says Command Center, Content,
+  Merchant and GA4 are usable review-first surfaces. Ads Doctor is still the
+  densest core route and should be checked with the real marketer before
+  spending time on more polish; likely fix is a prioritized "start here" strip
+  or collapsed lower-priority action cards. Proof:
+  `.local-lab/proof/marketer-walkthrough/summary.md`.
 - `deferred_bdos`: Post-publication measurement loop is after staging handoff:
   compare GSC/GA4 windows, detect refresh/merge/kill follow-ups and feed the
   result back into knowledge cards.
