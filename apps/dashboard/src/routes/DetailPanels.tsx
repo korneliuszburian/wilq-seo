@@ -647,6 +647,9 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>Cel briefu: {stringValue(item.brief_goal, "brak")}</div>
         <div>Kąt treści: {stringValue(item.content_angle, "brak")}</div>
         <div>Odbiorca: {stringValue(item.audience, "brak")}</div>
+        <div>H1: {stringValue(item.h1_direction, "brak")}</div>
+        <div>H2: {asStringArray(item.h2_direction).slice(0, 4).join(", ") || "brak"}</div>
+        <div>FAQ: {asStringArray(item.faq_direction).slice(0, 4).join(", ") || "brak"}</div>
         <div>CTA: {stringValue(item.cta_direction, "brak")}</div>
         <div>Strona docelowa: {contentTargetSiteValue(item)}</div>
         <div>Obiekcje: {asStringArray(item.key_objections).slice(0, 3).join(", ") || "brak"}</div>

@@ -2748,6 +2748,9 @@ def _compact_content_brief_preview_for_context(
         "content_angle",
         "audience",
         "key_objections",
+        "h1_direction",
+        "h2_direction",
+        "faq_direction",
         "cta_direction",
         "internal_link_direction",
         "source_facts",
@@ -2766,6 +2769,8 @@ def _compact_content_brief_preview_for_context(
             compact_item = {key: item[key] for key in keep_keys if key in item}
             for key, limit in (
                 ("key_objections", 3),
+                ("h2_direction", 4),
+                ("faq_direction", 4),
                 ("internal_link_direction", 3),
                 ("source_facts", 4),
                 ("missing_evidence", 3),

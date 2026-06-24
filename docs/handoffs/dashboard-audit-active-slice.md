@@ -366,6 +366,10 @@ Command Center decision:
 - `ready`: `/knowledge` keeps API IDs/source fields intact but renders
   card/playbook display headings in Polish for the operator. Proof:
   `.local-lab/proof/dashboard/route-audit/knowledge-after-polish-labels.txt`.
+- `ready`: `/content-planner` content brief cards expose writer-useful H1, H2,
+  FAQ and CTA direction from the same `content_brief_preview_v1` ActionObject
+  payload that `wilq-content-strategist` receives through context-pack. Proof:
+  `.local-lab/proof/dashboard/route-audit/content-brief-h1-h2-faq.txt`.
 - `deferred`: `/settings` is a technical connector/status route and can stay
   technical unless it is promoted into the marketer demo path.
 

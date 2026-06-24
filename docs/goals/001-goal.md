@@ -764,18 +764,24 @@ out of the active queue unless fresh API/browser proof reopens them.
      with focused route tests plus live `agent-browser` proof. `/actions` now
      starts with prioritized demo ActionObjects and keeps the long list as
      lower-page details. Reopen only with fresh route proof.
-3. **task - content generation usefulness**
-   - Harden existing content flow, not a new pipeline:
+3. **ready - content generation usefulness**
+   - Existing content flow is hardened, not rebuilt:
      evidence pack -> intent/query cluster -> inventory/canonical check ->
      brief -> draft/rewrite preview -> review ActionObject.
-   - Verify `/api/content/diagnostics`, `/api/marketing/tactical-queue`,
-     content route, Action Detail and `wilq-content-strategist` /
-     `wilq-gsc-content-doctor` agree on the same decisions.
-4. **task - target-site adaptation**
-   - Use `http://ekologus.dev.proudsite.pl/` only as target context after the
-     content flow remains stable.
-   - Keep current `ekologus.pl`, `sklep.ekologus.pl` and first-party evidence
-     as source truth. Do not invent target-page claims.
+   - Current proof: `content_brief_preview_v1` includes angle, audience,
+     objections, H1, H2, FAQ, CTA, internal links, source facts, missing
+     evidence and forbidden claims; `/api/content/diagnostics`,
+     `/api/marketing/tactical-queue`, content route, Action Detail and
+     `wilq-content-strategist` use the same `act_prepare_content_refresh_queue`
+     path. Reopen only if those fields disappear or decisions diverge.
+4. **ready - target-site adaptation**
+   - `http://ekologus.dev.proudsite.pl/` is target context only. Current
+     `ekologus.pl`, `sklep.ekologus.pl` and first-party evidence remain source
+     truth.
+   - Typed target fields already exist in content brief and WordPress draft
+     previews: source URL/host, target URL/host, adaptation status and review
+     state. Reopen only if dev-site URLs are treated as independent source
+     evidence or target fields disappear.
 5. **task - decision-quality evals**
    - Upgrade skill evals from format/evidence checks to concrete useful
      decision checks for Ads, Merchant, Content, GA4, Localo, Ahrefs and social.

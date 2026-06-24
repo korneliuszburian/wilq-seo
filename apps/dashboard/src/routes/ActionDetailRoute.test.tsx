@@ -685,6 +685,9 @@ const contentActionFixture: ActionObject = {
           "Najpierw potwierdź kanoniczną stronę BDO, potem przygotuj brief bez obietnic pozycji.",
         audience: "Przedsiębiorca sprawdzający obowiązki BDO.",
         key_objections: ["czy istnieje już kanoniczny URL", "czy intencja wymaga checklisty"],
+        h1_direction: "H1 ma jasno odpowiedzieć na intencję `bdo co to`.",
+        h2_direction: ["czym jest BDO", "obowiązki przedsiębiorcy", "najczęstsze ryzyka"],
+        faq_direction: ["Co to jest BDO?", "Kto musi mieć BDO?"],
         cta_direction: "CTA do konsultacji obowiązków BDO bez obietnicy uniknięcia kar.",
         source_facts: ["GSC page=/bdo-co-musi-wiedziec-przedsiebiorca/", "clicks=4"],
         missing_evidence: ["brak potwierdzonego kanonicznego URL w WordPress"],
@@ -1124,6 +1127,9 @@ describe("Action detail route", () => {
     expect(screen.getAllByText(/Opcje: merge, create, block/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kąt treści: Najpierw potwierdź kanoniczną stronę BDO/)).toBeInTheDocument();
     expect(screen.getByText(/Odbiorca: Przedsiębiorca sprawdzający obowiązki BDO/)).toBeInTheDocument();
+    expect(screen.getByText(/H1: H1 ma jasno odpowiedzieć na intencję `bdo co to`/)).toBeInTheDocument();
+    expect(screen.getByText(/H2: czym jest BDO, obowiązki przedsiębiorcy/)).toBeInTheDocument();
+    expect(screen.getByText(/FAQ: Co to jest BDO\?, Kto musi mieć BDO\?/)).toBeInTheDocument();
     expect(screen.getByText(/Brakujące dowody: brak potwierdzonego kanonicznego URL/)).toBeInTheDocument();
     expect(screen.getAllByText(/Walidacje: wordpress_inventory_check/).length).toBeGreaterThan(0);
     expect(screen.getByText("Draft WordPress do review")).toBeInTheDocument();

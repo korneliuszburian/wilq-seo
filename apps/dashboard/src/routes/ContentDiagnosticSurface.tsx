@@ -158,6 +158,9 @@ type ContentBriefPreviewItem = {
   content_angle?: string | null;
   audience?: string | null;
   key_objections?: string[];
+  h1_direction?: string | null;
+  h2_direction?: string[];
+  faq_direction?: string[];
   cta_direction?: string | null;
   internal_link_direction?: string[];
   source_facts?: string[];
@@ -260,6 +263,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
       <div className="mt-3 grid gap-2 rounded-md border border-line bg-white p-3 text-xs leading-5 text-slate-600">
         {preview.content_angle ? <div>Kąt treści: {preview.content_angle}</div> : null}
         {preview.audience ? <div>Odbiorca: {preview.audience}</div> : null}
+        {preview.h1_direction ? <div>H1: {preview.h1_direction}</div> : null}
         {preview.cta_direction ? <div>CTA: {preview.cta_direction}</div> : null}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -273,6 +277,8 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Obiekcje" values={(preview.key_objections ?? []).slice(0, 3)} />
+        <TraceLine label="H2" values={(preview.h2_direction ?? []).slice(0, 4)} />
+        <TraceLine label="FAQ" values={(preview.faq_direction ?? []).slice(0, 4)} />
         <TraceLine
           label="Strona docelowa"
           values={contentTargetSiteValues(preview)}

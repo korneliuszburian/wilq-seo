@@ -222,7 +222,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
     .map((decisionId) => decisionsById.get(decisionId))
     .filter(
       (decision): decision is Ga4DecisionItem =>
-        Boolean(decision) && decision.decision_type !== "fix_measurement"
+        decision !== undefined && decision.decision_type !== "fix_measurement"
     );
   const conversionReadiness = data.conversion_readiness_contract;
   const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");

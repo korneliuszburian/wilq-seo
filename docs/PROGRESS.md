@@ -41,6 +41,22 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Content generation usefulness moved to current-demo ready on 2026-06-24.
+  Existing typed flow was hardened instead of rebuilt: content ActionObject
+  `content_brief_preview_v1` now includes `h1_direction`, `h2_direction` and
+  `faq_direction` beside angle, audience, objections, CTA, source facts,
+  missing evidence and forbidden claims. The skill-scoped context-pack
+  compactor now preserves those fields, so `wilq-content-strategist` sees the
+  same brief shape as the dashboard. Focused proof: content brief API contract
+  subset 2 passed, content route test passed, Action Detail content preview
+  test passed, live content ActionObject/context-pack returned H1/H2/FAQ, the
+  content strategist smoke passed after a sequential warm run, tactical queue
+  exposes content refresh items with `act_prepare_content_refresh_queue`, and
+  browser proof saved H1/H2/FAQ visibility in
+  `.local-lab/proof/dashboard/route-audit/content-brief-h1-h2-faq.txt`. Next
+  checklist item: decision-quality evals; do not rebuild the content pipeline
+  unless a current API/dashboard/skill proof loses the same fields or diverges
+  on decisions.
 - Marketer cockpit route sweep started on 2026-06-24 with `agent-browser`
   snapshots saved under `.local-lab/proof/dashboard/route-audit/`. Fresh reruns
   reclassified first nav-only snapshots for `/command-center`, `/actions` and

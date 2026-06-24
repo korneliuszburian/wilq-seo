@@ -200,6 +200,9 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "content_angle": _content_angle(primary_query, wordpress_match),
                 "audience": _content_audience(primary_query),
                 "key_objections": _key_objections(primary_query),
+                "h1_direction": _h1_direction(primary_query, wordpress_match),
+                "h2_direction": _h2_direction(primary_query),
+                "faq_direction": _faq_direction(primary_query),
                 "cta_direction": _cta_direction(primary_query),
                 "internal_link_direction": _internal_link_direction(primary_query),
                 "source_facts": _gsc_source_facts(page, page_facts, wordpress_match),
@@ -383,6 +386,9 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "content_angle": _ahrefs_content_angle(topic),
                 "audience": _content_audience(topic),
                 "key_objections": _key_objections(topic),
+                "h1_direction": _h1_direction(topic, False),
+                "h2_direction": _h2_direction(topic),
+                "faq_direction": _faq_direction(topic),
                 "cta_direction": _cta_direction(topic),
                 "internal_link_direction": _internal_link_direction(topic),
                 "source_facts": _ahrefs_source_facts(fact, topic),
@@ -521,6 +527,52 @@ def _key_objections(topic: str) -> list[str]:
     else:
         objections.append("czy intencja jest edukacyjna, zakupowa czy konsultacyjna")
     return objections
+
+
+def _h1_direction(topic: str, wordpress_match: bool) -> str:
+    if wordpress_match:
+        return f"H1 powinien jasno odpowiadać na intencję `{topic}` i nie sugerować nowej, osobnej strony."
+    return f"H1 roboczy dla `{topic}` dopiero po potwierdzeniu kanonicznego URL i braku duplikatu."
+
+
+def _h2_direction(topic: str) -> list[str]:
+    normalized = _normalize_text(topic)
+    sections = [
+        f"krótka odpowiedź: czym jest `{topic}`",
+        "co firma powinna sprawdzić przed decyzją",
+        "kiedy warto porozmawiać z ekspertem Ekologus",
+    ]
+    if "bdo" in normalized:
+        sections.insert(1, "obowiązki BDO przedsiębiorcy w praktyce")
+        sections.insert(2, "najczęstsze błędy i ryzyka formalne")
+    elif "zielony lad" in normalized or "esg" in normalized:
+        sections.insert(1, "wpływ regulacji na przedsiębiorstwo")
+        sections.insert(2, "co zmienia się w obowiązkach środowiskowych")
+    elif "odpad" in normalized or "beczk" in normalized or "sorbent" in normalized:
+        sections.insert(1, "bezpieczny proces magazynowania lub obsługi")
+        sections.insert(2, "dobór rozwiązania do ryzyka i miejsca pracy")
+    return sections
+
+
+def _faq_direction(topic: str) -> list[str]:
+    normalized = _normalize_text(topic)
+    if "bdo" in normalized:
+        return [
+            "Co to jest BDO?",
+            "Kto musi mieć wpis do BDO?",
+            "Kiedy warto skonsultować obowiązki BDO z ekspertem?",
+        ]
+    if "zielony lad" in normalized or "esg" in normalized:
+        return [
+            "Co oznacza Zielony Ład dla firmy?",
+            "Jakie obowiązki środowiskowe warto sprawdzić?",
+            "Czy Ekologus może pomóc w ocenie wpływu regulacji?",
+        ]
+    return [
+        f"Co oznacza `{topic}` dla firmy?",
+        "Jakie informacje trzeba potwierdzić przed wdrożeniem?",
+        "Kiedy warto skontaktować się z Ekologus?",
+    ]
 
 
 def _cta_direction(topic: str) -> str:
