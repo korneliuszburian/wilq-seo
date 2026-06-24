@@ -60,6 +60,15 @@ Stan produktu:
   search-term waste, wasted budget, budget scaling, recommendation apply,
   targeting/apply and negative keyword apply. This proves Ads review guidance,
   not optimizer/apply readiness.
+- Merchant occurrences-not-unique-products eval was verified through real
+  non-interactive Codex on 2026-06-24. Proof:
+  `.local-lab/evals/codex-skill/20260624T132303Z/wilq-merchant-feed-operator/result.json`.
+  Result passed with `operator_usefulness_score=5`, live Merchant/Ads evidence,
+  `decision_queue` as the final review queue, explicit
+  `reported_issue_occurrences` semantics, samples not treated as a full SKU
+  queue and blocked claims for product ROAS, product revenue recovery, price
+  change impact, approval restored and feed write. This proves Merchant review
+  safety, not feed repair/apply readiness.
 - Content duplicate/canonical gate slice completed on 2026-06-24. Content
   decisions now expose `inventory_gate_status`, `canonical_gate_status`,
   `duplicate_gate_status` and `content_gate_summary`; `/content-planner` renders

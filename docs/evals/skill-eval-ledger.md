@@ -5475,3 +5475,55 @@ Product finding:
   unlock optimizer/apply readiness: target CPA/ROAS, human strategy review,
   change-impact windows, Keyword Planner enrichment, apply/audit contracts and
   mutation safety remain blockers.
+
+## 2026-06-24 - wilq-merchant-feed-operator occurrence semantics proof
+
+Purpose:
+
+- Re-verify Merchant Feed Operator against the current live API after content
+  gate and demo-proof slices.
+- Prove that Merchant reported issue occurrences are not presented as unique
+  products/SKU, while product ROAS, product revenue recovery, price change
+  impact, approval restored and feed write stay blocked.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T132303Z/wilq-merchant-feed-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `operator_usefulness_score=5`
+- `source_connectors=["google_merchant_center","google_ads"]`
+- Evidence IDs include current Merchant and Ads refresh evidence:
+  `ev_refresh_refresh_google_merchant_center_6dbd43a93f93`,
+  `ev_refresh_refresh_google_ads_0562765671b2` and
+  `ev_refresh_refresh_google_ads_6a60cd137224`.
+- Recommendations require `decision_queue` as the final review queue and
+  treat `issue_clusters` as reporting drilldown.
+- Recommendations state that `count_semantics=reported_issue_occurrences` is
+  not a unique product count, and that `sample_product_ids` are only samples,
+  not a full SKU/product queue.
+- Validated review-only action: `act_review_merchant_feed_issues`.
+- Blocked claims include product ROAS, product revenue recovery, price change
+  impact, approval restored and feed write.
+- `decision_quality` booleans all passed and `safety_findings=[]`.
+
+Product finding:
+
+- Merchant Feed Operator is current-demo useful as a review-only feed issue
+  triage path. This does not unlock feed repair, approval recovery, product
+  revenue recovery, product ROAS, price impact or feed write readiness; those
+  remain dependent on product-level contracts, performance windows, write/apply
+  validation and audit.

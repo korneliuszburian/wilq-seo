@@ -120,6 +120,13 @@ Still incomplete:
   passed with `operator_usefulness_score=5`, validated review-only Ads
   ActionObjects and blocked CPA/ROAS/wasted-budget/budget-scaling/
   recommendation-apply/targeting-apply/negative-keyword-apply claims.
+- [x] Verify Merchant occurrences-not-unique-products eval proof. Proof:
+  `.local-lab/evals/codex-skill/20260624T132303Z/wilq-merchant-feed-operator/result.json`;
+  passed with `operator_usefulness_score=5`, `decision_queue` as the final
+  review queue, `reported_issue_occurrences` not as unique products/SKU, samples
+  not as full product queue, validated `act_review_merchant_feed_issues` and
+  blocked product ROAS, product revenue recovery, price change impact, approval
+  restored and feed write claims.
 - [x] Add or verify a target-site duplicate/canonical gate for content. Proof:
   API decisions now expose `inventory_gate_status`, `canonical_gate_status`,
   `duplicate_gate_status` and `content_gate_summary`; browser snapshot
@@ -415,6 +422,10 @@ unless explicitly promoted:
 - The 2026-06-24 Ads Doctor eval passed with usefulness score 5 on live API.
   It proves review-only Ads guidance and overclaim blocking, not optimizer or
   apply readiness.
+- The 2026-06-24 Merchant eval passed with usefulness score 5 on live API. It
+  proves safe feed issue review wording and count semantics, not product-level
+  performance, approval recovery, price impact, revenue recovery or feed write
+  readiness.
 
 ## Decision Log
 
