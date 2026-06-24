@@ -6117,10 +6117,16 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { name: "ActionObjecty" })).toBeInTheDocument()
     );
-    expect(screen.getByText("ActionObjecty do przeglądu")).toBeInTheDocument();
+    expect(screen.getByText("Najważniejsze ActionObjecty demo")).toBeInTheDocument();
+    expect(screen.getByText("Pełna lista ActionObjectów - szczegóły")).toBeInTheDocument();
+    expect(screen.getByText(/pierwsze akcje do pokazania marketerowi/i)).toBeInTheDocument();
+    expect(screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")).toBeInTheDocument();
+    expect(screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")).toBeInTheDocument();
+    expect(screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")).toBeInTheDocument();
     expect(screen.queryByText("Dowody powiązane z akcjami")).not.toBeInTheDocument();
     expect(screen.getByText("Do walidacji")).toBeInTheDocument();
     expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Otwórz ActionObject" }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: "Pokaż payload ActionObject" }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Dowody: 1 ID").length).toBeGreaterThan(0);

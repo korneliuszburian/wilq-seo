@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 
 import {
+  type ActionObject,
   getActions,
   getEvidence,
   getOpportunities,
@@ -8,9 +10,18 @@ import {
   getWorkflows
 } from "../lib/api";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine } from "../components/TraceLine";
 import { ActionList, EvidenceList, OpportunityList } from "./RegistryPanels";
 import { WorkflowRegistryList, WorkflowRunList } from "./WorkflowPanels";
+
+const DEMO_ACTION_PRIORITY = [
+  "act_review_merchant_feed_issues",
+  "act_prepare_content_refresh_queue",
+  "act_review_ga4_tracking_quality",
+  "act_prepare_ads_campaign_review_queue",
+  "act_prepare_negative_keyword_review_queue"
+];
 
 export function OpportunitiesSurface() {
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: getOpportunities });
@@ -93,6 +104,10 @@ export function ActionsSurface() {
   const needsValidation = items.filter(
     (action) => action.validation_status !== "valid"
   );
+  const demoFocusActions = getDemoFocusActions(items);
+  const remainingActions = items.filter(
+    (action) => !demoFocusActions.some((focusAction) => focusAction.id === action.id)
+  );
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
@@ -114,11 +129,68 @@ export function ActionsSurface() {
 
       <div className="grid gap-8">
         <section>
-          <SectionHeading title="ActionObjecty do przeglądu" />
-          <ActionList actions={items} />
+          <SectionHeading title="Najważniejsze ActionObjecty demo" />
+          <p className="mb-3 max-w-3xl text-sm leading-6 text-slate-600">
+            To są pierwsze akcje do pokazania marketerowi: Merchant, Content,
+            GA4 i przegląd Ads. Pełna lista zostaje niżej jako szczegóły.
+          </p>
+          <ActionDemoFocus actions={demoFocusActions} />
+        </section>
+        <section>
+          <SectionHeading title="Pełna lista ActionObjectów - szczegóły" />
+          <ActionList actions={remainingActions} />
         </section>
       </div>
     </main>
+  );
+}
+
+function getDemoFocusActions(actions: ActionObject[]) {
+  const byId = new Map(actions.map((action) => [action.id, action]));
+  return DEMO_ACTION_PRIORITY.map((id) => byId.get(id)).filter(
+    (action): action is ActionObject => Boolean(action)
+  );
+}
+
+function ActionDemoFocus({ actions }: { actions: ActionObject[] }) {
+  if (actions.length === 0) {
+    return (
+      <BlockerNotice message="Brak priorytetowych ActionObjectów demo w /api/actions. Pełna lista niżej nadal pokazuje dostępne kandydaty review." />
+    );
+  }
+
+  return (
+    <div className="grid gap-3 xl:grid-cols-2">
+      {actions.map((action) => (
+        <article key={action.id} className="rounded-md border border-action/30 bg-action/5 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">{action.title}</h3>
+              <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                {action.domain} / {action.connector} / {action.mode}
+              </p>
+            </div>
+            <StatusBadge value={action.validation_status} />
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">{action.recommended_reason}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <StatusBadge value={action.status} />
+            <StatusBadge value={action.risk} />
+          </div>
+          <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+            <LinkedTraceLine label="Dowody" values={action.evidence_ids.slice(0, 4)} kind="evidence" />
+            <div>Metryki: {action.metrics.length}</div>
+          </div>
+          <Link
+            to="/actions/$actionId"
+            params={{ actionId: action.id }}
+            className="mt-4 inline-flex min-h-9 items-center rounded-md border border-action bg-white px-3 py-2 text-xs font-medium text-action hover:bg-action/10"
+          >
+            Otwórz ActionObject
+          </Link>
+        </article>
+      ))}
+    </div>
   );
 }
 

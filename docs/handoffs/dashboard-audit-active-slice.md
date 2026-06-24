@@ -1,6 +1,6 @@
 # Dashboard Audit Active Slice
 
-Last updated: 2026-06-18.
+Last updated: 2026-06-24.
 
 This file preserves the active dashboard audit while Goal 001 is open. Keep it
 updated when new route evidence is collected or a problem is fixed.
@@ -359,9 +359,10 @@ Command Center decision:
   cards in the operator section. Measurement issues stay in "PROBLEMY POMIARU
   GA4"; the operator section shows separate quality decisions. Proof:
   `.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`.
-- `suspicious`: `/actions` is useful as a registry, but it is still a long
-  undifferentiated ActionObject list. Demo path should add/keep a prioritized
-  ActionObject focus elsewhere and treat `/actions` as drilldown.
+- `ready`: `/actions` now starts with "Najważniejsze ActionObjecty demo" for
+  Merchant, Content, GA4 and Ads review, then keeps the rest under "Pełna lista
+  ActionObjectów - szczegóły". Proof:
+  `.local-lab/proof/dashboard/route-audit/actions-after-priority.txt`.
 - `ready`: `/knowledge` keeps API IDs/source fields intact but renders
   card/playbook display headings in Polish for the operator. Proof:
   `.local-lab/proof/dashboard/route-audit/knowledge-after-polish-labels.txt`.

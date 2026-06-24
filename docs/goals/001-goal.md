@@ -753,17 +753,17 @@ out of the active queue unless fresh API/browser proof reopens them.
      and sequential WILQ skill smokes.
    - Next action only if it regresses: fix the failing step, not the whole
      testing strategy.
-2. **task - marketer cockpit audit**
+2. **ready - marketer cockpit audit**
    - Review `/command-center`, `/ads-doctor`, `/merchant`, `/content-planner`,
      `/ga4`, `/localo`, `/actions`, `/opportunities`, `/knowledge` and
      `/settings` from the marketer perspective.
    - Classify cards as keep, rewrite, move to drilldown, delete or suspicious.
      Verification: browser/API proof and targeted route tests only.
-   - Current suspicious finding: `/actions` remains a long undifferentiated
-     ActionObject registry. `/ga4` duplicate measurement cards were fixed and
-     verified by focused route test plus live `agent-browser` proof.
-     `/knowledge` now renders Polish card/playbook display headings while
-     keeping API IDs/source fields intact.
+   - Current status: `/ga4` duplicate measurement cards, `/knowledge` English
+     card/playbook labels and `/actions` undifferentiated registry were fixed
+     with focused route tests plus live `agent-browser` proof. `/actions` now
+     starts with prioritized demo ActionObjects and keeps the long list as
+     lower-page details. Reopen only with fresh route proof.
 3. **task - content generation usefulness**
    - Harden existing content flow, not a new pipeline:
      evidence pack -> intent/query cluster -> inventory/canonical check ->

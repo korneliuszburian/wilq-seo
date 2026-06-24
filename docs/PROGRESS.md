@@ -44,20 +44,20 @@ Stan produktu:
 - Marketer cockpit route sweep started on 2026-06-24 with `agent-browser`
   snapshots saved under `.local-lab/proof/dashboard/route-audit/`. Fresh reruns
   reclassified first nav-only snapshots for `/command-center`, `/actions` and
-  `/settings` as collection/session artifacts, not blank routes. Current
-  findings are product-level. Fixed the smallest confirmed route issue:
-  `/ga4` no longer repeats the same `(not set)` measurement problem cards in
-  the operator section; measurement issues stay in "PROBLEMY POMIARU GA4" and
-  the operator section shows separate quality decisions. Proof:
-  focused GA4 route test passed and live
-  `.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`. `/knowledge`
-  now keeps API IDs/source fields intact while rendering card/playbook display
-  headings in Polish; proof:
-  `.local-lab/proof/dashboard/route-audit/knowledge-after-polish-labels.txt`.
-  Remaining cockpit finding: `/actions` is still a long undifferentiated
-  ActionObject registry and should stay drilldown or gain prioritized focus.
-  Recorded in `docs/handoffs/dashboard-audit-active-slice.md`. Next checklist
-  item: `/actions` prioritization or explicit drilldown positioning.
+  `/settings` as collection/session artifacts, not blank routes. Confirmed
+  route issues are now fixed with focused proof: `/ga4` no longer repeats the
+  same `(not set)` measurement cards in the operator section
+  (`.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`);
+  `/knowledge` renders Polish card/playbook display headings while keeping API
+  IDs/source fields intact
+  (`.local-lab/proof/dashboard/route-audit/knowledge-after-polish-labels.txt`);
+  `/actions` now starts with "Najważniejsze ActionObjecty demo" for Merchant,
+  Content, GA4 and Ads review, then moves the rest into "Pełna lista
+  ActionObjectów - szczegóły"
+  (`.local-lab/proof/dashboard/route-audit/actions-after-priority.txt`).
+  Focused `/actions` route test passed. Next checklist item: content
+  generation usefulness; do not reopen route audit unless fresh browser/API
+  proof shows a regression.
 - Pre-demo gate slice completed on 2026-06-24. Added
   `scripts/pre_demo_gate.sh` as the small demo readiness gate for the managed
   local stack. It checks stack status, API health, live contract smoke, shared
