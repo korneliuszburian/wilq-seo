@@ -25,6 +25,45 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-24 - wilq-content-strategist H1/H2/FAQ decision-quality eval
+
+Purpose:
+
+- Close the weak-green eval gap where content expected terms could be satisfied
+  by mentioning missing markers instead of using the actual brief preview.
+- Make the content strategist eval prove writer-useful `content_brief_preview_v1`
+  fields: H1 direction, H2 direction and FAQ direction.
+
+Change:
+
+- `wilq-content-strategist` deterministic smoke now emits
+  `content_brief_preview_type=content_brief_preview_v1` and a compact
+  `content_brief_preview` summary with `h1_direction`, `h2_direction`,
+  `faq_direction`, source facts, missing evidence, forbidden claims and
+  evidence IDs.
+- `docs/evals/cases/wilq-skill-eval-cases.json` and
+  `tests/test_codex_skill_eval_cases.py` require those terms for the content
+  strategist decision-quality path.
+
+Proof:
+
+```bash
+uv run python -m json.tool docs/evals/cases/wilq-skill-eval-cases.json >/dev/null
+uv run pytest tests/test_codex_skill_eval_cases.py -q -k 'route_specific_codex_eval_cases_define_surface_markers or route_specific_skill_smokes_expose_marketing_brief_items or codex_skill_eval_harness_validates_route_markers or codex_skill_eval_schema_requires_decision_quality'
+uv run ruff check .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Outcome:
+
+- Focused tests, smoke and non-interactive Codex eval passed.
+- New artifact:
+  `.local-lab/evals/codex-skill/20260624T103515Z/wilq-content-strategist/result.json`.
+- Result score was 5 with concrete recommendations for BDO and Zielony Ład,
+  validated `act_prepare_content_refresh_queue`, `content_brief_preview_v1`,
+  H1/H2/FAQ direction and safe review-only next step.
+
 ## 2026-06-24 - diagnostics-first skill reference cleanup
 
 Purpose:

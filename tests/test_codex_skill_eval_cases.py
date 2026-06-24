@@ -188,6 +188,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "content_angle",
                 "audience",
                 "key_objections",
+                "h1_direction",
+                "h2_direction",
+                "faq_direction",
                 "source_facts",
                 "missing_evidence",
                 "forbidden_claims",
@@ -341,6 +344,9 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         "content_angle",
         "audience",
         "key_objections",
+        "h1_direction",
+        "h2_direction",
+        "faq_direction",
         "source_facts",
         "missing_evidence",
         "forbidden_claims",
@@ -579,6 +585,18 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
             )
             assert content_validation_call in content_smoke_script
             assert '"action_validations": action_validations' in content_smoke_script
+        if skill == "wilq-content-strategist":
+            assert '"content_brief_preview_type": "content_brief_preview_v1"' in (
+                content_smoke_script
+            )
+            assert '"content_brief_preview": content_brief_preview' in content_smoke_script
+            assert '"h1_direction": preview.get("h1_direction")' in content_smoke_script
+            assert '"h2_direction": (preview.get("h2_direction") or [])[:4]' in (
+                content_smoke_script
+            )
+            assert '"faq_direction": (preview.get("faq_direction") or [])[:4]' in (
+                content_smoke_script
+            )
 
     ahrefs_skill_doc = Path(".agents/skills/wilq-ahrefs-gap-finder/SKILL.md").read_text(
         encoding="utf-8"

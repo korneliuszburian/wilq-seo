@@ -89,7 +89,7 @@ def main() -> int:
     require_content_preview = bool(
         content_diagnostics.get("live_data_available") and decision_queue
     )
-    validate_content_action_preview(
+    content_brief_preview = validate_content_action_preview(
         pack.get("active_action_objects"),
         require_preview=require_content_preview,
     )
@@ -174,6 +174,8 @@ def main() -> int:
                     ],
                     "evidence_ids": content_diagnostics.get("evidence_ids", [])[:20],
                     "action_ids": content_diagnostics.get("action_ids", []),
+                    "content_brief_preview_type": "content_brief_preview_v1",
+                    "content_brief_preview": content_brief_preview,
                     "tactical_item_ids": [
                         item.get("id")
                         for section in content_diagnostics.get("sections", [])
@@ -257,7 +259,7 @@ def validate_content_action_preview(
     active_actions: Any,
     *,
     require_preview: bool,
-) -> None:
+) -> list[dict[str, Any]]:
     if not isinstance(active_actions, list):
         raise SystemExit("Context pack active_action_objects must be a list")
     content_action = next(
@@ -275,7 +277,7 @@ def validate_content_action_preview(
         raise SystemExit("Content ActionObject payload must be an object")
     previews = payload.get("content_brief_preview")
     if not require_preview and previews is None:
-        return
+        return []
     if not isinstance(previews, list) or not previews:
         raise SystemExit("Content ActionObject lacks content_brief_preview")
     if int(payload.get("content_brief_preview_included") or 0) <= 0:
@@ -337,6 +339,24 @@ def validate_content_action_preview(
                     raise SystemExit(f"GSC content brief preview lacks {field}")
         if gsc_preview.get("target_site_url") == "[REDACTED]":
             raise SystemExit("GSC content brief target_site_url must not be redacted")
+    return [
+        {
+            "topic": preview.get("topic"),
+            "source_type": preview.get("source_type"),
+            "content_angle": preview.get("content_angle"),
+            "audience": preview.get("audience"),
+            "h1_direction": preview.get("h1_direction"),
+            "h2_direction": (preview.get("h2_direction") or [])[:4],
+            "faq_direction": (preview.get("faq_direction") or [])[:4],
+            "cta_direction": preview.get("cta_direction"),
+            "source_facts": (preview.get("source_facts") or [])[:4],
+            "missing_evidence": (preview.get("missing_evidence") or [])[:3],
+            "forbidden_claims": (preview.get("forbidden_claims") or [])[:6],
+            "evidence_ids": (preview.get("evidence_ids") or [])[:5],
+        }
+        for preview in previews[:3]
+        if isinstance(preview, dict)
+    ]
 
 
 def decision_trace(value: Any) -> list[dict[str, Any]]:

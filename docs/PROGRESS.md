@@ -41,6 +41,20 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Decision-quality evals moved to current-demo ready on 2026-06-24. The eval
+  schema/harness already required `decision_quality` across skills; this slice
+  tightened `wilq-content-strategist` so content eval proof now includes
+  `content_brief_preview_v1`, `h1_direction`, `h2_direction` and
+  `faq_direction` from deterministic smoke output instead of accepting a marker
+  mention. Focused proof: JSON case validates, targeted
+  `tests/test_codex_skill_eval_cases.py` subset passed, ruff passed, content
+  strategist smoke prints H1/H2/FAQ and `content_brief_preview_type`, and
+  non-interactive eval passed at
+  `.local-lab/evals/codex-skill/20260624T103515Z/wilq-content-strategist/result.json`
+  with operator_usefulness_score=5. Next checklist item: semantic skill
+  references; reopen decision-quality only if a skill eval passes without a
+  concrete workflow decision, safe next step, evidence-backed reasoning or
+  blocked-claim handling.
 - Content generation usefulness moved to current-demo ready on 2026-06-24.
   Existing typed flow was hardened instead of rebuilt: content ActionObject
   `content_brief_preview_v1` now includes `h1_direction`, `h2_direction` and

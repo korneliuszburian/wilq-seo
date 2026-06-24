@@ -782,11 +782,17 @@ out of the active queue unless fresh API/browser proof reopens them.
      previews: source URL/host, target URL/host, adaptation status and review
      state. Reopen only if dev-site URLs are treated as independent source
      evidence or target fields disappear.
-5. **task - decision-quality evals**
-   - Upgrade skill evals from format/evidence checks to concrete useful
-     decision checks for Ads, Merchant, Content, GA4, Localo, Ahrefs and social.
-   - Keep non-interactive evals scoped; do not send full context when a narrow
-     diagnostics endpoint and skill-scoped pack prove the behavior.
+5. **ready - decision-quality evals**
+   - Skill eval schema/harness requires `decision_quality`: actionable decision,
+     safe next step, blocked-claim handling, workflow-specific interpretation
+     and evidence-backed reasoning.
+   - `docs/evals/skill-coverage-audit.md` tracks 12/12 WILQ skills with current
+     non-interactive artifacts. The latest content strategist hardening proves
+     `content_brief_preview_v1`, H1, H2 and FAQ direction through deterministic
+     smoke output and a scoped Codex eval:
+     `.local-lab/evals/codex-skill/20260624T103515Z/wilq-content-strategist/result.json`.
+   - Reopen only if a skill eval passes without a concrete workflow decision,
+     safe next step, evidence-backed reasoning or blocked-claim handling.
 6. **suspicious - semantic skill references**
    - Reopen only with proof that a reference hides product behavior, workaround
      prose, ranking/dedupe logic or dashboard cleanup that belongs in typed
