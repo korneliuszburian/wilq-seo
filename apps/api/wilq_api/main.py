@@ -2829,6 +2829,8 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "target_site_inventory_modified_gmt",
         "target_site_inventory_missing_fields",
         "target_site_inventory_summary",
+        "draft_generation_status",
+        "draft_blockers",
         "required_validation",
         "blocked_claims",
         "source_connectors",

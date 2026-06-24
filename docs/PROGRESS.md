@@ -75,6 +75,10 @@ Stan produktu:
   `inventory_source`, `modified_gmt`) plus missing fields such as
   `title_or_h1` and `canonical_url`. Focused API tests, dashboard tests and the
   content-strategist smoke passed after a managed stack restart.
+- Reviewed WordPress draft previews now expose `draft_generation_status` and
+  `draft_blockers`: `needs_review` target mapping stays
+  `blocked_pending_target_mapping`, so a review event cannot look like staging
+  or publish readiness.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;

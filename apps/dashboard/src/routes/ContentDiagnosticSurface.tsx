@@ -382,6 +382,8 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_inventory_modified_gmt?: string | null;
   target_site_inventory_missing_fields?: string[];
   target_site_inventory_summary?: string | null;
+  draft_generation_status?: string | null;
+  draft_blockers?: string[];
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -414,6 +416,11 @@ function WordPressDraftPayloadPreviewCard({
         </div>
         <StatusBadge value={preview.mutation_allowed ? "ready" : "blocked"} />
       </div>
+      {preview.draft_generation_status ? (
+        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs font-medium text-ink">
+          Status draftu: {contentDraftGenerationStatusLabel(preview.draft_generation_status)}
+        </p>
+      ) : null}
       <p className="mt-2 text-xs leading-5 text-slate-600">
         {preview.draft_payload.post_excerpt_direction ??
           "Szkic payloadu do review. Nie publikuje i nie wykonuje apply."}
@@ -439,6 +446,11 @@ function WordPressDraftPayloadPreviewCard({
         <TraceLine
           label="Braki targetu"
           values={(preview.target_site_inventory_missing_fields ?? []).slice(0, 6)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Blockery draftu"
+          values={(preview.draft_blockers ?? []).slice(0, 6)}
           empty="brak"
         />
         <TraceLine
@@ -948,6 +960,16 @@ function contentDraftOperationLabel(value: string) {
   const labels: Record<string, string> = {
     prepare_existing_content_draft: "draft istniejącej treści",
     prepare_new_content_draft_review: "draft nowej treści do review"
+  };
+  return labels[value] ?? value;
+}
+
+function contentDraftGenerationStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    ready_for_review: "gotowy tylko do review",
+    blocked_pending_target_mapping: "zablokowany do mapowania targetu",
+    blocked_missing_target_inventory: "zablokowany bez inventory targetu",
+    blocked_until_content_review: "zablokowany do review treści"
   };
   return labels[value] ?? value;
 }

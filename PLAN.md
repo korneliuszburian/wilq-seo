@@ -182,6 +182,10 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   previews and content-strategist context-pack expose
   `target_site_review_requirements`, including target inventory mapping,
   canonical review, duplicate/cannibalization check and human confirmation.
+- `ready`: Reviewed WordPress draft previews expose `draft_generation_status`
+  and `draft_blockers`. A reviewed candidate with `needs_review` target mapping
+  stays `blocked_pending_target_mapping`; preview/review is allowed for audit,
+  but staging, publish and apply remain blocked.
 - `task`: Promote the duplicate/canonical gate into a stricter content
   ActionObject and skill eval decision rule so `create` is blocked or downgraded
   when refresh/merge is safer.

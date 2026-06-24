@@ -263,6 +263,12 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         if isinstance(preview.get("target_site_migration_candidate_url"), str)
         else None
     )
+    migration_status = (
+        preview.get("target_site_migration_status")
+        if isinstance(preview.get("target_site_migration_status"), str)
+        else None
+    )
+    draft_generation_status = _draft_generation_status(migration_status)
     candidate_id = str(preview["candidate_id"])
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -287,9 +293,7 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         if isinstance(preview.get("target_site_adaptation_status"), str)
         else None,
         "target_site_migration_candidate_url": migration_candidate_url,
-        "target_site_migration_status": preview.get("target_site_migration_status")
-        if isinstance(preview.get("target_site_migration_status"), str)
-        else None,
+        "target_site_migration_status": migration_status,
         "target_site_migration_summary": preview.get("target_site_migration_summary")
         if isinstance(preview.get("target_site_migration_summary"), str)
         else None,
@@ -322,6 +326,8 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         "target_site_inventory_summary": preview.get("target_site_inventory_summary")
         if isinstance(preview.get("target_site_inventory_summary"), str)
         else None,
+        "draft_generation_status": draft_generation_status,
+        "draft_blockers": _draft_blockers(draft_generation_status),
         "draft_payload": {
             "post_status": "draft",
             "post_title": _draft_title(topic, mode),
@@ -372,6 +378,50 @@ def _wordpress_draft_operation(mode: str) -> str:
     if mode in {"refresh", "merge"}:
         return "prepare_existing_content_draft"
     return "prepare_new_content_draft_review"
+
+
+def _draft_generation_status(migration_status: str | None) -> str:
+    if migration_status == "confirmed_target_inventory":
+        return "ready_for_review"
+    if migration_status == "needs_review":
+        return "blocked_pending_target_mapping"
+    if migration_status == "blocked_missing_inventory":
+        return "blocked_missing_target_inventory"
+    return "blocked_until_content_review"
+
+
+def _draft_blockers(draft_generation_status: str) -> list[str]:
+    blockers = [
+        "wordpress_write_not_requested",
+        "api_mutation_ready_false",
+        "human_confirm_before_wordpress_write",
+    ]
+    if draft_generation_status == "ready_for_review":
+        return [
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            *blockers,
+        ]
+    if draft_generation_status == "blocked_pending_target_mapping":
+        return [
+            "target_site_inventory_mapping_review",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            *blockers,
+        ]
+    if draft_generation_status == "blocked_missing_target_inventory":
+        return [
+            "target_site_inventory_required",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            *blockers,
+        ]
+    return [
+        "business_relevance_review",
+        "wordpress_inventory_check",
+        "duplicate_or_cannibalization_check",
+        *blockers,
+    ]
 
 
 def _draft_title(topic: str, mode: str) -> str:

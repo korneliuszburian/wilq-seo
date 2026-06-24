@@ -1778,6 +1778,15 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["destructive"] is False
+    assert draft_preview["draft_generation_status"] in {
+        "blocked_pending_target_mapping",
+        "blocked_missing_target_inventory",
+        "ready_for_review",
+    }
+    assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
+    if draft_preview["target_site_migration_status"] == "needs_review":
+        assert draft_preview["draft_generation_status"] == "blocked_pending_target_mapping"
+        assert "target_site_inventory_mapping_review" in draft_preview["draft_blockers"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[
@@ -1885,6 +1894,15 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "target_site_migration_status" in draft_preview
     assert "target_site_migration_summary" in draft_preview
     assert "target_site_review_requirements" in draft_preview
+    assert draft_preview["draft_generation_status"] in {
+        "blocked_pending_target_mapping",
+        "blocked_missing_target_inventory",
+        "ready_for_review",
+    }
+    if draft_preview["target_site_migration_status"] == "needs_review":
+        assert draft_preview["draft_generation_status"] == "blocked_pending_target_mapping"
+        assert "target_site_inventory_mapping_review" in draft_preview["draft_blockers"]
+    assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
     assert (
         "duplicate_or_cannibalization_check"
         in draft_preview["target_site_review_requirements"]
