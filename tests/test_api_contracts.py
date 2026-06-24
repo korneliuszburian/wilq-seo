@@ -2962,6 +2962,21 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         item["dimensions"].get("affected_attribute") == "image_link"
         for item in merchant_items
     )
+    ahrefs_items = [
+        item for item in queue["items"] if item["source_connectors"] == ["ahrefs"]
+    ]
+    assert ahrefs_items
+    assert any(
+        item["dimensions"].get("keyword") == "audyt środowiskowy"
+        and item["dimensions"].get("gap_type") == "content_gap"
+        for item in ahrefs_items
+    )
+    assert all(item["domain"] == "content" for item in ahrefs_items)
+    assert all("traffic uplift" in item["blocked_claims"] for item in ahrefs_items)
+    assert all(
+        item["dimensions"].get("competitor_domain") != "cuk.pl"
+        for item in ahrefs_items
+    )
     for item in queue["items"]:
         assert item["dimensions"]
         assert item["evidence_ids"]

@@ -52,8 +52,11 @@ Stan produktu:
   `.local-lab/evals/codex-skill/20260624T021206Z/wilq-ahrefs-gap-finder/result.json`
   returns only `source_connectors=["ahrefs"]`, sees 8 typed stale gap records,
   keeps `action_count=0`, and blocks traffic uplift / authority improvement
-  claims. Ahrefs granular records are no longer an active source gap; freshness
-  and safe cross-source joins remain.
+  claims. `/api/marketing/tactical-queue` now also promotes review-only Ahrefs
+  gap records into `domain=content` tactical items with
+  `act_prepare_content_refresh_queue`, evidence IDs and blocked traffic/
+  authority/ranking claims. Ahrefs remaining work is freshness and safe
+  cross-source confirmation with GSC/WordPress before stronger decisions.
 - Content/GSC inventory matching no longer marks current Ekologus URLs as
   missing when wide WordPress inventory pushes public sitemap URLs past the old
   slice boundary. Live HTTP proof after stack restart:
@@ -161,8 +164,8 @@ Stan produktu:
   are ready for review-only decisions; Merchant product-performance join is
   blocked by state-only/zero performance product rows, not by missing GA4/Ads
   read contracts. The nearest source gaps are Merchant before-after price
-  history/performance windows, Ahrefs freshness/cross-source joins, Keyword
-  Planner approval/forecast and cross-source decision joins.
+  history/performance windows, Ahrefs freshness/cross-source confirmation,
+  Keyword Planner approval/forecast and cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
   stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
   `total_revenue` and `transactions` with landing/source/campaign dimensions.

@@ -21,6 +21,7 @@ from wilq.storage.metric_store import metric_store
 TACTICAL_QUEUE_LIMIT = 24
 TACTICAL_QUEUE_DOMAIN_FLOOR = 4
 TACTICAL_QUEUE_SOURCE_CONNECTORS = (
+    "ahrefs",
     "google_search_console",
     "google_analytics_4",
     "google_merchant_center",
@@ -51,6 +52,46 @@ WORDPRESS_CANONICAL_HOST_ALIASES = {
     "www.ekologus.pl": {"ekologus.dev.proudsite.pl", "ekologus.pl"},
     "ekologus.pl": {"ekologus.dev.proudsite.pl", "www.ekologus.pl"},
 }
+AHREFS_GAP_FACT_NAMES = {
+    "ahrefs_competitor_page_count",
+    "ahrefs_content_gap_count",
+    "ahrefs_backlink_gap_count",
+    "ahrefs_referring_domain_gap_count",
+    "ahrefs_organic_keyword_gap_count",
+    "ahrefs_top_page_gap_count",
+}
+AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS = {
+    "cuk.pl",
+    "ltesty.pl",
+}
+AHREFS_OFF_TOPIC_TERMS = (
+    "prawo jazdy",
+    "kalkulator oc",
+    "ubezpieczenie samochodu",
+    "samochod",
+    "samochodu",
+    "ubezpieczenie",
+)
+AHREFS_RELEVANT_COMPETITOR_DOMAINS = {
+    "denios.pl",
+    "dla-przemyslu.pl",
+    "manutan.pl",
+}
+AHREFS_RELEVANT_TERMS = (
+    "bdo",
+    "odpady",
+    "odpad",
+    "srodowisko",
+    "srodowiskowy",
+    "remediacja",
+    "operat",
+    "wodnoprawny",
+    "zielony lad",
+    "ppwr",
+    "audyt",
+    "beczka",
+    "sorbent",
+)
 DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS = 30.0
 _cached_tactical_queue: TacticalQueueCacheEntry | None = None
 
@@ -139,6 +180,7 @@ def _build_tactical_queue(
         *_gsc_content_items(facts, action_ids_by_connector, wordpress_index, gsc_page_counts),
         *_ga4_quality_items(facts, action_ids_by_connector, wordpress_index),
         *_merchant_feed_items(facts, action_ids_by_connector),
+        *_ahrefs_gap_items(facts, action_ids_by_connector),
     ]
     items = _balanced_tactical_items(items, limit=TACTICAL_QUEUE_LIMIT)
     return TacticalQueueResponse(
@@ -638,6 +680,202 @@ def _merchant_feed_items(
     return items
 
 
+def _ahrefs_gap_items(
+    facts: list[MetricFact],
+    action_ids_by_connector: dict[str, list[str]],
+) -> list[TacticalQueueItem]:
+    gap_groups = _group_ahrefs_gap_facts(facts)
+    items: list[TacticalQueueItem] = []
+    for index, group in enumerate(gap_groups.items(), start=1):
+        (gap_type, keyword, source_url, target_url, competitor_domain), group_facts = group
+        if _is_ahrefs_off_topic(keyword, source_url, target_url, competitor_domain):
+            continue
+        topic = _ahrefs_topic(keyword, source_url, target_url, competitor_domain)
+        priority = _ahrefs_gap_priority(gap_type, topic, competitor_domain, index)
+        items.append(
+            TacticalQueueItem(
+                id=f"tq_ahrefs_{_stable_slug(gap_type)}_{_stable_slug(topic)}",
+                title=f"Ahrefs: sprawdź lukę treści `{topic}`",
+                domain=OpportunityDomain.content,
+                intent=_ahrefs_content_intent(gap_type),
+                priority=priority,
+                risk=ActionRisk.medium,
+                source_connectors=["ahrefs"],
+                evidence_ids=_unique(fact.evidence_id for fact in group_facts),
+                metric_facts=group_facts[:6],
+                dimensions={
+                    "gap_type": gap_type,
+                    "topic": topic,
+                    "keyword": keyword,
+                    "source_url": source_url,
+                    "target_url": target_url,
+                    "competitor_domain": competitor_domain,
+                },
+                diagnosis=_ahrefs_gap_diagnosis(
+                    gap_type,
+                    topic,
+                    source_url,
+                    target_url,
+                    competitor_domain,
+                    group_facts,
+                ),
+                next_step=(
+                    "Połącz rekord Ahrefs z GSC i WordPress inventory, potem wybierz "
+                    "refresh, merge, create albo block. Nie traktuj Ahrefs jako "
+                    "samodzielnej obietnicy ruchu."
+                ),
+                blocked_claims=[
+                    "traffic uplift",
+                    "authority improvement",
+                    "ranking guarantee",
+                    "lead uplift",
+                    "content brief without GSC/WordPress review",
+                ],
+                action_ids=action_ids_by_connector.get("ahrefs", []),
+            )
+        )
+    return items
+
+
+def _group_ahrefs_gap_facts(facts: list[MetricFact]) -> dict[tuple[str, ...], list[MetricFact]]:
+    grouped: dict[tuple[str, ...], list[MetricFact]] = {}
+    for fact in facts:
+        if fact.source_connector != "ahrefs" or fact.name not in AHREFS_GAP_FACT_NAMES:
+            continue
+        dimensions = fact.dimensions
+        gap_type = dimensions.get("gap_type") or _ahrefs_gap_type_for_fact(fact.name)
+        key = (
+            gap_type,
+            dimensions.get("keyword", ""),
+            dimensions.get("source_url", ""),
+            dimensions.get("target_url", ""),
+            _normalized_domain(dimensions.get("competitor_domain", "")),
+        )
+        if not any(key):
+            continue
+        grouped.setdefault(key, []).append(fact)
+    return dict(sorted(grouped.items(), key=lambda item: _ahrefs_group_sort_key(item)))
+
+
+def _ahrefs_group_sort_key(item: tuple[tuple[str, ...], list[MetricFact]]) -> tuple[int, str]:
+    gap_type, keyword, source_url, target_url, competitor_domain = item[0]
+    topic = _ahrefs_topic(keyword, source_url, target_url, competitor_domain)
+    return (_ahrefs_gap_priority(gap_type, topic, competitor_domain, 0), topic)
+
+
+def _ahrefs_gap_type_for_fact(name: str) -> str:
+    if name == "ahrefs_competitor_page_count":
+        return "competitor_page"
+    if name == "ahrefs_content_gap_count":
+        return "content_gap"
+    if name in {"ahrefs_backlink_gap_count", "ahrefs_referring_domain_gap_count"}:
+        return "backlink_gap"
+    if name == "ahrefs_organic_keyword_gap_count":
+        return "organic_keyword_gap"
+    if name == "ahrefs_top_page_gap_count":
+        return "top_page_gap"
+    return "content_gap"
+
+
+def _ahrefs_content_intent(gap_type: str) -> TacticalIntent:
+    if gap_type == "backlink_gap":
+        return "content_block"
+    return "content_create"
+
+
+def _ahrefs_gap_priority(
+    gap_type: str,
+    topic: str,
+    competitor_domain: str,
+    index: int,
+) -> int:
+    base_by_type = {
+        "content_gap": 26,
+        "organic_keyword_gap": 28,
+        "top_page_gap": 30,
+        "competitor_page": 34,
+        "backlink_gap": 48,
+    }
+    base = base_by_type.get(gap_type, 40)
+    normalized_topic = _normalize_ahrefs_text(topic)
+    if any(term in normalized_topic for term in AHREFS_RELEVANT_TERMS):
+        base -= 4
+    if competitor_domain in AHREFS_RELEVANT_COMPETITOR_DOMAINS:
+        base -= 3
+    return max(1, min(base + index, 69))
+
+
+def _ahrefs_topic(
+    keyword: str,
+    source_url: str,
+    target_url: str,
+    competitor_domain: str,
+) -> str:
+    if keyword:
+        return keyword
+    if target_url:
+        return _short_path(target_url)
+    if source_url:
+        return _short_path(source_url)
+    if competitor_domain:
+        return competitor_domain
+    return "rekord Ahrefs"
+
+
+def _ahrefs_gap_diagnosis(
+    gap_type: str,
+    topic: str,
+    source_url: str,
+    target_url: str,
+    competitor_domain: str,
+    facts: list[MetricFact],
+) -> str:
+    context = ", ".join(
+        part
+        for part in (
+            f"competitor_domain={competitor_domain}" if competitor_domain else None,
+            f"source_url={source_url}" if source_url else None,
+            f"target_url={target_url}" if target_url else None,
+        )
+        if part is not None
+    )
+    context_text = f" Kontekst: {context}." if context else ""
+    return (
+        f"Ahrefs wskazuje rekord `{gap_type}` dla tematu `{topic}`. "
+        f"Fakty: {_ahrefs_fact_summary(facts)}.{context_text} "
+        "To jest sygnał do review contentu, nie samodzielna rekomendacja SEO."
+    )
+
+
+def _ahrefs_fact_summary(facts: list[MetricFact]) -> str:
+    sorted_facts = sorted(facts, key=lambda item: item.name)
+    return ", ".join(f"{fact.name}={fact.value}" for fact in sorted_facts)
+
+
+def _is_ahrefs_off_topic(
+    keyword: str,
+    source_url: str,
+    target_url: str,
+    competitor_domain: str,
+) -> bool:
+    if competitor_domain in AHREFS_OFF_TOPIC_COMPETITOR_DOMAINS:
+        return True
+    text = _normalize_ahrefs_text(" ".join((keyword, source_url, target_url, competitor_domain)))
+    return any(term in text for term in AHREFS_OFF_TOPIC_TERMS)
+
+
+def _normalize_ahrefs_text(value: str) -> str:
+    replacements = str.maketrans(
+        {"ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n", "ó": "o", "ś": "s", "ź": "z", "ż": "z"}
+    )
+    return value.lower().translate(replacements)
+
+
+def _normalized_domain(value: str) -> str:
+    host = urlparse(value).netloc or value
+    return host.removeprefix("www.").lower()
+
+
 def _group_facts(facts: Iterable[MetricFact]) -> dict[tuple[str, ...], list[MetricFact]]:
     grouped: dict[tuple[str, ...], list[MetricFact]] = {}
     for fact in facts:
@@ -1039,6 +1277,7 @@ def _wordpress_match_confidence_label(confidence: WordPressMatchConfidence) -> s
 
 def _tactical_action_ids_by_connector() -> dict[str, list[str]]:
     return {
+        "ahrefs": ["act_prepare_content_refresh_queue"],
         "google_analytics_4": ["act_review_ga4_tracking_quality"],
         "google_merchant_center": ["act_review_merchant_feed_issues"],
         "wordpress_ekologus": ["act_prepare_content_refresh_queue"],
