@@ -1426,9 +1426,22 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     )
 
     action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+    diagnostics_response = client.get("/api/content/diagnostics")
 
     assert action_response.status_code == 200
+    assert diagnostics_response.status_code == 200
     action = action_response.json()
+    diagnostics = diagnostics_response.json()
+    decision = next(
+        item
+        for item in diagnostics["decision_queue"]
+        if item["page"] == source_url
+    )
+    assert decision["source_url"] == source_url
+    assert decision["source_site_host"] == "www.ekologus.pl"
+    assert decision["target_site_url"] == target_site_url
+    assert decision["target_site_host"] == "ekologus.dev.proudsite.pl"
+    assert decision["target_site_adaptation_status"] == "target_site_alias_match"
     preview = next(
         item
         for item in action["payload"]["content_brief_preview"]
@@ -11575,6 +11588,15 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert first_decision["wordpress_content_url"] == (
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
     )
+    assert first_decision["source_url"] == (
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    )
+    assert first_decision["source_site_host"] == "www.ekologus.pl"
+    assert first_decision["target_site_url"] == (
+        "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
+    )
+    assert first_decision["target_site_host"] == "www.ekologus.pl"
+    assert first_decision["target_site_adaptation_status"] == "current_site_match"
     assert first_decision["normalized_page_path"] == (
         "/europejski-zielony-lad-co-to-takiego"
     )

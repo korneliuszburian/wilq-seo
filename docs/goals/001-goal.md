@@ -37,6 +37,72 @@ Treat this file as the active Goal contract, not a backlog transcript. A Codex
 Goal is done only when the outcome below is verified by evidence while
 preserving the constraints and boundaries.
 
+## Current Execution Goal
+
+Produce a solid Ekologus marketer demo by turning WILQ from a broad
+evidence-backed cockpit into one clearly useful marketer workflow, verified
+against live WILQ API, dashboard routes, focused tests and skill evals.
+
+**End state:** the Ekologus marketer can open Command Center, follow the
+narrow demo path `Command Center -> Merchant -> Content Planner -> Ads Doctor
+-> GA4`, and use Codex skills to get Polish, evidence-backed decisions that
+explain what to do now, why it matters, which evidence supports it, which
+claims are blocked and which ActionObject can be reviewed next. The strongest
+proof point is content: WILQ must produce a useful review-only content brief or
+draft plan from current Ekologus evidence, including source URL, target-site
+context for `http://ekologus.dev.proudsite.pl/`, intent cluster, audience,
+source facts, H1/H2/FAQ/CTA direction, internal-link direction, missing
+evidence, forbidden claims and review state.
+
+**Verification:** do not mark this goal complete from prose or screenshots
+alone. Verify with live WILQ API endpoints, dashboard/browser walkthrough,
+focused route/API tests, deterministic skill smokes and at least the relevant
+non-interactive skill evals. The final proof must show:
+
+- Command Center has a clear daily plan and links to the demo path.
+- Merchant, Content Planner, Ads Doctor, GA4 and optional Localo answer
+  "what should the marketer do now and why?" without fake metrics.
+- `act_prepare_content_refresh_queue` exposes a content brief/draft plan that
+  is useful for a marketer, not only structurally valid JSON.
+- `wilq-content-strategist`, `wilq-ads-doctor`,
+  `wilq-merchant-feed-operator`, `wilq-ga4-analyst` and
+  `wilq-daily-command` use WILQ API evidence and keep unsafe claims blocked.
+- Adversarial checks prevent overclaims: Ads CPA/ROAS/wasted budget, Merchant
+  unique products/product ROAS, GA4 `(not set)`, Ahrefs uplift and Localo
+  access proof vs real local metrics.
+- Progress and unresolved gaps are recorded in the smallest useful recovery
+  docs, not only in chat.
+
+**Constraints:** keep WILQ API as the product brain. Do not fix product
+behavior in skill references, dashboard copy or prompt cleverness. If a skill
+or dashboard needs smarter grouping, ranking, copy, source lineage or safety
+logic, expose it through typed API/schema/view-model/expert-rule/eval
+contracts first. Keep all operator-facing copy practical Polish with Polish
+diacritics. Keep write/apply blocked unless a validated ActionObject, preview,
+confirmation and audit path exists. Do not claim full BDOS, Ads optimizer,
+feed repair, local uplift or publishing automation from review-only evidence.
+
+**Boundaries:** go depth-first on Ekologus. Treat `ekologus.pl`,
+`sklep.ekologus.pl`, GSC, GA4, Ahrefs, Ads, Merchant, Localo and WordPress
+inventory as current evidence. Treat `ekologus.dev.proudsite.pl` as target
+context for migration/adaptation, not independent proof of performance. Do not
+add multi-client, production auth, full apply automation, budget optimizer or
+new broad surfaces unless they are explicitly promoted from the deferred BDOS
+backlog.
+
+**Iteration policy:** before adding a task, verify whether the repo/API already
+has the capability. Classify each finding as `ready`, `hardening`, `task`,
+`blocked`, `deferred` or `obsolete`. Prefer the next slice that increases
+marketer usefulness of the core demo path, especially content usefulness and
+decision-quality evals. Run the smallest focused check that proves the touched
+surface; reserve broad gates for final demo proof or broad-risk changes.
+
+**Blocked stop condition:** if a needed vendor/API contract, permission,
+source fact, dashboard route, skill eval or safe write path is unavailable,
+stop the affected claim with the evidence gathered, what remains safe to show,
+the exact missing contract/input and the next implementation needed. Do not
+paper over the gap in a prompt or reference file.
+
 **Outcome:** build WILQ as an API-first Marketing Operating System for
 Ekologus, with the strongest current demo centered on the Polish marketer's
 daily decisions, evidence-backed content generation and safe review workflows.

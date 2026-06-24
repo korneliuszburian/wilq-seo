@@ -566,6 +566,16 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
             Dopasowanie: {wordpressMatchConfidenceLabel(decision.wordpress_match_confidence)}
           </span>
         ) : null}
+        {decision.target_site_adaptation_status ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Target: {contentTargetSiteStatusLabel(decision.target_site_adaptation_status)}
+          </span>
+        ) : null}
+        {decision.target_site_url ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Docelowo: {shortPath(decision.target_site_url)}
+          </span>
+        ) : null}
       </div>
       {decision.ahrefs_candidate_rows.length > 0 ? (
         <div className="mt-3 rounded-md border border-line bg-white p-3">

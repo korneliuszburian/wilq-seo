@@ -41,6 +41,31 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Content decision target-context slice completed on 2026-06-24. Confirmed
+  live gap: `/api/content/diagnostics` decision queue had useful content
+  decisions, but GSC decisions did not expose `source_url`, `source_site_host`,
+  `target_site_url`, `target_site_host` or `target_site_adaptation_status`;
+  those fields were only visible after opening `act_prepare_content_refresh_queue`.
+  Fixed in typed backend/shared schemas, content diagnostics builder and
+  Content Planner cards. Live API after managed stack restart shows 4 content
+  decisions with target context; first decision exposes source/target
+  `https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/` and
+  `target_site_adaptation_status=current_site_match`. Focused proof: content
+  API pytest subset 2 passed, shared schema tests passed, dashboard typecheck
+  passed through `rtk proxy`, dashboard content route-focused tests passed 35
+  tests and live `/api/content/diagnostics` check passed. Next best slice:
+  marketer browser walkthrough of the narrow demo path or adversarial
+  overclaim evals for content/Ads/Merchant/GA4/Localo.
+- External second-opinion synthesis was captured on 2026-06-24 in
+  `docs/audits/002-2026-06-24-second-opinion-synthesis.md`. Consensus:
+  WILQ is a real API-first review cockpit and content-planning assistant, not
+  a prompt pack, but it must not be overclaimed as full BDOS/optimizer/write
+  automation. The next highest-value product direction is one strong
+  evidence-backed content workflow for Ekologus: source evidence -> target-site
+  context -> inventory/canonical/duplicate check -> structured brief/draft
+  plan -> review ActionObject -> later staging/publish/measurement loop.
+  Continue from the Final A-Z checklist in `docs/goals/001-goal.md` and verify
+  each audit task against live repo/API before adding new work.
 - Solid Ekologus demo gate passed on 2026-06-24. `scripts/pre_demo_gate.sh`
   completed managed stack status, API health, live contract smoke, shared live
   schemas, dashboard API-backed route smoke 13/13 and sequential core WILQ skill

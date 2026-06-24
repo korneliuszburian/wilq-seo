@@ -2180,6 +2180,11 @@ class ContentDecisionItem(BaseModel):
     wordpress_match: str | None = None
     wordpress_match_confidence: str | None = None
     wordpress_content_url: str | None = None
+    source_url: str | None = None
+    source_site_host: str | None = None
+    target_site_url: str | None = None
+    target_site_host: str | None = None
+    target_site_adaptation_status: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)

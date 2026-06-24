@@ -5,6 +5,7 @@ import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
+from urllib.parse import urlparse
 
 from wilq.actions.service import list_actions
 from wilq.briefing.marketing_brief import STRICT_BRIEF_INSTRUCTION
@@ -712,6 +713,11 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
         metric_facts = _unique_metric_facts(
             fact for item in page_items for fact in item.metric_facts
         )
+        target_site_context = _content_target_site_context(
+            source_url=page,
+            target_site_url=first.dimensions.get("wordpress_content_url"),
+            wordpress_match=wordpress_match == "found",
+        )
         metrics = _content_decision_metrics(metric_facts, queries)
         decision_type: ContentDecisionType
         if wordpress_match == "found":
@@ -780,6 +786,7 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
                 wordpress_match=wordpress_match,
                 wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
                 wordpress_content_url=first.dimensions.get("wordpress_content_url"),
+                **target_site_context,
                 source_connectors=_unique(
                     connector for item in page_items for connector in item.source_connectors
                 ),
@@ -801,6 +808,35 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
             )
         )
     return decisions
+
+
+def _content_target_site_context(
+    *,
+    source_url: str,
+    target_site_url: str | None,
+    wordpress_match: bool,
+) -> dict[str, str | None]:
+    source_host = _content_url_host(source_url)
+    target_host = _content_url_host(target_site_url) if target_site_url else None
+    if not wordpress_match:
+        status = "needs_inventory_match"
+    elif target_host and source_host and target_host != source_host:
+        status = "target_site_alias_match"
+    else:
+        status = "current_site_match"
+    return {
+        "source_url": source_url,
+        "source_site_host": source_host,
+        "target_site_url": target_site_url,
+        "target_site_host": target_host,
+        "target_site_adaptation_status": status,
+    }
+
+
+def _content_url_host(value: str | None) -> str | None:
+    if not value:
+        return None
+    return urlparse(value).netloc.lower() or None
 
 
 def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
