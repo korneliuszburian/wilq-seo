@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:33 CEST.
+Last updated: 2026-06-24 02:41 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -240,7 +240,10 @@ Finish these before claiming the Ekologus demo is done:
      connector-freshness fallback. Live smoke asserts both fields exist without
      checking changing live metric values. The dashboard status badge now shows
      stale ready decisions as `do odświeżenia`, so stale data is not visually
-     presented as fully fresh/ready.
+     presented as fully fresh/ready. Daily decisions now also expose capped
+     `metric_facts` from their own source connectors; multi-source decisions
+     use connector round-robin so Ahrefs/GSC/WordPress style evidence is not
+     dominated by the first connector.
    - Add decision/view-model slices:
      1. Domain-specific decision queues for Ads, Merchant, Content, GA4 and
         Localo with stable fields: `why_it_matters`, `operator_action`,

@@ -3553,6 +3553,11 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
     assert merchant_decision["metric_tiles"]["zgłoszenia"] == 3
     assert merchant_decision["metric_tiles"]["decyzje"] >= 1
+    assert merchant_decision["metric_facts"]
+    assert len(merchant_decision["metric_facts"]) <= 8
+    assert {
+        fact["source_connector"] for fact in merchant_decision["metric_facts"]
+    } == {"google_merchant_center"}
     assert "status=ready" not in merchant_decision["co_widzimy"]
     for decision in decisions_by_id.values():
         assert "Źródła=" not in decision["co_widzimy"]
@@ -3569,7 +3574,12 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["evidence_ids"]
     assert merchant_decision["blocked_claims"]
     ga4_decision = decisions_by_id["decision_review_ga4_landing_quality"]
-    assert decisions_by_id["decision_prepare_content_refresh_queue"]["domain"] == "content"
+    content_decision = decisions_by_id["decision_prepare_content_refresh_queue"]
+    assert content_decision["domain"] == "content"
+    content_fact_sources = {
+        fact["source_connector"] for fact in content_decision["metric_facts"]
+    }
+    assert {"google_search_console", "ahrefs"}.issubset(content_fact_sources)
     if "decision_review_ads_campaign_metrics" in decisions_by_id:
         assert decisions_by_id["decision_review_ads_campaign_metrics"]["domain"] == "google_ads"
     assert ga4_decision["status"] == "blocked"
@@ -3605,6 +3615,7 @@ def test_command_center_exposes_polish_operator_brief(
             "id": item["id"],
             "domain": item["domain"],
             "freshness_state": item["freshness"]["state"],
+            "metric_fact_count": len(item["metric_facts"]),
             "route": item["route"],
             "status": item["status"],
             "source_connectors": item["source_connectors"],
@@ -3619,6 +3630,7 @@ def test_command_center_exposes_polish_operator_brief(
             "id": item["id"],
             "domain": item["domain"],
             "freshness_state": item["freshness"]["state"],
+            "metric_fact_count": len(item["metric_facts"]),
             "route": item["route"],
             "status": item["status"],
             "source_connectors": item["source_connectors"],

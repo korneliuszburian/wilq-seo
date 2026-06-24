@@ -31,6 +31,15 @@ def _payloads_with_metric_value(value: int) -> dict[str, Any]:
                     "source_connectors": ["google_ads"],
                     "action_ids": ["act_prepare_ads_campaign_review_queue"],
                     "metric_tiles": {"kliknięcia": value},
+                    "metric_facts": [
+                        {
+                            "name": "clicks",
+                            "value": value,
+                            "period": "connector_refresh",
+                            "source_connector": "google_ads",
+                            "evidence_id": "ev_refresh_refresh_google_ads_123",
+                        }
+                    ],
                 }
             ],
             "action_plan": [

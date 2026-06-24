@@ -190,6 +190,9 @@ Stan produktu:
   2026-06-24 returned Merchant/GA4/Ads fresh and Content stale. The dashboard
   badge now renders stale ready decisions as `do odświeżenia`; browser proof:
   `.local-lab/proof/dashboard/command-center-decision-freshness-full-snapshot.txt`.
+  Daily decisions also expose capped `metric_facts` from their own source
+  connectors. Live proof shows 8 facts per Merchant/Content/GA4/Ads decision;
+  Content facts are round-robin across Ahrefs, GSC and WordPress sources.
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.
@@ -228,7 +231,8 @@ Stan produktu:
      API/schema/view-model first.
    - Shared `daily_decisions` are now the canonical first-screen view-model.
      They expose stable `domain` identifiers and typed `freshness` state for
-     Merchant, Content, GA4 and Ads.
+     Merchant, Content, GA4 and Ads, plus capped `metric_facts` for the same
+     source connectors.
      Next decision/API work should harden stable domain queues and explicit
      ready/stale/blocked semantics. Avoid showing connector readiness as a
      marketing decision.

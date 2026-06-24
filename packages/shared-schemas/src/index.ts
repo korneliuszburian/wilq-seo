@@ -2291,6 +2291,7 @@ export const DailyDecisionSchema = z.object({
   status: z.enum(["ready", "blocked"]),
   priority: z.number(),
   metric_tiles: z.record(z.union([z.string(), z.number()])),
+  metric_facts: z.array(MetricFactSchema).default([]),
   co_widzimy: z.string(),
   dlaczego_to_ma_znaczenie: z.string(),
   bezpieczny_next_step: z.string(),

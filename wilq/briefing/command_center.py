@@ -65,6 +65,7 @@ LOCALO_PROBE_METRIC_NAMES = {
     "pkce_s256_supported",
 }
 DAILY_DECISION_FRESH_AFTER_HOURS = 48
+DAILY_DECISION_METRIC_FACT_LIMIT = 8
 PRIMARY_DAILY_PLAN_IDS = {
     "plan_review_merchant_feed_issues",
     "plan_prepare_content_refresh_queue",
@@ -116,6 +117,7 @@ def build_command_center_response(
             operator_brief,
             connectors=connectors,
             refresh_runs=refresh_runs,
+            facts_by_connector=facts_by_connector,
         ),
         operator_brief=operator_brief,
         demo_script=[],
@@ -317,12 +319,14 @@ def build_daily_decisions(
     operator_brief: list[CommandCenterBriefItem],
     connectors: list[ConnectorStatus] | None = None,
     refresh_runs: list[ConnectorRefreshRun] | None = None,
+    facts_by_connector: dict[str, list[MetricFact]] | None = None,
 ) -> list[DailyDecision]:
     brief_by_plan_id = _brief_items_by_plan_id(operator_brief)
     freshness_by_connector = _daily_decision_freshness_by_connector(
         connectors or [],
         refresh_runs or [],
     )
+    facts_by_connector = facts_by_connector or {}
     return [
         DailyDecision(
             id=plan_item.id.replace("plan_", "decision_", 1),
@@ -336,6 +340,7 @@ def build_daily_decisions(
             status=plan_item.status,
             priority=plan_item.priority,
             metric_tiles=_decision_metric_tiles(plan_item, brief_by_plan_id),
+            metric_facts=_decision_metric_facts(plan_item, facts_by_connector),
             co_widzimy=_decision_observation(
                 plan_item,
                 brief_by_plan_id.get(plan_item.id),
@@ -438,6 +443,49 @@ def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
+
+
+def _decision_metric_facts(
+    plan_item: CommandCenterActionPlanItem,
+    facts_by_connector: dict[str, list[MetricFact]],
+) -> list[MetricFact]:
+    evidence_ids = set(plan_item.evidence_ids)
+    source_connectors = list(dict.fromkeys(plan_item.source_connectors))
+    buckets: list[list[MetricFact]] = []
+    seen: set[tuple[str, str, tuple[tuple[str, str], ...]]] = set()
+    for connector_id in source_connectors:
+        matched: list[MetricFact] = []
+        fallback: list[MetricFact] = []
+        for fact in facts_by_connector.get(connector_id, []):
+            key = (
+                fact.source_connector,
+                fact.name,
+                tuple(sorted(fact.dimensions.items())),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            if fact.evidence_id in evidence_ids:
+                matched.append(fact)
+            else:
+                fallback.append(fact)
+        bucket = [*matched, *fallback]
+        if bucket:
+            buckets.append(bucket)
+    selected: list[MetricFact] = []
+    while buckets and len(selected) < DAILY_DECISION_METRIC_FACT_LIMIT:
+        next_buckets: list[list[MetricFact]] = []
+        for bucket in buckets:
+            selected.append(bucket[0])
+            if len(selected) >= DAILY_DECISION_METRIC_FACT_LIMIT:
+                break
+            if len(bucket) > 1:
+                next_buckets.append(bucket[1:])
+        else:
+            buckets = next_buckets
+            continue
+        break
+    return selected
 
 
 def _brief_items_by_plan_id(

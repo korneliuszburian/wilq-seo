@@ -34,6 +34,16 @@ const commandCenterFixture: CommandCenterResponse = {
         produkty: 10900,
         zgłoszenia: 15
       },
+      metric_facts: [
+        {
+          name: "issue_count",
+          value: 15,
+          period: "connector_refresh",
+          source_connector: "google_merchant_center",
+          evidence_id: "ev_refresh_merchant_feed",
+          dimensions: {}
+        }
+      ],
       co_widzimy:
         "Merchant Center ma evidence `ev_refresh_merchant_feed` i ActionObject `act_review_merchant_feed_issues`.",
       dlaczego_to_ma_znaczenie:
@@ -67,6 +77,16 @@ const commandCenterFixture: CommandCenterResponse = {
         kliknięcia: 138,
         wyświetlenia: 7852
       },
+      metric_facts: [
+        {
+          name: "clicks",
+          value: 138,
+          period: "connector_refresh",
+          source_connector: "google_search_console",
+          evidence_id: "ev_refresh_gsc",
+          dimensions: {}
+        }
+      ],
       co_widzimy:
         "Content evidence jest gotowe: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
       dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać review treści.",
