@@ -492,6 +492,13 @@ Skills are operator workflows over WILQ API. They are not the product brain.
   review scale, reported issue occurrences not treated as unique SKUs, sample
   product IDs not treated as a complete product queue, and product ROAS/revenue
   recovery/price impact/approval restored/feed write claims blocked.
+- `ready`: The GA4 messy-prompt runtime proof passed. Artifact:
+  `.local-lab/evals/codex-skill/20260624T211123Z/wilq-ga4-analyst/result.json`.
+  Result: `operator_usefulness_score=5`, all `decision_quality` booleans true,
+  `act_review_ga4_tracking_quality` validated, `(not set)` rows handled as
+  `fix_measurement`, no campaign/landing blame from measurement gaps, no
+  invented `review_landing_mapping`, and ROAS/revenue/profitability/tracking
+  fixed claims blocked.
 - `task`: Add decision-quality rubrics that check usefulness, prioritization,
   blocked-claim handling and safe next steps, not only output shape.
 - `task`: Add a human usefulness rubric after marketer UAT: "Czy wiem co

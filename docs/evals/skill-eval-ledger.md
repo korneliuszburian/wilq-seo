@@ -163,6 +163,45 @@ Product finding:
   claim full product queue, approval recovery, price impact, revenue recovery
   or feed repair automation.
 
+## 2026-06-24 - wilq-ga4-analyst messy marketer prompt eval
+
+Purpose:
+
+- Verify that GA4 can answer a messy marketer question about whether landing
+  pages are weak or tracking is broken without blaming campaigns from `(not set)`
+  rows.
+- Keep GA4 write, ROAS, attribution verdict, conversion drop, conversion rate,
+  funnel diagnosis, profitability, revenue and tracking-fixed claims blocked.
+
+Proof:
+
+```bash
+rtk scripts/codex_skill_eval.sh --skill wilq-ga4-analyst
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T211123Z/wilq-ga4-analyst/result.json
+```
+
+Result:
+
+- `operator_usefulness_score=5`
+- `decision_quality` booleans all passed and `safety_findings=[]`.
+- The output puts `(not set)` rows into `fix_measurement` first and explicitly
+  says not to judge campaigns or landing pages from those rows.
+- `act_review_ga4_tracking_quality` is validated.
+- `review_traffic_quality` is allowed only for the ready `/` and
+  `google / cpc` row, without ROAS/revenue/profitability conclusions.
+- `review_landing_mapping` is not invented when it is absent from
+  `ga4_diagnostics.decision_types`.
+
+Product finding:
+
+- GA4 is demo-useful as measurement and traffic-quality review. It is still not
+  a revenue attribution or campaign-performance verdict engine.
+
 ## 2026-06-24 - wilq-content-strategist target-site boundary eval case
 
 Purpose:
