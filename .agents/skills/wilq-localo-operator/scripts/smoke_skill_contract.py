@@ -156,14 +156,20 @@ def main() -> int:
             ):
                 raise SystemExit("Localo value review is missing aggregate evidence contracts")
             missing_contracts = set(review_decision.get("missing_read_contracts") or [])
-            if not {"gbp_visibility", "competitor_visibility", "local_tasks"}.issubset(
-                missing_contracts
-            ):
+            unsupported_contracts = {"local_tasks"}
+            if "gbp_visibility" not in allowed_evidence:
+                unsupported_contracts.add("gbp_visibility")
+            if "competitor_visibility" not in allowed_evidence:
+                unsupported_contracts.add("competitor_visibility")
+            if not unsupported_contracts.issubset(missing_contracts):
                 raise SystemExit("Localo value review must keep unsupported contracts missing")
             blocked_claims = set(review_decision.get("blocked_claims") or [])
-            if not {"GBP performance", "competitor visibility", "local visibility uplift"}.issubset(
-                blocked_claims
-            ):
+            unsupported_claims = {"local visibility uplift"}
+            if "gbp_visibility" not in allowed_evidence:
+                unsupported_claims.add("GBP performance")
+            if "competitor_visibility" not in allowed_evidence:
+                unsupported_claims.add("competitor visibility")
+            if not unsupported_claims.issubset(blocked_claims):
                 raise SystemExit("Localo value review must block unsupported marketing claims")
             if not localo_metric_facts:
                 raise SystemExit("Localo value review must expose aggregate metric facts")
