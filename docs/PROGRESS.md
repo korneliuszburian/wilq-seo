@@ -634,17 +634,13 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Work by completion contract: core demo cockpit -> content-generation
-   pipeline -> new-site adaptation -> source contracts -> decision
-   API/view-model -> ActionObject safety -> Codex skill/eval quality ->
-   knowledge compiler -> dashboard usefulness/performance -> release/live-test
-   hardening.
-2. Next concrete slice should come from live proof. Current preference:
-   content-generation pipeline; then `http://ekologus.dev.proudsite.pl/`
-   adaptation only after content briefs/draft previews are stable. Fallbacks:
-   Merchant before/after price-performance windows, Ahrefs freshness/
-   cross-source scoring, semantic skill-reference audit or route-level
-   dashboard usefulness/performance.
-3. Do not re-add ready/done surfaces as active tasks. If a completed area looks
+1. Current active map lives in `docs/goals/001-goal.md` under
+   `Remaining Demo Task Map`.
+2. Next concrete slice: marketer cockpit audit route-by-route, then content
+   generation usefulness, then target-site adaptation.
+3. Fallbacks only with fresh proof: Merchant before/after price-performance,
+   Ahrefs freshness/cross-source scoring, decision-quality eval hardening or
+   semantic skill-reference cleanup.
+4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

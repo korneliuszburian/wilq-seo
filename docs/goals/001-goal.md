@@ -742,37 +742,53 @@ Finish these before claiming the Ekologus demo is done:
 - Never commit `.env`, `.local-lab`, traces, screenshots, secrets or protected
   client data.
 
-## Immediate Next Tasks
+## Remaining Demo Task Map
 
-1. First stabilize the core demo cockpit: Command Center and domain routes must
-   show useful marketer decisions, prompt-to-Codex, evidence, blocked claims and
-   safe next actions without technical filler.
-2. Then harden the existing content-generation pipeline: evidence pack ->
-   intent cluster -> inventory/canonical check -> brief -> draft/rewrite
-   preview -> review ActionObject. Before coding, inventory the existing
-   `content_diagnostics`, `content_refresh.py`, dashboard content route,
-   ActionObject payload and content skills so we do not rebuild what already
-   exists. Verify through content diagnostics, tactical queue, dashboard route
-   and `wilq-content-strategist` / `wilq-gsc-content-doctor` evals.
-3. Use `http://ekologus.dev.proudsite.pl/` only after the content pipeline is
-   stable enough to adapt old evidence into target-site briefs without
-   inventing metrics or page claims.
-4. Run knowledge/source condensation in parallel when it directly improves a
-   decision: ingest reputable source -> create knowledge card/rule -> link
-   evidence requirement -> prove in eval that the rule changes the decision or
-   blocks an unsafe claim.
-5. If a task is blocked, take the next slice that increases demo truthfulness
-   or marketer usefulness:
-   - Merchant historical price/performance proof and safer product previews.
-   - Localo `local_tasks` only if a side-effect-free read contract exists.
-   - Ads Keyword Planner/change-impact/apply contracts only when source
-     approval or change rows exist.
-   - Semantic skill-reference cleanup only with fresh proof that a reference is
-     carrying product behavior without a typed API field.
-   - Dashboard performance/shared data-boundary work only with fresh latency or
-     duplicate-aggregation evidence.
-6. Do not advance a slice by prose alone. Each slice needs a concrete API,
-   dashboard, skill, eval or docs proof matched to the changed surface.
+This is the compact active queue for the Ekologus demo. Keep ready/done items
+out of the active queue unless fresh API/browser proof reopens them.
+
+1. **ready - pre-demo gate**
+   - `scripts/pre_demo_gate.sh` now covers managed stack status, API health,
+     live contract smoke, shared live schemas, dashboard API-backed route smoke
+     and sequential WILQ skill smokes.
+   - Next action only if it regresses: fix the failing step, not the whole
+     testing strategy.
+2. **task - marketer cockpit audit**
+   - Review `/command-center`, `/ads-doctor`, `/merchant`, `/content-planner`,
+     `/ga4`, `/localo`, `/actions`, `/opportunities`, `/knowledge` and
+     `/settings` from the marketer perspective.
+   - Classify cards as keep, rewrite, move to drilldown, delete or suspicious.
+     Verification: browser/API proof and targeted route tests only.
+3. **task - content generation usefulness**
+   - Harden existing content flow, not a new pipeline:
+     evidence pack -> intent/query cluster -> inventory/canonical check ->
+     brief -> draft/rewrite preview -> review ActionObject.
+   - Verify `/api/content/diagnostics`, `/api/marketing/tactical-queue`,
+     content route, Action Detail and `wilq-content-strategist` /
+     `wilq-gsc-content-doctor` agree on the same decisions.
+4. **task - target-site adaptation**
+   - Use `http://ekologus.dev.proudsite.pl/` only as target context after the
+     content flow remains stable.
+   - Keep current `ekologus.pl`, `sklep.ekologus.pl` and first-party evidence
+     as source truth. Do not invent target-page claims.
+5. **task - decision-quality evals**
+   - Upgrade skill evals from format/evidence checks to concrete useful
+     decision checks for Ads, Merchant, Content, GA4, Localo, Ahrefs and social.
+   - Keep non-interactive evals scoped; do not send full context when a narrow
+     diagnostics endpoint and skill-scoped pack prove the behavior.
+6. **suspicious - semantic skill references**
+   - Reopen only with proof that a reference hides product behavior, workaround
+     prose, ranking/dedupe logic or dashboard cleanup that belongs in typed
+     API/schema/view-model/eval code.
+7. **deferred - source and apply depth**
+   - Merchant before/after price-performance, Ahrefs freshness/cross-source
+     scoring, Ads Keyword Planner/change-impact/apply contracts and Localo
+     `local_tasks` are not blockers for the near-term demo unless selected as
+     the current slice.
+8. **deferred - BDOS production**
+   - Multi-client, agency operations, full write/apply safety, operational
+     alerts and long-term knowledge memory stay in
+     `docs/goals/archive/bdos-deferred-backlog.md`.
 
 ## Stop Condition
 
