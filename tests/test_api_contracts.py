@@ -12131,10 +12131,28 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         or expected_migration_decisions[0].get("page")
     )
     assert mapping_review_inputs[0]["candidate_id"].startswith("content_brief_gsc_")
+    assert (
+        mapping_review_inputs[0]["review_action_id"]
+        == "act_prepare_content_refresh_queue"
+    )
+    assert (
+        mapping_review_inputs[0]["review_endpoint"]
+        == "/api/actions/act_prepare_content_refresh_queue/review"
+    )
     assert mapping_review_inputs[0]["candidate_target_urls"]
     assert "mapping_outcome:<wybierz allowed_outcome>" in mapping_review_inputs[0][
         "required_checked_items"
     ]
+    assert mapping_review_inputs[0]["review_payload_template"]["outcome"] == (
+        "approved_for_prepare"
+    )
+    assert (
+        mapping_review_inputs[0]["review_payload_template"]["checked_items"]
+        == mapping_review_inputs[0]["required_checked_items"]
+    )
+    assert "wordpress_write_not_requested" in mapping_review_inputs[0][
+        "review_payload_template"
+    ]["blockers"]
     assert "wordpress_publish" in mapping_review_inputs[0]["blocked_outputs"]
     assert "review" in mapping_review_inputs[0]["review_notes_prompt"].lower()
     assert migration_map[0]["migration_candidate_url"] == (

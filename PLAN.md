@@ -267,6 +267,17 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   content-strategist smoke with extended context-pack timeout. This converts the
   mapping blocker into exact human input needed, but does not confirm mapping,
   staging, publish, ranking gain, lead gain or uplift.
+- `ready`: Mapping review inputs now include typed review handoff fields:
+  `review_action_id`, `review_endpoint` and a `review_payload_template` with
+  checked items and blockers. The dashboard renders this as marketer-facing
+  "Review: zapisz review mapowania przez ActionObject" plus payload item count,
+  without exposing raw action IDs on the first screen. Live proof:
+  `.local-lab/proof/content-mapping-review-handoff/live-mapping-review-handoff-summary.json`;
+  browser proof:
+  `.local-lab/proof/content-mapping-review-handoff/content-planner-browser-body.txt`
+  and `.local-lab/proof/content-mapping-review-handoff/content-planner-browser.png`.
+  This makes the next operator action explicit while preserving review-only
+  state and all publish/uplift blocks.
 - `ready`: Existing `/api/actions/act_prepare_content_refresh_queue/review`
   now records target-site mapping review through structured `AuditEvent.details`
   instead of unsafe free-text summary parsing. The reviewed WordPress draft

@@ -2249,8 +2249,11 @@ class ContentTargetSiteMappingReviewInputItem(BaseModel):
     current_migration_candidate_url: str | None = None
     candidate_target_urls: list[str] = Field(default_factory=list)
     mapping_review_status: str | None = None
+    review_action_id: str
+    review_endpoint: str
     allowed_outcomes: list[str] = Field(default_factory=list)
     required_checked_items: list[str] = Field(default_factory=list)
+    review_payload_template: dict[str, object] = Field(default_factory=dict)
     review_notes_prompt: str
     blocked_outputs: list[str] = Field(default_factory=list)
 

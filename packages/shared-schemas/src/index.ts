@@ -1871,8 +1871,11 @@ export const ContentOperatorSummarySchema = z.object({
         current_migration_candidate_url: z.string().nullable().optional(),
         candidate_target_urls: z.array(z.string()).default([]),
         mapping_review_status: z.string().nullable().optional(),
+        review_action_id: z.string(),
+        review_endpoint: z.string(),
         allowed_outcomes: z.array(z.string()).default([]),
         required_checked_items: z.array(z.string()).default([]),
+        review_payload_template: z.record(z.string(), z.unknown()).default({}),
         review_notes_prompt: z.string(),
         blocked_outputs: z.array(z.string()).default([])
       })

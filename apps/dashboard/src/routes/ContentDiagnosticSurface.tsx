@@ -753,6 +753,15 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
                         {item.candidate_target_urls.slice(0, 2).map(shortPath).join(", ") ||
                           "wymaga ręcznego URL"}
                       </div>
+                      <div>
+                        Review: zapisz review mapowania przez ActionObject
+                      </div>
+                      <div>
+                        Payload:{" "}
+                        {Array.isArray(item.review_payload_template.checked_items)
+                          ? `${item.review_payload_template.checked_items.length} checked items`
+                          : "template review-only"}
+                      </div>
                       <div className="text-slate-500">{item.review_notes_prompt}</div>
                     </div>
                   ))}

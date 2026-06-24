@@ -434,8 +434,15 @@ def _content_operator_target_site_mapping_review_inputs(
                 ]
             ),
             "mapping_review_status": decision.target_site_mapping_review_status,
+            "review_action_id": "act_prepare_content_refresh_queue",
+            "review_endpoint": (
+                "/api/actions/act_prepare_content_refresh_queue/review"
+            ),
             "allowed_outcomes": _content_operator_mapping_allowed_outcomes(decision),
             "required_checked_items": _content_operator_mapping_checked_items(
+                decision
+            ),
+            "review_payload_template": _content_operator_mapping_review_payload_template(
                 decision
             ),
             "review_notes_prompt": _content_operator_mapping_notes_prompt(decision),
@@ -448,6 +455,23 @@ def _content_operator_target_site_mapping_review_inputs(
         }
         for decision in _content_operator_mapping_review_decisions(decisions)[:8]
     ]
+
+
+def _content_operator_mapping_review_payload_template(
+    decision: ContentDecisionItem,
+) -> dict[str, object]:
+    return {
+        "outcome": "approved_for_prepare",
+        "reviewed_by": "<operator>",
+        "notes": _content_operator_mapping_notes_prompt(decision),
+        "checked_items": _content_operator_mapping_checked_items(decision),
+        "blockers": [
+            "payload_apply_allowed_false",
+            "wordpress_write_not_requested",
+            "blocked_claim:ranking guarantee",
+            "blocked_claim:lead uplift",
+        ],
+    }
 
 
 def _content_operator_mapping_review_decisions(

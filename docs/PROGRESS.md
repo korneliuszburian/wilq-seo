@@ -69,6 +69,12 @@ Stan produktu:
   `.local-lab/proof/content-mapping-review-input/live-mapping-review-input-summary.json`.
   This turns the mapping blocker into exact human input needed, but still does
   not unlock staging, publish, ranking/lead uplift or content-success claims.
+- Mapping review inputs now also carry a typed review handoff:
+  `review_action_id`, `review_endpoint` and `review_payload_template`.
+  Content Planner renders this as "Review: zapisz review mapowania przez
+  ActionObject" plus payload item count, without raw action IDs on the first
+  screen. Live/browser proof:
+  `.local-lab/proof/content-mapping-review-handoff/`.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -113,10 +119,10 @@ Stan produktu:
 3. If demo UX is the next priority, change one confirmed blocker at a time
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.
-4. If content depth is next, continue from the
-   `target_site_mapping_review_inputs` packet toward confirmed human mapping
-   for every row, then audited draft-readiness. Do not unlock staging, publish
-   or uplift claims without typed preview, human confirmation and audit.
+4. If content depth is next, continue from the review handoff packet toward
+   confirmed human mapping for every row, then audited draft-readiness. Do not
+   unlock staging, publish or uplift claims without typed preview, human
+   confirmation and audit.
 5. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

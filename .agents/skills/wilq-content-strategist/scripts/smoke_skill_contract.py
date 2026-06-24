@@ -344,6 +344,10 @@ def validate_content_operator_summary(content_diagnostics: dict[str, Any]) -> No
             raise SystemExit("Content mapping review input item must be an object")
         if not str(item.get("candidate_id") or "").startswith("content_brief_gsc_"):
             raise SystemExit("Content mapping review input lacks traceable candidate_id")
+        if item.get("review_action_id") != CONTENT_ACTION_ID:
+            raise SystemExit("Content mapping review input lacks review ActionObject ID")
+        if item.get("review_endpoint") != f"/api/actions/{CONTENT_ACTION_ID}/review":
+            raise SystemExit("Content mapping review input lacks review endpoint")
         if not isinstance(item.get("candidate_target_urls"), list):
             raise SystemExit("Content mapping review input candidate_target_urls must be a list")
         checked_items = item.get("required_checked_items")
@@ -352,6 +356,16 @@ def validate_content_operator_summary(content_diagnostics: dict[str, Any]) -> No
             for value in checked_items
         ):
             raise SystemExit("Content mapping review input lacks mapping_outcome checked item")
+        review_payload = item.get("review_payload_template")
+        if not isinstance(review_payload, dict):
+            raise SystemExit("Content mapping review input lacks review payload template")
+        if review_payload.get("outcome") != "approved_for_prepare":
+            raise SystemExit("Content mapping review payload template has unsafe outcome")
+        if review_payload.get("checked_items") != checked_items:
+            raise SystemExit("Content mapping review payload template checked items differ")
+        payload_blockers = set(review_payload.get("blockers") or [])
+        if "wordpress_write_not_requested" not in payload_blockers:
+            raise SystemExit("Content mapping review payload template must block writes")
         blocked_outputs = set(item.get("blocked_outputs") or [])
         if not {"wordpress_publish", "ranking_or_lead_uplift_claim"}.issubset(
             blocked_outputs

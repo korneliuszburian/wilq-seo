@@ -4396,6 +4396,8 @@ const contentDiagnostics = {
         current_migration_candidate_url: "https://ekologus.dev.proudsite.pl/bdo/",
         candidate_target_urls: ["https://ekologus.dev.proudsite.pl/bdo/"],
         mapping_review_status: "manual_mapping_required",
+        review_action_id: "act_prepare_content_refresh_queue",
+        review_endpoint: "/api/actions/act_prepare_content_refresh_queue/review",
         allowed_outcomes: ["manual_mapping_required", "reject_all_candidates"],
         required_checked_items: [
           "candidate:content_brief_gsc_bdo",
@@ -4403,6 +4405,24 @@ const contentDiagnostics = {
           "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
           "mapping_notes:<krótka decyzja marketera>"
         ],
+        review_payload_template: {
+          outcome: "approved_for_prepare",
+          reviewed_by: "<operator>",
+          notes:
+            "Review mapowania: wskaż docelowy URL na nowej stronie albo odrzuć kandydatów. Bez tej decyzji draft i staging zostają zablokowane.",
+          checked_items: [
+            "candidate:content_brief_gsc_bdo",
+            "mapping_outcome:<wybierz allowed_outcome>",
+            "selected_target_url:https://ekologus.dev.proudsite.pl/bdo/",
+            "mapping_notes:<krótka decyzja marketera>"
+          ],
+          blockers: [
+            "payload_apply_allowed_false",
+            "wordpress_write_not_requested",
+            "blocked_claim:ranking guarantee",
+            "blocked_claim:lead uplift"
+          ]
+        },
         review_notes_prompt:
           "Review mapowania: wskaż docelowy URL na nowej stronie albo odrzuć kandydatów. Bez tej decyzji draft i staging zostają zablokowane.",
         blocked_outputs: [
@@ -6783,6 +6803,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Mapowanie: wymaga mapowania")).toBeInTheDocument();
     expect(screen.getByText("Input do review mapowania")).toBeInTheDocument();
     expect(screen.getByText(/Kandydat: content_brief_gsc_/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Review: zapisz review mapowania przez ActionObject")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Payload: 4 checked items")).toBeInTheDocument();
     expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
