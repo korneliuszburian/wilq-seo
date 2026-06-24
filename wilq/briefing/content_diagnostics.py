@@ -39,6 +39,29 @@ PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
+GSC_CONTENT_KNOWLEDGE_CARD_IDS = (
+    "card_gsc_seo_content_playbook",
+    "card_wordpress_content_refresh_playbook",
+)
+GSC_CONTENT_EXPERT_RULE_IDS = (
+    "seo_gsc_opportunities_v1",
+    "seo_query_page_matrix_v1",
+    "seo_content_decay_v1",
+    "seo_cannibalization_v1",
+    "content_duplication_rules_v1",
+    "content_brief_rules_v1",
+)
+AHREFS_CONTENT_KNOWLEDGE_CARD_IDS = (
+    "card_ahrefs_content_gap_playbook",
+    "card_gsc_seo_content_playbook",
+    "card_wordpress_content_refresh_playbook",
+)
+AHREFS_CONTENT_EXPERT_RULE_IDS = (
+    "content_brief_rules_v1",
+    "content_duplication_rules_v1",
+)
+GA4_TRACKING_KNOWLEDGE_CARD_IDS = ("card_ga4_behavior_diagnostics_playbook",)
+GA4_TRACKING_EXPERT_RULE_IDS = ("ga4_diagnostics_v1",)
 ContentDecisionType = Literal[
     "block_until_vendor_read",
     "refresh_or_merge",
@@ -396,6 +419,11 @@ def _query_page_section(
                 "google_search_console",
             ),
             action_ids=action_ids,
+            knowledge_card_ids=["card_gsc_seo_content_playbook"],
+            expert_rule_ids=[
+                "seo_gsc_opportunities_v1",
+                "seo_query_page_matrix_v1",
+            ],
             blocked_claims=["CTR opportunity", "ranking win", "content intent"],
             risk=ActionRisk.medium,
         )
@@ -422,6 +450,11 @@ def _query_page_section(
         metric_facts=gsc_facts[:10],
         tactical_items=gsc_items[:8],
         action_ids=action_ids,
+        knowledge_card_ids=list(GSC_CONTENT_KNOWLEDGE_CARD_IDS),
+        expert_rule_ids=[
+            "seo_gsc_opportunities_v1",
+            "seo_query_page_matrix_v1",
+        ],
         blocked_claims=["lead uplift", "conversion uplift", "revenue impact"],
         risk=ActionRisk.low,
     )
@@ -467,6 +500,8 @@ def _inventory_match_section(
                 "wordpress_ekologus",
             ),
             action_ids=action_ids,
+            knowledge_card_ids=["card_wordpress_content_refresh_playbook"],
+            expert_rule_ids=["content_duplication_rules_v1", "content_brief_rules_v1"],
             blocked_claims=["duplicate avoidance", "refresh plan", "merge plan"],
             risk=ActionRisk.medium,
         )
@@ -498,6 +533,11 @@ def _inventory_match_section(
         metric_facts=inventory_facts[:10],
         tactical_items=[*matched_items[:5], *missing_items[:3]],
         action_ids=action_ids,
+        knowledge_card_ids=list(GSC_CONTENT_KNOWLEDGE_CARD_IDS),
+        expert_rule_ids=[
+            "content_duplication_rules_v1",
+            "content_brief_rules_v1",
+        ],
         blocked_claims=["new article without inventory check", "duplicate-free guarantee"],
         risk=ActionRisk.low,
     )
@@ -537,6 +577,8 @@ def _content_action_safety_section(
         or [connector_evidence_id("google_search_console")],
         tactical_items=tactical_items[:6],
         action_ids=action_ids,
+        knowledge_card_ids=["card_wordpress_content_refresh_playbook"],
+        expert_rule_ids=["content_brief_rules_v1", "content_voice_rules_v1"],
         blocked_claims=["wordpress write", "auto publish", "ranking guarantee"],
         risk=ActionRisk.medium,
     )
@@ -628,6 +670,8 @@ def _content_vendor_read_blocker_decision(
             ]
         ),
         action_ids=action_ids,
+        knowledge_card_ids=list(GSC_CONTENT_KNOWLEDGE_CARD_IDS),
+        expert_rule_ids=list(GSC_CONTENT_EXPERT_RULE_IDS),
         blocked_claims=[
             "content recommendation",
             "ranking uplift",
@@ -746,6 +790,8 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
                 action_ids=_unique(
                     action_id for item in page_items for action_id in item.action_ids
                 ),
+                knowledge_card_ids=list(GSC_CONTENT_KNOWLEDGE_CARD_IDS),
+                expert_rule_ids=list(GSC_CONTENT_EXPERT_RULE_IDS),
                 blocked_claims=_unique(
                     claim for item in page_items for claim in item.blocked_claims
                 ),
@@ -789,6 +835,8 @@ def _ga4_tracking_gap_decisions(items: list[TacticalQueueItem]) -> list[ContentD
             action_ids=_unique(
                 action_id for item in tracking_gaps for action_id in item.action_ids
             ),
+            knowledge_card_ids=list(GA4_TRACKING_KNOWLEDGE_CARD_IDS),
+            expert_rule_ids=list(GA4_TRACKING_EXPERT_RULE_IDS),
             blocked_claims=_unique(
                 [
                     *(claim for item in tracking_gaps for claim in item.blocked_claims),
@@ -892,6 +940,8 @@ def _ahrefs_gap_record_decisions(
             metric_facts=display_facts,
             ahrefs_candidate_rows=_ahrefs_candidate_rows(candidate_scores),
             action_ids=content_action_ids,
+            knowledge_card_ids=list(AHREFS_CONTENT_KNOWLEDGE_CARD_IDS),
+            expert_rule_ids=list(AHREFS_CONTENT_EXPERT_RULE_IDS),
             blocked_claims=[
                 "off-topic content recommendation",
                 "content brief without relevance review",

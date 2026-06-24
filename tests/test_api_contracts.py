@@ -11549,6 +11549,18 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert first_decision["evidence_ids"]
     assert "act_prepare_content_refresh_queue" in first_decision["action_ids"]
+    assert first_decision["knowledge_card_ids"] == [
+        "card_gsc_seo_content_playbook",
+        "card_wordpress_content_refresh_playbook",
+    ]
+    assert first_decision["expert_rule_ids"] == [
+        "seo_gsc_opportunities_v1",
+        "seo_query_page_matrix_v1",
+        "seo_content_decay_v1",
+        "seo_cannibalization_v1",
+        "content_duplication_rules_v1",
+        "content_brief_rules_v1",
+    ]
     ahrefs_decision = next(
         decision
         for decision in payload["decision_queue"]
@@ -11597,6 +11609,15 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert ahrefs_decision["source_connectors"] == ["ahrefs"]
     assert ahrefs_decision["evidence_ids"] == ["ev_refresh_ahrefs_gap_records"]
     assert "act_prepare_content_refresh_queue" in ahrefs_decision["action_ids"]
+    assert ahrefs_decision["knowledge_card_ids"] == [
+        "card_ahrefs_content_gap_playbook",
+        "card_gsc_seo_content_playbook",
+        "card_wordpress_content_refresh_playbook",
+    ]
+    assert ahrefs_decision["expert_rule_ids"] == [
+        "content_brief_rules_v1",
+        "content_duplication_rules_v1",
+    ]
     assert "off-topic content recommendation" in ahrefs_decision["blocked_claims"]
     assert "traffic uplift" in ahrefs_decision["blocked_claims"]
     assert "ev_refresh_ahrefs_gap_records" in payload["evidence_ids"]
@@ -11628,6 +11649,18 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert context_decision["source_connectors"] == first_decision["source_connectors"]
     assert context_decision["evidence_ids"] == first_decision["evidence_ids"]
     assert context_decision["action_ids"] == first_decision["action_ids"]
+    assert context_decision["knowledge_card_ids"] == first_decision["knowledge_card_ids"]
+    assert context_decision["expert_rule_ids"] == first_decision["expert_rule_ids"]
+    context_knowledge_card_ids = {
+        card["id"] for card in context_payload["knowledge_card_summaries"]
+    }
+    context_expert_rule_ids = {
+        rule["id"] for rule in context_payload["expert_rule_summaries"]
+    }
+    assert set(context_decision["knowledge_card_ids"]).issubset(
+        context_knowledge_card_ids
+    )
+    assert set(context_decision["expert_rule_ids"]).issubset(context_expert_rule_ids)
     assert any(
         decision["decision_type"] == "review_ahrefs_gap_records"
         for decision in context_payload["content_diagnostics"]["decision_queue"]

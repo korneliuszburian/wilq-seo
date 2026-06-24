@@ -165,6 +165,11 @@ dashboard and `wilq-content-strategist`: current source URLs and target-site
 URLs/hosts/status are explicit in content brief and WordPress draft previews,
 including future `ekologus.dev.proudsite.pl` adaptation, while the dev site is
 not treated as independent source evidence.
+Content expert/knowledge lineage is now typed on `/api/content/diagnostics`
+sections and decisions instead of living only in context-pack summaries:
+GSC/WordPress refresh decisions, Ahrefs gap review decisions and GA4
+tracking-gap blocks expose supporting knowledge card IDs and expert rule IDs
+that are present in the skill context.
 Daily Command wording/eval now treats Localo as outside the daily task list only
 when it is outside typed `command_center.daily_decisions`, not because Localo
 evidence is absent
@@ -927,3 +932,16 @@ Focused proof passed: content API subset 4 passed, content route test passed,
 Action Detail content preview test passed, dashboard typecheck passed, content
 strategist smoke passed and `git diff --check` passed. Continue Final A-Z from
 expert rules and knowledge audit.
+
+2026-06-24 expert/knowledge checkpoint: first confirmed issue fixed in the
+content workflow. Expert rules and knowledge cards existed and were scoped into
+`wilq-content-strategist`, but content diagnostic decisions/sections did not
+carry `knowledge_card_ids` or `expert_rule_ids`, so the decision queue did not
+prove which rule/card supported a refresh, Ahrefs review or GA4 tracking block.
+`ContentDiagnosticSection` and `ContentDecisionItem` now expose those IDs, and
+live API/context-pack proof shows the IDs on content decisions while the scoped
+skill context contains the matching summaries. Focused proof passed: content
+API pytest subset, Python compile, managed stack restart, live API/context-pack
+check, content strategist smoke and shared live schema smoke. Continue the
+expert/knowledge audit by checking other non-Ads domain diagnostics for the
+same direct decision-lineage gap before moving to test strategy/code quality.

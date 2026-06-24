@@ -41,6 +41,24 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Expert/knowledge audit slice completed on 2026-06-24 for the content
+  workflow. Confirmed finding: WILQ already had structured expert YAML,
+  knowledge playbooks, operating-map bindings and skill-scoped context-pack
+  summaries, but `/api/content/diagnostics` decisions and sections did not
+  carry `knowledge_card_ids` or `expert_rule_ids`. That meant content skills
+  could see nearby cards/rules but the decision queue itself did not prove
+  which rules supported refresh/merge/Ahrefs/tracking-block decisions. Fixed in
+  typed API/schema: `ContentDiagnosticSection` and `ContentDecisionItem` now
+  expose lineage; GSC/WordPress decisions use GSC + WordPress playbooks and
+  SEO/content rules; Ahrefs review decisions use Ahrefs/GSC/WordPress cards;
+  GA4 tracking-gap blocks use GA4 diagnostics lineage. Focused proof passed:
+  content API pytest subset 2 passed, Python compile passed, managed stack
+  restart, live `/api/content/diagnostics` showed section/decision lineage,
+  live `wilq-content-strategist` context-pack carried the same IDs, content
+  strategist smoke passed and shared live schemas parsed content diagnostics.
+  Next checklist item: continue expert/knowledge audit beyond content by
+  checking whether non-Ads domain diagnostics surface lineage directly in their
+  decision queues or only through operating-map/context summaries.
 - Content target-site adaptation slice completed on 2026-06-24. Existing
   content evidence still comes from current source sites, but content brief and
   WordPress draft previews now carry explicit target-site context:

@@ -2122,6 +2122,8 @@ class ContentDiagnosticSection(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     tactical_items: list[TacticalQueueItem] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     risk: ActionRisk = ActionRisk.low
 
@@ -2179,6 +2181,8 @@ class ContentDecisionItem(BaseModel):
     metric_facts: list[MetricFact] = Field(default_factory=list)
     ahrefs_candidate_rows: list[ContentAhrefsCandidateRow] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
+    knowledge_card_ids: list[str] = Field(default_factory=list)
+    expert_rule_ids: list[str] = Field(default_factory=list)
     blocked_claims: list[str] = Field(default_factory=list)
     rationale: str
     next_step: str
