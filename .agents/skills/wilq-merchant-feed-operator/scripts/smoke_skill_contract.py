@@ -148,6 +148,8 @@ def main() -> int:
             raise SystemExit("Ready price_impact_readiness must include current prices")
         if price_impact_readiness.get("products_with_previous_price", 0) <= 0:
             raise SystemExit("Ready price_impact_readiness must include previous prices")
+        if price_impact_readiness.get("products_with_price_change", 0) <= 0:
+            raise SystemExit("Ready price_impact_readiness must include changed prices")
         if price_impact_readiness.get("products_with_performance_metrics", 0) <= 0:
             raise SystemExit("Ready price_impact_readiness must include performance windows")
     elif price_status == "blocked":
@@ -173,6 +175,11 @@ def main() -> int:
             raise SystemExit("Merchant price impact preview must keep apply_allowed=false")
         if price_preview[0].get("api_mutation_ready") is not False:
             raise SystemExit("Merchant price impact preview must keep api_mutation_ready=false")
+        products = price_preview[0].get("products") or []
+        if products:
+            first_product = products[0]
+            if "has_price_change" not in first_product:
+                raise SystemExit("Merchant price impact preview must expose has_price_change")
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
     decision_queue = merchant_diagnostics.get("decision_queue") or []
     unknowns = merchant_diagnostics.get("unknowns") or []

@@ -4092,6 +4092,8 @@ const merchantDiagnostics = {
     status: "blocked",
     products_with_current_price: 0,
     products_with_previous_price: 0,
+    products_with_price_change: 0,
+    products_with_unchanged_price_history: 0,
     products_with_performance_metrics: 0,
     current_read_contracts: ["merchant_aggregate_product_statuses"],
     required_read_contracts: [
@@ -6390,6 +6392,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/google_ads_shopping_product_performance/)).toBeInTheDocument();
     expect(screen.getByText("Wpływ ceny produktu")).toBeInTheDocument();
     expect(screen.getByText("price impact zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("Zmiany ceny")).toBeInTheDocument();
+    expect(screen.getByText("Bez zmiany")).toBeInTheDocument();
     expect(screen.getAllByText(/google_ads_shopping_product_price_history/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ROAS produktu/).length).toBeGreaterThan(0);
     expect(screen.getByText("Brak joinu produktów Merchant z Ads/GA4")).toBeInTheDocument();

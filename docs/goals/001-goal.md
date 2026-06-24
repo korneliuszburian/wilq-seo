@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:58 CEST.
+Last updated: 2026-06-24 03:09 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -194,10 +194,12 @@ Finish these before claiming the Ekologus demo is done:
      Ads prices, 0 previous price snapshots and 0 matching product performance
      windows, so price-impact remains blocked with explicit missing read
      contracts. Price preview rows now expose current/previous price snapshot
-     timestamps and previous evidence IDs when metric history exists. Remaining
-     Merchant work is actual historical price snapshots,
-     before/after performance windows and richer read-only previews where vendor
-     APIs expose safe details. Do not claim approval restoration, revenue
+     timestamps, previous evidence IDs, `has_price_change`, and changed-vs-
+     unchanged price-history counters when metric history exists. A second
+     identical price snapshot is history, not a price-change event. Remaining
+     Merchant work is actual historical price snapshots with real price
+     changes, before/after performance windows and richer read-only previews
+     where vendor APIs expose safe details. Do not claim approval restoration, revenue
      recovery, product ROAS, price impact or unique SKU fixes from aggregate
      issue counts, state-only rows, supplemental-feed candidates or current
      prices alone.

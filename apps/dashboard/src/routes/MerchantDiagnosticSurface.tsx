@@ -541,10 +541,15 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
           </p>
           <p className="mt-2 text-sm font-medium text-ink">{readiness.next_step}</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-5">
           <MetricTile label="Status" value={statusLabel} />
           <MetricTile label="Ceny teraz" value={readiness.products_with_current_price} />
           <MetricTile label="Historia cen" value={readiness.products_with_previous_price} />
+          <MetricTile label="Zmiany ceny" value={readiness.products_with_price_change} />
+          <MetricTile
+            label="Bez zmiany"
+            value={readiness.products_with_unchanged_price_history}
+          />
         </div>
       </div>
       <div className="grid gap-2 text-xs text-slate-600 md:grid-cols-2">

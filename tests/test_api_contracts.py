@@ -30,7 +30,10 @@ from wilq.briefing.ads_diagnostics import (
 from wilq.briefing.content_diagnostics import build_content_diagnostics
 from wilq.briefing.ga4_diagnostics import build_ga4_diagnostics
 from wilq.briefing.marketing_brief import build_marketing_brief
-from wilq.briefing.merchant_diagnostics import _merchant_product_performance_readiness
+from wilq.briefing.merchant_diagnostics import (
+    _merchant_price_impact_readiness,
+    _merchant_product_performance_readiness,
+)
 from wilq.connectors.ahrefs.client import refresh_ahrefs_domain_rating
 from wilq.connectors.google_ads.client import (
     _fetch_optional_shopping_product_performance,
@@ -72,6 +75,8 @@ from wilq.schemas import (
     FreshnessState,
     MarketingBrief,
     MerchantIssueCluster,
+    MerchantProductPerformanceReadiness,
+    MerchantProductPerformanceRow,
     MerchantProductSampleReadiness,
     MetricFact,
     Opportunity,
@@ -10744,6 +10749,8 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert price_readiness["status"] == "blocked"
     assert price_readiness["products_with_current_price"] == 1
     assert price_readiness["products_with_previous_price"] == 1
+    assert price_readiness["products_with_price_change"] == 1
+    assert price_readiness["products_with_unchanged_price_history"] == 0
     assert price_readiness["products_with_performance_metrics"] == 0
     assert price_readiness["missing_read_contracts"] == [
         "google_ads_or_ga4_product_performance_window"
@@ -10762,6 +10769,7 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
         "ev_ads_product_state_previous"
     )
     assert price_preview["products"][0]["has_price_snapshot_history"] is True
+    assert price_preview["products"][0]["has_price_change"] is True
     assert price_preview["products"][0]["price_delta_micros"] == 3450000
     assert price_preview["products"][0]["has_product_performance_metrics"] is False
     readiness = payload["product_performance_readiness"]
@@ -10776,6 +10784,60 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert row["ads_product_title"] == "Sorbent chemiczny 10 kg"
     assert row["ads_product_status"] == "NOT_ELIGIBLE"
     assert row["ads_product_availability"] == "OUT_OF_STOCK"
+
+
+def test_merchant_price_impact_blocks_snapshot_history_without_price_change() -> None:
+    readiness = _merchant_price_impact_readiness(
+        MerchantProductPerformanceReadiness(
+            status="blocked",
+            joined_product_count=1,
+            merchant_sample_count=1,
+            ads_product_fact_count=4,
+            ga4_product_fact_count=0,
+            current_read_contracts=["google_ads_shopping_product_state"],
+            required_read_contracts=["google_ads_shopping_product_performance"],
+            missing_read_contracts=["google_ads_shopping_product_performance"],
+            join_key_candidates=["product_item_id"],
+            sample_product_ids=["SKU-001"],
+            performance_rows=[
+                MerchantProductPerformanceRow(
+                    product_id="SKU-001",
+                    sample_title="Sorbent chemiczny",
+                    source_connectors=["google_ads"],
+                    evidence_ids=["ev_ads_product_state"],
+                    ads_product_price_micros=123450000,
+                    ads_product_currency_code="PLN",
+                    ads_product_price_collected_at=datetime(
+                        2026, 6, 24, 8, 0, tzinfo=UTC
+                    ),
+                    ads_product_previous_price_micros=123450000,
+                    ads_product_previous_price_collected_at=datetime(
+                        2026, 6, 23, 8, 0, tzinfo=UTC
+                    ),
+                    ads_product_previous_price_evidence_id="ev_ads_previous",
+                    ads_product_price_delta_micros=0,
+                    ads_product_price_delta_percent=0.0,
+                )
+            ],
+            source_connectors=["google_merchant_center", "google_ads"],
+            evidence_ids=["ev_merchant", "ev_ads_product_state"],
+            summary="State-only price snapshot.",
+            next_step="Keep price impact blocked.",
+            blocked_claims=["price change impact"],
+        )
+    )
+
+    assert readiness.status == "blocked"
+    assert readiness.products_with_previous_price == 1
+    assert readiness.products_with_price_change == 0
+    assert readiness.products_with_unchanged_price_history == 1
+    assert "google_ads_shopping_product_price_history" in readiness.current_read_contracts
+    assert "merchant_price_change_event_or_snapshot" not in readiness.current_read_contracts
+    assert "merchant_price_change_event_or_snapshot" in readiness.missing_read_contracts
+    assert "bez wykrytej zmiany ceny" in readiness.summary
+    preview_product = readiness.payload_preview[0]["products"][0]
+    assert preview_product["has_price_snapshot_history"] is True
+    assert preview_product["has_price_change"] is False
 
 
 def test_merchant_diagnostics_groups_reporting_contexts_into_one_operator_decision(

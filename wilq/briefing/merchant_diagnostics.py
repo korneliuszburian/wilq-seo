@@ -742,10 +742,17 @@ def _merchant_price_impact_readiness(
         if row.ads_product_previous_price_micros is not None
         and row.ads_product_previous_price_collected_at is not None
     ]
+    rows_with_price_change = [
+        row for row in rows_with_previous_price if _has_price_change(row)
+    ]
+    rows_with_unchanged_price_history = [
+        row for row in rows_with_previous_price if not _has_price_change(row)
+    ]
     rows_with_performance = [row for row in rows if _has_product_performance_metric(row)]
     current_read_contracts = _merchant_price_impact_current_read_contracts(
         rows_with_current_price=rows_with_current_price,
         rows_with_previous_price=rows_with_previous_price,
+        rows_with_price_change=rows_with_price_change,
         rows_with_performance=rows_with_performance,
     )
     missing_read_contracts = [
@@ -760,6 +767,8 @@ def _merchant_price_impact_readiness(
         status=status,
         rows_with_current_price=len(rows_with_current_price),
         rows_with_previous_price=len(rows_with_previous_price),
+        rows_with_price_change=len(rows_with_price_change),
+        rows_with_unchanged_price_history=len(rows_with_unchanged_price_history),
         rows_with_performance=len(rows_with_performance),
     )
     next_step = (
@@ -771,6 +780,8 @@ def _merchant_price_impact_readiness(
         status=status,
         products_with_current_price=len(rows_with_current_price),
         products_with_previous_price=len(rows_with_previous_price),
+        products_with_price_change=len(rows_with_price_change),
+        products_with_unchanged_price_history=len(rows_with_unchanged_price_history),
         products_with_performance_metrics=len(rows_with_performance),
         current_read_contracts=current_read_contracts,
         required_read_contracts=MERCHANT_PRICE_IMPACT_REQUIRED_READ_CONTRACTS,
@@ -801,6 +812,7 @@ def _merchant_price_impact_current_read_contracts(
     *,
     rows_with_current_price: list[MerchantProductPerformanceRow],
     rows_with_previous_price: list[MerchantProductPerformanceRow],
+    rows_with_price_change: list[MerchantProductPerformanceRow],
     rows_with_performance: list[MerchantProductPerformanceRow],
 ) -> list[str]:
     contracts: list[str] = []
@@ -808,6 +820,7 @@ def _merchant_price_impact_current_read_contracts(
         contracts.append("google_ads_shopping_product_current_price")
     if rows_with_previous_price:
         contracts.append("google_ads_shopping_product_price_history")
+    if rows_with_price_change:
         contracts.append("merchant_price_change_event_or_snapshot")
     if rows_with_performance:
         contracts.append("google_ads_or_ga4_product_performance_window")
@@ -819,6 +832,8 @@ def _merchant_price_impact_summary(
     status: Literal["ready", "blocked"],
     rows_with_current_price: int,
     rows_with_previous_price: int,
+    rows_with_price_change: int,
+    rows_with_unchanged_price_history: int,
     rows_with_performance: int,
 ) -> str:
     if status == "ready":
@@ -833,9 +848,16 @@ def _merchant_price_impact_summary(
             "zmapowanych produktów, ale nie ma historii ceny ani zdarzenia "
             "zmiany ceny. Price impact pozostaje zablokowany."
         )
-    if rows_with_previous_price and not rows_with_performance:
+    if rows_with_previous_price and not rows_with_price_change:
         return (
             f"WILQ widzi historię ceny dla {rows_with_previous_price} produktów, "
+            f"w tym {rows_with_unchanged_price_history} bez wykrytej zmiany ceny. "
+            "Price impact pozostaje zablokowany do czasu faktycznego zdarzenia "
+            "zmiany ceny i performance window."
+        )
+    if rows_with_previous_price and not rows_with_performance:
+        return (
+            f"WILQ widzi zmianę ceny dla {rows_with_price_change} produktów, "
             "ale nie ma dopasowanych metryk performance w oknie before/after."
         )
     return (
@@ -874,6 +896,7 @@ def _merchant_price_impact_payload_preview(
                     row.ads_product_previous_price_micros is not None
                     and row.ads_product_previous_price_collected_at is not None
                 ),
+                "has_price_change": _has_price_change(row),
                 "has_product_performance_metrics": _has_product_performance_metric(row),
                 "issue_type": row.issue_type,
                 "affected_attribute": row.affected_attribute,
@@ -1182,6 +1205,18 @@ def _has_product_performance_metric(row: MerchantProductPerformanceRow) -> bool:
             row.ga4_purchase_revenue,
         )
     )
+
+
+def _has_price_change(row: MerchantProductPerformanceRow) -> bool:
+    if (
+        row.ads_product_price_micros is None
+        or row.ads_product_previous_price_micros is None
+        or row.ads_product_previous_price_collected_at is None
+    ):
+        return False
+    if row.ads_product_price_delta_micros is not None:
+        return row.ads_product_price_delta_micros != 0
+    return row.ads_product_price_micros != row.ads_product_previous_price_micros
 
 
 def _has_ads_product_state(row: MerchantProductPerformanceRow) -> bool:

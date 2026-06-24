@@ -2062,6 +2062,8 @@ class MerchantPriceImpactReadiness(BaseModel):
     status: Literal["ready", "blocked"]
     products_with_current_price: int = 0
     products_with_previous_price: int = 0
+    products_with_price_change: int = 0
+    products_with_unchanged_price_history: int = 0
     products_with_performance_metrics: int = 0
     current_read_contracts: list[str] = Field(default_factory=list)
     required_read_contracts: list[str] = Field(default_factory=list)

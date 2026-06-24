@@ -1679,6 +1679,8 @@ export const MerchantPriceImpactReadinessSchema = z.object({
   status: z.enum(["ready", "blocked"]),
   products_with_current_price: z.number(),
   products_with_previous_price: z.number(),
+  products_with_price_change: z.number().default(0),
+  products_with_unchanged_price_history: z.number().default(0),
   products_with_performance_metrics: z.number(),
   current_read_contracts: z.array(z.string()),
   required_read_contracts: z.array(z.string()),

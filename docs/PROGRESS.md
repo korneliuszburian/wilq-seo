@@ -91,9 +91,10 @@ Stan produktu:
   review-only preview flags and blocked product ROAS/profitability/price-impact
   claims. Metric facts now also expose `previous_evidence_id` and
   `previous_collected_at`, and Merchant price preview rows expose current and
-  previous price snapshot timestamps. Live proof still shows 3 current Ads
-  prices, 0 previous price snapshots and 0 performance windows, so impact claims
-  remain blocked. Merchant `product_performance_readiness` now also exposes
+  previous price snapshot timestamps, `has_price_change`, changed-price count
+  and unchanged-history count. Live proof still shows 3 current Ads prices, 0
+  previous price snapshots, 0 changed prices and 0 performance windows, so
+  impact claims remain blocked. Merchant `product_performance_readiness` now also exposes
   `missing_read_contracts`, so dashboard and skills can distinguish state-only
   Ads joins from missing Ads/GA4 product performance contracts without deriving
   that in prompt prose.
@@ -225,8 +226,8 @@ Stan produktu:
    - Merchant now has partial Ads product-state joins for Merchant samples,
      a state-only review decision, review-only supplemental-feed candidates and
      a blocked price-impact readiness contract. It still needs historical price
-     snapshots and before/after performance windows before product-performance
-     decisions can become useful. GA4 item facts, state-only Ads rows or zero-row
+     snapshots with actual price changes and before/after performance windows
+     before product-performance decisions can become useful. GA4 item facts, state-only Ads rows or zero-row
      Ads performance reads alone do not justify revenue, approval, ROAS, price
      impact or product-fix claims.
 
