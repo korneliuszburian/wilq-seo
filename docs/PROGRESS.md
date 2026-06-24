@@ -89,6 +89,10 @@ Stan produktu:
   packet for Command Center -> Merchant -> Content Planner -> Ads Doctor ->
   GA4. Proof: `.local-lab/proof/marketer-uat-packet/`. This prepares the real
   marketer session and records pass/fail fields, but is not itself marketer UAT.
+- `scripts/record_marketer_uat_result.py` now validates a filled UAT result,
+  rejects placeholders and turns marketer fail/confusion/new tasks into
+  classified task candidates. Focused proof:
+  `rtk uv run pytest tests/test_marketer_uat_packet.py tests/test_marketer_uat_result.py -q`.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -153,8 +157,8 @@ Stan produktu:
 
 1. Run or defer the live marketer UAT packet from
    `.local-lab/proof/marketer-uat-packet/`: Command Center -> Merchant ->
-   Content Planner -> Ads Doctor -> GA4, then record whether the marketer knew
-   what to do next and where they got confused.
+   Content Planner -> Ads Doctor -> GA4, then record the filled result through
+   `scripts/record_marketer_uat_result.py`.
 2. If demo UX is the next priority, verify with the real marketer whether the
    Ads "Najpierw sprawdź" strip is enough. Collapse lower-priority action cards
    only if human feedback or fresh browser proof still shows confusion.

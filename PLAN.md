@@ -145,6 +145,10 @@ Active demo work is narrow and depth-first.
   `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.json` and
   `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.md`. This prepares
   real UAT but is not a substitute for marketer feedback.
+- `ready`: A UAT result recorder now validates a filled marketer result,
+  rejects placeholders and converts fail/confusion/new tasks into classified
+  task candidates. Focused proof:
+  `rtk uv run pytest tests/test_marketer_uat_packet.py tests/test_marketer_uat_result.py -q`.
 - `ready`: A simulated operator UAT walkthrough is captured at
   `docs/handoffs/2026-06-24-operator-uat-findings.md` with browser proof under
   `.local-lab/proof/dashboard/marketer-uat-20260624/`. It found real
@@ -811,6 +815,10 @@ Use these rules before every implementation slice:
   `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.json` and
   `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.md`; focused test:
   `rtk uv run pytest tests/test_marketer_uat_packet.py -q`.
+- [x] Add a UAT result recorder that rejects placeholder results and turns
+  marketer fail/confusion/new tasks into classified task candidates. Focused
+  test:
+  `rtk uv run pytest tests/test_marketer_uat_packet.py tests/test_marketer_uat_result.py -q`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
@@ -1145,7 +1153,7 @@ captured or explicitly deferred.
 
 ## Current Completion Audit
 
-Status at 2026-06-24 after `f3950e0`:
+Status at 2026-06-24 after the UAT packet/result-recorder slices:
 
 | Requirement | Status | Current evidence | Remaining gap |
 | --- | --- | --- | --- |
@@ -1155,7 +1163,7 @@ Status at 2026-06-24 after `f3950e0`:
 | Content workflow shows source evidence, target context, gates, brief/draft-plan fields, missing evidence, forbidden claims, evidence IDs and connectors | ready | Content migration map, mapping review packet, draft-readiness and staging/measurement blocked previews listed in this plan | Human mapping still needed before draft/staging/publish claims. |
 | Adversarial and messy skill evals block overclaims for Content, Ads, Merchant, GA4 and Localo | ready | `.local-lab/evals/codex-skill/20260624T205857Z/`, `20260624T210410Z/`, `20260624T210800Z/`, `20260624T211123Z/`, `20260624T211506Z/` | Not a substitute for marketer UAT. |
 | Missing contracts are labelled as blocked/deferred | ready | PLAN deferred BDOS backlog, skill eval artifacts, dashboard blocked preview contracts | Do not promote apply/publish/optimizer/uplift without new source contracts. |
-| Marketer UAT captured or owner explicitly defers it | blocked-on-human | `docs/handoffs/2026-06-24-marketer-uat-script.md` and `.local-lab/proof/marketer-uat-packet/` | Run the packet with the marketer or get owner deferral. |
+| Marketer UAT captured or owner explicitly defers it | blocked-on-human | `docs/handoffs/2026-06-24-marketer-uat-script.md`, `.local-lab/proof/marketer-uat-packet/` and `scripts/record_marketer_uat_result.py` | Run the packet with the marketer, then record the filled result, or get owner deferral. |
 | Recovery docs identify the next item and avoid repeating completed checks | ready | `PLAN.md` plus short `docs/PROGRESS.md` | Keep pruning after every new slice. |
 
 When the full demo goal is complete, add a final retrospective here with:
