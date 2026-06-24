@@ -882,3 +882,18 @@ to skill/Codex workflow audit. Follow-up same day: GA4 route fallback to
 for a status badge was removed; remaining `decision_queue.find(...)` usages in
 Content and Localo are classified as presentational focus/readout helpers unless
 fresh route proof shows otherwise.
+
+2026-06-24 content-skill checkpoint: content brief usefulness is now guarded
+across API, context-pack and skill eval. `act_prepare_content_refresh_queue`
+already exposed richer `content_brief_preview_v1` fields for writer work, but
+`POST /api/codex/context-pack` compacted them away for
+`wilq-content-strategist`. Fixed compaction to preserve `content_angle`,
+`audience`, `key_objections`, `cta_direction`, `internal_link_direction`,
+`source_facts`, `missing_evidence` and `forbidden_claims` in compact form.
+Focused proof passed: content context-pack API pytest, codex skill eval case
+pytest, managed stack restart, content strategist smoke and non-interactive
+`wilq-content-strategist` eval
+`.local-lab/evals/codex-skill/20260624T075942Z/wilq-content-strategist/result.json`.
+Continue from skill/reference semantic audit and remaining content usefulness
+gaps; do not reopen the rich brief eval unless the content preview contract
+changes.

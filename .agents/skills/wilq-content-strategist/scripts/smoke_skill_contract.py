@@ -291,6 +291,27 @@ def validate_content_action_preview(
         raise SystemExit("Content brief preview lacks evidence IDs")
     if "ranking guarantee" not in set(first_preview.get("blocked_claims") or []):
         raise SystemExit("Content brief preview must block ranking guarantee claims")
+    required_string_fields = [
+        "content_angle",
+        "audience",
+        "cta_direction",
+        "internal_link_direction",
+    ]
+    for field in required_string_fields:
+        if not str(first_preview.get(field) or "").strip():
+            raise SystemExit(f"Content brief preview lacks {field}")
+    required_list_fields = [
+        "key_objections",
+        "source_facts",
+        "missing_evidence",
+        "forbidden_claims",
+    ]
+    for field in required_list_fields:
+        value = first_preview.get(field)
+        if not isinstance(value, list) or not value:
+            raise SystemExit(f"Content brief preview lacks {field}")
+    if "ranking guarantee" not in set(first_preview.get("forbidden_claims") or []):
+        raise SystemExit("Content brief preview forbidden_claims must block ranking guarantee")
 
 
 def decision_trace(value: Any) -> list[dict[str, Any]]:

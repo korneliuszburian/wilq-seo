@@ -41,6 +41,25 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Content skill eval hardening slice completed on 2026-06-24 10:01 CEST.
+  `wilq-content-strategist` no longer only checks that
+  `content_brief_preview` exists. The skill smoke now requires compacted
+  context-pack previews to preserve writer-useful fields:
+  `content_angle`, `audience`, `key_objections`, `cta_direction`,
+  `internal_link_direction`, `source_facts`, `missing_evidence` and
+  `forbidden_claims`, while keeping `apply_allowed=false` and
+  `api_mutation_ready=false`. The context-pack compactor now preserves those
+  fields instead of dropping them from `active_action_objects`. Proof:
+  `uv run pytest tests/test_api_contracts.py -k 'content_strategist_context_pack_preserves_reviewed_draft_preview'`
+  returned 1 passed; `uv run pytest tests/test_codex_skill_eval_cases.py -q`
+  returned 5 passed; `scripts/local_stack.sh restart` refreshed the managed API;
+  `uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
+  passed; `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000`
+  passed with
+  `.local-lab/evals/codex-skill/20260624T075942Z/wilq-content-strategist/result.json`.
+  Next checklist item: continue Final A-Z from skill/reference semantic audit
+  and content usefulness gaps; do not reopen this eval unless the content
+  preview contract changes.
 - Content-generation pipeline inventory/hardening slice completed on
   2026-06-24. Existing pipeline was not rebuilt: `/api/content/diagnostics`
   already exposes typed `decision_queue`; `act_prepare_content_refresh_queue`
@@ -58,9 +77,9 @@ Stan produktu:
   returned 1 passed; Action Detail content preview test returned 1 passed;
   dashboard typecheck passed; `wilq-content-strategist` smoke passed; live
   `/api/actions/act_prepare_content_refresh_queue` after stack restart shows
-  the new fields and `apply_allowed=false`. Next checklist item: decide whether
-  content skill eval should require these richer brief fields, then continue
-  content usefulness hardening or move to the next highest demo gap.
+  the new fields and `apply_allowed=false`. Follow-up completed: skill smoke,
+  context-pack compaction and non-interactive eval now require those richer
+  brief fields.
 - Domain workflow audit hardening slice completed on 2026-06-24. Fixed
   confirmed UI-side contract drift instead of adding prompt/reference
   workarounds: Content and Merchant diagnostic summaries no longer invent

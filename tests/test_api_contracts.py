@@ -1682,6 +1682,21 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     content_action = actions_by_id["act_prepare_content_refresh_queue"]
     payload = content_action["payload"]
 
+    assert payload["content_brief_preview_total"] >= 1
+    assert payload["content_brief_preview_included"] >= 1
+    brief_preview = next(
+        item
+        for item in payload["content_brief_preview"]
+        if item["candidate_id"] == candidate_id
+    )
+    assert brief_preview["content_angle"]
+    assert brief_preview["audience"]
+    assert brief_preview["key_objections"]
+    assert brief_preview["cta_direction"]
+    assert brief_preview["internal_link_direction"]
+    assert brief_preview["source_facts"]
+    assert brief_preview["missing_evidence"]
+    assert "ranking guarantee" in brief_preview["forbidden_claims"]
     assert payload["wordpress_draft_payload_preview_total"] == 1
     assert payload["wordpress_draft_payload_preview_included"] == 1
     draft_preview = payload["wordpress_draft_payload_preview"][0]

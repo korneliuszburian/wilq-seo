@@ -2741,6 +2741,14 @@ def _compact_content_brief_preview_for_context(
         "gsc_demand",
         "metric_snapshot",
         "brief_goal",
+        "content_angle",
+        "audience",
+        "key_objections",
+        "cta_direction",
+        "internal_link_direction",
+        "source_facts",
+        "missing_evidence",
+        "forbidden_claims",
         "required_validation",
         "blocked_claims",
         "source_connectors",
@@ -2751,7 +2759,23 @@ def _compact_content_brief_preview_for_context(
     }
     for item in preview_items[:4]:
         if isinstance(item, dict):
-            compact_items.append({key: item[key] for key in keep_keys if key in item})
+            compact_item = {key: item[key] for key in keep_keys if key in item}
+            for key, limit in (
+                ("key_objections", 3),
+                ("internal_link_direction", 3),
+                ("source_facts", 4),
+                ("missing_evidence", 3),
+                ("forbidden_claims", 5),
+                ("required_validation", 4),
+                ("blocked_claims", 5),
+                ("source_connectors", 4),
+                ("evidence_ids", 3),
+            ):
+                value = compact_item.get(key)
+                if isinstance(value, list):
+                    compact_item[key] = value[:limit]
+                    compact_item[f"{key}_total"] = len(value)
+            compact_items.append(compact_item)
     return compact_items
 
 

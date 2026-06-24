@@ -184,6 +184,13 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "inventory_check_before_create",
                 "merge_create_after_inventory_check",
                 "review_ahrefs_gap_records",
+                "content_brief_preview_v1",
+                "content_angle",
+                "audience",
+                "key_objections",
+                "source_facts",
+                "missing_evidence",
+                "forbidden_claims",
                 "bdo co to",
                 "zielony ład",
             },
@@ -329,6 +336,16 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "wordpress_sklep" not in content_case["required_source_connectors"]
     assert "freshness" in content_case["expected_terms_pl"]
     assert "stale" in content_case["expected_terms_pl"]
+    for term in (
+        "content_brief_preview_v1",
+        "content_angle",
+        "audience",
+        "key_objections",
+        "source_facts",
+        "missing_evidence",
+        "forbidden_claims",
+    ):
+        assert term in content_case["expected_terms_pl"]
     assert set(content_case["required_source_connectors"]) <= set(
         content_case["expected_connectors"]
     )

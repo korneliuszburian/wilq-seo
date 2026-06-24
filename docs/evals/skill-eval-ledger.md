@@ -5260,3 +5260,50 @@ Product finding:
 - The daily smoke now validates `act_prepare_ads_campaign_review_queue` too,
   so the Ads daily action is no longer left as `pending_validation` in the
   non-interactive eval.
+
+## 2026-06-24 - wilq-content-strategist rich brief contract
+
+Purpose:
+
+- Make the content strategist eval prove writer-useful brief fields, not only
+  the existence of `content_brief_preview`.
+- Keep the fix in typed API/context-pack compaction and eval contracts, not in
+  skill reference workaround prose.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_api_contracts.py -k 'content_strategist_context_pack_preserves_reviewed_draft_preview' -q
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+scripts/local_stack.sh restart
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 \
+  scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T075942Z/wilq-content-strategist/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `source_connectors` include GSC, GA4, Ahrefs and WordPress inventory.
+- `decision_quality` booleans all passed.
+- Eval expected terms now include `content_brief_preview_v1`,
+  `content_angle`, `audience`, `key_objections`, `source_facts`,
+  `missing_evidence` and `forbidden_claims`.
+- Skill smoke now fails if compacted context-pack previews omit the writer
+  fields or safety flags.
+
+Product finding:
+
+- The API action payload already had richer content brief fields, but
+  `POST /api/codex/context-pack` compacted them away for
+  `wilq-content-strategist`. That meant the dashboard could show a useful
+  brief while the Codex skill received a thinner one. The context-pack compactor
+  now preserves the fields in compact form, so dashboard and skill share the
+  same review-safe content brief contract.
