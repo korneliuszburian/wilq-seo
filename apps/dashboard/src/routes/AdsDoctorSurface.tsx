@@ -547,6 +547,7 @@ function AdsMetricEvidencePanel({
   currencyCode?: string;
 }) {
   const [showDiagnosticTables, setShowDiagnosticTables] = useState(false);
+  const summary = data.operator_summary;
   const campaignRows = data.campaign_read_contract.campaign_rows;
   const derivedKpiRows = data.derived_kpi_read_contract.kpi_rows;
   const budgetRows = data.budget_pacing_read_contract.budget_rows;
@@ -566,57 +567,9 @@ function AdsMetricEvidencePanel({
   const customSegmentForecastRows =
     data.custom_segments_read_contract.audience_forecast_read_contract.forecast_rows;
   const negativeKeywordCandidates = data.negative_keywords_read_contract.candidates;
-  const missingReadContracts = uniqueValues([
-    ...data.account_currency_read_contract.missing_read_contracts,
-    ...data.business_context_read_contract.missing_read_contracts,
-    ...data.campaign_read_contract.missing_read_contracts,
-    ...data.derived_kpi_read_contract.missing_read_contracts,
-    ...data.budget_pacing_read_contract.missing_read_contracts,
-    ...data.recommendations_read_contract.missing_read_contracts,
-    ...data.impression_share_read_contract.missing_read_contracts,
-    ...campaignTriage.missing_read_contracts,
-    ...data.change_history_read_contract.missing_read_contracts,
-    ...data.change_impact_readiness_contract.missing_read_contracts,
-    ...searchTermReview.missing_read_contracts,
-    ...data.search_terms_read_contract.missing_read_contracts,
-    ...data.search_term_ngram_read_contract.missing_read_contracts,
-    ...data.search_term_safety_read_contract.missing_read_contracts,
-    ...data.keyword_match_context_read_contract.missing_read_contracts,
-    ...data.custom_segments_read_contract.missing_read_contracts,
-    ...data.custom_segments_read_contract.audience_forecast_read_contract.missing_read_contracts,
-    ...data.negative_keywords_read_contract.missing_read_contracts
-  ]).map(adsMissingReadContractLabel);
-  const operatorReviewGates = uniqueValues([
-    ...searchTermReview.operator_review_gates,
-    ...(data.search_terms_read_contract.operator_review_gates ?? []),
-    ...data.search_term_ngram_read_contract.operator_review_gates,
-    ...data.search_term_safety_read_contract.operator_review_gates,
-    ...data.keyword_match_context_read_contract.operator_review_gates,
-    ...data.custom_segments_read_contract.operator_review_gates,
-    ...data.custom_segments_read_contract.audience_forecast_read_contract.operator_review_gates,
-    ...data.decision_queue.flatMap((decision) => decision.operator_review_gates)
-  ]).map(adsOperatorReviewGateLabel);
-  const blockedClaims = uniqueValues([
-    ...data.account_currency_read_contract.blocked_claims,
-    ...data.business_context_read_contract.blocked_claims,
-    ...data.campaign_read_contract.blocked_claims,
-    ...data.derived_kpi_read_contract.blocked_claims,
-    ...data.budget_pacing_read_contract.blocked_claims,
-    ...data.recommendations_read_contract.blocked_claims,
-    ...data.impression_share_read_contract.blocked_claims,
-    ...campaignTriage.blocked_claims,
-    ...data.change_history_read_contract.blocked_claims,
-    ...data.change_impact_readiness_contract.blocked_claims,
-    ...searchTermReview.blocked_claims,
-    ...data.search_terms_read_contract.blocked_claims,
-    ...data.search_term_ngram_read_contract.blocked_claims,
-    ...data.search_term_safety_read_contract.blocked_claims,
-    ...data.keyword_match_context_read_contract.blocked_claims,
-    ...data.custom_segments_read_contract.blocked_claims,
-    ...data.custom_segments_read_contract.audience_forecast_read_contract.blocked_claims,
-    ...data.negative_keywords_read_contract.blocked_claims,
-    ...data.sections.flatMap((section) => section.blocked_claims)
-  ]).map(adsBlockedClaimLabel);
+  const missingReadContracts = summary.missing_read_contracts.map(adsMissingReadContractLabel);
+  const operatorReviewGates = summary.operator_review_gates.map(adsOperatorReviewGateLabel);
+  const blockedClaims = summary.blocked_claims.map(adsBlockedClaimLabel);
 
   return (
     <section className="rounded-md border border-line bg-white p-4">

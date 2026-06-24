@@ -138,6 +138,9 @@ def build_ga4_diagnostics(
             sum(1 for section in sections if section.status == "blocked")
             + (1 if conversion_readiness_contract.status == "blocked" else 0)
         ),
+        decision_blocker_count=sum(
+            1 for decision in decision_queue if decision.status == "blocked"
+        ),
     )
 
 

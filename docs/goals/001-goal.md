@@ -865,3 +865,15 @@ proof.
    - Do not claim "100% certainty" until this checklist has a fresh result and
      every suspicious item is either fixed, deliberately deferred or explicitly
      marked blocked with the missing contract/input.
+
+2026-06-24 domain workflow checkpoint: dashboard route smoke and API contract
+first pass are complete. Domain workflow audit found and fixed three confirmed
+contract-drift issues: Content and Merchant dashboard summaries no longer invent
+fallback ActionObject IDs, Ads diagnostic proof reads blocked/missing/gate
+rollups from `operator_summary`, and GA4 now exposes
+`decision_blocker_count` to distinguish blocked decision-queue items from
+section/contract blockers. Focused proof passed: GA4 API pytest subset,
+shared-schema live contracts, dashboard route tests for Ads/Merchant/GA4/Ahrefs
+and dashboard typecheck. Continue from the remaining domain workflow queue:
+scan other marketer routes for local product-decision rebuilding, then proceed
+to skill/Codex workflow audit.

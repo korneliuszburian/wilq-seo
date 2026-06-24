@@ -1934,7 +1934,8 @@ export const Ga4DiagnosticsResponseSchema = z.object({
   sections: z.array(Ga4DiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
-  blocker_count: z.number()
+  blocker_count: z.number(),
+  decision_blocker_count: z.number()
 });
 
 export const LocaloAccessProbeSchema = z.object({

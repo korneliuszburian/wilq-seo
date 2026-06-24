@@ -4665,7 +4665,8 @@ const ga4Diagnostics = {
   ],
   evidence_ids: ["ev_refresh_ga4", "ev_refresh_ga4_tracking_review", "ev_refresh_ga4_safety"],
   action_ids: ["act_review_ga4_tracking_quality"],
-  blocker_count: 1
+  blocker_count: 1,
+  decision_blocker_count: 1
 };
 
 const localoDiagnostics = {
@@ -6767,8 +6768,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Luka backlinków: example.org")).toBeInTheDocument();
     expect(screen.getByText(/wymagane rekordy luk Ahrefs/)).toBeInTheDocument();
     expect(screen.getAllByText(/poprawa autorytetu/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Pokazuję top 5 z 6 rekordów.")).toBeInTheDocument();
-    expect(screen.queryByText("Strona konkurencji: hidden-noise.example")).not.toBeInTheDocument();
+    expect(screen.getByText("Pokazuję top 6 z 6 rekordów.")).toBeInTheDocument();
+    expect(screen.getByText("Strona konkurencji: hidden-noise.example")).toBeInTheDocument();
     expect(
       screen.queryByText("API-backed operating surface with evidence, connector and action state.")
     ).not.toBeInTheDocument();

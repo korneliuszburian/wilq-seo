@@ -3162,6 +3162,9 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert "act_review_ga4_tracking_quality" in readiness_contract["action_ids"]
     assert readiness_contract["evidence_ids"]
     assert payload["blocker_count"] >= 1
+    assert payload["decision_blocker_count"] == sum(
+        1 for decision in payload["decision_queue"] if decision["status"] == "blocked"
+    )
 
     action_response = client.get("/api/actions/act_review_ga4_tracking_quality")
     assert action_response.status_code == 200

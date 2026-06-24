@@ -397,9 +397,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
   const topDecisions = summary.top_decision_ids
     .map((decisionId) => decisionsById.get(decisionId))
     .filter((decision): decision is ContentDecisionItem => Boolean(decision));
-  const actionIds = summary.action_ids.length
-    ? summary.action_ids
-    : ["act_prepare_content_refresh_queue"];
+  const actionIds = summary.action_ids;
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -456,12 +454,14 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
               values={contentBlockedClaimLabels(summary.blocked_claims)}
             />
           </div>
-          <a
-            href={`/actions/${actionIds[0]}`}
-            className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
-          >
-            Waliduj ActionObject
-          </a>
+          {actionIds.length > 0 ? (
+            <a
+              href={`/actions/${actionIds[0]}`}
+              className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
+            >
+              Waliduj ActionObject
+            </a>
+          ) : null}
         </div>
       </div>
     </section>

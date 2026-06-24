@@ -2344,6 +2344,7 @@ class Ga4DiagnosticsResponse(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)
     blocker_count: int = 0
+    decision_blocker_count: int = 0
 
 
 class LocaloAccessProbe(BaseModel):

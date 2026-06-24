@@ -187,9 +187,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
     .filter((item): item is MerchantDiagnosticsResponse["sections"][number]["tactical_items"][number] =>
       Boolean(item)
     );
-  const actionIds = summary.action_ids.length
-    ? summary.action_ids
-    : ["act_review_merchant_feed_issues"];
+  const actionIds = summary.action_ids;
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -326,12 +324,14 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
               values={merchantBlockedClaimLabels(summary.blocked_claims)}
             />
           </div>
-          <a
-            href={`/actions/${actionIds[0]}`}
-            className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
-          >
-            Waliduj ActionObject
-          </a>
+          {actionIds.length > 0 ? (
+            <a
+              href={`/actions/${actionIds[0]}`}
+              className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
+            >
+              Waliduj ActionObject
+            </a>
+          ) : null}
         </div>
       </div>
     </section>

@@ -41,6 +41,26 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Domain workflow audit hardening slice completed on 2026-06-24. Fixed
+  confirmed UI-side contract drift instead of adding prompt/reference
+  workarounds: Content and Merchant diagnostic summaries no longer invent
+  fallback ActionObject IDs when `operator_summary.action_ids` is empty; their
+  validation link appears only when the API returns an action. Ads diagnostic
+  proof now renders missing read contracts, review gates and blocked claims
+  from `operator_summary` instead of recomputing a separate UI truth from many
+  nested contracts. GA4 diagnostics now expose `decision_blocker_count` so the
+  API distinguishes section/contract blockers from blocked decision-queue
+  items. Live proof after `scripts/local_stack.sh restart`:
+  `/api/ga4/diagnostics` returned `blocker_count=0`,
+  `decision_blocker_count=3`, decision statuses
+  `blocked, blocked, blocked, ready`. Focused proof passed:
+  `uv run pytest tests/test_api_contracts.py -k 'ga4_diagnostics'` returned
+  3 passed; `pnpm --filter @wilq/shared-schemas test:live-contracts` returned
+  10 passed; `pnpm --filter @wilq/dashboard exec vitest run
+  src/routes/App.test.tsx -t 'ads doctor route|merchant route|content-planner
+  route|ga4 and gsc routes|ahrefs route'` returned 4 passed. Remaining domain
+  workflow audit queue: check whether any other marketer route still rebuilds
+  product decisions locally instead of consuming typed API summaries.
 - Final A-Z dashboard route audit moved forward on 2026-06-24. Current
   checklist item completed: dashboard API-backed smoke for marketer routes.
   Previous suspicious failures were reclassified with current proof:
