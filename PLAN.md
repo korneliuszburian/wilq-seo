@@ -1143,6 +1143,21 @@ Current outcome: WILQ has a credible solid-demo path and a strong content
 planning direction, but the goal is not complete until marketer UAT feedback is
 captured or explicitly deferred.
 
+## Current Completion Audit
+
+Status at 2026-06-24 after `f3950e0`:
+
+| Requirement | Status | Current evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Local stack healthy and core pre-demo gate passes | ready | `.local-lab/proof/pre-demo-gate-after-messy-evals.txt` | Rerun only after material runtime change. |
+| Dashboard path Command Center -> Merchant -> Content Planner -> Ads Doctor -> GA4 works from live contracts | ready | Dashboard route smoke 13/13 plus browser/operator proof listed in this plan | Real marketer must still validate comprehension. |
+| Core first-screen copy tells a Polish marketer what to do next | hardening-ready | Domain CTAs, core nav and Ads start strip proof listed in this plan | Reopen only if UAT/browser proof finds confusion. |
+| Content workflow shows source evidence, target context, gates, brief/draft-plan fields, missing evidence, forbidden claims, evidence IDs and connectors | ready | Content migration map, mapping review packet, draft-readiness and staging/measurement blocked previews listed in this plan | Human mapping still needed before draft/staging/publish claims. |
+| Adversarial and messy skill evals block overclaims for Content, Ads, Merchant, GA4 and Localo | ready | `.local-lab/evals/codex-skill/20260624T205857Z/`, `20260624T210410Z/`, `20260624T210800Z/`, `20260624T211123Z/`, `20260624T211506Z/` | Not a substitute for marketer UAT. |
+| Missing contracts are labelled as blocked/deferred | ready | PLAN deferred BDOS backlog, skill eval artifacts, dashboard blocked preview contracts | Do not promote apply/publish/optimizer/uplift without new source contracts. |
+| Marketer UAT captured or owner explicitly defers it | blocked-on-human | `docs/handoffs/2026-06-24-marketer-uat-script.md` and `.local-lab/proof/marketer-uat-packet/` | Run the packet with the marketer or get owner deferral. |
+| Recovery docs identify the next item and avoid repeating completed checks | ready | `PLAN.md` plus short `docs/PROGRESS.md` | Keep pruning after every new slice. |
+
 When the full demo goal is complete, add a final retrospective here with:
 
 - what the marketer can now do;
