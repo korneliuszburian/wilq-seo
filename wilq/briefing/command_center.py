@@ -347,6 +347,8 @@ def build_daily_decisions(
             ),
             dlaczego_to_ma_znaczenie=plan_item.why_it_matters,
             bezpieczny_next_step=plan_item.operator_action,
+            why_it_matters=plan_item.why_it_matters,
+            operator_action=plan_item.operator_action,
             source_connectors=plan_item.source_connectors,
             evidence_ids=plan_item.evidence_ids,
             action_ids=plan_item.action_ids,

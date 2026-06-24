@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:41 CEST.
+Last updated: 2026-06-24 02:46 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -243,7 +243,10 @@ Finish these before claiming the Ekologus demo is done:
      presented as fully fresh/ready. Daily decisions now also expose capped
      `metric_facts` from their own source connectors; multi-source decisions
      use connector round-robin so Ahrefs/GSC/WordPress style evidence is not
-     dominated by the first connector.
+     dominated by the first connector. They also expose stable
+     `why_it_matters` and `operator_action` aliases beside Polish display
+     fields, so Codex skills and dashboard code do not need prompt-side field
+     inference.
    - Add decision/view-model slices:
      1. Domain-specific decision queues for Ads, Merchant, Content, GA4 and
         Localo with stable fields: `why_it_matters`, `operator_action`,

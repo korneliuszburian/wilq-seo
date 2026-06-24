@@ -3566,7 +3566,13 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["dlaczego_to_ma_znaczenie"] == plan_by_id[
         "plan_review_merchant_feed_issues"
     ]["why_it_matters"]
+    assert merchant_decision["why_it_matters"] == plan_by_id[
+        "plan_review_merchant_feed_issues"
+    ]["why_it_matters"]
     assert merchant_decision["bezpieczny_next_step"] == plan_by_id[
+        "plan_review_merchant_feed_issues"
+    ]["operator_action"]
+    assert merchant_decision["operator_action"] == plan_by_id[
         "plan_review_merchant_feed_issues"
     ]["operator_action"]
     assert merchant_decision["skill_id"] == "wilq-merchant-feed-operator"
@@ -3618,6 +3624,8 @@ def test_command_center_exposes_polish_operator_brief(
             "metric_fact_count": len(item["metric_facts"]),
             "route": item["route"],
             "status": item["status"],
+            "why_it_matters": item["why_it_matters"],
+            "operator_action": item["operator_action"],
             "source_connectors": item["source_connectors"],
             "evidence_ids": item["evidence_ids"],
             "action_ids": item["action_ids"],
@@ -3633,6 +3641,8 @@ def test_command_center_exposes_polish_operator_brief(
             "metric_fact_count": len(item["metric_facts"]),
             "route": item["route"],
             "status": item["status"],
+            "why_it_matters": item["why_it_matters"],
+            "operator_action": item["operator_action"],
             "source_connectors": item["source_connectors"],
             "evidence_ids": item["evidence_ids"],
             "action_ids": item["action_ids"],
@@ -12941,6 +12951,8 @@ def test_marketing_brief_dedupes_command_center_blockers() -> None:
         co_widzimy="GA4 ma problemy pomiaru.",
         dlaczego_to_ma_znaczenie="Brak kontraktu na ROAS i revenue.",
         bezpieczny_next_step="Otwórz /ga4 i waliduj review GA4.",
+        why_it_matters="Brak kontraktu na ROAS i revenue.",
+        operator_action="Otwórz /ga4 i waliduj review GA4.",
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],
@@ -12996,6 +13008,8 @@ def test_marketing_brief_daily_context_limits_safe_actions_to_daily_decisions() 
         co_widzimy="GA4 ma problemy pomiaru.",
         dlaczego_to_ma_znaczenie="Brak kontraktu na ROAS i revenue.",
         bezpieczny_next_step="Otwórz /ga4 i waliduj review GA4.",
+        why_it_matters="Brak kontraktu na ROAS i revenue.",
+        operator_action="Otwórz /ga4 i waliduj review GA4.",
         source_connectors=["google_analytics_4"],
         evidence_ids=["ev_refresh_refresh_google_analytics_4_test"],
         action_ids=["act_review_ga4_tracking_quality"],

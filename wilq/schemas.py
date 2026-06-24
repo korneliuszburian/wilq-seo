@@ -2610,6 +2610,8 @@ class DailyDecision(BaseModel):
     co_widzimy: str
     dlaczego_to_ma_znaczenie: str
     bezpieczny_next_step: str
+    why_it_matters: str
+    operator_action: str
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     action_ids: list[str] = Field(default_factory=list)

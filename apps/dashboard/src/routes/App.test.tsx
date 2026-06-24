@@ -5519,6 +5519,10 @@ function mockFetch() {
                   "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
                 bezpieczny_next_step:
                   "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject.",
+                why_it_matters:
+                  "WILQ widzi 10900 produktów i 1887 zgłoszeń problemów feedu. To wymaga ręcznego review przed zmianami.",
+                operator_action:
+                  "Otwórz /merchant, sprawdź kolejkę problemów i waliduj ActionObject.",
                 skill_id: "wilq-merchant-feed-operator",
                 codex_prompt:
                   "Użyj skilla wilq-merchant-feed-operator. Przejrzyj Merchant Center dla Ekologus.",
@@ -5546,6 +5550,10 @@ function mockFetch() {
                   'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
                 bezpieczny_next_step:
                   'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
+                why_it_matters:
+                  'GSC: 120 wyświetleń, 12 kliknięć, CTR 10.00%; główne zapytanie: "bdo". WordPress potwierdza istniejącą stronę, więc to jest decyzja refresh/merge, nie nowy artykuł. Pełny drilldown query/page i URL jest w /content-planner.',
+                operator_action:
+                  'Otwórz /content-planner i zacznij od: SEO: odśwież lub scal "bdo" (1 zapytanie).',
                 skill_id: "wilq-content-strategist",
                 codex_prompt:
                   "Użyj skilla wilq-content-strategist. Zbuduj kolejkę content refresh.",
@@ -5569,6 +5577,10 @@ function mockFetch() {
                 dlaczego_to_ma_znaczenie:
                   "Google Ads OAuth, MCC login i child customer działają.",
                 bezpieczny_next_step:
+                  "Otwórz /ads-doctor i analizuj tylko metryki widoczne w evidence.",
+                why_it_matters:
+                  "Google Ads OAuth, MCC login i child customer działają.",
+                operator_action:
                   "Otwórz /ads-doctor i analizuj tylko metryki widoczne w evidence.",
                 source_connectors: ["google_ads"],
                 evidence_ids: ["ev_refresh_refresh_google_ads_test"],

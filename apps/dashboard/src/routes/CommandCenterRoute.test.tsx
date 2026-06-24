@@ -50,6 +50,10 @@ const commandCenterFixture: CommandCenterResponse = {
         "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego review.",
       bezpieczny_next_step:
         "Otwórz /merchant, sprawdź issue queue i waliduj `act_review_merchant_feed_issues`.",
+      why_it_matters:
+        "Problemy feedu mogą blokować widoczność produktów, ale wymagają ręcznego review.",
+      operator_action:
+        "Otwórz /merchant, sprawdź issue queue i waliduj `act_review_merchant_feed_issues`.",
       source_connectors: ["google_merchant_center"],
       evidence_ids: ["ev_refresh_merchant_feed"],
       action_ids: ["act_review_merchant_feed_issues"],
@@ -91,6 +95,8 @@ const commandCenterFixture: CommandCenterResponse = {
         "Content evidence jest gotowe: zapytania/URL=10, dopasowania WordPress=15, ocena Ahrefs=1, luki linków=9.",
       dlaczego_to_ma_znaczenie: "120 wyświetleń może uzasadniać review treści.",
       bezpieczny_next_step: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
+      why_it_matters: "120 wyświetleń może uzasadniać review treści.",
+      operator_action: "Otwórz /content-planner i wybierz refresh, merge, create albo block.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
       evidence_ids: ["ev_refresh_gsc"],
       action_ids: ["act_prepare_content_refresh_queue"],

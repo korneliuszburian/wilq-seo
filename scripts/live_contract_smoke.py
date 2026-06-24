@@ -102,7 +102,16 @@ def _check_decision_shape(
     label: str,
     errors: list[str],
 ) -> None:
-    for key in ("id", "title", "domain", "freshness", "status", "metric_facts"):
+    for key in (
+        "id",
+        "title",
+        "domain",
+        "freshness",
+        "status",
+        "why_it_matters",
+        "operator_action",
+        "metric_facts",
+    ):
         if not decision.get(key):
             errors.append(f"{label}.{key} must be present")
     freshness = decision.get("freshness") or {}

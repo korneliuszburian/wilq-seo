@@ -2295,6 +2295,8 @@ export const DailyDecisionSchema = z.object({
   co_widzimy: z.string(),
   dlaczego_to_ma_znaczenie: z.string(),
   bezpieczny_next_step: z.string(),
+  why_it_matters: z.string(),
+  operator_action: z.string(),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),
   action_ids: z.array(z.string()),
