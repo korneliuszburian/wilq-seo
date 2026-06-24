@@ -86,6 +86,8 @@ LOCALO_BLOCKED_CLAIMS = [
     "local visibility uplift",
     "review velocity",
 ]
+LOCALO_KNOWLEDGE_CARD_IDS = ["card_localo_local_seo_playbook"]
+LOCALO_EXPERT_RULE_IDS = ["local_visibility_v1", "local_reviews_v1"]
 
 
 def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
@@ -104,10 +106,12 @@ def build_localo_diagnostics() -> LocaloDiagnosticsResponse:
     live_data_available = bool(visibility_facts)
     sections = _localo_sections(access_probe, latest_refresh, visibility_facts)
     read_contract_statuses = _localo_read_contract_statuses(visibility_facts)
-    decision_queue = _localo_decision_queue(
-        access_probe,
-        visibility_facts,
-        read_contract_statuses,
+    decision_queue = _localo_decisions_with_lineage(
+        _localo_decision_queue(
+            access_probe,
+            visibility_facts,
+            read_contract_statuses,
+        )
     )
     action_ids = _unique(
         action_id for decision in decision_queue for action_id in decision.action_ids
@@ -556,6 +560,24 @@ def _localo_decision_queue(
             risk=ActionRisk.medium,
         ),
         _blocked_visibility_decision(access_probe),
+    ]
+
+
+def _localo_decisions_with_lineage(
+    decisions: list[LocaloDecisionItem],
+) -> list[LocaloDecisionItem]:
+    return [
+        decision.model_copy(
+            update={
+                "knowledge_card_ids": _unique(
+                    [*decision.knowledge_card_ids, *LOCALO_KNOWLEDGE_CARD_IDS]
+                ),
+                "expert_rule_ids": _unique(
+                    [*decision.expert_rule_ids, *LOCALO_EXPERT_RULE_IDS]
+                ),
+            }
+        )
+        for decision in decisions
     ]
 
 

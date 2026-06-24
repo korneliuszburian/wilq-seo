@@ -50,6 +50,14 @@ MERCHANT_PRODUCT_PERFORMANCE_BLOCKED_CLAIMS = [
     "approval restored",
     "feed write",
 ]
+MERCHANT_KNOWLEDGE_CARD_IDS = [
+    "card_merchant_feed_optimization_playbook",
+    "card_google_ads_pmax_playbook",
+]
+MERCHANT_EXPERT_RULE_IDS = [
+    "merchant_feed_rules_v1",
+    "merchant_product_diagnostics_v1",
+]
 MERCHANT_PRODUCT_STATE_REVIEW_PREVIEW_CONTRACT = (
     "merchant_product_state_review_preview_v1"
 )
@@ -184,6 +192,7 @@ def build_merchant_diagnostics(
         price_impact_readiness,
         action_ids,
     )
+    decision_queue = _merchant_decisions_with_lineage(decision_queue)
     return MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -1709,6 +1718,24 @@ def _merchant_decisions_with_price_impact_review(
         return decisions
     merged = [price_decision, *decisions]
     return sorted(merged, key=lambda decision: (decision.priority, decision.id))
+
+
+def _merchant_decisions_with_lineage(
+    decisions: list[MerchantDecisionItem],
+) -> list[MerchantDecisionItem]:
+    return [
+        decision.model_copy(
+            update={
+                "knowledge_card_ids": _unique(
+                    [*decision.knowledge_card_ids, *MERCHANT_KNOWLEDGE_CARD_IDS]
+                ),
+                "expert_rule_ids": _unique(
+                    [*decision.expert_rule_ids, *MERCHANT_EXPERT_RULE_IDS]
+                ),
+            }
+        )
+        for decision in decisions
+    ]
 
 
 def _merchant_price_impact_review_decision(

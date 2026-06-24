@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 07:47 CEST.
+Last updated: 2026-06-24 11:02 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -170,6 +170,16 @@ sections and decisions instead of living only in context-pack summaries:
 GSC/WordPress refresh decisions, Ahrefs gap review decisions and GA4
 tracking-gap blocks expose supporting knowledge card IDs and expert rule IDs
 that are present in the skill context.
+Non-content domain diagnostics now expose direct expert/knowledge lineage on
+their decision queues too. Merchant, GA4, Localo and Ahrefs decisions carry
+their existing `knowledge_card_ids` and `expert_rule_ids`, and the matching
+skill context-packs include the referenced summaries. This closes the confirmed
+lineage gap without moving business logic into skill references. Focused proof:
+API contract subset, live diagnostics check, live context-pack check, shared
+live schema smoke warm rerun and sequential skill smokes for Merchant, GA4,
+Localo and Ahrefs. Parallel context-pack-heavy skill smokes can still hit the
+20s script timeout, so pre-demo gates should run those sequentially or with an
+explicit performance slice.
 Daily Command wording/eval now treats Localo as outside the daily task list only
 when it is outside typed `command_center.daily_decisions`, not because Localo
 evidence is absent
@@ -938,6 +948,18 @@ content workflow. Expert rules and knowledge cards existed and were scoped into
 `wilq-content-strategist`, but content diagnostic decisions/sections did not
 carry `knowledge_card_ids` or `expert_rule_ids`, so the decision queue did not
 prove which rule/card supported a refresh, Ahrefs review or GA4 tracking block.
+Follow-up at 2026-06-24 11:02 CEST: the same direct decision-lineage gap is
+fixed for Merchant, GA4, Localo and Ahrefs diagnostics. Live API previously
+returned null lineage on the first decision in each domain; live API now
+returns Merchant cards/rules, GA4 diagnostics card/rule, Localo local SEO
+card/rules and Ahrefs content-gap card/rule on domain decision queues. The
+matching skill context-packs include the referenced summaries. Focused checks:
+Python compile, ruff, API contract subset 4 passed, managed stack restart, live
+diagnostics/context-pack checks, shared live schema smoke 10 passed on warm
+rerun and four sequential deterministic skill smokes passed. Continue Final
+A-Z from test strategy/code-quality audit and task extraction; record the
+parallel smoke timeout as a performance/pre-demo-gate gotcha, not as a lineage
+failure.
 `ContentDiagnosticSection` and `ContentDecisionItem` now expose those IDs, and
 live API/context-pack proof shows the IDs on content decisions while the scoped
 skill context contains the matching summaries. Focused proof passed: content

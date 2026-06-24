@@ -67,6 +67,8 @@ AHREFS_GAP_IMPACT_BLOCKED_CLAIMS = [
     "traffic uplift",
     "authority improvement",
 ]
+AHREFS_KNOWLEDGE_CARD_IDS = ["card_ahrefs_content_gap_playbook"]
+AHREFS_EXPERT_RULE_IDS = ["content_brief_rules_v1"]
 AHREFS_GAP_TYPES = {
     "competitor_page",
     "content_gap",
@@ -194,12 +196,14 @@ def build_ahrefs_diagnostics() -> AhrefsDiagnosticsResponse:
         competitor_read_facts=competitor_read_facts,
         gap_facts=gap_facts,
     )
-    decision_queue = _ahrefs_decision_queue(
-        connector_missing=connector.missing_credentials,
-        latest_refresh=latest_refresh,
-        authority_facts=authority_facts,
-        competitor_read_facts=competitor_read_facts,
-        gap_facts=gap_facts,
+    decision_queue = _ahrefs_decisions_with_lineage(
+        _ahrefs_decision_queue(
+            connector_missing=connector.missing_credentials,
+            latest_refresh=latest_refresh,
+            authority_facts=authority_facts,
+            competitor_read_facts=competitor_read_facts,
+            gap_facts=gap_facts,
+        )
     )
     gap_read_contract = _ahrefs_gap_read_contract(
         latest_refresh=latest_refresh,
@@ -983,6 +987,24 @@ def _ahrefs_decision_queue(
             )
         )
     return decisions
+
+
+def _ahrefs_decisions_with_lineage(
+    decisions: list[AhrefsDecisionItem],
+) -> list[AhrefsDecisionItem]:
+    return [
+        decision.model_copy(
+            update={
+                "knowledge_card_ids": _unique(
+                    [*decision.knowledge_card_ids, *AHREFS_KNOWLEDGE_CARD_IDS]
+                ),
+                "expert_rule_ids": _unique(
+                    [*decision.expert_rule_ids, *AHREFS_EXPERT_RULE_IDS]
+                ),
+            }
+        )
+        for decision in decisions
+    ]
 
 
 def _authority_summary(authority_facts: list[MetricFact]) -> str:

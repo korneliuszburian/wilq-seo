@@ -47,6 +47,8 @@ GA4_CONVERSION_BLOCKED_CLAIMS = [
     "funnel diagnosis",
     "attribution verdict",
 ]
+GA4_KNOWLEDGE_CARD_IDS = ["card_ga4_behavior_diagnostics_playbook"]
+GA4_EXPERT_RULE_IDS = ["ga4_diagnostics_v1"]
 Ga4DecisionType = Literal[
     "fix_measurement",
     "review_traffic_quality",
@@ -88,7 +90,9 @@ def build_ga4_diagnostics(
     actions = actions if actions is not None else list_actions()
     action_ids = _ga4_action_ids(actions)
     dimensioned_facts = _dimensioned_ga4_facts(trusted_facts)
-    decision_queue = _ga4_decision_queue(tactical_items, action_ids, dimensioned_facts)
+    decision_queue = _ga4_decisions_with_lineage(
+        _ga4_decision_queue(tactical_items, action_ids, dimensioned_facts)
+    )
     freshness_assessment = _ga4_freshness_assessment(latest_refresh, trusted_facts)
     conversion_readiness_contract = _conversion_readiness_contract(
         latest_refresh=latest_refresh,
@@ -642,6 +646,20 @@ def _ga4_decision_queue(
     if not decisions:
         decisions.extend(_ga4_decisions_from_dimensioned_facts(dimensioned_facts, action_ids))
     return sorted(decisions, key=lambda decision: (decision.priority, decision.id))[:6]
+
+
+def _ga4_decisions_with_lineage(decisions: list[Ga4DecisionItem]) -> list[Ga4DecisionItem]:
+    return [
+        decision.model_copy(
+            update={
+                "knowledge_card_ids": _unique(
+                    [*decision.knowledge_card_ids, *GA4_KNOWLEDGE_CARD_IDS]
+                ),
+                "expert_rule_ids": _unique([*decision.expert_rule_ids, *GA4_EXPERT_RULE_IDS]),
+            }
+        )
+        for decision in decisions
+    ]
 
 
 def _ga4_decisions_from_dimensioned_facts(

@@ -41,6 +41,27 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Expert/knowledge audit slice continued on 2026-06-24 for non-content domain
+  diagnostics. Confirmed live finding: `/api/merchant/diagnostics`,
+  `/api/ga4/diagnostics`, `/api/localo/diagnostics` and
+  `/api/ahrefs/diagnostics` decision queues returned decisions without direct
+  `knowledge_card_ids` / `expert_rule_ids`, even though the supporting cards
+  and rules existed in `wilq/knowledge/operating_map.py`. Fixed in typed
+  schemas/builders: `MerchantDecisionItem`, `Ga4DecisionItem`,
+  `LocaloDecisionItem` and `AhrefsDecisionItem` now expose lineage; domain
+  builders attach the existing Merchant, GA4, Localo and Ahrefs card/rule IDs
+  to every decision. Focused proof passed: Python compile, ruff, API contract
+  subset 4 passed, managed stack restart, live diagnostics lineage check,
+  live context-pack lineage check for `wilq-merchant-feed-operator`,
+  `wilq-ga4-analyst`, `wilq-localo-operator` and
+  `wilq-ahrefs-gap-finder`, shared live schema smoke 10 passed on warm rerun,
+  and four deterministic skill smokes passed sequentially. Note: running the
+  four context-pack-heavy skill smokes in parallel timed out at the smoke
+  script 20s HTTP limit; sequential run passed, so treat that as a performance
+  gotcha for future pre-demo gates rather than a lineage failure. Next checklist
+  item: continue A-Z with test strategy/code-quality audit and task extraction;
+  do not reopen lineage unless a live diagnostic decision or skill context-pack
+  loses the matching IDs.
 - Expert/knowledge audit slice completed on 2026-06-24 for the content
   workflow. Confirmed finding: WILQ already had structured expert YAML,
   knowledge playbooks, operating-map bindings and skill-scoped context-pack

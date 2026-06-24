@@ -3211,6 +3211,14 @@ def test_ga4_diagnostics_exposes_landing_quality_contract(
     assert all(isinstance(decision["priority"], int) for decision in decision_by_id.values())
     assert all(decision["metric_tiles"] for decision in decision_by_id.values())
     assert any("engagement" in decision["metric_tiles"] for decision in decision_by_id.values())
+    assert all(
+        decision["knowledge_card_ids"] == ["card_ga4_behavior_diagnostics_playbook"]
+        for decision in decision_by_id.values()
+    )
+    assert all(
+        decision["expert_rule_ids"] == ["ga4_diagnostics_v1"]
+        for decision in decision_by_id.values()
+    )
     readiness_contract = payload["conversion_readiness_contract"]
     operator_summary = payload["operator_summary"]
     assert operator_summary["id"] == "ga4_operator_summary"
@@ -4686,6 +4694,11 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     assert "local ranking" not in review_decision["blocked_claims"]
     assert "GBP performance" in review_decision["blocked_claims"]
     assert "competitor visibility" in review_decision["blocked_claims"]
+    assert review_decision["knowledge_card_ids"] == ["card_localo_local_seo_playbook"]
+    assert review_decision["expert_rule_ids"] == [
+        "local_visibility_v1",
+        "local_reviews_v1",
+    ]
     operator_summary = payload["operator_summary"]
     assert operator_summary["visibility_fact_count"] == 4
     assert "agregaty widoczności" in operator_summary["summary"]
@@ -5046,6 +5059,10 @@ def test_ahrefs_diagnostics_exposes_authority_context_and_blocks_gap_claims(
     assert "rows=0" in authority_decision["summary"]
     assert "ahrefs_content_gap_records" in authority_decision["missing_read_contracts"]
     assert "content gap" in authority_decision["blocked_claims"]
+    assert authority_decision["knowledge_card_ids"] == [
+        "card_ahrefs_content_gap_playbook"
+    ]
+    assert authority_decision["expert_rule_ids"] == ["content_brief_rules_v1"]
     block_decision = decision_by_id["ahrefs_block_gap_claims_without_records"]
     assert block_decision["status"] == "blocked"
     assert block_decision["metric_tiles"]["braki kontraktu"] == 5
@@ -10495,6 +10512,14 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "ActionObject review" in decision["next_step"]
     assert decision["why_it_matters"] == decision["rationale"]
     assert decision["operator_action"] == decision["next_step"]
+    assert decision["knowledge_card_ids"] == [
+        "card_merchant_feed_optimization_playbook",
+        "card_google_ads_pmax_playbook",
+    ]
+    assert decision["expert_rule_ids"] == [
+        "merchant_feed_rules_v1",
+        "merchant_product_diagnostics_v1",
+    ]
     feed_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_feed_health"
     )
