@@ -1,8 +1,23 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { Activity, AlertTriangle, Boxes, ClipboardList, Database, Settings } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Boxes,
+  ClipboardList,
+  Database,
+  FileText,
+  Megaphone,
+  Settings,
+  ShoppingBag
+} from "lucide-react";
 
 export const primaryRoutes = [
   { to: "/command-center", label: "Command Center", icon: Activity },
+  { to: "/merchant", label: "Merchant", icon: ShoppingBag },
+  { to: "/content-planner", label: "Content", icon: FileText },
+  { to: "/ads-doctor", label: "Ads Doctor", icon: Megaphone },
+  { to: "/ga4", label: "GA4", icon: BarChart3 },
   { to: "/workflows", label: "Workflowy", icon: Boxes },
   { to: "/opportunities", label: "Szanse", icon: AlertTriangle },
   { to: "/actions", label: "Akcje", icon: ClipboardList },

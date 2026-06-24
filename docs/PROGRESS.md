@@ -161,6 +161,10 @@ Stan produktu:
   now link as `Otwórz Merchant`, `Otwórz Content Planner`, `Otwórz GA4` and
   `Otwórz Ads Doctor` instead of generic `Otwórz działanie`. Browser proof:
   `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-cta.txt`.
+- Global dashboard navigation now exposes the core demo workflow links
+  `Merchant`, `Content`, `Ads Doctor` and `GA4` before registry/admin routes.
+  Browser proof:
+  `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-nav.txt`.
 
 ## Active Gaps
 

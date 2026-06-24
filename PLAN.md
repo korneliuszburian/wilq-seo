@@ -150,6 +150,8 @@ Active demo work is narrow and depth-first.
 - `ready`: Command Center daily decision CTAs now use domain labels:
   `Otwórz Merchant`, `Otwórz Content Planner`, `Otwórz GA4` and
   `Otwórz Ads Doctor`, while preserving the existing domain `route` values.
+- `ready`: The global dashboard navigation now shows core workflow links
+  `Merchant`, `Content`, `Ads Doctor` and `GA4` before registry/admin routes.
 - `hardening`: Keep Command Center CTAs aligned to the narrow path:
   `/merchant`, `/content-planner`, `/ads-doctor`, `/ga4`.
 - `ready`: Pre-demo gate passed after current hardening; rerun only after a
@@ -470,6 +472,8 @@ Use these rules before every implementation slice:
 - [x] Fix the simulated UAT Command Center CTA blocker by replacing generic
   `Otwórz działanie` with domain route labels. Browser proof:
   `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-cta.txt`.
+- [x] Add core domain links to the global dashboard navigation. Browser proof:
+  `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-nav.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

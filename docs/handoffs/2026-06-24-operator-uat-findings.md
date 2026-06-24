@@ -13,6 +13,10 @@ Proof directory:
   and `Otwórz Ads Doctor`. Before the fix, the same domain routes were labelled
   `Otwórz działanie`, which made the first step feel like an Action detail
   instead of a domain workflow.
+- Global navigation: pass after nav fix. The sidebar now exposes the core
+  domain workflow links `Merchant`, `Content`, `Ads Doctor` and `GA4` before the
+  registry/admin routes, so a marketer can return to the main demo path without
+  knowing internal route names.
 - Merchant: pass for review-first demo. It clearly separates reported issue
   occurrences from unique products, shows sample product IDs/titles when
   available, and blocks feed write, approval recovery, product ROAS and revenue
@@ -40,6 +44,7 @@ without developer narration.
 
 - Run the same script with the actual marketer and record pass/fail per route.
 - Keep Command Center domain CTAs; do not regress to generic action wording.
+- Keep core domain navigation visible before registry routes.
 - Continue content depth through old-to-new dev-site mapping, not publish/apply.
 - Treat Social, Demand Gen, Knowledge and deeper BDOS automation as deferred
   unless the core demo path regresses.
