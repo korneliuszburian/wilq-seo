@@ -107,6 +107,7 @@ def _check_decision_shape(
         "title",
         "domain",
         "freshness",
+        "decision_state",
         "status",
         "why_it_matters",
         "operator_action",
@@ -117,6 +118,14 @@ def _check_decision_shape(
     freshness = decision.get("freshness") or {}
     if freshness.get("state") not in {"fresh", "stale", "unknown", "missing"}:
         errors.append(f"{label}.freshness.state must be present")
+    if decision.get("decision_state") not in {
+        "ready",
+        "stale",
+        "blocked",
+        "missing",
+        "unknown",
+    }:
+        errors.append(f"{label}.decision_state must be present")
     if decision.get("status") not in {"ready", "blocked"}:
         errors.append(f"{label}.status must be ready or blocked")
     metric_facts = decision.get("metric_facts")

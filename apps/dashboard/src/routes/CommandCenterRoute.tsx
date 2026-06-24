@@ -138,10 +138,7 @@ function decisionFreshnessLabel(item: DailyDecision) {
 }
 
 function decisionStatusBadgeValue(item: DailyDecision) {
-  if (item.status === "blocked") return "blocked";
-  const freshnessState = item.freshness?.state ?? "unknown";
-  if (freshnessState === "fresh") return "ready";
-  return freshnessState;
+  return item.decision_state;
 }
 
 function decisionCopy(item: DailyDecision): DecisionCopy {

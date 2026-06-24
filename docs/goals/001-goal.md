@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:46 CEST.
+Last updated: 2026-06-24 02:58 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -104,9 +104,13 @@ fresh API/browser proof shows a regression.
      even though conversion/ecommerce metrics are now readable.
 2. **Decision contracts**
    - Ready: core diagnostics, tactical queue, marketing brief, command-center
-     `daily_decisions` and ActionObject surfaces share WILQ API contracts.
-   - Real gaps: stable per-domain queues, explicit freshness/ready/blocked
-     semantics and ranking that favors marketer value over connector readiness.
+     `daily_decisions`, explicit `decision_state` and ActionObject surfaces
+     share WILQ API contracts. `decision_state` is the canonical
+     ready/stale/blocked/missing/unknown field for dashboard and Codex
+     consumers, so they do not infer state from separate `status` and
+     `freshness` fields.
+   - Real gaps: stable per-domain queues and ranking that favors marketer
+     value over connector readiness.
 3. **Action safety**
    - Ready: demo-safe prepare/review ActionObjects for Ads, Merchant, Content,
      GA4 and Localo with blocked apply state where required.

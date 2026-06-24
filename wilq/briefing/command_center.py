@@ -34,6 +34,7 @@ from wilq.schemas import (
     ConnectorStatus,
     ConnectorSummary,
     DailyDecision,
+    DecisionState,
     FreshnessState,
     MetricFact,
     OpportunityDomain,
@@ -327,41 +328,57 @@ def build_daily_decisions(
         refresh_runs or [],
     )
     facts_by_connector = facts_by_connector or {}
-    return [
-        DailyDecision(
-            id=plan_item.id.replace("plan_", "decision_", 1),
-            title=plan_item.title,
-            domain=_daily_decision_domain(plan_item.category),
-            freshness=_combined_decision_freshness(
-                plan_item.source_connectors,
-                freshness_by_connector,
-            ),
-            route=plan_item.route,
-            status=plan_item.status,
-            priority=plan_item.priority,
-            metric_tiles=_decision_metric_tiles(plan_item, brief_by_plan_id),
-            metric_facts=_decision_metric_facts(plan_item, facts_by_connector),
-            co_widzimy=_decision_observation(
-                plan_item,
-                brief_by_plan_id.get(plan_item.id),
-            ),
-            dlaczego_to_ma_znaczenie=plan_item.why_it_matters,
-            bezpieczny_next_step=plan_item.operator_action,
-            why_it_matters=plan_item.why_it_matters,
-            operator_action=plan_item.operator_action,
-            source_connectors=plan_item.source_connectors,
-            evidence_ids=plan_item.evidence_ids,
-            action_ids=plan_item.action_ids,
-            blocked_claims=plan_item.blocked_claims,
-            skill_id=plan_item.skill_id,
-            codex_prompt=plan_item.codex_prompt,
-            codex_context_endpoint=plan_item.codex_context_endpoint,
-            expected_codex_output=plan_item.expected_codex_output,
-            risk=plan_item.risk,
+    decisions: list[DailyDecision] = []
+    for plan_item in action_plan:
+        if plan_item.id not in PRIMARY_DAILY_PLAN_IDS:
+            continue
+        freshness = _combined_decision_freshness(
+            plan_item.source_connectors,
+            freshness_by_connector,
         )
-        for plan_item in action_plan
-        if plan_item.id in PRIMARY_DAILY_PLAN_IDS
-    ]
+        decisions.append(
+            DailyDecision(
+                id=plan_item.id.replace("plan_", "decision_", 1),
+                title=plan_item.title,
+                domain=_daily_decision_domain(plan_item.category),
+                freshness=freshness,
+                decision_state=_daily_decision_state(plan_item.status, freshness),
+                route=plan_item.route,
+                status=plan_item.status,
+                priority=plan_item.priority,
+                metric_tiles=_decision_metric_tiles(plan_item, brief_by_plan_id),
+                metric_facts=_decision_metric_facts(plan_item, facts_by_connector),
+                co_widzimy=_decision_observation(
+                    plan_item,
+                    brief_by_plan_id.get(plan_item.id),
+                ),
+                dlaczego_to_ma_znaczenie=plan_item.why_it_matters,
+                bezpieczny_next_step=plan_item.operator_action,
+                why_it_matters=plan_item.why_it_matters,
+                operator_action=plan_item.operator_action,
+                source_connectors=plan_item.source_connectors,
+                evidence_ids=plan_item.evidence_ids,
+                action_ids=plan_item.action_ids,
+                blocked_claims=plan_item.blocked_claims,
+                skill_id=plan_item.skill_id,
+                codex_prompt=plan_item.codex_prompt,
+                codex_context_endpoint=plan_item.codex_context_endpoint,
+                expected_codex_output=plan_item.expected_codex_output,
+                risk=plan_item.risk,
+            )
+        )
+    return decisions
+
+
+def _daily_decision_state(
+    status: Literal["ready", "blocked"],
+    freshness: FreshnessState,
+) -> DecisionState:
+    if status == "blocked":
+        return "blocked"
+    if freshness.state == "fresh":
+        return "ready"
+    return freshness.state
 
 
 def _daily_decision_domain(category: str) -> str:

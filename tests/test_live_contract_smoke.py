@@ -26,6 +26,7 @@ def _payloads_with_metric_value(value: int) -> dict[str, Any]:
                     "title": "Przejrzyj Ads",
                     "domain": "google_ads",
                     "freshness": {"state": "fresh"},
+                    "decision_state": "ready",
                     "status": "ready",
                     "why_it_matters": "Ads evidence exists.",
                     "operator_action": "Review Ads safely.",
@@ -130,3 +131,13 @@ def test_live_contract_smoke_rejects_missing_evidence_and_decisions() -> None:
 
     assert "command_center.daily_decisions must not be empty" in errors
     assert "marketing_brief.evidence_ids must not be empty" in errors
+
+
+def test_live_contract_smoke_rejects_daily_decision_without_decision_state() -> None:
+    smoke = _load_live_smoke_module()
+    payloads = _payloads_with_metric_value(12)
+    del payloads["command_center"]["daily_decisions"][0]["decision_state"]
+
+    errors = smoke.evaluate_contracts(payloads)
+
+    assert "command_center.daily_decisions[0].decision_state must be present" in errors

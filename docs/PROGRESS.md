@@ -195,6 +195,10 @@ Stan produktu:
   Content facts are round-robin across Ahrefs, GSC and WordPress sources.
   Daily decisions also expose stable `why_it_matters` and `operator_action`
   aliases beside the Polish display fields for Codex/dashboard consumers.
+  Daily decisions now expose canonical `decision_state`, and dashboard badges
+  use it directly instead of reconstructing ready/stale/blocked state. Live
+  smoke on 2026-06-24 returned Merchant/Ads `ready`, Content `stale` and GA4
+  `blocked`; scoped daily-command context-pack preserved the same states.
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.

@@ -81,6 +81,9 @@ class FreshnessState(BaseModel):
     notes: str | None = None
 
 
+DecisionState = Literal["ready", "stale", "blocked", "missing", "unknown"]
+
+
 class ConnectorCapability(BaseModel):
     read: bool = True
     write: bool = False
@@ -2602,6 +2605,7 @@ class DailyDecision(BaseModel):
     freshness: FreshnessState = Field(
         default_factory=lambda: FreshnessState(state="unknown")
     )
+    decision_state: DecisionState = "unknown"
     route: str
     status: Literal["ready", "blocked"]
     priority: int = Field(ge=1, le=100)

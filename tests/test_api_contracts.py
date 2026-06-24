@@ -3548,6 +3548,15 @@ def test_command_center_exposes_polish_operator_brief(
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
     assert merchant_decision["domain"] == "merchant"
     assert merchant_decision["freshness"]["state"] in {"fresh", "stale", "unknown", "missing"}
+    assert merchant_decision["decision_state"] in {
+        "ready",
+        "stale",
+        "blocked",
+        "missing",
+        "unknown",
+    }
+    if merchant_decision["freshness"]["state"] == "stale":
+        assert merchant_decision["decision_state"] == "stale"
     assert "Świeżość źródeł decyzji" in merchant_decision["freshness"]["notes"]
     assert merchant_decision["co_widzimy"].startswith("Merchant Center ma")
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
@@ -3589,6 +3598,7 @@ def test_command_center_exposes_polish_operator_brief(
     if "decision_review_ads_campaign_metrics" in decisions_by_id:
         assert decisions_by_id["decision_review_ads_campaign_metrics"]["domain"] == "google_ads"
     assert ga4_decision["status"] == "blocked"
+    assert ga4_decision["decision_state"] == "blocked"
     assert ga4_decision["domain"] == "ga4"
     assert "pomiar i jakość ruchu" in ga4_decision["title"]
     assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
@@ -3620,6 +3630,7 @@ def test_command_center_exposes_polish_operator_brief(
         {
             "id": item["id"],
             "domain": item["domain"],
+            "decision_state": item["decision_state"],
             "freshness_state": item["freshness"]["state"],
             "metric_fact_count": len(item["metric_facts"]),
             "route": item["route"],
@@ -3637,6 +3648,7 @@ def test_command_center_exposes_polish_operator_brief(
         {
             "id": item["id"],
             "domain": item["domain"],
+            "decision_state": item["decision_state"],
             "freshness_state": item["freshness"]["state"],
             "metric_fact_count": len(item["metric_facts"]),
             "route": item["route"],

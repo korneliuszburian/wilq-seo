@@ -21,6 +21,8 @@ export const FreshnessStateSchema = z.object({
   notes: z.string().nullable().optional()
 });
 
+export const DecisionStateSchema = z.enum(["ready", "stale", "blocked", "missing", "unknown"]);
+
 export const MetricFactSchema = z.object({
   name: z.string(),
   value: z.union([z.string(), z.number()]),
@@ -2287,6 +2289,7 @@ export const DailyDecisionSchema = z.object({
   title: z.string(),
   domain: z.string().default("wilq"),
   freshness: FreshnessStateSchema.default({ state: "unknown" }),
+  decision_state: DecisionStateSchema.default("unknown"),
   route: z.string(),
   status: z.enum(["ready", "blocked"]),
   priority: z.number(),
