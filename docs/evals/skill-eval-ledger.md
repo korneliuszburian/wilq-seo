@@ -4977,3 +4977,76 @@ Product finding:
   WordPress inventory checks remain required before create/merge decisions.
 - The eval case now requires `freshness` and `stale`, so future content skill
   runs should not silently present stale evidence as current content direction.
+
+## 2026-06-24 - wilq-merchant-feed-operator product/price readiness eval hardening
+
+Purpose:
+
+- Strengthen the Merchant eval from a generic feed-review smoke into a
+  decision-quality check for product performance and price-impact readiness.
+- Force Codex to mention `product_performance_readiness`,
+  `price_impact_readiness`, `missing_read_contracts` and
+  `merchant_price_impact_readiness_preview_v1` when the WILQ API exposes them.
+- Prevent unsupported Merchant claims from leaking into recommendations:
+  product ROAS, product revenue recovery, price change impact, approval
+  restored and feed write must stay blocked unless matching contracts exist.
+
+Focused local proof:
+
+```bash
+uv run python -m json.tool docs/evals/cases/wilq-skill-eval-cases.json
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Local result:
+
+- Eval case JSON parses.
+- `tests/test_codex_skill_eval_cases.py` passes.
+- Merchant smoke exposes `product_performance_readiness=blocked` and
+  `price_impact_readiness=blocked`.
+- Smoke output contains `merchant_price_impact_readiness_preview_v1`,
+  `missing_read_contracts`, `product ROAS` and `price change impact`.
+
+Non-interactive Codex eval:
+
+- First attempt artifact directory:
+  `.local-lab/evals/codex-skill/20260624T013143Z/wilq-merchant-feed-operator/`
+- First attempt result: blocked by Codex usage limit before model output was
+  produced.
+- Passing retry command:
+
+```bash
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-merchant-feed-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors=["google_merchant_center"]`
+- Evidence count: `4`
+- `decision_quality` booleans all passed.
+- `action_candidates` contains validated
+  `act_review_merchant_feed_issues`.
+- `action_candidates` also contains blocked candidates for product ROAS,
+  product revenue recovery, price change impact, approval restored and feed
+  write.
+- `operator_next_step` points to `/merchant` and keeps the action review-only.
+- `safety_findings=[]`
+
+Product finding:
+
+- The WILQ API already has the right Merchant contract boundaries for this
+  slice: feed review can continue, while product ROAS, product revenue recovery
+  and price-impact conclusions remain blocked by missing read contracts.
+- The eval now tests that boundary explicitly instead of letting the skill pass
+  on generic “review feed issues” language.

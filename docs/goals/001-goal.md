@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 03:09 CEST.
+Last updated: 2026-06-24 04:00 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -50,6 +50,11 @@ tracked in git history, `docs/PROGRESS.md`, route tests and
 `docs/evals/skill-coverage-audit.md`; do not keep ready/done surfaces as active
 goal tasks. Only reopen a ready surface when fresh browser/API proof shows a
 regression.
+
+Latest completed slice: Merchant skill eval is hardened for product/price
+readiness and blocked product ROAS / price-impact claims. Local proof passed;
+targeted non-interactive Codex eval passed after one usage-limit retry:
+`.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json`.
 
 ## Current Stack Map
 

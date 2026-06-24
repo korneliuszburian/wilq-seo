@@ -210,6 +210,14 @@ Stan produktu:
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.
+- Merchant eval case is now hardened for product/price readiness. It requires
+  `product_performance_readiness`, `price_impact_readiness`,
+  `missing_read_contracts` and `merchant_price_impact_readiness_preview_v1`,
+  and blocks product ROAS, product revenue recovery, price change impact,
+  approval restored and feed write claims unless matching contracts exist.
+  Focused local proof passes. Targeted `codex_skill_eval.sh` first hit the
+  Codex usage limit, then passed after retry; artifact:
+  `.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json`.
 - Strong demo path today:
   `/command-center` -> `/merchant` -> `/content-planner` -> `/ads-doctor` ->
   optional `/ga4` and `/localo`.

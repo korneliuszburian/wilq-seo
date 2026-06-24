@@ -134,11 +134,17 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "decision_queue",
                 "unknowns",
                 "product_sample_readiness",
+                "product_performance_readiness",
+                "price_impact_readiness",
+                "merchant_price_impact_readiness_preview_v1",
+                "missing_read_contracts",
                 "sample_product_ids",
                 "issue",
                 "act_review_merchant_feed_issues",
                 "merchant_feed_issue_review_preview_v1",
                 "review-only",
+                "price impact",
+                "product ROAS",
             },
             "action_ids": {"act_review_merchant_feed_issues"},
             "validated_action_ids": {"act_review_merchant_feed_issues"},
@@ -341,6 +347,13 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "traffic uplift" in ahrefs_case["blocked_claim_terms"]
     assert "competitor gap" not in ahrefs_case["blocked_claim_terms"]
     assert "act_prepare_content_refresh_queue" in ahrefs_case["forbidden_action_ids"]
+
+    merchant_case = cases["wilq-merchant-feed-operator"]
+    assert "product ROAS" in merchant_case["blocked_claim_terms"]
+    assert "product revenue recovery" in merchant_case["blocked_claim_terms"]
+    assert "price change impact" in merchant_case["blocked_claim_terms"]
+    assert "approval restored" in merchant_case["blocked_claim_terms"]
+    assert "feed write" in merchant_case["blocked_claim_terms"]
 
 
 def test_codex_skill_eval_harness_validates_route_markers() -> None:

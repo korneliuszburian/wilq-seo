@@ -396,7 +396,7 @@
   {
     "skill": "wilq-merchant-feed-operator",
     "surface_path": "/merchant",
-    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczny kandydat działania bez zmiany danych produktu.",
+    "task_pl": "Sprawdź Merchant feed/product evidence i wskaż, czy można przygotować bezpieczny kandydat działania bez zmiany danych produktu. Uwzględnij product_performance_readiness, price_impact_readiness, missing_read_contracts i pokaż, że product ROAS, product revenue recovery, price change impact, approval restored oraz feed write są zablokowane bez odpowiednich kontraktów.",
     "expected_connectors": ["google_merchant_center"],
     "expected_terms_pl": [
       "Merchant Center",
@@ -407,11 +407,24 @@
       "decision_queue",
       "unknowns",
       "product_sample_readiness",
+      "product_performance_readiness",
+      "price_impact_readiness",
+      "merchant_price_impact_readiness_preview_v1",
+      "missing_read_contracts",
       "sample_product_ids",
       "issue",
       "act_review_merchant_feed_issues",
       "merchant_feed_issue_review_preview_v1",
-      "review-only"
+      "review-only",
+      "price impact",
+      "product ROAS"
+    ],
+    "blocked_claim_terms": [
+      "product ROAS",
+      "product revenue recovery",
+      "price change impact",
+      "approval restored",
+      "feed write"
     ],
     "expected_action_ids": ["act_review_merchant_feed_issues"],
     "expected_validated_action_ids": ["act_review_merchant_feed_issues"]
