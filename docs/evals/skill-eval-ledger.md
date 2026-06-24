@@ -25,6 +25,42 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-24 - diagnostics-first skill reference cleanup
+
+Purpose:
+
+- Prevent skills with dedicated diagnostics endpoints from drifting back to
+  context-pack-first workflows.
+- Keep product behavior in typed API contracts, with context-pack used as a
+  scoped consistency check.
+
+Change:
+
+- `scripts/skill_hygiene_check.py` now requires diagnostics-first wording in
+  both `SKILL.md` and `references/output-contract.md` for skills that have a
+  dedicated diagnostics endpoint.
+- `wilq-ahrefs-gap-finder`, `wilq-demand-gen-operator` and
+  `wilq-localo-operator` were normalized to call `GET /api/ahrefs/diagnostics`,
+  `GET /api/demand-gen/diagnostics` and `GET /api/localo/diagnostics` before
+  scoped `POST /api/codex/context-pack`.
+
+Proof:
+
+```bash
+uv run python scripts/skill_hygiene_check.py
+uv run ruff check scripts/skill_hygiene_check.py
+uv run mypy scripts/skill_hygiene_check.py
+uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run python .agents/skills/wilq-demand-gen-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+uv run pytest tests/test_codex_skill_eval_cases.py -q -k route_specific_skill_smokes_expose_marketing_brief_items
+```
+
+Outcome:
+
+- Focused hygiene, static checks and three touched skill smokes passed.
+- This is a contract hygiene slice, not a new marketing recommendation layer.
+
 ## 2026-06-24 - wilq-localo-operator deterministic smoke no-refresh default
 
 Purpose:

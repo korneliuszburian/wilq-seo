@@ -8,7 +8,7 @@ Oczekiwany wynik: ustalenia gotowości Demand Gen, blockery i zwalidowani kandyd
 
 ## Wymagany kontekst API
 
-Pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-demand-gen-operator"}` przed analizą marketingową. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
+Pobierz `GET /api/demand-gen/diagnostics` przed analizą marketingową. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-demand-gen-operator"}` i potwierdź, że osadzony kontrakt Demand Gen zgadza się z endpointem. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
 Wymagane connectory:
 

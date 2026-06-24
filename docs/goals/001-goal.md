@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 05:29 CEST.
+Last updated: 2026-06-24 05:36 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -373,6 +373,11 @@ Finish these before claiming the Ekologus demo is done:
      and body lines over 900 characters. Ads Doctor context-pack must use
      summary diagnostics before compaction and stay under the deterministic
      smoke budget.
+   - Diagnostics-first skill cleanup normalized Ahrefs, Demand Gen and Localo:
+     their `SKILL.md` and `references/output-contract.md` files now require the
+     dedicated diagnostics endpoint before scoped context-pack consistency
+     checks. `scripts/skill_hygiene_check.py` blocks context-pack-first
+     regressions for skills with dedicated diagnostics endpoints.
    - Remaining audit: deeper semantic review of references. References may
      describe API usage, required evidence, output shape and safety rules.
    - References must not become the place for product behavior, workaround

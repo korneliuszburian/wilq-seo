@@ -8,7 +8,7 @@ Oczekiwany wynik: status Localo access, lokalne blockery widoczności i bezpiecz
 
 ## Wymagany kontekst API
 
-Pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-localo-operator"}` przed analizą marketingową. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
+Pobierz `GET /api/localo/diagnostics` przed analizą marketingową. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-localo-operator"}` i potwierdź, że osadzone `localo_diagnostics` zgadza się z endpointem. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
 Wymagane connectory:
 

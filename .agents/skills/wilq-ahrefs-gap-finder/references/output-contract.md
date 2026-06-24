@@ -8,7 +8,7 @@ Oczekiwany wynik: okazje gap review z confidence notes, evidence IDs i następny
 
 ## Wymagany kontekst API
 
-Pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-ahrefs-gap-finder"}` przed analizą marketingową. Context-pack musi zawierać `ahrefs_diagnostics`, czyli ten sam kontrakt co `GET /api/ahrefs/diagnostics`. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
+Pobierz `GET /api/ahrefs/diagnostics` przed analizą marketingową. Następnie pobierz `POST /api/codex/context-pack` z `{"skill":"wilq-ahrefs-gap-finder"}` i potwierdź, że osadzone `ahrefs_diagnostics` zgadza się z endpointem. Użyj `GET /api/connectors/{connector}/status` dla każdego wymaganego connectora, gdy readiness ma znaczenie.
 
 Wymagane connectory:
 

@@ -148,6 +148,11 @@ Stan produktu:
   removed hardcoded Daily Command domain ranking and GA4 prompt-side item
   classification; both now consume WILQ API decision order/types, and the
   hygiene gate blocks those exact regressions.
+- Skill hygiene now also enforces diagnostics-first references for skills with
+  dedicated endpoints. Ahrefs, Demand Gen and Localo contracts now say to call
+  their typed diagnostics endpoint before scoped context-pack consistency
+  checks, so references cannot quietly drift back into context-pack-first prompt
+  behavior.
 - Ads Doctor semantic cleanup removed a long prompt-pack style evidence
   paragraph from `wilq-ads-doctor/SKILL.md`; the skill now points to typed
   `/api/ads/diagnostics` contracts such as `allowed_metrics`,

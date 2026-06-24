@@ -45,6 +45,17 @@ FORBIDDEN_SKILL_PROSE = {
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 MAX_BODY_LINE_LENGTH = 900
+DEDICATED_DIAGNOSTICS_ENDPOINTS = {
+    "wilq-ads-doctor": "/api/ads/diagnostics",
+    "wilq-ahrefs-gap-finder": "/api/ahrefs/diagnostics",
+    "wilq-content-strategist": "/api/content/diagnostics",
+    "wilq-custom-segments": "/api/ads/diagnostics",
+    "wilq-demand-gen-operator": "/api/demand-gen/diagnostics",
+    "wilq-ga4-analyst": "/api/ga4/diagnostics",
+    "wilq-gsc-content-doctor": "/api/content/diagnostics",
+    "wilq-localo-operator": "/api/localo/diagnostics",
+    "wilq-merchant-feed-operator": "/api/merchant/diagnostics",
+}
 
 
 def main() -> None:
@@ -77,6 +88,8 @@ def _skill_errors(skill_name: str, skill_dir: Path) -> list[str]:
                 errors.append(f"{relative}: forbidden prose {phrase!r}")
         if path.name == "SKILL.md":
             errors.extend(_skill_md_errors(skill_name, path, text))
+        if path.name == "output-contract.md":
+            errors.extend(_output_contract_errors(skill_name, path, text))
         errors.extend(_long_line_errors(path, text))
     return errors
 
@@ -93,7 +106,29 @@ def _skill_md_errors(skill_name: str, path: Path, text: str) -> list[str]:
             errors.append(
                 f"{relative}:{line_number}: workflow step starts with English imperative"
             )
+    errors.extend(_diagnostics_first_errors(skill_name, path, text))
     return errors
+
+
+def _output_contract_errors(skill_name: str, path: Path, text: str) -> list[str]:
+    return _diagnostics_first_errors(skill_name, path, text)
+
+
+def _diagnostics_first_errors(skill_name: str, path: Path, text: str) -> list[str]:
+    endpoint = DEDICATED_DIAGNOSTICS_ENDPOINTS.get(skill_name)
+    if endpoint is None:
+        return []
+    diagnostics_call = f"GET {endpoint}"
+    context_pack_call = "POST /api/codex/context-pack"
+    diagnostics_index = text.find(diagnostics_call)
+    context_pack_index = text.find(context_pack_call)
+    if diagnostics_index == -1:
+        return [f"{path.as_posix()}: missing diagnostics-first endpoint {endpoint!r}"]
+    if context_pack_index != -1 and diagnostics_index > context_pack_index:
+        return [
+            f"{path.as_posix()}: diagnostics endpoint must be documented before context-pack"
+        ]
+    return []
 
 
 def _long_line_errors(path: Path, text: str) -> list[str]:
