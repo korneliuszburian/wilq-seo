@@ -172,6 +172,10 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   content-strategist context-pack preserve target-site migration candidate,
   status and summary fields. Current old-site rows are `needs_review`, so draft
   or staging work remains blocked until mapping is confirmed.
+- `ready`: Content decision queue, ActionObject previews, reviewed draft
+  previews and content-strategist context-pack expose
+  `target_site_review_requirements`, including target inventory mapping,
+  canonical review, duplicate/cannibalization check and human confirmation.
 - `task`: Promote the duplicate/canonical gate into a stricter content
   ActionObject and skill eval decision rule so `create` is blocked or downgraded
   when refresh/merge is safer.
@@ -390,6 +394,12 @@ Use these rules before every implementation slice:
   focused tests passed for content API contracts/context-pack and
   `wilq-content-strategist/scripts/smoke_skill_contract.py` passed after stack
   restart.
+- [x] Expose target-site review requirements in content diagnostics,
+  ActionObject brief previews, reviewed draft previews, dashboard preview cards
+  and the content-strategist context-pack. Proof:
+  `.local-lab/proof/dashboard/content-target-review-requirements/action-review-requirements.json`;
+  focused API tests, `ContentDiagnosticSurface` dashboard test and
+  `wilq-content-strategist/scripts/smoke_skill_contract.py` passed.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

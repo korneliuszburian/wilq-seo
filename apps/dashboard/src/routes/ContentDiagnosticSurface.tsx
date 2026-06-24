@@ -150,6 +150,7 @@ type ContentBriefPreviewItem = {
   target_site_host?: string | null;
   source_site_host?: string | null;
   target_site_adaptation_status?: string | null;
+  target_site_review_requirements?: string[];
   inventory_gate_status?: string | null;
   canonical_gate_status?: string | null;
   duplicate_gate_status?: string | null;
@@ -288,6 +289,10 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           values={contentTargetSiteValues(preview)}
           empty="brak"
         />
+        <TraceLine
+          label="Review targetu"
+          values={(preview.target_site_review_requirements ?? []).slice(0, 4)}
+        />
         <TraceLine label="Linkowanie" values={(preview.internal_link_direction ?? []).slice(0, 3)} />
         <TraceLine label="Źródła faktów" values={(preview.source_facts ?? []).slice(0, 4)} />
         <TraceLine label="Brakujące dowody" values={(preview.missing_evidence ?? []).slice(0, 3)} />
@@ -351,6 +356,10 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_host?: string | null;
   source_site_host?: string | null;
   target_site_adaptation_status?: string | null;
+  target_site_migration_candidate_url?: string | null;
+  target_site_migration_status?: string | null;
+  target_site_migration_summary?: string | null;
+  target_site_review_requirements?: string[];
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -395,6 +404,10 @@ function WordPressDraftPayloadPreviewCard({
           label="Strona docelowa"
           values={contentTargetSiteValues(preview)}
           empty="brak"
+        />
+        <TraceLine
+          label="Review targetu"
+          values={(preview.target_site_review_requirements ?? []).slice(0, 4)}
         />
         <TraceLine
           label="Bloki"

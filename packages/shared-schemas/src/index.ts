@@ -1770,6 +1770,7 @@ export const ContentDecisionItemSchema = z.object({
   target_site_migration_candidate_url: z.string().nullable().optional(),
   target_site_migration_status: z.string().nullable().optional(),
   target_site_migration_summary: z.string().nullable().optional(),
+  target_site_review_requirements: z.array(z.string()).default([]),
   inventory_gate_status: z.string().nullable().optional(),
   canonical_gate_status: z.string().nullable().optional(),
   duplicate_gate_status: z.string().nullable().optional(),

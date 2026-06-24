@@ -1478,6 +1478,12 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert "Inventory potwierdza URL na target site" in preview[
         "target_site_migration_summary"
     ]
+    assert preview["target_site_review_requirements"] == [
+        "target_site_inventory_confirmed",
+        "target_site_canonical_review",
+        "duplicate_or_cannibalization_check",
+        "human_confirm_before_wordpress_write",
+    ]
     assert preview["wordpress_inventory_match"] == "present"
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
@@ -1838,6 +1844,11 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "target_site_migration_candidate_url" in brief_preview
     assert "target_site_migration_status" in brief_preview
     assert "target_site_migration_summary" in brief_preview
+    assert "target_site_review_requirements" in brief_preview
+    assert (
+        "duplicate_or_cannibalization_check"
+        in brief_preview["target_site_review_requirements"]
+    )
     assert payload["wordpress_draft_payload_preview_total"] == 1
     assert payload["wordpress_draft_payload_preview_included"] == 1
     draft_preview = payload["wordpress_draft_payload_preview"][0]
@@ -1849,6 +1860,11 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert "target_site_migration_candidate_url" in draft_preview
     assert "target_site_migration_status" in draft_preview
     assert "target_site_migration_summary" in draft_preview
+    assert "target_site_review_requirements" in draft_preview
+    assert (
+        "duplicate_or_cannibalization_check"
+        in draft_preview["target_site_review_requirements"]
+    )
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["evidence_ids"]
@@ -11661,6 +11677,12 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert first_decision["target_site_migration_status"] == "needs_review"
     assert "Wymagane ręczne mapowanie" in first_decision[
         "target_site_migration_summary"
+    ]
+    assert first_decision["target_site_review_requirements"] == [
+        "target_site_inventory_mapping_review",
+        "target_site_canonical_review",
+        "duplicate_or_cannibalization_check",
+        "human_confirm_before_wordpress_write",
     ]
     assert first_decision["inventory_gate_status"] == "confirmed_current_inventory"
     assert first_decision["canonical_gate_status"] == "current_url_confirmed"

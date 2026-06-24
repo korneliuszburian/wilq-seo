@@ -64,6 +64,11 @@ Stan produktu:
   `needs_review`, so draft/staging remains blocked until mapping is confirmed.
   Proof:
   `.local-lab/proof/dashboard/content-action-migration/action-payload-summary.json`.
+- Content diagnostics and `act_prepare_content_refresh_queue` now expose
+  `target_site_review_requirements` for the new-site path: target inventory
+  mapping, canonical review, duplicate/cannibalization check and human
+  confirmation. Proof:
+  `.local-lab/proof/dashboard/content-target-review-requirements/action-review-requirements.json`.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
@@ -110,9 +115,9 @@ Stan produktu:
    likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
    drilldown IDs behind technical details.
 3. If content depth is next, continue from the existing source/target,
-   duplicate/canonical and ActionObject migration status toward confirmed
-   dev-site inventory mapping and draft/staging handoff, without publish/apply
-   claims.
+   duplicate/canonical, ActionObject migration status and target-site review
+   requirements toward confirmed dev-site inventory mapping and draft/staging
+   handoff, without publish/apply claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

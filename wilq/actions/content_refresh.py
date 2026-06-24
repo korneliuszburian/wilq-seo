@@ -286,6 +286,11 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         "target_site_migration_summary": preview.get("target_site_migration_summary")
         if isinstance(preview.get("target_site_migration_summary"), str)
         else None,
+        "target_site_review_requirements": _target_site_review_requirements(
+            preview.get("target_site_migration_status")
+            if isinstance(preview.get("target_site_migration_status"), str)
+            else None,
+        ),
         "draft_payload": {
             "post_status": "draft",
             "post_title": _draft_title(topic, mode),
@@ -475,6 +480,7 @@ def _target_site_context(
         target_site_adaptation_status=status,
         migration_candidate_url=migration_candidate_url,
     )
+    review_requirements = _target_site_review_requirements(migration_status)
     return {
         "source_url": source_url,
         "source_site_host": source_host,
@@ -487,6 +493,7 @@ def _target_site_context(
             migration_status,
             migration_candidate_url,
         ),
+        "target_site_review_requirements": review_requirements,
     }
 
 
@@ -542,6 +549,36 @@ def _target_site_migration_summary(
             "kontrolą sitemap, canonical i duplikatów."
         )
     return "Brak kandydata migracji na target site dla tej pozycji."
+
+
+def _target_site_review_requirements(migration_status: str | None) -> list[str]:
+    if migration_status == "confirmed_target_inventory":
+        return [
+            "target_site_inventory_confirmed",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ]
+    if migration_status == "needs_review":
+        return [
+            "target_site_inventory_mapping_review",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ]
+    if migration_status == "blocked_missing_inventory":
+        return [
+            "target_site_inventory_required",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ]
+    return [
+        "business_relevance_review",
+        "wordpress_inventory_check",
+        "duplicate_or_cannibalization_check",
+        "human_confirm_before_wordpress_write",
+    ]
 
 
 def _gsc_metric_snapshot(page_facts: list[MetricFact]) -> dict[str, int | float | str]:

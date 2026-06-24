@@ -903,6 +903,7 @@ def _content_target_site_context(
         target_site_adaptation_status=status,
         migration_candidate_url=migration_candidate_url,
     )
+    review_requirements = _content_target_site_review_requirements(migration_status)
     return {
         "source_url": source_url,
         "source_site_host": source_host,
@@ -915,6 +916,7 @@ def _content_target_site_context(
             migration_status,
             migration_candidate_url,
         ),
+        "target_site_review_requirements": review_requirements,
     }
 
 
@@ -970,6 +972,36 @@ def _content_target_site_migration_summary(
             "kontrolą sitemap, canonical i duplikatów."
         )
     return "Brak kandydata migracji na target site dla tej decyzji."
+
+
+def _content_target_site_review_requirements(migration_status: str | None) -> list[str]:
+    if migration_status == "confirmed_target_inventory":
+        return [
+            "target_site_inventory_confirmed",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ]
+    if migration_status == "needs_review":
+        return [
+            "target_site_inventory_mapping_review",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ]
+    if migration_status == "blocked_missing_inventory":
+        return [
+            "target_site_inventory_required",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "human_confirm_before_wordpress_write",
+        ]
+    return [
+        "business_relevance_review",
+        "wordpress_inventory_check",
+        "duplicate_or_cannibalization_check",
+        "human_confirm_before_wordpress_write",
+    ]
 
 
 def _content_gate_status(

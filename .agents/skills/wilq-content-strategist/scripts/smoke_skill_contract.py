@@ -321,6 +321,13 @@ def validate_content_action_preview(
         raise SystemExit("Content brief preview lacks target_site_migration_status")
     if "target_site_migration_summary" not in first_preview:
         raise SystemExit("Content brief preview lacks target_site_migration_summary")
+    requirements = first_preview.get("target_site_review_requirements")
+    if not isinstance(requirements, list) or not requirements:
+        raise SystemExit("Content brief preview lacks target_site_review_requirements")
+    if "duplicate_or_cannibalization_check" not in set(requirements):
+        raise SystemExit(
+            "Content brief preview target_site_review_requirements must include duplicate_or_cannibalization_check"
+        )
     gsc_preview = next(
         (
             item
