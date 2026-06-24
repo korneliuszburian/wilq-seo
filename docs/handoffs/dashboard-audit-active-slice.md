@@ -346,6 +346,28 @@ Command Center decision:
 
 ## Next Implementation Queue
 
+2026-06-24 route sweep checkpoint:
+
+- Proof source: `.local-lab/proof/dashboard/route-audit/*.txt` from
+  `agent-browser` snapshots, plus fresh single-route reruns for
+  `/command-center`, `/actions` and `/settings` after the first loop produced
+  nav-only snapshots for those routes.
+- `ready`: `/command-center`, `/ads-doctor`, `/merchant`, `/content-planner`,
+  `/localo` show marketer-facing decisions, evidence/safety language or
+  domain-specific drilldown instead of a generic registry.
+- `ready`: `/ga4` no longer repeats the same `(not set)` measurement problem
+  cards in the operator section. Measurement issues stay in "PROBLEMY POMIARU
+  GA4"; the operator section shows separate quality decisions. Proof:
+  `.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`.
+- `suspicious`: `/actions` is useful as a registry, but it is still a long
+  undifferentiated ActionObject list. Demo path should add/keep a prioritized
+  ActionObject focus elsewhere and treat `/actions` as drilldown.
+- `suspicious`: `/knowledge` correctly maps source knowledge to decisions, but
+  many visible card/playbook headings are English. Decide whether these are
+  internal rule IDs or translate display labels for the Polish operator.
+- `deferred`: `/settings` is a technical connector/status route and can stay
+  technical unless it is promoted into the marketer demo path.
+
 0. Preserve the 2026-06-18 direction: WILQ is not a connector dashboard. The
    current slice is dashboard-to-Codex usefulness: real marketer prompt ->
    correct WILQ skill -> WILQ API context-pack -> Polish evidence-backed

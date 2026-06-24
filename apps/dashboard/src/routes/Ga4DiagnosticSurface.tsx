@@ -220,7 +220,10 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
   const topDecisions = summary.top_decision_ids
     .map((decisionId) => decisionsById.get(decisionId))
-    .filter((decision): decision is Ga4DecisionItem => Boolean(decision));
+    .filter(
+      (decision): decision is Ga4DecisionItem =>
+        Boolean(decision) && decision.decision_type !== "fix_measurement"
+    );
   const conversionReadiness = data.conversion_readiness_contract;
   const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");
   const actionIds = summary.action_ids;
@@ -253,7 +256,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
               <Ga4DecisionCard key={decision.id} decision={decision} />
             ))
           ) : (
-            <BlockerNotice message="Brak decyzji GA4. Najpierw uruchom odczyt GA4." />
+            <BlockerNotice message="Problemy pomiaru są w sekcji powyżej. Brak osobnych decyzji jakości ruchu do pokazania w operatorze GA4." />
           )}
         </div>
 
