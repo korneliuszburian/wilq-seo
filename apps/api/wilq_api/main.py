@@ -2849,6 +2849,7 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "content_gate_summary",
         "draft_generation_status",
         "draft_blockers",
+        "draft_generation_contract",
         "required_validation",
         "blocked_claims",
         "source_connectors",
@@ -2862,6 +2863,18 @@ def _compact_wordpress_draft_payload_preview_for_context(
         if not isinstance(item, dict):
             continue
         compact_item = {key: item[key] for key in keep_keys if key in item}
+        draft_generation_contract = compact_item.get("draft_generation_contract")
+        if isinstance(draft_generation_contract, dict):
+            for key, limit in (
+                ("blocked_until", 6),
+                ("requires_passed_gates", 7),
+                ("output_must_include", 10),
+                ("forbidden_outputs", 6),
+            ):
+                value = draft_generation_contract.get(key)
+                if isinstance(value, list):
+                    draft_generation_contract[key] = value[:limit]
+                    draft_generation_contract[f"{key}_total"] = len(value)
         draft_payload = item.get("draft_payload")
         if isinstance(draft_payload, dict):
             compact_item["draft_payload"] = {

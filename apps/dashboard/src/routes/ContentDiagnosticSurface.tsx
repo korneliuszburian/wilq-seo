@@ -424,6 +424,16 @@ type WordPressDraftPayloadPreviewItem = {
   content_gate_summary?: string | null;
   draft_generation_status?: string | null;
   draft_blockers?: string[];
+  draft_generation_contract?: {
+    contract_version?: string;
+    language?: string;
+    status?: string;
+    allowed_output_kind?: string;
+    blocked_until?: string[];
+    requires_passed_gates?: string[];
+    output_must_include?: string[];
+    forbidden_outputs?: string[];
+  };
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -492,6 +502,11 @@ function WordPressDraftPayloadPreviewCard({
         <TraceLine
           label="Blockery draftu"
           values={(preview.draft_blockers ?? []).slice(0, 6)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Kontrakt draftu"
+          values={contentDraftContractValues(preview.draft_generation_contract)}
           empty="brak"
         />
         <TraceLine
@@ -1110,6 +1125,26 @@ function contentDraftGateValues(
     item.duplicate_gate_status ? `duplikaty: ${contentGateStatusLabel(item.duplicate_gate_status)}` : "",
     item.content_gate_summary ?? ""
   ].filter((value) => value.trim().length > 0);
+}
+
+function contentDraftContractValues(
+  contract: WordPressDraftPayloadPreviewItem["draft_generation_contract"]
+): string[] {
+  if (!contract) return [];
+  return [
+    contract.contract_version ? `contract: ${contract.contract_version}` : "",
+    contract.allowed_output_kind ? `output: ${contentDraftOutputKindLabel(contract.allowed_output_kind)}` : "",
+    ...(contract.requires_passed_gates ?? []).slice(0, 3).map((value) => `gate: ${value}`),
+    ...(contract.forbidden_outputs ?? []).slice(0, 3).map((value) => `zakaz: ${value}`)
+  ].filter((value) => value.trim().length > 0);
+}
+
+function contentDraftOutputKindLabel(value: string): string {
+  const labels: Record<string, string> = {
+    outline_only_until_gates_pass: "tylko outline do czasu gate review",
+    reviewable_polish_draft_preview: "polski draft tylko do review"
+  };
+  return labels[value] ?? value;
 }
 
 function contentGateStatusLabel(value: string) {

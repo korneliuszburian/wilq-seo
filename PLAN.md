@@ -199,9 +199,12 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   These fields improve handoff quality without unlocking staging, publish or
   apply. Proof:
   `.local-lab/proof/content-publication-brief/content-strategist-smoke.json`.
-- `task`: Add a draft-generation contract that produces reviewable Polish
-  drafts only after the brief passes evidence and duplicate gates. The first
-  implementation should be preview/review-only.
+- `ready`: Reviewed WordPress draft previews expose
+  `content_draft_generation_v1`, which defines language, allowed output kind,
+  required gates, required draft elements and forbidden outputs. Current live
+  candidates stay `outline_only_until_gates_pass` until mapping,
+  canonical/duplicate, legal/factual and human checks pass. Proof:
+  `.local-lab/proof/content-draft-contract/content-strategist-smoke.json`.
 - `blocked`: WordPress/staging handoff remains blocked until there is a typed
   staging ActionObject with preview, human confirmation, audit and no automatic
   publish.

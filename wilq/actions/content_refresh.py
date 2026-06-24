@@ -309,6 +309,7 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         canonical_gate_status=canonical_gate_status,
         duplicate_gate_status=duplicate_gate_status,
     )
+    draft_blockers = _draft_blockers(draft_generation_status)
     candidate_id = str(preview["candidate_id"])
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -373,7 +374,11 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         if isinstance(preview.get("content_gate_summary"), str)
         else None,
         "draft_generation_status": draft_generation_status,
-        "draft_blockers": _draft_blockers(draft_generation_status),
+        "draft_blockers": draft_blockers,
+        "draft_generation_contract": _draft_generation_contract(
+            draft_generation_status=draft_generation_status,
+            draft_blockers=draft_blockers,
+        ),
         "draft_payload": {
             "post_status": "draft",
             "post_title": _draft_title(topic, mode),
@@ -489,6 +494,53 @@ def _draft_blockers(draft_generation_status: str) -> list[str]:
         "duplicate_or_cannibalization_check",
         *blockers,
     ]
+
+
+def _draft_generation_contract(
+    *,
+    draft_generation_status: str,
+    draft_blockers: list[str],
+) -> dict[str, Any]:
+    output_kind = (
+        "reviewable_polish_draft_preview"
+        if draft_generation_status == "ready_for_review"
+        else "outline_only_until_gates_pass"
+    )
+    return {
+        "contract_version": "content_draft_generation_v1",
+        "language": "pl-PL",
+        "status": draft_generation_status,
+        "allowed_output_kind": output_kind,
+        "blocked_until": draft_blockers,
+        "requires_passed_gates": [
+            "evidence_ids_present",
+            "source_connectors_present",
+            "target_site_mapping_review",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "legal_factual_review",
+            "human_confirm_before_wordpress_write",
+        ],
+        "output_must_include": [
+            "seo_title_direction",
+            "meta_description_direction",
+            "h1_direction",
+            "h2_direction",
+            "faq_direction",
+            "cta_direction",
+            "internal_link_direction",
+            "source_facts",
+            "missing_evidence",
+            "forbidden_claims",
+        ],
+        "forbidden_outputs": [
+            "publish_ready_claim",
+            "automatic_wordpress_write",
+            "ranking_guarantee",
+            "lead_or_revenue_uplift_claim",
+            "legal_compliance_guarantee",
+        ],
+    }
 
 
 def _draft_title(topic: str, mode: str) -> str:

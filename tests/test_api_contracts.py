@@ -1811,6 +1811,18 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["canonical_gate_status"]
     assert draft_preview["duplicate_gate_status"]
     assert draft_preview["content_gate_summary"]
+    draft_contract = draft_preview["draft_generation_contract"]
+    assert draft_contract["contract_version"] == "content_draft_generation_v1"
+    assert draft_contract["language"] == "pl-PL"
+    assert draft_contract["status"] == draft_preview["draft_generation_status"]
+    assert draft_contract["allowed_output_kind"] in {
+        "outline_only_until_gates_pass",
+        "reviewable_polish_draft_preview",
+    }
+    assert "duplicate_or_cannibalization_check" in draft_contract[
+        "requires_passed_gates"
+    ]
+    assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[
@@ -1944,6 +1956,18 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["canonical_gate_status"]
     assert draft_preview["duplicate_gate_status"]
     assert draft_preview["content_gate_summary"]
+    draft_contract = draft_preview["draft_generation_contract"]
+    assert draft_contract["contract_version"] == "content_draft_generation_v1"
+    assert draft_contract["language"] == "pl-PL"
+    assert draft_contract["status"] == draft_preview["draft_generation_status"]
+    assert draft_contract["allowed_output_kind"] in {
+        "outline_only_until_gates_pass",
+        "reviewable_polish_draft_preview",
+    }
+    assert "duplicate_or_cannibalization_check" in draft_contract[
+        "requires_passed_gates"
+    ]
+    assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
     assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
     assert (
         "duplicate_or_cannibalization_check"

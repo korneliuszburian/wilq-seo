@@ -87,6 +87,9 @@ Stan produktu:
   previews, reviewed draft previews, dashboard draft cards and the
   content-strategist context-pack. Draft preview readiness remains blocked for
   canonical/duplicate review instead of implying publish or staging readiness.
+- Reviewed WordPress draft previews now expose `content_draft_generation_v1`:
+  allowed output kind, required gates, required draft elements and forbidden
+  outputs. Current live candidates remain outline-only until gates pass.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
