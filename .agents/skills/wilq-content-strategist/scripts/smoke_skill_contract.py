@@ -332,6 +332,14 @@ def validate_content_action_preview(
         raise SystemExit("Content brief preview lacks target_site_migration_status")
     if "target_site_migration_summary" not in first_preview:
         raise SystemExit("Content brief preview lacks target_site_migration_summary")
+    if "target_site_migration_candidate_inventory_status" not in first_preview:
+        raise SystemExit(
+            "Content brief preview lacks target_site_migration_candidate_inventory_status"
+        )
+    if "target_site_migration_candidate_inventory_summary" not in first_preview:
+        raise SystemExit(
+            "Content brief preview lacks target_site_migration_candidate_inventory_summary"
+        )
     requirements = first_preview.get("target_site_review_requirements")
     if not isinstance(requirements, list) or not requirements:
         raise SystemExit("Content brief preview lacks target_site_review_requirements")
@@ -363,6 +371,17 @@ def validate_content_action_preview(
             raise SystemExit("GSC content brief target_site_url must not be redacted")
         if "target_site_inventory_summary" not in gsc_preview:
             raise SystemExit("GSC content brief preview lacks target_site_inventory_summary")
+        candidate_inventory_status = str(
+            gsc_preview.get("target_site_migration_candidate_inventory_status") or ""
+        )
+        if candidate_inventory_status not in {
+            "confirmed_target_inventory",
+            "missing_target_inventory",
+            "not_applicable",
+        }:
+            raise SystemExit(
+                "GSC content brief preview has invalid target_site_migration_candidate_inventory_status"
+            )
         inventory_missing = gsc_preview.get("target_site_inventory_missing_fields")
         canonical_url = str(gsc_preview.get("target_site_inventory_canonical_url") or "")
         canonical_missing = (
@@ -399,6 +418,15 @@ def validate_content_action_preview(
             "forbidden_claims": (preview.get("forbidden_claims") or [])[:6],
             "target_site_inventory_summary": preview.get(
                 "target_site_inventory_summary"
+            ),
+            "target_site_migration_candidate_url": preview.get(
+                "target_site_migration_candidate_url"
+            ),
+            "target_site_migration_candidate_inventory_status": preview.get(
+                "target_site_migration_candidate_inventory_status"
+            ),
+            "target_site_migration_candidate_inventory_summary": preview.get(
+                "target_site_migration_candidate_inventory_summary"
             ),
             "target_site_inventory_missing_fields": (
                 preview.get("target_site_inventory_missing_fields") or []

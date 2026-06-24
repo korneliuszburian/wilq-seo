@@ -148,6 +148,10 @@ Stan produktu:
   BDO, operat wodnoprawny and remediacja as `missing_target_inventory`, so the
   remaining blocker is real old-to-new dev-site mapping before draft or staging
   work.
+- `wilq-content-strategist` smoke coverage now requires the same migration
+  candidate inventory status/summary fields in content brief previews. Fresh
+  proof:
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
 
 ## Active Gaps
 

@@ -184,6 +184,10 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   Live proof: top old-site candidates such as Zielony Lad, BDO, operat
   wodnoprawny and remediacja produce `missing_target_inventory`, so the
   blocker is explicit target inventory mapping rather than missing metadata.
+- `ready`: The `wilq-content-strategist` smoke contract now requires
+  `target_site_migration_candidate_inventory_status` and summary fields in the
+  content brief preview, so context-pack or ActionObject regressions cannot pass
+  with only the older migration status.
 - `ready`: Content decisions, content ActionObject previews, reviewed draft
   previews, dashboard cards and content-strategist context-pack now expose the
   WordPress inventory facts WILQ actually has for target URLs:
@@ -450,6 +454,9 @@ Use these rules before every implementation slice:
   Live API proof shows old-site candidates for Zielony Lad, BDO, operat
   wodnoprawny and remediacja as `missing_target_inventory`; this preserves the
   blocker for real old-to-new mapping before draft or staging work.
+- [x] Harden `wilq-content-strategist` smoke coverage for the same migration
+  candidate inventory fields. Proof:
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
