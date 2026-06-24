@@ -41,6 +41,23 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Final A-Z dashboard route audit moved forward on 2026-06-24. Current
+  checklist item completed: dashboard API-backed smoke for marketer routes.
+  Previous suspicious failures were reclassified with current proof:
+  Content/SEO was obsolete after fresh rerun, Action Detail and Actions/
+  Workflows were transient full-run/runtime issues, Knowledge had a stale
+  helper assertion that treated route-local subloaders as a page failure, and
+  Ahrefs had a real UI usefulness gap because the dashboard showed only 5 of 8
+  typed gap records and hid the competitor-page record. Fixes: the Playwright
+  helper now waits for the route heading and route-specific assertions instead
+  of globally requiring every loader to disappear; `/ahrefs` now shows all 8
+  typed gap records returned by the current contract. Proof:
+  `pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1`
+  returned 13 passed. Stack proof after the run:
+  `scripts/local_stack.sh status` ready for API/dashboard and `/api/health`
+  returned ok. Next checklist item: API contract audit, starting with command
+  center, marketing brief, tactical queue, actions, evidence, connector status
+  and domain diagnostics lineage/payload-preview shape.
 - Marketing Brief empty-section regression was a stale long-running API process,
   not current product code. Fresh `uv run` construction returned
   `what_we_know=5`, `what_blocks_us=2`, `safe_next_actions=7`,

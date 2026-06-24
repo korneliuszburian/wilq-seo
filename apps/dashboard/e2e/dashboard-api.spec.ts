@@ -7,9 +7,6 @@ async function expectApiBackedRouteHeading(
   name: string,
   options: { exact?: boolean } = {}
 ) {
-  await expect(page.getByText("Ładowanie stanu WILQ API")).toBeHidden({
-    timeout: routeReadyTimeoutMs
-  });
   await expect(page.getByRole("heading", { name, exact: options.exact })).toBeVisible({
     timeout: routeReadyTimeoutMs
   });

@@ -9,7 +9,7 @@ import { priorityLabel } from "./marketingLabels";
 type AhrefsDecisionItem = AhrefsDiagnosticsResponse["decision_queue"][number];
 type AhrefsMetricFact = AhrefsDiagnosticsResponse["sections"][number]["metric_facts"][number];
 
-const AHREFS_VISIBLE_GAP_RECORD_LIMIT = 5;
+const AHREFS_VISIBLE_GAP_RECORD_LIMIT = 8;
 
 export function AhrefsDiagnosticSurface() {
   const diagnostics = useQuery({
