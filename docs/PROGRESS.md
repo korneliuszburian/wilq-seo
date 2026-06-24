@@ -91,6 +91,9 @@ Stan produktu:
   marketer-facing `Akcje`, `Akcje do walidacji`, `Otwórz akcję` and
   `Pokaż payload techniczny` while preserving technical route/API IDs. Proof:
   `.local-lab/proof/dashboard/action-labels/actions-route-snapshot.txt`.
+- Core demo route language hardening continued: Content, Merchant and GA4
+  first-screen links/cards now use `akcja/akcje` copy instead of marketer-facing
+  `ActionObject` labels. Focused dashboard tests passed.
 
 ## Active Gaps
 
@@ -102,9 +105,9 @@ Stan produktu:
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
-- Dashboard still has marketer-facing technical language in some places,
-  especially `ActionObjecty`, raw IDs and technical drilldowns. Change only
-  with browser proof that it blocks demo comprehension.
+- Dashboard still has marketer-facing technical language in secondary routes,
+  fixtures and technical drilldowns. Change only with browser proof that it
+  blocks demo comprehension.
 
 ## Next Best Queue
 

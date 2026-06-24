@@ -235,8 +235,9 @@ Skills are operator workflows over WILQ API. They are not the product brain.
 Dashboard is the marketer cockpit. Registry and debug details are allowed only
 after the first decision layer is clear.
 
-- `task`: Finish the marketer-facing rename from `ActionObjecty` to actions on
-  first-screen copy while preserving route names, IDs and technical traceability.
+- `hardening`: Finish the marketer-facing rename from `ActionObjecty` to
+  action wording across remaining secondary/technical routes, while preserving
+  route names, IDs and technical traceability.
 - `task`: Hide raw payload/debug blocks behind technical toggles where they are
   not already hidden.
 - `task`: Keep route cards action-oriented: "what happened", "what to do next",
@@ -400,6 +401,10 @@ Use these rules before every implementation slice:
   `.local-lab/proof/dashboard/content-target-review-requirements/action-review-requirements.json`;
   focused API tests, `ContentDiagnosticSurface` dashboard test and
   `wilq-content-strategist/scripts/smoke_skill_contract.py` passed.
+- [x] Harden core demo route copy from `ActionObject` wording to marketer-facing
+  `akcja/akcje` labels in Content, Merchant and GA4 first-screen links/cards.
+  Focused dashboard tests passed; technical component names and trace IDs remain
+  unchanged.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

@@ -329,7 +329,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
               href={`/actions/${actionIds[0]}`}
               className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
             >
-              Waliduj ActionObject
+              Waliduj akcję
             </a>
           ) : null}
         </div>

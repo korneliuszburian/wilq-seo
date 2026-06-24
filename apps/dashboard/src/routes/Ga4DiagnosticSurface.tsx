@@ -143,7 +143,7 @@ export function Ga4DiagnosticSurface() {
                 Podgląd review GA4
               </h2>
               <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-                Review-only kolejka z ActionObject. Pokazuje co sprawdzić w
+                Review-only kolejka akcji. Pokazuje co sprawdzić w
                 landing/source/campaign i nie wykonuje zmian w GA4.
               </p>
             </div>
@@ -169,7 +169,7 @@ export function Ga4DiagnosticSurface() {
             <p className="mt-1 text-sm leading-6 text-slate-600">
               WILQ może przygotować review jakości ruchu i checklistę pomiaru, ale
               nie może uznać wyniku za problem kampanii bez konwersji, kosztów i
-              walidacji ActionObject.
+              walidacji akcji.
             </p>
           </div>
         </div>
@@ -296,7 +296,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
               values={[formatGa4EvidenceCount(data.evidence_ids.length)]}
             />
             <TraceLine
-              label="ActionObject"
+              label="Akcje"
               values={[formatGa4ActionCount(actionIds.length)]}
             />
             <TraceLine
@@ -424,7 +424,7 @@ function Ga4TrackingQualityPreviewCard({
           values={ga4BlockedClaimLabels(preview.blocked_claims).slice(0, 5)}
         />
         <LinkedTraceLine label="Dowody" values={preview.evidence_ids.slice(0, 3)} kind="evidence" />
-        <LinkedTraceLine label="ActionObject" values={[preview.action_id]} kind="actions" />
+        <LinkedTraceLine label="Akcja" values={[preview.action_id]} kind="actions" />
       </div>
       {Object.keys(preview.metric_snapshot).length > 0 ? (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

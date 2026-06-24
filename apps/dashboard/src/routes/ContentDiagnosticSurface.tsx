@@ -101,12 +101,12 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         {actions.isLoading ? (
           <ActionObjectIdFocus
             actionIds={data.action_ids}
-            note="Ładuję szczegóły ActionObjectów; decyzje contentowe powyżej są już oparte o WILQ API."
+            note="Ładuję szczegóły akcji; decyzje contentowe powyżej są już oparte o WILQ API."
           />
         ) : actions.error ? (
           <ActionObjectIdFocus
             actionIds={data.action_ids}
-            note="Nie udało się odczytać pełnych ActionObjectów. Linki do walidacji zostają widoczne, ale payload preview wymaga /api/actions."
+            note="Nie udało się odczytać pełnych akcji. Linki do walidacji zostają widoczne, ale podgląd payloadu wymaga /api/actions."
           />
         ) : (
           <ActionObjectFocus actions={routeActions} />
@@ -124,7 +124,7 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               WILQ może przygotować brief, kolejkę odświeżenia i podgląd payloadu,
-              ale nie publikuje ani nie zmienia WordPress bez walidacji ActionObject,
+              ale nie publikuje ani nie zmienia WordPress bez walidacji akcji,
               jawnej zgody operatora i audytu.
             </p>
           </div>
@@ -194,7 +194,7 @@ function ContentBriefPreviewPanel({ actions }: { actions: ActionObject[] }) {
             Co WILQ może przygotować bez publikacji
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            To są kandydaci z ActionObject. Każdy wymaga walidacji GSC/WordPress,
+            To są kandydaci z akcji WILQ. Każdy wymaga walidacji GSC/WordPress,
             sprawdzenia duplikatów i decyzji operatora przed jakąkolwiek zmianą treści.
           </p>
         </div>
@@ -522,7 +522,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
               values={[formatContentEvidenceCount(summary.evidence_ids.length)]}
               empty="brak"
             />
-            <TraceLine label="ActionObject" values={[formatContentActionCount(actionIds.length)]} />
+            <TraceLine label="Akcje" values={[formatContentActionCount(actionIds.length)]} />
             <TraceLine
               label="Nie wolno twierdzić"
               values={contentBlockedClaimLabels(summary.blocked_claims)}
@@ -533,7 +533,7 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
               href={`/actions/${actionIds[0]}`}
               className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
             >
-              Waliduj ActionObject
+              Waliduj akcję
             </a>
           ) : null}
         </div>

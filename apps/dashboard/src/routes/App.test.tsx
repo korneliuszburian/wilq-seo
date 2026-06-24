@@ -6475,7 +6475,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/najpierw przygotuj podgląd payloadu/)).toBeInTheDocument();
     expect(screen.getAllByText(/produkt zatwierdzony ponownie/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Waliduj akcję" })).toHaveAttribute(
       "href",
       "/actions/act_review_merchant_feed_issues"
     );
@@ -6567,7 +6567,7 @@ describe("WILQ dashboard", () => {
       screen.getByText("Sprawdź jakość pomiaru GA4 przed oceną kampanii")
     ).toBeInTheDocument();
     expect(screen.getByText("Podgląd review GA4")).toBeInTheDocument();
-    expect(screen.getByText(/Review-only kolejka z ActionObject/)).toBeInTheDocument();
+    expect(screen.getByText(/Review-only kolejka akcji/)).toBeInTheDocument();
     expect(screen.getByText(/apply zablokowany/)).toBeInTheDocument();
     expect(screen.queryByText("Analytics Safety Gate")).not.toBeInTheDocument();
     expect(screen.getByText("Brama bezpieczeństwa GA4")).toBeInTheDocument();
@@ -6637,7 +6637,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText(/120 wyświetleń/)).toBeInTheDocument();
     expect(screen.getByText(/12 kliknięć/)).toBeInTheDocument();
     expect(screen.getByText(/WordPress: potwierdzony/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Waliduj ActionObject" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Waliduj akcję" })).toHaveAttribute(
       "href",
       "/actions/act_prepare_content_refresh_queue"
     );
