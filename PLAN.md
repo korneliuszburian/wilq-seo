@@ -140,8 +140,16 @@ Active demo work is narrow and depth-first.
 
 - `task`: Run or explicitly defer the marketer UAT script. This is the only
   remaining proof gap between browser/eval readiness and "marketer gets value".
+- `ready`: A simulated operator UAT walkthrough is captured at
+  `docs/handoffs/2026-06-24-operator-uat-findings.md` with browser proof under
+  `.local-lab/proof/dashboard/marketer-uat-20260624/`. It found real
+  review/planning value and one Command Center CTA blocker; it is not a
+  substitute for real marketer UAT.
 - `hardening`: Keep `ActionObject`/raw payload/technical ID language out of
   first-screen marketer copy while preserving traceability in details.
+- `ready`: Command Center daily decision CTAs now use domain labels:
+  `Otwórz Merchant`, `Otwórz Content Planner`, `Otwórz GA4` and
+  `Otwórz Ads Doctor`, while preserving the existing domain `route` values.
 - `hardening`: Keep Command Center CTAs aligned to the narrow path:
   `/merchant`, `/content-planner`, `/ads-doctor`, `/ga4`.
 - `ready`: Pre-demo gate passed after current hardening; rerun only after a
@@ -457,6 +465,11 @@ Use these rules before every implementation slice:
 - [x] Harden `wilq-content-strategist` smoke coverage for the same migration
   candidate inventory fields. Proof:
   `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
+- [x] Run simulated operator UAT for the core path and save findings:
+  `docs/handoffs/2026-06-24-operator-uat-findings.md`.
+- [x] Fix the simulated UAT Command Center CTA blocker by replacing generic
+  `Otwórz działanie` with domain route labels. Browser proof:
+  `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-cta.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

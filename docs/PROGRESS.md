@@ -152,11 +152,21 @@ Stan produktu:
   candidate inventory status/summary fields in content brief previews. Fresh
   proof:
   `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
+- Simulated operator UAT walkthrough captured route proof under
+  `.local-lab/proof/dashboard/marketer-uat-20260624/` and findings in
+  `docs/handoffs/2026-06-24-operator-uat-findings.md`. Result: core path gives
+  a real review/planning boost, with Content Planner and Merchant strongest,
+  but real marketer UAT is still not collected.
+- Command Center CTA blocker from the simulated UAT is fixed: daily decisions
+  now link as `Otwórz Merchant`, `Otwórz Content Planner`, `Otwórz GA4` and
+  `Otwórz Ads Doctor` instead of generic `Otwórz działanie`. Browser proof:
+  `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-cta.txt`.
 
 ## Active Gaps
 
-- Real marketer UAT has not been collected. Browser/smoke/eval proof does not
-  prove that the marketer saves time or knows what to do without explanation.
+- Real marketer UAT has not been collected. Simulated operator UAT says the
+  core path is useful, but it does not prove that the marketer saves time or
+  knows what to do without explanation.
 - Content workflow still lacks confirmed old-to-new mapping against full
   dev-site inventory, staging handoff, publishing and post-publication
   measurement loop for `ekologus.dev.proudsite.pl`. Target metadata and

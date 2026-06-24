@@ -141,6 +141,16 @@ function decisionStatusBadgeValue(item: DailyDecision) {
   return item.decision_state;
 }
 
+function routeCtaLabel(route: string) {
+  const labels: Record<string, string> = {
+    "/ads-doctor": "Otwórz Ads Doctor",
+    "/content-planner": "Otwórz Content Planner",
+    "/ga4": "Otwórz GA4",
+    "/merchant": "Otwórz Merchant"
+  };
+  return labels[route] ?? "Otwórz widok";
+}
+
 function decisionCopy(item: DailyDecision): DecisionCopy {
   if (item.id === "decision_review_merchant_feed_issues") {
     const products = metricDisplay(item, "produkty");
@@ -297,7 +307,7 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
               href={item.route}
               className="mt-4 inline-flex h-9 items-center rounded-md border border-line px-3 text-sm font-medium text-ink hover:bg-slate-50"
             >
-              Otwórz działanie
+              {routeCtaLabel(item.route)}
             </a>
           </article>
           );

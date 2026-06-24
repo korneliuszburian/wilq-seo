@@ -183,6 +183,15 @@ describe("CommandCenter route", () => {
     expect(screen.getByText("Codex: feed Merchant")).toBeInTheDocument();
     expect(screen.getByText("Codex: strategia treści")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Kopiuj prompt" })).toHaveLength(2);
+    expect(screen.getByRole("link", { name: "Otwórz Merchant" })).toHaveAttribute(
+      "href",
+      "/merchant"
+    );
+    expect(screen.getByRole("link", { name: "Otwórz Content Planner" })).toHaveAttribute(
+      "href",
+      "/content-planner"
+    );
+    expect(screen.queryByRole("link", { name: "Otwórz działanie" })).not.toBeInTheDocument();
     expect(screen.getByText("gotowe")).toBeInTheDocument();
     expect(screen.getByText("do odświeżenia")).toBeInTheDocument();
     expect(screen.getByText(/Świeżość źródeł: świeże/)).toBeInTheDocument();
