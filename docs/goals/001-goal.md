@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:00 CEST.
+Last updated: 2026-06-24 04:27 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -51,10 +51,13 @@ tracked in git history, `docs/PROGRESS.md`, route tests and
 goal tasks. Only reopen a ready surface when fresh browser/API proof shows a
 regression.
 
-Latest completed slice: Merchant skill eval is hardened for product/price
-readiness and blocked product ROAS / price-impact claims. Local proof passed;
-targeted non-interactive Codex eval passed after one usage-limit retry:
-`.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json`.
+Latest completed slices: Merchant skill eval is hardened for product/price
+readiness and blocked product ROAS / price-impact claims
+(`.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json`).
+Daily Command wording/eval now treats Localo as outside the daily task list only
+when it is outside typed `command_center.daily_decisions`, not because Localo
+evidence is absent
+(`.local-lab/evals/codex-skill/20260624T020034Z/wilq-daily-command/result.json`).
 
 ## Current Stack Map
 

@@ -9,10 +9,11 @@ CommandCenter action-plan items, evidence IDs, opportunity IDs, action IDs,
 blockers i następnymi bezpiecznymi krokami.
 
 Daily Command pokazuje core daily loop: Merchant, Content/GSC/WordPress, GA4 i
-Ads. Nie jest pełnym registry connectorów ani social planning surface. Localo
-może pojawić się w daily briefie tylko jako realny blocker albo ograniczenie
-claimów, dopóki WILQ API nie ma Localo ranking/GBP evidence. Social draft
-ActionObjects należą do `wilq-social-publisher`, nie do daily briefu.
+Ads. Nie jest pełnym registry connectorów, Localo dashboardem ani social
+planning surface. Localo może pojawić się w daily briefie tylko wtedy, gdy
+`command_center.daily_decisions` je zwraca albo użytkownik jawnie pyta o
+lokalną widoczność. Social draft ActionObjects należą do
+`wilq-social-publisher`, nie do daily briefu.
 
 ## Wymagany kontekst API
 

@@ -40,6 +40,8 @@ FORBIDDEN_SKILL_PROSE = {
     "API identifiers",
     "Priorytetyzuj Merchant",
     "Klasyfikuj każdy item",
+    "WILQ nie ma Localo ranking/GBP evidence",
+    "Localo nie zostało wypromowane",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 MAX_BODY_LINE_LENGTH = 900

@@ -218,6 +218,12 @@ Stan produktu:
   Focused local proof passes. Targeted `codex_skill_eval.sh` first hit the
   Codex usage limit, then passed after retry; artifact:
   `.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json`.
+- Daily Command skill/reference/eval no longer says Localo is omitted because
+  WILQ lacks Localo ranking/GBP evidence. It now follows the typed
+  `command_center.daily_decisions` boundary: Localo is outside the daily task
+  list unless the API promotes it or the user explicitly asks for Localo.
+  Targeted eval artifact:
+  `.local-lab/evals/codex-skill/20260624T020034Z/wilq-daily-command/result.json`.
 - Strong demo path today:
   `/command-center` -> `/merchant` -> `/content-planner` -> `/ads-doctor` ->
   optional `/ga4` and `/localo`.

@@ -35,7 +35,7 @@ Używaj tego skilla jako workflow operatora WILQ API, nie jako raport oparty tyl
 5. Wywołaj `POST /api/codex/context-pack` z `{"skill":"wilq-daily-command"}`, żeby pobrać szersze evidence, opportunities, actions, expert rules i knowledge cards.
 6. Osadzony w context packu `command_center` jest celowo kompaktowy: użyj `daily_decisions` jako kanonicznej daily decision list i potwierdź zgodność z `GET /api/dashboard/command-center` dla `primary_next_step`, blocker count, tactical item count oraz daily decision trace fields. Nie odbudowuj planu z legacy list `operator_brief` albo `action_plan`.
 7. Osadzony `marketing_brief` musi zgadzać się z `GET /api/marketing/brief` dla language, section IDs, blocker count, recommendation count, evidence IDs i action IDs.
-8. Daily Command jest core daily loop, nie pełnym registry. Zachowaj kolejność, statusy i `primary_next_step` z WILQ API; nie nadawaj własnego rankingu domen ani nie promuj connector readiness jako zadania marketingowego. Social workflow pokaż tylko wtedy, gdy API zwraca go w daily decyzjach albo użytkownik jawnie o niego prosi.
+8. Daily Command jest core daily loop, nie pełnym registry. Zachowaj kolejność, statusy i `primary_next_step` z WILQ API; nie nadawaj własnego rankingu domen ani nie promuj connector readiness jako zadania marketingowego. Localo i social workflow pokaż tylko wtedy, gdy API zwraca je w `daily_decisions` albo użytkownik jawnie o nie prosi.
 9. Endpointów refresh connectorów używaj tylko do jawnych read-only refreshy i tylko gdy connector jest skonfigurowany.
 10. Zwaliduj istniejący ActionObject przez `POST /api/actions/{action_id}/validate` przed rekomendacją apply/execution.
 11. Zwracaj identyfikatory: source connector IDs, evidence IDs, opportunity IDs i action IDs wszędzie tam, gdzie API je udostępnia.
@@ -105,7 +105,7 @@ Kontrakt językowy: wszystkie odpowiedzi dla operatora pisz po polsku z polskimi
 
 - Nie wymyślaj metryk, rankingów, liczby produktów, stanu kampanii, inventory treści, social permissions ani ustaleń Localo.
 - Nie promuj `act_prepare_linkedin_social_drafts` ani `act_prepare_facebook_social_drafts` w daily briefie; to należy do `wilq-social-publisher`.
-- Nie promuj Localo readiness jako zadania dnia, jeśli WILQ nie ma Localo ranking/GBP evidence. W daily briefie Localo może być blockerem albo blocked claim.
+- Nie promuj Localo jako zadania dnia poza `command_center.daily_decisions`. Jeśli użytkownik pyta o Localo, użyj dedykowanego `wilq-localo-operator`.
 - Nie drukuj sekretów, ścieżek credentiali, wartości tokenów ani surowych vendor response bodies.
 - Nie wywołuj write/apply endpoints, chyba że WILQ API wystawia action, walidacja przechodzi i użytkownik jawnie prosi o wykonanie.
 - Nie omijaj walidacji ActionObject, evidence IDs ani wymagań audytu.

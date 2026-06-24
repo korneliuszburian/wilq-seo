@@ -109,7 +109,7 @@ Result:
 - The final JSON includes `/command-center`, `daily_decisions`,
   `primary_next_step`, `/merchant`, `/content-planner`, `/ga4` and
   `/ads-doctor`.
-- `Localo nie zostało wypromowane`: `act_review_localo_visibility_facts` and
+- `Localo poza daily_decisions`: `act_review_localo_visibility_facts` and
   social draft ActionObjects are not present in action candidates.
 - `operator_usefulness_score=5`
 - `safety_findings=[]`
@@ -5050,3 +5050,51 @@ Product finding:
   and price-impact conclusions remain blocked by missing read contracts.
 - The eval now tests that boundary explicitly instead of letting the skill pass
   on generic “review feed issues” language.
+
+## 2026-06-24 - wilq-daily-command Localo daily-decision wording repair
+
+Purpose:
+
+- Remove stale daily-skill wording that implied Localo could only be omitted
+  because WILQ lacked Localo ranking/GBP evidence.
+- Align Daily Command with the current API contract: Localo is omitted from the
+  daily task list only when it is outside `command_center.daily_decisions`.
+- Keep Localo/social ActionObjects out of daily action candidates unless the
+  canonical daily view includes them or the user explicitly asks for that route.
+
+Focused proof:
+
+```bash
+uv run python scripts/skill_hygiene_check.py
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run ruff check scripts/skill_hygiene_check.py tests/test_codex_skill_eval_cases.py
+uv run python .agents/skills/wilq-daily-command/scripts/smoke_context_pack.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-daily-command --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T020034Z/wilq-daily-command/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors` include Localo because it is part of wider context.
+- `action_candidates` contain Merchant, Content, GA4 and Ads review actions.
+- `act_review_localo_visibility_facts` and social draft actions are not action
+  candidates.
+- `decision_quality` booleans all passed.
+- `notes` include `Localo poza daily_decisions`.
+- `safety_findings=[]`
+
+Product finding:
+
+- Current live `daily_decisions` still cover Merchant, Content, GA4 and Ads.
+  Localo may have aggregate evidence in its dedicated route, but Daily Command
+  should not promote it as a main daily task unless the typed command-center
+  view-model promotes it.

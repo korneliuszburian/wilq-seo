@@ -255,7 +255,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
                 "Content",
                 "GA4",
                 "Ads",
-                "Localo nie zostało wypromowane",
+                "Localo poza daily_decisions",
             },
             "action_ids": {
                 "act_review_merchant_feed_issues",
