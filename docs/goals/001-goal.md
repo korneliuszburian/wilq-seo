@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 07:23 CEST.
+Last updated: 2026-06-24 07:47 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -95,6 +95,59 @@ Use the Codex Goal pattern as a completion contract:
   before editing shared product surfaces.
 - Prompt text exposed to the marketer is part of the product surface: it must be
   practical Polish, skill-specific, evidence-scoped and eval-covered.
+
+## Codex Rollout Quality Gates
+
+These gates apply before adding tasks, editing code or claiming a gap exists:
+
+1. **Inventory before planning**
+   - Search and read the current repo/API first. Use `rg`, targeted file reads
+     and relevant WILQ endpoints before writing a plan or backlog item.
+   - Every new task must name what already exists, what is missing, and which
+     API/schema/dashboard/skill/eval surface proves that gap.
+   - If live API contradicts source/tests, restart the managed stack before
+     changing product logic.
+2. **Reuse before building**
+   - Reuse existing typed contracts, helpers, schemas, view-models, route
+     components and skill smokes before adding new ones.
+   - Do not create duplicate pipelines because a previous session forgot an
+     implementation exists. If a contract exists but is weak, harden it.
+   - Large files such as dashboard route modules are technical debt, but do not
+     refactor them during unrelated slices. Extract only when the current slice
+     needs it or when a dedicated quality slice is active.
+3. **Smallest working slice**
+   - Deliver working code or a concrete docs correction, not a plan-only turn,
+     unless the user explicitly asks for a plan.
+   - Keep edits surgical. Every changed line must trace to this goal, the
+     user's latest request or a directly observed regression.
+   - Do not add speculative flexibility, broad fallbacks, broad catches,
+     success-shaped defaults or prompt-side business logic.
+4. **Tool and execution discipline**
+   - Batch independent reads and searches with parallel tool calls. Avoid
+     sequential file-by-file exploration unless the next path truly depends on
+     the previous result.
+   - Use `apply_patch` for manual edits. Do not use destructive git commands.
+   - Use subagents only for independent audits or implementation slices with
+     disjoint files; merge findings into one typed API/view-model plan before
+     editing shared surfaces.
+5. **Verification discipline**
+   - Run the smallest check that proves the touched surface. Docs-only changes
+     need `git diff --check`; API/schema changes need the focused pytest; route
+     changes need the touched route test and type/lint only when shared types
+     moved; skill changes need the touched smoke/eval.
+   - Do not repeat broad test suites by habit. Use `scripts/verify.sh` only for
+     final handoff, broad-risk changes or shared-regression evidence.
+   - Before completion, reconcile all stated tasks as done, blocked or
+     cancelled. Do not leave active docs with stale ready items.
+6. **Codex harness discipline**
+   - For any WILQ-owned Codex API/runtime work, preserve assistant `phase`
+     metadata for commentary/final output, preserve compaction state, and keep
+     tool schemas close to Codex CLI conventions.
+   - Operator prompts must be practical Polish commands mapped to a specific
+     WILQ skill, endpoint, evidence set, ActionObject and blocked claims.
+   - If a skill needs smarter behavior, implement or expose the typed API field
+     first. Skill references describe how to use contracts; they do not patch
+     missing product behavior.
 
 ## Current Product State
 
@@ -244,13 +297,15 @@ fresh API/browser proof shows a regression.
    - Real gaps: decision-quality evals, semantic reference audit, practical
      dashboard prompts and tighter context packs for each domain.
 5. **Content generation layer**
-   - Ready: content diagnostics and tactical queue can already turn GSC,
-     WordPress, Ahrefs and GA4 evidence into review-safe refresh/create/merge/
-     block decisions.
-   - Required next shape: a typed content-generation contract that converts
-     evidence into Polish marketer artifacts: intent cluster, audience/problem,
-     old source URL, target page type, source facts, H1/H2/FAQ/CTA direction,
-     draft constraints, forbidden claims and review state.
+   - Ready: content diagnostics already returns typed `decision_queue` items,
+     `act_prepare_content_refresh_queue` already exposes
+     `content_brief_preview_v1` and `wordpress_draft_payload_preview_v1`, and
+     dashboard/skills already render or consume the review-only content flow.
+   - Required next shape: harden the existing content-generation contract, not
+     rebuild it. The contract must consistently convert evidence into Polish
+     marketer artifacts: intent cluster, audience/problem, old source URL,
+     target page type, source facts, H1/H2/FAQ/CTA direction, draft
+     constraints, forbidden claims and review state.
    - Techniques: evidence-first context packs, query/page clustering, search
      intent grouping, content inventory dedupe, landing/source quality checks,
      competitor/gap context as supporting evidence only, and human review before
@@ -259,9 +314,10 @@ fresh API/browser proof shows a regression.
      for example "zbuduj brief SEO dla tej strony", "połącz te query w jeden
      klaster", "wskaż refresh/merge/create/block", with evidence IDs,
      source connectors, ActionObject IDs and blocked claims embedded.
-   - Real gaps: content brief schema, draft/rewrite preview, duplicate/canonical
-     checks, target-site migration fields and evals that score usefulness of
-     the generated brief, not only JSON shape.
+   - Real gaps: surface consistency between content diagnostics, tactical
+     queue, context-pack and dashboard; richer draft/rewrite preview;
+     duplicate/canonical checks; target-site migration fields; and evals that
+     score usefulness of the generated brief, not only JSON shape.
 6. **Knowledge compiler and marketing expertise**
    - Ready: structured expert YAML rules and first knowledge-card/compiler
      scaffolding exist.
@@ -663,10 +719,13 @@ Finish these before claiming the Ekologus demo is done:
 1. First stabilize the core demo cockpit: Command Center and domain routes must
    show useful marketer decisions, prompt-to-Codex, evidence, blocked claims and
    safe next actions without technical filler.
-2. Then build the content-generation pipeline: evidence pack -> intent cluster
-   -> inventory/canonical check -> brief -> draft/rewrite preview -> review
-   ActionObject. Verify through content diagnostics, tactical queue, dashboard
-   route and `wilq-content-strategist` / `wilq-gsc-content-doctor` evals.
+2. Then harden the existing content-generation pipeline: evidence pack ->
+   intent cluster -> inventory/canonical check -> brief -> draft/rewrite
+   preview -> review ActionObject. Before coding, inventory the existing
+   `content_diagnostics`, `content_refresh.py`, dashboard content route,
+   ActionObject payload and content skills so we do not rebuild what already
+   exists. Verify through content diagnostics, tactical queue, dashboard route
+   and `wilq-content-strategist` / `wilq-gsc-content-doctor` evals.
 3. Use `http://ekologus.dev.proudsite.pl/` only after the content pipeline is
    stable enough to adapt old evidence into target-site briefs without
    inventing metrics or page claims.

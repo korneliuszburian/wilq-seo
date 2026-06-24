@@ -76,20 +76,24 @@ Stan produktu:
   blocked stop condition. Use it to decide the next slice by evidence and demo
   value, not by percentage estimates or a growing backlog.
 - Goal 001 now treats `http://ekologus.dev.proudsite.pl/` as a later target
-  context after the core demo cockpit and content-generation pipeline are
-  stable. The content pipeline must be API-first: evidence pack, intent cluster,
-  inventory/canonical check, brief, draft/rewrite preview and review
-  ActionObject, with skill evals proving usefulness.
+  context after the core demo cockpit and existing content-generation pipeline
+  are stable. The content pipeline is not blank: it already has typed
+  content decisions, `act_prepare_content_refresh_queue`, brief previews and a
+  WordPress draft preview. Next work is hardening surface consistency,
+  usefulness and target-site adaptation, not rebuilding from scratch.
 - Deferred "better BDOS" work is archived in
   `docs/goals/archive/bdos-deferred-backlog.md`. Do not lose those tasks, but
   do not paste the whole backlog back into active Goal 001; promote one
   evidence-backed slice at a time.
 - Live sanity check on 2026-06-24: `/api/dashboard/command-center` returns 4
   daily decisions across Merchant, Content, GA4 and Ads with 18 evidence IDs
-  and 7 action IDs; `/api/content/diagnostics` has live data, 10 query/page
-  rows and 11 inventory matches, but 0 tactical items. This confirms the next
-  product slice is content-generation decision/brief pipeline, not premature
-  dev-site adaptation.
+  and 7 action IDs. `/api/content/diagnostics` has live data, 10 query/page
+  rows, 11 inventory matches and 5 `decision_queue` entries.
+  `act_prepare_content_refresh_queue` exposes 8 `content_brief_preview_v1`
+  items, 1 `wordpress_draft_payload_preview_v1` item and validates
+  successfully. The next product slice is content pipeline hardening:
+  diagnostics/tactical queue/context-pack/dashboard consistency, stronger brief
+  usefulness evals and later dev-site adaptation.
 - Skill eval schema/harness now requires `decision_quality`: actionable
   decision, safe next step, blocked-claims handling, workflow-specific
   interpretation and evidence-backed reasoning. Live proof:
