@@ -262,6 +262,7 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
       </div>
 
       <AdsOptimizerReadinessPanel contract={optimizer} />
+      <AdsStartHerePanel decisions={decisions.slice(0, 3)} currencyCode={currencyCode} />
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="grid gap-3">
@@ -304,6 +305,72 @@ function AdsOperatorSummary({ data }: { data: AdsDiagnosticsResponse }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function AdsStartHerePanel({
+  decisions,
+  currencyCode
+}: {
+  decisions: AdsDecisionItem[];
+  currencyCode?: string;
+}) {
+  if (decisions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mb-4 rounded-md border border-line bg-white p-3">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Najpierw sprawdź w Ads</h3>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-600">
+            Skrócona kolejność dla marketera. Pełne karty i akcje do walidacji są niżej,
+            ale ten pasek pokazuje, od czego zacząć bez przechodzenia przez całą listę.
+          </p>
+        </div>
+        <span className="rounded-md border border-line bg-slate-50 px-2 py-1 text-xs text-slate-600">
+          tryb: review-only
+        </span>
+      </div>
+      <div className="grid gap-2 lg:grid-cols-3">
+        {decisions.map((decision, index) => (
+          <article key={decision.id} className="rounded-md border border-line bg-slate-50 p-3">
+            <div className="flex items-start gap-2">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-white">
+                {index + 1}
+              </span>
+              <div>
+                <h4 className="text-sm font-semibold leading-5 text-ink">
+                  {adsDecisionTitle(decision)}
+                </h4>
+                <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
+                  {adsDecisionTypeLabel(decision.decision_type)} / {adsDecisionStatusLabel(decision.status)}
+                </p>
+              </div>
+            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-700">
+              {adsStartHereSummary(decision, currencyCode)}
+            </p>
+            <p className="mt-2 text-xs font-medium leading-5 text-ink">
+              {adsDecisionNextStep(decision)}
+            </p>
+            <div className="mt-2 grid gap-1 text-xs text-slate-600">
+              <TraceLine
+                label="Akcje"
+                values={[formatActionObjectCount(decision.action_ids.length)]}
+                empty="brak"
+              />
+              <TraceLine
+                label="Nie wolno"
+                values={decision.blocked_claims.map(adsBlockedClaimLabel).slice(0, 3)}
+                empty="brak"
+              />
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -2157,6 +2224,34 @@ function adsDecisionSummary(decision: AdsDecisionItem) {
       "WILQ pokazuje wyszukiwane hasła do ręcznej oceny kosztu, intencji i konwersji."
   };
   return summaries[decision.decision_type] ?? decision.summary;
+}
+
+function adsStartHereSummary(decision: AdsDecisionItem, currencyCode?: string) {
+  if (decision.decision_type === "review_campaign_triage") {
+    const campaignCount = decision.campaign_triage_rows.length || decision.campaign_rows.length;
+    return `${campaignCount} kampanii w kolejce oceny. Zacznij od celu, kosztu, konwersji, budżetu i haseł.`;
+  }
+  if (decision.decision_type === "review_campaign_activity") {
+    const cost = adsCost(sumCampaignCostMicros(decision.campaign_rows), currencyCode);
+    return `${decision.campaign_rows.length} kampanii z odczytem aktywności. Koszt w tej karcie: ${cost}.`;
+  }
+  if (decision.decision_type === "review_business_context") {
+    return "Najpierw potwierdź marżę, cel biznesowy i target CPA/ROAS, zanim ktokolwiek nazwie wynik opłacalnym.";
+  }
+  if (decision.decision_type === "review_derived_kpi") {
+    return `${decision.derived_kpi_rows.length} wierszy KPI do triage. To nadal sygnał review, nie werdykt CPA/ROAS.`;
+  }
+  if (decision.decision_type === "review_budget_context") {
+    return `${decision.budget_rows.length} budżetów do sprawdzenia. Nie skaluj ani nie tnij budżetu bez walidacji akcji WILQ.`;
+  }
+  if (decision.decision_type === "review_search_terms") {
+    return `${decision.search_term_rows.length} haseł do oceny. Zacznij od kosztu i intencji, nie od automatycznego wykluczenia.`;
+  }
+  return adsDecisionSummary(decision);
+}
+
+function sumCampaignCostMicros(rows: AdsCampaignMetricRow[]) {
+  return rows.reduce((total, row) => total + (row.cost_micros ?? 0), 0);
 }
 
 function adsDecisionRationale(decision: AdsDecisionItem) {

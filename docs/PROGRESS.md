@@ -300,6 +300,11 @@ Stan produktu:
   "start here" strip or action-card collapse before real marketer UAT. This is
   not a replacement for human marketer feedback. Proof:
   `.local-lab/proof/marketer-walkthrough/summary.md`.
+- Ads Doctor now has a marketer-facing "Najpierw sprawdź w Ads" strip above
+  the full decision/action list. It uses the existing typed top Ads decisions
+  and keeps review-only/blocked-claim wording, giving the marketer a starting
+  order without unlocking optimizer/apply claims. Proof:
+  `.local-lab/proof/dashboard/ads-start-here/ads-doctor-start-here.txt`.
 
 ## Active Gaps
 
@@ -326,9 +331,9 @@ Stan produktu:
 1. Run or defer the short marketer UAT script: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record whether the marketer knew
    what to do next and where they got confused.
-2. If demo UX is the next priority, verify whether Ads Doctor's dense action
-   list confuses the marketer. If yes, add a prioritized "start here" strip or
-   collapse lower-priority action cards.
+2. If demo UX is the next priority, verify with the real marketer whether the
+   Ads "Najpierw sprawdź" strip is enough. Collapse lower-priority action cards
+   only if human feedback or fresh browser proof still shows confusion.
 3. If demo UX is the next priority, change one confirmed blocker at a time
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.

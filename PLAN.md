@@ -355,6 +355,14 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   spending time on more polish; likely fix is a prioritized "start here" strip
   or collapsed lower-priority action cards. Proof:
   `.local-lab/proof/marketer-walkthrough/summary.md`.
+- `ready`: Ads Doctor now exposes a compact "Najpierw sprawdź w Ads" strip
+  from the existing typed top decision queue before the full action list. This
+  gives the marketer the first three Ads review steps while preserving
+  review-only wording and blocked optimizer/apply claims. Proof:
+  `.local-lab/proof/dashboard/ads-start-here/ads-doctor-start-here.txt`.
+- `hardening`: Do not collapse lower-priority Ads action cards until real
+  marketer UAT or fresh browser proof shows the new start strip is still not
+  enough.
 - `deferred_bdos`: Post-publication measurement loop is after staging handoff:
   compare GSC/GA4 windows, detect refresh/merge/kill follow-ups and feed the
   result back into knowledge cards.

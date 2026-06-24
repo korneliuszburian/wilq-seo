@@ -108,7 +108,9 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(
       page.getByRole("heading", { name: "Co marketer ma sprawdzić teraz w Google Ads" })
     ).toBeVisible();
-    await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Najpierw sprawdź w Ads" })).toBeVisible();
+    await expect(page.getByText("tryb: review-only")).toBeVisible();
+    await expect(page.getByText("Przejrzyj aktywność kampanii Google Ads").first()).toBeVisible();
     await expect(page.getByText("Operator Ads")).toBeVisible();
     await expect(page.getByText("Budżety").first()).toBeVisible();
     await expect(page.getByText("Rekom.").first()).toBeVisible();
