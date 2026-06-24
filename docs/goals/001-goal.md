@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:27 CEST.
+Last updated: 2026-06-24 04:39 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -57,7 +57,9 @@ readiness and blocked product ROAS / price-impact claims
 Daily Command wording/eval now treats Localo as outside the daily task list only
 when it is outside typed `command_center.daily_decisions`, not because Localo
 evidence is absent
-(`.local-lab/evals/codex-skill/20260624T020034Z/wilq-daily-command/result.json`).
+(`.local-lab/evals/codex-skill/20260624T020437Z/wilq-daily-command/result.json`);
+the same daily eval now validates the Ads review ActionObject instead of
+leaving it pending.
 
 ## Current Stack Map
 

@@ -334,6 +334,7 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
         daily_case["expected_connectors"]
     )
     assert set(daily_case["expected_validated_action_ids"]) == {
+        "act_prepare_ads_campaign_review_queue",
         "act_review_merchant_feed_issues",
         "act_prepare_content_refresh_queue",
         "act_review_ga4_tracking_quality",

@@ -5076,7 +5076,7 @@ CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
 Passing artifact:
 
 ```txt
-.local-lab/evals/codex-skill/20260624T020034Z/wilq-daily-command/result.json
+.local-lab/evals/codex-skill/20260624T020437Z/wilq-daily-command/result.json
 ```
 
 Result:
@@ -5085,7 +5085,8 @@ Result:
 - `api_used=true`
 - `blocked=false`
 - `source_connectors` include Localo because it is part of wider context.
-- `action_candidates` contain Merchant, Content, GA4 and Ads review actions.
+- `action_candidates` contain validated Merchant, Content, GA4 and Ads review
+  actions.
 - `act_review_localo_visibility_facts` and social draft actions are not action
   candidates.
 - `decision_quality` booleans all passed.
@@ -5098,3 +5099,6 @@ Product finding:
   Localo may have aggregate evidence in its dedicated route, but Daily Command
   should not promote it as a main daily task unless the typed command-center
   view-model promotes it.
+- The daily smoke now validates `act_prepare_ads_campaign_review_queue` too,
+  so the Ads daily action is no longer left as `pending_validation` in the
+  non-interactive eval.

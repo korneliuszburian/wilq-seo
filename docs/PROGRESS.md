@@ -222,8 +222,10 @@ Stan produktu:
   WILQ lacks Localo ranking/GBP evidence. It now follows the typed
   `command_center.daily_decisions` boundary: Localo is outside the daily task
   list unless the API promotes it or the user explicitly asks for Localo.
+  The daily smoke/eval now also validates the Ads review ActionObject, so the
+  four core daily actions are validated instead of leaving Ads as pending.
   Targeted eval artifact:
-  `.local-lab/evals/codex-skill/20260624T020034Z/wilq-daily-command/result.json`.
+  `.local-lab/evals/codex-skill/20260624T020437Z/wilq-daily-command/result.json`.
 - Strong demo path today:
   `/command-center` -> `/merchant` -> `/content-planner` -> `/ads-doctor` ->
   optional `/ga4` and `/localo`.

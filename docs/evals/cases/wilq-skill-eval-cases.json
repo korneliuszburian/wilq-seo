@@ -27,7 +27,8 @@
     "expected_validated_action_ids": [
       "act_review_merchant_feed_issues",
       "act_prepare_content_refresh_queue",
-      "act_review_ga4_tracking_quality"
+      "act_review_ga4_tracking_quality",
+      "act_prepare_ads_campaign_review_queue"
     ],
   "expected_connectors": [
     "google_ads",

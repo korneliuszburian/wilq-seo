@@ -31,6 +31,7 @@ REQUIRED_BRIEF_SECTIONS = {
 FORBIDDEN_MARKERS = ("fake_metric", "mock_metric", "seed_metric")
 MAX_CONTEXT_PACK_BYTES = 180_000
 CORE_DAILY_ACTION_IDS = {
+    "act_prepare_ads_campaign_review_queue",
     "act_prepare_content_refresh_queue",
     "act_review_ga4_tracking_quality",
     "act_review_merchant_feed_issues",
