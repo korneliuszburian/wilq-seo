@@ -694,7 +694,7 @@ def _content_decision_queue(
     latest_refreshes: list[ConnectorRefreshRun],
 ) -> list[ContentDecisionItem]:
     decisions = [
-        *_gsc_content_decisions(items),
+        *_gsc_content_decisions(items, inventory_metric_facts=metric_facts),
         *_ga4_tracking_gap_decisions(items),
         *_ahrefs_gap_record_decisions(metric_facts, action_ids),
     ]
@@ -754,7 +754,11 @@ def _content_vendor_read_blocker_decision(
     )
 
 
-def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisionItem]:
+def _gsc_content_decisions(
+    items: list[TacticalQueueItem],
+    *,
+    inventory_metric_facts: list[MetricFact],
+) -> list[ContentDecisionItem]:
     page_groups: dict[str, list[TacticalQueueItem]] = {}
     for item in _unique_tactical_items(items):
         if item.domain != OpportunityDomain.gsc_seo:
@@ -776,7 +780,9 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
         metric_facts = _unique_metric_facts(
             fact for item in page_items for fact in item.metric_facts
         )
-        inventory_details_by_path = _wordpress_inventory_details_by_path(metric_facts)
+        inventory_details_by_path = _wordpress_inventory_details_by_path(
+            [*metric_facts, *inventory_metric_facts]
+        )
         wordpress_content_url = first.dimensions.get("wordpress_content_url")
         inventory_details = inventory_details_by_path.get(
             _content_normalized_path(wordpress_content_url)
@@ -945,18 +951,22 @@ def _wordpress_inventory_details_by_path(
         path = _content_normalized_path(url)
         if not path:
             continue
-        details_by_path.setdefault(
-            path,
-            {
-                "content_type": fact.dimensions.get("content_type", ""),
-                "status": fact.dimensions.get("status", ""),
-                "inventory_source": fact.dimensions.get("inventory_source", ""),
-                "modified_gmt": fact.dimensions.get("modified_gmt", ""),
-                "title_or_h1": fact.dimensions.get("title_or_h1", ""),
-                "canonical_url": fact.dimensions.get("canonical_url", ""),
-            },
-        )
+        candidate = {
+            "content_type": fact.dimensions.get("content_type", ""),
+            "status": fact.dimensions.get("status", ""),
+            "inventory_source": fact.dimensions.get("inventory_source", ""),
+            "modified_gmt": fact.dimensions.get("modified_gmt", ""),
+            "title_or_h1": fact.dimensions.get("title_or_h1", ""),
+            "canonical_url": fact.dimensions.get("canonical_url", ""),
+        }
+        current = details_by_path.get(path)
+        if current is None or _inventory_detail_score(candidate) > _inventory_detail_score(current):
+            details_by_path[path] = candidate
     return details_by_path
+
+
+def _inventory_detail_score(details: dict[str, str]) -> int:
+    return sum(1 for value in details.values() if value)
 
 
 def _content_target_site_inventory_context(

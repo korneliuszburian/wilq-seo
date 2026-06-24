@@ -103,6 +103,11 @@ Stan produktu:
   `/api/content/diagnostics` still reports
   `target_site_mapping_review_needed`, so the remaining blocker is old-to-new
   target mapping, not lack of inventory metadata support.
+- Drift fix after runtime audit: `/api/content/diagnostics` now merges latest
+  WordPress inventory facts into decision inventory context, matching the
+  ActionObject preview path. After managed stack restart, live diagnostics show
+  1 active content decision with inventory title/canonical while the overall
+  mapping status remains `target_site_mapping_review_needed`.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;

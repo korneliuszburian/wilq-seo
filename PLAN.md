@@ -173,6 +173,11 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   mapping review for `ekologus.dev.proudsite.pl`; the latest read-only
   WordPress run has inventory metadata facts, but `/api/content/diagnostics`
   still reports `target_site_mapping_review_needed` for the active queue.
+- `ready`: Content diagnostics now merges latest WordPress inventory facts into
+  decision inventory context, so decision queue and ActionObject previews no
+  longer drift when newer facts contain `title_or_h1` or `canonical_url`.
+  Live proof after restart: 1 active content decision exposes inventory title
+  and canonical while mapping remains `target_site_mapping_review_needed`.
 - `ready`: Content decisions, content ActionObject previews, reviewed draft
   previews, dashboard cards and content-strategist context-pack now expose the
   WordPress inventory facts WILQ actually has for target URLs:
