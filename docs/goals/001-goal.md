@@ -759,3 +759,102 @@ write/apply safety, alerts, agency operations and long-term knowledge memory.
 The deferred production backlog is preserved in
 `docs/goals/archive/bdos-deferred-backlog.md`; promote items from that file one
 at a time only when they become the next evidence-backed slice.
+
+## Final A-Z Audit Checklist
+
+Run this checklist before claiming percent completion, "solid demo ready",
+"dashboard done" or "all remaining tasks are known". The output of this audit
+must be a compact task map: `ready`, `suspicious`, `task`, `blocked`,
+`deferred` or `obsolete`. Do not leave findings only in chat.
+
+1. **Repo/API inventory**
+   - Read `docs/goals/001-goal.md`, `docs/PROGRESS.md`,
+     `docs/evals/skill-coverage-audit.md` and the relevant source files before
+     adding or removing tasks.
+   - For every claimed gap, show the exact existing file/API endpoint first.
+     If the thing already exists, classify the task as hardening, wiring or
+     eval improvement, not build-from-zero.
+   - Check live API health and managed stack state before judging product
+     logic: `scripts/local_stack.sh status`, `/api/health`.
+2. **Dashboard route audit**
+   - Verify every route that a marketer can open:
+     `/command-center`, `/ads-doctor`, `/ads-doctor/search-terms`,
+     `/ads-doctor/custom-segments`, `/ads-doctor/demand-gen`, `/ga4`,
+     `/seo-gsc`, `/content-planner`, `/merchant`, `/localo`, `/ahrefs`,
+     `/opportunities`, `/actions`, `/actions/<id>`, `/workflows`,
+     `/knowledge`, `/settings`.
+   - Use the existing Playwright API-backed smoke as the first dashboard gate:
+     `pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1`.
+   - Current suspicious proof from 2026-06-24: this gate passed 9 tests and
+     failed Content, Action Detail, Knowledge and Ahrefs route checks. Do not
+     claim dashboard completeness until those are explained as fixed product
+     issues or obsolete test expectations.
+   - Each route must show marketer decisions, evidence counts/links, blocked
+     claims, safe next actions and no registry/debug dumps unless the route is
+     explicitly technical.
+3. **API contract audit**
+   - Check command center, marketing brief, tactical queue, actions, evidence,
+     connector status and every domain diagnostic endpoint.
+   - Confirm evidence/action lineage is where consumers expect it. Example:
+     Command Center currently carries evidence/action IDs on `daily_decisions`;
+     if a consumer expects top-level IDs, classify that as contract drift or
+     adjust the consumer.
+   - Confirm payload preview shape per ActionObject. Example: content action
+     previews currently live under `payload`, not `payload_preview`; dashboard
+     and tests must agree with the typed contract.
+4. **Domain workflow audit**
+   - Ads: verify campaign review, search terms, recommendations, budget pacing,
+     impression share, custom segments and negative keyword review remain
+     read-only until apply/audit contracts exist.
+   - Merchant: verify issue clusters, sample products, product-state mapping,
+     price-impact readiness and feed write blockers.
+   - Content/GSC/Ahrefs/WordPress: verify `decision_queue`, brief previews,
+     WordPress draft preview, inventory/canonical checks and Ahrefs support
+     evidence are consistent across diagnostics, tactical queue, context-pack,
+     dashboard and skills.
+   - GA4: verify tracking-quality decisions, `(not set)` handling and blocked
+     ROAS/revenue/profitability claims.
+   - Localo: verify read contracts ready for rankings/GBP/competitors/reviews
+     while `local_tasks`, writes and uplift claims remain blocked.
+5. **Skills and Codex workflow audit**
+   - For each of the 12 WILQ skills, run deterministic smoke first, then
+     non-interactive eval only when the skill contract or prompt path changed.
+   - Confirm each skill uses typed WILQ API contracts, returns Polish operator
+     output, carries evidence IDs/source connectors/action IDs and blocks
+     unsafe claims.
+   - Confirm dashboard "prompt to Codex" copy maps to the right skill,
+     endpoint, evidence set, ActionObject and blocked claims.
+   - Skill references may explain contracts and output format only. If a
+     reference contains product behavior, workaround prose or bugfix logic,
+     move that behavior into API/schema/view-model/eval.
+6. **Expert rules and knowledge audit**
+   - `wilq/expert/**` is the structured expert-rule layer: versioned YAML rules
+     for Ads, SEO, content, analytics, local, merchant and social decisions.
+   - Verify expert rules are loaded through code and affect decisions or
+     blocked claims through typed contracts, not loose prompt text.
+   - Verify knowledge cards/playbooks have source lineage, confidence/freshness
+     and at least one eval proving that the rule/card improves a decision or
+     blocks an unsafe claim before promoting it as product value.
+7. **Test strategy audit**
+   - Split deterministic fixture tests from live smoke checks. Live metrics
+     change and must not be asserted as exact values.
+   - Keep broad `scripts/verify.sh` for final/broad-risk gates. For daily
+     slices, run the smallest test that proves the touched surface.
+   - Flag test failures as one of: product bug, schema drift, stale test
+     expectation, slow endpoint/performance issue, or environment issue.
+8. **Code quality audit**
+   - Identify monoliths that slow development, especially dashboard route files
+     and large shared panels. Do not refactor them opportunistically; create a
+     dedicated quality slice only when extraction makes current work faster or
+     safer.
+   - Check for duplicated decision logic between API, dashboard and skills.
+     Dashboard and skills must consume the API's typed decisions instead of
+     rebuilding ranking/grouping in UI or prompt prose.
+9. **Task extraction**
+   - Convert every suspicious finding into a concrete task with: owner layer,
+     proof, smallest fix, focused verification and demo impact.
+   - Remove ready/done/outdated tasks from the active goal. Archive deferred
+     BDOS-class work in `docs/goals/archive/bdos-deferred-backlog.md`.
+   - Do not claim "100% certainty" until this checklist has a fresh result and
+     every suspicious item is either fixed, deliberately deferred or explicitly
+     marked blocked with the missing contract/input.
