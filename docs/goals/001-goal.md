@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 05:59 CEST.
+Last updated: 2026-06-24 06:10 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -106,6 +106,12 @@ and references: goal/progress/eval paths, `.local-lab` artifacts, previous-run
 wording and prompt-fix wording. Existing typed API contract fields such as
 `decision_queue`, `freshness_assessment`, `readiness.status`, `blocked_claims`
 and ActionObject validation remain valid reference material.
+Merchant `decision_queue` now exposes `why_it_matters` and `operator_action`
+aliases filled from canonical `rationale` and `next_step`, so dashboard and
+Codex can consume Merchant decisions the same way they consume daily/action-plan
+decisions. Live proof after stack restart shows real sample product IDs/titles
+and Ads product-state mapping in Merchant decisions; shared live schema smoke
+parsed the updated API contract.
 
 ## Current Stack Map
 
@@ -350,7 +356,7 @@ Finish these before claiming the Ekologus demo is done:
         campaign strategy review and target guardrails stay prepare-only until
         payload preview, 90-day safety checks, audit and explicit confirm exist.
      2. Merchant feed actions: review queue and supplemental-feed candidates now
-        show row-level evidence when available. Next work must keep
+        show row-level evidence and marketer aliases when available. Next work must keep
         primary-feed mutation blocked while adding before/after price-performance
         proof.
      3. Content actions: refresh/merge/create/block payload previews must

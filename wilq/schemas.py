@@ -1947,7 +1947,17 @@ class MerchantDecisionItem(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
     rationale: str
     next_step: str
+    why_it_matters: str | None = None
+    operator_action: str | None = None
     risk: ActionRisk = ActionRisk.low
+
+    @model_validator(mode="after")
+    def fill_operator_aliases(self) -> MerchantDecisionItem:
+        if self.why_it_matters is None:
+            self.why_it_matters = self.rationale
+        if self.operator_action is None:
+            self.operator_action = self.next_step
+        return self
 
 
 class MerchantOperatorSummary(BaseModel):

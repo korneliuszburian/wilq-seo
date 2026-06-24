@@ -10255,6 +10255,8 @@ def test_merchant_diagnostics_exposes_feed_issue_queue(
     assert "wystąpienia problemu" in decision["rationale"]
     assert "act_review_merchant_feed_issues" not in decision["next_step"]
     assert "ActionObject review" in decision["next_step"]
+    assert decision["why_it_matters"] == decision["rationale"]
+    assert decision["operator_action"] == decision["next_step"]
     feed_section = next(
         section for section in payload["sections"] if section["id"] == "merchant_feed_health"
     )

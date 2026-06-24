@@ -54,6 +54,11 @@ Stan produktu:
   prose. Current skills pass the tightened check; typed API contract fields like
   `decision_queue`, `freshness_assessment`, `blocked_claims` and ActionObject
   validation remain allowed reference material.
+- Merchant `decision_queue` now exposes marketer aliases `why_it_matters` and
+  `operator_action` for each decision, filled from canonical `rationale` and
+  `next_step`. Live proof after stack restart shows Merchant decisions with
+  real `sample_product_ids`/`sample_titles`, product-state mapping rows and the
+  new aliases; shared live schema smoke parsed Merchant diagnostics successfully.
 - Dashboard route loading now avoids blank marketer routes for `/opportunities`
   and `/knowledge`: primary headers/sections render before secondary
   registries finish loading, while ActionObject/evidence/knowledge subsections

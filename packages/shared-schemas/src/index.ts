@@ -1571,6 +1571,8 @@ export const MerchantDecisionItemSchema = z.object({
   blocked_claims: z.array(z.string()),
   rationale: z.string(),
   next_step: z.string(),
+  why_it_matters: z.string().nullable().optional(),
+  operator_action: z.string().nullable().optional(),
   risk: z.enum(["low", "medium", "high", "critical"])
 });
 
