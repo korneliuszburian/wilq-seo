@@ -278,6 +278,25 @@ def _operator_summary(
     action_ids: list[str],
 ) -> ContentOperatorSummary:
     top_decisions = decisions[:4]
+    target_site_host = _content_operator_target_site_host(decisions)
+    target_site_alias_match_count = sum(
+        1
+        for decision in decisions
+        if decision.target_site_adaptation_status == "target_site_alias_match"
+    )
+    current_site_match_count = sum(
+        1
+        for decision in decisions
+        if decision.target_site_adaptation_status == "current_site_match"
+    )
+    target_site_mapping_review_count = sum(
+        1
+        for decision in decisions
+        if decision.target_site_adaptation_status
+        in {"target_site_alias_match", "needs_inventory_match"}
+        or decision.inventory_gate_status == "blocked_missing_inventory"
+        or decision.canonical_gate_status == "needs_target_canonical_review"
+    )
     return ContentOperatorSummary(
         title="Co marketer ma zrobić teraz z treściami",
         summary=(
@@ -296,6 +315,15 @@ def _operator_summary(
         ),
         missing_wordpress_count=sum(
             1 for decision in decisions if decision.wordpress_match == "missing"
+        ),
+        target_site_host=target_site_host,
+        target_site_alias_match_count=target_site_alias_match_count,
+        current_site_match_count=current_site_match_count,
+        target_site_mapping_review_count=target_site_mapping_review_count,
+        target_site_mapping_status=_content_operator_target_site_mapping_status(
+            target_site_alias_match_count=target_site_alias_match_count,
+            current_site_match_count=current_site_match_count,
+            mapping_review_count=target_site_mapping_review_count,
         ),
         decision_type_labels=_unique(
             _content_decision_type_summary_label(decision.decision_type)
@@ -316,6 +344,33 @@ def _operator_summary(
             claim for section in sections for claim in section.blocked_claims
         ),
     )
+
+
+def _content_operator_target_site_host(
+    decisions: list[ContentDecisionItem],
+) -> str | None:
+    for decision in decisions:
+        if decision.target_site_adaptation_status == "target_site_alias_match":
+            return decision.target_site_host
+    for decision in decisions:
+        if decision.target_site_host and decision.target_site_host != decision.source_site_host:
+            return decision.target_site_host
+    return "ekologus.dev.proudsite.pl" if decisions else None
+
+
+def _content_operator_target_site_mapping_status(
+    *,
+    target_site_alias_match_count: int,
+    current_site_match_count: int,
+    mapping_review_count: int,
+) -> str:
+    if target_site_alias_match_count > 0:
+        return "target_site_inventory_confirmed"
+    if mapping_review_count > 0:
+        return "target_site_mapping_review_needed"
+    if current_site_match_count > 0:
+        return "current_site_inventory_confirmed"
+    return "target_site_mapping_not_available"
 
 
 def _content_decision_type_summary_label(decision_type: ContentDecisionType) -> str:

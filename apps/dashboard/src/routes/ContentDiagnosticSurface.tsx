@@ -491,6 +491,20 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
               ]}
             />
             <TraceLine
+              label="Nowa strona"
+              values={[
+                summary.target_site_host
+                  ? `target: ${summary.target_site_host}`
+                  : "target: brak",
+                `alias targetu: ${summary.target_site_alias_match_count}`,
+                `obecny URL: ${summary.current_site_match_count}`,
+                `do mapowania: ${summary.target_site_mapping_review_count}`,
+                `status: ${contentTargetSiteMappingStatusLabel(
+                  summary.target_site_mapping_status
+                )}`
+              ]}
+            />
+            <TraceLine
               label="Dowody"
               values={[formatContentEvidenceCount(summary.evidence_ids.length)]}
               empty="brak"
@@ -521,6 +535,19 @@ function contentAhrefsWordPressOverlapCount(data: ContentDiagnosticsResponse) {
   );
   const value = ahrefsDecision?.metric_tiles?.["WP overlap"];
   return typeof value === "number" ? value : 0;
+}
+
+function contentTargetSiteMappingStatusLabel(status?: string | null) {
+  if (status === "target_site_inventory_confirmed") {
+    return "inventory targetu potwierdzone";
+  }
+  if (status === "target_site_mapping_review_needed") {
+    return "wymaga mapowania";
+  }
+  if (status === "current_site_inventory_confirmed") {
+    return "potwierdzono obecną stronę";
+  }
+  return "brak mapowania targetu";
 }
 
 function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {

@@ -88,8 +88,9 @@ Still incomplete:
   decisions.
 - The new site `ekologus.dev.proudsite.pl` is target context, not a complete
   source inventory or staging publish path.
-- Content still needs a stronger duplicate/canonical/new-site target gate before
-  any draft/staging work.
+- Content has typed source/target/gate fields and now exposes target-site
+  mapping status in the operator summary, but it still lacks a full old-to-new
+  migration map, staging handoff and post-publication loop.
 - Ads lacks confirmed target CPA/ROAS, approved Keyword Planner enrichment,
   change-impact windows and apply/audit contracts.
 - Merchant lacks product IDs/SKU as a full product queue, historical price
@@ -154,11 +155,15 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
 
 - `ready`: Content Planner exposes source/target context plus inventory,
   canonical and duplicate gate fields.
-- `task`: Add a minimal dev-site inventory/read contract for
-  `ekologus.dev.proudsite.pl` that records URL, template/section, title/H1,
-  canonical/status and freshness without treating staging as source demand.
-- `task`: Add old-to-new URL mapping for `ekologus.pl` and `sklep.ekologus.pl`
-  to `ekologus.dev.proudsite.pl`.
+- `ready`: Content operator summary exposes `ekologus.dev.proudsite.pl`
+  target-site mapping status without pretending that current-site inventory is
+  already a migration map.
+- `hardening`: Extend the dev-site inventory/read contract for
+  `ekologus.dev.proudsite.pl` beyond current URL/fact rows into template or
+  section, title/H1, canonical/status and freshness.
+- `task`: Add explicit old-to-new URL mapping for `ekologus.pl` and
+  `sklep.ekologus.pl` to `ekologus.dev.proudsite.pl` when both old/current and
+  dev-site inventory exist for related content.
 - `task`: Promote the duplicate/canonical gate into the content ActionObject
   payload and skill eval so `create` is blocked or downgraded when refresh/merge
   is safer.
@@ -359,6 +364,15 @@ Use these rules before every implementation slice:
   `ActionObjecty` copy with marketer-facing action wording while preserving
   technical IDs and routes. Proof:
   `.local-lab/proof/dashboard/action-labels/actions-route-snapshot.txt`.
+- [x] Expose content target-site mapping truth in typed API, shared schema and
+  Content Planner operator summary. Proof: live API returns
+  `target_site_host=ekologus.dev.proudsite.pl`,
+  `target_site_alias_match_count=0`, `current_site_match_count=4`,
+  `target_site_mapping_review_count=0`,
+  `target_site_mapping_status=current_site_inventory_confirmed`; browser
+  snapshot
+  `.local-lab/proof/dashboard/content-target-summary/content-planner-snapshot.txt`
+  shows the same `Nowa strona` summary on `/content-planner`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

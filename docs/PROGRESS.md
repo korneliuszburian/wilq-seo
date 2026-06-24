@@ -52,6 +52,10 @@ Stan produktu:
   `inventory_gate_status`, `canonical_gate_status`, `duplicate_gate_status`,
   `content_gate_summary`. Browser proof:
   `.local-lab/proof/dashboard/content-target-gate/content-planner-gates.txt`.
+- Content Planner operator summary now exposes the live target-site mapping
+  truth for `ekologus.dev.proudsite.pl`: current live top decisions are
+  `current_site_inventory_confirmed`, not a completed migration map. Proof:
+  `.local-lab/proof/dashboard/content-target-summary/content-planner-snapshot.txt`.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
@@ -79,8 +83,9 @@ Stan produktu:
 
 - Real marketer UAT has not been collected. Browser/smoke/eval proof does not
   prove that the marketer saves time or knows what to do without explanation.
-- Content workflow still lacks full staging handoff, publishing and
-  post-publication measurement loop for `ekologus.dev.proudsite.pl`.
+- Content workflow still lacks explicit old-to-new migration mapping, full
+  staging handoff, publishing and post-publication measurement loop for
+  `ekologus.dev.proudsite.pl`.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
@@ -96,9 +101,9 @@ Stan produktu:
 2. If demo UX is the next priority, change one confirmed blocker at a time:
    likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
    drilldown IDs behind technical details.
-3. If content depth is next, continue from the existing source/target and
-   duplicate/canonical gate toward draft/staging handoff, without publish/apply
-   claims.
+3. If content depth is next, continue from the existing source/target,
+   duplicate/canonical and target-site mapping status toward explicit old-to-new
+   migration mapping and draft/staging handoff, without publish/apply claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

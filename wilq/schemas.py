@@ -2210,6 +2210,11 @@ class ContentOperatorSummary(BaseModel):
     top_decision_ids: list[str] = Field(default_factory=list)
     confirmed_wordpress_count: int = 0
     missing_wordpress_count: int = 0
+    target_site_host: str | None = None
+    target_site_alias_match_count: int = 0
+    current_site_match_count: int = 0
+    target_site_mapping_review_count: int = 0
+    target_site_mapping_status: str | None = None
     decision_type_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

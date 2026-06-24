@@ -1447,6 +1447,17 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert decision["duplicate_gate_status"] == "refresh_or_merge_required"
     assert "canonical" in decision["content_gate_summary"]
     assert "duplikaty" in decision["content_gate_summary"]
+    assert (
+        diagnostics["operator_summary"]["target_site_host"]
+        == "ekologus.dev.proudsite.pl"
+    )
+    assert diagnostics["operator_summary"]["target_site_alias_match_count"] == 1
+    assert diagnostics["operator_summary"]["current_site_match_count"] == 0
+    assert diagnostics["operator_summary"]["target_site_mapping_review_count"] == 1
+    assert (
+        diagnostics["operator_summary"]["target_site_mapping_status"]
+        == "target_site_inventory_confirmed"
+    )
     preview = next(
         item
         for item in action["payload"]["content_brief_preview"]
@@ -11557,6 +11568,29 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         1
         for decision in payload["decision_queue"]
         if decision.get("wordpress_match") == "missing"
+    )
+    assert operator_summary["target_site_host"] == "ekologus.dev.proudsite.pl"
+    assert operator_summary["target_site_alias_match_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("target_site_adaptation_status") == "target_site_alias_match"
+    )
+    assert operator_summary["current_site_match_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("target_site_adaptation_status") == "current_site_match"
+    )
+    assert operator_summary["target_site_mapping_review_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("target_site_adaptation_status")
+        in {"target_site_alias_match", "needs_inventory_match"}
+        or decision.get("inventory_gate_status") == "blocked_missing_inventory"
+        or decision.get("canonical_gate_status") == "needs_target_canonical_review"
+    )
+    assert (
+        operator_summary["target_site_mapping_status"]
+        == "current_site_inventory_confirmed"
     )
     assert "refresh/merge" in operator_summary["decision_type_labels"]
     assert "act_prepare_content_refresh_queue" in operator_summary["action_ids"]

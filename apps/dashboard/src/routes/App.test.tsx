@@ -4362,6 +4362,11 @@ const contentDiagnostics = {
     ],
     confirmed_wordpress_count: 1,
     missing_wordpress_count: 0,
+    target_site_host: "ekologus.dev.proudsite.pl",
+    target_site_alias_match_count: 0,
+    current_site_match_count: 1,
+    target_site_mapping_review_count: 0,
+    target_site_mapping_status: "current_site_inventory_confirmed",
     decision_type_labels: ["review luk Ahrefs", "refresh/merge"],
     source_connectors: ["ahrefs", "google_search_console", "wordpress_ekologus"],
     evidence_ids: [
@@ -6710,6 +6715,10 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Status SEO / Content")).toBeInTheDocument();
     expect(screen.getAllByText("GSC↔WP").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("Ahrefs↔WP").length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getByText(/Nowa strona: target: ekologus\.dev\.proudsite\.pl/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/status: potwierdzono obecną stronę/)).toBeInTheDocument();
     expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();
