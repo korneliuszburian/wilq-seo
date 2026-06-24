@@ -1,0 +1,426 @@
+# WILQ Ekologus Demo ExecPlan
+
+This is the canonical overnight execution plan for WILQ Marketing Operating
+System in this checkout. It is written as a living plan: every agent working on
+the active demo goal should update this file when a milestone is completed, a
+task is reclassified, or a blocker is proven. Keep `docs/PROGRESS.md` short and
+use this file for the full execution map.
+
+## Purpose
+
+WILQ should become a useful daily cockpit for the Ekologus marketer, not a
+prompt pack, static report, or fake automation demo. The useful demo is narrow:
+the marketer starts in Command Center, follows Merchant, Content Planner, Ads
+Doctor and GA4, and sees one strong content workflow that turns current
+Ekologus evidence into a safe Polish brief or draft plan for the new site
+context `ekologus.dev.proudsite.pl`.
+
+Success does not mean full BDOS, full Ads optimizer, feed repair, publishing
+automation, revenue recovery, approval recovery or automated apply. Success
+means the current review cockpit is evidence-backed, honest about missing data,
+usable by a marketer, and guarded by typed WILQ API contracts, ActionObject
+validation, preview, confirmation and audit.
+
+This plan follows two Codex operating patterns from official OpenAI docs:
+ExecPlans are self-contained living documents with progress, discoveries,
+decisions, milestones and validation; Goals are durable completion contracts
+with outcome, verification surface, constraints, boundaries, iteration policy
+and blocked stop condition.
+
+## Repository Context
+
+Work from `/home/krn/coding/krn/active/wilq-seo`.
+
+Important files:
+
+- `AGENTS.md`: project rules, command style and WILQ product constraints.
+- `docs/CONTEXT.md`: recovery index for runtime, skills and docs.
+- `docs/PROGRESS.md`: short recovery ledger only.
+- `docs/goals/001-goal.md`: older active goal and final A-Z audit checklist.
+- `docs/audits/002-2026-06-24-second-opinion-synthesis.md`: condensed external
+  2nd opinion.
+- `docs/evals/skill-eval-ledger.md`: skill eval evidence.
+- `docs/evals/skill-coverage-audit.md`: 12-skill coverage table.
+- `.agents/skills/wilq-*`: WILQ operator skills.
+- `apps/api/wilq_api/main.py`, `wilq/**`: WILQ API, diagnostics, schemas,
+  actions and knowledge/expert logic.
+- `apps/dashboard/src/**`: dashboard route and component surfaces.
+- `packages/shared-schemas/src/index.ts`: frontend/backend shared contracts.
+
+Command rules:
+
+- Prefix shell commands with `rtk`.
+- Use `uv run ...` for Python commands that import WILQ API.
+- Use `scripts/local_stack.sh start|status|restart|logs` for the local API and
+  dashboard stack.
+- Use focused verification first. Use `scripts/verify.sh` only for broad/final
+  gates.
+
+Canonical runtime URLs:
+
+- WILQ API: `http://127.0.0.1:8000`
+- Dashboard: `http://127.0.0.1:5173/command-center`
+
+## Current State On 2026-06-24
+
+Ready for current demo:
+
+- Command Center gives the narrow daily path and links to the core work.
+- Merchant shows feed issue review, freshness and safety boundaries. It must
+  not treat reported issue occurrences as unique products.
+- Content Planner shows GSC/WP-backed refresh or merge decisions, source/target
+  context, H1/H2/FAQ/CTA/source facts, missing evidence and forbidden claims.
+- Ads Doctor shows review candidates, KPI context and search-term/recommendation
+  surfaces while blocking CPA, ROAS, wasted-budget, profitability and apply
+  claims without missing contracts.
+- GA4 shows tracking and landing/source/campaign quality while treating
+  `(not set)` as a measurement/attribution problem, not campaign failure.
+- Action detail now uses marketer-facing "podgląd zmian" copy instead of
+  visible "dry-run" proof-run language.
+- `scripts/pre_demo_gate.sh` previously passed the solid demo gate. Treat this
+  as contract/demo proof, not marketer UAT or full production proof.
+- Skill/reference/eval baseline is current-demo ready. Reopen only with a
+  concrete failing or misleading current proof.
+
+Still incomplete:
+
+- No real marketer UAT has proven that the dashboard saves time or improves
+  decisions.
+- The new site `ekologus.dev.proudsite.pl` is target context, not a complete
+  source inventory or staging publish path.
+- Content still needs a stronger duplicate/canonical/new-site target gate before
+  any draft/staging work.
+- Ads lacks confirmed target CPA/ROAS, approved Keyword Planner enrichment,
+  change-impact windows and apply/audit contracts.
+- Merchant lacks product IDs/SKU as a full product queue, historical price
+  changes and before/after performance windows.
+- GA4 lacks enough attribution/revenue confidence for ROAS/profitability/funnel
+  verdicts.
+- Localo read evidence must not be inflated into tasks, writes or uplift.
+- Full BDOS/agency-grade production remains deferred.
+
+## Progress
+
+- [x] Capture external 2nd-opinion synthesis in
+  `docs/audits/002-2026-06-24-second-opinion-synthesis.md`.
+- [x] Keep `docs/PROGRESS.md` short and current.
+- [x] Expose content source/target context through typed API, shared schema and
+  Content Planner cards.
+- [x] Browser-walk the narrow demo path and save snapshots under
+  `.local-lab/proof/dashboard/marketer-demo-walkthrough/`.
+- [x] Clean Action detail marketer-facing copy from proof-run/dry-run wording.
+- [ ] Verify the latest target-site adversarial content eval through the real
+  non-interactive Codex harness.
+- [ ] Add or verify the next highest-risk adversarial overclaim eval.
+- [ ] Add or verify a target-site duplicate/canonical gate for content.
+- [ ] Run final pre-demo gate after the next material code/eval slice.
+- [ ] Produce a short marketer UAT script and record the result.
+
+Update this list after each slice. Do not keep done/outdated tasks in the active
+queue unless they are needed as proof for the next step.
+
+## Overnight Operating Rules
+
+Work until the next defensible slice is complete, then verify it, update this
+plan and commit. Do not stop after analysis when a safe implementation step is
+available.
+
+Before each slice:
+
+1. Read `git status --branch --short`.
+2. Read `docs/PROGRESS.md` and this `PLAN.md`.
+3. Check live stack status if the slice touches runtime behavior.
+4. Classify the target as `ready`, `hardening`, `task`, `blocked`,
+   `deferred_bdos` or `obsolete`.
+5. Choose the smallest check that proves the risk.
+
+After each slice:
+
+1. Run the focused check that covers the touched contract.
+2. Save browser or command proof under `.local-lab/proof/...` when useful.
+3. Update this file and, if recovery would otherwise be unclear,
+   `docs/PROGRESS.md`.
+4. Commit a coherent slice with a Conventional Commit message.
+5. Do not mark the overall goal complete unless the completion audit proves all
+   demo requirements.
+
+Do not:
+
+- invent marketing metrics;
+- treat screenshots as the only product proof;
+- repair business logic in skill references or dashboard copy;
+- hide missing credentials or stale data;
+- claim apply, publish, feed repair, Ads optimization, ROAS, revenue recovery,
+  approval recovery, local uplift or ranking gain without typed evidence and
+  validated ActionObject flow;
+- add new broad surfaces before the core Ekologus workflow is deep.
+
+## Milestone 0: Recovery And State Audit
+
+At the start of any continuation, recover current truth before acting. This
+protects the project from repeating old tests or implementing tasks that are
+already done.
+
+Run from repo root:
+
+    rtk git status --branch --short
+    rtk sed -n '1,220p' PLAN.md
+    rtk sed -n '1,180p' docs/PROGRESS.md
+    rtk scripts/local_stack.sh status
+
+Acceptance:
+
+- The agent can state the current dirty files.
+- The agent can state the next unchecked item from `Progress`.
+- If stack is needed, API and dashboard are managed and ready, or the blocker
+  is recorded.
+
+## Milestone 1: Adversarial Eval Hardening
+
+This milestone proves that WILQ skills do not pass while making unsafe or
+unsupported claims. It is more valuable than adding another dashboard surface.
+
+Preferred order:
+
+1. Content target-site boundary:
+   `ekologus.dev.proudsite.pl` is target context, not source evidence. The skill
+   must not claim duplicate-free content, publish readiness, ranking gain, lead
+   uplift or revenue impact without validated evidence and write/apply path.
+2. Ads CPA/ROAS/wasted-budget boundary:
+   live Ads facts can order review, but cannot make profitability or wasted
+   budget verdicts without confirmed target CPA/ROAS, strategy review, history
+   and apply/audit contracts.
+3. Merchant occurrence/Product boundary:
+   reported issue occurrences are not unique products; no product ROAS, approval
+   recovery, price-impact or feed repair without product IDs/SKU, history and
+   performance windows.
+4. GA4 measurement boundary:
+   `(not set)` is a tracking or attribution blocker, not proof of bad campaign
+   or landing performance.
+5. Localo access boundary:
+   access/readiness is not local task completion, GBP write, review response or
+   local uplift.
+
+Files likely involved:
+
+- `docs/evals/cases/wilq-skill-eval-cases.json`
+- `tests/test_codex_skill_eval_cases.py`
+- `docs/evals/skill-eval-ledger.md`
+- `.agents/skills/<skill>/scripts/smoke_skill_contract.py`
+
+Focused verification examples:
+
+    rtk uv run pytest tests/test_codex_skill_eval_cases.py -k content
+    rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist
+    rtk git diff --check
+
+Acceptance:
+
+- A bad output that makes the unsafe claim would fail.
+- The good output still includes Polish operator guidance, evidence IDs/source
+  connectors, ActionObject IDs where applicable, and blocked claims.
+- The ledger records the eval artifact path only after the run succeeds.
+
+## Milestone 2: Content Target-Site Duplicate And Canonical Gate
+
+This milestone makes the strongest demo value deeper: content for the new site
+must use current Ekologus evidence without creating SEO duplicates.
+
+Plain meaning:
+
+- Source evidence is current data from `ekologus.pl`, `sklep.ekologus.pl`, GSC,
+  GA4, Ahrefs, Ads, Merchant, Localo and WordPress inventory.
+- Target context is where content may eventually go, currently
+  `ekologus.dev.proudsite.pl`.
+- A duplicate/canonical gate answers whether the topic should be refresh,
+  merge, create or block before any brief or draft is treated as useful.
+
+Expected behavior:
+
+- Existing BDO/Zielony Lad style topics should prefer refresh or merge when
+  WordPress/GSC evidence shows a current URL.
+- Create should be blocked or downgraded when inventory/canonical evidence is
+  missing.
+- A brief can propose H1/H2/FAQ/CTA/source facts, but must keep missing
+  evidence and forbidden claims visible.
+- No WordPress staging/publish claim is allowed without ActionObject validation,
+  preview, human confirmation and audit.
+
+Files likely involved:
+
+- `wilq/briefing/content_diagnostics.py`
+- `wilq/schemas.py`
+- `packages/shared-schemas/src/index.ts`
+- `apps/dashboard/src/routes/ContentDiagnosticSurface.tsx`
+- `apps/dashboard/src/routes/DetailPanels.tsx`
+- `tests/test_api_contracts.py`
+- content skill smoke/eval files if the API contract changes
+
+Focused verification examples:
+
+    rtk uv run pytest tests/test_api_contracts.py -k content
+    rtk pnpm --filter @wilq/dashboard test -- ContentDiagnosticSurface
+    rtk proxy pnpm --filter @wilq/dashboard typecheck
+    rtk scripts/local_stack.sh restart
+    rtk curl -sS http://127.0.0.1:8000/api/content/diagnostics
+
+Browser proof:
+
+Use `agent-browser` with `XDG_RUNTIME_DIR=$PWD/.local-lab/xdg-runtime` and save
+snapshots under `.local-lab/proof/dashboard/content-target-gate/`.
+
+Acceptance:
+
+- Dashboard and API agree on source URL, target context, decision mode and
+  blocked claims.
+- The content skill consumes the same API fields instead of re-deciding in
+  prompt prose.
+
+## Milestone 3: Marketer Demo UX Hardening
+
+This milestone removes UI friction only when browser proof shows it blocks
+understanding. Do not do broad visual cleanup.
+
+Candidate fixes:
+
+- Rename marketer-facing nav `ActionObjecty` to a clearer label such as
+  `Akcje do walidacji`, while preserving ActionObject IDs and route names.
+- Hide raw IDs or payload/debug details behind technical drilldowns on first
+  screens.
+- Add clearer CTA copy to core route cards when a marketer cannot tell what to
+  click next.
+- Keep Command Center, Merchant, Content Planner, Ads Doctor and GA4 as the
+  main demo path. Do not make Opportunities, Knowledge, Social or Demand Gen
+  the demo entry point unless a fresh proof says they are ready.
+
+Files likely involved:
+
+- `apps/dashboard/src/components/Shell.tsx`
+- `apps/dashboard/src/routes/CommandCenterRoute.tsx`
+- `apps/dashboard/src/routes/ActionObjectPanels.tsx`
+- `apps/dashboard/src/routes/DetailPanels.tsx`
+- route-specific tests under `apps/dashboard/src/routes/*.test.tsx`
+- `apps/dashboard/e2e/dashboard-api.spec.ts`
+
+Focused verification examples:
+
+    rtk pnpm --filter @wilq/dashboard test -- App.test.tsx --runInBand
+    rtk proxy pnpm --filter @wilq/dashboard typecheck
+    rtk pnpm --filter @wilq/dashboard exec playwright test e2e/dashboard-api.spec.ts -g "action detail route"
+
+Acceptance:
+
+- The first screen says what the marketer should do next.
+- Traceability remains available in details.
+- No API contract or ActionObject ID is renamed.
+
+## Milestone 4: Marketer UAT Script And Proof
+
+This milestone turns "it renders" into "a marketer gets value".
+
+Write a short UAT script under `docs/handoffs/` only if it will be used. Keep
+it short enough that a marketer can run it in 15 minutes.
+
+Script should ask the marketer to:
+
+1. Open `/command-center`.
+2. Pick one daily decision.
+3. Open Merchant and identify one feed blocker without claiming feed repair.
+4. Open Content Planner and pick one refresh/merge brief.
+5. Open Ads Doctor and identify one review item without CPA/ROAS/wasted-budget
+   verdict.
+6. Open GA4 and identify one measurement issue without judging campaign
+   quality from `(not set)`.
+7. Answer: "Czy wiesz, co zrobic dalej?" and "Ile czasu to oszczedza?"
+
+Acceptance:
+
+- Feedback is saved in a short handoff/progress note.
+- Any confusion becomes a classified task, not vague UX commentary.
+
+## Milestone 5: Final Demo Gate
+
+Run this only after the next material code/eval slice is complete.
+
+Commands:
+
+    rtk scripts/local_stack.sh status
+    rtk scripts/pre_demo_gate.sh --core-skills
+
+Use `scripts/verify.sh` only when broad API/dashboard/skill changes justify the
+cost:
+
+    rtk scripts/verify.sh
+
+Acceptance:
+
+- Core gate passes, or blocker is precise and actionable.
+- `docs/PROGRESS.md` states the current proof and next step in under a few
+  bullets.
+- `PLAN.md` progress is updated.
+- No ready/done surfaces remain in the active task queue.
+
+## Deferred BDOS Backlog
+
+These are real tasks, but they are not blockers for the solid Ekologus demo
+unless explicitly promoted:
+
+- Full Ads apply path with SafetyLimits, mutation adapters, partial failure
+  handling and audit.
+- Budget optimizer using confirmed target CPA/ROAS, business guardrails,
+  change-history windows and attribution proof.
+- Keyword Planner/custom-segments production loop after developer-token
+  approval/readiness.
+- Demand Gen automation and creative quality loop.
+- Social publishing apply path.
+- Merchant feed writes, product IDs/SKU queue, historical price snapshots,
+  product ROAS and price-impact windows.
+- Localo/GBP write, review-response and local uplift automation.
+- Multi-client/account model, permissions, production auth, deployment,
+  monitoring and operational alerts.
+- Full knowledge compiler with external source registry, freshness/confidence,
+  owner review and rule-to-decision evals.
+
+## Surprises And Discoveries
+
+- Browser proof is stronger than route smoke for marketer language. The route
+  tests passed before the Action detail copy was cleaned up, but the snapshot
+  exposed proof-run wording that would confuse a demo.
+- `scripts/pre_demo_gate.sh` proves contract and route readiness; it does not
+  prove marketer usefulness or full BDOS.
+- `docs/PROGRESS.md` can become too long quickly. Keep it as a recovery ledger;
+  keep the fuller plan here.
+
+## Decision Log
+
+- 2026-06-24: Keep WILQ as review-first for demo. Reason: current typed API and
+  dashboard already provide value, while apply/publish/optimizer claims are not
+  supported by enough contracts.
+- 2026-06-24: Treat `ekologus.dev.proudsite.pl` as target context, not source
+  evidence. Reason: source truth currently comes from existing Ekologus
+  properties and vendor reads; the new site needs inventory/canonical checks
+  before it can guide content.
+- 2026-06-24: Use adversarial evals before adding new surfaces. Reason: the main
+  product risk is overclaiming from partial data, not lack of route count.
+- 2026-06-24: Do not fix product logic in skill references. Reason: WILQ API is
+  the system brain; skills should consume contracts, not invent behavior.
+
+## Outcomes And Retrospective
+
+Current outcome: WILQ has a credible solid-demo path and a strong content
+planning direction, but the goal is not complete until the next adversarial eval
+and target-site gate are verified, final pre-demo gate is run after material
+changes, and marketer UAT feedback is captured or explicitly deferred.
+
+When the full demo goal is complete, add a final retrospective here with:
+
+- what the marketer can now do;
+- proof commands and artifact paths;
+- blocked claims that remain blocked;
+- which deferred BDOS items should be promoted next.
+
+## Prompt For `/goal`
+
+Use this prompt in a fresh thread if you want a clean continuation:
+
+    /goal Doprowadź WILQ Marketing Operating System do solidnego, uczciwego demo dla marketera Ekologus, zweryfikowanego aktualnym repo, live WILQ API, dashboardem, focused tests, browser proof i skill smokes/evals. Demo ma prowadzić przez Command Center -> Merchant -> Content Planner -> Ads Doctor -> GA4 oraz pokazać jeden mocny content workflow: current Ekologus evidence z ekologus.pl/sklep.ekologus.pl/GSC/GA4/Ahrefs/Ads/Merchant/Localo/WordPress -> target context dla ekologus.dev.proudsite.pl -> inventory/canonical/duplicate gate -> polski brief lub draft plan z source facts, intent, audience, H1/H2/FAQ/CTA, internal links, missing evidence, forbidden claims, evidence IDs, source connectors i review state. Zweryfikuj wynik przez PLAN.md, docs/PROGRESS.md, live API endpoints, browser walkthrough, focused tests i skill eval artifacts, zachowując WILQ API jako mózg systemu. Nie naprawiaj product logic w skill references ani dashboard copy; jeśli decyzja ma być mądrzejsza, dodaj typed API/schema/view-model/expert-rule/eval contract. Nie claimuj pełnego BDOS, Ads optimizera, feed repair, Localo uplift, publish/apply automation, approval recovery, revenue recovery, CPA/ROAS/wasted-budget verdict ani ranking gain bez validated ActionObject, preview, human confirmation, audit i wymaganych source contracts. Po każdym slice sprawdź, czy capability już istnieje, klasyfikuj findings jako ready/hardening/task/blocked/deferred_bdos/obsolete, uruchamiaj najmniejszy sensowny check, zapisuj postęp w PLAN.md i krótkim docs/PROGRESS.md, commituj zielone slice'y. Jeśli zablokowane, zapisz próby, dowody, dokładny blocker, zablokowane claimy i jeden input odblokowujący dalszą pracę; nie oznaczaj celu complete, dopóki requirement-by-requirement audit nie potwierdzi całego demo.

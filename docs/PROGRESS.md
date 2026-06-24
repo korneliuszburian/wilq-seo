@@ -41,6 +41,9 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Full overnight execution map was added on 2026-06-24 in `PLAN.md`. Use it as
+  the canonical self-contained plan for unattended continuation and `/goal`
+  reset; keep this file as the short recovery ledger.
 - Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
   stack was ready, browser snapshots for `/command-center`, `/merchant`,
   `/content-planner`, `/ads-doctor`, `/ga4` and
