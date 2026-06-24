@@ -338,6 +338,17 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   `.local-lab/proof/content-staging-action/live-staging-action.json`,
   `.local-lab/proof/content-staging-action/content-strategist-smoke.json` and
   `.local-lab/proof/dashboard/content-staging-action/action-detail-staging-action.txt`.
+- `ready`: Command Center `decision_prepare_content_refresh_queue` now exposes
+  both `act_prepare_content_refresh_queue` and
+  `act_prepare_wordpress_staging_draft`. The first demo screen can therefore
+  lead the marketer from daily content decision to the review-only staging
+  draft path without implying staging write, publish, production write or
+  uplift readiness. Proof:
+  `.local-lab/proof/command-center-staging-action/live-command-center-content-decision.json`.
+- `ready`: `wilq-daily-command` context-pack stayed under the 180000-byte smoke
+  budget after staging action exposure by compacting latest audit events to
+  trace fields and recording `evidence_summaries_limit=40`. Proof:
+  `.local-lab/proof/command-center-staging-action/daily-context-pack-budget.json`.
 - `deferred_bdos`: Post-publication measurement loop is after staging handoff:
   compare GSC/GA4 windows, detect refresh/merge/kill follow-ups and feed the
   result back into knowledge cards.
@@ -907,6 +918,10 @@ unless explicitly promoted:
   exposed proof-run wording that would confuse a demo.
 - `scripts/pre_demo_gate.sh` proves contract and route readiness; it does not
   prove marketer usefulness or full BDOS.
+- `scripts/pre_demo_gate.sh --core-skills` must be captured with stderr
+  (`2>&1 | tee ...`) when investigating skill smokes. A failed daily context-pack
+  budget check can otherwise be visible in the terminal but missing from the
+  proof file if only stdout is piped to `tee`.
 - `docs/PROGRESS.md` can become too long quickly. Keep it as a recovery ledger;
   keep the fuller plan here.
 - `pytest -k content` did not match any test names in

@@ -274,10 +274,26 @@ Stan produktu:
   `.local-lab/proof/content-staging-action/live-staging-action.json`,
   `.local-lab/proof/content-staging-action/content-strategist-smoke.json` and
   `.local-lab/proof/dashboard/content-staging-action/action-detail-staging-action.txt`.
+- Command Center content daily decision now exposes both
+  `act_prepare_content_refresh_queue` and
+  `act_prepare_wordpress_staging_draft`, so the first demo screen points to the
+  review-only staging draft path instead of hiding it behind Content Planner or
+  Actions. Proof:
+  `.local-lab/proof/command-center-staging-action/live-command-center-content-decision.json`.
+- Daily context-pack compaction now keeps latest ActionObject audit events to
+  trace fields only and records `evidence_summaries_limit=40`, keeping
+  `wilq-daily-command` below its 180000-byte smoke budget after the staging
+  action was added. Proof:
+  `.local-lab/proof/command-center-staging-action/daily-context-pack-budget.json`.
 - Core pre-demo gate passed after the staging draft ActionObject: managed stack
   status, API health, live contract smoke, shared live schemas, dashboard route
   smoke 13/13 and core skill smokes. Proof:
   `.local-lab/proof/pre-demo-gate-after-staging-action.txt`.
+- Core pre-demo gate passed after Command Center exposed the staging draft
+  action and daily context-pack compaction was tightened: managed stack status,
+  API health, live contract smoke, shared live schemas, dashboard route smoke
+  13/13 and core skill smokes. Proof:
+  `.local-lab/proof/pre-demo-gate-after-command-center-staging-action.txt`.
 
 ## Active Gaps
 
@@ -285,11 +301,12 @@ Stan produktu:
   core path is useful, but it does not prove that the marketer saves time or
   knows what to do without explanation.
 - Content workflow still lacks a full real old-to-new mapping for all active
-  decisions, staging handoff, publishing and post-publication measurement loop
-  for `ekologus.dev.proudsite.pl`. Mapping and draft-readiness review decisions
-  can now be recorded and audited, staging handoff has a blocked preview
-  contract and a review-only ActionObject, but this does not confirm the whole
-  migration map or unlock draft/staging/publish readiness.
+  decisions, publishing and post-publication measurement loop for
+  `ekologus.dev.proudsite.pl`. Mapping and draft-readiness review decisions can
+  now be recorded and audited, staging handoff has a blocked preview contract,
+  and Command Center now exposes the review-only staging draft ActionObject, but
+  this does not confirm the whole migration map or unlock draft/staging/publish
+  readiness.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.

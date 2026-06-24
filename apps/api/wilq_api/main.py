@@ -343,7 +343,7 @@ def _daily_command_context_pack(
         "evidence_summaries": [
             evidence.model_dump(mode="json")
             for evidence in list_evidence_by_ids(sorted(evidence_ids))
-        ][:50],
+        ][:40],
         "knowledge_card_summaries": [
             card.model_dump(mode="json") for card in compile_playbook_cards()
         ],
@@ -366,6 +366,7 @@ def _daily_command_context_pack(
             "command_center_connector_health_omitted": True,
             "command_center_daily_decisions_only": True,
             "marketing_brief_metric_facts_compacted": True,
+            "evidence_summaries_limit": 40,
             "full_action_endpoint_template": "/api/actions/{action_id}",
             "full_marketing_brief_endpoint": "/api/marketing/brief",
             "full_command_center_endpoint": "/api/dashboard/command-center",
@@ -383,7 +384,9 @@ def _compact_daily_action_for_context(
     payload = dumped.get("payload")
     payload_keys = sorted(payload) if isinstance(payload, dict) else []
     audit_events = dumped.get("audit_events")
-    latest_audit_event = _latest_audit_event_for_context(audit_events)
+    latest_audit_event = _compact_audit_event_for_daily_context(
+        _latest_audit_event_for_context(audit_events)
+    )
     compact = {
         "id": dumped["id"],
         "title": dumped["title"],
@@ -465,6 +468,21 @@ def _latest_audit_event_for_context(audit_events: Any) -> dict[str, Any] | None:
         dict_events,
         key=lambda event: (str(event.get("created_at") or ""), str(event.get("id") or "")),
     )
+
+
+def _compact_audit_event_for_daily_context(event: dict[str, Any] | None) -> dict[str, Any] | None:
+    if event is None:
+        return None
+    details = event.get("details")
+    return {
+        "id": event.get("id"),
+        "action_id": event.get("action_id"),
+        "event_type": event.get("event_type"),
+        "actor": event.get("actor"),
+        "created_at": event.get("created_at"),
+        "summary": _context_pack_text(event.get("summary"), limit=180),
+        "details_keys": sorted(details) if isinstance(details, dict) else [],
+    }
 
 
 def _daily_decisions_by_action_id(decisions: list[DailyDecision]) -> dict[str, DailyDecision]:

@@ -4295,6 +4295,8 @@ def test_command_center_exposes_polish_operator_brief(
     ga4_decision = decisions_by_id["decision_review_ga4_landing_quality"]
     content_decision = decisions_by_id["decision_prepare_content_refresh_queue"]
     assert content_decision["domain"] == "content"
+    assert "act_prepare_content_refresh_queue" in content_decision["action_ids"]
+    assert "act_prepare_wordpress_staging_draft" in content_decision["action_ids"]
     content_fact_sources = {
         fact["source_connector"] for fact in content_decision["metric_facts"]
     }
@@ -14251,11 +14253,12 @@ def test_codex_context_pack_embeds_marketing_brief_contract(
         context_payload["context_pack_compaction"]["full_marketing_brief_endpoint"]
         == "/api/marketing/brief"
     )
+    assert context_payload["context_pack_compaction"]["evidence_summaries_limit"] == 40
     assert "command_center" in context_payload
     assert "tactical_queue" not in context_payload
     assert "ads_diagnostics" not in context_payload
     assert "merchant_diagnostics" not in context_payload
-    assert len(context_payload["evidence_summaries"]) <= 80
+    assert len(context_payload["evidence_summaries"]) <= 40
     assert context_brief["language"] == "pl-PL"
     assert context_brief["language"] == brief["language"]
     assert context_brief["blocker_count"] == brief["blocker_count"]

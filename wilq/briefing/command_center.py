@@ -238,6 +238,11 @@ def _command_center_action_stubs() -> list[ActionObject]:
             domain=OpportunityDomain.content,
         ),
         _command_center_action_stub(
+            "act_prepare_wordpress_staging_draft",
+            connector="wordpress_ekologus",
+            domain=OpportunityDomain.content,
+        ),
+        _command_center_action_stub(
             LOCALO_VISIBILITY_REVIEW_ACTION_ID,
             connector="localo",
             domain=OpportunityDomain.localo,
@@ -305,6 +310,7 @@ def build_command_center_brief(
         _content_item_from_tactical(
             tactical_queue,
             ahrefs_facts,
+            actions,
             latest_ahrefs_refresh=refresh_runs_by_connector.get(AHREFS_CONNECTOR_ID),
             allow_refresh_lookup=refresh_runs is None,
         ),
@@ -1223,6 +1229,7 @@ def _merchant_item_product_count(item: TacticalQueueItem) -> float:
 def _content_item_from_tactical(
     queue: TacticalQueueResponse,
     ahrefs_facts: list[MetricFact],
+    actions: list[ActionObject],
     *,
     latest_ahrefs_refresh: ConnectorRefreshRun | None = None,
     allow_refresh_lookup: bool = True,
@@ -1288,6 +1295,16 @@ def _content_item_from_tactical(
         )
         or [connector_evidence_id("google_search_console")]
     )
+    action_ids = _unique(
+        [
+            *_action_ids_for(
+                actions,
+                connector="wordpress_ekologus",
+                domain=OpportunityDomain.content,
+            ),
+            *(action_id for item in content_items for action_id in item.action_ids),
+        ]
+    )
     return CommandCenterBriefItem(
         id="daily_content_queue",
         title=(
@@ -1302,7 +1319,7 @@ def _content_item_from_tactical(
         next_step=next_step,
         source_connectors=source_connectors,
         evidence_ids=evidence_ids,
-        action_ids=_unique(action_id for item in content_items for action_id in item.action_ids),
+        action_ids=action_ids,
         metric_tiles={
             "zapytania/URL": len(content_items),
             "dopasowania WordPress": sum(
