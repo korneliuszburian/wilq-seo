@@ -468,6 +468,9 @@ Finish these before claiming the Ekologus demo is done:
    - Live smoke checks may assert freshness, nonempty expected facts,
      ready/missing/blocked contract status and correct blocker rendering, not
      exact clicks, reviews, costs or ranking values.
+   - Frontend schema drift must be caught before browser QA: use
+     `pnpm --filter @wilq/shared-schemas test:live-contracts` to parse live API
+     payloads with the same shared Zod schemas consumed by the dashboard.
    - Dashboard live e2e smoke should assert marketer-facing decision sections,
      safety copy, drilldown headings and absence of technical dumps, not stale
      copy or changing live counts.

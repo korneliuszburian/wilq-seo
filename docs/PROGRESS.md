@@ -205,6 +205,13 @@ Stan produktu:
   Content/GA4/Localo diagnostics for shape, evidence IDs, Polish language and
   ready/blocked state without asserting exact changing metric values. Live
   proof on 2026-06-23 returned `status=completed`, `errors=[]`.
+- Shared frontend schema live smoke now exists in `@wilq/shared-schemas`:
+  `pnpm --filter @wilq/shared-schemas test:live-contracts` fetches the live
+  API and parses command center, marketing brief, tactical queue, Ads,
+  Merchant, Content, GA4, Localo, Ahrefs and Demand Gen with the same Zod
+  schemas consumed by the dashboard. It is opt-in; normal shared-schema tests
+  skip live API calls. This catches API -> dashboard schema drift such as the
+  Merchant `review_price_impact_readiness` route fallback.
 - Dashboard live e2e smoke now avoids brittle assertions against changing
   Ekologus metric values and stale route copy. It checks marketer-facing
   decision sections, blocked technical dumps, safety copy and drilldown

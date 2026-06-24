@@ -12,6 +12,7 @@
     "build": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
+    "test:live-contracts": "WILQ_LIVE_SCHEMA_SMOKE=1 vitest run src/live-contract-smoke.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
