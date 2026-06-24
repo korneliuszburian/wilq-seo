@@ -176,6 +176,10 @@ Active demo work is narrow and depth-first.
   read-only place, rankings, GBP, competitor and review aggregates are allowed
   for review, while local tasks, GBP write and local visibility uplift remain
   blocked.
+- `ready`: Core pre-demo gate passed after the eval hardening slices. Proof:
+  `.local-lab/proof/pre-demo-gate-after-eval-hardening.txt`; coverage:
+  managed stack status, API health, live contract smoke, shared live schemas,
+  dashboard API-backed route smoke 13/13 and sequential core skill smokes.
 
 ### B. Content Generation And New-Site Workflow
 
@@ -688,6 +692,8 @@ Use these rules before every implementation slice:
   contracts and keeps local tasks/write/uplift blocked. Proof:
   `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q` and
   `.local-lab/proof/localo-eval-case-refresh-smoke.json`.
+- [x] Rerun core pre-demo gate after eval hardening:
+  `.local-lab/proof/pre-demo-gate-after-eval-hardening.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
