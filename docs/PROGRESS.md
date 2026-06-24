@@ -58,6 +58,21 @@ Stan produktu:
   returned ok. Next checklist item: API contract audit, starting with command
   center, marketing brief, tactical queue, actions, evidence, connector status
   and domain diagnostics lineage/payload-preview shape.
+- API contract audit first pass completed after the dashboard route fix.
+  Current proof: command center parses with lineage on `daily_decisions`
+  rather than top-level `evidence_ids`/`action_ids`; marketing brief returns 4
+  sections, 13 actions and 21 evidence IDs; tactical queue returns 24 items
+  with no missing evidence/source lineage; actions expose top-level `connector`
+  plus `evidence_ids`, with preview data intentionally under `payload`
+  (`payload_preview`, `content_brief_preview`, `wordpress_draft_payload_preview`
+  or domain-specific preview keys); `/api/connectors` reports 12 connectors,
+  9 configured, 1 disabled (`google_sheets`) and 2 missing social credentials.
+  Live shared schema proof:
+  `pnpm --filter @wilq/shared-schemas test:live-contracts` returned 10 passed.
+  No code change is needed for this first pass. Next checklist item: domain
+  workflow audit across Ads, Merchant, Content/GSC/Ahrefs/WordPress, GA4 and
+  Localo, with focus on whether each route/skill consumes the typed decision
+  queue instead of rebuilding logic in UI or prompt prose.
 - Marketing Brief empty-section regression was a stale long-running API process,
   not current product code. Fresh `uv run` construction returned
   `what_we_know=5`, `what_blocks_us=2`, `safe_next_actions=7`,
