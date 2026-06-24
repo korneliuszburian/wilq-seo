@@ -25,6 +25,58 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-24 - wilq-content-strategist messy marketer prompt eval
+
+Purpose:
+
+- Verify that the content strategist can handle a realistic, imprecise marketer
+  question about what to write for the new Ekologus site without SEO slop.
+- Prove that `messy_task_pl` is injected into the actual `codex exec` eval
+  prompt, not only stored in the case JSON.
+- Keep `ekologus.dev.proudsite.pl` as target context and keep staging, publish,
+  ranking, lead and revenue uplift claims blocked.
+
+Change:
+
+- Core demo cases now include `messy_task_pl` for Content, Ads, Merchant, GA4
+  and Localo.
+- `scripts/codex_skill_eval.sh` injects the field as `messy_marketer_prompt`
+  and describes `expected_terms_pl` as hard final-JSON markers, matching the
+  validator.
+
+Proof:
+
+```bash
+rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
+rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T205857Z/wilq-content-strategist/result.json
+```
+
+Result:
+
+- `operator_usefulness_score=5`
+- `decision_quality` booleans all passed and `safety_findings=[]`.
+- The prompt artifact contains `messy_marketer_prompt` with the marketer-style
+  question about BDO, Zielony Ład, refresh/merge/new content and draft blockers.
+- The final JSON keeps BDO and Zielony Ład as refresh/merge review work, names
+  `target_site_mapping_review`, `manual_mapping_required`,
+  `review_alternative_candidates`, `inventory_check_before_create`,
+  `merge_create_after_inventory_check`, `freshness` and `stale`.
+- The output blocks `wordpress_staging_write`, WordPress publish,
+  `ranking_or_lead_uplift_claim`, lead uplift, revenue impact and treating
+  `ekologus.dev.proudsite.pl` as source evidence.
+
+Product finding:
+
+- The messy prompt path is usable for the most important content workflow.
+  This is still not real marketer UAT and does not confirm human URL mapping or
+  draft/staging readiness.
+
 ## 2026-06-24 - wilq-content-strategist target-site boundary eval case
 
 Purpose:

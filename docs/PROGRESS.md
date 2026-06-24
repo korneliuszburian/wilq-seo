@@ -88,6 +88,11 @@ Stan produktu:
   Ads, Merchant, GA4 and Localo, and `scripts/codex_skill_eval.sh` injects them
   into future `codex exec` eval prompts. Focused contract proof:
   `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`.
+- The first real messy-prompt runtime proof passed for
+  `wilq-content-strategist`: artifact
+  `.local-lab/evals/codex-skill/20260624T205857Z/wilq-content-strategist/result.json`,
+  `operator_usefulness_score=5`, all decision-quality booleans true and
+  staging/publish/uplift claims still blocked. This is not real marketer UAT.
 - Content strategist eval hardening now requires the current
   `operator_summary.target_site_migration_map`, mapping-review gate markers and
   blocked staging/ranking outputs, so the eval cannot pass on generic

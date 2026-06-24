@@ -156,8 +156,10 @@ messy_task_instruction = (
     else ""
 )
 expected_terms_instruction = (
-    "\n<expected_terms>\nW finalnym JSON uwzględnij te marker terms, jeżeli są zgodne "
-    f"z WILQ evidence: {', '.join(expected_terms)}.\n</expected_terms>\n"
+    "\n<expected_terms>\nTo są twarde marker terms walidowane po finalnym JSON. "
+    "Jeżeli smoke/API wspiera dany marker, umieść go dosłownie w `notes`, "
+    "`operator_next_step`, rekomendacjach albo kandydatach działań. Nie pomijaj "
+    f"markerów route/evidence: {', '.join(expected_terms)}.\n</expected_terms>\n"
     if expected_terms
     else ""
 )

@@ -471,6 +471,13 @@ Skills are operator workflows over WILQ API. They are not the product brain.
   hardens future non-interactive evals against natural, imprecise marketer
   questions without changing skill references or product logic. Focused proof:
   `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`.
+- `ready`: The first real messy-prompt runtime proof passed for
+  `wilq-content-strategist`. Artifact:
+  `.local-lab/evals/codex-skill/20260624T205857Z/wilq-content-strategist/result.json`.
+  Result: `operator_usefulness_score=5`, all `decision_quality` booleans true,
+  `safety_findings=[]`, BDO/Zielony Ład handled as refresh/merge review work,
+  target-site mapping and draft blockers preserved, and staging/publish/uplift
+  claims blocked.
 - `task`: Add decision-quality rubrics that check usefulness, prioritization,
   blocked-claim handling and safe next steps, not only output shape.
 - `task`: Add a human usefulness rubric after marketer UAT: "Czy wiem co
