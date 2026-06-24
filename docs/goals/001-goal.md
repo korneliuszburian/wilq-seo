@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 05:05 CEST.
+Last updated: 2026-06-24 05:16 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -86,6 +86,9 @@ now includes only connectors with implemented read-only vendor adapters, so
 `openai_codex` no longer blocks the job while its vendor-read adapter is absent.
 Live proof `jobrun_configured_vendor_read_refresh_262817b0e1` completed with
 8 source connectors and no errors, making Content fresh on Command Center.
+`/merchant` live route now renders the Merchant diagnostics again after shared
+schema accepted API `decision_type=review_price_impact_readiness`; this was a
+frontend contract drift, not an API or route-mapping failure.
 
 ## Current Stack Map
 

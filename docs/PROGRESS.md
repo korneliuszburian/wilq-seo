@@ -117,6 +117,12 @@ Stan produktu:
   `product_performance_readiness` now also exposes `missing_read_contracts`, so
   dashboard and skills can distinguish state-only Ads joins from missing Ads/GA4
   product performance contracts without deriving that in prompt prose.
+  Dashboard `/merchant` briefly fell back to the API error state because the
+  shared frontend schema did not yet accept the new
+  `review_price_impact_readiness` decision type even though the API returned
+  HTTP 200. The shared schema enum and focused test now cover that decision;
+  browser proof shows `/merchant` rendering decision queue, product samples,
+  product-state join and price-impact blocker again.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
