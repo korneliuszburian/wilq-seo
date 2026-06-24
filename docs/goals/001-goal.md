@@ -160,6 +160,11 @@ regression.
 Latest completed slices: Merchant skill eval is hardened for product/price
 readiness and blocked product ROAS / price-impact claims
 (`.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json`).
+Content target-site adaptation now stays typed across API, context-pack,
+dashboard and `wilq-content-strategist`: current source URLs and target-site
+URLs/hosts/status are explicit in content brief and WordPress draft previews,
+including future `ekologus.dev.proudsite.pl` adaptation, while the dev site is
+not treated as independent source evidence.
 Daily Command wording/eval now treats Localo as outside the daily task list only
 when it is outside typed `command_center.daily_decisions`, not because Localo
 evidence is absent
@@ -910,3 +915,15 @@ current source evidence. Focused proof passed: social API pytest subset, managed
 stack restart, social/campaign skill smokes, live social context-pack URL check,
 skill hygiene and `git diff --check`. Continue from remaining content
 usefulness/target-site adaptation, then expert/knowledge rule audit.
+
+2026-06-24 content target-site checkpoint: content brief and WordPress draft
+previews now expose source URL/host and target-site URL/host/status through the
+typed ActionObject payload, skill-scoped context-pack and dashboard preview
+cards. Public content `target_site_url` is preserved by redaction under explicit
+safe keys. Deterministic API proof covers `ekologus.dev.proudsite.pl` as
+`target_site_alias_match`; live current data still resolves to
+`current_site_match` when WordPress inventory points at `www.ekologus.pl`.
+Focused proof passed: content API subset 4 passed, content route test passed,
+Action Detail content preview test passed, dashboard typecheck passed, content
+strategist smoke passed and `git diff --check` passed. Continue Final A-Z from
+expert rules and knowledge audit.

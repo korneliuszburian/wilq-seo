@@ -41,6 +41,21 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Content target-site adaptation slice completed on 2026-06-24. Existing
+  content evidence still comes from current source sites, but content brief and
+  WordPress draft previews now carry explicit target-site context:
+  `source_url`, `source_site_host`, `target_site_url`, `target_site_host` and
+  `target_site_adaptation_status`. This lets WILQ distinguish current-site
+  refresh from future `ekologus.dev.proudsite.pl` adaptation without treating
+  the dev site as independent evidence. Context-pack compaction preserves these
+  fields for `wilq-content-strategist`; redaction now preserves public content
+  target URLs under explicit safe keys. Focused proof passed: content API
+  contract subset 4 passed, dashboard content route test passed, Action Detail
+  content preview test passed, dashboard typecheck passed, content strategist
+  smoke passed and `git diff --check` passed. Next checklist item: expert and
+  knowledge rule audit; do not reopen target-site adaptation unless preview
+  fields disappear from API/context-pack/dashboard or dev-site URLs leak into
+  source-evidence candidate inputs.
 - Skill/reference semantic audit slice moved forward on 2026-06-24. Current
   `scripts/skill_hygiene_check.py` passed and semantic pass found no broad
   reference-as-workaround pattern. Two references were underdocumented rather

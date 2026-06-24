@@ -312,6 +312,28 @@ def validate_content_action_preview(
             raise SystemExit(f"Content brief preview lacks {field}")
     if "ranking guarantee" not in set(first_preview.get("forbidden_claims") or []):
         raise SystemExit("Content brief preview forbidden_claims must block ranking guarantee")
+    gsc_preview = next(
+        (
+            item
+            for item in previews
+            if isinstance(item, dict) and item.get("source_type") == "gsc_query_page"
+        ),
+        None,
+    )
+    if isinstance(gsc_preview, dict):
+        for field in (
+            "source_url",
+            "source_site_host",
+            "target_site_adaptation_status",
+        ):
+            if not str(gsc_preview.get(field) or "").strip():
+                raise SystemExit(f"GSC content brief preview lacks {field}")
+        if gsc_preview.get("target_site_adaptation_status") != "needs_inventory_match":
+            for field in ("target_site_url", "target_site_host"):
+                if not str(gsc_preview.get(field) or "").strip():
+                    raise SystemExit(f"GSC content brief preview lacks {field}")
+        if gsc_preview.get("target_site_url") == "[REDACTED]":
+            raise SystemExit("GSC content brief target_site_url must not be redacted")
 
 
 def decision_trace(value: Any) -> list[dict[str, Any]]:

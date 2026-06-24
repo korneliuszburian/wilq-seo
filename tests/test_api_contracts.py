@@ -834,6 +834,13 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
             "gap_type": "organic_keyword_gap",
             "source_url": "https://example.pl/poradnik/",
             "target_url": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
+            "source_site_host": "www.ekologus.pl",
+            "target_site_host": "ekologus.dev.proudsite.pl",
+            "target_site_url": (
+                "https://ekologus.dev.proudsite.pl/"
+                "europejski-zielony-lad-co-to-takiego/"
+            ),
+            "target_site_adaptation_status": "target_site_alias_match",
             "competitor_domain": "example.pl",
             "keyword": "zielony ład obowiązki",
             "gsc_overlap_terms": ["zielony ład"],
@@ -921,6 +928,12 @@ def test_redaction_preserves_env_names_but_redacts_token_values() -> None:
     assert redacted["target_url"] == (
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
     )
+    assert redacted["source_site_host"] == "www.ekologus.pl"
+    assert redacted["target_site_host"] == "ekologus.dev.proudsite.pl"
+    assert redacted["target_site_url"] == (
+        "https://ekologus.dev.proudsite.pl/europejski-zielony-lad-co-to-takiego/"
+    )
+    assert redacted["target_site_adaptation_status"] == "target_site_alias_match"
     assert redacted["competitor_domain"] == "example.pl"
     assert redacted["keyword"] == "zielony ład obowiązki"
     assert redacted["gsc_overlap_terms"] == ["zielony ład"]
@@ -1352,6 +1365,85 @@ def test_content_action_preview_exposes_review_only_brief_payload(
     assert "action_mode_prepare_only" in preview["blockers"]
 
 
+def test_content_brief_preview_marks_dev_site_as_target_context(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "content_target_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "content_target.duckdb"))
+    source_url = "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    target_site_url = (
+        "https://ekologus.dev.proudsite.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    )
+    gsc_run = ConnectorRefreshRun(
+        id="refresh_gsc_content_target_site_test",
+        connector_id="google_search_console",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_gsc_content_target_site_test"],
+        metric_summary={"query_page_rows": 1},
+        summary="GSC source URL for target-site content adaptation.",
+    )
+    wordpress_run = ConnectorRefreshRun(
+        id="refresh_wordpress_content_target_site_test",
+        connector_id="wordpress_ekologus",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_wordpress_content_target_site_test"],
+        metric_summary={"content_object_count": 1},
+        summary="Target-site WordPress inventory for content adaptation.",
+    )
+    metric_store().save_connector_refresh_metrics(
+        gsc_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="clicks",
+                value=8,
+                dimensions={"query": "bdo przedsiębiorca", "page": source_url},
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=220,
+                dimensions={"query": "bdo przedsiębiorca", "page": source_url},
+            ),
+        ],
+    )
+    metric_store().save_connector_refresh_metrics(
+        wordpress_run,
+        detailed_facts=[
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "content_type": "sitemap",
+                    "content_url": target_site_url,
+                    "status": "indexed",
+                    "inventory_source": "public_sitemap",
+                },
+            )
+        ],
+    )
+
+    action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
+
+    assert action_response.status_code == 200
+    action = action_response.json()
+    preview = next(
+        item
+        for item in action["payload"]["content_brief_preview"]
+        if item["target_url"] == source_url
+    )
+    assert preview["source_url"] == source_url
+    assert preview["source_site_host"] == "www.ekologus.pl"
+    assert preview["target_site_url"] == target_site_url
+    assert preview["target_site_host"] == "ekologus.dev.proudsite.pl"
+    assert preview["target_site_adaptation_status"] == "target_site_alias_match"
+    assert preview["wordpress_inventory_match"] == "present"
+    assert preview["apply_allowed"] is False
+    assert preview["api_mutation_ready"] is False
+
+
 def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregate_runs(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1697,6 +1789,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["source_facts"]
     assert brief_preview["missing_evidence"]
     assert "ranking guarantee" in brief_preview["forbidden_claims"]
+    assert "target_site_adaptation_status" in brief_preview
     assert payload["wordpress_draft_payload_preview_total"] == 1
     assert payload["wordpress_draft_payload_preview_included"] == 1
     draft_preview = payload["wordpress_draft_payload_preview"][0]
@@ -1704,6 +1797,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["source_preview_contract"] == "content_brief_preview_v1"
     assert draft_preview["candidate_id"] == candidate_id
     assert draft_preview["post_status"] == "draft"
+    assert "target_site_adaptation_status" in draft_preview
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["evidence_ids"]

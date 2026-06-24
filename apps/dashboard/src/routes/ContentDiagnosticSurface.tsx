@@ -146,6 +146,10 @@ type ContentBriefPreviewItem = {
   topic: string;
   target_url?: string | null;
   source_url?: string | null;
+  target_site_url?: string | null;
+  target_site_host?: string | null;
+  source_site_host?: string | null;
+  target_site_adaptation_status?: string | null;
   competitor_domain?: string | null;
   wordpress_inventory_match?: string | null;
   gsc_demand?: string | null;
@@ -269,6 +273,11 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
         <TraceLine label="Obiekcje" values={(preview.key_objections ?? []).slice(0, 3)} />
+        <TraceLine
+          label="Strona docelowa"
+          values={contentTargetSiteValues(preview)}
+          empty="brak"
+        />
         <TraceLine label="Linkowanie" values={(preview.internal_link_direction ?? []).slice(0, 3)} />
         <TraceLine label="Źródła faktów" values={(preview.source_facts ?? []).slice(0, 4)} />
         <TraceLine label="Brakujące dowody" values={(preview.missing_evidence ?? []).slice(0, 3)} />
@@ -328,6 +337,10 @@ type WordPressDraftPayloadPreviewItem = {
   topic: string;
   target_url?: string | null;
   source_url?: string | null;
+  target_site_url?: string | null;
+  target_site_host?: string | null;
+  source_site_host?: string | null;
+  target_site_adaptation_status?: string | null;
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -368,6 +381,11 @@ function WordPressDraftPayloadPreviewCard({
         <p className="mt-2 text-xs text-slate-600">URL: {shortPath(preview.target_url)}</p>
       ) : null}
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine
+          label="Strona docelowa"
+          values={contentTargetSiteValues(preview)}
+          empty="brak"
+        />
         <TraceLine
           label="Bloki"
           values={(preview.draft_payload.content_blocks ?? [])
@@ -791,6 +809,39 @@ function contentDraftOperationLabel(value: string) {
   const labels: Record<string, string> = {
     prepare_existing_content_draft: "draft istniejącej treści",
     prepare_new_content_draft_review: "draft nowej treści do review"
+  };
+  return labels[value] ?? value;
+}
+
+function contentTargetSiteValues(
+  preview: Pick<
+    ContentBriefPreviewItem | WordPressDraftPayloadPreviewItem,
+    | "source_site_host"
+    | "target_site_host"
+    | "target_site_url"
+    | "target_site_adaptation_status"
+  >
+) {
+  const values: string[] = [];
+  if (preview.source_site_host && preview.target_site_host) {
+    values.push(`${preview.source_site_host} -> ${preview.target_site_host}`);
+  } else if (preview.target_site_host) {
+    values.push(preview.target_site_host);
+  }
+  if (preview.target_site_adaptation_status) {
+    values.push(contentTargetSiteStatusLabel(preview.target_site_adaptation_status));
+  }
+  if (preview.target_site_url) {
+    values.push(shortPath(preview.target_site_url));
+  }
+  return values;
+}
+
+function contentTargetSiteStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    current_site_match: "bieżąca strona",
+    target_site_alias_match: "dopasowanie do nowej strony",
+    needs_inventory_match: "wymaga dopasowania inventory"
   };
   return labels[value] ?? value;
 }

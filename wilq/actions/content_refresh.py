@@ -147,7 +147,7 @@ def content_payload_with_reviewed_wordpress_draft_previews(
 
 
 def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str, Any]]:
-    wordpress_paths = _wordpress_inventory_paths(metric_facts)
+    wordpress_urls_by_path = _wordpress_inventory_urls_by_path(metric_facts)
     gsc_facts_by_page: dict[str, list[MetricFact]] = {}
     for fact in metric_facts:
         if fact.source_connector != "google_search_console":
@@ -171,13 +171,19 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         )
         primary_query = queries[0] if queries else _short_path(page)
         page_path = _normalized_path(page)
-        wordpress_match = page_path in wordpress_paths
+        wordpress_target_url = wordpress_urls_by_path.get(page_path)
+        wordpress_match = wordpress_target_url is not None
         mode = "refresh" if wordpress_match else "inventory_check"
         decision_options = ["refresh", "merge", "block"] if wordpress_match else [
             "merge",
             "create",
             "block",
         ]
+        target_site_context = _target_site_context(
+            source_url=page,
+            target_site_url=wordpress_target_url,
+            wordpress_match=wordpress_match,
+        )
         previews.append(
             {
                 "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
@@ -186,6 +192,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "mode": mode,
                 "topic": primary_query,
                 "target_url": page,
+                **target_site_context,
                 "wordpress_inventory_match": "present" if wordpress_match else "missing",
                 "decision_options": decision_options,
                 "metric_snapshot": _gsc_metric_snapshot(page_facts),
@@ -229,6 +236,11 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
     source_type = str(preview.get("source_type") or "unknown")
     target_url = preview.get("target_url") if isinstance(preview.get("target_url"), str) else None
     source_url = preview.get("source_url") if isinstance(preview.get("source_url"), str) else None
+    target_site_url = (
+        preview.get("target_site_url")
+        if isinstance(preview.get("target_site_url"), str)
+        else None
+    )
     candidate_id = str(preview["candidate_id"])
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -242,6 +254,16 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         "topic": topic,
         "target_url": target_url,
         "source_url": source_url,
+        "target_site_url": target_site_url,
+        "target_site_host": preview.get("target_site_host")
+        if isinstance(preview.get("target_site_host"), str)
+        else None,
+        "source_site_host": preview.get("source_site_host")
+        if isinstance(preview.get("source_site_host"), str)
+        else None,
+        "target_site_adaptation_status": preview.get("target_site_adaptation_status")
+        if isinstance(preview.get("target_site_adaptation_status"), str)
+        else None,
         "draft_payload": {
             "post_status": "draft",
             "post_title": _draft_title(topic, mode),
@@ -391,8 +413,8 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
     return previews
 
 
-def _wordpress_inventory_paths(metric_facts: list[MetricFact]) -> set[str]:
-    paths: set[str] = set()
+def _wordpress_inventory_urls_by_path(metric_facts: list[MetricFact]) -> dict[str, str]:
+    urls_by_path: dict[str, str] = {}
     for fact in metric_facts:
         if not fact.source_connector.startswith("wordpress_"):
             continue
@@ -401,8 +423,31 @@ def _wordpress_inventory_paths(metric_facts: list[MetricFact]) -> set[str]:
             continue
         path = _normalized_path(url)
         if path:
-            paths.add(path)
-    return paths
+            urls_by_path.setdefault(path, url)
+    return urls_by_path
+
+
+def _target_site_context(
+    *,
+    source_url: str,
+    target_site_url: str | None,
+    wordpress_match: bool,
+) -> dict[str, str | None]:
+    source_host = _url_host(source_url)
+    target_host = _url_host(target_site_url) if target_site_url else None
+    if not wordpress_match:
+        status = "needs_inventory_match"
+    elif target_host and source_host and target_host != source_host:
+        status = "target_site_alias_match"
+    else:
+        status = "current_site_match"
+    return {
+        "source_url": source_url,
+        "source_site_host": source_host,
+        "target_site_url": target_site_url,
+        "target_site_host": target_host,
+        "target_site_adaptation_status": status,
+    }
 
 
 def _gsc_metric_snapshot(page_facts: list[MetricFact]) -> dict[str, int | float | str]:
@@ -671,6 +716,13 @@ def _short_path(value: str) -> str:
     if parsed.netloc:
         return f"{parsed.netloc}{parsed.path}".rstrip("/") or parsed.netloc
     return value
+
+
+def _url_host(value: str | None) -> str | None:
+    if not value:
+        return None
+    host = urlparse(value).netloc.lower()
+    return host or None
 
 
 def _candidate_slug_for_page(value: str) -> str:
