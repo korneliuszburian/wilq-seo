@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Data: 2026-06-24 04:13 CEST.
+Data: 2026-06-24 05:59 CEST.
 
 Cel: jedna krótka mapa stanu 12 WILQ skillów po najnowszych evalach. Pełne
 przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko
@@ -45,3 +45,11 @@ Do not fix future skill failures by adding edge-case prose to references. If an
 eval lacks a useful decision, first check whether WILQ API exposes a typed field
 for that decision. If not, add or fix the typed API/dashboard contract, then make
 the skill consume it.
+
+`scripts/skill_hygiene_check.py` now also blocks recovery/artifact prose in
+skills and references, including `docs/goals/`, `docs/PROGRESS`,
+`docs/evals/`, `.local-lab/`, previous-run wording and prompt-fix wording.
+Typed API contract fields such as `decision_queue`, `freshness_assessment`,
+`readiness.status`, `blocked_claims` and `ActionObject` validation remain valid
+reference material; they are not a workaround when they describe an existing API
+field.

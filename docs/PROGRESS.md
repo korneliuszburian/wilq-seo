@@ -48,6 +48,12 @@ Stan produktu:
   `/api/marketing/brief` returned the same counts with 13 ActionObject IDs and
   21 evidence IDs. If live API output contradicts current source/tests, restart
   the managed stack before patching view-model code.
+- Skill-reference audit guardrail was tightened: `scripts/skill_hygiene_check.py`
+  now blocks recovery/artifact prose such as goal/progress/eval paths,
+  `.local-lab` artifacts, previous-run wording and prompt-fix wording in skill
+  prose. Current skills pass the tightened check; typed API contract fields like
+  `decision_queue`, `freshness_assessment`, `blocked_claims` and ActionObject
+  validation remain allowed reference material.
 - Dashboard route loading now avoids blank marketer routes for `/opportunities`
   and `/knowledge`: primary headers/sections render before secondary
   registries finish loading, while ActionObject/evidence/knowledge subsections

@@ -42,6 +42,18 @@ FORBIDDEN_SKILL_PROSE = {
     "Klasyfikuj każdy item",
     "WILQ nie ma Localo ranking/GBP evidence",
     "Localo nie zostało wypromowane",
+    "docs/goals/",
+    "docs/PROGRESS",
+    "docs/evals/",
+    ".local-lab/",
+    "previous run",
+    "last run",
+    "ostatni przebieg",
+    "poprzedni przebieg",
+    "prompt-fix",
+    "prompt fix",
+    "napraw skill",
+    "naprawa skilla",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
 MAX_BODY_LINE_LENGTH = 900

@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 05:55 CEST.
+Last updated: 2026-06-24 05:59 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -101,6 +101,11 @@ live API after `scripts/local_stack.sh restart` both returned
 `what_we_know=5`, `what_blocks_us=2`, `safe_next_actions=7`,
 `recommended_focus=3`, 13 ActionObject IDs and 21 evidence IDs. When live API
 contradicts current source/tests, restart the managed stack before patching.
+Skill-reference audit guardrail now blocks recovery/artifact prose in skills
+and references: goal/progress/eval paths, `.local-lab` artifacts, previous-run
+wording and prompt-fix wording. Existing typed API contract fields such as
+`decision_queue`, `freshness_assessment`, `readiness.status`, `blocked_claims`
+and ActionObject validation remain valid reference material.
 
 ## Current Stack Map
 
@@ -390,7 +395,11 @@ Finish these before claiming the Ekologus demo is done:
      dedicated diagnostics endpoint before scoped context-pack consistency
      checks. `scripts/skill_hygiene_check.py` blocks context-pack-first
      regressions for skills with dedicated diagnostics endpoints.
-   - Remaining audit: deeper semantic review of references. References may
+   - Recovery/artifact prose is now blocked from skill docs and references:
+     goal/progress/eval paths, `.local-lab` artifacts, previous-run wording and
+     prompt-fix wording fail `scripts/skill_hygiene_check.py`.
+   - Remaining semantic audit is only for concrete proof that a reference hides
+     product behavior without a matching typed API field. References may
      describe API usage, required evidence, output shape and safety rules.
    - References must not become the place for product behavior, workaround
      rules, dashboard cleanup, dedupe decisions, ranking logic or bug fixes.
@@ -543,8 +552,8 @@ Finish these before claiming the Ekologus demo is done:
    - Merchant deepening beyond current product samples: performance joins,
      historical price snapshots, before/after proof or safer product preview
      boundaries.
-   - Semantic skill-reference audit where references are still carrying
-     product behavior instead of API contracts.
+   - A concrete semantic reference cleanup only if fresh audit proof shows a
+     reference carrying product behavior without a typed API contract.
    - Dashboard performance/shared daily view-model if command-center latency or
      duplicate aggregation blocks demo speed.
 

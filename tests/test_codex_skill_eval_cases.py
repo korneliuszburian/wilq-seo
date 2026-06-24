@@ -7,6 +7,21 @@ CASES_PATH = Path("docs/evals/cases/wilq-skill-eval-cases.json")
 HARNESS_PATH = Path("scripts/codex_skill_eval.sh")
 
 
+def test_skill_hygiene_blocks_recovery_artifacts_in_skill_prose() -> None:
+    from scripts import skill_hygiene_check
+
+    forbidden = skill_hygiene_check.FORBIDDEN_SKILL_PROSE
+    for phrase in (
+        "docs/goals/",
+        "docs/PROGRESS",
+        ".local-lab/",
+        "previous run",
+        "ostatni przebieg",
+        "prompt-fix",
+    ):
+        assert phrase in forbidden
+
+
 def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     cases = {case["skill"]: case for case in json.loads(CASES_PATH.read_text(encoding="utf-8"))}
 
