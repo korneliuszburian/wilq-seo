@@ -115,7 +115,11 @@ Still incomplete:
   passed with `operator_usefulness_score=4`, API evidence, source connectors,
   canonical/duplicate/target-context wording and blocked publish/ranking/lead/
   revenue/duplicate-free/source-evidence overclaims.
-- [ ] Add or verify the next highest-risk adversarial overclaim eval.
+- [x] Add or verify the next highest-risk adversarial overclaim eval. Proof:
+  `.local-lab/evals/codex-skill/20260624T125820Z/wilq-ads-doctor/result.json`;
+  passed with `operator_usefulness_score=5`, validated review-only Ads
+  ActionObjects and blocked CPA/ROAS/wasted-budget/budget-scaling/
+  recommendation-apply/targeting-apply/negative-keyword-apply claims.
 - [ ] Add or verify a target-site duplicate/canonical gate for content.
 - [ ] Run final pre-demo gate after the next material code/eval slice.
 - [ ] Produce a short marketer UAT script and record the result.
@@ -400,6 +404,9 @@ unless explicitly promoted:
 - The 2026-06-24 content strategist non-interactive eval passed the target-site
   boundary with usefulness score 4, not 5. Treat it as a guardrail proof, not
   marketer UAT or proof of a complete draft/staging workflow.
+- The 2026-06-24 Ads Doctor eval passed with usefulness score 5 on live API.
+  It proves review-only Ads guidance and overclaim blocking, not optimizer or
+  apply readiness.
 
 ## Decision Log
 

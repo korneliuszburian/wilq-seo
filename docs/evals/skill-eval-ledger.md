@@ -5428,3 +5428,50 @@ Product finding:
   case while preserving evidence-backed refresh/merge guidance. The next content
   depth risk is the actual duplicate/canonical gate before draft or staging
   handoff, not this boundary wording.
+
+## 2026-06-24 - wilq-ads-doctor overclaim boundary proof
+
+Purpose:
+
+- Re-verify Ads Doctor against the current live API after dashboard/API/doc
+  slices.
+- Prove that live Ads facts can drive review queues while CPA, ROAS,
+  search-term waste, wasted budget, budget scaling, recommendation apply,
+  targeting/apply and negative keyword apply stay blocked.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-ads-doctor/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-ads-doctor --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T125820Z/wilq-ads-doctor/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `operator_usefulness_score=5`
+- `source_connectors=["google_ads"]`
+- Validated ActionObjects: `act_prepare_ads_campaign_review_queue`,
+  `act_prepare_google_ads_recommendation_review_queue`,
+  `act_prepare_custom_segments_from_search_terms`,
+  `act_prepare_negative_keyword_review_queue`.
+- Blocked action candidates include CPA/ROAS verdict, budget scaling or wasted
+  budget decision, recommendation apply, targeting/apply and negative keyword
+  apply.
+- `decision_quality` booleans all passed.
+
+Product finding:
+
+- Ads Doctor is current-demo useful as a review-only cockpit. This does not
+  unlock optimizer/apply readiness: target CPA/ROAS, human strategy review,
+  change-impact windows, Keyword Planner enrichment, apply/audit contracts and
+  mutation safety remain blockers.

@@ -52,6 +52,14 @@ Stan produktu:
   and blocked claims for `ekologus.dev.proudsite.pl source evidence`,
   WordPress publish, duplicate-free guarantee, ranking guarantee, lead uplift
   and revenue impact. This is guardrail proof, not marketer UAT.
+- Ads overclaim adversarial eval was verified through real non-interactive
+  Codex on 2026-06-24. Proof:
+  `.local-lab/evals/codex-skill/20260624T125820Z/wilq-ads-doctor/result.json`.
+  Result passed with `operator_usefulness_score=5`, live Google Ads evidence,
+  four validated review-only ActionObjects and explicit blocks for CPA, ROAS,
+  search-term waste, wasted budget, budget scaling, recommendation apply,
+  targeting/apply and negative keyword apply. This proves Ads review guidance,
+  not optimizer/apply readiness.
 - Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
   stack was ready, browser snapshots for `/command-center`, `/merchant`,
   `/content-planner`, `/ads-doctor`, `/ga4` and
@@ -150,10 +158,9 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Run the next adversarial eval slice for overclaims that matters to the demo:
-   pick Ads no CPA/ROAS without targets, Merchant occurrences-not-unique-
-   products, GA4 `(not set)` measurement blocker or Localo access-not-ranking.
-   Pick the smallest one with current proof.
+1. If continuing eval hardening, pick Merchant occurrences-not-unique-products,
+   GA4 `(not set)` measurement blocker or Localo access-not-ranking. Ads
+   no-CPA/ROAS overclaim proof is current.
 2. If demo UX is the next priority, change only one confirmed blocker at a time:
    likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
    drilldown IDs behind technical details.
