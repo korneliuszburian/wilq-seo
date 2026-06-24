@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:20 CEST.
+Last updated: 2026-06-24 02:21 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -184,6 +184,7 @@ Finish these before claiming the Ekologus demo is done:
      `merchant_supplemental_feed_review_preview_v1` candidates so the marketer
      can inspect Ads status, availability, price, Merchant issue context and
      candidate supplemental-feed review fields without apply. It also exposes
+     `price_impact_readiness` response key with contract id
      `merchant_price_impact_readiness` and
      `merchant_price_impact_readiness_preview_v1`; live proof sees 3 current
      Ads prices, 0 previous price snapshots and 0 matching product performance
@@ -233,6 +234,9 @@ Finish these before claiming the Ekologus demo is done:
    - If a skill or dashboard needs smarter grouping, dedupe, ranking or copy,
      implement it in typed API/schema/view-model first, then make the UI/skill
      consume it.
+   - Current Command Center `daily_decisions` expose stable `domain`
+     identifiers (`merchant`, `content`, `ga4`, `google_ads`) and live smoke
+     asserts the field exists.
    - Add decision/view-model slices:
      1. Domain-specific decision queues for Ads, Merchant, Content, GA4 and
         Localo with stable fields: `why_it_matters`, `operator_action`,

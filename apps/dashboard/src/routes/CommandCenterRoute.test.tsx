@@ -25,6 +25,7 @@ const commandCenterFixture: CommandCenterResponse = {
     {
       id: "decision_review_merchant_feed_issues",
       title: "Przejrzyj kolejkę problemów Merchant Center",
+      domain: "merchant",
       route: "/merchant",
       status: "ready",
       priority: 10,
@@ -52,6 +53,7 @@ const commandCenterFixture: CommandCenterResponse = {
     {
       id: "decision_prepare_content_refresh_queue",
       title: "Przejrzyj kolejkę SEO z GSC i WordPress",
+      domain: "content",
       route: "/content-planner",
       status: "ready",
       priority: 12,

@@ -2278,6 +2278,7 @@ export const CommandCenterActionPlanItemSchema = z.object({
 export const DailyDecisionSchema = z.object({
   id: z.string(),
   title: z.string(),
+  domain: z.string().default("wilq"),
   route: z.string(),
   status: z.enum(["ready", "blocked"]),
   priority: z.number(),

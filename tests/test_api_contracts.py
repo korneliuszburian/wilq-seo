@@ -3546,6 +3546,7 @@ def test_command_center_exposes_polish_operator_brief(
         if "localo" not in item_id
     }
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
+    assert merchant_decision["domain"] == "merchant"
     assert merchant_decision["co_widzimy"].startswith("Merchant Center ma")
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
     assert merchant_decision["metric_tiles"]["zgłoszenia"] == 3
@@ -3566,7 +3567,11 @@ def test_command_center_exposes_polish_operator_brief(
     assert merchant_decision["evidence_ids"]
     assert merchant_decision["blocked_claims"]
     ga4_decision = decisions_by_id["decision_review_ga4_landing_quality"]
+    assert decisions_by_id["decision_prepare_content_refresh_queue"]["domain"] == "content"
+    if "decision_review_ads_campaign_metrics" in decisions_by_id:
+        assert decisions_by_id["decision_review_ads_campaign_metrics"]["domain"] == "google_ads"
     assert ga4_decision["status"] == "blocked"
+    assert ga4_decision["domain"] == "ga4"
     assert "pomiar i jakość ruchu" in ga4_decision["title"]
     assert ga4_decision["metric_tiles"]["grupy ruchu"] >= 1
     assert ga4_decision["metric_tiles"]["decyzje"] >= 1
@@ -3596,6 +3601,7 @@ def test_command_center_exposes_polish_operator_brief(
     assert [
         {
             "id": item["id"],
+            "domain": item["domain"],
             "route": item["route"],
             "status": item["status"],
             "source_connectors": item["source_connectors"],
@@ -3608,6 +3614,7 @@ def test_command_center_exposes_polish_operator_brief(
     ] == [
         {
             "id": item["id"],
+            "domain": item["domain"],
             "route": item["route"],
             "status": item["status"],
             "source_connectors": item["source_connectors"],

@@ -79,8 +79,9 @@ Stan produktu:
   includes review-only `merchant_supplemental_feed_review_preview_v1`
   candidates with product ID, title, Merchant issue context, Ads state,
   required validation and blocked apply/API mutation. This is not a feed write
-  or approval/revenue claim. Merchant diagnostics now also expose
-  `merchant_price_impact_readiness` with
+  or approval/revenue claim. Merchant diagnostics now also expose the
+  `price_impact_readiness` response key with contract id
+  `merchant_price_impact_readiness` and preview contract
   `merchant_price_impact_readiness_preview_v1`: live API sees 3 current Ads
   prices, 0 previous price snapshots and 0 matching product performance
   windows, so price-impact stays blocked with missing read contracts instead of
@@ -182,7 +183,9 @@ Stan produktu:
   decision view-model. Live `/api/dashboard/command-center` returns Merchant,
   Content, GA4 and Ads daily decisions with Polish Codex prompts, evidence IDs,
   ActionObject IDs and blocked claims; raw sections are empty on the first
-  screen.
+  screen. Daily decisions now also carry stable `domain` identifiers:
+  `merchant`, `content`, `ga4` and `google_ads`; `scripts/live_contract_smoke.py`
+  asserts the field exists without checking changing live metric values.
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.
@@ -220,6 +223,7 @@ Stan produktu:
    - Do not push decisions into prompt/reference prose; implement typed
      API/schema/view-model first.
    - Shared `daily_decisions` are now the canonical first-screen view-model.
+     They expose stable `domain` identifiers for Merchant, Content, GA4 and Ads.
      Next decision/API work should harden stable domain queues and explicit
      ready/stale/blocked semantics. Avoid showing connector readiness as a
      marketing decision.

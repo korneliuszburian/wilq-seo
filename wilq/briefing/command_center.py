@@ -311,6 +311,7 @@ def build_daily_decisions(
         DailyDecision(
             id=plan_item.id.replace("plan_", "decision_", 1),
             title=plan_item.title,
+            domain=_daily_decision_domain(plan_item.category),
             route=plan_item.route,
             status=plan_item.status,
             priority=plan_item.priority,
@@ -334,6 +335,16 @@ def build_daily_decisions(
         for plan_item in action_plan
         if plan_item.id in PRIMARY_DAILY_PLAN_IDS
     ]
+
+
+def _daily_decision_domain(category: str) -> str:
+    return {
+        "Merchant Center": "merchant",
+        "Content + SEO": "content",
+        "GA4": "ga4",
+        "Google Ads": "google_ads",
+        "Localo": "localo",
+    }.get(category, "wilq")
 
 
 def _brief_items_by_plan_id(
