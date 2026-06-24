@@ -3676,6 +3676,20 @@ def test_command_center_exposes_polish_operator_brief(
         fact["source_connector"] for fact in content_decision["metric_facts"]
     }
     assert {"google_search_console", "ahrefs"}.issubset(content_fact_sources)
+    content_ahrefs_facts = [
+        fact
+        for fact in content_decision["metric_facts"]
+        if fact["source_connector"] == "ahrefs"
+    ]
+    assert content_ahrefs_facts
+    assert all(
+        fact["dimensions"].get("competitor_domain") != "cuk.pl"
+        for fact in content_ahrefs_facts
+    )
+    assert all(
+        "prawo jazdy" not in fact["dimensions"].get("keyword", "")
+        for fact in content_ahrefs_facts
+    )
     if "decision_review_ads_campaign_metrics" in decisions_by_id:
         assert decisions_by_id["decision_review_ads_campaign_metrics"]["domain"] == "google_ads"
     assert ga4_decision["status"] == "blocked"

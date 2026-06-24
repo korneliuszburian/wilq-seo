@@ -16,6 +16,8 @@ from wilq.briefing.tactical_queue import (
     GSC_QUERY_PAGE_FACT_LIMIT,
     WORDPRESS_INVENTORY_FACT_LIMIT,
     build_tactical_queue,
+    is_ahrefs_gap_fact,
+    is_reviewable_ahrefs_gap_fact,
 )
 from wilq.codex.runtime_status import codex_runtime_status
 from wilq.connectors.registry import get_connector_status, list_connector_statuses
@@ -475,7 +477,12 @@ def _decision_metric_facts(
     for connector_id in source_connectors:
         matched: list[MetricFact] = []
         fallback: list[MetricFact] = []
-        for fact in facts_by_connector.get(connector_id, []):
+        candidate_facts = _decision_candidate_facts(
+            plan_item,
+            connector_id,
+            facts_by_connector.get(connector_id, []),
+        )
+        for fact in candidate_facts:
             key = (
                 fact.source_connector,
                 fact.name,
@@ -505,6 +512,20 @@ def _decision_metric_facts(
             continue
         break
     return selected
+
+
+def _decision_candidate_facts(
+    plan_item: CommandCenterActionPlanItem,
+    connector_id: str,
+    facts: list[MetricFact],
+) -> list[MetricFact]:
+    if plan_item.id != "plan_prepare_content_refresh_queue" or connector_id != AHREFS_CONNECTOR_ID:
+        return facts
+    reviewable_gap_facts = [fact for fact in facts if is_reviewable_ahrefs_gap_fact(fact)]
+    if reviewable_gap_facts:
+        return reviewable_gap_facts
+    gap_facts = [fact for fact in facts if is_ahrefs_gap_fact(fact)]
+    return gap_facts or facts
 
 
 def _brief_items_by_plan_id(
@@ -1253,37 +1274,10 @@ def _content_item_from_tactical(
 
 
 def _ahrefs_gap_facts(facts: list[MetricFact]) -> list[MetricFact]:
-    gap_fact_names = {
-        "ahrefs_content_gap_count",
-        "ahrefs_organic_keyword_gap_count",
-        "ahrefs_top_page_gap_count",
-        "ahrefs_competitor_page_count",
-        "ahrefs_referring_domain_gap_count",
-        "ahrefs_backlink_gap_count",
-    }
-    record_facts = [
-        fact
-        for fact in facts
-        if fact.source_connector == AHREFS_CONNECTOR_ID
-        and fact.name in gap_fact_names
-        and any(
-            fact.dimensions.get(key)
-            for key in (
-                "gap_type",
-                "keyword",
-                "source_url",
-                "target_url",
-                "competitor_domain",
-            )
-        )
-    ]
+    record_facts = [fact for fact in facts if is_reviewable_ahrefs_gap_fact(fact)]
     if record_facts:
         return record_facts
-    return [
-        fact
-        for fact in facts
-        if fact.source_connector == AHREFS_CONNECTOR_ID and fact.name in gap_fact_names
-    ]
+    return [fact for fact in facts if is_ahrefs_gap_fact(fact)]
 
 
 def _ahrefs_content_metric_tiles(facts: list[MetricFact]) -> dict[str, int]:

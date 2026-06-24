@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:31 CEST.
+Last updated: 2026-06-24 04:37 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -67,7 +67,8 @@ records now also feed `/api/marketing/tactical-queue` as review-only
 `domain=content` tactical items with `act_prepare_content_refresh_queue`,
 GSC/WordPress confirmation fields and no uplift/ranking claims; remaining
 Ahrefs work is freshness and stronger cross-source scoring, not raw gap
-visibility.
+visibility. Command Center daily content metric facts use the same reviewable
+Ahrefs filter, so off-topic raw gaps do not leak onto the first screen.
 
 ## Current Stack Map
 

@@ -795,7 +795,7 @@ def _ahrefs_gap_items(
 def _group_ahrefs_gap_facts(facts: list[MetricFact]) -> dict[tuple[str, ...], list[MetricFact]]:
     grouped: dict[tuple[str, ...], list[MetricFact]] = {}
     for fact in facts:
-        if fact.source_connector != "ahrefs" or fact.name not in AHREFS_GAP_FACT_NAMES:
+        if not is_reviewable_ahrefs_gap_fact(fact):
             continue
         dimensions = fact.dimensions
         gap_type = dimensions.get("gap_type") or _ahrefs_gap_type_for_fact(fact.name)
@@ -810,6 +810,27 @@ def _group_ahrefs_gap_facts(facts: list[MetricFact]) -> dict[tuple[str, ...], li
             continue
         grouped.setdefault(key, []).append(fact)
     return dict(sorted(grouped.items(), key=lambda item: _ahrefs_group_sort_key(item)))
+
+
+def is_ahrefs_gap_fact(fact: MetricFact) -> bool:
+    return fact.source_connector == "ahrefs" and fact.name in AHREFS_GAP_FACT_NAMES
+
+
+def is_reviewable_ahrefs_gap_fact(fact: MetricFact) -> bool:
+    if not is_ahrefs_gap_fact(fact):
+        return False
+    dimensions = fact.dimensions
+    if not any(
+        dimensions.get(key)
+        for key in ("gap_type", "keyword", "source_url", "target_url", "competitor_domain")
+    ):
+        return False
+    return not _is_ahrefs_off_topic(
+        dimensions.get("keyword", ""),
+        dimensions.get("source_url", ""),
+        dimensions.get("target_url", ""),
+        _normalized_domain(dimensions.get("competitor_domain", "")),
+    )
 
 
 def _ahrefs_content_confirmation(

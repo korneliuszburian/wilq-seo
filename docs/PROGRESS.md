@@ -57,8 +57,11 @@ Stan produktu:
   `act_prepare_content_refresh_queue`, evidence IDs, GSC/WordPress
   confirmation fields and blocked traffic/authority/ranking claims. Runtime
   proof after stack restart shows `beczka` as WordPress-present but GSC-missing,
-  so WILQ does not pretend Ahrefs alone proves demand. Ahrefs remaining work is
-  freshness and stronger cross-source scoring before stronger decisions.
+  so WILQ does not pretend Ahrefs alone proves demand. Command Center daily
+  content decisions now use the same reviewable Ahrefs filter; off-topic raw
+  gaps such as `cuk.pl` / `prawo jazdy` no longer leak into first-screen
+  metric facts. Ahrefs remaining work is freshness and stronger cross-source
+  scoring before stronger decisions.
 - Content/GSC inventory matching no longer marks current Ekologus URLs as
   missing when wide WordPress inventory pushes public sitemap URLs past the old
   slice boundary. Live HTTP proof after stack restart:
