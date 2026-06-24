@@ -51,6 +51,11 @@ Stan produktu:
 - The same core pre-demo gate passed again after the mapping review handoff
   slice. Proof:
   `.local-lab/proof/pre-demo-gate-after-mapping-review-handoff.txt`.
+- The core pre-demo gate passed again after messy-prompt eval hardening and
+  runtime proofs. Proof:
+  `.local-lab/proof/pre-demo-gate-after-messy-evals.txt`. Coverage: stack
+  status, API health, live contract smoke, shared live schemas, dashboard route
+  smoke 13/13 and sequential core skill smokes.
 - Core demo path is currently usable in simulated/browser proof:
   Command Center -> Merchant -> Content Planner -> Ads Doctor -> GA4. Action
   copy and core navigation were hardened; Ads Doctor has the marketer-facing

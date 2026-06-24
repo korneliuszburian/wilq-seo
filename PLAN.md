@@ -186,6 +186,13 @@ Active demo work is narrow and depth-first.
   managed stack status, API health, live contract smoke, shared live schemas,
   dashboard API-backed route smoke 13/13 and sequential core skill smokes for
   daily, Merchant, Content, Ads, GA4, Localo and Ahrefs.
+- `ready`: Core pre-demo gate passed again after messy-prompt eval hardening
+  and runtime proofs. Proof:
+  `.local-lab/proof/pre-demo-gate-after-messy-evals.txt`; coverage: managed
+  stack status, API health, live contract smoke, shared live schemas, dashboard
+  API-backed route smoke 13/13 and sequential core skill smokes for daily,
+  Merchant, Content, Ads, GA4, Localo and Ahrefs. This is contract/demo
+  readiness proof, not real marketer UAT.
 
 ### B. Content Generation And New-Site Workflow
 
