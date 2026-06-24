@@ -215,10 +215,20 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "audience": _content_audience(primary_query),
                 "key_objections": _key_objections(primary_query),
                 "h1_direction": _h1_direction(primary_query, wordpress_match),
+                "seo_title_direction": _seo_title_direction(primary_query, wordpress_match),
+                "meta_description_direction": _meta_description_direction(
+                    primary_query,
+                    wordpress_match,
+                ),
                 "h2_direction": _h2_direction(primary_query),
                 "faq_direction": _faq_direction(primary_query),
+                "schema_direction": _schema_direction(primary_query),
                 "cta_direction": _cta_direction(primary_query),
                 "internal_link_direction": _internal_link_direction(primary_query),
+                "legal_review_notes": _legal_review_notes(primary_query),
+                "brand_voice_notes": _brand_voice_notes(primary_query),
+                "publication_readiness_status": "blocked_until_review",
+                "publication_blockers": _publication_blockers(),
                 "source_facts": _gsc_source_facts(page, page_facts, wordpress_match),
                 "missing_evidence": _gsc_missing_evidence(wordpress_match),
                 "forbidden_claims": CONTENT_BLOCKED_CLAIMS,
@@ -492,10 +502,17 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                 "audience": _content_audience(topic),
                 "key_objections": _key_objections(topic),
                 "h1_direction": _h1_direction(topic, False),
+                "seo_title_direction": _seo_title_direction(topic, False),
+                "meta_description_direction": _meta_description_direction(topic, False),
                 "h2_direction": _h2_direction(topic),
                 "faq_direction": _faq_direction(topic),
+                "schema_direction": _schema_direction(topic),
                 "cta_direction": _cta_direction(topic),
                 "internal_link_direction": _internal_link_direction(topic),
+                "legal_review_notes": _legal_review_notes(topic),
+                "brand_voice_notes": _brand_voice_notes(topic),
+                "publication_readiness_status": "blocked_until_review",
+                "publication_blockers": _publication_blockers(),
                 "source_facts": _ahrefs_source_facts(fact, topic),
                 "missing_evidence": [
                     "brak potwierdzenia popytu GSC dla tematu",
@@ -837,6 +854,26 @@ def _h1_direction(topic: str, wordpress_match: bool) -> str:
     return f"H1 roboczy dla `{topic}` dopiero po potwierdzeniu kanonicznego URL i braku duplikatu."
 
 
+def _seo_title_direction(topic: str, wordpress_match: bool) -> str:
+    action = "odświeżany URL" if wordpress_match else "kanoniczny URL po review"
+    return (
+        f"Title powinien zawierać intencję `{topic}`, jasno opisywać {action} "
+        "i nie obiecywać pozycji, leadów ani kompletnej zgodności prawnej."
+    )
+
+
+def _meta_description_direction(topic: str, wordpress_match: bool) -> str:
+    if wordpress_match:
+        return (
+            f"Meta description ma streścić odpowiedź na `{topic}` i kierować do "
+            "konsultacji Ekologus bez claimów wyniku."
+        )
+    return (
+        f"Meta description dla `{topic}` dopiero po potwierdzeniu inventory, "
+        "kanonicznego URL i decyzji create/merge."
+    )
+
+
 def _h2_direction(topic: str) -> list[str]:
     normalized = _normalize_text(topic)
     sections = [
@@ -877,6 +914,13 @@ def _faq_direction(topic: str) -> list[str]:
     ]
 
 
+def _schema_direction(topic: str) -> str:
+    return (
+        f"FAQ schema można rozważyć tylko dla pytań faktycznie użytych w treści "
+        f"o `{topic}` i po ręcznej kontroli zgodności odpowiedzi."
+    )
+
+
 def _cta_direction(topic: str) -> str:
     normalized = _normalize_text(topic)
     if "bdo" in normalized:
@@ -884,6 +928,37 @@ def _cta_direction(topic: str) -> str:
     if "zielony lad" in normalized or "esg" in normalized:
         return "CTA do rozmowy o wpływie regulacji na firmę, bez claimów revenue albo lead uplift."
     return "CTA do kontaktu z ekspertem Ekologus po ręcznym potwierdzeniu intencji tematu."
+
+
+def _legal_review_notes(topic: str) -> list[str]:
+    normalized = _normalize_text(topic)
+    notes = [
+        "potwierdź aktualność regulacji i zakres usługi z ekspertem Ekologus",
+        "nie obiecuj uniknięcia kar, leadów, pozycji ani pełnej zgodności bez audytu",
+    ]
+    if "bdo" in normalized:
+        notes.append("sprawdź, czy opis obowiązków BDO nie zastępuje indywidualnej konsultacji")
+    if "zielony lad" in normalized or "esg" in normalized:
+        notes.append("oddziel wyjaśnienie regulacji od interpretacji prawnej dla konkretnej firmy")
+    return notes
+
+
+def _brand_voice_notes(topic: str) -> list[str]:
+    return [
+        f"pisz konkretnie dla przedsiębiorcy szukającego odpowiedzi na `{topic}`",
+        "unikaj clickbaitowych obietnic i generycznego poradnikowego tonu",
+        "prowadź do konsultacji lub weryfikacji, gdy temat wymaga danych firmy",
+    ]
+
+
+def _publication_blockers() -> list[str]:
+    return [
+        "target_site_mapping_or_inventory_review",
+        "canonical_review",
+        "duplicate_or_cannibalization_check",
+        "legal_factual_review",
+        "human_confirm_before_wordpress_write",
+    ]
 
 
 def _internal_link_direction(topic: str) -> list[str]:

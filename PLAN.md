@@ -189,9 +189,13 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
 - `task`: Promote the duplicate/canonical gate into a stricter content
   ActionObject and skill eval decision rule so `create` is blocked or downgraded
   when refresh/merge is safer.
-- `task`: Define a publication-quality brief schema with title/meta, H1/H2/FAQ,
-  CTA, internal links, source facts, objection handling, legal/factual
-  validation, missing evidence and forbidden claims.
+- `ready`: Content ActionObject brief previews, reviewed draft previews,
+  dashboard cards and content-strategist context-pack expose publication-quality
+  review fields: title/meta/schema directions, legal/factual review notes,
+  brand voice notes, `publication_readiness_status` and publication blockers.
+  These fields improve handoff quality without unlocking staging, publish or
+  apply. Proof:
+  `.local-lab/proof/content-publication-brief/content-strategist-smoke.json`.
 - `task`: Add a draft-generation contract that produces reviewable Polish
   drafts only after the brief passes evidence and duplicate gates. The first
   implementation should be preview/review-only.

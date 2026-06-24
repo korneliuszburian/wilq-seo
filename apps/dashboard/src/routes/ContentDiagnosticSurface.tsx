@@ -170,10 +170,17 @@ type ContentBriefPreviewItem = {
   audience?: string | null;
   key_objections?: string[];
   h1_direction?: string | null;
+  seo_title_direction?: string | null;
+  meta_description_direction?: string | null;
   h2_direction?: string[];
   faq_direction?: string[];
+  schema_direction?: string | null;
   cta_direction?: string | null;
   internal_link_direction?: string[];
+  legal_review_notes?: string[];
+  brand_voice_notes?: string[];
+  publication_readiness_status?: string | null;
+  publication_blockers?: string[];
   source_facts?: string[];
   missing_evidence?: string[];
   forbidden_claims?: string[];
@@ -275,6 +282,10 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         {preview.content_angle ? <div>Kąt treści: {preview.content_angle}</div> : null}
         {preview.audience ? <div>Odbiorca: {preview.audience}</div> : null}
         {preview.h1_direction ? <div>H1: {preview.h1_direction}</div> : null}
+        {preview.seo_title_direction ? <div>Title: {preview.seo_title_direction}</div> : null}
+        {preview.meta_description_direction ? (
+          <div>Meta: {preview.meta_description_direction}</div>
+        ) : null}
         {preview.cta_direction ? <div>CTA: {preview.cta_direction}</div> : null}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -290,6 +301,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         <TraceLine label="Obiekcje" values={(preview.key_objections ?? []).slice(0, 3)} />
         <TraceLine label="H2" values={(preview.h2_direction ?? []).slice(0, 4)} />
         <TraceLine label="FAQ" values={(preview.faq_direction ?? []).slice(0, 4)} />
+        <TraceLine label="Schema" values={preview.schema_direction ? [preview.schema_direction] : []} />
         <TraceLine
           label="Strona docelowa"
           values={contentTargetSiteValues(preview)}
@@ -307,6 +319,30 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         <TraceLine
           label="Braki targetu"
           values={(preview.target_site_inventory_missing_fields ?? []).slice(0, 6)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Status publikacji"
+          values={
+            preview.publication_readiness_status
+              ? [contentPublicationReadinessLabel(preview.publication_readiness_status)]
+              : []
+          }
+          empty="brak"
+        />
+        <TraceLine
+          label="Blockery publikacji"
+          values={(preview.publication_blockers ?? []).slice(0, 6)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Review prawny"
+          values={(preview.legal_review_notes ?? []).slice(0, 4)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Ton marki"
+          values={(preview.brand_voice_notes ?? []).slice(0, 4)}
           empty="brak"
         />
         <TraceLine label="Linkowanie" values={(preview.internal_link_direction ?? []).slice(0, 3)} />
@@ -970,6 +1006,13 @@ function contentDraftGenerationStatusLabel(value: string) {
     blocked_pending_target_mapping: "zablokowany do mapowania targetu",
     blocked_missing_target_inventory: "zablokowany bez inventory targetu",
     blocked_until_content_review: "zablokowany do review treści"
+  };
+  return labels[value] ?? value;
+}
+
+function contentPublicationReadinessLabel(value: string) {
+  const labels: Record<string, string> = {
+    blocked_until_review: "zablokowane do review"
   };
   return labels[value] ?? value;
 }

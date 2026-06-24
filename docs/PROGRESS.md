@@ -79,6 +79,10 @@ Stan produktu:
   `draft_blockers`: `needs_review` target mapping stays
   `blocked_pending_target_mapping`, so a review event cannot look like staging
   or publish readiness.
+- Content brief previews now include publication-quality review fields:
+  title/meta/schema directions, legal/factual review notes, brand voice notes,
+  publication readiness and publication blockers. This improves the content
+  handoff while keeping staging, publish and apply blocked.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;

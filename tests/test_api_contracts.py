@@ -1508,6 +1508,14 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert "Inventory potwierdza target URL" in preview[
         "target_site_inventory_summary"
     ]
+    assert preview["seo_title_direction"]
+    assert preview["meta_description_direction"]
+    assert preview["schema_direction"]
+    assert preview["publication_readiness_status"] == "blocked_until_review"
+    assert "legal_factual_review" in preview["publication_blockers"]
+    assert "human_confirm_before_wordpress_write" in preview["publication_blockers"]
+    assert preview["legal_review_notes"]
+    assert preview["brand_voice_notes"]
     assert preview["wordpress_inventory_match"] == "present"
     assert preview["apply_allowed"] is False
     assert preview["api_mutation_ready"] is False
@@ -1865,11 +1873,18 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert brief_preview["content_angle"]
     assert brief_preview["audience"]
     assert brief_preview["h1_direction"]
+    assert brief_preview["seo_title_direction"]
+    assert brief_preview["meta_description_direction"]
     assert brief_preview["h2_direction"]
     assert brief_preview["faq_direction"]
+    assert brief_preview["schema_direction"]
     assert brief_preview["key_objections"]
     assert brief_preview["cta_direction"]
     assert brief_preview["internal_link_direction"]
+    assert brief_preview["publication_readiness_status"] == "blocked_until_review"
+    assert "legal_factual_review" in brief_preview["publication_blockers"]
+    assert brief_preview["legal_review_notes"]
+    assert brief_preview["brand_voice_notes"]
     assert brief_preview["source_facts"]
     assert brief_preview["missing_evidence"]
     assert "ranking guarantee" in brief_preview["forbidden_claims"]

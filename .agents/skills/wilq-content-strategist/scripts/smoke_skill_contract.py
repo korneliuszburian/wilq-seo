@@ -297,7 +297,11 @@ def validate_content_action_preview(
         "content_angle",
         "audience",
         "h1_direction",
+        "seo_title_direction",
+        "meta_description_direction",
+        "schema_direction",
         "cta_direction",
+        "publication_readiness_status",
     ]
     for field in required_string_fields:
         if not str(first_preview.get(field) or "").strip():
@@ -310,6 +314,9 @@ def validate_content_action_preview(
         "source_facts",
         "missing_evidence",
         "forbidden_claims",
+        "legal_review_notes",
+        "brand_voice_notes",
+        "publication_blockers",
     ]
     for field in required_list_fields:
         value = first_preview.get(field)
@@ -366,9 +373,16 @@ def validate_content_action_preview(
             "content_angle": preview.get("content_angle"),
             "audience": preview.get("audience"),
             "h1_direction": preview.get("h1_direction"),
+            "seo_title_direction": preview.get("seo_title_direction"),
+            "meta_description_direction": preview.get("meta_description_direction"),
             "h2_direction": (preview.get("h2_direction") or [])[:4],
             "faq_direction": (preview.get("faq_direction") or [])[:4],
+            "schema_direction": preview.get("schema_direction"),
             "cta_direction": preview.get("cta_direction"),
+            "publication_readiness_status": preview.get(
+                "publication_readiness_status"
+            ),
+            "publication_blockers": (preview.get("publication_blockers") or [])[:6],
             "source_facts": (preview.get("source_facts") or [])[:4],
             "missing_evidence": (preview.get("missing_evidence") or [])[:3],
             "forbidden_claims": (preview.get("forbidden_claims") or [])[:6],
