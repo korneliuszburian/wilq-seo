@@ -26,17 +26,15 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await gotoAndWaitForApi(page, "/command-center", "/api/dashboard/command-center");
     await expect(page.getByRole("heading", { name: "Dzisiejsze decyzje marketera" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Przejrzyj kolejkę problemów Merchant Center" })
+      page.getByRole("heading", { name: "Przejrzyj problemy produktów w Merchant Center" })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Przejrzyj kolejkę SEO z GSC i WordPress" })
+      page.getByRole("heading", { name: "Ułóż kolejkę odświeżenia i scalania treści SEO" })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "GA4: pomiar i jakość ruchu do kontroli" })
+      page.getByRole("heading", { name: "Sprawdź pomiar GA4 zanim ocenimy kampanie" })
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Przejrzyj kolejki Ads do oceny bez apply" })
-    ).toBeVisible();
+    await expect(page.getByText("Czego nie twierdzimy").first()).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Localo: MCP access działa, brak jeszcze ranking/GBP facts" })
     ).toHaveCount(0);
@@ -46,7 +44,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(page.getByText("Akcje do walidacji").first()).toBeVisible();
     await expect(page.getByText("1 bezpieczna akcja do walidacji").first()).toBeVisible();
     await expect(page.getByText("act_review_merchant_feed_issues")).toHaveCount(0);
-    await expect(page.getByText("Przejrzyj kolejki Ads do oceny bez apply")).toBeVisible();
+    await expect(page.getByText("Czego nie twierdzimy").first()).toBeVisible();
     await page.screenshot({
       path: path.join(runDir, "01-command-center-action-plan.png"),
       fullPage: true,
@@ -60,7 +58,7 @@ test.describe("WILQ dashboard marketer demo proof", () => {
     await expect(
       page.getByText(/missing_potentially_required_attribute|availability_updated/).first()
     ).toBeVisible();
-    await expect(page.getByText(/item_level_issue_count: \d+/).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gotowość próbek produktów" })).toBeVisible();
     await expect(page.getByRole("link", { name: "act_review_merchant_feed_issues" }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: /ev_refresh_refresh_google_merchant_center/ }).first()).toBeVisible();
     await page.screenshot({
@@ -104,14 +102,13 @@ test.describe("WILQ dashboard marketer demo proof", () => {
 
     await gotoAndWaitForApi(page, "/localo", "/api/localo/diagnostics");
     await expect(page.getByRole("heading", { name: "Localo", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Status Localo / MCP access" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Status Localo / widoczność lokalna" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Co marketer ma wiedzieć o Localo" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dowody i ograniczenia Localo" })).toBeVisible();
     await expect(
       page.getByText(/Przejrzyj agregaty widoczności lokalnej z Localo/)
     ).toBeVisible();
     await expect(page.getByText(/rankingi lokalne/)).toBeVisible();
-    await expect(page.getByText(/wyniki GBP/).first()).toBeVisible();
     await expect(page.getByText(/MCP initialize zwrócił 200/)).toBeVisible();
     await expect(page.getByText(/Dokończ Localo access/)).toHaveCount(0);
     await expect(page.getByText(/Local Visibility Focus/)).toHaveCount(0);

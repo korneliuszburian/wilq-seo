@@ -137,7 +137,8 @@ fresh API/browser proof shows a regression.
      velocity/reviewability.
 7. **Testing/release**
    - Ready: broad `scripts/verify.sh`, focused API/dashboard tests, skill
-     smokes/evals and hygiene/security gates exist.
+     smokes/evals, hygiene/security gates and live dashboard e2e smoke that
+     avoids exact assertions against changing Ekologus metric values.
    - Real gaps: fixture-vs-live smoke split, smaller pre-demo gate, production
      readiness checks and operational alerts for stale contracts, missing facts,
      unsafe apply attempts and secret leakage.
@@ -419,6 +420,9 @@ Finish these before claiming the Ekologus demo is done:
    - Live smoke checks may assert freshness, nonempty expected facts,
      ready/missing/blocked contract status and correct blocker rendering, not
      exact clicks, reviews, costs or ranking values.
+   - Dashboard live e2e smoke should assert marketer-facing decision sections,
+     safety copy, drilldown headings and absence of technical dumps, not stale
+     copy or changing live counts.
    - Production monitoring should alert on source failures, stale freshness,
      zero facts where a contract is expected, secret leaks or unsafe apply
      attempts. Those are operational alerts, not brittle CI assertions.

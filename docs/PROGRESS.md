@@ -180,6 +180,13 @@ Stan produktu:
   Content/GA4/Localo diagnostics for shape, evidence IDs, Polish language and
   ready/blocked state without asserting exact changing metric values. Live
   proof on 2026-06-23 returned `status=completed`, `errors=[]`.
+- Dashboard live e2e smoke now avoids brittle assertions against changing
+  Ekologus metric values and stale route copy. It checks marketer-facing
+  decision sections, blocked technical dumps, safety copy and drilldown
+  headings instead of exact live counts like products/clicks/issues. Focused
+  proof on 2026-06-24:
+  `pnpm --filter @wilq/dashboard test:e2e -- e2e/dashboard-api.spec.ts`
+  returned 14/14 passed.
 - Command Center now uses shared `daily_decisions` as the first-screen
   decision view-model. Live `/api/dashboard/command-center` returns Merchant,
   Content, GA4 and Ads daily decisions with Polish Codex prompts, evidence IDs,
