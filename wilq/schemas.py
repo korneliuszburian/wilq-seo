@@ -195,6 +195,7 @@ class AuditEvent(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
     summary: str
     evidence_ids: list[str] = Field(default_factory=list)
+    details: dict[str, Any] = Field(default_factory=dict)
     redacted: bool = True
 
 

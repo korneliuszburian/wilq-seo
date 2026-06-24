@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import Any
 from urllib.parse import urlparse
 
@@ -156,12 +156,19 @@ def content_payload_with_reviewed_wordpress_draft_previews(
     payload: dict[str, Any],
     *,
     review_event_summaries: Iterable[str],
+    review_event_details: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if payload.get("action_type") != CONTENT_REFRESH_ACTION_TYPE:
         return payload
     enriched_payload = dict(payload)
     enriched_payload.pop("wordpress_draft_payload_preview", None)
-    reviewed_candidate_ids = _reviewed_candidate_ids(review_event_summaries)
+    summary_list = list(review_event_summaries)
+    reviewed_candidate_ids = _reviewed_candidate_ids(summary_list)
+    detail_list = list(review_event_details or [])
+    mapping_reviews = {
+        **_reviewed_candidate_mapping_reviews(summary_list),
+        **_reviewed_candidate_mapping_reviews_from_details(detail_list),
+    }
     if not reviewed_candidate_ids:
         return enriched_payload
     brief_previews = [
@@ -170,7 +177,10 @@ def content_payload_with_reviewed_wordpress_draft_previews(
         if isinstance(item, dict)
     ]
     draft_previews = [
-        _wordpress_draft_payload_preview(item)
+        _wordpress_draft_payload_preview(
+            item,
+            mapping_review=mapping_reviews.get(str(item.get("candidate_id") or "")),
+        )
         for item in brief_previews
         if isinstance(item.get("candidate_id"), str)
         and item["candidate_id"] in reviewed_candidate_ids
@@ -331,7 +341,58 @@ def _reviewed_candidate_ids(review_event_summaries: Iterable[str]) -> set[str]:
     return candidate_ids
 
 
-def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
+def _reviewed_candidate_mapping_reviews(
+    review_event_summaries: Iterable[str],
+) -> dict[str, dict[str, str]]:
+    mapping_reviews: dict[str, dict[str, str]] = {}
+    for summary in review_event_summaries:
+        candidate_id = _review_summary_token(summary, "candidate")
+        if not candidate_id:
+            continue
+        outcome = _review_summary_token(summary, "mapping_outcome")
+        selected_url = _review_summary_token(summary, "selected_target_url")
+        notes = _review_summary_token(summary, "mapping_notes")
+        if outcome or selected_url or notes:
+            mapping_reviews[candidate_id] = {
+                "mapping_outcome": outcome,
+                "selected_target_url": selected_url,
+                "mapping_notes": notes,
+            }
+    return mapping_reviews
+
+
+def _reviewed_candidate_mapping_reviews_from_details(
+    review_event_details: Iterable[Mapping[str, Any]],
+) -> dict[str, dict[str, str]]:
+    mapping_reviews: dict[str, dict[str, str]] = {}
+    for details in review_event_details:
+        mapping_review = details.get("target_site_mapping_review")
+        if not isinstance(mapping_review, Mapping):
+            continue
+        candidate_id = mapping_review.get("candidate")
+        if not isinstance(candidate_id, str) or not candidate_id:
+            continue
+        mapping_reviews[candidate_id] = {
+            "mapping_outcome": str(mapping_review.get("mapping_outcome") or ""),
+            "selected_target_url": str(mapping_review.get("selected_target_url") or ""),
+            "mapping_notes": str(mapping_review.get("mapping_notes") or ""),
+        }
+    return mapping_reviews
+
+
+def _review_summary_token(summary: str, key: str) -> str:
+    marker = f"{key}:"
+    if marker not in summary:
+        return ""
+    fragment = summary.split(marker, 1)[1]
+    return fragment.split(",", 1)[0].split(".", 1)[0].strip()
+
+
+def _wordpress_draft_payload_preview(
+    preview: dict[str, Any],
+    *,
+    mapping_review: dict[str, str] | None = None,
+) -> dict[str, Any]:
     topic = str(preview.get("topic") or "Brief treści")
     mode = str(preview.get("mode") or "review")
     source_type = str(preview.get("source_type") or "unknown")
@@ -437,6 +498,15 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         )
         if isinstance(preview.get("target_site_mapping_review_candidate_urls"), list)
         else [],
+        "target_site_mapping_review_recorded_outcome": (
+            (mapping_review or {}).get("mapping_outcome") or None
+        ),
+        "target_site_mapping_review_selected_url": (
+            (mapping_review or {}).get("selected_target_url") or None
+        ),
+        "target_site_mapping_review_notes": (
+            (mapping_review or {}).get("mapping_notes") or None
+        ),
         "target_site_review_requirements": _target_site_review_requirements(
             preview.get("target_site_migration_status")
             if isinstance(preview.get("target_site_migration_status"), str)

@@ -88,6 +88,7 @@ SAFE_IDENTIFIER_KEYS = {
     "source_id",
     "source_url",
     "source_site_host",
+    "selected_target_url",
     "source_metric_names",
     "supported_actions",
     "target_site_adaptation_status",

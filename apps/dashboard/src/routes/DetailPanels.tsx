@@ -720,6 +720,13 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
             stringValue(item.target_site_mapping_review_summary, "brak")}
         </div>
         <div>
+          Zapis review mapowania:{" "}
+          {stringValue(item.target_site_mapping_review_recorded_outcome, "brak")}
+          {item.target_site_mapping_review_selected_url
+            ? ` -> ${stringValue(item.target_site_mapping_review_selected_url)}`
+            : ""}
+        </div>
+        <div>
           Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
           {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
         </div>

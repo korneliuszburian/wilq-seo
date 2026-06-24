@@ -217,6 +217,15 @@ Stan produktu:
   `.local-lab/proof/content-mapping-review/action-mapping-review-contract.json`
   and
   `.local-lab/proof/content-mapping-review/content-strategist-contract-smoke.json`.
+- Target-site mapping review can now be recorded through the existing
+  `/api/actions/act_prepare_content_refresh_queue/review` audit path. The
+  selected target URL is stored in structured `AuditEvent.details`, the human
+  summary masks the URL as `[stored in audit details]`, and reviewed draft
+  previews surface the recorded outcome/selected URL while keeping
+  `apply_allowed=false`, `api_mutation_ready=false` and draft blockers active.
+  Proof:
+  `.local-lab/proof/content-mapping-recording/live-review-recording.json` and
+  `.local-lab/proof/dashboard/content-mapping-recording/action-detail-mapping-recording.txt`.
 
 ## Active Gaps
 
@@ -247,8 +256,8 @@ Stan produktu:
 3. If content depth is next, continue from the existing source/target,
    duplicate/canonical, ActionObject migration status, target-site review
    requirements, typed intent, alternative candidate URLs, mapping-review
-   statuses and the review-only mapping contract toward an audited mapping
-   recording path, then draft/staging handoff without publish/apply claims.
+   statuses, the review-only mapping contract and audited mapping record
+   toward the next draft/staging readiness gate without publish/apply claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

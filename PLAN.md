@@ -240,9 +240,18 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   required fields and blocked outputs. Required validation includes
   `target_site_mapping_review`; queue steps include `review_target_site_mapping`.
   Live proof shows `apply_allowed=false` and `api_mutation_ready=false`.
-- `task`: Add the actual review-only mapping recording endpoint/UI path so an
-  operator can confirm, reject or override exact/alternative dev-site mappings
-  with audit.
+- `ready`: Existing `/api/actions/act_prepare_content_refresh_queue/review`
+  now records target-site mapping review through structured `AuditEvent.details`
+  instead of unsafe free-text summary parsing. The reviewed WordPress draft
+  preview exposes `target_site_mapping_review_recorded_outcome`,
+  `target_site_mapping_review_selected_url` and notes while keeping
+  `apply_allowed=false`, `api_mutation_ready=false` and target/canonical/
+  duplicate blockers active. Live proof recorded a BDO alternative mapping and
+  showed it in Action detail without staging or publish.
+- `task`: Use the audited mapping review record as the input for the next
+  draft/staging readiness gate; do not unlock staging/publish until target
+  mapping, canonical, duplicate/cannibalization, legal/factual and human checks
+  all pass through typed contracts.
 - `ready`: Content ActionObject payload, reviewed draft preview and
   content-strategist context-pack preserve target-site migration candidate,
   status and summary fields. Current old-site rows are `needs_review`, so draft
@@ -544,6 +553,10 @@ Use these rules before every implementation slice:
   `.local-lab/proof/content-mapping-review/action-mapping-review-contract.json`
   and
   `.local-lab/proof/content-mapping-review/content-strategist-contract-smoke.json`.
+- [x] Record a review-only target-site mapping decision through the existing
+  Action review audit path and surface it in reviewed draft preview. Proof:
+  `.local-lab/proof/content-mapping-recording/live-review-recording.json` and
+  `.local-lab/proof/dashboard/content-mapping-recording/action-detail-mapping-recording.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

@@ -1920,6 +1920,9 @@ def test_content_brief_candidate_review_persists_audit_event(
     action = action_response.json()
     candidate = action["payload"]["content_brief_preview"][0]
     candidate_id = candidate["candidate_id"]
+    selected_target_url = (
+        candidate.get("target_site_mapping_review_candidate_urls") or [candidate["target_url"]]
+    )[0]
 
     review_response = client.post(
         "/api/actions/act_prepare_content_refresh_queue/review",
@@ -1931,6 +1934,9 @@ def test_content_brief_candidate_review_persists_audit_event(
                 f"candidate:{candidate_id}",
                 f"source_type:{candidate['source_type']}",
                 f"mode:{candidate['mode']}",
+                "mapping_outcome:confirm_alternative_candidate",
+                f"selected_target_url:{selected_target_url}",
+                "mapping_notes:operator wybral target do dalszego review",
             ],
             "blockers": [
                 "payload_apply_allowed_false",
@@ -1947,6 +1953,14 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert result["review_gate"]["apply_allowed"] is False
     assert result["review_gate"]["last_review_outcome"] == "approved_for_prepare"
     assert f"candidate:{candidate_id}" in result["audit_event"]["summary"]
+    assert "mapping_outcome:confirm_alternative_candidate" in result["audit_event"]["summary"]
+    assert "selected_target_url:[stored in audit details]" in result["audit_event"]["summary"]
+    assert result["audit_event"]["details"]["target_site_mapping_review"] == {
+        "candidate": candidate_id,
+        "mapping_outcome": "confirm_alternative_candidate",
+        "selected_target_url": selected_target_url,
+        "mapping_notes": "operator wybral target do dalszego review",
+    }
     assert "Ten zapis nie wykonuje apply" in result["audit_event"]["summary"]
 
     audit_response = client.get(
@@ -1956,6 +1970,9 @@ def test_content_brief_candidate_review_persists_audit_event(
     persisted_audit = audit_response.json()[0]
     assert persisted_audit["event_type"] == "human_review_approved_for_prepare"
     assert f"candidate:{candidate_id}" in persisted_audit["summary"]
+    assert persisted_audit["details"]["target_site_mapping_review"]["selected_target_url"] == (
+        selected_target_url
+    )
 
     reviewed_action_response = client.get("/api/actions/act_prepare_content_refresh_queue")
     assert reviewed_action_response.status_code == 200
@@ -1972,6 +1989,14 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["apply_allowed"] is False
     assert draft_preview["api_mutation_ready"] is False
     assert draft_preview["destructive"] is False
+    assert (
+        draft_preview["target_site_mapping_review_recorded_outcome"]
+        == "confirm_alternative_candidate"
+    )
+    assert draft_preview["target_site_mapping_review_selected_url"] == selected_target_url
+    assert draft_preview["target_site_mapping_review_notes"] == (
+        "operator wybral target do dalszego review"
+    )
     assert draft_preview["draft_generation_status"] in {
         "blocked_pending_target_mapping",
         "blocked_pending_canonical_duplicate_review",

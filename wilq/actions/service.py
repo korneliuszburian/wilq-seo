@@ -1718,6 +1718,7 @@ def record_action_review(
         actor=request.reviewed_by,
         summary=_action_review_summary(request),
         evidence_ids=action.evidence_ids,
+        details=_action_review_details(request),
     )
     action.audit_events = [audit, *action.audit_events]
     action.review_gate = _action_review_gate(action)
@@ -1996,6 +1997,11 @@ def _with_review_gate(
             for event in action.audit_events
             if event.event_type == "human_review_approved_for_prepare"
         ),
+        review_event_details=(
+            event.details
+            for event in action.audit_events
+            if event.event_type == "human_review_approved_for_prepare"
+        ),
     )
     action.review_gate = _action_review_gate(action, mutation_audits)
     return action
@@ -2162,11 +2168,54 @@ def _action_review_summary(request: ActionReviewRequest) -> str:
         f"Notatka: {request.notes}",
     ]
     if request.checked_items:
-        parts.append(f"Sprawdzone: {', '.join(request.checked_items[:8])}.")
+        parts.append(
+            "Sprawdzone: "
+            f"{', '.join(_review_summary_item(item) for item in request.checked_items[:8])}."
+        )
     if request.blockers:
         parts.append(f"Blockery: {', '.join(request.blockers[:8])}.")
     parts.append("Ten zapis nie wykonuje apply ani mutacji vendorów.")
     return " ".join(parts)
+
+
+def _review_summary_item(item: str) -> str:
+    if item.startswith("selected_target_url:"):
+        return "selected_target_url:[stored in audit details]"
+    return item
+
+
+def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
+    details: dict[str, Any] = {
+        "review_outcome": request.outcome,
+        "reviewed_by": request.reviewed_by,
+        "checked_items": request.checked_items,
+        "blockers": request.blockers,
+    }
+    mapping_review = _mapping_review_details_from_checked_items(request.checked_items)
+    if mapping_review:
+        details["target_site_mapping_review"] = mapping_review
+    return details
+
+
+def _mapping_review_details_from_checked_items(
+    checked_items: list[str],
+) -> dict[str, str]:
+    tokens: dict[str, str] = {}
+    allowed_keys = {
+        "candidate",
+        "mapping_outcome",
+        "selected_target_url",
+        "mapping_notes",
+    }
+    for item in checked_items:
+        if ":" not in item:
+            continue
+        key, value = item.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        if key in allowed_keys and value:
+            tokens[key] = value
+    return tokens
 
 
 def _review_outcome_label(outcome: str) -> str:
