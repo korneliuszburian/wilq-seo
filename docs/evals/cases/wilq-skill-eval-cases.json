@@ -204,17 +204,35 @@
   {
     "skill": "wilq-localo-operator",
     "surface_path": "/localo",
-    "task_pl": "Oceń aktualne Localo evidence dla Ekologus: pokaż, że MCP access działa, ale jasno zablokuj ranking, GBP, konkurencję i local visibility uplift, jeśli WILQ nie ma takich facts.",
+    "task_pl": "Oceń aktualne Localo evidence dla Ekologus: pokaż MCP access oraz read-only agregaty place_inventory, local_rankings, gbp_visibility, competitor_visibility i reviews, jeśli WILQ API je zwraca. Jasno oddziel review agregatów od brakującego local_tasks contract, GBP write i local visibility uplift; nie twierdź, że zadania lokalne, write path albo wzrost widoczności są odblokowane.",
     "expected_connectors": ["localo"],
     "expected_terms_pl": [
       "Localo",
       "mcp_initialize_status",
       "act_review_localo_visibility_facts",
       "local_visibility_review_preview_v1",
+      "read_contract_statuses",
+      "place_inventory",
+      "local_rankings",
+      "gbp_visibility",
+      "competitor_visibility",
+      "reviews",
+      "local_tasks",
+      "metric_snapshot",
+      "localo_avg_visibility_current",
+      "localo_gbp_impressions_total",
+      "localo_reviews_count",
+      "apply_allowed",
+      "api_mutation_ready",
       "ranking",
       "GBP",
       "local visibility",
       "blocked claims"
+    ],
+    "blocked_claim_terms": [
+      "local task completed",
+      "GBP write",
+      "local visibility uplift"
     ],
     "expected_action_ids": ["act_review_localo_visibility_facts"],
     "expected_validated_action_ids": ["act_review_localo_visibility_facts"]

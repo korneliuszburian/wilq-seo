@@ -66,6 +66,9 @@ Stan produktu:
   `operator_summary.target_site_migration_map`, mapping-review gate markers and
   blocked staging/ranking outputs, so the eval cannot pass on generic
   target-context wording alone.
+- Localo eval hardening now matches current live readiness: read-only place,
+  rankings, GBP, competitor and review aggregates are allowed for review, while
+  `local_tasks`, GBP write and local visibility uplift remain blocked.
 
 ## Active Gaps
 

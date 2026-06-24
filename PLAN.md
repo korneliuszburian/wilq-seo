@@ -172,6 +172,10 @@ Active demo work is narrow and depth-first.
   `operator_summary.target_site_migration_map`, mapping-review status, next
   required gate and blocked staging/ranking outputs. This prevents the eval
   from passing with only the older generic target-site context wording.
+- `ready`: The Localo eval case now matches current live Localo readiness:
+  read-only place, rankings, GBP, competitor and review aggregates are allowed
+  for review, while local tasks, GBP write and local visibility uplift remain
+  blocked.
 
 ### B. Content Generation And New-Site Workflow
 
@@ -679,6 +683,11 @@ Use these rules before every implementation slice:
   outputs. Proof: `rtk uv run python -m json.tool
   docs/evals/cases/wilq-skill-eval-cases.json >/dev/null` and
   `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q`.
+- [x] Refresh the `wilq-localo-operator` eval case so it no longer treats
+  Localo as access-only proof. It now expects read-only aggregate review
+  contracts and keeps local tasks/write/uplift blocked. Proof:
+  `rtk uv run pytest tests/test_codex_skill_eval_cases.py -q` and
+  `.local-lab/proof/localo-eval-case-refresh-smoke.json`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

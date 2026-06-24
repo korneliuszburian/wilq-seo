@@ -261,6 +261,19 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
             "terms": {
                 "Localo",
                 "mcp_initialize_status",
+                "read_contract_statuses",
+                "place_inventory",
+                "local_rankings",
+                "gbp_visibility",
+                "competitor_visibility",
+                "reviews",
+                "local_tasks",
+                "metric_snapshot",
+                "localo_avg_visibility_current",
+                "localo_gbp_impressions_total",
+                "localo_reviews_count",
+                "apply_allowed",
+                "api_mutation_ready",
                 "ranking",
                 "GBP",
                 "local visibility",
@@ -442,6 +455,26 @@ def test_route_specific_codex_eval_cases_define_surface_markers() -> None:
     assert "google_search_console" in ahrefs_case["forbidden_connectors"]
     assert "wordpress_ekologus" in ahrefs_case["forbidden_connectors"]
     assert "act_prepare_content_refresh_queue" in ahrefs_case["forbidden_action_ids"]
+
+    localo_case = cases["wilq-localo-operator"]
+    for term in (
+        "place_inventory",
+        "local_rankings",
+        "gbp_visibility",
+        "competitor_visibility",
+        "reviews",
+        "local_tasks",
+        "localo_avg_visibility_current",
+        "localo_gbp_impressions_total",
+        "localo_reviews_count",
+    ):
+        assert term in localo_case["expected_terms_pl"]
+    for term in (
+        "local task completed",
+        "GBP write",
+        "local visibility uplift",
+    ):
+        assert term in localo_case["blocked_claim_terms"]
 
     merchant_case = cases["wilq-merchant-feed-operator"]
     assert "product ROAS" in merchant_case["blocked_claim_terms"]
