@@ -82,6 +82,7 @@ export function Ga4DiagnosticSurface() {
           <MetricTile label="Grupy ruchu" value={data.landing_group_count} />
           <MetricTile label="Problemy pomiaru" value={data.operator_summary.measurement_issue_count} />
           <MetricTile label="Brak WP" value={data.operator_summary.wordpress_missing_count} />
+          <MetricTile label="Blokady decyzji" value={data.decision_blocker_count} />
         </div>
       </div>
 
@@ -222,9 +223,7 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
     .filter((decision): decision is Ga4DecisionItem => Boolean(decision));
   const conversionReadiness = data.conversion_readiness_contract;
   const trackingSection = data.sections.find((section) => section.id === "ga4_tracking_readiness");
-  const actionIds = summary.action_ids.length
-    ? summary.action_ids
-    : ["act_review_ga4_tracking_quality"];
+  const actionIds = summary.action_ids;
 
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -302,12 +301,14 @@ function Ga4OperatorSummary({ data }: { data: Ga4DiagnosticsResponse }) {
               values={ga4BlockedClaimLabels(summary.blocked_claims)}
             />
           </div>
-          <a
-            href={`/actions/${actionIds[0]}`}
-            className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
-          >
-            Waliduj review GA4
-          </a>
+          {actionIds.length > 0 ? (
+            <a
+              href={`/actions/${actionIds[0]}`}
+              className="mt-4 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
+            >
+              Waliduj review GA4
+            </a>
+          ) : null}
         </div>
       </div>
     </section>

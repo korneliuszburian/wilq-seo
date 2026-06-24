@@ -876,4 +876,6 @@ section/contract blockers. Focused proof passed: GA4 API pytest subset,
 shared-schema live contracts, dashboard route tests for Ads/Merchant/GA4/Ahrefs
 and dashboard typecheck. Continue from the remaining domain workflow queue:
 scan other marketer routes for local product-decision rebuilding, then proceed
-to skill/Codex workflow audit.
+to skill/Codex workflow audit. Follow-up same day: GA4 route fallback to
+`act_review_ga4_tracking_quality` was removed and GA4 now displays
+`decision_blocker_count` from the API.

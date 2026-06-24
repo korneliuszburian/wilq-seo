@@ -59,8 +59,15 @@ Stan produktu:
   10 passed; `pnpm --filter @wilq/dashboard exec vitest run
   src/routes/App.test.tsx -t 'ads doctor route|merchant route|content-planner
   route|ga4 and gsc routes|ahrefs route'` returned 4 passed. Remaining domain
-  workflow audit queue: check whether any other marketer route still rebuilds
-  product decisions locally instead of consuming typed API summaries.
+  workflow scan found and fixed one additional route-local fallback: GA4 no
+  longer invents `act_review_ga4_tracking_quality` when the API omits action
+  IDs and now shows `decision_blocker_count` as a dashboard metric. Focused
+  proof for that follow-up: `pnpm --filter @wilq/dashboard exec vitest run
+  src/routes/App.test.tsx -t 'ga4 and gsc routes'` returned 1 passed,
+  dashboard typecheck passed and shared-schema live contracts returned 10
+  passed. Remaining domain workflow audit queue: check whether any other
+  marketer route still rebuilds product decisions locally instead of consuming
+  typed API summaries.
 - Final A-Z dashboard route audit moved forward on 2026-06-24. Current
   checklist item completed: dashboard API-backed smoke for marketer routes.
   Previous suspicious failures were reclassified with current proof:
