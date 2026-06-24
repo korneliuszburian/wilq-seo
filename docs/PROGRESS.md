@@ -41,180 +41,60 @@ Stan produktu:
 
 ## Latest Important Facts
 
-- Full overnight execution map was added on 2026-06-24 in `PLAN.md`. Use it as
-  the canonical self-contained plan for unattended continuation and `/goal`
-  reset; keep this file as the short recovery ledger.
-- Content target-site adversarial eval was verified through real
-  non-interactive Codex on 2026-06-24. Proof:
-  `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`.
-  Result passed with `operator_usefulness_score=4`, API usage, Polish output,
-  evidence IDs, source connectors, canonical/duplicate/target-context wording
-  and blocked claims for `ekologus.dev.proudsite.pl source evidence`,
-  WordPress publish, duplicate-free guarantee, ranking guarantee, lead uplift
-  and revenue impact. This is guardrail proof, not marketer UAT.
-- Ads overclaim adversarial eval was verified through real non-interactive
-  Codex on 2026-06-24. Proof:
-  `.local-lab/evals/codex-skill/20260624T125820Z/wilq-ads-doctor/result.json`.
-  Result passed with `operator_usefulness_score=5`, live Google Ads evidence,
-  four validated review-only ActionObjects and explicit blocks for CPA, ROAS,
-  search-term waste, wasted budget, budget scaling, recommendation apply,
-  targeting/apply and negative keyword apply. This proves Ads review guidance,
-  not optimizer/apply readiness.
-- Merchant occurrences-not-unique-products eval was verified through real
-  non-interactive Codex on 2026-06-24. Proof:
-  `.local-lab/evals/codex-skill/20260624T132303Z/wilq-merchant-feed-operator/result.json`.
-  Result passed with `operator_usefulness_score=5`, live Merchant/Ads evidence,
-  `decision_queue` as the final review queue, explicit
-  `reported_issue_occurrences` semantics, samples not treated as a full SKU
-  queue and blocked claims for product ROAS, product revenue recovery, price
-  change impact, approval restored and feed write. This proves Merchant review
-  safety, not feed repair/apply readiness.
-- GA4 measurement-boundary eval was verified through real non-interactive Codex
-  on 2026-06-24. Proof:
-  `.local-lab/evals/codex-skill/20260624T132845Z/wilq-ga4-analyst/result.json`.
-  Result passed with `operator_usefulness_score=5`, live GA4 evidence,
-  `fix_measurement` for `(not set)` rows, explicit campaign/page judgment block,
-  validated `act_review_ga4_tracking_quality`, no invented
-  `review_landing_mapping` decision when API did not return one and blocked
-  claims for GA4 write, ROAS, attribution verdict, conversion drop, conversion
-  rate, profitability, revenue and tracking fixed. This proves GA4 review
-  safety, not write/tracking-repair/performance verdict readiness.
-- Localo read-only visibility eval was verified through real non-interactive
-  Codex on 2026-06-24. Proof:
-  `.local-lab/evals/codex-skill/20260624T133326Z/wilq-localo-operator/result.json`.
-  Result passed with `operator_usefulness_score=5`, `mcp_initialize_status=200`,
-  `access_ready`, evidence IDs, `act_review_localo_visibility_facts`,
-  `local_visibility_review_preview_v1` and no safety findings. Current Localo
-  truth: WILQ has read-only aggregate facts for local rankings, GBP,
-  competitor visibility and reviews; it is not just OAuth proof anymore. Local
-  tasks, GBP write, write/apply automation and local visibility uplift remain
-  blocked.
-- Content duplicate/canonical gate slice completed on 2026-06-24. Content
-  decisions now expose `inventory_gate_status`, `canonical_gate_status`,
-  `duplicate_gate_status` and `content_gate_summary`; `/content-planner` renders
-  marketer-facing `Inventory gate`, `Canonical` and `Duplikaty` chips. Proof:
-  focused content API tests passed, dashboard typecheck passed, dashboard route
-  tests 35 passed, live `/api/content/diagnostics` showed the new fields, skill
-  smoke passed, and browser snapshot
-  `.local-lab/proof/dashboard/content-target-gate/content-planner-gates.txt`
-  shows create blocked before duplicate control.
-- Final core pre-demo gate passed after the content gate change on 2026-06-24:
+- `PLAN.md` is the canonical self-contained overnight plan and `/goal` reset
+  prompt. Keep this file short and current.
+- Solid Ekologus demo gate passed on 2026-06-24:
   `scripts/pre_demo_gate.sh --core-skills` completed managed stack status, API
-  health, live contract smoke, shared live schemas, dashboard API-backed route
-  smoke 13/13 and sequential core skill smokes.
+  health, live contract smoke, shared live schemas, dashboard route smoke 13/13
+  and sequential core skill smokes. This is contract/demo readiness, not
+  marketer UAT or full BDOS/apply proof.
+- Content Planner now exposes source/target context and
+  `inventory_gate_status`, `canonical_gate_status`, `duplicate_gate_status`,
+  `content_gate_summary`. Browser proof:
+  `.local-lab/proof/dashboard/content-target-gate/content-planner-gates.txt`.
+- Fresh non-interactive skill eval proofs from 2026-06-24:
+  content target-site boundary score 4
+  `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
+  Ads overclaim boundary score 5
+  `.local-lab/evals/codex-skill/20260624T125820Z/wilq-ads-doctor/result.json`;
+  Merchant occurrence semantics score 5
+  `.local-lab/evals/codex-skill/20260624T132303Z/wilq-merchant-feed-operator/result.json`;
+  GA4 measurement boundary score 5
+  `.local-lab/evals/codex-skill/20260624T132845Z/wilq-ga4-analyst/result.json`;
+  Localo read-only visibility score 5
+  `.local-lab/evals/codex-skill/20260624T133326Z/wilq-localo-operator/result.json`.
+- Current Localo truth: WILQ has read-only aggregate facts for local rankings,
+  GBP, competitor visibility and reviews. Localo is not merely OAuth proof
+  anymore, but local tasks, GBP write, write/apply automation and local
+  visibility uplift remain blocked.
 - Short marketer UAT script is ready at
-  `docs/handoffs/2026-06-24-marketer-uat-script.md`. It tests whether a marketer
-  can move through Command Center -> Merchant -> Content Planner -> Ads Doctor
-  -> GA4, understand blockers and identify the next safe step. The real UAT
-  result is not collected yet.
-- Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
-  stack was ready, browser snapshots for `/command-center`, `/merchant`,
-  `/content-planner`, `/ads-doctor`, `/ga4` and
-  `/actions/act_prepare_content_refresh_queue` are saved under
-  `.local-lab/proof/dashboard/marketer-demo-walkthrough/`. Ready findings:
-  Command Center gives the narrow demo path, Merchant correctly separates
-  reported issue occurrences from unique products/feed writes, Content Planner
-  shows concrete GSC/WP-backed refresh/merge briefs, Ads blocks CPA/ROAS/
-  wasted-budget/apply overclaims, and GA4 treats `(not set)` as measurement
-  quality rather than campaign failure. Hardening fixed in this slice: Action
-  detail no longer shows marketer-facing `Dry-run preview`, `Goal 001 live
-  proof` or raw context-pack proof notes; it now renders Polish podgląd/review
-  summaries while preserving audit event IDs. Focused proof: dashboard route
-  tests 35 passed, dashboard typecheck passed, targeted Playwright action-detail
-  smoke passed, `git diff --check` clean, and refreshed browser snapshot
-  `actions__act_prepare_content_refresh_queue_after_copy_fix.txt` shows the new
-  copy.
-- Content decision target-context slice completed on 2026-06-24. Typed backend
-  and shared schemas now expose `source_url`, `source_site_host`,
-  `target_site_url`, `target_site_host` and
-  `target_site_adaptation_status` on content decisions, and Content Planner
-  cards show source/target context. Live `/api/content/diagnostics` after
-  managed stack restart showed 4 content decisions with target context. Focused
-  proof: content API pytest subset 2 passed, shared schema tests passed,
-  dashboard typecheck passed, dashboard route-focused tests passed 35 tests and
-  live API check passed.
-- External second-opinion synthesis was captured on 2026-06-24 in
-  `docs/audits/002-2026-06-24-second-opinion-synthesis.md`. Consensus: WILQ is
-  a real API-first review cockpit and content-planning assistant, not a prompt
-  pack, but it must not be overclaimed as full BDOS/optimizer/write automation.
-  The highest-value direction remains one strong evidence-backed content
-  workflow for Ekologus: source evidence -> target-site context -> inventory/
-  canonical/duplicate check -> structured brief/draft plan -> review
-  ActionObject -> later staging/publish/measurement loop.
-- Solid Ekologus demo gate passed on 2026-06-24. `scripts/pre_demo_gate.sh`
-  completed managed stack status, API health, live contract smoke, shared live
-  schemas, dashboard API-backed route smoke 13/13 and sequential core WILQ skill
-  smokes. Treat this as contract/demo readiness, not marketer UAT or proof of
-  full BDOS/apply automation.
-- Skill/reference/eval baseline is current-demo ready. `scripts/skill_hygiene_check.py`
-  passed, manual semantic review of 12 `references/output-contract.md` files
-  found contract/output guidance rather than workaround prose, and the eval
-  harness requires `decision_quality`. Content strategist proof now includes
-  `content_brief_preview_v1`, H1/H2/FAQ fields and non-interactive eval score 5.
-  The content eval case now also guards the new-site boundary:
-  `ekologus.dev.proudsite.pl` must be treated as target context, not source
-  evidence, and publish/ranking/lead/revenue/duplicate-free claims stay blocked
-  without validated write/apply evidence. Reopen this area only with a concrete
-  skill that passes while making a bad or unsupported decision.
+  `docs/handoffs/2026-06-24-marketer-uat-script.md`; real marketer feedback is
+  not collected yet.
 
 ## Active Gaps
 
-1. **Content workflow depth**
-   - Must-have direction: old/current Ekologus evidence -> target context for
-     `ekologus.dev.proudsite.pl` -> inventory/canonical/duplicate gate ->
-     Polish brief or draft plan -> review ActionObject.
-   - Current status: content decisions and ActionObject previews expose useful
-     source/target and H1/H2/FAQ/CTA/source-fact fields, but full staging
-     handoff, publishing and post-publication measurement remain deferred.
-   - Verified now: live content diagnostics and non-interactive skill output
-     satisfy the target-site boundary eval contract; content decisions expose
-     inventory/canonical/duplicate gate fields.
-   - Next risk to test: real marketer UAT and whether the content gate makes
-     the next action clearer without developer explanation.
-
-2. **Marketer UAT and route usefulness**
-   - Browser proof shows the narrow demo path is usable, but no real marketer
-     UAT has yet proved that the screens save time or improve decisions.
-   - Next audit should ask: can a marketer choose one content action, one
-     Merchant blocker, one Ads review and one GA4 measurement issue without a
-     developer explaining the UI?
-
-3. **Source contracts still blocking deeper claims**
-   - Ads: target CPA/ROAS, Keyword Planner approval/forecast, change-history
-     impact and write/apply safety remain blockers for optimizer claims.
-   - Merchant: product IDs/SKU, true unique-product rows, historical price
-     changes and before/after performance windows remain blockers for product
-     ROAS, price-impact, approval recovery and feed-repair claims.
-   - GA4: conversion/revenue/attribution confidence remains a blocker for ROAS,
-     profitability and funnel verdicts.
-   - Localo: access/read evidence must not be treated as tasks, writes or uplift
-     unless WILQ API exposes those contracts.
-
-4. **Dashboard language and information hierarchy**
-   - Fixed this slice: Action detail no longer leads with dry-run/proof-run
-     wording.
-   - Remaining hardening: primary nav still says `ActionObjecty`, some raw IDs
-     and technical labels remain visible in drilldowns, and some route modules
-     are large. Only change these with browser proof that they block demo
-     comprehension.
-
-5. **BDOS / agency-grade future**
-   - Deferred until Ekologus works deeply: full Ads apply path, budget optimizer,
-     Demand Gen automation, social publishing apply, Merchant feed writes,
-     Localo write/uplift automation, multi-client permissions, production auth,
-     deployment/monitoring and full external knowledge compiler.
+- Real marketer UAT has not been collected. Browser/smoke/eval proof does not
+  prove that the marketer saves time or knows what to do without explanation.
+- Content workflow still lacks full staging handoff, publishing and
+  post-publication measurement loop for `ekologus.dev.proudsite.pl`.
+- Source contracts still block deeper claims: Ads optimizer/apply, Merchant
+  feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
+  Localo tasks/write/uplift and full BDOS/agency-grade automation.
+- Dashboard still has marketer-facing technical language in some places,
+  especially `ActionObjecty`, raw IDs and technical drilldowns. Change only
+  with browser proof that it blocks demo comprehension.
 
 ## Next Best Queue
 
-1. If continuing eval hardening, pick Merchant occurrences-not-unique-products,
-   GA4 `(not set)` measurement blocker or Localo access-not-ranking. Ads
-   no-CPA/ROAS overclaim proof is current.
-2. If demo UX is the next priority, change only one confirmed blocker at a time:
-   likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
-   drilldown IDs behind technical details.
-3. Prepare or run the short marketer UAT script: Command Center -> Merchant ->
+1. Run or defer the short marketer UAT script: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record whether the marketer knew
    what to do next and where they got confused.
+2. If demo UX is the next priority, change one confirmed blocker at a time:
+   likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
+   drilldown IDs behind technical details.
+3. If content depth is next, continue from the existing source/target and
+   duplicate/canonical gate toward draft/staging handoff, without publish/apply
+   claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.
