@@ -89,9 +89,9 @@ Still incomplete:
 - The new site `ekologus.dev.proudsite.pl` is target context, not a complete
   source inventory or staging publish path.
 - Content has typed source/target/gate fields and now exposes target-site
-  migration candidates and mapping status in the operator summary, but it still
-  lacks a confirmed full migration map, staging handoff and post-publication
-  loop.
+  migration candidates, mapping status, blocked staging handoff and a blocked
+  post-publication measurement plan, but it still lacks a confirmed full
+  migration map, actual staging/publish and follow-up data.
 - Ads lacks confirmed target CPA/ROAS, approved Keyword Planner enrichment,
   change-impact windows and apply/audit contracts.
 - Merchant lacks product IDs/SKU as a full product queue, historical price
@@ -357,6 +357,18 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   draft path without implying staging write, publish, production write or
   uplift readiness. Proof:
   `.local-lab/proof/command-center-staging-action/live-command-center-content-decision.json`.
+- `ready`: Reviewed WordPress draft previews, the review-only
+  `act_prepare_wordpress_staging_draft`, Action detail cards, Content Planner
+  cards and the content-strategist context-pack now expose
+  `post_publication_measurement_plan_v1`. The plan defines baseline and
+  follow-up windows, required GSC/GA4/WordPress evidence, required pre-claim
+  checks and blocked ranking/lead/revenue/content-success outputs. It is
+  `blocked_preview_only`, keeps `apply_allowed=false` and
+  `api_mutation_ready=false`, and does not unlock staging, publish, uplift or
+  automatic follow-up. Proof:
+  `.local-lab/proof/content-post-publication-measurement/wordpress-staging-action-measurement-plan.json`
+  and
+  `.local-lab/proof/content-post-publication-measurement/content-strategist-smoke.json`.
 - `ready`: Content operator summary now exposes a first-class read-only
   `target_site_migration_map` for the active old-to-new review queue. The map
   is derived from `decision_queue`, includes source URL, migration candidate,
@@ -385,9 +397,11 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
 - `hardening`: Do not collapse lower-priority Ads action cards until real
   marketer UAT or fresh browser proof shows the new start strip is still not
   enough.
-- `deferred_bdos`: Post-publication measurement loop is after staging handoff:
-  compare GSC/GA4 windows, detect refresh/merge/kill follow-ups and feed the
-  result back into knowledge cards.
+- `deferred_bdos`: Actual post-publication measurement loop is after staging
+  handoff and publish: capture baseline/follow-up GSC/GA4/WordPress data,
+  detect refresh/merge/kill follow-ups and feed the result back into knowledge
+  cards. The blocked preview-only measurement plan exists; the real loop does
+  not.
 
 ### C. Data Contracts Required For Deeper Claims
 
@@ -694,6 +708,12 @@ Use these rules before every implementation slice:
   `.local-lab/proof/localo-eval-case-refresh-smoke.json`.
 - [x] Rerun core pre-demo gate after eval hardening:
   `.local-lab/proof/pre-demo-gate-after-eval-hardening.txt`.
+- [x] Add blocked preview-only post-publication measurement plan to content
+  draft/staging previews and context-pack. Proof:
+  `.local-lab/proof/content-post-publication-measurement/wordpress-staging-action-measurement-plan.json`
+  and
+  `.local-lab/proof/content-post-publication-measurement/content-strategist-smoke.json`;
+  focused API tests and dashboard typecheck passed.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

@@ -341,9 +341,9 @@ function AdsStartHerePanel({
                 {index + 1}
               </span>
               <div>
-                <h4 className="text-sm font-semibold leading-5 text-ink">
-                  {adsDecisionTitle(decision)}
-                </h4>
+                <div className="text-sm font-semibold leading-5 text-ink">
+                  Krok {index + 1}: {adsDecisionTitle(decision)}
+                </div>
                 <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
                   {adsDecisionTypeLabel(decision.decision_type)} / {adsDecisionStatusLabel(decision.status)}
                 </p>

@@ -293,6 +293,9 @@ function WordPressStagingDraftPreviewCard({ item }: { item: Record<string, unkno
         <div>Duplikaty: {stringValue(item.duplicate_gate_status, "brak")}</div>
         <div>Staging: {stringValue(item.staging_handoff_status, "zablokowany")}</div>
         <div>
+          Pomiar po publikacji: {postPublicationMeasurementValue(item.post_publication_measurement_plan)}
+        </div>
+        <div>
           Następny kontrakt: {stringValue(item.required_next_action_contract, "brak")}
         </div>
         <PreviewValues label="Walidacje" values={asStringArray(item.required_validation)} />
@@ -783,6 +786,9 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
           Blokady stagingu: {asStringArray(item.staging_handoff_blockers).slice(0, 5).join(", ") || "brak"}
         </div>
         <div>
+          Pomiar po publikacji: {postPublicationMeasurementValue(item.post_publication_measurement_plan)}
+        </div>
+        <div>
           Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
           {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
         </div>
@@ -992,6 +998,20 @@ function asStringArray(value: unknown): string[] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function postPublicationMeasurementValue(value: unknown) {
+  if (!isRecord(value)) return "brak";
+  const parts = [
+    stringValue(value.contract_version, ""),
+    stringValue(value.status, ""),
+    stringValue(value.baseline_window, ""),
+    ...asStringArray(value.followup_windows).slice(0, 2),
+    ...asStringArray(value.blocked_outputs)
+      .slice(0, 2)
+      .map((item) => `blokuje: ${item}`)
+  ].filter(Boolean);
+  return parts.join(" · ") || "brak";
 }
 
 export function EvidenceDetailSurface({ evidenceId }: { evidenceId: string }) {

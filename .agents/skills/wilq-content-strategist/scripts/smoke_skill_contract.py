@@ -25,6 +25,7 @@ REQUIRED_CONTEXT_KEYS = {
     "content_diagnostics",
 }
 CONTENT_ACTION_ID = "act_prepare_content_refresh_queue"
+WORDPRESS_STAGING_ACTION_ID = "act_prepare_wordpress_staging_draft"
 CONTENT_ACTION_DECISION_TYPES = {
     "block_until_vendor_read",
     "refresh_or_merge",
@@ -94,6 +95,7 @@ def main() -> int:
         pack.get("active_action_objects"),
         require_preview=require_content_preview,
     )
+    validate_wordpress_staging_action_preview(pack.get("active_action_objects"))
 
     action_validations = []
     for action_id in content_diagnostics.get("action_ids", []):
@@ -500,6 +502,61 @@ def validate_content_action_preview(
         for preview in previews[:3]
         if isinstance(preview, dict)
     ]
+
+
+def validate_wordpress_staging_action_preview(active_actions: Any) -> None:
+    if not isinstance(active_actions, list):
+        raise SystemExit("Context pack active_action_objects must be a list")
+    staging_action = next(
+        (
+            action
+            for action in active_actions
+            if isinstance(action, dict) and action.get("id") == WORDPRESS_STAGING_ACTION_ID
+        ),
+        None,
+    )
+    if staging_action is None:
+        return
+    if not isinstance(staging_action, dict):
+        raise SystemExit("WordPress staging ActionObject must be an object")
+    payload = staging_action.get("payload")
+    if not isinstance(payload, dict):
+        raise SystemExit("WordPress staging ActionObject payload must be an object")
+    if "post_publication_measurement_plan_v1" not in set(
+        payload.get("required_input_contracts") or []
+    ):
+        raise SystemExit(
+            "WordPress staging ActionObject must require post_publication_measurement_plan_v1"
+        )
+    previews = payload.get("payload_preview")
+    if not isinstance(previews, list) or not previews:
+        raise SystemExit("WordPress staging ActionObject lacks payload_preview")
+    first_preview = next((item for item in previews if isinstance(item, dict)), None)
+    if not isinstance(first_preview, dict):
+        raise SystemExit("WordPress staging payload preview must be an object")
+    measurement_plan = first_preview.get("post_publication_measurement_plan")
+    if not isinstance(measurement_plan, dict):
+        raise SystemExit("WordPress staging preview lacks post_publication_measurement_plan")
+    if (
+        measurement_plan.get("contract_version")
+        != "post_publication_measurement_plan_v1"
+    ):
+        raise SystemExit("Post-publication measurement plan has invalid contract")
+    if measurement_plan.get("scope") != "blocked_preview_only":
+        raise SystemExit("Post-publication measurement plan must be blocked_preview_only")
+    if "google_search_console" not in set(
+        measurement_plan.get("required_source_connectors") or []
+    ):
+        raise SystemExit("Post-publication measurement plan must require GSC evidence")
+    if "google_analytics_4" not in set(
+        measurement_plan.get("required_source_connectors") or []
+    ):
+        raise SystemExit("Post-publication measurement plan must require GA4 evidence")
+    blocked_outputs = set(measurement_plan.get("blocked_outputs") or [])
+    if not {"ranking_gain_claim", "lead_uplift_claim"}.issubset(blocked_outputs):
+        raise SystemExit(
+            "Post-publication measurement plan must block uplift/ranking claims"
+        )
 
 
 def decision_trace(value: Any) -> list[dict[str, Any]]:

@@ -10,6 +10,7 @@ from wilq.schemas import MetricFact
 CONTENT_REFRESH_ACTION_TYPE = "wordpress_content_refresh"
 CONTENT_BRIEF_PREVIEW_CONTRACT = "content_brief_preview_v1"
 WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT = "wordpress_draft_payload_preview_v1"
+POST_PUBLICATION_MEASUREMENT_PLAN_CONTRACT = "post_publication_measurement_plan_v1"
 CONTENT_TARGET_SITE_HOST = "ekologus.dev.proudsite.pl"
 CONTENT_TARGET_SITE_SCHEME = "https"
 CONTENT_SOURCE_SITE_HOSTS = {
@@ -626,6 +627,9 @@ def _wordpress_draft_payload_preview(
             staging_handoff_blockers=staging_handoff_blockers,
             target_site_url=staging_target_url,
         ),
+        "post_publication_measurement_plan": post_publication_measurement_plan(
+            target_site_url=staging_target_url,
+        ),
         "draft_payload": {
             "post_status": "draft",
             "post_title": _draft_title(topic, mode),
@@ -900,6 +904,44 @@ def _staging_handoff_contract(
             "production_wordpress_write",
             "publish_ready_claim",
             "ranking_or_lead_uplift_claim",
+        ],
+    }
+
+
+def post_publication_measurement_plan(
+    *,
+    target_site_url: str | None,
+) -> dict[str, Any]:
+    return {
+        "contract_version": POST_PUBLICATION_MEASUREMENT_PLAN_CONTRACT,
+        "scope": "blocked_preview_only",
+        "target_site_url": target_site_url,
+        "status": "blocked_until_publish_and_followup_data",
+        "baseline_window": "28d_before_publish",
+        "followup_windows": ["7d_after_publish", "28d_after_publish", "90d_after_publish"],
+        "required_source_connectors": [
+            "google_search_console",
+            "google_analytics_4",
+            "wordpress_ekologus",
+        ],
+        "required_metric_groups": [
+            "gsc_query_page_clicks_impressions_ctr_position",
+            "ga4_landing_engagement_and_key_events",
+            "wordpress_publish_metadata",
+        ],
+        "requires_before_claims": [
+            "published_url_confirmed",
+            "baseline_window_captured",
+            "followup_window_captured",
+            "same_url_or_redirect_mapping_confirmed",
+            "tracking_quality_review",
+        ],
+        "blocked_outputs": [
+            "ranking_gain_claim",
+            "lead_uplift_claim",
+            "revenue_impact_claim",
+            "content_success_verdict",
+            "automatic_refresh_followup",
         ],
     }
 

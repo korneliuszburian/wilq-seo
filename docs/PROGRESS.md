@@ -58,7 +58,8 @@ Stan produktu:
 - Content workflow is the strongest proof point. It now has typed source/target
   context, inventory/canonical/duplicate gates, audited mapping and
   draft-readiness reviews, blocked staging handoff preview, review-only
-  `act_prepare_wordpress_staging_draft`, and a read-only
+  `act_prepare_wordpress_staging_draft`, blocked
+  `post_publication_measurement_plan_v1`, and a read-only
   `target_site_migration_map` rendered in Content Planner as
   "Mapa migracji do review".
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
@@ -80,11 +81,12 @@ Stan produktu:
   knows what to do without explanation.
 - Content workflow now has a read-only old-to-new migration map for the active
   decisions, but it still lacks confirmed human mapping for every row,
-  publishing and post-publication measurement loop for
+  publishing and real post-publication follow-up data for
   `ekologus.dev.proudsite.pl`. Mapping and draft-readiness review decisions can
-  be recorded and audited, staging handoff has a blocked preview contract, and
-  Command Center exposes the review-only staging draft ActionObject, but this
-  does not unlock draft/staging/publish readiness.
+  be recorded and audited; staging handoff and post-publication measurement now
+  have blocked preview contracts, and Command Center exposes the review-only
+  staging draft ActionObject, but this does not unlock draft/staging/publish,
+  uplift or content-success readiness.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
@@ -106,10 +108,10 @@ Stan produktu:
    unless a fresh route proof finds a remaining marketer-facing leak.
 4. If content depth is next, continue from the read-only migration map,
    audited mapping, draft-readiness and blocked staging-handoff previews plus
-   the review-only staging draft ActionObject toward confirmed human mapping
-   for every row or post-publication measurement design. Do not unlock staging,
-   publish or uplift claims without typed preview, human confirmation and
-   audit.
+   the review-only staging draft ActionObject and blocked post-publication
+   measurement plan toward confirmed human mapping for every row or actual
+   follow-up measurement after publish. Do not unlock staging, publish or
+   uplift claims without typed preview, human confirmation and audit.
 5. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

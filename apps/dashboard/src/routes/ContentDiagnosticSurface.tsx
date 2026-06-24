@@ -482,6 +482,18 @@ type WordPressDraftPayloadPreviewItem = {
     required_next_action_contract?: string;
     blocked_outputs?: string[];
   };
+  post_publication_measurement_plan?: {
+    contract_version?: string;
+    scope?: string;
+    target_site_url?: string | null;
+    status?: string;
+    baseline_window?: string;
+    followup_windows?: string[];
+    required_source_connectors?: string[];
+    required_metric_groups?: string[];
+    requires_before_claims?: string[];
+    blocked_outputs?: string[];
+  };
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -578,6 +590,13 @@ function WordPressDraftPayloadPreviewCard({
         <TraceLine
           label="Kontrakt stagingu"
           values={contentStagingHandoffContractValues(preview.staging_handoff_contract)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Pomiar po publikacji"
+          values={contentPostPublicationMeasurementValues(
+            preview.post_publication_measurement_plan
+          )}
           empty="brak"
         />
         <TraceLine
@@ -1427,6 +1446,30 @@ function contentStagingHandoffContractValues(
     ...(contract.requires_passed_gates ?? []).slice(0, 4).map((value) => `gate: ${value}`),
     ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${value}`)
   ].filter((value) => value.trim().length > 0);
+}
+
+function contentPostPublicationMeasurementValues(
+  plan: WordPressDraftPayloadPreviewItem["post_publication_measurement_plan"]
+): string[] {
+  if (!plan) return [];
+  return [
+    plan.contract_version ? `contract: ${plan.contract_version}` : "",
+    plan.status ? `status: ${contentPostPublicationMeasurementStatusLabel(plan.status)}` : "",
+    plan.baseline_window ? `baseline: ${plan.baseline_window}` : "",
+    ...(plan.followup_windows ?? []).slice(0, 3).map((value) => `follow-up: ${value}`),
+    ...(plan.required_source_connectors ?? [])
+      .slice(0, 3)
+      .map((value) => `źródło: ${value}`),
+    ...(plan.blocked_outputs ?? []).slice(0, 3).map((value) => `blokuje: ${value}`)
+  ].filter((value) => value.trim().length > 0);
+}
+
+function contentPostPublicationMeasurementStatusLabel(value: string): string {
+  const labels: Record<string, string> = {
+    blocked_until_publish_and_followup_data:
+      "zablokowany do publikacji i danych po publikacji"
+  };
+  return labels[value] ?? value;
 }
 
 function contentStagingHandoffStatusLabel(value: string): string {

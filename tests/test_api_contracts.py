@@ -2089,6 +2089,20 @@ def test_content_brief_candidate_review_persists_audit_event(
     )
     assert "content_draft_readiness_review" in staging_contract["requires_passed_gates"]
     assert "wordpress_staging_write" in staging_contract["blocked_outputs"]
+    measurement_plan = draft_preview["post_publication_measurement_plan"]
+    assert (
+        measurement_plan["contract_version"]
+        == "post_publication_measurement_plan_v1"
+    )
+    assert measurement_plan["scope"] == "blocked_preview_only"
+    assert measurement_plan["target_site_url"] == selected_target_url
+    assert measurement_plan["status"] == "blocked_until_publish_and_followup_data"
+    assert "google_search_console" in measurement_plan["required_source_connectors"]
+    assert "google_analytics_4" in measurement_plan["required_source_connectors"]
+    assert "28d_after_publish" in measurement_plan["followup_windows"]
+    assert "followup_window_captured" in measurement_plan["requires_before_claims"]
+    assert "ranking_gain_claim" in measurement_plan["blocked_outputs"]
+    assert "lead_uplift_claim" in measurement_plan["blocked_outputs"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[
@@ -2249,6 +2263,16 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert staging_contract["contract_version"] == "wordpress_staging_handoff_v1"
     assert staging_contract["scope"] == "blocked_preview_only"
     assert "wordpress_publish" in staging_contract["blocked_outputs"]
+    measurement_plan = draft_preview["post_publication_measurement_plan"]
+    assert (
+        measurement_plan["contract_version"]
+        == "post_publication_measurement_plan_v1"
+    )
+    assert measurement_plan["scope"] == "blocked_preview_only"
+    assert measurement_plan["status"] == "blocked_until_publish_and_followup_data"
+    assert "google_search_console" in measurement_plan["required_source_connectors"]
+    assert "google_analytics_4" in measurement_plan["required_source_connectors"]
+    assert "content_success_verdict" in measurement_plan["blocked_outputs"]
     assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
     assert (
         "duplicate_or_cannibalization_check"
@@ -3040,6 +3064,9 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert "content_draft_readiness_review_v1" in staging_payload[
                 "required_input_contracts"
             ]
+            assert "post_publication_measurement_plan_v1" in staging_payload[
+                "required_input_contracts"
+            ]
             assert staging_payload["apply_allowed"] is False
             assert staging_payload["api_mutation_ready"] is False
             assert "wordpress_staging_payload_preview" in staging_payload[
@@ -3057,6 +3084,18 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert first_staging_preview["apply_allowed"] is False
             assert first_staging_preview["api_mutation_ready"] is False
             assert first_staging_preview["selected_target_url"]
+            staging_measurement_plan = first_staging_preview[
+                "post_publication_measurement_plan"
+            ]
+            assert (
+                staging_measurement_plan["contract_version"]
+                == "post_publication_measurement_plan_v1"
+            )
+            assert staging_measurement_plan["scope"] == "blocked_preview_only"
+            assert "wordpress_ekologus" in staging_measurement_plan[
+                "required_source_connectors"
+            ]
+            assert "lead_uplift_claim" in staging_measurement_plan["blocked_outputs"]
             assert ahrefs_preview["mode"] == "review"
             assert ahrefs_preview["topic"] == "audyt środowiskowy"
             assert ahrefs_preview["gsc_demand"] == "unknown"

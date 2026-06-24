@@ -8,6 +8,7 @@ from uuid import uuid4
 from wilq.actions.content_refresh import (
     content_payload_with_reviewed_wordpress_draft_previews,
     content_refresh_payload_from_metric_facts,
+    post_publication_measurement_plan,
 )
 from wilq.actions.ga4.tracking_quality import ga4_tracking_quality_payload_from_metric_facts
 from wilq.actions.google_ads.business_context import (
@@ -1574,6 +1575,7 @@ def _wordpress_staging_draft_action(
                 "content_draft_generation_v1",
                 "content_draft_readiness_review_v1",
                 "wordpress_staging_handoff_v1",
+                "post_publication_measurement_plan_v1",
             ],
             "payload_preview": preview_items,
             "required_validation": [
@@ -1622,6 +1624,9 @@ def _wordpress_staging_draft_preview_item(item: dict[str, Any]) -> dict[str, Any
         "duplicate_gate_status": item.get("duplicate_gate_status"),
         "staging_handoff_status": "blocked_until_draft_gates_pass",
         "required_next_action_contract": "wordpress_staging_draft_apply_v1",
+        "post_publication_measurement_plan": post_publication_measurement_plan(
+            target_site_url=str(selected_target_url) if selected_target_url else None,
+        ),
         "required_validation": [
             "target_site_mapping_review",
             "target_site_canonical_review",

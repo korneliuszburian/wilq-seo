@@ -2472,6 +2472,19 @@ def _compact_action_dump_for_context(action: dict[str, Any]) -> dict[str, Any]:
             compact_payload["payload_preview"]
         )
         payload_preview_kept = True
+    if (
+        compact_payload.get("preview_contract")
+        == "wordpress_staging_draft_apply_preview_v1"
+        and isinstance(payload_preview, list)
+    ):
+        compact_payload["payload_preview_total"] = len(payload_preview)
+        compact_payload["payload_preview"] = (
+            _compact_wordpress_staging_payload_preview_for_context(payload_preview)
+        )
+        compact_payload["payload_preview_included"] = len(
+            compact_payload["payload_preview"]
+        )
+        payload_preview_kept = True
     ngram_preview = compact_payload.get("ngram_preview")
     if (
         compact_payload.get("preview_contract") == "search_term_ngram_review_v1"
@@ -2906,6 +2919,7 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "staging_handoff_status",
         "staging_handoff_blockers",
         "staging_handoff_contract",
+        "post_publication_measurement_plan",
         "required_validation",
         "blocked_claims",
         "source_connectors",
@@ -2965,6 +2979,7 @@ def _compact_wordpress_draft_payload_preview_for_context(
                 if isinstance(value, list):
                     staging_handoff_contract[key] = value[:limit]
                     staging_handoff_contract[f"{key}_total"] = len(value)
+        _compact_post_publication_measurement_plan(compact_item)
         draft_payload = item.get("draft_payload")
         if isinstance(draft_payload, dict):
             compact_item["draft_payload"] = {
@@ -2991,6 +3006,79 @@ def _compact_wordpress_draft_payload_preview_for_context(
                 )
         compact_items.append(compact_item)
     return compact_items
+
+
+def _compact_wordpress_staging_payload_preview_for_context(
+    preview_items: list[Any],
+) -> list[dict[str, Any]]:
+    compact_items: list[dict[str, Any]] = []
+    keep_keys = {
+        "preview_contract",
+        "operation_type",
+        "candidate_id",
+        "topic",
+        "source_url",
+        "selected_target_url",
+        "mapping_review_status",
+        "canonical_gate_status",
+        "duplicate_gate_status",
+        "staging_handoff_status",
+        "required_next_action_contract",
+        "post_publication_measurement_plan",
+        "required_validation",
+        "blocked_claims",
+        "apply_allowed",
+        "api_mutation_ready",
+        "destructive",
+    }
+    for item in preview_items[:4]:
+        if not isinstance(item, dict):
+            continue
+        compact_item = {key: item[key] for key in keep_keys if key in item}
+        for key, limit in (
+            ("required_validation", 6),
+            ("blocked_claims", 5),
+        ):
+            value = compact_item.get(key)
+            if isinstance(value, list):
+                compact_item[key] = value[:limit]
+                compact_item[f"{key}_total"] = len(value)
+        _compact_post_publication_measurement_plan(compact_item)
+        compact_items.append(compact_item)
+    return compact_items
+
+
+def _compact_post_publication_measurement_plan(item: dict[str, Any]) -> None:
+    measurement_plan = item.get("post_publication_measurement_plan")
+    if not isinstance(measurement_plan, dict):
+        return
+    keep_keys = {
+        "contract_version",
+        "scope",
+        "target_site_url",
+        "status",
+        "baseline_window",
+        "followup_windows",
+        "required_source_connectors",
+        "required_metric_groups",
+        "requires_before_claims",
+        "blocked_outputs",
+    }
+    compact_plan = {
+        key: measurement_plan[key] for key in keep_keys if key in measurement_plan
+    }
+    for key, limit in (
+        ("followup_windows", 3),
+        ("required_source_connectors", 3),
+        ("required_metric_groups", 3),
+        ("requires_before_claims", 5),
+        ("blocked_outputs", 5),
+    ):
+        value = compact_plan.get(key)
+        if isinstance(value, list):
+            compact_plan[key] = value[:limit]
+            compact_plan[f"{key}_total"] = len(value)
+    item["post_publication_measurement_plan"] = compact_plan
 
 
 def _compact_campaign_candidates_for_context(
