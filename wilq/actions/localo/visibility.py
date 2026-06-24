@@ -8,13 +8,6 @@ from wilq.schemas import MetricFact
 LOCALO_VISIBILITY_REVIEW_ACTION_ID = "act_review_localo_visibility_facts"
 LOCALO_VISIBILITY_REVIEW_ACTION_TYPE = "local_visibility_task"
 LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT = "local_visibility_review_preview_v1"
-LOCALO_VISIBILITY_BLOCKED_CLAIMS = [
-    "GBP performance",
-    "competitor visibility",
-    "local task completed",
-    "GBP write",
-    "local visibility uplift",
-]
 LOCALO_VISIBILITY_CONTRACTS = [
     "place_inventory",
     "local_rankings",
@@ -27,9 +20,15 @@ LOCALO_VISIBILITY_REVIEW_STEPS = [
     "review_place_inventory",
     "review_local_rankings_aggregate",
     "review_reviews_aggregate",
-    "block_gbp_and_competitor_claims_without_contract",
     "require_human_confirm_before_any_write",
 ]
+LOCALO_CLAIMS_BY_MISSING_CONTRACT = {
+    "local_rankings": "local ranking",
+    "gbp_visibility": "GBP performance",
+    "competitor_visibility": "competitor visibility",
+    "reviews": "review velocity",
+    "local_tasks": "local task completed",
+}
 
 
 def localo_visibility_review_payload_from_metric_facts(
@@ -48,6 +47,9 @@ def localo_visibility_review_payload_from_metric_facts(
         for contract in LOCALO_VISIBILITY_CONTRACTS
         if contract not in set(present_contracts)
     ]
+    blocked_claims = _blocked_claims_for_missing_contracts(missing_contracts)
+    review_steps = _review_steps_for_missing_contracts(missing_contracts)
+    blocked_scope = _blocked_scope_sentence(missing_contracts)
     source_metric_names = _unique(fact.name for fact in visibility_facts)
     evidence_ids = _unique(fact.evidence_id for fact in visibility_facts)
     return {
@@ -58,8 +60,8 @@ def localo_visibility_review_payload_from_metric_facts(
         "source_connectors": ["localo"],
         "allowed_contracts": present_contracts,
         "missing_read_contracts": missing_contracts,
-        "review_steps": LOCALO_VISIBILITY_REVIEW_STEPS,
-        "blocked_claims": LOCALO_VISIBILITY_BLOCKED_CLAIMS,
+        "review_steps": review_steps,
+        "blocked_claims": blocked_claims,
         "preview_contract": LOCALO_VISIBILITY_REVIEW_PREVIEW_CONTRACT,
         "payload_preview": [
             {
@@ -72,11 +74,11 @@ def localo_visibility_review_payload_from_metric_facts(
                 "missing_read_contracts": missing_contracts,
                 "reason": (
                     "Review-only podgląd Localo aggregate facts. WILQ może "
-                    "sprawdzić wskazane kontrakty, ale blokuje GBP, konkurencję, "
-                    "lokalne taski i uplift bez osobnych read contracts."
+                    f"sprawdzić wskazane kontrakty, ale blokuje {blocked_scope} "
+                    "bez osobnych read contracts albo effect evidence."
                 ),
-                "required_validation": LOCALO_VISIBILITY_REVIEW_STEPS,
-                "blocked_claims": LOCALO_VISIBILITY_BLOCKED_CLAIMS,
+                "required_validation": review_steps,
+                "blocked_claims": blocked_claims,
                 "evidence_ids": evidence_ids,
                 "api_mutation_ready": False,
                 "apply_allowed": False,
@@ -140,6 +142,43 @@ def validate_localo_visibility_review_payload(payload: dict[str, Any]) -> list[s
     if payload.get("destructive") is not False:
         errors.append("local_visibility_task must be non-destructive.")
     return errors
+
+
+def _blocked_claims_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
+    claims = [
+        claim
+        for contract, claim in LOCALO_CLAIMS_BY_MISSING_CONTRACT.items()
+        if contract in missing_contracts
+    ]
+    claims.extend(["GBP write", "local visibility uplift"])
+    return _unique(claims)
+
+
+def _review_steps_for_missing_contracts(missing_contracts: list[str]) -> list[str]:
+    steps = list(LOCALO_VISIBILITY_REVIEW_STEPS)
+    if "gbp_visibility" in missing_contracts or "competitor_visibility" in missing_contracts:
+        steps.append("block_gbp_and_competitor_claims_without_contract")
+    if "local_tasks" in missing_contracts:
+        steps.append("block_local_tasks_without_contract")
+    return steps
+
+
+def _blocked_scope_sentence(missing_contracts: list[str]) -> str:
+    missing_labels = [
+        label
+        for contract, label in {
+            "local_rankings": "lokalne rankingi",
+            "gbp_visibility": "GBP",
+            "competitor_visibility": "konkurencję",
+            "reviews": "review velocity",
+            "local_tasks": "lokalne taski",
+        }.items()
+        if contract in missing_contracts
+    ]
+    labels = [*missing_labels, "write path", "uplift"]
+    if len(labels) == 1:
+        return labels[0]
+    return f"{', '.join(labels[:-1])} i {labels[-1]}"
 
 
 def _metric_snapshot(facts: list[MetricFact]) -> dict[str, int | float | str]:

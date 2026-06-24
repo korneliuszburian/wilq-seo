@@ -67,6 +67,55 @@ LOCALO_PROBE_METRIC_NAMES = {
     "mcp_initialize_status",
     "pkce_s256_supported",
 }
+LOCALO_COMMAND_CENTER_CONTRACT_FACT_NAMES = {
+    "place_inventory": {
+        "localo_active_place_count",
+        "localo_place_detail_count",
+    },
+    "local_rankings": {
+        "localo_tracked_keyword_count",
+        "localo_visibility_score_count",
+        "localo_avg_visibility_current",
+        "localo_avg_visibility_change",
+        "localo_latest_grid_position_count",
+        "localo_avg_latest_grid_position",
+        "localo_keyword_volume_count",
+        "localo_total_keyword_volume",
+    },
+    "gbp_visibility": {
+        "localo_gbp_impressions_total",
+        "localo_gbp_actions_total",
+        "localo_gbp_metric_point_count",
+    },
+    "competitor_visibility": {
+        "localo_competitor_count",
+        "localo_favorite_competitor_count",
+        "localo_competitor_change_count",
+    },
+    "reviews": {
+        "localo_avg_rating",
+        "localo_snapshot_reviews_count",
+        "localo_reviews_count",
+        "localo_reviews_replied_count",
+        "localo_reviews_removed_count",
+        "localo_review_reply_rate",
+    },
+}
+LOCALO_COMMAND_CENTER_CONTRACT_ORDER = [
+    "place_inventory",
+    "local_rankings",
+    "gbp_visibility",
+    "competitor_visibility",
+    "reviews",
+    "local_tasks",
+]
+LOCALO_COMMAND_CENTER_CLAIM_BY_MISSING_CONTRACT = {
+    "local_rankings": "local ranking",
+    "gbp_visibility": "GBP performance",
+    "competitor_visibility": "competitor visibility",
+    "reviews": "review velocity",
+    "local_tasks": "local task completed",
+}
 DAILY_DECISION_FRESH_AFTER_HOURS = 48
 DAILY_DECISION_METRIC_FACT_LIMIT = 8
 PRIMARY_DAILY_PLAN_IDS = {
@@ -1530,6 +1579,8 @@ def _localo_item(
     metric_facts = _localo_metric_facts_for_run(successful_mcp_run, metric_facts)
     value_facts = _localo_value_facts(metric_facts)
     has_value_facts = bool(value_facts)
+    missing_value_contracts = _localo_missing_value_contracts(value_facts)
+    missing_value_contracts_phrase = _localo_contracts_phrase(missing_value_contracts)
     missing = (
         ", ".join(connector.missing_credentials)
         if connector.missing_credentials
@@ -1544,16 +1595,20 @@ def _localo_item(
         item_id = "daily_localo_visibility_facts"
         title = "Localo: agregaty widoczności i recenzji są gotowe"
         summary = (
-            "Localo dostarczył read-only agregaty miejsc, monitorowanych fraz "
-            "i recenzji. WILQ nadal blokuje GBP, konkurencję i claim o wzroście "
-            "widoczności bez osobnych kontraktów."
+            "Localo dostarczył read-only agregaty miejsc, monitorowanych fraz, "
+            "GBP, konkurencji i recenzji. WILQ nadal blokuje "
+            f"{missing_value_contracts_phrase}, write path i claim o wzroście "
+            "widoczności bez osobnych kontraktów albo effect evidence."
         )
         next_step = (
             "Otwórz /localo i przejrzyj agregaty fraz, grid positions oraz recenzji. "
-            "Nie twierdź nic o GBP/konkurencji bez dodatkowego evidence."
+            f"Nie twierdź nic o {missing_value_contracts_phrase}, write path ani "
+            "wzroście widoczności bez dodatkowego evidence."
         )
         priority = 18
-        blocked_claims = ["GBP performance", "competitor visibility", "local visibility uplift"]
+        blocked_claims = _localo_blocked_claims_for_missing_contracts(
+            missing_value_contracts
+        )
     elif oauth_access_ready:
         item_id = "daily_localo_readiness"
         title = "Localo: MCP access działa, brak jeszcze ranking/GBP facts"
@@ -1615,6 +1670,75 @@ def _localo_value_facts(metric_facts: list[MetricFact]) -> list[MetricFact]:
             and fact.value == "localo_mcp_oauth_probe"
         )
     ]
+
+
+def _localo_missing_value_contracts(value_facts: list[MetricFact]) -> list[str]:
+    if not value_facts:
+        return [
+            "local_rankings",
+            "gbp_visibility",
+            "competitor_visibility",
+            "reviews",
+            "local_tasks",
+        ]
+    fact_names = {fact.name for fact in value_facts}
+    present = {
+        contract
+        for contract, names in LOCALO_COMMAND_CENTER_CONTRACT_FACT_NAMES.items()
+        if fact_names.intersection(names)
+    }
+    return [
+        contract
+        for contract in LOCALO_COMMAND_CENTER_CONTRACT_ORDER
+        if contract not in present
+    ]
+
+
+def _localo_blocked_claims_for_missing_contracts(
+    missing_contracts: list[str],
+) -> list[str]:
+    claims = [
+        claim
+        for contract, claim in LOCALO_COMMAND_CENTER_CLAIM_BY_MISSING_CONTRACT.items()
+        if contract in missing_contracts
+    ]
+    claims.extend(["GBP write", "local visibility uplift"])
+    return _unique(claims)
+
+
+def _localo_contracts_phrase(contracts: list[str]) -> str:
+    labels = {
+        "place_inventory": "place inventory",
+        "local_rankings": "lokalne rankingi",
+        "gbp_visibility": "GBP",
+        "competitor_visibility": "konkurencję",
+        "reviews": "recenzje",
+        "local_tasks": "local tasks",
+    }
+    values = [labels.get(contract, contract) for contract in contracts]
+    if not values:
+        return "write path"
+    if len(values) == 1:
+        return values[0]
+    return f"{', '.join(values[:-1])} i {values[-1]}"
+
+
+def _localo_claims_phrase(claims: list[str]) -> str:
+    labels = {
+        "local ranking": "lokalne rankingi",
+        "GBP performance": "wynik GBP",
+        "competitor visibility": "widoczność konkurencji",
+        "review velocity": "tempo recenzji",
+        "local task completed": "wykonanie local tasks",
+        "GBP write": "GBP write path",
+        "local visibility uplift": "wzrost lokalnej widoczności",
+    }
+    values = [labels.get(claim, claim) for claim in claims]
+    if not values:
+        return "niepotwierdzone claimy"
+    if len(values) == 1:
+        return values[0]
+    return f"{', '.join(values[:-1])} i {values[-1]}"
 
 
 def _localo_metric_facts_for_run(
@@ -1924,6 +2048,7 @@ def _action_plan_item(
             risk=ActionRisk.medium,
         )
     if item.id == "daily_localo_visibility_facts":
+        blocked_claims_phrase = _localo_claims_phrase(item.blocked_claims)
         return CommandCenterActionPlanItem(
             id="plan_review_localo_visibility_facts",
             title="Przejrzyj agregaty widoczności lokalnej z Localo",
@@ -1932,20 +2057,22 @@ def _action_plan_item(
             priority=20,
             category="Localo",
             why_it_matters=(
-                "Localo ma read-only agregaty miejsc, fraz i recenzji. To pozwala "
-                "zrobić review lokalnej widoczności, ale WILQ nadal blokuje claimy "
-                "o GBP, konkurencji i wzroście widoczności bez osobnych kontraktów."
+                "Localo ma read-only agregaty miejsc, fraz, GBP, konkurencji i "
+                "recenzji. To pozwala zrobić review lokalnej widoczności, ale "
+                f"WILQ nadal blokuje claimy: {blocked_claims_phrase} bez osobnych "
+                "kontraktów albo effect evidence."
             ),
             operator_action=(
                 "Otwórz /localo i przejrzyj tylko agregaty widoczne w evidence. "
-                "Nie twierdź nic o GBP performance, konkurencji ani wzroście widoczności."
+                f"Nie używaj zablokowanych claimów: {blocked_claims_phrase}."
             ),
             skill_id="wilq-localo-operator",
             codex_prompt=(
                 "Użyj skilla wilq-localo-operator. Przejrzyj agregaty Localo dla "
                 "Ekologus na podstawie WILQ API evidence i wskaż bezpieczne następne "
-                "kroki. Nie twierdź nic o GBP, konkurencji ani wzroście widoczności "
-                "bez osobnych kontraktów."
+                f"kroki. Nie używaj zablokowanych claimów: {blocked_claims_phrase}. "
+                "Nie zdejmuj tych blokad bez osobnych "
+                "kontraktów albo effect evidence."
             ),
             codex_context_endpoint="/api/codex/context-pack",
             expected_codex_output=(

@@ -156,8 +156,12 @@ Stan produktu:
   `visibility_fact_count=23`, `act_review_localo_visibility_facts` ready,
   `place_inventory`, `local_rankings`, `gbp_visibility`,
   `competitor_visibility` and `reviews` ready; `local_tasks` remains missing
-  with explicit blocked claims. If Localo appears empty while metric store has
-  facts, restart the managed stack before changing product logic.
+  with explicit blocked claims. Localo diagnostics, Command Center and Localo
+  ActionObject payloads must not describe GBP or competitor visibility as
+  missing when those contracts are ready; only `local_tasks`, write path and
+  uplift claims remain blocked in the current live state. If Localo appears
+  empty while metric store has facts, restart the managed stack before changing
+  product logic.
 - `wilq-localo-operator` deterministic smoke now validates
   `localo_diagnostics.latest_refresh` by default and does not force a live
   `/api/connectors/localo/refresh`. Use `--refresh` only for explicit vendor
@@ -311,6 +315,11 @@ Stan produktu:
 - Strong demo path today:
   `/command-center` -> `/merchant` -> `/content-planner` -> `/ads-doctor` ->
   optional `/ga4` and `/localo`.
+- Highest-value next demo slice: content for the new Ekologus site at
+  `http://ekologus.dev.proudsite.pl/`. Treat `ekologus.pl`,
+  `sklep.ekologus.pl`, GSC, GA4, Ahrefs, Ads, Merchant and WordPress as source
+  evidence; treat the dev site as the target for Polish page/section briefs,
+  H1/H2/CTA direction and `refresh/merge/create/block` decisions.
 
 ## Active Gaps
 
@@ -415,10 +424,11 @@ Stan produktu:
 1. Work by theme: source contracts -> decision API/view-model -> ActionObject
    safety -> Codex skill/eval quality -> knowledge compiler -> dashboard
    usefulness/performance -> release/live-test hardening.
-2. Next concrete slice should come from live proof: Localo missing read
-   `local_tasks` only if a read-only contract exists, Merchant before/after
-   price-performance windows, Ahrefs granular gaps, semantic skill-reference
-   audit or route-level dashboard usefulness/performance.
+2. Next concrete slice should come from live proof. Current preference:
+   content target workflow for `http://ekologus.dev.proudsite.pl/`; otherwise
+   Merchant before/after price-performance windows, Ahrefs freshness/
+   cross-source scoring, semantic skill-reference audit or route-level
+   dashboard usefulness/performance.
 3. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

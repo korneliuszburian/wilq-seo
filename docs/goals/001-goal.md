@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 06:10 CEST.
+Last updated: 2026-06-24 07:03 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -112,6 +112,12 @@ Codex can consume Merchant decisions the same way they consume daily/action-plan
 decisions. Live proof after stack restart shows real sample product IDs/titles
 and Ads product-state mapping in Merchant decisions; shared live schema smoke
 parsed the updated API contract.
+Localo live state now distinguishes ready read contracts from truly blocked
+areas: `place_inventory`, `local_rankings`, `gbp_visibility`,
+`competitor_visibility` and `reviews` are usable read-only evidence, while only
+`local_tasks`, write path and uplift claims stay blocked. Command Center,
+Localo diagnostics and Localo ActionObject payloads must not say that GBP or
+competitor visibility are missing when those contracts are ready.
 
 ## Current Stack Map
 
@@ -209,7 +215,19 @@ fresh API/browser proof shows a regression.
 
 Finish these before claiming the Ekologus demo is done:
 
-1. **Source contracts and data acquisition**
+1. **Content demo for the new Ekologus site**
+   - The next highest-value marketer slice is content for the new site:
+     `http://ekologus.dev.proudsite.pl/`.
+   - Treat old sources as evidence: current `ekologus.pl`, `sklep.ekologus.pl`,
+     GSC, GA4, Ahrefs, Ads, Merchant and WordPress inventory.
+   - Treat the dev site as target context, not as a replacement for evidence:
+     output should be Polish page/section briefs, H1/H2/CTA direction and
+     refresh/merge/create/block decisions for the new site.
+   - Add typed API/view-model fields before skill prompt cleverness if the
+     content planner needs target URL, target page type, old-source URL,
+     canonical source, or migration/rewrite status.
+
+2. **Source contracts and data acquisition**
    - Current Localo diagnostics expose live aggregate facts and typed
      read-contract status after a managed stack restart. Live proof
      `refresh_localo_a1b33cd17835` completed with
@@ -302,7 +320,7 @@ Finish these before claiming the Ekologus demo is done:
      4. Return to Ads only when Keyword Planner approval changes, change rows
         appear, or apply/audit contracts are the active slice.
 
-2. **Decision API and view-model quality**
+3. **Decision API and view-model quality**
    - Keep `/api/dashboard/command-center`, `/api/marketing/brief`,
      `/api/marketing/tactical-queue`, diagnostics endpoints and `/api/actions`
      as the shared product surface for dashboard and Codex.
@@ -341,7 +359,7 @@ Finish these before claiming the Ekologus demo is done:
      3. Explicit stale/ready/blocked semantics per contract, so `ready` never
         hides missing conversion, GBP, product or Ads safety evidence.
 
-3. **Action safety and apply path**
+4. **Action safety and apply path**
    - Current demo is mostly prepare/review-only. This is acceptable for demo,
      but not enough for BDOS-class production writes.
    - Every future write path must be `dry_run -> preview -> confirm -> audit`.
@@ -366,7 +384,7 @@ Finish these before claiming the Ekologus demo is done:
      5. Social actions: draft-only is acceptable; publishing stays blocked
         until page/org permissions, preview, confirm and audit exist.
 
-4. **Codex skills, prompts and eval quality**
+5. **Codex skills, prompts and eval quality**
    - `scripts/skill_hygiene_check.py` now guards obvious hygiene failures:
      `Goal 001`/workaround/bugfix/outdated/slop prose, English safety headings,
      English `with mode=vendor_read` endpoint notes and English imperative
@@ -437,7 +455,7 @@ Finish these before claiming the Ekologus demo is done:
      5. Keep skill context packs scoped. Do not send the full system context
         when a narrow diagnostics endpoint and skill-scoped pack are enough.
 
-5. **Knowledge compiler and source condensation**
+6. **Knowledge compiler and source condensation**
    - Goal: turn external marketing knowledge into versioned, source-linked
      rules/cards that improve WILQ decisions without bloating prompts.
    - Required contract for each accepted source: source URL/file, author/vendor,
@@ -461,7 +479,7 @@ Finish these before claiming the Ekologus demo is done:
         Merchant feed diagnostics, GA4 measurement/commerce, GSC/content,
         Localo/GBP and Ahrefs gap analysis.
 
-6. **Dashboard usefulness, performance and code quality**
+7. **Dashboard usefulness, performance and code quality**
    - Command Center must stay a decision cockpit, not a connector registry or
      raw metric dump. First screen should prioritize today's marketer decisions,
      prompts to Codex, action focus and source freshness.
@@ -496,7 +514,7 @@ Finish these before claiming the Ekologus demo is done:
         artifacts. Use `agent-browser` when checking real routes and record
         only concise proof paths.
 
-7. **Release, staging and live-test strategy**
+8. **Release, staging and live-test strategy**
    - Blocking CI/release tests must verify contracts, schemas, evidence IDs,
      source connectors, secret redaction, ActionObject safety, Polish output and
      no invented metrics.
@@ -551,10 +569,13 @@ Finish these before claiming the Ekologus demo is done:
 ## Immediate Next Tasks
 
 1. Work in this order unless live proof shows a stronger blocker:
-   source contracts -> decision API/view-model -> ActionObject safety -> Codex
-   skill/eval quality -> knowledge compiler -> dashboard usefulness/performance
-   -> release/live-test hardening.
+   content demo for `ekologus.dev.proudsite.pl` -> source contracts -> decision
+   API/view-model -> ActionObject safety -> Codex skill/eval quality ->
+   knowledge compiler -> dashboard usefulness/performance -> release/live-test
+   hardening.
 2. Next concrete slice should be one of:
+   - Content target workflow for `http://ekologus.dev.proudsite.pl/`: map old
+     evidence into new-site briefs and `refresh/merge/create/block` decisions.
    - Merchant deepening beyond current product samples: performance joins,
      historical price snapshots, before/after proof or safer product preview
      boundaries.

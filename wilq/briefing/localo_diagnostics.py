@@ -569,19 +569,20 @@ def _blocked_visibility_decision(
     effective_missing_contracts = missing_contracts or LOCALO_VISIBILITY_READ_CONTRACTS
     effective_blocked_claims = blocked_claims or LOCALO_BLOCKED_CLAIMS
     has_partial_visibility_facts = missing_contracts is not None
+    missing_contracts_phrase = _localo_missing_contracts_phrase(effective_missing_contracts)
     return LocaloDecisionItem(
         id="localo_block_visibility_claims_without_read_contract",
         decision_type="block_visibility_claims",
         status="blocked",
         title=(
-            "Blokuj GBP, konkurencję i local tasks bez pełnych kontraktów Localo"
+            f"Blokuj {missing_contracts_phrase} bez pełnych kontraktów Localo"
             if has_partial_visibility_facts
             else "Nie wyciągaj wniosków o lokalnej widoczności bez Localo facts"
         ),
         summary=(
             (
                 "WILQ ma częściowe agregaty Localo, ale blokuje claimy zależne od "
-                "brakujących kontraktów: GBP, konkurencji, local tasks i write path."
+                f"brakujących kontraktów: {missing_contracts_phrase} i write path."
             )
             if has_partial_visibility_facts
             else (
@@ -602,8 +603,8 @@ def _blocked_visibility_decision(
         ),
         next_step=(
             (
-                "Przejrzyj dostępne agregaty Localo, a kontrakty GBP, konkurencji "
-                "i local tasks dodaj przed szerszymi claimami lub write path."
+                "Przejrzyj dostępne agregaty Localo, a brakujące kontrakty "
+                f"{missing_contracts_phrase} dodaj przed szerszymi claimami lub write path."
             )
             if has_partial_visibility_facts
             else (
@@ -686,6 +687,23 @@ def _localo_contract_evidence_kind(contract: str) -> str:
         "local_tasks": "lokalne zadania do wykonania",
     }
     return labels.get(contract, contract)
+
+
+def _localo_missing_contracts_phrase(contracts: list[str]) -> str:
+    labels = {
+        "place_inventory": "place inventory",
+        "local_rankings": "lokalne rankingi",
+        "gbp_visibility": "GBP",
+        "competitor_visibility": "konkurencję",
+        "reviews": "recenzje",
+        "local_tasks": "local tasks",
+    }
+    values = [labels.get(contract, contract) for contract in contracts]
+    if not values:
+        return "brak"
+    if len(values) == 1:
+        return values[0]
+    return f"{', '.join(values[:-1])} i {values[-1]}"
 
 
 def _blocked_claims_for_contract(contract: str) -> list[str]:

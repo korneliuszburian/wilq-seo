@@ -4684,6 +4684,124 @@ def test_localo_diagnostics_exposes_partial_visibility_contracts(
     ] == 4
 
 
+def test_localo_diagnostics_does_not_block_ready_gbp_or_competitor_contracts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("WILQ_STATE_DB", str(tmp_path / "localo_full_state.sqlite3"))
+    monkeypatch.setenv("WILQ_METRIC_DB", str(tmp_path / "localo_full.duckdb"))
+    monkeypatch.setenv("WILQ_ACCESS_PACK_PATH", str(tmp_path / "empty_access_pack"))
+    clear_localo_env(monkeypatch)
+    monkeypatch.setenv("LOCALO_API_TOKEN", "localo-token-test")
+    monkeypatch.setenv("LOCALO_ORGANIZATION_ID", "localo-org-test")
+    monkeypatch.setenv("LOCALO_ACCESS_TOKEN", "localo-access-test")
+    localo_run = ConnectorRefreshRun(
+        id="refresh_localo_full_diag_test",
+        connector_id="localo",
+        mode=ConnectorRefreshMode.vendor_read,
+        status=ConnectorRefreshStatus.completed,
+        evidence_ids=["ev_refresh_refresh_localo_full_diag_test"],
+        external_call_attempted=True,
+        vendor_data_collected=True,
+        metric_summary={
+            "api": "localo_mcp_oauth_probe",
+            "mcp_initialize_status": 200,
+            "authorization_code_supported": 1,
+            "pkce_s256_supported": 1,
+            "access_token_present": 1,
+            "localo_active_place_count": 4,
+            "localo_tracked_keyword_count": 23,
+            "localo_avg_visibility_current": 53.1739,
+            "localo_reviews_count": 798,
+            "localo_gbp_impressions_total": 120,
+            "localo_competitor_count": 3,
+        },
+        summary="Localo MCP read completed with aggregate facts.",
+    )
+    local_state_store().save_connector_refresh_run(localo_run)
+    metric_store().save_connector_refresh_metrics(
+        localo_run,
+        detailed_facts=[
+            VendorMetricFact(
+                "localo_active_place_count",
+                4,
+                {"contract": "place_inventory", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_tracked_keyword_count",
+                23,
+                {"contract": "local_rankings", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_avg_visibility_current",
+                53.1739,
+                {"contract": "local_rankings", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_reviews_count",
+                798,
+                {"contract": "reviews", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_gbp_impressions_total",
+                120,
+                {"contract": "gbp_visibility", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+            VendorMetricFact(
+                "localo_competitor_count",
+                3,
+                {"contract": "competitor_visibility", "scope": "active_places"},
+                period="localo_mcp_read",
+            ),
+        ],
+    )
+
+    response = client.get("/api/localo/diagnostics")
+
+    assert response.status_code == 200
+    payload = response.json()
+    decision_by_id = {item["id"]: item for item in payload["decision_queue"]}
+    review_decision = decision_by_id["localo_review_visibility_facts"]
+    assert review_decision["allowed_evidence"] == [
+        "place_inventory",
+        "local_rankings",
+        "gbp_visibility",
+        "competitor_visibility",
+        "reviews",
+    ]
+    assert review_decision["missing_read_contracts"] == ["local_tasks"]
+    assert review_decision["blocked_claims"] == [
+        "local task completed",
+        "GBP write",
+        "local visibility uplift",
+    ]
+    assert "GBP performance" not in review_decision["blocked_claims"]
+    assert "competitor visibility" not in review_decision["blocked_claims"]
+    blocked_decision = decision_by_id["localo_block_visibility_claims_without_read_contract"]
+    assert blocked_decision["missing_read_contracts"] == ["local_tasks"]
+    assert "GBP, konkurencję" not in blocked_decision["title"]
+    assert "GBP, konkurencji" not in blocked_decision["summary"]
+    assert "kontrakty GBP, konkurencji" not in blocked_decision["next_step"]
+
+    actions_response = client.get("/api/actions")
+
+    assert actions_response.status_code == 200
+    actions_by_id = {action["id"]: action for action in actions_response.json()}
+    localo_action = actions_by_id[LOCALO_VISIBILITY_REVIEW_ACTION_ID]
+    assert localo_action["payload"]["missing_read_contracts"] == ["local_tasks"]
+    assert "GBP performance" not in localo_action["payload"]["blocked_claims"]
+    assert "competitor visibility" not in localo_action["payload"]["blocked_claims"]
+    assert localo_action["payload"]["payload_preview"][0]["missing_read_contracts"] == [
+        "local_tasks"
+    ]
+    assert "GBP, konkurencję" not in localo_action["payload"]["payload_preview"][0]["reason"]
+
+
 def test_localo_diagnostics_blocks_visibility_when_access_is_missing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
