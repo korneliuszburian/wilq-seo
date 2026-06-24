@@ -125,7 +125,9 @@ Still incomplete:
   `duplicate_gate_status` and `content_gate_summary`; browser snapshot
   `.local-lab/proof/dashboard/content-target-gate/content-planner-gates.txt`
   shows `Inventory gate`, `Canonical` and `Duplikaty` on `/content-planner`.
-- [ ] Run final pre-demo gate after the next material code/eval slice.
+- [x] Run final pre-demo gate after the next material code/eval slice. Proof:
+  `scripts/pre_demo_gate.sh --core-skills` passed after the content
+  duplicate/canonical gate change.
 - [ ] Produce a short marketer UAT script and record the result.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
@@ -429,8 +431,7 @@ unless explicitly promoted:
 ## Outcomes And Retrospective
 
 Current outcome: WILQ has a credible solid-demo path and a strong content
-planning direction, but the goal is not complete until the final pre-demo gate
-is run after the material target-gate change, and marketer UAT feedback is
+planning direction, but the goal is not complete until marketer UAT feedback is
 captured or explicitly deferred.
 
 When the full demo goal is complete, add a final retrospective here with:

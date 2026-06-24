@@ -69,6 +69,10 @@ Stan produktu:
   smoke passed, and browser snapshot
   `.local-lab/proof/dashboard/content-target-gate/content-planner-gates.txt`
   shows create blocked before duplicate control.
+- Final core pre-demo gate passed after the content gate change on 2026-06-24:
+  `scripts/pre_demo_gate.sh --core-skills` completed managed stack status, API
+  health, live contract smoke, shared live schemas, dashboard API-backed route
+  smoke 13/13 and sequential core skill smokes.
 - Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
   stack was ready, browser snapshots for `/command-center`, `/merchant`,
   `/content-planner`, `/ads-doctor`, `/ga4` and
@@ -131,8 +135,8 @@ Stan produktu:
    - Verified now: live content diagnostics and non-interactive skill output
      satisfy the target-site boundary eval contract; content decisions expose
      inventory/canonical/duplicate gate fields.
-   - Next risk to test: whether the final pre-demo gate still passes after the
-     material content gate change.
+   - Next risk to test: real marketer UAT and whether the content gate makes
+     the next action clearer without developer explanation.
 
 2. **Marketer UAT and route usefulness**
    - Browser proof shows the narrow demo path is usable, but no real marketer
@@ -174,8 +178,9 @@ Stan produktu:
 2. If demo UX is the next priority, change only one confirmed blocker at a time:
    likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
    drilldown IDs behind technical details.
-3. Run `scripts/pre_demo_gate.sh --core-skills` after the content gate slice,
-   because API/schema/dashboard output changed.
+3. Prepare or run the short marketer UAT script: Command Center -> Merchant ->
+   Content Planner -> Ads Doctor -> GA4, then record whether the marketer knew
+   what to do next and where they got confused.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.
