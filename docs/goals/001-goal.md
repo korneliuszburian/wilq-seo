@@ -878,4 +878,7 @@ and dashboard typecheck. Continue from the remaining domain workflow queue:
 scan other marketer routes for local product-decision rebuilding, then proceed
 to skill/Codex workflow audit. Follow-up same day: GA4 route fallback to
 `act_review_ga4_tracking_quality` was removed and GA4 now displays
-`decision_blocker_count` from the API.
+`decision_blocker_count` from the API. Custom Segments route magic decision ID
+for a status badge was removed; remaining `decision_queue.find(...)` usages in
+Content and Localo are classified as presentational focus/readout helpers unless
+fresh route proof shows otherwise.

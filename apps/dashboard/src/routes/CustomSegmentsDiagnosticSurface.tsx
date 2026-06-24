@@ -249,9 +249,6 @@ export function CustomSegmentsDiagnosticSurface() {
   const contract = data.custom_segments_read_contract;
   const audienceForecast = contract.audience_forecast_read_contract;
   const keywordPlanner = data.keyword_planner_read_contract;
-  const customDecision = data.decision_queue.find(
-    (decision) => decision.id === "ads_prepare_custom_segments_from_search_terms"
-  );
   const sourceTermCount = contract.candidates.reduce(
     (total, candidate) => total + candidate.source_terms.length,
     0,
@@ -293,7 +290,7 @@ export function CustomSegmentsDiagnosticSurface() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
             <StatusBadge value={contract.status === "ready" ? "gotowe" : "zablokowane"} />
-            <StatusBadge value={customDecision?.status === "ready" ? "do oceny" : "zablokowane"} />
+            <StatusBadge value={contract.status === "ready" ? "do oceny" : "zablokowane"} />
             <StatusBadge value={keywordPlanner.status === "ready" ? "KP gotowe" : "KP zablokowane"} />
             <StatusBadge
               value={audienceForecast.status === "ready" ? "prognoza gotowa" : "prognoza zablokowana"}

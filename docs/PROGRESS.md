@@ -65,9 +65,15 @@ Stan produktu:
   proof for that follow-up: `pnpm --filter @wilq/dashboard exec vitest run
   src/routes/App.test.tsx -t 'ga4 and gsc routes'` returned 1 passed,
   dashboard typecheck passed and shared-schema live contracts returned 10
-  passed. Remaining domain workflow audit queue: check whether any other
-  marketer route still rebuilds product decisions locally instead of consuming
-  typed API summaries.
+  passed. Additional scan removed a Custom Segments magic decision ID used only
+  for a status badge; the route now reads its badge from the custom-segments
+  read contract. Focused proof: `pnpm --filter @wilq/dashboard exec vitest run
+  src/routes/App.test.tsx -t 'custom segments route'` returned 1 passed and
+  dashboard typecheck passed. Remaining `decision_queue.find(...)` usages in
+  Content and Localo are presentational focus/readout helpers, not fake
+  ActionObject or decision generation; reopen only with a failing route proof.
+  Remaining domain workflow audit queue: proceed to skill/Codex workflow audit
+  and reference hygiene.
 - Final A-Z dashboard route audit moved forward on 2026-06-24. Current
   checklist item completed: dashboard API-backed smoke for marketer routes.
   Previous suspicious failures were reclassified with current proof:
