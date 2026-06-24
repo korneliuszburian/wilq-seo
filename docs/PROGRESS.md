@@ -187,7 +187,9 @@ Stan produktu:
   `freshness` state derived from latest source `vendor_read` with
   connector-freshness fallback; `scripts/live_contract_smoke.py` asserts these
   fields exist without checking changing live metric values. Live proof on
-  2026-06-24 returned Merchant/GA4/Ads fresh and Content stale.
+  2026-06-24 returned Merchant/GA4/Ads fresh and Content stale. The dashboard
+  badge now renders stale ready decisions as `do odświeżenia`; browser proof:
+  `.local-lab/proof/dashboard/command-center-decision-freshness-full-snapshot.txt`.
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.

@@ -137,6 +137,13 @@ function decisionFreshnessLabel(item: DailyDecision) {
   return labels[item.freshness?.state ?? "unknown"] ?? "nieznana";
 }
 
+function decisionStatusBadgeValue(item: DailyDecision) {
+  if (item.status === "blocked") return "blocked";
+  const freshnessState = item.freshness?.state ?? "unknown";
+  if (freshnessState === "fresh") return "ready";
+  return freshnessState;
+}
+
 function decisionCopy(item: DailyDecision): DecisionCopy {
   if (item.id === "decision_review_merchant_feed_issues") {
     const products = metricDisplay(item, "produkty");
@@ -249,7 +256,7 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
                   {copy.title}
                 </h3>
               </div>
-              <StatusBadge value={item.status} />
+              <StatusBadge value={decisionStatusBadgeValue(item)} />
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-700">
               {copy.what}
