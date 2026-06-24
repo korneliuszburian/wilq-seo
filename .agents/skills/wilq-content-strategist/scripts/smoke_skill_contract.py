@@ -25,6 +25,13 @@ REQUIRED_CONTEXT_KEYS = {
     "content_diagnostics",
 }
 CONTENT_ACTION_ID = "act_prepare_content_refresh_queue"
+CONTENT_ACTION_DECISION_TYPES = {
+    "block_until_vendor_read",
+    "refresh_or_merge",
+    "merge_create_after_inventory_check",
+    "inventory_check_before_create",
+    "review_ahrefs_gap_records",
+}
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -207,12 +214,6 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
     decision_queue = content_diagnostics.get("decision_queue", [])
     live_data_available = bool(content_diagnostics.get("live_data_available"))
     query_page_count = int(content_diagnostics.get("query_page_count") or 0)
-    if not live_data_available and query_page_count == 0:
-        if decision_queue:
-            raise SystemExit(
-                "Content diagnostics exposes decision_queue without live content facts"
-            )
-        return
     if not decision_queue:
         raise SystemExit("Content diagnostics decision_queue is empty")
     if not all(isinstance(item, dict) for item in decision_queue):
@@ -220,14 +221,18 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
     action_ids = set(content_diagnostics.get("action_ids") or [])
     if CONTENT_ACTION_ID not in action_ids:
         raise SystemExit(f"Content diagnostics missing {CONTENT_ACTION_ID}")
-    if not any(
-        decision.get("decision_type")
-        in {
-            "refresh_or_merge",
-            "merge_create_after_inventory_check",
-            "inventory_check_before_create",
-            "review_ahrefs_gap_records",
-        }
+    if not live_data_available and query_page_count == 0:
+        if not any(
+            decision.get("decision_type") == "block_until_vendor_read"
+            and decision.get("status") == "blocked"
+            for decision in decision_queue
+        ):
+            raise SystemExit(
+                "Content diagnostics must expose blocked vendor-read decision "
+                "without live content facts"
+            )
+    elif not any(
+        decision.get("decision_type") in CONTENT_ACTION_DECISION_TYPES
         for decision in decision_queue
     ):
         raise SystemExit("Content decision_queue lacks review-safe content planning decision")
@@ -236,8 +241,14 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
             continue
         if not decision.get("evidence_ids"):
             raise SystemExit("Content decision_queue item lacks evidence IDs")
-        if CONTENT_ACTION_ID not in set(decision.get("action_ids") or []):
-            raise SystemExit("Content decision_queue item lacks content ActionObject ID")
+        decision_action_ids = set(decision.get("action_ids") or [])
+        if not decision_action_ids:
+            raise SystemExit("Content decision_queue item lacks ActionObject ID")
+        if (
+            decision.get("decision_type") in CONTENT_ACTION_DECISION_TYPES
+            and CONTENT_ACTION_ID not in decision_action_ids
+        ):
+            raise SystemExit("Content planning decision lacks content ActionObject ID")
         if not decision.get("blocked_claims"):
             raise SystemExit("Content decision_queue item lacks blocked claims")
 
