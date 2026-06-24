@@ -151,6 +151,12 @@ type ContentBriefPreviewItem = {
   source_site_host?: string | null;
   target_site_adaptation_status?: string | null;
   target_site_review_requirements?: string[];
+  target_site_inventory_content_type?: string | null;
+  target_site_inventory_status?: string | null;
+  target_site_inventory_source?: string | null;
+  target_site_inventory_modified_gmt?: string | null;
+  target_site_inventory_missing_fields?: string[];
+  target_site_inventory_summary?: string | null;
   inventory_gate_status?: string | null;
   canonical_gate_status?: string | null;
   duplicate_gate_status?: string | null;
@@ -293,6 +299,16 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           label="Review targetu"
           values={(preview.target_site_review_requirements ?? []).slice(0, 4)}
         />
+        <TraceLine
+          label="Inventory targetu"
+          values={contentTargetInventoryValues(preview)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Braki targetu"
+          values={(preview.target_site_inventory_missing_fields ?? []).slice(0, 6)}
+          empty="brak"
+        />
         <TraceLine label="Linkowanie" values={(preview.internal_link_direction ?? []).slice(0, 3)} />
         <TraceLine label="Źródła faktów" values={(preview.source_facts ?? []).slice(0, 4)} />
         <TraceLine label="Brakujące dowody" values={(preview.missing_evidence ?? []).slice(0, 3)} />
@@ -360,6 +376,12 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_migration_status?: string | null;
   target_site_migration_summary?: string | null;
   target_site_review_requirements?: string[];
+  target_site_inventory_content_type?: string | null;
+  target_site_inventory_status?: string | null;
+  target_site_inventory_source?: string | null;
+  target_site_inventory_modified_gmt?: string | null;
+  target_site_inventory_missing_fields?: string[];
+  target_site_inventory_summary?: string | null;
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -408,6 +430,16 @@ function WordPressDraftPayloadPreviewCard({
         <TraceLine
           label="Review targetu"
           values={(preview.target_site_review_requirements ?? []).slice(0, 4)}
+        />
+        <TraceLine
+          label="Inventory targetu"
+          values={contentTargetInventoryValues(preview)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Braki targetu"
+          values={(preview.target_site_inventory_missing_fields ?? []).slice(0, 6)}
+          empty="brak"
         />
         <TraceLine
           label="Bloki"
@@ -632,6 +664,11 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
             )}
           </span>
         ) : null}
+        {decision.target_site_inventory_source ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Inventory: {decision.target_site_inventory_source}
+          </span>
+        ) : null}
         {decision.inventory_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Inventory gate: {contentGateStatusLabel(decision.inventory_gate_status)}
@@ -656,6 +693,11 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
       {decision.target_site_migration_summary ? (
         <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
           {decision.target_site_migration_summary}
+        </p>
+      ) : null}
+      {decision.target_site_inventory_summary ? (
+        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
+          {decision.target_site_inventory_summary}
         </p>
       ) : null}
       {decision.ahrefs_candidate_rows.length > 0 ? (
@@ -930,6 +972,35 @@ function contentTargetSiteValues(
   }
   if (preview.target_site_url) {
     values.push(shortPath(preview.target_site_url));
+  }
+  return values;
+}
+
+function contentTargetInventoryValues(
+  preview: Pick<
+    ContentBriefPreviewItem | WordPressDraftPayloadPreviewItem,
+    | "target_site_inventory_content_type"
+    | "target_site_inventory_status"
+    | "target_site_inventory_source"
+    | "target_site_inventory_modified_gmt"
+    | "target_site_inventory_summary"
+  >
+) {
+  const values: string[] = [];
+  if (preview.target_site_inventory_content_type) {
+    values.push(`typ: ${preview.target_site_inventory_content_type}`);
+  }
+  if (preview.target_site_inventory_status) {
+    values.push(`status: ${preview.target_site_inventory_status}`);
+  }
+  if (preview.target_site_inventory_source) {
+    values.push(`źródło: ${preview.target_site_inventory_source}`);
+  }
+  if (preview.target_site_inventory_modified_gmt) {
+    values.push(`modified: ${preview.target_site_inventory_modified_gmt}`);
+  }
+  if (!values.length && preview.target_site_inventory_summary) {
+    values.push(preview.target_site_inventory_summary);
   }
   return values;
 }

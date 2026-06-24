@@ -162,9 +162,15 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
 - `ready`: Current-site content decisions expose old-to-new candidate URLs for
   `ekologus.dev.proudsite.pl` and mark them `needs_review` before draft or
   staging work.
-- `hardening`: Extend the dev-site inventory/read contract for
-  `ekologus.dev.proudsite.pl` beyond current URL/fact rows into template or
-  section, title/H1, canonical/status and freshness.
+- `hardening`: Continue the dev-site inventory/read contract toward real
+  template or section, title/H1 and canonical facts when the vendor read exposes
+  them. Do not infer those fields from URL-only inventory.
+- `ready`: Content decisions, content ActionObject previews, reviewed draft
+  previews, dashboard cards and content-strategist context-pack now expose the
+  WordPress inventory facts WILQ actually has for target URLs:
+  `content_type`, `status`, `inventory_source`, `modified_gmt`, plus missing
+  fields such as `title_or_h1` and `canonical_url`. This increases migration
+  review confidence without unlocking draft, staging or publish.
 - `task`: Confirm explicit old-to-new URL mapping against dev-site inventory
   when both old/current and `ekologus.dev.proudsite.pl` inventory exist for
   related content.

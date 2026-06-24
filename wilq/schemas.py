@@ -2189,6 +2189,12 @@ class ContentDecisionItem(BaseModel):
     target_site_migration_status: str | None = None
     target_site_migration_summary: str | None = None
     target_site_review_requirements: list[str] = Field(default_factory=list)
+    target_site_inventory_content_type: str | None = None
+    target_site_inventory_status: str | None = None
+    target_site_inventory_source: str | None = None
+    target_site_inventory_modified_gmt: str | None = None
+    target_site_inventory_missing_fields: list[str] = Field(default_factory=list)
+    target_site_inventory_summary: str | None = None
     inventory_gate_status: str | None = None
     canonical_gate_status: str | None = None
     duplicate_gate_status: str | None = None

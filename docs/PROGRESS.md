@@ -69,6 +69,12 @@ Stan produktu:
   mapping, canonical review, duplicate/cannibalization check and human
   confirmation. Proof:
   `.local-lab/proof/dashboard/content-target-review-requirements/action-review-requirements.json`.
+- Content decisions, content ActionObject previews, reviewed draft previews,
+  dashboard cards and the content-strategist context-pack now expose target
+  inventory details WILQ actually has (`content_type`, `status`,
+  `inventory_source`, `modified_gmt`) plus missing fields such as
+  `title_or_h1` and `canonical_url`. Focused API tests, dashboard tests and the
+  content-strategist smoke passed after a managed stack restart.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
@@ -100,8 +106,9 @@ Stan produktu:
 - Real marketer UAT has not been collected. Browser/smoke/eval proof does not
   prove that the marketer saves time or knows what to do without explanation.
 - Content workflow still lacks confirmed old-to-new mapping against full
-  dev-site inventory, staging handoff, publishing and post-publication
-  measurement loop for `ekologus.dev.proudsite.pl`.
+  dev-site inventory, real target title/H1/canonical facts, staging handoff,
+  publishing and post-publication measurement loop for
+  `ekologus.dev.proudsite.pl`.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.

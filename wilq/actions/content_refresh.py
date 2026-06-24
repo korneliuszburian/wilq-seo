@@ -155,6 +155,7 @@ def content_payload_with_reviewed_wordpress_draft_previews(
 
 def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str, Any]]:
     wordpress_urls_by_path = _wordpress_inventory_urls_by_path(metric_facts)
+    wordpress_details_by_path = _wordpress_inventory_details_by_path(metric_facts)
     gsc_facts_by_page: dict[str, list[MetricFact]] = {}
     for fact in metric_facts:
         if fact.source_connector != "google_search_console":
@@ -179,6 +180,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
         primary_query = queries[0] if queries else _short_path(page)
         page_path = _normalized_path(page)
         wordpress_target_url = wordpress_urls_by_path.get(page_path)
+        wordpress_details = wordpress_details_by_path.get(page_path)
         wordpress_match = wordpress_target_url is not None
         mode = "refresh" if wordpress_match else "inventory_check"
         decision_options = ["refresh", "merge", "block"] if wordpress_match else [
@@ -191,6 +193,10 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
             target_site_url=wordpress_target_url,
             wordpress_match=wordpress_match,
         )
+        target_site_inventory_context = _target_site_inventory_context(
+            target_site_url=target_site_context.get("target_site_url"),
+            inventory_details=wordpress_details,
+        )
         previews.append(
             {
                 "preview_contract": CONTENT_BRIEF_PREVIEW_CONTRACT,
@@ -200,6 +206,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "topic": primary_query,
                 "target_url": page,
                 **target_site_context,
+                **target_site_inventory_context,
                 "wordpress_inventory_match": "present" if wordpress_match else "missing",
                 "decision_options": decision_options,
                 "metric_snapshot": _gsc_metric_snapshot(page_facts),
@@ -291,6 +298,30 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
             if isinstance(preview.get("target_site_migration_status"), str)
             else None,
         ),
+        "target_site_inventory_content_type": preview.get(
+            "target_site_inventory_content_type"
+        )
+        if isinstance(preview.get("target_site_inventory_content_type"), str)
+        else None,
+        "target_site_inventory_status": preview.get("target_site_inventory_status")
+        if isinstance(preview.get("target_site_inventory_status"), str)
+        else None,
+        "target_site_inventory_source": preview.get("target_site_inventory_source")
+        if isinstance(preview.get("target_site_inventory_source"), str)
+        else None,
+        "target_site_inventory_modified_gmt": preview.get(
+            "target_site_inventory_modified_gmt"
+        )
+        if isinstance(preview.get("target_site_inventory_modified_gmt"), str)
+        else None,
+        "target_site_inventory_missing_fields": [
+            item
+            for item in preview.get("target_site_inventory_missing_fields", [])
+            if isinstance(item, str)
+        ],
+        "target_site_inventory_summary": preview.get("target_site_inventory_summary")
+        if isinstance(preview.get("target_site_inventory_summary"), str)
+        else None,
         "draft_payload": {
             "post_status": "draft",
             "post_title": _draft_title(topic, mode),
@@ -457,6 +488,33 @@ def _wordpress_inventory_urls_by_path(metric_facts: list[MetricFact]) -> dict[st
     return urls_by_path
 
 
+def _wordpress_inventory_details_by_path(
+    metric_facts: list[MetricFact],
+) -> dict[str, dict[str, str]]:
+    details_by_path: dict[str, dict[str, str]] = {}
+    for fact in metric_facts:
+        if not fact.source_connector.startswith("wordpress_"):
+            continue
+        if fact.name != "content_object_seen":
+            continue
+        url = fact.dimensions.get("content_url")
+        if not url:
+            continue
+        path = _normalized_path(url)
+        if not path:
+            continue
+        details_by_path.setdefault(
+            path,
+            {
+                "content_type": fact.dimensions.get("content_type", ""),
+                "status": fact.dimensions.get("status", ""),
+                "inventory_source": fact.dimensions.get("inventory_source", ""),
+                "modified_gmt": fact.dimensions.get("modified_gmt", ""),
+            },
+        )
+    return details_by_path
+
+
 def _target_site_context(
     *,
     source_url: str,
@@ -494,6 +552,75 @@ def _target_site_context(
             migration_candidate_url,
         ),
         "target_site_review_requirements": review_requirements,
+    }
+
+
+def _target_site_inventory_context(
+    *,
+    target_site_url: str | None,
+    inventory_details: dict[str, str] | None,
+) -> dict[str, object]:
+    if not target_site_url:
+        return {
+            "target_site_inventory_missing_fields": [
+                "target_site_url",
+                "title_or_h1",
+                "canonical_url",
+            ],
+            "target_site_inventory_summary": (
+                "Brak target URL w inventory. Nie przygotowuj draftu ani stagingu "
+                "bez ręcznego mapowania."
+            ),
+        }
+
+    if inventory_details is None:
+        return {
+            "target_site_inventory_missing_fields": [
+                "content_type",
+                "status",
+                "inventory_source",
+                "modified_gmt",
+                "title_or_h1",
+                "canonical_url",
+            ],
+            "target_site_inventory_summary": (
+                "Brak szczegółu inventory dla target URL. WILQ może pokazać "
+                "kandydata mapowania, ale draft i staging wymagają potwierdzenia."
+            ),
+        }
+
+    missing = [
+        field
+        for field in ("content_type", "status", "inventory_source", "modified_gmt")
+        if not inventory_details.get(field)
+    ]
+    missing.extend(["title_or_h1", "canonical_url"])
+    content_type = inventory_details.get("content_type") or None
+    status = inventory_details.get("status") or None
+    inventory_source = inventory_details.get("inventory_source") or None
+    modified_gmt = inventory_details.get("modified_gmt") or None
+    known_parts = _unique(
+        [
+            f"type={content_type}" if content_type else "",
+            f"status={status}" if status else "",
+            f"source={inventory_source}" if inventory_source else "",
+            f"modified_gmt={modified_gmt}" if modified_gmt else "",
+        ]
+    )
+    summary = "Inventory potwierdza target URL"
+    if known_parts:
+        summary = f"{summary}: {', '.join(known_parts)}"
+    summary = (
+        f"{summary}. Przed draftem/stagingiem nadal sprawdź: "
+        f"{', '.join(missing)}."
+    )
+    return {
+        "target_site_inventory_content_type": content_type,
+        "target_site_inventory_status": status,
+        "target_site_inventory_source": inventory_source,
+        "target_site_inventory_modified_gmt": modified_gmt,
+        "target_site_inventory_missing_fields": missing,
+        "target_site_inventory_summary": summary,
     }
 
 

@@ -1420,6 +1420,7 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
                     "content_url": target_site_url,
                     "status": "indexed",
                     "inventory_source": "public_sitemap",
+                    "modified_gmt": "2026-06-20T08:15:00+00:00",
                 },
             )
         ],
@@ -1447,6 +1448,18 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert "Inventory potwierdza URL na target site" in decision[
         "target_site_migration_summary"
     ]
+    assert decision["target_site_inventory_content_type"] == "sitemap"
+    assert decision["target_site_inventory_status"] == "indexed"
+    assert decision["target_site_inventory_source"] == "public_sitemap"
+    assert decision["target_site_inventory_modified_gmt"] == "2026-06-20T08:15:00+00:00"
+    assert decision["target_site_inventory_missing_fields"] == [
+        "title_or_h1",
+        "canonical_url",
+    ]
+    assert "Inventory potwierdza target URL" in decision[
+        "target_site_inventory_summary"
+    ]
+    assert "title_or_h1" in decision["target_site_inventory_summary"]
     assert decision["inventory_gate_status"] == "confirmed_target_inventory"
     assert decision["canonical_gate_status"] == "needs_target_canonical_review"
     assert decision["duplicate_gate_status"] == "refresh_or_merge_required"
@@ -1483,6 +1496,17 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
         "target_site_canonical_review",
         "duplicate_or_cannibalization_check",
         "human_confirm_before_wordpress_write",
+    ]
+    assert preview["target_site_inventory_content_type"] == "sitemap"
+    assert preview["target_site_inventory_status"] == "indexed"
+    assert preview["target_site_inventory_source"] == "public_sitemap"
+    assert preview["target_site_inventory_modified_gmt"] == "2026-06-20T08:15:00+00:00"
+    assert preview["target_site_inventory_missing_fields"] == [
+        "title_or_h1",
+        "canonical_url",
+    ]
+    assert "Inventory potwierdza target URL" in preview[
+        "target_site_inventory_summary"
     ]
     assert preview["wordpress_inventory_match"] == "present"
     assert preview["apply_allowed"] is False

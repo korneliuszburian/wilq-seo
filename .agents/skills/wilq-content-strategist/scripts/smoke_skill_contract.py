@@ -350,6 +350,15 @@ def validate_content_action_preview(
                     raise SystemExit(f"GSC content brief preview lacks {field}")
         if gsc_preview.get("target_site_url") == "[REDACTED]":
             raise SystemExit("GSC content brief target_site_url must not be redacted")
+        if "target_site_inventory_summary" not in gsc_preview:
+            raise SystemExit("GSC content brief preview lacks target_site_inventory_summary")
+        inventory_missing = gsc_preview.get("target_site_inventory_missing_fields")
+        if not isinstance(inventory_missing, list) or "canonical_url" not in set(
+            inventory_missing
+        ):
+            raise SystemExit(
+                "GSC content brief preview target_site_inventory_missing_fields must include canonical_url"
+            )
     return [
         {
             "topic": preview.get("topic"),
@@ -363,6 +372,12 @@ def validate_content_action_preview(
             "source_facts": (preview.get("source_facts") or [])[:4],
             "missing_evidence": (preview.get("missing_evidence") or [])[:3],
             "forbidden_claims": (preview.get("forbidden_claims") or [])[:6],
+            "target_site_inventory_summary": preview.get(
+                "target_site_inventory_summary"
+            ),
+            "target_site_inventory_missing_fields": (
+                preview.get("target_site_inventory_missing_fields") or []
+            )[:6],
             "evidence_ids": (preview.get("evidence_ids") or [])[:5],
         }
         for preview in previews[:3]
