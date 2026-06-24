@@ -135,6 +135,13 @@ Still incomplete:
   when API did not return it, and blocked GA4 write, ROAS, attribution verdict,
   conversion drop, conversion rate, profitability, revenue and tracking fixed
   claims.
+- [x] Verify Localo read-only visibility proof. Proof:
+  `.local-lab/evals/codex-skill/20260624T133326Z/wilq-localo-operator/result.json`;
+  passed with `operator_usefulness_score=5`, `mcp_initialize_status=200`,
+  `access_ready`, read-only Localo facts, validated
+  `act_review_localo_visibility_facts`, `local_visibility_review_preview_v1`
+  and write/apply/uplift claims limited to evidence and blocked where not
+  supported.
 - [x] Add or verify a target-site duplicate/canonical gate for content. Proof:
   API decisions now expose `inventory_gate_status`, `canonical_gate_status`,
   `duplicate_gate_status` and `content_gate_summary`; browser snapshot
@@ -438,6 +445,11 @@ unless explicitly promoted:
   measurement-vs-traffic-quality separation, not GA4 write, tracking repair,
   attribution verdict, ROAS, revenue, profitability or conversion-drop
   readiness.
+- The 2026-06-24 Localo eval passed with usefulness score 5 on live API. It
+  proves Localo is no longer merely OAuth/access proof: read-only visibility,
+  GBP, competitor and review aggregates are available for review. It still does
+  not unlock local tasks, GBP write, write/apply automation or local visibility
+  uplift claims.
 
 ## Decision Log
 

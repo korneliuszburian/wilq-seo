@@ -5580,3 +5580,53 @@ Product finding:
 - GA4 Analyst is current-demo useful as a measurement and traffic-quality review
   tool. This does not unlock GA4 write, tracking repair, attribution verdicts,
   ROAS, revenue, profitability or conversion-drop readiness.
+
+## 2026-06-24 - wilq-localo-operator read-only visibility proof
+
+Purpose:
+
+- Re-verify Localo Operator against the current live API because prior audits
+  were inconsistent about whether Localo was only OAuth/access proof or had
+  usable read-only visibility evidence.
+- Prove the current boundary: Localo aggregate facts can support read-only local
+  visibility review, while local tasks, GBP write, write/apply automation and
+  local visibility uplift remain blocked.
+
+Focused proof:
+
+```bash
+uv run python .agents/skills/wilq-localo-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-localo-operator --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T133326Z/wilq-localo-operator/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `operator_usefulness_score=5`
+- `source_connectors=["localo"]`
+- Evidence IDs: `ev_connector_localo_status` and
+  `ev_refresh_refresh_localo_c41b348c5292`.
+- Smoke path confirmed `mcp_initialize_status=200`,
+  `localo_access_status=access_ready`, `localo_refresh_status=completed`,
+  `localo_action_preview_contract=local_visibility_review_preview_v1` and
+  `act_review_localo_visibility_facts` validation as `valid=true`.
+- Live diagnostics expose read-only aggregate facts for local rankings, GBP
+  visibility, competitor visibility and reviews.
+- The eval output keeps Localo work as manual review of evidence-backed facts
+  and does not allow write/apply without separate approval.
+- `decision_quality` booleans all passed and `safety_findings=[]`.
+
+Product finding:
+
+- Localo is current-demo useful as a read-only local visibility review surface,
+  not merely OAuth/access proof. This does not unlock local tasks, GBP write,
+  write/apply automation, review response execution or local visibility uplift
+  claims.

@@ -79,6 +79,16 @@ Stan produktu:
   claims for GA4 write, ROAS, attribution verdict, conversion drop, conversion
   rate, profitability, revenue and tracking fixed. This proves GA4 review
   safety, not write/tracking-repair/performance verdict readiness.
+- Localo read-only visibility eval was verified through real non-interactive
+  Codex on 2026-06-24. Proof:
+  `.local-lab/evals/codex-skill/20260624T133326Z/wilq-localo-operator/result.json`.
+  Result passed with `operator_usefulness_score=5`, `mcp_initialize_status=200`,
+  `access_ready`, evidence IDs, `act_review_localo_visibility_facts`,
+  `local_visibility_review_preview_v1` and no safety findings. Current Localo
+  truth: WILQ has read-only aggregate facts for local rankings, GBP,
+  competitor visibility and reviews; it is not just OAuth proof anymore. Local
+  tasks, GBP write, write/apply automation and local visibility uplift remain
+  blocked.
 - Content duplicate/canonical gate slice completed on 2026-06-24. Content
   decisions now expose `inventory_gate_status`, `canonical_gate_status`,
   `duplicate_gate_status` and `content_gate_summary`; `/content-planner` renders
