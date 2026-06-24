@@ -235,8 +235,14 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   returned 4 current mapping-review decisions: BDO and remediacja have
   `review_alternative_candidates`; Zielony Lad and operat wodnoprawny have
   `manual_mapping_required`. Draft/staging/publish remain blocked.
-- `task`: Add a review-only mapping decision/recording path so an operator can
-  confirm, reject or override exact/alternative dev-site mappings with audit.
+- `ready`: `act_prepare_content_refresh_queue` now exposes
+  `target_site_mapping_review_contract` with review-only allowed outcomes,
+  required fields and blocked outputs. Required validation includes
+  `target_site_mapping_review`; queue steps include `review_target_site_mapping`.
+  Live proof shows `apply_allowed=false` and `api_mutation_ready=false`.
+- `task`: Add the actual review-only mapping recording endpoint/UI path so an
+  operator can confirm, reject or override exact/alternative dev-site mappings
+  with audit.
 - `ready`: Content ActionObject payload, reviewed draft preview and
   content-strategist context-pack preserve target-site migration candidate,
   status and summary fields. Current old-site rows are `needs_review`, so draft
@@ -533,6 +539,11 @@ Use these rules before every implementation slice:
   `.local-lab/proof/content-mapping-review/live-mapping-review.json`,
   `.local-lab/proof/content-mapping-review/content-strategist-smoke.json` and
   `.local-lab/proof/dashboard/content-mapping-review/content-planner-mapping-review.txt`.
+- [x] Add the review-only mapping contract to
+  `act_prepare_content_refresh_queue`. Proof:
+  `.local-lab/proof/content-mapping-review/action-mapping-review-contract.json`
+  and
+  `.local-lab/proof/content-mapping-review/content-strategist-contract-smoke.json`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

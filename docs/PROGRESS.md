@@ -209,6 +209,14 @@ Stan produktu:
   `.local-lab/proof/content-mapping-review/live-mapping-review.json`,
   `.local-lab/proof/content-mapping-review/content-strategist-smoke.json` and
   `.local-lab/proof/dashboard/content-mapping-review/content-planner-mapping-review.txt`.
+- `act_prepare_content_refresh_queue` now exposes
+  `target_site_mapping_review_contract` with review-only allowed outcomes,
+  required fields and blocked outputs. Live payload proof keeps
+  `apply_allowed=false` and `api_mutation_ready=false`; content-strategist smoke
+  now requires the contract. Proof:
+  `.local-lab/proof/content-mapping-review/action-mapping-review-contract.json`
+  and
+  `.local-lab/proof/content-mapping-review/content-strategist-contract-smoke.json`.
 
 ## Active Gaps
 
@@ -238,9 +246,9 @@ Stan produktu:
    unless a fresh route proof finds a remaining marketer-facing leak.
 3. If content depth is next, continue from the existing source/target,
    duplicate/canonical, ActionObject migration status, target-site review
-   requirements, typed intent, alternative candidate URLs and mapping-review
-   statuses toward a review-only mapping recording path, then draft/staging
-   handoff without publish/apply claims.
+   requirements, typed intent, alternative candidate URLs, mapping-review
+   statuses and the review-only mapping contract toward an audited mapping
+   recording path, then draft/staging handoff without publish/apply claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

@@ -308,6 +308,15 @@ def validate_content_action_preview(
     payload = content_action.get("payload")
     if not isinstance(payload, dict):
         raise SystemExit("Content ActionObject payload must be an object")
+    mapping_contract = payload.get("target_site_mapping_review_contract")
+    if not isinstance(mapping_contract, dict):
+        raise SystemExit("Content ActionObject lacks target_site_mapping_review_contract")
+    if mapping_contract.get("contract") != "target_site_mapping_review_v1":
+        raise SystemExit("Content mapping review contract has invalid version")
+    if mapping_contract.get("scope") != "review_only":
+        raise SystemExit("Content mapping review contract must be review_only")
+    if "wordpress_publish" not in set(mapping_contract.get("blocked_outputs") or []):
+        raise SystemExit("Content mapping review contract must block wordpress_publish")
     previews = payload.get("content_brief_preview")
     if not require_preview and previews is None:
         return []

@@ -2895,6 +2895,12 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             assert content_payload["preview_contract"] == "content_brief_preview_v1"
             assert content_payload["apply_allowed"] is False
             assert content_payload["api_mutation_ready"] is False
+            mapping_contract = content_payload["target_site_mapping_review_contract"]
+            assert mapping_contract["contract"] == "target_site_mapping_review_v1"
+            assert mapping_contract["scope"] == "review_only"
+            assert "confirm_alternative_candidate" in mapping_contract["allowed_outcomes"]
+            assert "wordpress_publish" in mapping_contract["blocked_outputs"]
+            assert "target_site_mapping_review" in content_payload["required_validation"]
             assert "content_brief_preview" in content_payload
             assert len(content_payload["content_brief_preview"]) >= 2
             gsc_preview = next(
