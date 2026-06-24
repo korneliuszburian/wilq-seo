@@ -202,11 +202,11 @@ test.describe("WILQ dashboard API-backed smoke", () => {
     await expect(page.getByRole("heading", { name: "Podgląd payloadu" })).toBeVisible();
     await expect(page.getByText(/Dowody: .*ev_refresh_refresh_google_merchant_center/)).toBeVisible();
     await expect(page.getByText(/^Evidence:/)).toHaveCount(0);
-    await expect(page.getByText("Dry-run preview", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: "Generuj preview" }).click();
+    await expect(page.getByText("Podgląd zmian", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Generuj podgląd" }).click();
     await expect(page.getByText("Audit event: action_preview_generated")).toBeVisible();
-    await expect(page.getByText("Jawne potwierdzenie preview")).toBeVisible();
-    await page.getByRole("button", { name: "Potwierdź preview" }).click();
+    await expect(page.getByText("Jawne potwierdzenie podglądu")).toBeVisible();
+    await page.getByRole("button", { name: "Potwierdź podgląd" }).click();
     await expect(page.getByText("Potwierdzenie: confirmed")).toBeVisible();
     await expect(page.getByText("Audit event: action_apply_confirmed")).toBeVisible();
     await expect(page.getByText(/Apply nadal: zablokowany/)).toHaveCount(1);

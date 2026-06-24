@@ -6489,12 +6489,12 @@ describe("WILQ dashboard", () => {
     await waitFor(() =>
       expect(screen.getByText("Zapisano audit event: human_review_approved_for_prepare")).toBeInTheDocument()
     );
-    expect(screen.getByText("Dry-run preview")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Generuj preview" }));
+    expect(screen.getByText("Podgląd zmian")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Generuj podgląd" }));
     await waitFor(() => expect(screen.getByText("Audit event: action_preview_generated")).toBeInTheDocument());
-    expect(screen.getByText(/Dry-run: tak; mutacje:\s*zablokowane/)).toBeInTheDocument();
-    expect(screen.getByText("Jawne potwierdzenie preview")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Potwierdź preview" }));
+    expect(screen.getByText(/Tryb bez mutacji: tak; mutacje:\s*zablokowane/)).toBeInTheDocument();
+    expect(screen.getByText("Jawne potwierdzenie podglądu")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Potwierdź podgląd" }));
     await waitFor(() => expect(screen.getByText("Audit event: action_apply_confirmed")).toBeInTheDocument());
     expect(screen.getByText("Potwierdzenie:")).toBeInTheDocument();
     expect(screen.getByText("confirmed")).toBeInTheDocument();

@@ -91,10 +91,10 @@ export function ActionPreviewControls({ action }: { action: ActionObject }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="font-semibold uppercase tracking-normal text-slate-600">
-            Dry-run preview
+            Podgląd zmian
           </div>
           <p className="mt-1 leading-5 text-slate-600">
-            Generuje podgląd payloadu i audit event bez mutacji vendorów.
+            Generuje podgląd payloadu i zapis audytu bez mutacji vendorów.
           </p>
         </div>
         <button
@@ -108,7 +108,7 @@ export function ActionPreviewControls({ action }: { action: ActionObject }) {
           ) : (
             <FileJson aria-hidden="true" size={15} />
           )}
-          {previewMutation.isPending ? "Generuję" : "Generuj preview"}
+          {previewMutation.isPending ? "Generuję" : "Generuj podgląd"}
         </button>
       </div>
       <ActionPreviewResultPanel
@@ -135,17 +135,17 @@ function ActionPreviewResultPanel({
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-700">
       <div>
-        Preview: <span className="font-semibold">{result.status}</span>
+        Podgląd: <span className="font-semibold">{result.status}</span>
       </div>
       <div>
-        Dry-run: {result.dry_run ? "tak" : "nie"}; mutacje:{" "}
+        Tryb bez mutacji: {result.dry_run ? "tak" : "nie"}; mutacje:{" "}
         {result.mutation_allowed ? "dopuszczone" : "zablokowane"}
       </div>
       <div>
-        Pozycje preview: {result.preview_items.length}/{result.preview_items_total}
+        Pozycje podglądu: {result.preview_items.length}/{result.preview_items_total}
         {result.omitted_items > 0 ? `, pominięto ${result.omitted_items}` : ""}
       </div>
-      <TraceLine label="Blokady preview" values={result.blockers.map(actionGateLabel)} empty="brak" />
+      <TraceLine label="Blokady podglądu" values={result.blockers.map(actionGateLabel)} empty="brak" />
       <div>Audit event: {result.audit_event.event_type}</div>
     </div>
   );
@@ -215,7 +215,10 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
       </div>
       {action.review_gate.last_review_summary ? (
         <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">
-          {action.review_gate.last_review_summary}
+          {actionAuditSummaryLabel(
+            "human_review_approved_for_prepare",
+            action.review_gate.last_review_summary
+          )}
         </p>
       ) : null}
       <div className="mt-3 grid gap-3 md:grid-cols-[220px_1fr_auto]">
@@ -353,8 +356,8 @@ function actionGateLabel(value: string) {
     payload_apply_allowed_false: "payload nie pozwala na apply",
     destructive_actions_blocked: "destructive actions zablokowane",
     preview_acknowledgement_required: "wymagane potwierdzenie preview",
-    dry_run_preview_required: "wymagany wcześniejszy dry-run preview",
-    action_confirmation_required: "wymagane potwierdzenie preview",
+    dry_run_preview_required: "wymagany wcześniejszy podgląd zmian",
+    action_confirmation_required: "wymagane potwierdzenie podglądu",
     metric_facts_required: "wymagane metric facts",
     evidence_ids_required: "wymagane evidence IDs",
     impact_sanity_check_required: "wymagany impact sanity check",
@@ -421,10 +424,10 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
       />
       <div className="mt-3 rounded-md border border-wait/30 bg-white p-3">
         <div className="text-xs font-semibold uppercase tracking-normal text-slate-600">
-          Jawne potwierdzenie preview
+          Jawne potwierdzenie podglądu
         </div>
         <p className="mt-1 text-xs leading-5 text-slate-600">
-          Potwierdzenie wymaga wcześniejszego dry-run preview. Zapisuje lokalny audit event,
+          Potwierdzenie wymaga wcześniejszego podglądu zmian. Zapisuje lokalny audit event,
           ale nie wykonuje apply ani mutacji vendorów.
         </p>
         <button
@@ -438,7 +441,7 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
           ) : (
             <ShieldAlert aria-hidden="true" size={15} />
           )}
-          {confirmMutation.isPending ? "Zapisuję potwierdzenie" : "Potwierdź preview"}
+          {confirmMutation.isPending ? "Zapisuję potwierdzenie" : "Potwierdź podgląd"}
         </button>
         <ActionConfirmResultPanel
           result={confirmMutation.data}
@@ -598,4 +601,30 @@ function SectionHeading({ title }: { title: string }) {
       {title}
     </h2>
   );
+}
+
+export function actionAuditEventLabel(eventType: string) {
+  const labels: Record<string, string> = {
+    action_preview_generated: "Podgląd zmian wygenerowany",
+    human_review_approved_for_prepare: "Review operatora zapisany",
+    action_apply_confirmed: "Podgląd potwierdzony",
+    action_impact_check_completed: "Impact sanity check zapisany"
+  };
+  return labels[eventType] ?? eventType;
+}
+
+export function actionAuditSummaryLabel(eventType: string, summary: string) {
+  if (
+    eventType === "human_review_approved_for_prepare" &&
+    /\bGoal 001\b|live proof|context-pack draft preview/i.test(summary)
+  ) {
+    return "Review operatora zapisany. Apply i mutacje vendorów pozostają zablokowane.";
+  }
+  if (eventType === "action_preview_generated" && summary.startsWith("Dry-run preview generated:")) {
+    return summary
+      .replace("Dry-run preview generated:", "Podgląd zmian wygenerowany:")
+      .replace("mutation_allowed=false", "mutacje=zablokowane")
+      .replace("This did not execute vendor mutations.", "Nie wykonano mutacji vendorów.");
+  }
+  return summary;
 }

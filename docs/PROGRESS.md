@@ -41,695 +41,108 @@ Stan produktu:
 
 ## Latest Important Facts
 
-- Content decision target-context slice completed on 2026-06-24. Confirmed
-  live gap: `/api/content/diagnostics` decision queue had useful content
-  decisions, but GSC decisions did not expose `source_url`, `source_site_host`,
-  `target_site_url`, `target_site_host` or `target_site_adaptation_status`;
-  those fields were only visible after opening `act_prepare_content_refresh_queue`.
-  Fixed in typed backend/shared schemas, content diagnostics builder and
-  Content Planner cards. Live API after managed stack restart shows 4 content
-  decisions with target context; first decision exposes source/target
-  `https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/` and
-  `target_site_adaptation_status=current_site_match`. Focused proof: content
-  API pytest subset 2 passed, shared schema tests passed, dashboard typecheck
-  passed through `rtk proxy`, dashboard content route-focused tests passed 35
-  tests and live `/api/content/diagnostics` check passed. Next best slice:
-  marketer browser walkthrough of the narrow demo path or adversarial
-  overclaim evals for content/Ads/Merchant/GA4/Localo.
+- Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
+  stack was ready, browser snapshots for `/command-center`, `/merchant`,
+  `/content-planner`, `/ads-doctor`, `/ga4` and
+  `/actions/act_prepare_content_refresh_queue` are saved under
+  `.local-lab/proof/dashboard/marketer-demo-walkthrough/`. Ready findings:
+  Command Center gives the narrow demo path, Merchant correctly separates
+  reported issue occurrences from unique products/feed writes, Content Planner
+  shows concrete GSC/WP-backed refresh/merge briefs, Ads blocks CPA/ROAS/
+  wasted-budget/apply overclaims, and GA4 treats `(not set)` as measurement
+  quality rather than campaign failure. Hardening fixed in this slice: Action
+  detail no longer shows marketer-facing `Dry-run preview`, `Goal 001 live
+  proof` or raw context-pack proof notes; it now renders Polish podgląd/review
+  summaries while preserving audit event IDs. Focused proof: dashboard route
+  tests 35 passed, dashboard typecheck passed, targeted Playwright action-detail
+  smoke passed, `git diff --check` clean, and refreshed browser snapshot
+  `actions__act_prepare_content_refresh_queue_after_copy_fix.txt` shows the new
+  copy.
+- Content decision target-context slice completed on 2026-06-24. Typed backend
+  and shared schemas now expose `source_url`, `source_site_host`,
+  `target_site_url`, `target_site_host` and
+  `target_site_adaptation_status` on content decisions, and Content Planner
+  cards show source/target context. Live `/api/content/diagnostics` after
+  managed stack restart showed 4 content decisions with target context. Focused
+  proof: content API pytest subset 2 passed, shared schema tests passed,
+  dashboard typecheck passed, dashboard route-focused tests passed 35 tests and
+  live API check passed.
 - External second-opinion synthesis was captured on 2026-06-24 in
-  `docs/audits/002-2026-06-24-second-opinion-synthesis.md`. Consensus:
-  WILQ is a real API-first review cockpit and content-planning assistant, not
-  a prompt pack, but it must not be overclaimed as full BDOS/optimizer/write
-  automation. The next highest-value product direction is one strong
-  evidence-backed content workflow for Ekologus: source evidence -> target-site
-  context -> inventory/canonical/duplicate check -> structured brief/draft
-  plan -> review ActionObject -> later staging/publish/measurement loop.
-  Continue from the Final A-Z checklist in `docs/goals/001-goal.md` and verify
-  each audit task against live repo/API before adding new work.
+  `docs/audits/002-2026-06-24-second-opinion-synthesis.md`. Consensus: WILQ is
+  a real API-first review cockpit and content-planning assistant, not a prompt
+  pack, but it must not be overclaimed as full BDOS/optimizer/write automation.
+  The highest-value direction remains one strong evidence-backed content
+  workflow for Ekologus: source evidence -> target-site context -> inventory/
+  canonical/duplicate check -> structured brief/draft plan -> review
+  ActionObject -> later staging/publish/measurement loop.
 - Solid Ekologus demo gate passed on 2026-06-24. `scripts/pre_demo_gate.sh`
   completed managed stack status, API health, live contract smoke, shared live
   schemas, dashboard API-backed route smoke 13/13 and sequential core WILQ skill
-  smokes. The only gate issue found during the final pass was a stale e2e
-  heading expectation on `/actions`; product already used
-  "Najważniejsze ActionObjecty demo", and the API-backed route smoke now passes.
-  Current demo task map has no active `task`, `suspicious` or `blocked` items;
-  remaining source/apply depth and BDOS production items are deliberately
-  deferred, not demo blockers.
-- Semantic skill-reference audit moved to current-demo ready on 2026-06-24.
-  `scripts/skill_hygiene_check.py` passed and manual semantic review of the 12
-  `references/output-contract.md` files found short contract/output guidance,
-  not workaround prose or product logic. The only quick-scan hits were strong
-  `SKILL.md` rules tied to typed API fields (`decision_queue`, `unknowns`,
-  readiness contracts), so they remain valid skill operating rules. Next
-  checklist item: final pre-demo gate if the goal is being closed; reopen
-  references only with concrete proof of product behavior hidden in prose.
-- Decision-quality evals moved to current-demo ready on 2026-06-24. The eval
-  schema/harness already required `decision_quality` across skills; this slice
-  tightened `wilq-content-strategist` so content eval proof now includes
-  `content_brief_preview_v1`, `h1_direction`, `h2_direction` and
-  `faq_direction` from deterministic smoke output instead of accepting a marker
-  mention. Focused proof: JSON case validates, targeted
-  `tests/test_codex_skill_eval_cases.py` subset passed, ruff passed, content
-  strategist smoke prints H1/H2/FAQ and `content_brief_preview_type`, and
-  non-interactive eval passed at
-  `.local-lab/evals/codex-skill/20260624T103515Z/wilq-content-strategist/result.json`
-  with operator_usefulness_score=5. Next checklist item: semantic skill
-  references; reopen decision-quality only if a skill eval passes without a
-  concrete workflow decision, safe next step, evidence-backed reasoning or
-  blocked-claim handling.
-- Content generation usefulness moved to current-demo ready on 2026-06-24.
-  Existing typed flow was hardened instead of rebuilt: content ActionObject
-  `content_brief_preview_v1` now includes `h1_direction`, `h2_direction` and
-  `faq_direction` beside angle, audience, objections, CTA, source facts,
-  missing evidence and forbidden claims. The skill-scoped context-pack
-  compactor now preserves those fields, so `wilq-content-strategist` sees the
-  same brief shape as the dashboard. Focused proof: content brief API contract
-  subset 2 passed, content route test passed, Action Detail content preview
-  test passed, live content ActionObject/context-pack returned H1/H2/FAQ, the
-  content strategist smoke passed after a sequential warm run, tactical queue
-  exposes content refresh items with `act_prepare_content_refresh_queue`, and
-  browser proof saved H1/H2/FAQ visibility in
-  `.local-lab/proof/dashboard/route-audit/content-brief-h1-h2-faq.txt`. Next
-  checklist item: decision-quality evals; do not rebuild the content pipeline
-  unless a current API/dashboard/skill proof loses the same fields or diverges
-  on decisions.
-- Marketer cockpit route sweep started on 2026-06-24 with `agent-browser`
-  snapshots saved under `.local-lab/proof/dashboard/route-audit/`. Fresh reruns
-  reclassified first nav-only snapshots for `/command-center`, `/actions` and
-  `/settings` as collection/session artifacts, not blank routes. Confirmed
-  route issues are now fixed with focused proof: `/ga4` no longer repeats the
-  same `(not set)` measurement cards in the operator section
-  (`.local-lab/proof/dashboard/route-audit/ga4-after-dedupe.txt`);
-  `/knowledge` renders Polish card/playbook display headings while keeping API
-  IDs/source fields intact
-  (`.local-lab/proof/dashboard/route-audit/knowledge-after-polish-labels.txt`);
-  `/actions` now starts with "Najważniejsze ActionObjecty demo" for Merchant,
-  Content, GA4 and Ads review, then moves the rest into "Pełna lista
-  ActionObjectów - szczegóły"
-  (`.local-lab/proof/dashboard/route-audit/actions-after-priority.txt`).
-  Focused `/actions` route test passed. Next checklist item: content
-  generation usefulness; do not reopen route audit unless fresh browser/API
-  proof shows a regression.
-- Pre-demo gate slice completed on 2026-06-24. Added
-  `scripts/pre_demo_gate.sh` as the small demo readiness gate for the managed
-  local stack. It checks stack status, API health, live contract smoke, shared
-  live schemas, the API-backed dashboard route smoke and sequential core WILQ
-  skill smokes. Full proof passed with `--core-skills`:
-  `.local-lab/pre-demo-gate.log` shows live contract smoke completed, shared
-  schemas 10 passed, dashboard API-backed route smoke 13 passed and
-  `Pre-demo gate passed.`. Follow-up after log readability patch also passed:
-  `.local-lab/pre-demo-gate-core-skills.log` shows stack/API/live smoke plus
-  seven core skill smokes and `Pre-demo gate passed.`. Next checklist item:
-  continue Final A-Z from task extraction / remaining-task map cleanup; do not
-  run full `scripts/verify.sh` unless a broad-risk change needs it.
-- Expert/knowledge audit slice continued on 2026-06-24 for non-content domain
-  diagnostics. Confirmed live finding: `/api/merchant/diagnostics`,
-  `/api/ga4/diagnostics`, `/api/localo/diagnostics` and
-  `/api/ahrefs/diagnostics` decision queues returned decisions without direct
-  `knowledge_card_ids` / `expert_rule_ids`, even though the supporting cards
-  and rules existed in `wilq/knowledge/operating_map.py`. Fixed in typed
-  schemas/builders: `MerchantDecisionItem`, `Ga4DecisionItem`,
-  `LocaloDecisionItem` and `AhrefsDecisionItem` now expose lineage; domain
-  builders attach the existing Merchant, GA4, Localo and Ahrefs card/rule IDs
-  to every decision. Focused proof passed: Python compile, ruff, API contract
-  subset 4 passed, managed stack restart, live diagnostics lineage check,
-  live context-pack lineage check for `wilq-merchant-feed-operator`,
-  `wilq-ga4-analyst`, `wilq-localo-operator` and
-  `wilq-ahrefs-gap-finder`, shared live schema smoke 10 passed on warm rerun,
-  and four deterministic skill smokes passed sequentially. Note: running the
-  four context-pack-heavy skill smokes in parallel timed out at the smoke
-  script 20s HTTP limit; sequential run passed, so treat that as a performance
-  gotcha for future pre-demo gates rather than a lineage failure. Next checklist
-  item: continue A-Z with test strategy/code-quality audit and task extraction;
-  do not reopen lineage unless a live diagnostic decision or skill context-pack
-  loses the matching IDs.
-- Expert/knowledge audit slice completed on 2026-06-24 for the content
-  workflow. Confirmed finding: WILQ already had structured expert YAML,
-  knowledge playbooks, operating-map bindings and skill-scoped context-pack
-  summaries, but `/api/content/diagnostics` decisions and sections did not
-  carry `knowledge_card_ids` or `expert_rule_ids`. That meant content skills
-  could see nearby cards/rules but the decision queue itself did not prove
-  which rules supported refresh/merge/Ahrefs/tracking-block decisions. Fixed in
-  typed API/schema: `ContentDiagnosticSection` and `ContentDecisionItem` now
-  expose lineage; GSC/WordPress decisions use GSC + WordPress playbooks and
-  SEO/content rules; Ahrefs review decisions use Ahrefs/GSC/WordPress cards;
-  GA4 tracking-gap blocks use GA4 diagnostics lineage. Focused proof passed:
-  content API pytest subset 2 passed, Python compile passed, managed stack
-  restart, live `/api/content/diagnostics` showed section/decision lineage,
-  live `wilq-content-strategist` context-pack carried the same IDs, content
-  strategist smoke passed and shared live schemas parsed content diagnostics.
-  Next checklist item: continue expert/knowledge audit beyond content by
-  checking whether non-Ads domain diagnostics surface lineage directly in their
-  decision queues or only through operating-map/context summaries.
-- Content target-site adaptation slice completed on 2026-06-24. Existing
-  content evidence still comes from current source sites, but content brief and
-  WordPress draft previews now carry explicit target-site context:
-  `source_url`, `source_site_host`, `target_site_url`, `target_site_host` and
-  `target_site_adaptation_status`. This lets WILQ distinguish current-site
-  refresh from future `ekologus.dev.proudsite.pl` adaptation without treating
-  the dev site as independent evidence. Context-pack compaction preserves these
-  fields for `wilq-content-strategist`; redaction now preserves public content
-  target URLs under explicit safe keys. Focused proof passed: content API
-  contract subset 4 passed, dashboard content route test passed, Action Detail
-  content preview test passed, dashboard typecheck passed, content strategist
-  smoke passed and `git diff --check` passed. Next checklist item: expert and
-  knowledge rule audit; do not reopen target-site adaptation unless preview
-  fields disappear from API/context-pack/dashboard or dev-site URLs leak into
-  source-evidence candidate inputs.
-- Skill/reference semantic audit slice moved forward on 2026-06-24. Current
-  `scripts/skill_hygiene_check.py` passed and semantic pass found no broad
-  reference-as-workaround pattern. Two references were underdocumented rather
-  than wrong: `wilq-campaign-builder` now names typed `ads_diagnostics` and
-  `content_landing_context`, while `wilq-social-publisher` now names typed
-  `social_draft_context`. Suspicious product finding fixed in API layer:
-  `ekologus.dev.proudsite.pl` is excluded from social draft evidence/candidate
-  inputs because the dev site is a later target context, not source evidence for
-  current social insights. Proof: social API pytest subset returned 2 passed,
-  managed stack restart refreshed the API, `wilq-social-publisher` and
-  `wilq-campaign-builder` smokes passed, live social context-pack returned only
-  `https://www.ekologus.pl/` as content URL, and skill hygiene plus
-  `git diff --check` passed. Next checklist item: continue Final A-Z with
-  remaining content usefulness/target-site adaptation and then expert/knowledge
-  rule audit; do not reopen this social fix unless dev-site URLs reappear in
-  source-evidence candidate inputs.
-- Content skill eval hardening slice completed on 2026-06-24 10:01 CEST.
-  `wilq-content-strategist` no longer only checks that
-  `content_brief_preview` exists. The skill smoke now requires compacted
-  context-pack previews to preserve writer-useful fields:
-  `content_angle`, `audience`, `key_objections`, `cta_direction`,
-  `internal_link_direction`, `source_facts`, `missing_evidence` and
-  `forbidden_claims`, while keeping `apply_allowed=false` and
-  `api_mutation_ready=false`. The context-pack compactor now preserves those
-  fields instead of dropping them from `active_action_objects`. Proof:
-  `uv run pytest tests/test_api_contracts.py -k 'content_strategist_context_pack_preserves_reviewed_draft_preview'`
-  returned 1 passed; `uv run pytest tests/test_codex_skill_eval_cases.py -q`
-  returned 5 passed; `scripts/local_stack.sh restart` refreshed the managed API;
-  `uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000`
-  passed; `CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000`
-  passed with
-  `.local-lab/evals/codex-skill/20260624T075942Z/wilq-content-strategist/result.json`.
-  Next checklist item: continue Final A-Z from skill/reference semantic audit
-  and content usefulness gaps; do not reopen this eval unless the content
-  preview contract changes.
-- Content-generation pipeline inventory/hardening slice completed on
-  2026-06-24. Existing pipeline was not rebuilt: `/api/content/diagnostics`
-  already exposes typed `decision_queue`; `act_prepare_content_refresh_queue`
-  already exposes `content_brief_preview_v1` and
-  `wordpress_draft_payload_preview_v1`; `/content-planner`, Action Detail and
-  `wilq-content-strategist` already consume those contracts. Confirmed gap:
-  preview was safe but too thin for a content writer. Fixed in typed
-  ActionObject payload and dashboard rendering by adding brief fields:
-  `content_angle`, `audience`, `key_objections`, `cta_direction`,
-  `internal_link_direction`, `source_facts`, `missing_evidence` and
-  `forbidden_claims`, while keeping apply/API mutation blocked. Proof:
-  `uv run pytest tests/test_api_contracts.py -k 'content_diagnostics_exposes_review_safe_decision_queue or content_brief_preview'`
-  returned 1 passed; dashboard route test
-  `pnpm --filter @wilq/dashboard exec vitest run src/routes/App.test.tsx -t 'localo social and content routes render workflow-specific blockers or focus'`
-  returned 1 passed; Action Detail content preview test returned 1 passed;
-  dashboard typecheck passed; `wilq-content-strategist` smoke passed; live
-  `/api/actions/act_prepare_content_refresh_queue` after stack restart shows
-  the new fields and `apply_allowed=false`. Follow-up completed: skill smoke,
-  context-pack compaction and non-interactive eval now require those richer
-  brief fields.
-- Domain workflow audit hardening slice completed on 2026-06-24. Fixed
-  confirmed UI-side contract drift instead of adding prompt/reference
-  workarounds: Content and Merchant diagnostic summaries no longer invent
-  fallback ActionObject IDs when `operator_summary.action_ids` is empty; their
-  validation link appears only when the API returns an action. Ads diagnostic
-  proof now renders missing read contracts, review gates and blocked claims
-  from `operator_summary` instead of recomputing a separate UI truth from many
-  nested contracts. GA4 diagnostics now expose `decision_blocker_count` so the
-  API distinguishes section/contract blockers from blocked decision-queue
-  items. Live proof after `scripts/local_stack.sh restart`:
-  `/api/ga4/diagnostics` returned `blocker_count=0`,
-  `decision_blocker_count=3`, decision statuses
-  `blocked, blocked, blocked, ready`. Focused proof passed:
-  `uv run pytest tests/test_api_contracts.py -k 'ga4_diagnostics'` returned
-  3 passed; `pnpm --filter @wilq/shared-schemas test:live-contracts` returned
-  10 passed; `pnpm --filter @wilq/dashboard exec vitest run
-  src/routes/App.test.tsx -t 'ads doctor route|merchant route|content-planner
-  route|ga4 and gsc routes|ahrefs route'` returned 4 passed. Remaining domain
-  workflow scan found and fixed one additional route-local fallback: GA4 no
-  longer invents `act_review_ga4_tracking_quality` when the API omits action
-  IDs and now shows `decision_blocker_count` as a dashboard metric. Focused
-  proof for that follow-up: `pnpm --filter @wilq/dashboard exec vitest run
-  src/routes/App.test.tsx -t 'ga4 and gsc routes'` returned 1 passed,
-  dashboard typecheck passed and shared-schema live contracts returned 10
-  passed. Additional scan removed a Custom Segments magic decision ID used only
-  for a status badge; the route now reads its badge from the custom-segments
-  read contract. Focused proof: `pnpm --filter @wilq/dashboard exec vitest run
-  src/routes/App.test.tsx -t 'custom segments route'` returned 1 passed and
-  dashboard typecheck passed. Remaining `decision_queue.find(...)` usages in
-  Content and Localo are presentational focus/readout helpers, not fake
-  ActionObject or decision generation; reopen only with a failing route proof.
-  Skill/Codex workflow audit checkpoint is current: `docs/evals/skill-coverage-audit.md`
-  records 12/12 WILQ skills with non-interactive eval artifacts, Polish output,
-  WILQ API usage and no safety findings; `scripts/skill_hygiene_check.py`
-  passed with only valid typed-contract references in GA4/Merchant skills.
-  Next checklist item: content-generation pipeline inventory and hardening,
-  starting from existing diagnostics, ActionObject payloads, dashboard content
-  route and content skills instead of rebuilding the pipeline from scratch.
-- Final A-Z dashboard route audit moved forward on 2026-06-24. Current
-  checklist item completed: dashboard API-backed smoke for marketer routes.
-  Previous suspicious failures were reclassified with current proof:
-  Content/SEO was obsolete after fresh rerun, Action Detail and Actions/
-  Workflows were transient full-run/runtime issues, Knowledge had a stale
-  helper assertion that treated route-local subloaders as a page failure, and
-  Ahrefs had a real UI usefulness gap because the dashboard showed only 5 of 8
-  typed gap records and hid the competitor-page record. Fixes: the Playwright
-  helper now waits for the route heading and route-specific assertions instead
-  of globally requiring every loader to disappear; `/ahrefs` now shows all 8
-  typed gap records returned by the current contract. Proof:
-  `pnpm --filter @wilq/dashboard exec playwright test apps/dashboard/e2e/dashboard-api.spec.ts --workers=1`
-  returned 13 passed. Stack proof after the run:
-  `scripts/local_stack.sh status` ready for API/dashboard and `/api/health`
-  returned ok. Next checklist item: API contract audit, starting with command
-  center, marketing brief, tactical queue, actions, evidence, connector status
-  and domain diagnostics lineage/payload-preview shape.
-- API contract audit first pass completed after the dashboard route fix.
-  Current proof: command center parses with lineage on `daily_decisions`
-  rather than top-level `evidence_ids`/`action_ids`; marketing brief returns 4
-  sections, 13 actions and 21 evidence IDs; tactical queue returns 24 items
-  with no missing evidence/source lineage; actions expose top-level `connector`
-  plus `evidence_ids`, with preview data intentionally under `payload`
-  (`payload_preview`, `content_brief_preview`, `wordpress_draft_payload_preview`
-  or domain-specific preview keys); `/api/connectors` reports 12 connectors,
-  9 configured, 1 disabled (`google_sheets`) and 2 missing social credentials.
-  Live shared schema proof:
-  `pnpm --filter @wilq/shared-schemas test:live-contracts` returned 10 passed.
-  No code change is needed for this first pass. Next checklist item: domain
-  workflow audit across Ads, Merchant, Content/GSC/Ahrefs/WordPress, GA4 and
-  Localo, with focus on whether each route/skill consumes the typed decision
-  queue instead of rebuilding logic in UI or prompt prose.
-- Marketing Brief empty-section regression was a stale long-running API process,
-  not current product code. Fresh `uv run` construction returned
-  `what_we_know=5`, `what_blocks_us=2`, `safe_next_actions=7`,
-  `recommended_focus=3`; after `scripts/local_stack.sh restart`, live
-  `/api/marketing/brief` returned the same counts with 13 ActionObject IDs and
-  21 evidence IDs. If live API output contradicts current source/tests, restart
-  the managed stack before patching view-model code.
-- Skill-reference audit guardrail was tightened: `scripts/skill_hygiene_check.py`
-  now blocks recovery/artifact prose such as goal/progress/eval paths,
-  `.local-lab` artifacts, previous-run wording and prompt-fix wording in skill
-  prose. Current skills pass the tightened check; typed API contract fields like
-  `decision_queue`, `freshness_assessment`, `blocked_claims` and ActionObject
-  validation remain allowed reference material.
-- Merchant `decision_queue` now exposes marketer aliases `why_it_matters` and
-  `operator_action` for each decision, filled from canonical `rationale` and
-  `next_step`. Live proof after stack restart shows Merchant decisions with
-  real `sample_product_ids`/`sample_titles`, product-state mapping rows and the
-  new aliases; shared live schema smoke parsed Merchant diagnostics successfully.
-- Dashboard route loading now avoids blank marketer routes for `/opportunities`
-  and `/knowledge`: primary headers/sections render before secondary
-  registries finish loading, while ActionObject/evidence/knowledge subsections
-  keep their own loading/error states. Focused proof:
-  `pnpm --filter @wilq/dashboard exec vitest run src/routes/OpportunitiesRoute.test.tsx`,
-  `pnpm --filter @wilq/dashboard exec vitest run src/routes/App.test.tsx -t "knowledge route"`,
-  dashboard lint/typecheck, and `agent-browser` runtime checks showing
-  `/opportunities` and `/knowledge` render `main` + `h1` quickly and then
-  final decision/knowledge content.
-- Goal and progress were compacted on 2026-06-23 to remove ready/done task
-  noise from active recovery docs. Historical proof remains in git history and
-  `docs/progress/archive/`.
-- Goal 001 was reshaped on 2026-06-24 as a Codex Goal completion contract:
-  outcome, verification surface, constraints, boundaries, iteration policy and
-  blocked stop condition. Use it to decide the next slice by evidence and demo
-  value, not by percentage estimates or a growing backlog.
-- Goal 001 now treats `http://ekologus.dev.proudsite.pl/` as a later target
-  context after the core demo cockpit and existing content-generation pipeline
-  are stable. The content pipeline is not blank: it already has typed
-  content decisions, `act_prepare_content_refresh_queue`, brief previews and a
-  WordPress draft preview. Next work is hardening surface consistency,
-  usefulness and target-site adaptation, not rebuilding from scratch.
-- Deferred "better BDOS" work is archived in
-  `docs/goals/archive/bdos-deferred-backlog.md`. Do not lose those tasks, but
-  do not paste the whole backlog back into active Goal 001; promote one
-  evidence-backed slice at a time.
-- Live sanity check on 2026-06-24: `/api/dashboard/command-center` returns 4
-  daily decisions across Merchant, Content, GA4 and Ads with 18 evidence IDs
-  and 7 action IDs. `/api/content/diagnostics` has live data, 10 query/page
-  rows, 11 inventory matches and 5 `decision_queue` entries.
-  `act_prepare_content_refresh_queue` exposes 8 `content_brief_preview_v1`
-  items, 1 `wordpress_draft_payload_preview_v1` item and validates
-  successfully. The next product slice is content pipeline hardening:
-  diagnostics/tactical queue/context-pack/dashboard consistency, stronger brief
-  usefulness evals and later dev-site adaptation.
-- Skill eval schema/harness now requires `decision_quality`: actionable
-  decision, safe next step, blocked-claims handling, workflow-specific
-  interpretation and evidence-backed reasoning. Live proof:
-  `.local-lab/evals/codex-skill/20260623T191904Z/wilq-daily-command/result.json`.
-- Ahrefs gap-finder eval now proves scoped lineage for `/ahrefs`: artifact
-  `.local-lab/evals/codex-skill/20260624T021206Z/wilq-ahrefs-gap-finder/result.json`
-  returns only `source_connectors=["ahrefs"]`, sees 8 typed stale gap records,
-  keeps `action_count=0`, and blocks traffic uplift / authority improvement
-  claims. `/api/marketing/tactical-queue` now also promotes review-only Ahrefs
-  gap records into `domain=content` tactical items with
-  `act_prepare_content_refresh_queue`, evidence IDs, GSC/WordPress
-  confirmation fields and blocked traffic/authority/ranking claims. Runtime
-  proof after stack restart shows `beczka` as WordPress-present but GSC-missing,
-  so WILQ does not pretend Ahrefs alone proves demand. Command Center daily
-  content decisions now use the same reviewable Ahrefs filter; off-topic raw
-  gaps such as `cuk.pl` / `prawo jazdy` no longer leak into first-screen
-  metric facts. Ahrefs remaining work is freshness and stronger cross-source
-  scoring before stronger decisions.
-- Content/GSC inventory matching no longer marks current Ekologus URLs as
-  missing when wide WordPress inventory pushes public sitemap URLs past the old
-  slice boundary. Live HTTP proof after stack restart:
-  `/api/content/diagnostics` returned `query_page_count=10` and
-  `matched_inventory_count=10`. Content diagnostics now also returns a typed
-  `block_until_vendor_read` decision when no GSC/WordPress/Ahrefs-backed
-  content decisions exist, so skills/dashboard show a blocker instead of an
-  empty queue.
-- GA4 landing inventory matching preserves dimensioned landing facts even when
-  aggregate GA4 facts are noisy. Live HTTP proof after stack restart:
-  `/api/ga4/diagnostics` returned `landing_group_count=10`,
-  `wordpress_match_count=6`; `(not set)` rows remain measurement blockers.
-- Merchant decision queue now carries review-only `payload_preview` on concrete
-  feed issue decisions, including sample product IDs/titles when available and
-  blocked apply/API mutation state. Focused API contract tests pass for issue
-  queue and grouped reporting contexts. Live HTTP proof after stack restart:
-  `/api/merchant/diagnostics` decision queue entries expose
-  `merchant_feed_issue_review_preview_v1` with consistent grouped
-  `reported_issue_occurrences`; apply/API mutation/destructive flags stay
-  false. Product samples are ready; GA4 exposes item-level product facts and
-  Ads now has live `shopping_performance_view` and `shopping_product` state
-  read contracts. Merchant now promotes state-only Ads joins into a review-safe
-  `review_product_state_mapping` decision with
-  `merchant_product_state_review_preview_v1`. Live HTTP proof after stack
-  restart: `/api/merchant/diagnostics` shows 3 joined products, all
-  `NOT_ELIGIBLE`, with Ads title, availability, price and Merchant issue
-  context; product ROAS/revenue/fix impact and feed write remain blocked because
-  no Ads/GA4 performance metrics match those products. The same decision now
-  includes review-only `merchant_supplemental_feed_review_preview_v1`
-  candidates with product ID, title, Merchant issue context, Ads state,
-  required validation and blocked apply/API mutation. This is not a feed write
-  or approval/revenue claim. Merchant diagnostics now also expose the
-  `price_impact_readiness` response key with contract id
-  `merchant_price_impact_readiness` and preview contract
-  `merchant_price_impact_readiness_preview_v1`: live API sees 3 current Ads
-  prices, 0 previous price snapshots and 0 matching product performance
-  windows, so price-impact stays blocked with missing read contracts instead of
-  pretending to measure price impact. `wilq-merchant-feed-operator` now consumes
-  that typed contract: its deterministic smoke verifies endpoint/context-pack
-  consistency for `price_impact_readiness`, the
-  `review_price_impact_readiness` decision queue item, required missing read
-  contracts, review-only preview flags and blocked product ROAS/profitability/
-  price-impact claims. Metric facts now also expose `previous_evidence_id` and
-  `previous_collected_at`, and Merchant price preview rows expose current and
-  previous price snapshot timestamps, `has_price_change`, changed-price count
-  and unchanged-history count. Live proof still shows 3 current Ads prices, 0
-  previous price snapshots, 0 changed prices and 0 performance windows, so
-  impact claims remain blocked. Merchant now also promotes that readiness into
-  `decision_queue` as `review_price_impact_readiness` when current product
-  prices exist, so dashboard and skills can show missing price history and
-  performance windows as a visible blocked review decision with
-  `merchant_price_impact_readiness_preview_v1`. Merchant
-  `product_performance_readiness` now also exposes `missing_read_contracts`, so
-  dashboard and skills can distinguish state-only Ads joins from missing Ads/GA4
-  product performance contracts without deriving that in prompt prose.
-  Dashboard `/merchant` briefly fell back to the API error state because the
-  shared frontend schema did not yet accept the new
-  `review_price_impact_readiness` decision type even though the API returned
-  HTTP 200. The shared schema enum and focused test now cover that decision;
-  browser proof shows `/merchant` rendering decision queue, product samples,
-  product-state join and price-impact blocker again.
-- Localo diagnostics now expose live aggregate facts and typed
-  `read_contract_statuses`. Live HTTP proof after managed stack restart:
-  `refresh_localo_a1b33cd17835` returned `live_data_available=true`,
-  `visibility_fact_count=23`, `act_review_localo_visibility_facts` ready,
-  `place_inventory`, `local_rankings`, `gbp_visibility`,
-  `competitor_visibility` and `reviews` ready; `local_tasks` remains missing
-  with explicit blocked claims. Localo diagnostics, Command Center and Localo
-  ActionObject payloads must not describe GBP or competitor visibility as
-  missing when those contracts are ready; only `local_tasks`, write path and
-  uplift claims remain blocked in the current live state. If Localo appears
-  empty while metric store has facts, restart the managed stack before changing
-  product logic.
-- `wilq-localo-operator` deterministic smoke now validates
-  `localo_diagnostics.latest_refresh` by default and does not force a live
-  `/api/connectors/localo/refresh`. Use `--refresh` only for explicit vendor
-  read proof. This prevents transient Localo OAuth discovery HTTP 503 from
-  being misread as broken Localo evidence. Focused proof passed on 2026-06-24:
-  Localo smoke used `localo_diagnostics.latest_refresh`, refresh status
-  `completed`, `act_review_localo_visibility_facts` validation `valid`.
-- Skill hygiene now has a deterministic gate: `scripts/skill_hygiene_check.py`
-  runs from `scripts/quality.sh`, blocks `Goal 001`/workaround/bugfix/outdated
-  prose, English safety headings, English `with mode=vendor_read` endpoint notes
-  English imperative workflow steps in WILQ skill docs and mixed-language
-  `API identifiers` wording. WILQ `SKILL.md` and
-  `references/output-contract.md` files now use Polish operator prose while
-  preserving API IDs, endpoint paths and enum values. Semantic audit also
-  removed hardcoded Daily Command domain ranking and GA4 prompt-side item
-  classification; both now consume WILQ API decision order/types, and the
-  hygiene gate blocks those exact regressions.
-- Skill hygiene now also enforces diagnostics-first references for skills with
-  dedicated endpoints. Ahrefs, Demand Gen and Localo contracts now say to call
-  their typed diagnostics endpoint before scoped context-pack consistency
-  checks, so references cannot quietly drift back into context-pack-first prompt
-  behavior.
-- Ads Doctor semantic cleanup removed a long prompt-pack style evidence
-  paragraph from `wilq-ads-doctor/SKILL.md`; the skill now points to typed
-  `/api/ads/diagnostics` contracts such as `allowed_metrics`,
-  `missing_read_contracts`, `blocked_claims`, `action_ids` and
-  `payload_preview`. `scripts/skill_hygiene_check.py` now also blocks
-  `Inspiracja produktowa` reference prose and body lines over 900 characters,
-  so skill references cannot silently become bugfix/product-logic dumps. The
-  Ads Doctor context-pack uses Ads summary diagnostics before context
-  compaction; live smoke proof:
-  `.local-lab/proof/skills/ads-doctor-contract-slim-smoke.json` with
-  `context_pack_bytes=178744`.
-- Live Ads optimizer review is ready but review-only. `/api/ads/diagnostics`
-  exposes ready campaign triage, budget pacing, recommendation review,
-  impression-share context, search terms, search-term safety, custom-segment
-  review and negative-keyword review. Apply/API mutation remains blocked.
-  Current `keyword_planner_read_contract` is blocked by
-  `authorizationError.DEVELOPER_TOKEN_NOT_APPROVED`, not by missing OAuth.
-  Empty `change_history_read_contract` means "ready, no changes in the selected
-  window"; `change_impact_readiness_contract` remains blocked until WILQ has
-  change rows plus before/after performance windows.
-- Ads Shopping/PMax product performance read contract is now live. The Google
-  Ads adapter queries `shopping_performance_view` by `segments.product_item_id`
-  and stores `shopping_product_*` facts when rows exist. Live proof
-  `refresh_google_ads_3a629caccfa3` completed with
-  `shopping_product_performance_query=shopping_performance_view_last_90_days`,
-  `shopping_product_performance_zero_row_lookbacks=30,90` and 0 product rows.
-- Ads `shopping_product` current-state read contract is now live. Live proof
-  `refresh_google_ads_72dc2a727c45` returned 500 state rows, 500 products,
-  `shopping_product_state_status=ready`, `shopping_product_state_not_eligible_count=500`
-  and availability values `IN_STOCK,OUT_OF_STOCK`. Merchant diagnostics now
-  show state-only product joins as `blocked`, not performance-ready, and expose
-  a separate state review decision for marketer triage.
-- Goal 001 now has a thematic stack assessment: acquisition/source proof,
-  decision contracts, action safety, Codex skills, knowledge/compiler,
-  dashboard/UI and testing/release. Current source triage: Ads optimizer review,
-  Merchant product sample readiness and Localo GBP/competitor/reviews/rankings
-  are ready for review-only decisions; Merchant product-performance join is
-  blocked by state-only/zero performance product rows, not by missing GA4/Ads
-  read contracts. The nearest source gaps are Merchant before-after price
-  history/performance windows, Ahrefs freshness/stronger cross-source scoring,
-  Keyword Planner approval/forecast and cross-source decision joins.
-- GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
-  stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
-  `total_revenue` and `transactions` with landing/source/campaign dimensions.
-  Live proof `refresh_google_analytics_4_6acb3a6c9be8` completed; diagnostics
-  and `wilq-ga4-analyst` context-pack show
-  `conversion_readiness_contract.status=ready`, no missing read contracts, and
-  blocked ROAS/profitability/conversion-drop claims until cost/history/
-  attribution context exists.
-- GA4 item/product read contract is now live. The GA4 adapter requests
-  `itemId`, `itemName`, `itemsViewed`, `itemsAddedToCart`, `itemsCheckedOut`,
-  `itemsPurchased` and `itemRevenue`; live proof
-  `refresh_google_analytics_4_33a4b3fda0db` completed with 50 item rows and
-  250 item-scoped metric facts. Merchant sees `ga4_item_metric_facts`, but the
-  current Merchant sample IDs do not join to those GA4 item IDs.
-- Goal 001 now tracks knowledge/compiler work as a separate theme: source
-  ingestion, lineage, confidence/freshness, rule/card promotion and evals that
-  prove external marketing standards improve WILQ decisions without turning
-  skills into long prompt dumps.
-- Lightweight live contract smoke now exists at `scripts/live_contract_smoke.py`.
-  It checks API health, command center, marketing brief and Ads/Merchant/
-  Content/GA4/Localo diagnostics for shape, evidence IDs, Polish language and
-  ready/blocked state without asserting exact changing metric values. Live
-  proof on 2026-06-23 returned `status=completed`, `errors=[]`.
-- Shared frontend schema live smoke now exists in `@wilq/shared-schemas`:
-  `pnpm --filter @wilq/shared-schemas test:live-contracts` fetches the live
-  API and parses command center, marketing brief, tactical queue, Ads,
-  Merchant, Content, GA4, Localo, Ahrefs and Demand Gen with the same Zod
-  schemas consumed by the dashboard. It is opt-in; normal shared-schema tests
-  skip live API calls. This catches API -> dashboard schema drift such as the
-  Merchant `review_price_impact_readiness` route fallback.
-- Dashboard live e2e smoke now avoids brittle assertions against changing
-  Ekologus metric values and stale route copy. It checks marketer-facing
-  decision sections, blocked technical dumps, safety copy and drilldown
-  headings instead of exact live counts like products/clicks/issues. Focused
-  proof on 2026-06-24:
-  `pnpm --filter @wilq/dashboard test:e2e -- e2e/dashboard-api.spec.ts`
-  returned 14/14 passed.
-- Command Center now uses shared `daily_decisions` as the first-screen
-  decision view-model. Live `/api/dashboard/command-center` returns Merchant,
-  Content, GA4 and Ads daily decisions with Polish Codex prompts, evidence IDs,
-  ActionObject IDs and blocked claims; raw sections are empty on the first
-  screen. Daily decisions now also carry stable `domain` identifiers and typed
-  `freshness` state derived from latest source `vendor_read` with
-  connector-freshness fallback; `scripts/live_contract_smoke.py` asserts these
-  fields exist without checking changing live metric values. Earlier live proof
-  on 2026-06-24 returned Merchant/GA4/Ads fresh and Content stale. Manual
-  `configured_vendor_read_refresh` now excludes `openai_codex` until a
-  vendor-read adapter exists; proof
-  `jobrun_configured_vendor_read_refresh_262817b0e1` completed 8 implemented
-  read adapters with no errors, and Command Center returned Merchant, Content
-  and Ads as fresh/ready while GA4 stayed fresh/blocked. The dashboard
-  badge now renders stale ready decisions as `do odświeżenia`; browser proof:
-  `.local-lab/proof/dashboard/command-center-decision-freshness-full-snapshot.txt`.
-  Daily decisions also expose capped `metric_facts` from their own source
-  connectors. Live proof shows 8 facts per Merchant/Content/GA4/Ads decision;
-  Content facts are round-robin across Ahrefs, GSC and WordPress sources.
-  Daily decisions also expose stable `why_it_matters` and `operator_action`
-  aliases beside the Polish display fields for Codex/dashboard consumers.
-  Daily decisions now expose canonical `decision_state`, and dashboard badges
-  use it directly instead of reconstructing ready/stale/blocked state. Live
-  smoke on 2026-06-24 returned Merchant/Ads `ready`, Content `stale` and GA4
-  `blocked`; scoped daily-command context-pack preserved the same states. Daily
-  runtime now reuses the preloaded metric facts for Marketing Brief instead of
-  making the brief repeat its own metric-store read after Command Center built
-  the daily base. Focused live proof after stack restart: cold
-  `/api/marketing/brief` returned 200, then warm-cache checks for
-  `/api/dashboard/command-center`, `/api/marketing/brief` and
-  `/api/marketing/tactical-queue` returned in single-digit milliseconds.
-- Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
-  12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
-  output/safety checks are covered.
-- Merchant eval case is now hardened for product/price readiness. It requires
-  `product_performance_readiness`, `price_impact_readiness`,
-  `missing_read_contracts` and `merchant_price_impact_readiness_preview_v1`,
-  and blocks product ROAS, product revenue recovery, price change impact,
-  approval restored and feed write claims unless matching contracts exist.
-  Focused local proof passes. Targeted `codex_skill_eval.sh` first hit the
-  Codex usage limit, then passed after retry; artifact:
-  `.local-lab/evals/codex-skill/20260624T015347Z/wilq-merchant-feed-operator/result.json`.
-- Daily Command skill/reference/eval no longer says Localo is omitted because
-  WILQ lacks Localo ranking/GBP evidence. It now follows the typed
-  `command_center.daily_decisions` boundary: Localo is outside the daily task
-  list unless the API promotes it or the user explicitly asks for Localo.
-  The daily smoke/eval now also validates the Ads review ActionObject, so the
-  four core daily actions are validated instead of leaving Ads as pending.
-  Targeted eval artifact:
-  `.local-lab/evals/codex-skill/20260624T020437Z/wilq-daily-command/result.json`.
-- Strong demo path today:
-  `/command-center` -> `/merchant` -> `/content-planner` -> `/ads-doctor` ->
-  optional `/ga4` and `/localo`.
-- Highest-value next demo slice: stabilize the core demo cockpit and content
-  generation pipeline before adapting to the new Ekologus dev site. The dev
-  site remains target context for migration/adaptation, not the first task
-  before content briefs, draft previews and evals are reliable.
+  smokes. Treat this as contract/demo readiness, not marketer UAT or proof of
+  full BDOS/apply automation.
+- Skill/reference/eval baseline is current-demo ready. `scripts/skill_hygiene_check.py`
+  passed, manual semantic review of 12 `references/output-contract.md` files
+  found contract/output guidance rather than workaround prose, and the eval
+  harness requires `decision_quality`. Content strategist proof now includes
+  `content_brief_preview_v1`, H1/H2/FAQ fields and non-interactive eval score 5.
+  Reopen this area only with a concrete skill that passes while making a bad or
+  unsupported decision.
 
 ## Active Gaps
 
-1. **Source contracts and data acquisition**
-   - Current Localo supports live place inventory, local rankings and reviews as
-     typed aggregate read contracts, and now also GBP visibility and competitor
-     visibility aggregate read contracts.
-   - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
-     Localo tasks blocked unless a side-effect-free read exists.
-   - Source-contract queue: Merchant before-after price history/performance
-     windows, Ahrefs freshness/cross-source joins, Keyword Planner approval/
-     forecast and cross-source decision joins.
-   - Ads remaining gaps are not OAuth: optimizer review is ready/read-only,
-     Keyword Planner is blocked by developer token approval, change history
-     currently has no rows in the selected window, and apply/audit contracts
-     are still required before budget, recommendation, custom-segment or
-     negative-keyword mutations.
-   - Merchant now has partial Ads product-state joins for Merchant samples,
-     a state-only review decision, review-only supplemental-feed candidates and
-     a blocked price-impact readiness contract. It still needs historical price
-     snapshots with actual price changes and before/after performance windows
-     before product-performance decisions can become useful. GA4 item facts, state-only Ads rows or zero-row
-     Ads performance reads alone do not justify revenue, approval, ROAS, price
-     impact or product-fix claims.
+1. **Content workflow depth**
+   - Must-have direction: old/current Ekologus evidence -> target context for
+     `ekologus.dev.proudsite.pl` -> inventory/canonical/duplicate gate ->
+     Polish brief or draft plan -> review ActionObject.
+   - Current status: content decisions and ActionObject previews expose useful
+     source/target and H1/H2/FAQ/CTA/source-fact fields, but full staging
+     handoff, publishing and post-publication measurement remain deferred.
+   - Next risk to test: whether a new-site target case can be reviewed without
+     treating the dev site as source evidence or creating duplicate SEO content.
 
-2. **Decision API and shared view-models**
-   - Dashboard and skills must consume the same API contracts:
-     command-center, marketing brief, tactical queue, diagnostics and actions.
-   - Do not push decisions into prompt/reference prose; implement typed
-     API/schema/view-model first.
-   - Shared `daily_decisions` are now the canonical first-screen view-model.
-     They expose stable `domain` identifiers and typed `freshness` state for
-     Merchant, Content, GA4 and Ads, plus capped `metric_facts` for the same
-     source connectors and stable `why_it_matters`/`operator_action` aliases.
-     Next decision/API work should harden stable domain queues and explicit
-     ready/stale/blocked semantics. Avoid showing connector readiness as a
-     marketing decision.
+2. **Marketer UAT and route usefulness**
+   - Browser proof shows the narrow demo path is usable, but no real marketer
+     UAT has yet proved that the screens save time or improve decisions.
+   - Next audit should ask: can a marketer choose one content action, one
+     Merchant blocker, one Ads review and one GA4 measurement issue without a
+     developer explaining the UI?
 
-3. **Action safety and apply path**
-   - Current demo is mostly prepare/review-only.
-   - Future writes need dry_run, preview, confirm, audit, SafetyLimits and
-     partial-failure handling before apply claims.
-   - Near-term actions stay review-only: Ads negative keywords/custom
-     segments/strategy, Merchant feed review, content refresh/merge/create,
-     Localo/GBP and social drafts. Apply remains blocked until the matching
-     preview, validation, confirmation and audit contracts exist.
+3. **Source contracts still blocking deeper claims**
+   - Ads: target CPA/ROAS, Keyword Planner approval/forecast, change-history
+     impact and write/apply safety remain blockers for optimizer claims.
+   - Merchant: product IDs/SKU, true unique-product rows, historical price
+     changes and before/after performance windows remain blockers for product
+     ROAS, price-impact, approval recovery and feed-repair claims.
+   - GA4: conversion/revenue/attribution confidence remains a blocker for ROAS,
+     profitability and funnel verdicts.
+   - Localo: access/read evidence must not be treated as tasks, writes or uplift
+     unless WILQ API exposes those contracts.
 
-4. **Skill/reference hygiene and eval quality**
-   - Obvious hygiene failures are now guarded by `scripts/skill_hygiene_check.py`.
-   - Repeated output-contract language wording has been normalized across WILQ
-     skills.
-   - Ads Doctor now consumes typed Ads diagnostics contracts instead of carrying
-     long prompt-pack logic in `SKILL.md`; its context-pack stays under the
-     deterministic smoke budget by using summary diagnostics before compaction.
-   - Remaining: deeper semantic review of references for product logic hidden in prose.
-   - References should describe contracts and output shape only; product logic,
-     workaround rules and bug fixes belong in API/schema/eval.
-   - Evals now cover basic API/evidence/Polish/safety, but still need stronger
-     decision-quality assertions per skill.
-   - Skill queue: manual + non-interactive eval per skill after its domain API
-     contract is strong; upgrade evals to require concrete decisions, not only
-     JSON shape; normalize dashboard prompts to Polish operator commands with
-     evidence IDs, action IDs and blocked claims.
+4. **Dashboard language and information hierarchy**
+   - Fixed this slice: Action detail no longer leads with dry-run/proof-run
+     wording.
+   - Remaining hardening: primary nav still says `ActionObjecty`, some raw IDs
+     and technical labels remain visible in drilldowns, and some route modules
+     are large. Only change these with browser proof that they block demo
+     comprehension.
 
-5. **Knowledge compiler and source condensation**
-   - Goal: convert official docs, reputable PPC/SEO/analytics sources, papers
-     and expert playbooks into versioned rules/cards with source lineage,
-     confidence, freshness and blocked-claim boundaries.
-   - Do not put raw research into dashboard cards or skill prompts.
-   - Knowledge queue: define source-ingestion contract, promote high-confidence
-     claims into `wilq/expert/**` or `wilq/knowledge/**`, then add eval checks
-     proving the rules improve decisions without unsupported overclaims.
-
-6. **Dashboard usefulness, performance and code quality**
-   - Avoid broad aesthetic refactors.
-   - Extract large route modules only when they block product work, reviewability
-     or focused verification.
-   - Focus performance work on shared daily view-model/cache and duplicated
-     aggregation, not visual churn.
-   - Dashboard queue: route-by-route marketer audit, Command Center as decision
-     cockpit only, drilldowns for raw evidence/registries, shared route data
-     boundaries and targeted extraction of large modules only when it speeds
-     real slices.
-
-7. **Release/live-test strategy**
-   - Release gates should assert contracts, safety, evidence, Polish output and
-     secret redaction.
-   - Exact changing metric values belong in fixture tests only. Live smokes
-     should assert freshness, nonempty expected facts and correct
-     ready/missing/blocked status.
-   - Release queue: separate fixture tests from live smokes, define a smaller
-     pre-demo gate, keep full `scripts/verify.sh` for broad/final gates and add
-     operational alerts for stale contracts, missing facts, unsafe apply and
-     secret leakage.
-   - Do not block production on exact live metric values. Exact clicks, costs,
-     reviews, rankings and issue counts belong in fixtures/proof notes; live
-     gates assert contract shape, freshness, nonempty expected facts and honest
-     ready/missing/blocked state.
+5. **BDOS / agency-grade future**
+   - Deferred until Ekologus works deeply: full Ads apply path, budget optimizer,
+     Demand Gen automation, social publishing apply, Merchant feed writes,
+     Localo write/uplift automation, multi-client permissions, production auth,
+     deployment/monitoring and full external knowledge compiler.
 
 ## Next Best Queue
 
-1. Current active map lives in `docs/goals/001-goal.md` under
-   `Remaining Demo Task Map`.
-2. Next concrete slice: marketer cockpit audit route-by-route, then content
-   generation usefulness, then target-site adaptation.
-3. Fallbacks only with fresh proof: Merchant before/after price-performance,
-   Ahrefs freshness/cross-source scoring, decision-quality eval hardening or
-   semantic skill-reference cleanup.
+1. Run one adversarial eval slice for overclaims that matters to the demo:
+   Content new-site target-not-source, Ads no CPA/ROAS without targets, Merchant
+   occurrences-not-unique-products, GA4 `(not set)` measurement blocker or
+   Localo access-not-ranking. Pick the smallest one with current proof.
+2. If demo UX is the next priority, change only one confirmed blocker at a time:
+   likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
+   drilldown IDs behind technical details.
+3. If content depth is the next priority, add/verify a target-site duplicate/
+   canonical gate for `ekologus.dev.proudsite.pl` before any draft/staging work.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

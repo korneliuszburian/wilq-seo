@@ -15,7 +15,9 @@ import {
   ActionHumanReviewControls,
   ActionPreviewControls,
   ActionReviewGatePanel,
-  ActionValidationControls
+  ActionValidationControls,
+  actionAuditEventLabel,
+  actionAuditSummaryLabel
 } from "./ActionObjectPanels";
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
@@ -88,8 +90,10 @@ function ActionDetail({ action }: { action: ActionObject }) {
             ) : null}
             {visibleAuditEvents.map((event) => (
               <div key={event.id} className="rounded-md border border-line p-3 text-sm">
-                <div className="font-medium">{event.event_type}</div>
-                <div className="mt-1 text-slate-600">{event.summary}</div>
+                <div className="font-medium">{actionAuditEventLabel(event.event_type)}</div>
+                <div className="mt-1 text-slate-600">
+                  {actionAuditSummaryLabel(event.event_type, event.summary)}
+                </div>
               </div>
             ))}
           </div>
