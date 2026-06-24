@@ -1,0 +1,160 @@
+from __future__ import annotations
+
+from scripts.export_marketer_uat_packet import (
+    build_marketer_uat_packet,
+    render_markdown,
+)
+
+
+def test_marketer_uat_packet_covers_core_demo_path_without_claiming_uat() -> None:
+    surfaces = {
+        "command_center": {
+            "generated_at": "2026-06-24T21:30:00Z",
+            "strict_instruction": "Nie zmyślaj metryk.",
+            "primary_next_step": "Najpierw otwórz /merchant.",
+            "blocker_count": 2,
+            "tactical_item_count": 24,
+            "daily_decisions": [
+                {
+                    "id": "decision_review_merchant_feed_issues",
+                    "title": "Przejrzyj kolejkę problemów Merchant Center",
+                    "domain": "merchant",
+                    "route": "/merchant",
+                    "status": "ready",
+                    "priority": 10,
+                    "metric_tiles": {"produkty": 10776},
+                }
+            ],
+        },
+        "merchant": {
+            "operator_summary": {
+                "reported_issue_occurrences": 1343,
+                "decision_queue_count": 5,
+            },
+            "decision_queue": [
+                {
+                    "id": "merchant_issue_unit_pricing",
+                    "title": "Review unit pricing measure",
+                    "status": "review",
+                    "next_step": "Sprawdź atrybut.",
+                }
+            ],
+            "blocked_claims": ["approval restored", "revenue recovered"],
+            "action_ids": ["act_review_merchant_feed_issues"],
+        },
+        "content": {
+            "operator_summary": {
+                "target_site_host": "ekologus.dev.proudsite.pl",
+                "target_site_mapping_status": "target_site_mapping_review_needed",
+                "target_site_mapping_review_count": 1,
+                "target_site_mapping_review_inputs": [
+                    {
+                        "candidate_id": "content_brief_gsc_bdo",
+                        "title": "SEO: odśwież BDO",
+                        "source_url": "https://www.ekologus.pl/bdo/",
+                        "mapping_review_status": "review_alternative_candidates",
+                        "candidate_target_urls": [
+                            "https://ekologus.dev.proudsite.pl/uslugi/bdo/"
+                        ],
+                        "blocked_outputs": [
+                            "wordpress_publish",
+                            "ranking_or_lead_uplift_claim",
+                        ],
+                    }
+                ],
+            },
+            "blocked_claims": ["wordpress_publish", "ranking gain"],
+            "action_ids": ["act_prepare_content_refresh_queue"],
+        },
+        "ads": {
+            "operator_summary": {"campaign_count": 3, "blocked_claim_count": 4},
+            "decision_queue": [
+                {
+                    "id": "ads_review_campaigns",
+                    "title": "Review campaigns",
+                    "status": "review",
+                }
+            ],
+            "blocked_claims": ["CPA verdict", "ROAS verdict"],
+            "action_ids": ["act_prepare_ads_campaign_review_queue"],
+        },
+        "ga4": {
+            "operator_summary": {"tracking_gap_count": 2},
+            "decision_queue": [
+                {
+                    "id": "ga4_not_set",
+                    "title": "Review tracking gaps",
+                    "decision_type": "fix_measurement",
+                }
+            ],
+            "blocked_claims": ["tracking fixed", "revenue verdict"],
+            "action_ids": ["act_review_ga4_tracking_quality"],
+        },
+    }
+
+    packet = build_marketer_uat_packet(surfaces)
+
+    assert packet["packet_type"] == "ekologus_marketer_uat_packet_v1"
+    assert packet["route_order"] == [
+        "/command-center",
+        "/merchant",
+        "/content-planner",
+        "/ads-doctor",
+        "/ga4",
+    ]
+    assert [route["key"] for route in packet["route_checks"]] == [
+        "command_center",
+        "merchant",
+        "content",
+        "ads",
+        "ga4",
+    ]
+    assert "nie jest dowodem wykonanego UAT" in packet["safety_note"]
+    assert "Nie odblokowuje publish/apply" in packet["safety_note"]
+    assert packet["result_template"]["ready_without_developer"] == "<yes|no>"
+
+    content_snapshot = packet["route_checks"][2]["live_snapshot"]
+    assert content_snapshot["target_site_host"] == "ekologus.dev.proudsite.pl"
+    assert content_snapshot["mapping_review_inputs"][0]["candidate_id"] == (
+        "content_brief_gsc_bdo"
+    )
+
+
+def test_marketer_uat_packet_markdown_has_recording_fields() -> None:
+    packet = {
+        "packet_type": "ekologus_marketer_uat_packet_v1",
+        "generated_at": "2026-06-24T21:30:00Z",
+        "api_base": "http://127.0.0.1:8000",
+        "time_limit_minutes": 15,
+        "primary_next_step": "Najpierw otwórz /merchant.",
+        "safety_note": "Ten pakiet nie jest dowodem wykonanego UAT.",
+        "route_checks": [
+            {
+                "label": "Command Center",
+                "route": "/command-center",
+                "operator_task": "Wskaż jedną decyzję.",
+                "pass_condition": "Marketer wie, co zrobić.",
+                "fail_condition": "Marketer zgaduje.",
+                "live_snapshot": {"daily_decisions": []},
+                "record_after_session": {
+                    "result": "<pass|fail>",
+                    "marketer_next_step": "<what marketer says>",
+                    "confusion": "<what was unclear>",
+                    "tasks_to_create": ["<task if any>"],
+                },
+            }
+        ],
+        "final_questions": ["Czy wiesz, co zrobić jako następny krok?"],
+        "result_template": {
+            "ready_without_developer": "<yes|no>",
+            "new_tasks": ["<task from feedback>"],
+        },
+    }
+
+    markdown = render_markdown(packet)
+
+    assert "# Ekologus Marketer UAT Packet" in markdown
+    assert "Live snapshot" in markdown
+    assert "Do uzupełnienia po sesji" in markdown
+    assert "Czy wiesz, co zrobić jako następny krok?" in markdown
+    assert "ready_without_developer" in markdown

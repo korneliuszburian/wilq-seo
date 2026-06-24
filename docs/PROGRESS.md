@@ -85,6 +85,10 @@ Stan produktu:
   `.local-lab/proof/content-mapping-review-packet/`. This is review-only:
   mapping still requires human input and does not unlock staging, publish or
   uplift claims.
+- `scripts/export_marketer_uat_packet.py` now exports a live, read-only UAT
+  packet for Command Center -> Merchant -> Content Planner -> Ads Doctor ->
+  GA4. Proof: `.local-lab/proof/marketer-uat-packet/`. This prepares the real
+  marketer session and records pass/fail fields, but is not itself marketer UAT.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -147,7 +151,8 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Run or defer the short marketer UAT script: Command Center -> Merchant ->
+1. Run or defer the live marketer UAT packet from
+   `.local-lab/proof/marketer-uat-packet/`: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record whether the marketer knew
    what to do next and where they got confused.
 2. If demo UX is the next priority, verify with the real marketer whether the

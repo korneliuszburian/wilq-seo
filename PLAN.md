@@ -140,6 +140,11 @@ Active demo work is narrow and depth-first.
 
 - `task`: Run or explicitly defer the marketer UAT script. This is the only
   remaining proof gap between browser/eval readiness and "marketer gets value".
+- `ready`: A live read-only UAT packet now exports the current WILQ API state
+  for the core route path plus pass/fail recording fields. Proof:
+  `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.json` and
+  `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.md`. This prepares
+  real UAT but is not a substitute for marketer feedback.
 - `ready`: A simulated operator UAT walkthrough is captured at
   `docs/handoffs/2026-06-24-operator-uat-findings.md` with browser proof under
   `.local-lab/proof/dashboard/marketer-uat-20260624/`. It found real
@@ -801,6 +806,11 @@ Use these rules before every implementation slice:
   and
   `.local-lab/proof/content-post-publication-measurement/content-strategist-smoke.json`;
   focused API tests and dashboard typecheck passed.
+- [x] Export a live, read-only marketer UAT packet for the core demo path.
+  Proof:
+  `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.json` and
+  `.local-lab/proof/marketer-uat-packet/marketer-uat-packet.md`; focused test:
+  `rtk uv run pytest tests/test_marketer_uat_packet.py -q`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
