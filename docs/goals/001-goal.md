@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 07:18 CEST.
+Last updated: 2026-06-24 07:23 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -37,15 +37,19 @@ preserving the constraints and boundaries.
 
 **Outcome:** build WILQ as an API-first Marketing Operating System for
 Ekologus, with the strongest current demo centered on the Polish marketer's
-daily decisions and content work for the new site
-`http://ekologus.dev.proudsite.pl/`.
+daily decisions, evidence-backed content generation and safe review workflows.
+The new site `http://ekologus.dev.proudsite.pl/` is a later target context for
+content migration/adaptation after the core demo and content-generation
+pipeline are stable.
 
 **Verification surface:** the demo is ready when the marketer can open the
 dashboard, follow the daily plan, inspect Ads/Merchant/Content/GA4/Localo
 decisions, copy/run the matching Codex skill prompt, and receive Polish
 evidence-backed recommendations with safe next actions and blocked claims.
-Proof must come from typed WILQ API endpoints, targeted route/browser checks,
-focused tests/smokes and skill eval artifacts, not screenshots or prose alone.
+Content output must include a structured brief or draft plan with source facts,
+intent, H1/H2/CTA direction, forbidden overclaims and review state. Proof must
+come from typed WILQ API endpoints, targeted route/browser checks, focused
+tests/smokes and skill eval artifacts, not screenshots or prose alone.
 
 **Constraints:** WILQ API remains the system brain; dashboard, skills, hooks,
 workflows, expert rules, opportunities and ActionObjects use the same typed API
@@ -71,6 +75,24 @@ technical status polish.
 data source, test surface or safe write path is unavailable, stop that claim
 with: missing contract, evidence gathered, blocked claims, what remains safe to
 show, and the exact input or implementation needed to unblock it.
+
+## Codex Goal And Prompting Contract
+
+Use the Codex Goal pattern as a completion contract:
+
+- Outcome, verification, constraints, boundaries and blocker rules must be
+  explicit before long-running work continues.
+- Long details belong in this file and linked docs, not in a 4,000-character
+  `/goal` prompt. The thread goal should point here.
+- Codex should inspect, implement, verify and refine without waiting after
+  every small step, but must stop when evidence says a claim is blocked.
+- Avoid looping on the same files or broad tests. If progress stalls, report
+  what was tried, what evidence exists and the next input/implementation needed.
+- Use parallel reads and subagents for independent audits or disjoint
+  implementation slices, then merge findings into one typed API/view-model plan
+  before editing shared product surfaces.
+- Prompt text exposed to the marketer is part of the product surface: it must be
+  practical Polish, skill-specific, evidence-scoped and eval-covered.
 
 ## Current Product State
 
@@ -219,20 +241,39 @@ fresh API/browser proof shows a regression.
      non-interactive eval coverage.
    - Real gaps: decision-quality evals, semantic reference audit, practical
      dashboard prompts and tighter context packs for each domain.
-5. **Knowledge compiler and marketing expertise**
+5. **Content generation layer**
+   - Ready: content diagnostics and tactical queue can already turn GSC,
+     WordPress, Ahrefs and GA4 evidence into review-safe refresh/create/merge/
+     block decisions.
+   - Required next shape: a typed content-generation contract that converts
+     evidence into Polish marketer artifacts: intent cluster, audience/problem,
+     old source URL, target page type, source facts, H1/H2/FAQ/CTA direction,
+     draft constraints, forbidden claims and review state.
+   - Techniques: evidence-first context packs, query/page clustering, search
+     intent grouping, content inventory dedupe, landing/source quality checks,
+     competitor/gap context as supporting evidence only, and human review before
+     publish/write.
+   - Prompt pattern: practical Polish commands mapped to a skill and endpoint,
+     for example "zbuduj brief SEO dla tej strony", "połącz te query w jeden
+     klaster", "wskaż refresh/merge/create/block", with evidence IDs,
+     source connectors, ActionObject IDs and blocked claims embedded.
+   - Real gaps: content brief schema, draft/rewrite preview, duplicate/canonical
+     checks, target-site migration fields and evals that score usefulness of
+     the generated brief, not only JSON shape.
+6. **Knowledge compiler and marketing expertise**
    - Ready: structured expert YAML rules and first knowledge-card/compiler
      scaffolding exist.
    - Real gaps: source-ingestion workflow for Google/Ads/SEO/Localo/Merchant
      standards, source lineage, confidence/freshness scoring, rule/card
      promotion into code and evals that prove rules influence decisions.
-6. **Dashboard/product UI**
+7. **Dashboard/product UI**
    - Ready: strong demo path exists across command center, Merchant, Content,
      Ads, GA4, Localo and action details.
    - Real gaps: route-by-route marketer audit, shared data boundaries to avoid
      repeated heavy aggregation, removal of leftover technical/meta cards, and
      targeted extraction of large frontend modules only where it improves
      velocity/reviewability.
-7. **Testing/release**
+8. **Testing/release**
    - Ready: broad `scripts/verify.sh`, focused API/dashboard tests, skill
      smokes/evals, hygiene/security gates and live dashboard e2e smoke that
      avoids exact assertions against changing Ekologus metric values.
@@ -244,19 +285,39 @@ fresh API/browser proof shows a regression.
 
 Finish these before claiming the Ekologus demo is done:
 
-1. **Content demo for the new Ekologus site**
-   - The next highest-value marketer slice is content for the new site:
-     `http://ekologus.dev.proudsite.pl/`.
-   - Treat old sources as evidence: current `ekologus.pl`, `sklep.ekologus.pl`,
-     GSC, GA4, Ahrefs, Ads, Merchant and WordPress inventory.
-   - Treat the dev site as target context, not as a replacement for evidence:
-     output should be Polish page/section briefs, H1/H2/CTA direction and
-     refresh/merge/create/block decisions for the new site.
-   - Add typed API/view-model fields before skill prompt cleverness if the
-     content planner needs target URL, target page type, old-source URL,
-     canonical source, or migration/rewrite status.
+1. **Core demo decision cockpit**
+   - Keep Command Center and domain routes focused on marketer decisions,
+     evidence, safe next actions, prompt-to-Codex and blocked claims.
+   - Do not promote connector readiness, raw metric dumps or stale technical
+     cards as marketing value.
+   - Verification: browser/API proof that `/command-center`, `/content-planner`,
+     `/ads-doctor`, `/merchant`, `/ga4`, `/localo` and action details show
+     useful decisions without fake metrics.
 
-2. **Source contracts and data acquisition**
+2. **Content generation pipeline**
+   - Build a typed content workflow before adapting to the dev site: evidence
+     pack -> intent/query cluster -> inventory/canonical check -> brief ->
+     draft/rewrite preview -> review ActionObject.
+   - Output must be Polish and useful for the marketer: page goal, audience,
+     key objections, evidence-backed angle, H1/H2/FAQ/CTA direction, internal
+     linking ideas, source facts, missing evidence and forbidden claims.
+   - Use `wilq-content-strategist` and `wilq-gsc-content-doctor` as operator
+     workflows over the API, not as the place where brief logic is invented.
+   - Verification: `/api/content/diagnostics`,
+     `/api/marketing/tactical-queue`, content route, skill smoke and
+     non-interactive eval must all agree on the same decisions.
+
+3. **New Ekologus site adaptation**
+   - Use `http://ekologus.dev.proudsite.pl/` after the core content workflow is
+     stable.
+   - Treat current `ekologus.pl`, `sklep.ekologus.pl`, GSC, GA4, Ahrefs, Ads,
+     Merchant, Localo and WordPress inventory as evidence.
+   - Treat the dev site as target context, not as evidence by itself.
+   - Add typed fields for target URL, target page type, source URL, canonical
+     source, migration/rewrite status and review state before exposing this in
+     dashboard prompts.
+
+4. **Source contracts and data acquisition**
    - Current Localo diagnostics expose live aggregate facts and typed
      read-contract status after a managed stack restart. Live proof
      `refresh_localo_a1b33cd17835` completed with
@@ -349,7 +410,7 @@ Finish these before claiming the Ekologus demo is done:
      4. Return to Ads only when Keyword Planner approval changes, change rows
         appear, or apply/audit contracts are the active slice.
 
-3. **Decision API and view-model quality**
+5. **Decision API and view-model quality**
    - Keep `/api/dashboard/command-center`, `/api/marketing/brief`,
      `/api/marketing/tactical-queue`, diagnostics endpoints and `/api/actions`
      as the shared product surface for dashboard and Codex.
@@ -388,7 +449,7 @@ Finish these before claiming the Ekologus demo is done:
      3. Explicit stale/ready/blocked semantics per contract, so `ready` never
         hides missing conversion, GBP, product or Ads safety evidence.
 
-4. **Action safety and apply path**
+6. **Action safety and apply path**
    - Current demo is mostly prepare/review-only. This is acceptable for demo,
      but not enough for BDOS-class production writes.
    - Every future write path must be `dry_run -> preview -> confirm -> audit`.
@@ -413,7 +474,7 @@ Finish these before claiming the Ekologus demo is done:
      5. Social actions: draft-only is acceptable; publishing stays blocked
         until page/org permissions, preview, confirm and audit exist.
 
-5. **Codex skills, prompts and eval quality**
+7. **Codex skills, prompts and eval quality**
    - `scripts/skill_hygiene_check.py` now guards obvious hygiene failures:
      `Goal 001`/workaround/bugfix/outdated/slop prose, English safety headings,
      English `with mode=vendor_read` endpoint notes and English imperative
@@ -484,7 +545,7 @@ Finish these before claiming the Ekologus demo is done:
      5. Keep skill context packs scoped. Do not send the full system context
         when a narrow diagnostics endpoint and skill-scoped pack are enough.
 
-6. **Knowledge compiler and source condensation**
+8. **Knowledge compiler and source condensation**
    - Goal: turn external marketing knowledge into versioned, source-linked
      rules/cards that improve WILQ decisions without bloating prompts.
    - Required contract for each accepted source: source URL/file, author/vendor,
@@ -508,7 +569,7 @@ Finish these before claiming the Ekologus demo is done:
         Merchant feed diagnostics, GA4 measurement/commerce, GSC/content,
         Localo/GBP and Ahrefs gap analysis.
 
-7. **Dashboard usefulness, performance and code quality**
+9. **Dashboard usefulness, performance and code quality**
    - Command Center must stay a decision cockpit, not a connector registry or
      raw metric dump. First screen should prioritize today's marketer decisions,
      prompts to Codex, action focus and source freshness.
@@ -543,7 +604,7 @@ Finish these before claiming the Ekologus demo is done:
         artifacts. Use `agent-browser` when checking real routes and record
         only concise proof paths.
 
-8. **Release, staging and live-test strategy**
+10. **Release, staging and live-test strategy**
    - Blocking CI/release tests must verify contracts, schemas, evidence IDs,
      source connectors, secret redaction, ActionObject safety, Polish output and
      no invented metrics.
@@ -597,13 +658,22 @@ Finish these before claiming the Ekologus demo is done:
 
 ## Immediate Next Tasks
 
-1. Next highest-value slice: content target workflow for
-   `http://ekologus.dev.proudsite.pl/`. It must map old evidence into new-site
-   Polish briefs and `refresh/merge/create/block` decisions, verified by
-   `/api/content/diagnostics`, `/api/marketing/tactical-queue`, the
-   dashboard content route and `wilq-content-strategist` smoke/eval.
-2. If content workflow is blocked, take the next slice that increases demo
-   truthfulness or marketer usefulness:
+1. First stabilize the core demo cockpit: Command Center and domain routes must
+   show useful marketer decisions, prompt-to-Codex, evidence, blocked claims and
+   safe next actions without technical filler.
+2. Then build the content-generation pipeline: evidence pack -> intent cluster
+   -> inventory/canonical check -> brief -> draft/rewrite preview -> review
+   ActionObject. Verify through content diagnostics, tactical queue, dashboard
+   route and `wilq-content-strategist` / `wilq-gsc-content-doctor` evals.
+3. Use `http://ekologus.dev.proudsite.pl/` only after the content pipeline is
+   stable enough to adapt old evidence into target-site briefs without
+   inventing metrics or page claims.
+4. Run knowledge/source condensation in parallel when it directly improves a
+   decision: ingest reputable source -> create knowledge card/rule -> link
+   evidence requirement -> prove in eval that the rule changes the decision or
+   blocks an unsafe claim.
+5. If a task is blocked, take the next slice that increases demo truthfulness
+   or marketer usefulness:
    - Merchant historical price/performance proof and safer product previews.
    - Localo `local_tasks` only if a side-effect-free read contract exists.
    - Ads Keyword Planner/change-impact/apply contracts only when source
@@ -612,7 +682,7 @@ Finish these before claiming the Ekologus demo is done:
      carrying product behavior without a typed API field.
    - Dashboard performance/shared data-boundary work only with fresh latency or
      duplicate-aggregation evidence.
-3. Do not advance a slice by prose alone. Each slice needs a concrete API,
+6. Do not advance a slice by prose alone. Each slice needs a concrete API,
    dashboard, skill, eval or docs proof matched to the changed surface.
 
 ## Stop Condition

@@ -75,6 +75,11 @@ Stan produktu:
   outcome, verification surface, constraints, boundaries, iteration policy and
   blocked stop condition. Use it to decide the next slice by evidence and demo
   value, not by percentage estimates or a growing backlog.
+- Goal 001 now treats `http://ekologus.dev.proudsite.pl/` as a later target
+  context after the core demo cockpit and content-generation pipeline are
+  stable. The content pipeline must be API-first: evidence pack, intent cluster,
+  inventory/canonical check, brief, draft/rewrite preview and review
+  ActionObject, with skill evals proving usefulness.
 - Skill eval schema/harness now requires `decision_quality`: actionable
   decision, safe next step, blocked-claims handling, workflow-specific
   interpretation and evidence-backed reasoning. Live proof:
@@ -319,11 +324,10 @@ Stan produktu:
 - Strong demo path today:
   `/command-center` -> `/merchant` -> `/content-planner` -> `/ads-doctor` ->
   optional `/ga4` and `/localo`.
-- Highest-value next demo slice: content for the new Ekologus site at
-  `http://ekologus.dev.proudsite.pl/`. Treat `ekologus.pl`,
-  `sklep.ekologus.pl`, GSC, GA4, Ahrefs, Ads, Merchant and WordPress as source
-  evidence; treat the dev site as the target for Polish page/section briefs,
-  H1/H2/CTA direction and `refresh/merge/create/block` decisions.
+- Highest-value next demo slice: stabilize the core demo cockpit and content
+  generation pipeline before adapting to the new Ekologus dev site. The dev
+  site remains target context for migration/adaptation, not the first task
+  before content briefs, draft previews and evals are reliable.
 
 ## Active Gaps
 
@@ -425,11 +429,14 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Work by theme: source contracts -> decision API/view-model -> ActionObject
-   safety -> Codex skill/eval quality -> knowledge compiler -> dashboard
-   usefulness/performance -> release/live-test hardening.
+1. Work by completion contract: core demo cockpit -> content-generation
+   pipeline -> new-site adaptation -> source contracts -> decision
+   API/view-model -> ActionObject safety -> Codex skill/eval quality ->
+   knowledge compiler -> dashboard usefulness/performance -> release/live-test
+   hardening.
 2. Next concrete slice should come from live proof. Current preference:
-   content target workflow for `http://ekologus.dev.proudsite.pl/`; otherwise
+   content-generation pipeline; then `http://ekologus.dev.proudsite.pl/`
+   adaptation only after content briefs/draft previews are stable. Fallbacks:
    Merchant before/after price-performance windows, Ahrefs freshness/
    cross-source scoring, semantic skill-reference audit or route-level
    dashboard usefulness/performance.
