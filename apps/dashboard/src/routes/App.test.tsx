@@ -281,6 +281,15 @@ const actions = [
           },
           brief_goal:
             "Przygotuj refresh/merge brief dla istniejącej treści pod temat `zielony ład`.",
+          content_angle:
+            "Odśwież istniejącą treść wokół intencji zielony ład bez obietnic pozycji.",
+          audience: "Decydent środowiskowy szukający prostego wyjaśnienia regulacji.",
+          key_objections: ["czy tekst jest aktualny prawnie", "czy nie dubluje innej strony"],
+          cta_direction: "CTA do rozmowy o wpływie regulacji na firmę.",
+          internal_link_direction: ["powiązane treści o regulacjach środowiskowych"],
+          source_facts: ["GSC page=/europejski-zielony-lad-co-to-takiego/", "clicks=12"],
+          missing_evidence: ["brak dowodu lead uplift"],
+          forbidden_claims: ["lead uplift", "revenue impact", "ranking guarantee"],
           required_validation: [
             "wordpress_existing_url_confirmed",
             "gsc_query_page_check",
@@ -6703,6 +6712,11 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
     expect(screen.getByText("GSC query/page / refresh")).toBeInTheDocument();
     expect(screen.getByText("Ahrefs review / review")).toBeInTheDocument();
+    expect(screen.getByText(/Kąt treści: Odśwież istniejącą treść/)).toBeInTheDocument();
+    expect(screen.getByText(/Odbiorca: Decydent środowiskowy/)).toBeInTheDocument();
+    expect(screen.getByText(/CTA: CTA do rozmowy/)).toBeInTheDocument();
+    expect(screen.getByText(/czy tekst jest aktualny prawnie/)).toBeInTheDocument();
+    expect(screen.getByText(/brak dowodu lead uplift/)).toBeInTheDocument();
     expect(screen.getAllByText("audyt środowiskowy").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("GSC: jest")).toBeInTheDocument();
     expect(screen.getByText("WP: jest")).toBeInTheDocument();

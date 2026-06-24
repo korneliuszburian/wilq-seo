@@ -1461,6 +1461,14 @@ def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregat
     assert previews[0]["preview_contract"] == "content_brief_preview_v1"
     assert previews[0]["candidate_id"].startswith("content_brief_gsc_")
     assert previews[0]["evidence_ids"]
+    assert previews[0]["content_angle"]
+    assert previews[0]["audience"]
+    assert previews[0]["key_objections"]
+    assert previews[0]["cta_direction"]
+    assert previews[0]["internal_link_direction"]
+    assert previews[0]["source_facts"]
+    assert previews[0]["missing_evidence"]
+    assert "ranking guarantee" in previews[0]["forbidden_claims"]
     assert previews[0]["apply_allowed"] is False
     assert previews[0]["api_mutation_ready"] is False
     assert "ranking guarantee" in previews[0]["blocked_claims"]

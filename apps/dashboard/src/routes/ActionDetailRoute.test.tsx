@@ -681,6 +681,13 @@ const contentActionFixture: ActionObject = {
         },
         brief_goal:
           "Sprawdź inventory i duplikaty przed briefem dla `bdo co to`. Bez potwierdzenia URL nie twórz nowej strony.",
+        content_angle:
+          "Najpierw potwierdź kanoniczną stronę BDO, potem przygotuj brief bez obietnic pozycji.",
+        audience: "Przedsiębiorca sprawdzający obowiązki BDO.",
+        key_objections: ["czy istnieje już kanoniczny URL", "czy intencja wymaga checklisty"],
+        cta_direction: "CTA do konsultacji obowiązków BDO bez obietnicy uniknięcia kar.",
+        source_facts: ["GSC page=/bdo-co-musi-wiedziec-przedsiebiorca/", "clicks=4"],
+        missing_evidence: ["brak potwierdzonego kanonicznego URL w WordPress"],
         brief_outline: [
           {
             section: "intent",
@@ -1115,6 +1122,9 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();
     expect(screen.getByText(/Wyświetlenia: 4429/)).toBeInTheDocument();
     expect(screen.getAllByText(/Opcje: merge, create, block/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Kąt treści: Najpierw potwierdź kanoniczną stronę BDO/)).toBeInTheDocument();
+    expect(screen.getByText(/Odbiorca: Przedsiębiorca sprawdzający obowiązki BDO/)).toBeInTheDocument();
+    expect(screen.getByText(/Brakujące dowody: brak potwierdzonego kanonicznego URL/)).toBeInTheDocument();
     expect(screen.getAllByText(/Walidacje: wordpress_inventory_check/).length).toBeGreaterThan(0);
     expect(screen.getByText("Draft WordPress do review")).toBeInTheDocument();
     expect(screen.getByText(/Tytuł draftu: Brief: bdo co to/)).toBeInTheDocument();

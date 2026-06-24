@@ -190,6 +190,14 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "decision_options": decision_options,
                 "metric_snapshot": _gsc_metric_snapshot(page_facts),
                 "brief_goal": _gsc_brief_goal(wordpress_match, primary_query),
+                "content_angle": _content_angle(primary_query, wordpress_match),
+                "audience": _content_audience(primary_query),
+                "key_objections": _key_objections(primary_query),
+                "cta_direction": _cta_direction(primary_query),
+                "internal_link_direction": _internal_link_direction(primary_query),
+                "source_facts": _gsc_source_facts(page, page_facts, wordpress_match),
+                "missing_evidence": _gsc_missing_evidence(wordpress_match),
+                "forbidden_claims": CONTENT_BLOCKED_CLAIMS,
                 "brief_outline": _brief_outline(primary_query, wordpress_match),
                 "required_validation": _gsc_required_validation(wordpress_match),
                 "blocked_claims": CONTENT_BLOCKED_CLAIMS,
@@ -350,6 +358,18 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                     "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim "
                     "powstanie brief. To jest kandydat do review, nie decyzja create."
                 ),
+                "content_angle": _ahrefs_content_angle(topic),
+                "audience": _content_audience(topic),
+                "key_objections": _key_objections(topic),
+                "cta_direction": _cta_direction(topic),
+                "internal_link_direction": _internal_link_direction(topic),
+                "source_facts": _ahrefs_source_facts(fact, topic),
+                "missing_evidence": [
+                    "brak potwierdzenia popytu GSC dla tematu",
+                    "brak potwierdzenia dopasowania WordPress inventory",
+                    "brak dowodu wpływu na ruch, leady albo revenue",
+                ],
+                "forbidden_claims": CONTENT_BLOCKED_CLAIMS,
                 "brief_outline": _brief_outline(topic, False),
                 "required_validation": [
                     "business_relevance_review",
@@ -411,6 +431,109 @@ def _gsc_brief_goal(wordpress_match: bool, primary_query: str) -> str:
         f"Sprawdź inventory i duplikaty przed briefem dla `{primary_query}`. "
         "Bez potwierdzenia URL nie twórz nowej strony."
     )
+
+
+def _content_angle(topic: str, wordpress_match: bool) -> str:
+    if wordpress_match:
+        return (
+            f"Odśwież istniejącą treść tak, żeby szybciej odpowiadała na intencję "
+            f"`{topic}` i prowadziła do właściwej usługi Ekologus bez obietnic wyniku."
+        )
+    return (
+        f"Najpierw potwierdź, czy temat `{topic}` nie ma już kanonicznej strony; "
+        "dopiero potem przygotuj nowy lub scalony brief."
+    )
+
+
+def _ahrefs_content_angle(topic: str) -> str:
+    return (
+        f"Potraktuj `{topic}` jako inspirację konkurencyjną do review, nie jako gotowy "
+        "temat publikacji, dopóki GSC i WordPress nie potwierdzą sensu biznesowego."
+    )
+
+
+def _content_audience(topic: str) -> str:
+    normalized = _normalize_text(topic)
+    if "bdo" in normalized:
+        return "Przedsiębiorca lub osoba operacyjna sprawdzająca obowiązki BDO i ryzyka formalne."
+    if "zielony lad" in normalized or "esg" in normalized:
+        return "Decydent lub specjalista środowiskowy szukający prostego wyjaśnienia regulacji."
+    if "odpad" in normalized or "beczk" in normalized or "sorbent" in normalized:
+        return "Firma potrzebująca bezpiecznego procesu, produktu albo konsultacji w obszarze odpadów."
+    return "Marketer i ekspert Ekologus powinni doprecyzować odbiorcę przed pisaniem treści."
+
+
+def _key_objections(topic: str) -> list[str]:
+    normalized = _normalize_text(topic)
+    objections = [
+        "czy temat jest aktualny prawnie i zgodny z realną usługą Ekologus",
+        "czy nie istnieje już strona, którą trzeba odświeżyć zamiast tworzyć nową",
+    ]
+    if "bdo" in normalized:
+        objections.append("czy użytkownik potrzebuje definicji, checklisty obowiązków czy konsultacji")
+    elif "zielony lad" in normalized or "esg" in normalized:
+        objections.append("czy tekst ma wyjaśniać pojęcie, obowiązki firmy czy wpływ na procesy")
+    else:
+        objections.append("czy intencja jest edukacyjna, zakupowa czy konsultacyjna")
+    return objections
+
+
+def _cta_direction(topic: str) -> str:
+    normalized = _normalize_text(topic)
+    if "bdo" in normalized:
+        return "CTA do konsultacji lub weryfikacji obowiązków BDO, bez obietnicy uniknięcia kar."
+    if "zielony lad" in normalized or "esg" in normalized:
+        return "CTA do rozmowy o wpływie regulacji na firmę, bez claimów revenue albo lead uplift."
+    return "CTA do kontaktu z ekspertem Ekologus po ręcznym potwierdzeniu intencji tematu."
+
+
+def _internal_link_direction(topic: str) -> list[str]:
+    normalized = _normalize_text(topic)
+    links = ["strona główna Ekologus lub główna strona usługowa potwierdzona w WordPress"]
+    if "bdo" in normalized:
+        links.append("powiązane treści o obowiązkach przedsiębiorcy i gospodarce odpadami")
+    if "zielony lad" in normalized or "esg" in normalized:
+        links.append("powiązane treści o regulacjach środowiskowych i ESG")
+    if "odpad" in normalized or "beczk" in normalized or "sorbent" in normalized:
+        links.append("powiązane treści lub kategorie dotyczące magazynowania i obsługi odpadów")
+    return links
+
+
+def _gsc_source_facts(page: str, page_facts: list[MetricFact], wordpress_match: bool) -> list[str]:
+    snapshot = _gsc_metric_snapshot(page_facts)
+    return [
+        f"GSC page={page}",
+        f"queries={snapshot['queries']}",
+        f"clicks={snapshot['clicks']}",
+        f"impressions={snapshot['impressions']}",
+        f"ctr={snapshot['ctr']}",
+        f"average_position={snapshot['average_position']}",
+        "wordpress_inventory_match=present" if wordpress_match else "wordpress_inventory_match=missing",
+    ]
+
+
+def _gsc_missing_evidence(wordpress_match: bool) -> list[str]:
+    missing = [
+        "brak dowodu lead quality, revenue impact i wzrostu pozycji",
+        "brak zatwierdzonego payloadu WordPress write",
+    ]
+    if not wordpress_match:
+        missing.insert(0, "brak potwierdzonego kanonicznego URL w WordPress inventory")
+    return missing
+
+
+def _ahrefs_source_facts(fact: MetricFact, topic: str) -> list[str]:
+    dimensions = fact.dimensions
+    facts = [
+        f"ahrefs_topic={topic}",
+        f"metric_name={fact.name}",
+        f"metric_value={fact.value}",
+    ]
+    for key in ("gap_type", "keyword", "competitor_domain", "source_url", "target_url"):
+        value = dimensions.get(key)
+        if value:
+            facts.append(f"{key}={value}")
+    return facts
 
 
 def _brief_outline(topic: str, wordpress_match: bool) -> list[dict[str, str]]:

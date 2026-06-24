@@ -41,6 +41,26 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Content-generation pipeline inventory/hardening slice completed on
+  2026-06-24. Existing pipeline was not rebuilt: `/api/content/diagnostics`
+  already exposes typed `decision_queue`; `act_prepare_content_refresh_queue`
+  already exposes `content_brief_preview_v1` and
+  `wordpress_draft_payload_preview_v1`; `/content-planner`, Action Detail and
+  `wilq-content-strategist` already consume those contracts. Confirmed gap:
+  preview was safe but too thin for a content writer. Fixed in typed
+  ActionObject payload and dashboard rendering by adding brief fields:
+  `content_angle`, `audience`, `key_objections`, `cta_direction`,
+  `internal_link_direction`, `source_facts`, `missing_evidence` and
+  `forbidden_claims`, while keeping apply/API mutation blocked. Proof:
+  `uv run pytest tests/test_api_contracts.py -k 'content_diagnostics_exposes_review_safe_decision_queue or content_brief_preview'`
+  returned 1 passed; dashboard route test
+  `pnpm --filter @wilq/dashboard exec vitest run src/routes/App.test.tsx -t 'localo social and content routes render workflow-specific blockers or focus'`
+  returned 1 passed; Action Detail content preview test returned 1 passed;
+  dashboard typecheck passed; `wilq-content-strategist` smoke passed; live
+  `/api/actions/act_prepare_content_refresh_queue` after stack restart shows
+  the new fields and `apply_allowed=false`. Next checklist item: decide whether
+  content skill eval should require these richer brief fields, then continue
+  content usefulness hardening or move to the next highest demo gap.
 - Domain workflow audit hardening slice completed on 2026-06-24. Fixed
   confirmed UI-side contract drift instead of adding prompt/reference
   workarounds: Content and Merchant diagnostic summaries no longer invent

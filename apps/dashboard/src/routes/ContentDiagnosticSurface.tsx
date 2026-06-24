@@ -151,6 +151,14 @@ type ContentBriefPreviewItem = {
   gsc_demand?: string | null;
   metric_snapshot: Record<string, string | number | boolean | null>;
   brief_goal: string;
+  content_angle?: string | null;
+  audience?: string | null;
+  key_objections?: string[];
+  cta_direction?: string | null;
+  internal_link_direction?: string[];
+  source_facts?: string[];
+  missing_evidence?: string[];
+  forbidden_claims?: string[];
   required_validation: string[];
   blocked_claims: string[];
   evidence_ids: string[];
@@ -245,6 +253,11 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         <StatusBadge value={preview.apply_allowed ? "ready" : "blocked"} />
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{preview.brief_goal}</p>
+      <div className="mt-3 grid gap-2 rounded-md border border-line bg-white p-3 text-xs leading-5 text-slate-600">
+        {preview.content_angle ? <div>Kąt treści: {preview.content_angle}</div> : null}
+        {preview.audience ? <div>Odbiorca: {preview.audience}</div> : null}
+        {preview.cta_direction ? <div>CTA: {preview.cta_direction}</div> : null}
+      </div>
       <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
         {Object.entries(preview.metric_snapshot).slice(0, 4).map(([label, value]) => (
           <MetricTile
@@ -255,10 +268,16 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
         ))}
       </div>
       <div className="mt-3 grid gap-2 text-xs text-slate-600">
+        <TraceLine label="Obiekcje" values={(preview.key_objections ?? []).slice(0, 3)} />
+        <TraceLine label="Linkowanie" values={(preview.internal_link_direction ?? []).slice(0, 3)} />
+        <TraceLine label="Źródła faktów" values={(preview.source_facts ?? []).slice(0, 4)} />
+        <TraceLine label="Brakujące dowody" values={(preview.missing_evidence ?? []).slice(0, 3)} />
         <TraceLine label="Walidacje" values={preview.required_validation.slice(0, 4)} />
         <TraceLine
-          label="Blokady claimów"
-          values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
+          label="Zakazane claimy"
+          values={contentBlockedClaimLabels(
+            (preview.forbidden_claims ?? preview.blocked_claims).slice(0, 4)
+          )}
         />
         <TraceLine
           label="Dowody"

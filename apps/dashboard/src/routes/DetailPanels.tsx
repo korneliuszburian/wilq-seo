@@ -645,6 +645,12 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
         <div>Opcje: {asStringArray(item.decision_options).join(", ") || "brak"}</div>
         <div>Cel briefu: {stringValue(item.brief_goal, "brak")}</div>
+        <div>Kąt treści: {stringValue(item.content_angle, "brak")}</div>
+        <div>Odbiorca: {stringValue(item.audience, "brak")}</div>
+        <div>CTA: {stringValue(item.cta_direction, "brak")}</div>
+        <div>Obiekcje: {asStringArray(item.key_objections).slice(0, 3).join(", ") || "brak"}</div>
+        <div>Źródła faktów: {asStringArray(item.source_facts).slice(0, 3).join(", ") || "brak"}</div>
+        <div>Brakujące dowody: {asStringArray(item.missing_evidence).slice(0, 3).join(", ") || "brak"}</div>
         <div>
           Kliknięcia: {formatNumber(metricSnapshot.clicks)}; Wyświetlenia:{" "}
           {formatNumber(metricSnapshot.impressions)}
