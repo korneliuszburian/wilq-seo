@@ -48,9 +48,9 @@ Stan produktu:
   live contract smoke, shared live schemas, dashboard route smoke 13/13 and
   sequential core skill smokes. This proves contract/demo readiness, not real
   marketer UAT or full BDOS/apply readiness.
-- The same core pre-demo gate passed again after the content/Localo eval
-  hardening slices. Proof:
-  `.local-lab/proof/pre-demo-gate-after-eval-hardening.txt`.
+- The same core pre-demo gate passed again after the mapping review handoff
+  slice. Proof:
+  `.local-lab/proof/pre-demo-gate-after-mapping-review-handoff.txt`.
 - Core demo path is currently usable in simulated/browser proof:
   Command Center -> Merchant -> Content Planner -> Ads Doctor -> GA4. Action
   copy and core navigation were hardened; Ads Doctor has the marketer-facing

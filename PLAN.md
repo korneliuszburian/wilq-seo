@@ -180,6 +180,12 @@ Active demo work is narrow and depth-first.
   `.local-lab/proof/pre-demo-gate-after-eval-hardening.txt`; coverage:
   managed stack status, API health, live contract smoke, shared live schemas,
   dashboard API-backed route smoke 13/13 and sequential core skill smokes.
+- `ready`: Core pre-demo gate passed again after the mapping review handoff
+  slice. Proof:
+  `.local-lab/proof/pre-demo-gate-after-mapping-review-handoff.txt`; coverage:
+  managed stack status, API health, live contract smoke, shared live schemas,
+  dashboard API-backed route smoke 13/13 and sequential core skill smokes for
+  daily, Merchant, Content, Ads, GA4, Localo and Ahrefs.
 
 ### B. Content Generation And New-Site Workflow
 
