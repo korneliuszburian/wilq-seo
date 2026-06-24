@@ -41,6 +41,13 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Marketing Brief empty-section regression was a stale long-running API process,
+  not current product code. Fresh `uv run` construction returned
+  `what_we_know=5`, `what_blocks_us=2`, `safe_next_actions=7`,
+  `recommended_focus=3`; after `scripts/local_stack.sh restart`, live
+  `/api/marketing/brief` returned the same counts with 13 ActionObject IDs and
+  21 evidence IDs. If live API output contradicts current source/tests, restart
+  the managed stack before patching view-model code.
 - Dashboard route loading now avoids blank marketer routes for `/opportunities`
   and `/knowledge`: primary headers/sections render before secondary
   registries finish loading, while ActionObject/evidence/knowledge subsections

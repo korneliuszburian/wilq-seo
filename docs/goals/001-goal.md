@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 05:50 CEST.
+Last updated: 2026-06-24 05:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -95,6 +95,12 @@ before secondary registries finish, with ActionObject/evidence/knowledge
 subsections handling their own loading/error states. Focused proof: targeted
 route tests, dashboard lint/typecheck and `agent-browser` checks for quick
 `main` + `h1` visibility plus final route content.
+Marketing Brief empty-section proof on 2026-06-24 showed a stale long-running
+API process/cache, not a current code defect: fresh `uv run` construction and
+live API after `scripts/local_stack.sh restart` both returned
+`what_we_know=5`, `what_blocks_us=2`, `safe_next_actions=7`,
+`recommended_focus=3`, 13 ActionObject IDs and 21 evidence IDs. When live API
+contradicts current source/tests, restart the managed stack before patching.
 
 ## Current Stack Map
 
