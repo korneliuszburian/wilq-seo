@@ -18,6 +18,8 @@ Every Codex session working on WILQ must read these files first:
 6. `docs/architecture/bdos-class-wilq-operating-system.md` - product bar.
 7. `docs/infra/001.md` - original product scope.
 8. `docs/audits/001-output.md` - 2026-06-18 audit and critique.
+9. `docs/goals/archive/bdos-deferred-backlog.md` - deferred BDOS-class work
+   that must not be lost but is not the active demo queue.
 
 Update this goal only when active blockers, next tasks or quality rules change.
 Do not paste finished logs, command transcripts or old proof blocks here.
@@ -695,3 +697,6 @@ is a solid Ekologus demo, not full BDOS-class production automation. The demo
 must prove real API evidence, not static artifacts, prompt-only reasoning or
 mock data. Full production is a later goal that adds multi-client support,
 write/apply safety, alerts, agency operations and long-term knowledge memory.
+The deferred production backlog is preserved in
+`docs/goals/archive/bdos-deferred-backlog.md`; promote items from that file one
+at a time only when they become the next evidence-backed slice.

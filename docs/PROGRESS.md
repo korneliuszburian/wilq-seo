@@ -80,6 +80,10 @@ Stan produktu:
   stable. The content pipeline must be API-first: evidence pack, intent cluster,
   inventory/canonical check, brief, draft/rewrite preview and review
   ActionObject, with skill evals proving usefulness.
+- Deferred "better BDOS" work is archived in
+  `docs/goals/archive/bdos-deferred-backlog.md`. Do not lose those tasks, but
+  do not paste the whole backlog back into active Goal 001; promote one
+  evidence-backed slice at a time.
 - Skill eval schema/harness now requires `decision_quality`: actionable
   decision, safe next step, blocked-claims handling, workflow-specific
   interpretation and evidence-backed reasoning. Live proof:
