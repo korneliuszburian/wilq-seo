@@ -114,6 +114,17 @@ Stan produktu:
   removed hardcoded Daily Command domain ranking and GA4 prompt-side item
   classification; both now consume WILQ API decision order/types, and the
   hygiene gate blocks those exact regressions.
+- Ads Doctor semantic cleanup removed a long prompt-pack style evidence
+  paragraph from `wilq-ads-doctor/SKILL.md`; the skill now points to typed
+  `/api/ads/diagnostics` contracts such as `allowed_metrics`,
+  `missing_read_contracts`, `blocked_claims`, `action_ids` and
+  `payload_preview`. `scripts/skill_hygiene_check.py` now also blocks
+  `Inspiracja produktowa` reference prose and body lines over 900 characters,
+  so skill references cannot silently become bugfix/product-logic dumps. The
+  Ads Doctor context-pack uses Ads summary diagnostics before context
+  compaction; live smoke proof:
+  `.local-lab/proof/skills/ads-doctor-contract-slim-smoke.json` with
+  `context_pack_bytes=178744`.
 - Live Ads optimizer review is ready but review-only. `/api/ads/diagnostics`
   exposes ready campaign triage, budget pacing, recommendation review,
   impression-share context, search terms, search-term safety, custom-segment
@@ -226,6 +237,9 @@ Stan produktu:
    - Obvious hygiene failures are now guarded by `scripts/skill_hygiene_check.py`.
    - Repeated output-contract language wording has been normalized across WILQ
      skills.
+   - Ads Doctor now consumes typed Ads diagnostics contracts instead of carrying
+     long prompt-pack logic in `SKILL.md`; its context-pack stays under the
+     deterministic smoke budget by using summary diagnostics before compaction.
    - Remaining: deeper semantic review of references for product logic hidden in prose.
    - References should describe contracts and output shape only; product logic,
      workaround rules and bug fixes belong in API/schema/eval.

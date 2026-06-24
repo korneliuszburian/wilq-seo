@@ -898,7 +898,7 @@ def _diagnostics_for_skill(skill: str) -> dict[str, Any]:
     if skill == "wilq-ads-doctor":
         return {
             "ads_diagnostics": _compact_ads_diagnostics_for_context(
-                build_ads_diagnostics().model_dump(mode="json")
+                build_ads_diagnostics(view="summary").model_dump(mode="json")
             )
         }
     if skill == "wilq-merchant-feed-operator":

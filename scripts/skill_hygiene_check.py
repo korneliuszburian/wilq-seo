@@ -29,6 +29,7 @@ FORBIDDEN_SKILL_PROSE = {
     "hack",
     "slop",
     "Product inspiration:",
+    "Inspiracja produktowa",
     "MCP Boundary",
     "Content Safety",
     "Merchant Safety",
@@ -41,6 +42,7 @@ FORBIDDEN_SKILL_PROSE = {
     "Klasyfikuj każdy item",
 }
 ENGLISH_WORKFLOW_PREFIX = re.compile(r"^\d+\.\s+(Call|Run|Use|Check|Fix|Build)\b")
+MAX_BODY_LINE_LENGTH = 900
 
 
 def main() -> None:
@@ -73,6 +75,7 @@ def _skill_errors(skill_name: str, skill_dir: Path) -> list[str]:
                 errors.append(f"{relative}: forbidden prose {phrase!r}")
         if path.name == "SKILL.md":
             errors.extend(_skill_md_errors(skill_name, path, text))
+        errors.extend(_long_line_errors(path, text))
     return errors
 
 
@@ -87,6 +90,26 @@ def _skill_md_errors(skill_name: str, path: Path, text: str) -> list[str]:
         if ENGLISH_WORKFLOW_PREFIX.match(line):
             errors.append(
                 f"{relative}:{line_number}: workflow step starts with English imperative"
+            )
+    return errors
+
+
+def _long_line_errors(path: Path, text: str) -> list[str]:
+    errors: list[str] = []
+    in_frontmatter = False
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if line_number == 1 and line == "---":
+            in_frontmatter = True
+            continue
+        if in_frontmatter and line == "---":
+            in_frontmatter = False
+            continue
+        if in_frontmatter:
+            continue
+        if len(line) > MAX_BODY_LINE_LENGTH:
+            errors.append(
+                f"{path.as_posix()}:{line_number}: line exceeds "
+                f"{MAX_BODY_LINE_LENGTH} characters"
             )
     return errors
 

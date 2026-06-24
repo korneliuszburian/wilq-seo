@@ -6,7 +6,7 @@ Diagnostyka Google Ads, jakość kampanii, search terms, negative keywords i bez
 
 Oczekiwany wynik: ustalenia Ads oparte na evidence, z kandydatami działań pozostającymi pending do walidacji przez WILQ API.
 
-Inspiracja produktowa: traktuj BDOS.ai jako referencję doświadczenia operatora Ads operating-system, a oficjalny Google Ads MCP server jako wzorzec adaptera MCP dla read-only account discovery, GAQL/reporting exploration i diagnostyki wspieranej dokumentacją. WILQ API pozostaje kanoniczne dla evidence IDs, opportunity IDs, action validation i audytu.
+WILQ API pozostaje kanoniczne dla evidence IDs, opportunity IDs, action validation i audytu. Zewnętrzne narzędzia lub MCP adaptery mogą być tylko źródłem read-only evidence po zapisaniu do WILQ kontraktów.
 
 ## Wymagany kontekst API
 
@@ -25,8 +25,8 @@ Kontrakt językowy: odpowiadaj marketerowi Ekologus po polsku z polskimi znakami
 
 1. `Status`: zasięg API, gotowość connectorów, `blocked_handoff.status` jeśli istnieje, i znane blockery.
 2. `Dowody`: Ads diagnostics section IDs, evidence IDs, connector IDs, latest refresh status, freshness notes i metric summaries wyłącznie z WILQ API.
-3. `Diagnoza`: co wspiera `/api/ads/diagnostics`, z niepewnością, jeśli evidence jest zagregowane, stare, niepełne albo zablokowane przez OAuth. Jeśli `budget_pacing_read_contract.status=ready`, opisz budżet wyłącznie jako read-only context: koszt z 7 dni, budżet dzienny, stosunek wydania i recommended budget signal.
-4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia. Dla campaign review używaj `act_prepare_ads_campaign_review_queue` wyłącznie jako prepare-only przeglądu kampanii i budżetu, nie jako decyzji budżetowej. Dla negative keywords używaj tylko `ads_diagnostics.negative_keywords_read_contract` i opisuj kandydatów oraz `payload_preview` jako review/safety queue, nie jako gotowe wykluczenia ani apply.
+3. `Diagnoza`: co wspiera `/api/ads/diagnostics`, z niepewnością, jeśli evidence jest zagregowane, stare, niepełne albo zablokowane przez OAuth. Używaj `allowed_metrics`, `missing_read_contracts` i `blocked_claims` z typed contracts zamiast własnych reguł w prose.
+4. `Kandydaci działań`: opportunity IDs i ActionObject IDs, gdy są dostępne; w przeciwnym razie opisz brakujące API/evidence potrzebne do ich utworzenia. Kandydatów zmian opisuj jako review/safety queue, dopóki ActionObject nie ma zwalidowanego apply support, confirm i audit boundary.
 5. `Walidacja`: wynik albo wymagane wywołanie `POST /api/actions/{action_id}/validate` przed apply/execution.
 6. `Następny krok`: najmniejszy bezpieczny krok operatora.
 

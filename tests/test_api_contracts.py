@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 import pytest
@@ -13852,6 +13852,35 @@ def test_codex_context_pack_scopes_merchant_payload_preview(
     assert preview["destructive"] is False
     assert "feed write" in preview["blocked_claims"]
     assert len(json.dumps(data, ensure_ascii=False).encode()) < 200_000
+
+
+def test_ads_doctor_context_pack_uses_summary_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    seed_google_ads_live_review_metric_facts(tmp_path, monkeypatch)
+    captured_views: list[str] = []
+
+    def recording_build_ads_diagnostics(
+        actions: list[ActionObject] | None = None,
+        *,
+        view: Literal["full", "summary"] = "full",
+    ) -> Any:
+        captured_views.append(view)
+        return build_ads_diagnostics(actions=actions, view=view)
+
+    monkeypatch.setattr(
+        "apps.api.wilq_api.main.build_ads_diagnostics",
+        recording_build_ads_diagnostics,
+    )
+
+    response = client.post(
+        "/api/codex/context-pack",
+        json={"skill": "wilq-ads-doctor"},
+    )
+
+    assert response.status_code == 200
+    assert captured_views == ["summary"]
 
 
 def test_codex_context_pack_scopes_ads_doctor_payload(

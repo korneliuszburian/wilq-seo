@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:16 CEST.
+Last updated: 2026-06-24 02:20 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -293,6 +293,14 @@ Finish these before claiming the Ekologus demo is done:
      longer classifies decision items in prose. Both must use WILQ API
      decision order/types. `scripts/skill_hygiene_check.py` blocks those exact
      regressions.
+   - Ads Doctor semantic cleanup removed long prompt-pack logic from
+     `wilq-ads-doctor/SKILL.md`. It now consumes typed
+     `/api/ads/diagnostics` contracts for `allowed_metrics`,
+     `missing_read_contracts`, `blocked_claims`, `action_ids` and
+     `payload_preview`. The hygiene gate blocks `Inspiracja produktowa` prose
+     and body lines over 900 characters. Ads Doctor context-pack must use
+     summary diagnostics before compaction and stay under the deterministic
+     smoke budget.
    - Remaining audit: deeper semantic review of references. References may
      describe API usage, required evidence, output shape and safety rules.
    - References must not become the place for product behavior, workaround
