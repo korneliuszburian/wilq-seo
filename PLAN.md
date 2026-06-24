@@ -478,6 +478,13 @@ Skills are operator workflows over WILQ API. They are not the product brain.
   `safety_findings=[]`, BDO/Zielony Ład handled as refresh/merge review work,
   target-site mapping and draft blockers preserved, and staging/publish/uplift
   claims blocked.
+- `ready`: The Ads Doctor messy-prompt runtime proof passed. Artifact:
+  `.local-lab/evals/codex-skill/20260624T210410Z/wilq-ads-doctor/result.json`.
+  Result: `operator_usefulness_score=5`, all `decision_quality` booleans true,
+  four Ads review ActionObjects validated, and CPA/ROAS/search-term waste/
+  wasted budget/budget scaling/recommendation apply/targeting apply/negative
+  keyword apply claims blocked without human review, confirmation and
+  apply/audit contract.
 - `task`: Add decision-quality rubrics that check usefulness, prioritization,
   blocked-claim handling and safe next steps, not only output shape.
 - `task`: Add a human usefulness rubric after marketer UAT: "Czy wiem co

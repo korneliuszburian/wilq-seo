@@ -93,6 +93,10 @@ Stan produktu:
   `.local-lab/evals/codex-skill/20260624T205857Z/wilq-content-strategist/result.json`,
   `operator_usefulness_score=5`, all decision-quality booleans true and
   staging/publish/uplift claims still blocked. This is not real marketer UAT.
+- The Ads Doctor messy-prompt runtime proof also passed: artifact
+  `.local-lab/evals/codex-skill/20260624T210410Z/wilq-ads-doctor/result.json`,
+  `operator_usefulness_score=5`, four review ActionObjects validated and
+  CPA/ROAS/wasted-budget/apply claims still blocked.
 - Content strategist eval hardening now requires the current
   `operator_summary.target_site_migration_map`, mapping-review gate markers and
   blocked staging/ranking outputs, so the eval cannot pass on generic
