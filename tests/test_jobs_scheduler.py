@@ -9,11 +9,27 @@ from typer.testing import CliRunner
 
 from apps.api.wilq_api.main import app
 from wilq.cli import app as cli_app
+from wilq.jobs.registry import list_jobs
 
 client = TestClient(app)
 
 FAKE_JOBS_API_SECRET = "sk-jobs-api-redaction-test"  # pragma: allowlist secret
 FAKE_JOBS_CLI_SECRET = "sk-jobs-cli-redaction-test"  # pragma: allowlist secret
+
+
+def test_configured_vendor_read_job_only_includes_implemented_vendor_adapters() -> None:
+    jobs = {job.id: job for job in list_jobs()}
+    job = jobs["configured_vendor_read_refresh"]
+
+    assert "google_ads" in job.connector_ids
+    assert "google_search_console" in job.connector_ids
+    assert "google_analytics_4" in job.connector_ids
+    assert "google_merchant_center" in job.connector_ids
+    assert "ahrefs" in job.connector_ids
+    assert "localo" in job.connector_ids
+    assert "wordpress_ekologus" in job.connector_ids
+    assert "wordpress_sklep" in job.connector_ids
+    assert "openai_codex" not in job.connector_ids
 
 
 def test_jobs_api_runs_connector_status_probe_without_secret_values(

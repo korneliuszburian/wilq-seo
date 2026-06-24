@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:55 CEST.
+Last updated: 2026-06-24 05:05 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -81,6 +81,11 @@ price-history/performance contracts as a visible blocked review decision
 instead of hiding them only in a top-level readiness object. The Merchant skill
 smoke now requires that same decision in both `/api/merchant/diagnostics` and
 skill-scoped context-pack before the skill path is trusted.
+Manual pre-demo vendor refresh is usable again: `configured_vendor_read_refresh`
+now includes only connectors with implemented read-only vendor adapters, so
+`openai_codex` no longer blocks the job while its vendor-read adapter is absent.
+Live proof `jobrun_configured_vendor_read_refresh_262817b0e1` completed with
+8 source connectors and no errors, making Content fresh on Command Center.
 
 ## Current Stack Map
 

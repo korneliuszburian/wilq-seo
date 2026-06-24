@@ -213,8 +213,13 @@ Stan produktu:
   screen. Daily decisions now also carry stable `domain` identifiers and typed
   `freshness` state derived from latest source `vendor_read` with
   connector-freshness fallback; `scripts/live_contract_smoke.py` asserts these
-  fields exist without checking changing live metric values. Live proof on
-  2026-06-24 returned Merchant/GA4/Ads fresh and Content stale. The dashboard
+  fields exist without checking changing live metric values. Earlier live proof
+  on 2026-06-24 returned Merchant/GA4/Ads fresh and Content stale. Manual
+  `configured_vendor_read_refresh` now excludes `openai_codex` until a
+  vendor-read adapter exists; proof
+  `jobrun_configured_vendor_read_refresh_262817b0e1` completed 8 implemented
+  read adapters with no errors, and Command Center returned Merchant, Content
+  and Ads as fresh/ready while GA4 stayed fresh/blocked. The dashboard
   badge now renders stale ready decisions as `do odświeżenia`; browser proof:
   `.local-lab/proof/dashboard/command-center-decision-freshness-full-snapshot.txt`.
   Daily decisions also expose capped `metric_facts` from their own source

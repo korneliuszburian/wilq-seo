@@ -4,6 +4,17 @@ from wilq.connectors.registry import list_connector_statuses
 from wilq.jobs.models import ScheduledJob
 from wilq.schemas import ConnectorRefreshMode
 
+VENDOR_READ_CONNECTOR_IDS = {
+    "google_ads",
+    "google_search_console",
+    "google_analytics_4",
+    "google_merchant_center",
+    "ahrefs",
+    "localo",
+    "wordpress_ekologus",
+    "wordpress_sklep",
+}
+
 
 def list_jobs() -> list[ScheduledJob]:
     connector_ids = [connector.id for connector in list_connector_statuses()]
@@ -32,7 +43,11 @@ def list_jobs() -> list[ScheduledJob]:
             connector_ids=[
                 connector.id
                 for connector in list_connector_statuses()
-                if connector.configured and connector.capabilities.read
+                if (
+                    connector.configured
+                    and connector.capabilities.read
+                    and connector.id in VENDOR_READ_CONNECTOR_IDS
+                )
             ],
             refresh_mode=ConnectorRefreshMode.vendor_read,
             schedule="manual",
@@ -54,4 +69,3 @@ def get_job(job_id: str) -> ScheduledJob | None:
         if job.id == job_id:
             return job
     return None
-
