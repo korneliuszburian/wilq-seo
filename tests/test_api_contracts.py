@@ -2075,6 +2075,20 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert "needs_duplicate_resolution" in readiness_contract["allowed_outcomes"]
     assert "canonical_review_outcome" in readiness_contract["required_fields"]
     assert "wordpress_staging_write" in readiness_contract["blocked_outputs"]
+    assert draft_preview["staging_handoff_status"] == "blocked_until_draft_gates_pass"
+    assert "wordpress_staging_write_not_requested" in draft_preview[
+        "staging_handoff_blockers"
+    ]
+    staging_contract = draft_preview["staging_handoff_contract"]
+    assert staging_contract["contract_version"] == "wordpress_staging_handoff_v1"
+    assert staging_contract["scope"] == "blocked_preview_only"
+    assert staging_contract["target_site_url"] == selected_target_url
+    assert (
+        staging_contract["required_next_action_contract"]
+        == "wordpress_staging_draft_apply_v1"
+    )
+    assert "content_draft_readiness_review" in staging_contract["requires_passed_gates"]
+    assert "wordpress_staging_write" in staging_contract["blocked_outputs"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[
@@ -2223,6 +2237,18 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         "requires_passed_gates"
     ]
     assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
+    assert draft_preview["staging_handoff_status"] in {
+        "blocked_until_draft_gates_pass",
+        "blocked_until_draft_readiness_review",
+        "blocked_until_staging_action_contract",
+    }
+    assert "wordpress_staging_write_not_requested" in draft_preview[
+        "staging_handoff_blockers"
+    ]
+    staging_contract = draft_preview["staging_handoff_contract"]
+    assert staging_contract["contract_version"] == "wordpress_staging_handoff_v1"
+    assert staging_contract["scope"] == "blocked_preview_only"
+    assert "wordpress_publish" in staging_contract["blocked_outputs"]
     assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
     assert (
         "duplicate_or_cannibalization_check"

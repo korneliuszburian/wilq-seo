@@ -739,6 +739,10 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
             .join(", ") || "brak zapisu"}
         </div>
         <div>Notatka readiness: {stringValue(item.draft_readiness_review_notes, "brak")}</div>
+        <div>Staging handoff: {stringValue(item.staging_handoff_status, "zablokowany")}</div>
+        <div>
+          Blokady stagingu: {asStringArray(item.staging_handoff_blockers).slice(0, 5).join(", ") || "brak"}
+        </div>
         <div>
           Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
           {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}

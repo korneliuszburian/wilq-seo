@@ -2885,6 +2885,9 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "legal_factual_review_recorded_outcome",
         "human_review_recorded_outcome",
         "draft_readiness_review_notes",
+        "staging_handoff_status",
+        "staging_handoff_blockers",
+        "staging_handoff_contract",
         "required_validation",
         "blocked_claims",
         "source_connectors",
@@ -2933,6 +2936,17 @@ def _compact_wordpress_draft_payload_preview_for_context(
                 if isinstance(value, list):
                     draft_readiness_contract[key] = value[:limit]
                     draft_readiness_contract[f"{key}_total"] = len(value)
+        staging_handoff_contract = compact_item.get("staging_handoff_contract")
+        if isinstance(staging_handoff_contract, dict):
+            for key, limit in (
+                ("blocked_until", 7),
+                ("requires_passed_gates", 7),
+                ("blocked_outputs", 5),
+            ):
+                value = staging_handoff_contract.get(key)
+                if isinstance(value, list):
+                    staging_handoff_contract[key] = value[:limit]
+                    staging_handoff_contract[f"{key}_total"] = len(value)
         draft_payload = item.get("draft_payload")
         if isinstance(draft_payload, dict):
             compact_item["draft_payload"] = {

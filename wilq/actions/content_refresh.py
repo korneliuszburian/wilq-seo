@@ -464,6 +464,18 @@ def _wordpress_draft_payload_preview(
         mapping_review_outcome=(mapping_review or {}).get("mapping_outcome"),
     )
     draft_blockers = _draft_blockers(draft_generation_status)
+    staging_target_url = (
+        (mapping_review or {}).get("selected_target_url")
+        or target_site_url
+        or migration_candidate_url
+    )
+    staging_handoff_status = _staging_handoff_status(
+        draft_generation_status=draft_generation_status,
+        draft_readiness_outcome=(draft_readiness_review or {}).get(
+            "draft_readiness_outcome"
+        ),
+    )
+    staging_handoff_blockers = _staging_handoff_blockers(staging_handoff_status)
     candidate_id = str(preview["candidate_id"])
     return {
         "preview_contract": WORDPRESS_DRAFT_PAYLOAD_PREVIEW_CONTRACT,
@@ -606,6 +618,13 @@ def _wordpress_draft_payload_preview(
         ),
         "draft_readiness_review_notes": (
             (draft_readiness_review or {}).get("draft_readiness_notes") or None
+        ),
+        "staging_handoff_status": staging_handoff_status,
+        "staging_handoff_blockers": staging_handoff_blockers,
+        "staging_handoff_contract": _staging_handoff_contract(
+            staging_handoff_status=staging_handoff_status,
+            staging_handoff_blockers=staging_handoff_blockers,
+            target_site_url=staging_target_url,
         ),
         "draft_payload": {
             "post_status": "draft",
@@ -811,6 +830,75 @@ def _draft_readiness_review_contract() -> dict[str, Any]:
             "publish_ready_claim",
             "duplicate_free_claim_without_review",
             "legal_compliance_guarantee",
+            "ranking_or_lead_uplift_claim",
+        ],
+    }
+
+
+def _staging_handoff_status(
+    *,
+    draft_generation_status: str,
+    draft_readiness_outcome: str | None,
+) -> str:
+    if draft_generation_status != "ready_for_review":
+        return "blocked_until_draft_gates_pass"
+    if draft_readiness_outcome != "approve_outline_for_editorial_review":
+        return "blocked_until_draft_readiness_review"
+    return "blocked_until_staging_action_contract"
+
+
+def _staging_handoff_blockers(staging_handoff_status: str) -> list[str]:
+    blockers = [
+        "wordpress_staging_write_not_requested",
+        "api_mutation_ready_false",
+        "human_confirm_before_wordpress_write",
+    ]
+    if staging_handoff_status == "blocked_until_draft_gates_pass":
+        return [
+            "target_site_mapping_review",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "legal_factual_review",
+            *blockers,
+        ]
+    if staging_handoff_status == "blocked_until_draft_readiness_review":
+        return [
+            "content_draft_readiness_review",
+            *blockers,
+        ]
+    return [
+        "wordpress_staging_action_object_required",
+        "wordpress_staging_payload_preview_required",
+        *blockers,
+    ]
+
+
+def _staging_handoff_contract(
+    *,
+    staging_handoff_status: str,
+    staging_handoff_blockers: list[str],
+    target_site_url: str | None,
+) -> dict[str, Any]:
+    return {
+        "contract_version": "wordpress_staging_handoff_v1",
+        "scope": "blocked_preview_only",
+        "target_site_url": target_site_url,
+        "status": staging_handoff_status,
+        "blocked_until": staging_handoff_blockers,
+        "requires_passed_gates": [
+            "target_site_mapping_review",
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            "legal_factual_review",
+            "content_draft_readiness_review",
+            "human_confirm_before_wordpress_write",
+        ],
+        "required_next_action_contract": "wordpress_staging_draft_apply_v1",
+        "blocked_outputs": [
+            "wordpress_staging_write",
+            "wordpress_publish",
+            "production_wordpress_write",
+            "publish_ready_claim",
             "ranking_or_lead_uplift_claim",
         ],
     }

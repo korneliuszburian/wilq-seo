@@ -470,6 +470,18 @@ type WordPressDraftPayloadPreviewItem = {
   legal_factual_review_recorded_outcome?: string | null;
   human_review_recorded_outcome?: string | null;
   draft_readiness_review_notes?: string | null;
+  staging_handoff_status?: string | null;
+  staging_handoff_blockers?: string[];
+  staging_handoff_contract?: {
+    contract_version?: string;
+    scope?: string;
+    target_site_url?: string | null;
+    status?: string;
+    blocked_until?: string[];
+    requires_passed_gates?: string[];
+    required_next_action_contract?: string;
+    blocked_outputs?: string[];
+  };
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -556,6 +568,16 @@ function WordPressDraftPayloadPreviewCard({
         <TraceLine
           label="Kontrakt review"
           values={contentDraftReadinessContractValues(preview.draft_readiness_review_contract)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Staging handoff"
+          values={contentStagingHandoffValues(preview)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Kontrakt stagingu"
+          values={contentStagingHandoffContractValues(preview.staging_handoff_contract)}
           empty="brak"
         />
         <TraceLine
@@ -1348,6 +1370,37 @@ function contentDraftReadinessContractValues(
     ...(contract.required_fields ?? []).slice(0, 4).map((value) => `wymaga: ${value}`),
     ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${value}`)
   ].filter((value) => value.trim().length > 0);
+}
+
+function contentStagingHandoffValues(item: WordPressDraftPayloadPreviewItem): string[] {
+  return [
+    item.staging_handoff_status
+      ? `status: ${contentStagingHandoffStatusLabel(item.staging_handoff_status)}`
+      : "",
+    ...(item.staging_handoff_blockers ?? []).slice(0, 5).map((value) => `blokada: ${value}`)
+  ].filter((value) => value.trim().length > 0);
+}
+
+function contentStagingHandoffContractValues(
+  contract: WordPressDraftPayloadPreviewItem["staging_handoff_contract"]
+): string[] {
+  if (!contract) return [];
+  return [
+    contract.contract_version ? `contract: ${contract.contract_version}` : "",
+    contract.scope ? `zakres: ${contract.scope}` : "",
+    contract.required_next_action_contract ? `następny kontrakt: ${contract.required_next_action_contract}` : "",
+    ...(contract.requires_passed_gates ?? []).slice(0, 4).map((value) => `gate: ${value}`),
+    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${value}`)
+  ].filter((value) => value.trim().length > 0);
+}
+
+function contentStagingHandoffStatusLabel(value: string): string {
+  const labels: Record<string, string> = {
+    blocked_until_draft_gates_pass: "zablokowany do przejścia bramek draftu",
+    blocked_until_draft_readiness_review: "zablokowany do review gotowości draftu",
+    blocked_until_staging_action_contract: "zablokowany do osobnego kontraktu staging"
+  };
+  return labels[value] ?? value;
 }
 
 function contentDraftOutputKindLabel(value: string): string {

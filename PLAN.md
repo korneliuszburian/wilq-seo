@@ -312,6 +312,20 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
 - `blocked`: WordPress/staging handoff remains blocked until there is a typed
   staging ActionObject with preview, human confirmation, audit and no automatic
   publish.
+- `ready`: Reviewed WordPress draft previews now expose
+  `wordpress_staging_handoff_v1`, a blocked preview-only staging handoff
+  contract. It uses the selected target URL from the audited mapping review
+  when available, lists required draft/mapping/canonical/duplicate/legal/human
+  gates, names the future `wordpress_staging_draft_apply_v1` contract, and
+  keeps staging writes, publishing, production writes and uplift claims
+  blocked. Proof:
+  `.local-lab/proof/content-staging-handoff/live-staging-handoff-preview.json`,
+  `.local-lab/proof/content-staging-handoff/content-strategist-smoke.json` and
+  `.local-lab/proof/dashboard/content-staging-handoff/content-planner-staging-handoff.txt`.
+- `task`: The next content depth slice is not staging write. It is either a
+  complete reviewed old-to-new URL map for active content decisions or a
+  separate `wordpress_staging_draft_apply_v1` ActionObject that remains
+  prepare/review-only until all gates, human confirmation and audit are present.
 - `deferred_bdos`: Post-publication measurement loop is after staging handoff:
   compare GSC/GA4 windows, detect refresh/merge/kill follow-ups and feed the
   result back into knowledge cards.
@@ -587,6 +601,13 @@ Use these rules before every implementation slice:
   `.local-lab/proof/dashboard/content-draft-readiness/content-planner-draft-readiness.txt`.
 - [x] Rerun core pre-demo gate after draft-readiness review changes:
   `.local-lab/proof/pre-demo-gate-after-draft-readiness.txt`.
+- [x] Add blocked preview-only staging handoff contract to reviewed draft
+  previews. Proof:
+  `.local-lab/proof/content-staging-handoff/live-staging-handoff-preview.json`,
+  `.local-lab/proof/content-staging-handoff/content-strategist-smoke.json` and
+  `.local-lab/proof/dashboard/content-staging-handoff/content-planner-staging-handoff.txt`.
+- [x] Rerun core pre-demo gate after staging handoff preview:
+  `.local-lab/proof/pre-demo-gate-after-staging-handoff.txt`.
 - [x] Rerun core pre-demo gate after content mapping review changes:
   `.local-lab/proof/pre-demo-gate-after-mapping-review.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
