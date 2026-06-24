@@ -150,6 +150,10 @@ type ContentBriefPreviewItem = {
   target_site_host?: string | null;
   source_site_host?: string | null;
   target_site_adaptation_status?: string | null;
+  inventory_gate_status?: string | null;
+  canonical_gate_status?: string | null;
+  duplicate_gate_status?: string | null;
+  content_gate_summary?: string | null;
   competitor_domain?: string | null;
   wordpress_inventory_match?: string | null;
   gsc_demand?: string | null;
@@ -576,7 +580,27 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
             Docelowo: {shortPath(decision.target_site_url)}
           </span>
         ) : null}
+        {decision.inventory_gate_status ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Inventory gate: {contentGateStatusLabel(decision.inventory_gate_status)}
+          </span>
+        ) : null}
+        {decision.canonical_gate_status ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Canonical: {contentGateStatusLabel(decision.canonical_gate_status)}
+          </span>
+        ) : null}
+        {decision.duplicate_gate_status ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Duplikaty: {contentGateStatusLabel(decision.duplicate_gate_status)}
+          </span>
+        ) : null}
       </div>
+      {decision.content_gate_summary ? (
+        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
+          {decision.content_gate_summary}
+        </p>
+      ) : null}
       {decision.ahrefs_candidate_rows.length > 0 ? (
         <div className="mt-3 rounded-md border border-line bg-white p-3">
           <h4 className="text-sm font-semibold text-ink">Kandydaci Ahrefs do review</h4>
@@ -858,6 +882,23 @@ function contentTargetSiteStatusLabel(value: string) {
     current_site_match: "bieżąca strona",
     target_site_alias_match: "dopasowanie do nowej strony",
     needs_inventory_match: "wymaga dopasowania inventory"
+  };
+  return labels[value] ?? value;
+}
+
+function contentGateStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    confirmed_current_inventory: "potwierdzone na obecnej stronie",
+    confirmed_target_inventory: "potwierdzone na stronie docelowej",
+    missing_inventory_match: "brak potwierdzenia inventory",
+    current_url_confirmed: "obecny URL potwierdzony",
+    needs_target_canonical_review: "sprawdź canonical na nowej stronie",
+    blocked_until_mapping_review: "blokada do mapowania URL",
+    blocked_until_inventory_review: "blokada do kontroli inventory",
+    refresh_or_merge_required: "refresh/merge zamiast nowego artykułu",
+    manual_merge_or_create_review: "ręcznie wybierz merge/create",
+    create_blocked_until_duplicate_check: "create zablokowane do kontroli",
+    not_applicable: "nie dotyczy"
   };
   return labels[value] ?? value;
 }

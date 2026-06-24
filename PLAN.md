@@ -120,7 +120,11 @@ Still incomplete:
   passed with `operator_usefulness_score=5`, validated review-only Ads
   ActionObjects and blocked CPA/ROAS/wasted-budget/budget-scaling/
   recommendation-apply/targeting-apply/negative-keyword-apply claims.
-- [ ] Add or verify a target-site duplicate/canonical gate for content.
+- [x] Add or verify a target-site duplicate/canonical gate for content. Proof:
+  API decisions now expose `inventory_gate_status`, `canonical_gate_status`,
+  `duplicate_gate_status` and `content_gate_summary`; browser snapshot
+  `.local-lab/proof/dashboard/content-target-gate/content-planner-gates.txt`
+  shows `Inventory gate`, `Canonical` and `Duplikaty` on `/content-planner`.
 - [ ] Run final pre-demo gate after the next material code/eval slice.
 - [ ] Produce a short marketer UAT script and record the result.
 
@@ -425,9 +429,9 @@ unless explicitly promoted:
 ## Outcomes And Retrospective
 
 Current outcome: WILQ has a credible solid-demo path and a strong content
-planning direction, but the goal is not complete until the next adversarial eval
-and target-site gate are verified, final pre-demo gate is run after material
-changes, and marketer UAT feedback is captured or explicitly deferred.
+planning direction, but the goal is not complete until the final pre-demo gate
+is run after the material target-gate change, and marketer UAT feedback is
+captured or explicitly deferred.
 
 When the full demo goal is complete, add a final retrospective here with:
 

@@ -60,6 +60,15 @@ Stan produktu:
   search-term waste, wasted budget, budget scaling, recommendation apply,
   targeting/apply and negative keyword apply. This proves Ads review guidance,
   not optimizer/apply readiness.
+- Content duplicate/canonical gate slice completed on 2026-06-24. Content
+  decisions now expose `inventory_gate_status`, `canonical_gate_status`,
+  `duplicate_gate_status` and `content_gate_summary`; `/content-planner` renders
+  marketer-facing `Inventory gate`, `Canonical` and `Duplikaty` chips. Proof:
+  focused content API tests passed, dashboard typecheck passed, dashboard route
+  tests 35 passed, live `/api/content/diagnostics` showed the new fields, skill
+  smoke passed, and browser snapshot
+  `.local-lab/proof/dashboard/content-target-gate/content-planner-gates.txt`
+  shows create blocked before duplicate control.
 - Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
   stack was ready, browser snapshots for `/command-center`, `/merchant`,
   `/content-planner`, `/ads-doctor`, `/ga4` and
@@ -120,9 +129,10 @@ Stan produktu:
      source/target and H1/H2/FAQ/CTA/source-fact fields, but full staging
      handoff, publishing and post-publication measurement remain deferred.
    - Verified now: live content diagnostics and non-interactive skill output
-     satisfy the target-site boundary eval contract.
-   - Next risk to test: duplicate/canonical gating for target-site content
-     before draft/staging work.
+     satisfy the target-site boundary eval contract; content decisions expose
+     inventory/canonical/duplicate gate fields.
+   - Next risk to test: whether the final pre-demo gate still passes after the
+     material content gate change.
 
 2. **Marketer UAT and route usefulness**
    - Browser proof shows the narrow demo path is usable, but no real marketer
@@ -164,8 +174,8 @@ Stan produktu:
 2. If demo UX is the next priority, change only one confirmed blocker at a time:
    likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
    drilldown IDs behind technical details.
-3. If content depth is the next priority, add/verify a target-site duplicate/
-   canonical gate for `ekologus.dev.proudsite.pl` before any draft/staging work.
+3. Run `scripts/pre_demo_gate.sh --core-skills` after the content gate slice,
+   because API/schema/dashboard output changed.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

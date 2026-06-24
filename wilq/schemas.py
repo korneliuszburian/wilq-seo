@@ -2185,6 +2185,10 @@ class ContentDecisionItem(BaseModel):
     target_site_url: str | None = None
     target_site_host: str | None = None
     target_site_adaptation_status: str | None = None
+    inventory_gate_status: str | None = None
+    canonical_gate_status: str | None = None
+    duplicate_gate_status: str | None = None
+    content_gate_summary: str | None = None
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
     metric_facts: list[MetricFact] = Field(default_factory=list)

@@ -787,6 +787,13 @@ def _gsc_content_decisions(items: list[TacticalQueueItem]) -> list[ContentDecisi
                 wordpress_match_confidence=first.dimensions.get("wordpress_match_confidence"),
                 wordpress_content_url=first.dimensions.get("wordpress_content_url"),
                 **target_site_context,
+                **_content_gate_status(
+                    decision_type=decision_type,
+                    wordpress_match=wordpress_match,
+                    target_site_adaptation_status=target_site_context.get(
+                        "target_site_adaptation_status"
+                    ),
+                ),
                 source_connectors=_unique(
                     connector for item in page_items for connector in item.source_connectors
                 ),
@@ -830,6 +837,67 @@ def _content_target_site_context(
         "target_site_url": target_site_url,
         "target_site_host": target_host,
         "target_site_adaptation_status": status,
+    }
+
+
+def _content_gate_status(
+    *,
+    decision_type: ContentDecisionType,
+    wordpress_match: str,
+    target_site_adaptation_status: str | None,
+) -> dict[str, str]:
+    if decision_type == "refresh_or_merge" and wordpress_match == "found":
+        if target_site_adaptation_status == "target_site_alias_match":
+            return {
+                "inventory_gate_status": "confirmed_target_inventory",
+                "canonical_gate_status": "needs_target_canonical_review",
+                "duplicate_gate_status": "refresh_or_merge_required",
+                "content_gate_summary": (
+                    "Inventory potwierdza docelową stronę na target site. "
+                    "Brief może iść do refresh/merge review, ale canonical i duplikaty "
+                    "wymagają ręcznego potwierdzenia przed draftem albo stagingiem."
+                ),
+            }
+        return {
+            "inventory_gate_status": "confirmed_current_inventory",
+            "canonical_gate_status": "current_url_confirmed",
+            "duplicate_gate_status": "refresh_or_merge_required",
+            "content_gate_summary": (
+                "Inventory potwierdza istniejący URL. WILQ traktuje to jako "
+                "refresh/merge, nie nowy artykuł; create pozostaje zablokowane "
+                "przed kontrolą duplikacji."
+            ),
+        }
+    if decision_type == "merge_create_after_inventory_check":
+        return {
+            "inventory_gate_status": "missing_inventory_match",
+            "canonical_gate_status": "blocked_until_mapping_review",
+            "duplicate_gate_status": "manual_merge_or_create_review",
+            "content_gate_summary": (
+                "GSC pokazuje klaster zapytań bez potwierdzonego inventory. "
+                "Najpierw potrzebne mapowanie URL i kontrola duplikatów; dopiero potem "
+                "merge albo create."
+            ),
+        }
+    if decision_type == "inventory_check_before_create":
+        return {
+            "inventory_gate_status": "missing_inventory_match",
+            "canonical_gate_status": "blocked_until_inventory_review",
+            "duplicate_gate_status": "create_blocked_until_duplicate_check",
+            "content_gate_summary": (
+                "GSC pokazuje popyt, ale WordPress nie potwierdza URL. "
+                "Brief create jest zablokowany do czasu kontroli inventory, canonical "
+                "i duplikatów."
+            ),
+        }
+    return {
+        "inventory_gate_status": "not_applicable",
+        "canonical_gate_status": "not_applicable",
+        "duplicate_gate_status": "not_applicable",
+        "content_gate_summary": (
+            "Ta decyzja nie jest bezpośrednim briefem contentowym; wymaga osobnego "
+            "review przed użyciem w planie treści."
+        ),
     }
 
 

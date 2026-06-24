@@ -1442,6 +1442,11 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert decision["target_site_url"] == target_site_url
     assert decision["target_site_host"] == "ekologus.dev.proudsite.pl"
     assert decision["target_site_adaptation_status"] == "target_site_alias_match"
+    assert decision["inventory_gate_status"] == "confirmed_target_inventory"
+    assert decision["canonical_gate_status"] == "needs_target_canonical_review"
+    assert decision["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert "canonical" in decision["content_gate_summary"]
+    assert "duplikaty" in decision["content_gate_summary"]
     preview = next(
         item
         for item in action["payload"]["content_brief_preview"]
@@ -11597,6 +11602,11 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert first_decision["target_site_host"] == "www.ekologus.pl"
     assert first_decision["target_site_adaptation_status"] == "current_site_match"
+    assert first_decision["inventory_gate_status"] == "confirmed_current_inventory"
+    assert first_decision["canonical_gate_status"] == "current_url_confirmed"
+    assert first_decision["duplicate_gate_status"] == "refresh_or_merge_required"
+    assert "refresh/merge" in first_decision["content_gate_summary"]
+    assert "nowy artykuł" in first_decision["content_gate_summary"]
     assert first_decision["normalized_page_path"] == (
         "/europejski-zielony-lad-co-to-takiego"
     )
@@ -11699,6 +11709,18 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "wordpress_match_confidence"
     ]
     assert context_decision["normalized_page_path"] == first_decision["normalized_page_path"]
+    assert context_decision["inventory_gate_status"] == first_decision[
+        "inventory_gate_status"
+    ]
+    assert context_decision["canonical_gate_status"] == first_decision[
+        "canonical_gate_status"
+    ]
+    assert context_decision["duplicate_gate_status"] == first_decision[
+        "duplicate_gate_status"
+    ]
+    assert context_decision["content_gate_summary"] == first_decision[
+        "content_gate_summary"
+    ]
     assert context_decision["source_connectors"] == first_decision["source_connectors"]
     assert context_decision["evidence_ids"] == first_decision["evidence_ids"]
     assert context_decision["action_ids"] == first_decision["action_ids"]
