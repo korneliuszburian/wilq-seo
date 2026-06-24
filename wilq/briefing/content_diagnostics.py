@@ -833,6 +833,17 @@ def _gsc_content_decisions(
             ),
             inventory_details_by_url=inventory_details_by_url,
         )
+        mapping_review_context = _content_target_site_mapping_review_context(
+            migration_candidate_url=target_site_context.get(
+                "target_site_migration_candidate_url"
+            ),
+            migration_candidate_inventory_status=migration_candidate_inventory_context.get(
+                "target_site_migration_candidate_inventory_status"
+            ),
+            alternative_candidate_urls=alternative_candidate_context.get(
+                "target_site_alternative_candidate_urls", []
+            ),
+        )
         decision_type: ContentDecisionType
         if wordpress_match == "found":
             decision_type = "refresh_or_merge"
@@ -904,6 +915,7 @@ def _gsc_content_decisions(
                 **target_site_inventory_context,
                 **migration_candidate_inventory_context,
                 **alternative_candidate_context,
+                **mapping_review_context,
                 **_content_gate_status(
                     decision_type=decision_type,
                     wordpress_match=wordpress_match,
@@ -1205,6 +1217,54 @@ def _content_target_site_alternative_candidate_context(
             "WILQ znalazł alternatywne URL-e do ręcznego mapowania; nie "
             "potwierdzają one jeszcze migracji ani gotowości draftu."
         ),
+    }
+
+
+def _content_target_site_mapping_review_context(
+    *,
+    migration_candidate_url: str | None,
+    migration_candidate_inventory_status: str | None,
+    alternative_candidate_urls: object,
+) -> dict[str, object]:
+    alternatives = (
+        [url for url in alternative_candidate_urls if isinstance(url, str) and url]
+        if isinstance(alternative_candidate_urls, list)
+        else []
+    )
+    if not migration_candidate_url:
+        return {
+            "target_site_mapping_review_status": "not_applicable",
+            "target_site_mapping_review_summary": (
+                "Brak kandydata migracji do review dla tej decyzji."
+            ),
+            "target_site_mapping_review_candidate_urls": [],
+        }
+    if migration_candidate_inventory_status == "confirmed_target_inventory":
+        return {
+            "target_site_mapping_review_status": "confirm_exact_candidate",
+            "target_site_mapping_review_summary": (
+                "Dokładny kandydat old-to-new jest w inventory. Operator musi "
+                "potwierdzić canonical, duplikaty i zgodność intencji przed draftem."
+            ),
+            "target_site_mapping_review_candidate_urls": [migration_candidate_url],
+        }
+    if alternatives:
+        return {
+            "target_site_mapping_review_status": "review_alternative_candidates",
+            "target_site_mapping_review_summary": (
+                "Dokładny kandydat old-to-new nie istnieje w inventory. Przejrzyj "
+                "alternatywne URL-e i wybierz właściwe mapowanie albo oznacz temat "
+                "jako wymagający ręcznego targetu."
+            ),
+            "target_site_mapping_review_candidate_urls": alternatives,
+        }
+    return {
+        "target_site_mapping_review_status": "manual_mapping_required",
+        "target_site_mapping_review_summary": (
+            "Nie znaleziono potwierdzonego ani alternatywnego URL-a targetu. "
+            "Wymagane ręczne wskazanie mapowania przed draftem albo stagingiem."
+        ),
+        "target_site_mapping_review_candidate_urls": [migration_candidate_url],
     }
 
 

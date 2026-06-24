@@ -227,9 +227,16 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   remediacja while keeping `target_site_migration_candidate_inventory_status`
   as `missing_target_inventory`, so alternatives do not confirm migration or
   unlock draft/staging/publish.
-- `task`: Confirm, reject or override explicit old-to-new URL mappings against
-  dev-site inventory. The next content slice should turn reviewed alternatives
-  into a typed mapping decision, not rerun discovery.
+- `ready`: Content diagnostics, ActionObject previews, reviewed draft previews,
+  dashboard cards and the content-strategist context-pack now expose typed
+  mapping-review decisions:
+  `confirm_exact_candidate`, `review_alternative_candidates`,
+  `manual_mapping_required` or `not_applicable`. Live proof after stack restart
+  returned 4 current mapping-review decisions: BDO and remediacja have
+  `review_alternative_candidates`; Zielony Lad and operat wodnoprawny have
+  `manual_mapping_required`. Draft/staging/publish remain blocked.
+- `task`: Add a review-only mapping decision/recording path so an operator can
+  confirm, reject or override exact/alternative dev-site mappings with audit.
 - `ready`: Content ActionObject payload, reviewed draft preview and
   content-strategist context-pack preserve target-site migration candidate,
   status and summary fields. Current old-site rows are `needs_review`, so draft
@@ -521,6 +528,11 @@ Use these rules before every implementation slice:
   `.local-lab/proof/content-target-alternatives/content-strategist-smoke.json`
   and
   `.local-lab/proof/dashboard/content-target-alternatives/content-planner-alternatives.txt`.
+- [x] Promote dev-site mapping alternatives into typed mapping-review
+  decisions. Proof:
+  `.local-lab/proof/content-mapping-review/live-mapping-review.json`,
+  `.local-lab/proof/content-mapping-review/content-strategist-smoke.json` and
+  `.local-lab/proof/dashboard/content-mapping-review/content-planner-mapping-review.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

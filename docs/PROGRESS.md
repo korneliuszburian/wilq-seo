@@ -200,6 +200,15 @@ Stan produktu:
   `.local-lab/proof/content-target-alternatives/content-strategist-smoke.json`
   and
   `.local-lab/proof/dashboard/content-target-alternatives/content-planner-alternatives.txt`.
+- Content mapping alternatives now produce typed mapping-review decisions in
+  diagnostics, ActionObject previews, reviewed draft previews, dashboard cards
+  and the content-strategist context-pack. Live proof after stack restart
+  returned 4 decisions: BDO/remediacja as `review_alternative_candidates` and
+  Zielony Lad/operat wodnoprawny as `manual_mapping_required`. This still does
+  not confirm migration or unlock draft/staging/publish. Proof:
+  `.local-lab/proof/content-mapping-review/live-mapping-review.json`,
+  `.local-lab/proof/content-mapping-review/content-strategist-smoke.json` and
+  `.local-lab/proof/dashboard/content-mapping-review/content-planner-mapping-review.txt`.
 
 ## Active Gaps
 
@@ -208,9 +217,9 @@ Stan produktu:
   knows what to do without explanation.
 - Content workflow still lacks reviewed old-to-new mapping decisions, staging
   handoff, publishing and post-publication measurement loop for
-  `ekologus.dev.proudsite.pl`. Exact missing candidates and alternative
-  dev-site URLs are now exposed; they do not confirm mapping or resolve
-  draft/staging/publish readiness.
+  `ekologus.dev.proudsite.pl`. Exact missing candidates, alternative dev-site
+  URLs and typed mapping-review decisions are now exposed; they do not confirm
+  mapping or resolve draft/staging/publish readiness.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
@@ -229,9 +238,9 @@ Stan produktu:
    unless a fresh route proof finds a remaining marketer-facing leak.
 3. If content depth is next, continue from the existing source/target,
    duplicate/canonical, ActionObject migration status, target-site review
-   requirements, typed intent and alternative candidate URLs toward a typed
-   mapping-review decision, then draft/staging handoff without publish/apply
-   claims.
+   requirements, typed intent, alternative candidate URLs and mapping-review
+   statuses toward a review-only mapping recording path, then draft/staging
+   handoff without publish/apply claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

@@ -2192,6 +2192,9 @@ class ContentDecisionItem(BaseModel):
     target_site_migration_candidate_inventory_summary: str | None = None
     target_site_alternative_candidate_urls: list[str] = Field(default_factory=list)
     target_site_alternative_candidate_summary: str | None = None
+    target_site_mapping_review_status: str | None = None
+    target_site_mapping_review_summary: str | None = None
+    target_site_mapping_review_candidate_urls: list[str] = Field(default_factory=list)
     target_site_review_requirements: list[str] = Field(default_factory=list)
     target_site_inventory_content_type: str | None = None
     target_site_inventory_status: str | None = None

@@ -662,6 +662,12 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
           {asStringArray(item.target_site_alternative_candidate_urls).slice(0, 3).join(", ") ||
             stringValue(item.target_site_alternative_candidate_summary, "brak")}
         </div>
+        <div>Review mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
+        <div>
+          URL-e do review:{" "}
+          {asStringArray(item.target_site_mapping_review_candidate_urls).slice(0, 3).join(", ") ||
+            stringValue(item.target_site_mapping_review_summary, "brak")}
+        </div>
         <div>Obiekcje: {asStringArray(item.key_objections).slice(0, 3).join(", ") || "brak"}</div>
         <div>Źródła faktów: {asStringArray(item.source_facts).slice(0, 3).join(", ") || "brak"}</div>
         <div>Brakujące dowody: {asStringArray(item.missing_evidence).slice(0, 3).join(", ") || "brak"}</div>
@@ -706,6 +712,12 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
           Alternatywy targetu:{" "}
           {asStringArray(item.target_site_alternative_candidate_urls).slice(0, 3).join(", ") ||
             stringValue(item.target_site_alternative_candidate_summary, "brak")}
+        </div>
+        <div>Review mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
+        <div>
+          URL-e do review:{" "}
+          {asStringArray(item.target_site_mapping_review_candidate_urls).slice(0, 3).join(", ") ||
+            stringValue(item.target_site_mapping_review_summary, "brak")}
         </div>
         <div>
           Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}

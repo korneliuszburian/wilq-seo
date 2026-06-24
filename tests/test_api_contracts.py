@@ -1654,6 +1654,12 @@ def test_content_diagnostics_suggests_dev_site_alternatives_without_confirming_m
         in decision["target_site_alternative_candidate_urls"]
     )
     assert "alternatywne URL-e" in decision["target_site_alternative_candidate_summary"]
+    assert decision["target_site_mapping_review_status"] == "review_alternative_candidates"
+    assert "Przejrzyj" in decision["target_site_mapping_review_summary"]
+    assert (
+        normalized_alternative_url
+        in decision["target_site_mapping_review_candidate_urls"]
+    )
     assert (
         diagnostics["operator_summary"]["target_site_confirmed_candidate_inventory_count"]
         == 0
@@ -1676,6 +1682,12 @@ def test_content_diagnostics_suggests_dev_site_alternatives_without_confirming_m
         in preview["target_site_alternative_candidate_urls"]
     )
     assert "nie potwierdzają" in preview["target_site_alternative_candidate_summary"]
+    assert preview["target_site_mapping_review_status"] == "review_alternative_candidates"
+    assert "Przejrzyj" in preview["target_site_mapping_review_summary"]
+    assert (
+        normalized_alternative_url
+        in preview["target_site_mapping_review_candidate_urls"]
+    )
     assert preview["inventory_gate_status"] == "confirmed_current_inventory"
     assert preview["canonical_gate_status"] == "current_url_confirmed"
     assert preview["duplicate_gate_status"] == "refresh_or_merge_required"

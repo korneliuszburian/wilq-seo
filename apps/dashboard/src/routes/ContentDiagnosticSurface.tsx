@@ -156,6 +156,9 @@ type ContentBriefPreviewItem = {
   target_site_migration_candidate_inventory_summary?: string | null;
   target_site_alternative_candidate_urls?: string[];
   target_site_alternative_candidate_summary?: string | null;
+  target_site_mapping_review_status?: string | null;
+  target_site_mapping_review_summary?: string | null;
+  target_site_mapping_review_candidate_urls?: string[];
   target_site_review_requirements?: string[];
   target_site_inventory_content_type?: string | null;
   target_site_inventory_status?: string | null;
@@ -426,6 +429,9 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_migration_candidate_inventory_summary?: string | null;
   target_site_alternative_candidate_urls?: string[];
   target_site_alternative_candidate_summary?: string | null;
+  target_site_mapping_review_status?: string | null;
+  target_site_mapping_review_summary?: string | null;
+  target_site_mapping_review_candidate_urls?: string[];
   target_site_review_requirements?: string[];
   target_site_inventory_content_type?: string | null;
   target_site_inventory_status?: string | null;
@@ -811,6 +817,23 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
           ))}
         </div>
       ) : null}
+      {decision.target_site_mapping_review_status ? (
+        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Review mapowania: {mappingReviewStatusLabel(decision.target_site_mapping_review_status)}
+          </span>
+          {decision.target_site_mapping_review_candidate_urls?.slice(0, 3).map((url) => (
+            <span key={url} className="rounded border border-line bg-white px-2 py-1">
+              Do review: {shortPath(url)}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      {decision.target_site_mapping_review_summary ? (
+        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
+          {decision.target_site_mapping_review_summary}
+        </p>
+      ) : null}
       {decision.target_site_inventory_summary ? (
         <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
           {decision.target_site_inventory_summary}
@@ -1112,6 +1135,9 @@ function contentTargetSiteValues(
     | "target_site_migration_candidate_inventory_status"
     | "target_site_alternative_candidate_urls"
     | "target_site_alternative_candidate_summary"
+    | "target_site_mapping_review_status"
+    | "target_site_mapping_review_summary"
+    | "target_site_mapping_review_candidate_urls"
   >
 ) {
   const values: string[] = [];
@@ -1146,6 +1172,19 @@ function contentTargetSiteValues(
     );
   } else if (preview.target_site_alternative_candidate_summary) {
     values.push(preview.target_site_alternative_candidate_summary);
+  }
+  if (preview.target_site_mapping_review_status) {
+    values.push(`review: ${mappingReviewStatusLabel(preview.target_site_mapping_review_status)}`);
+  }
+  if (preview.target_site_mapping_review_candidate_urls?.length) {
+    values.push(
+      `do review: ${preview.target_site_mapping_review_candidate_urls
+        .slice(0, 3)
+        .map(shortPath)
+        .join(", ")}`
+    );
+  } else if (preview.target_site_mapping_review_summary) {
+    values.push(preview.target_site_mapping_review_summary);
   }
   return values;
 }
@@ -1211,6 +1250,16 @@ function candidateInventoryStatusLabel(value: string) {
     confirmed_target_inventory: "kandydat w inventory",
     missing_target_inventory: "kandydat niepotwierdzony",
     not_applicable: "brak kandydata"
+  };
+  return labels[value] ?? value;
+}
+
+function mappingReviewStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    confirm_exact_candidate: "potwierdź exact candidate",
+    review_alternative_candidates: "przejrzyj alternatywy",
+    manual_mapping_required: "wymagane ręczne mapowanie",
+    not_applicable: "nie dotyczy"
   };
   return labels[value] ?? value;
 }

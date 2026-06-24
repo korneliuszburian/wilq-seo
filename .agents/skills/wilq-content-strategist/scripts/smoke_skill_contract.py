@@ -380,6 +380,14 @@ def validate_content_action_preview(
         raise SystemExit("Content brief preview target_site_alternative_candidate_urls must be a list")
     if "target_site_alternative_candidate_summary" not in first_preview:
         raise SystemExit("Content brief preview lacks target_site_alternative_candidate_summary")
+    if "target_site_mapping_review_status" not in first_preview:
+        raise SystemExit("Content brief preview lacks target_site_mapping_review_status")
+    if "target_site_mapping_review_summary" not in first_preview:
+        raise SystemExit("Content brief preview lacks target_site_mapping_review_summary")
+    if "target_site_mapping_review_candidate_urls" not in first_preview:
+        raise SystemExit("Content brief preview lacks target_site_mapping_review_candidate_urls")
+    if not isinstance(first_preview.get("target_site_mapping_review_candidate_urls"), list):
+        raise SystemExit("Content brief preview target_site_mapping_review_candidate_urls must be a list")
     requirements = first_preview.get("target_site_review_requirements")
     if not isinstance(requirements, list) or not requirements:
         raise SystemExit("Content brief preview lacks target_site_review_requirements")
