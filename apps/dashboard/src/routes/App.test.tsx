@@ -4064,6 +4064,11 @@ const merchantDiagnostics = {
       "google_ads_shopping_product_performance",
       "ga4_item_product_performance"
     ],
+    missing_read_contracts: [
+      "merchant_product_id_join_key",
+      "google_ads_shopping_product_performance",
+      "ga4_item_product_performance"
+    ],
     join_key_candidates: ["product_id", "item_id", "offer_id"],
     sample_product_ids: ["online~pl~PL~SKU-001", "online~pl~PL~SKU-002"],
     performance_rows: [],
