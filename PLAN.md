@@ -178,6 +178,12 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   longer drift when newer facts contain `title_or_h1` or `canonical_url`.
   Live proof after restart: 1 active content decision exposes inventory title
   and canonical while mapping remains `target_site_mapping_review_needed`.
+- `ready`: Content decisions and ActionObject previews now distinguish the
+  generated old-to-new migration candidate from confirmed target-site inventory
+  through `target_site_migration_candidate_inventory_status` and summary text.
+  Live proof: top old-site candidates such as Zielony Lad, BDO, operat
+  wodnoprawny and remediacja produce `missing_target_inventory`, so the
+  blocker is explicit target inventory mapping rather than missing metadata.
 - `ready`: Content decisions, content ActionObject previews, reviewed draft
   previews, dashboard cards and content-strategist context-pack now expose the
   WordPress inventory facts WILQ actually has for target URLs:
@@ -439,6 +445,11 @@ Use these rules before every implementation slice:
   `akcja/akcje` labels in Content, Merchant and GA4 first-screen links/cards.
   Focused dashboard tests passed; technical component names and trace IDs remain
   unchanged.
+- [x] Expose target-site migration candidate inventory truth in content
+  diagnostics, ActionObject previews, shared schemas and Content Planner cards.
+  Live API proof shows old-site candidates for Zielony Lad, BDO, operat
+  wodnoprawny and remediacja as `missing_target_inventory`; this preserves the
+  blocker for real old-to-new mapping before draft or staging work.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

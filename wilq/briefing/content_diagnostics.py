@@ -780,9 +780,11 @@ def _gsc_content_decisions(
         metric_facts = _unique_metric_facts(
             fact for item in page_items for fact in item.metric_facts
         )
+        inventory_facts = [*metric_facts, *inventory_metric_facts]
         inventory_details_by_path = _wordpress_inventory_details_by_path(
-            [*metric_facts, *inventory_metric_facts]
+            inventory_facts
         )
+        inventory_details_by_url = _wordpress_inventory_details_by_url(inventory_facts)
         wordpress_content_url = first.dimensions.get("wordpress_content_url")
         inventory_details = inventory_details_by_path.get(
             _content_normalized_path(wordpress_content_url)
@@ -795,6 +797,18 @@ def _gsc_content_decisions(
         target_site_inventory_context = _content_target_site_inventory_context(
             target_site_url=target_site_context.get("target_site_url"),
             inventory_details=inventory_details,
+        )
+        migration_candidate_inventory_context = (
+            _content_target_site_migration_candidate_inventory_context(
+                migration_candidate_url=target_site_context.get(
+                    "target_site_migration_candidate_url"
+                ),
+                inventory_details=inventory_details_by_url.get(
+                    _content_normalized_url(
+                        target_site_context.get("target_site_migration_candidate_url")
+                    )
+                ),
+            )
         )
         metrics = _content_decision_metrics(metric_facts, queries)
         decision_type: ContentDecisionType
@@ -866,6 +880,7 @@ def _gsc_content_decisions(
                 wordpress_content_url=wordpress_content_url,
                 **target_site_context,
                 **target_site_inventory_context,
+                **migration_candidate_inventory_context,
                 **_content_gate_status(
                     decision_type=decision_type,
                     wordpress_match=wordpress_match,
@@ -965,8 +980,46 @@ def _wordpress_inventory_details_by_path(
     return details_by_path
 
 
+def _wordpress_inventory_details_by_url(
+    metric_facts: list[MetricFact],
+) -> dict[str, dict[str, str]]:
+    details_by_url: dict[str, dict[str, str]] = {}
+    for fact in metric_facts:
+        if not fact.source_connector.startswith("wordpress_"):
+            continue
+        if fact.name != "content_object_seen":
+            continue
+        url = fact.dimensions.get("content_url")
+        normalized_url = _content_normalized_url(url)
+        if not normalized_url:
+            continue
+        candidate = {
+            "content_type": fact.dimensions.get("content_type", ""),
+            "status": fact.dimensions.get("status", ""),
+            "inventory_source": fact.dimensions.get("inventory_source", ""),
+            "modified_gmt": fact.dimensions.get("modified_gmt", ""),
+            "title_or_h1": fact.dimensions.get("title_or_h1", ""),
+            "canonical_url": fact.dimensions.get("canonical_url", ""),
+        }
+        current = details_by_url.get(normalized_url)
+        if current is None or _inventory_detail_score(candidate) > _inventory_detail_score(current):
+            details_by_url[normalized_url] = candidate
+    return details_by_url
+
+
 def _inventory_detail_score(details: dict[str, str]) -> int:
     return sum(1 for value in details.values() if value)
+
+
+def _content_normalized_url(value: str | None) -> str:
+    if not value:
+        return ""
+    parsed = urlparse(value)
+    host = parsed.netloc.lower()
+    path = _content_normalized_path(value)
+    if not host or not path:
+        return ""
+    return f"{parsed.scheme.lower() or 'https'}://{host}{path}"
 
 
 def _content_target_site_inventory_context(
@@ -1045,6 +1098,46 @@ def _content_target_site_inventory_context(
         "target_site_inventory_canonical_url": canonical_url,
         "target_site_inventory_missing_fields": missing,
         "target_site_inventory_summary": summary,
+    }
+
+
+def _content_target_site_migration_candidate_inventory_context(
+    *,
+    migration_candidate_url: str | None,
+    inventory_details: dict[str, str] | None,
+) -> dict[str, str | None]:
+    if not migration_candidate_url:
+        return {
+            "target_site_migration_candidate_inventory_status": "not_applicable",
+            "target_site_migration_candidate_inventory_summary": (
+                "Brak kandydata URL na target site dla tej decyzji."
+            ),
+        }
+    if inventory_details is None:
+        return {
+            "target_site_migration_candidate_inventory_status": "missing_target_inventory",
+            "target_site_migration_candidate_inventory_summary": (
+                "Kandydat old-to-new nie jest potwierdzony w target-site inventory. "
+                "Wymagane ręczne mapowanie przed draftem albo stagingiem."
+            ),
+        }
+    title = inventory_details.get("title_or_h1")
+    canonical = inventory_details.get("canonical_url")
+    parts = _unique(
+        [
+            f"title_or_h1={title}" if title else "",
+            f"canonical_url={canonical}" if canonical else "",
+            f"source={inventory_details.get('inventory_source')}"
+            if inventory_details.get("inventory_source")
+            else "",
+        ]
+    )
+    suffix = f": {', '.join(parts)}" if parts else "."
+    return {
+        "target_site_migration_candidate_inventory_status": "confirmed_target_inventory",
+        "target_site_migration_candidate_inventory_summary": (
+            f"Kandydat old-to-new jest w target-site inventory{suffix}"
+        ),
     }
 
 

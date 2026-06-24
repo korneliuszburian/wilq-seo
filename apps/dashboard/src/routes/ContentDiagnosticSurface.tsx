@@ -152,6 +152,8 @@ type ContentBriefPreviewItem = {
   target_site_adaptation_status?: string | null;
   target_site_migration_candidate_url?: string | null;
   target_site_migration_status?: string | null;
+  target_site_migration_candidate_inventory_status?: string | null;
+  target_site_migration_candidate_inventory_summary?: string | null;
   target_site_review_requirements?: string[];
   target_site_inventory_content_type?: string | null;
   target_site_inventory_status?: string | null;
@@ -415,6 +417,8 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_migration_candidate_url?: string | null;
   target_site_migration_status?: string | null;
   target_site_migration_summary?: string | null;
+  target_site_migration_candidate_inventory_status?: string | null;
+  target_site_migration_candidate_inventory_summary?: string | null;
   target_site_review_requirements?: string[];
   target_site_inventory_content_type?: string | null;
   target_site_inventory_status?: string | null;
@@ -738,6 +742,13 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
             )}
           </span>
         ) : null}
+        {decision.target_site_migration_candidate_inventory_status ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Kandydat: {candidateInventoryStatusLabel(
+              decision.target_site_migration_candidate_inventory_status
+            )}
+          </span>
+        ) : null}
         {decision.target_site_inventory_source ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Inventory: {decision.target_site_inventory_source}
@@ -767,6 +778,11 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
       {decision.target_site_migration_summary ? (
         <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
           {decision.target_site_migration_summary}
+        </p>
+      ) : null}
+      {decision.target_site_migration_candidate_inventory_summary ? (
+        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
+          {decision.target_site_migration_candidate_inventory_summary}
         </p>
       ) : null}
       {decision.target_site_inventory_summary ? (
@@ -1067,6 +1083,7 @@ function contentTargetSiteValues(
     | "target_site_adaptation_status"
     | "target_site_migration_candidate_url"
     | "target_site_migration_status"
+    | "target_site_migration_candidate_inventory_status"
   >
 ) {
   const values: string[] = [];
@@ -1086,6 +1103,11 @@ function contentTargetSiteValues(
   }
   if (preview.target_site_migration_status) {
     values.push(contentTargetSiteMigrationStatusLabel(preview.target_site_migration_status));
+  }
+  if (preview.target_site_migration_candidate_inventory_status) {
+    values.push(
+      candidateInventoryStatusLabel(preview.target_site_migration_candidate_inventory_status)
+    );
   }
   return values;
 }
@@ -1142,6 +1164,15 @@ function contentTargetSiteMigrationStatusLabel(value: string) {
     needs_review: "wymaga mapowania",
     blocked_missing_inventory: "blokada inventory",
     not_applicable: "nie dotyczy"
+  };
+  return labels[value] ?? value;
+}
+
+function candidateInventoryStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    confirmed_target_inventory: "kandydat w inventory",
+    missing_target_inventory: "kandydat niepotwierdzony",
+    not_applicable: "brak kandydata"
   };
   return labels[value] ?? value;
 }

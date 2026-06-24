@@ -1447,6 +1447,13 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert decision["target_site_adaptation_status"] == "target_site_alias_match"
     assert decision["target_site_migration_candidate_url"] == target_site_url
     assert decision["target_site_migration_status"] == "confirmed_target_inventory"
+    assert (
+        decision["target_site_migration_candidate_inventory_status"]
+        == "confirmed_target_inventory"
+    )
+    assert "target-site inventory" in decision[
+        "target_site_migration_candidate_inventory_summary"
+    ]
     assert "Inventory potwierdza URL na target site" in decision[
         "target_site_migration_summary"
     ]
@@ -1494,6 +1501,13 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert preview["target_site_adaptation_status"] == "target_site_alias_match"
     assert preview["target_site_migration_candidate_url"] == target_site_url
     assert preview["target_site_migration_status"] == "confirmed_target_inventory"
+    assert (
+        preview["target_site_migration_candidate_inventory_status"]
+        == "confirmed_target_inventory"
+    )
+    assert "target-site inventory" in preview[
+        "target_site_migration_candidate_inventory_summary"
+    ]
     assert "Inventory potwierdza URL na target site" in preview[
         "target_site_migration_summary"
     ]

@@ -141,6 +141,13 @@ Stan produktu:
   Action detail uses `Pokaż payload techniczny` instead of raw debug wording,
   and the API-backed demo path passed 14/14 e2e checks with
   `WILQ_E2E_API_PORT=8876 WILQ_E2E_DASHBOARD_PORT=5374 rtk pnpm --filter @wilq/dashboard test:e2e -- dashboard-api.spec.ts`.
+- Content migration candidate truth is now explicit: content diagnostics,
+  ActionObject previews, shared schemas and Content Planner cards expose
+  `target_site_migration_candidate_inventory_status` plus summary text. Live
+  `/api/content/diagnostics` shows top old-site candidates for Zielony Lad,
+  BDO, operat wodnoprawny and remediacja as `missing_target_inventory`, so the
+  remaining blocker is real old-to-new dev-site mapping before draft or staging
+  work.
 
 ## Active Gaps
 
@@ -148,8 +155,9 @@ Stan produktu:
   prove that the marketer saves time or knows what to do without explanation.
 - Content workflow still lacks confirmed old-to-new mapping against full
   dev-site inventory, staging handoff, publishing and post-publication
-  measurement loop for `ekologus.dev.proudsite.pl`. Target metadata support is
-  implemented, but active decisions only use it when the target URL is mapped.
+  measurement loop for `ekologus.dev.proudsite.pl`. Target metadata and
+  migration candidate inventory status support are implemented, and active live
+  candidates are currently flagged `missing_target_inventory`.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
