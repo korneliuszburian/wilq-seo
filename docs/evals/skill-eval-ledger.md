@@ -25,6 +25,54 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-24 - wilq-ahrefs-gap-finder scoped lineage eval
+
+Purpose:
+
+- Prove that `wilq-ahrefs-gap-finder` can use typed Ahrefs gap records without
+  leaking adjacent Content/GSC/WordPress connectors into the top-level workflow
+  output.
+- Keep Ahrefs review-only and stale-aware: gap records may support review, but
+  not traffic uplift or authority improvement claims.
+
+Commands:
+
+```bash
+uv run python -m json.tool docs/evals/cases/wilq-skill-eval-cases.json
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-ahrefs-gap-finder/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 scripts/codex_skill_eval.sh --skill wilq-ahrefs-gap-finder --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T021206Z/wilq-ahrefs-gap-finder/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `blocked=false`
+- `source_connectors=["ahrefs"]`
+- Evidence IDs include `ev_connector_ahrefs_status` and five Ahrefs refresh
+  evidence IDs.
+- Smoke confirms `gap_read_contract.status=ready`,
+  `gap_record_count=8`, `missing_read_contracts=[]`,
+  `freshness_states=["stale"]` and `action_count=0`.
+- `traffic uplift` and `authority improvement` remain blocked claims.
+- Eval case now forbids top-level leakage of `google_search_console`,
+  `wordpress_ekologus`, `wordpress_sklep`, `google_analytics_4`,
+  `google_ads` and `google_merchant_center` into this Ahrefs workflow.
+
+Product finding:
+
+- Ahrefs is now usable for stale, review-only authority/gap triage. The next
+  product value is not "add Ahrefs gap records" anymore; it is freshness and
+  safe cross-source joining with Content/GSC/WordPress before publish-ready
+  recommendations.
+
 ## 2026-06-23 - wilq-merchant-feed-operator live-run follow-up
 
 Purpose:

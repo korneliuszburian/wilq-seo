@@ -185,6 +185,14 @@
       "traffic uplift",
       "authority improvement"
     ],
+    "forbidden_connectors": [
+      "google_search_console",
+      "wordpress_ekologus",
+      "wordpress_sklep",
+      "google_analytics_4",
+      "google_ads",
+      "google_merchant_center"
+    ],
     "forbidden_action_ids": [
       "act_prepare_content_refresh_queue",
       "act_prepare_negative_keyword_review_queue",

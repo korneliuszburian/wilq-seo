@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:39 CEST.
+Last updated: 2026-06-24 04:13 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -59,7 +59,10 @@ when it is outside typed `command_center.daily_decisions`, not because Localo
 evidence is absent
 (`.local-lab/evals/codex-skill/20260624T020437Z/wilq-daily-command/result.json`);
 the same daily eval now validates the Ads review ActionObject instead of
-leaving it pending.
+leaving it pending. Ahrefs gap-finder eval now proves scoped lineage for
+`/ahrefs`: `.local-lab/evals/codex-skill/20260624T021206Z/wilq-ahrefs-gap-finder/result.json`
+uses only top-level `source_connectors=["ahrefs"]`, sees 8 typed stale gap
+records and keeps traffic uplift / authority improvement blocked.
 
 ## Current Stack Map
 
@@ -105,9 +108,9 @@ fresh API/browser proof shows a regression.
      token approval, not missing `.env`; Localo `local_tasks` must stay blocked
      unless a side-effect-free task read exists.
    - Real gaps: Ads change-impact windows and apply/audit contracts, approved
-     Keyword Planner enrichment, forecast/audience size, Ahrefs granular
-     URL/query/backlink gap evidence and cross-source joins that prove business
-     decisions rather than isolated facts. Empty Ads change-history reads are
+     Keyword Planner enrichment, forecast/audience size, fresh Ahrefs gap reads
+     and cross-source joins that prove business decisions rather than isolated
+     facts. Empty Ads change-history reads are
      `ready/no changes`; change-impact review stays blocked until change rows
      and before/after windows exist. GA4 still blocks ROAS/profitability/
      conversion-drop verdicts without cost, attribution and history context
@@ -233,8 +236,9 @@ Finish these before claiming the Ekologus demo is done:
         new tasks.
      2. Merchant deepening: add historical price snapshots, before/after
         performance windows and richer read-only previews.
-     3. Ahrefs/content-gap enrichment only where API evidence is granular
-        enough to support URL/query/backlink decisions.
+     3. Ahrefs/content-gap enrichment should now focus on freshness and safe
+        cross-source joins with Content/GSC/WordPress, because typed Ahrefs gap
+        records already exist.
      4. Return to Ads only when Keyword Planner approval changes, change rows
         appear, or apply/audit contracts are the active slice.
 

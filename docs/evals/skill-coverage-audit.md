@@ -1,6 +1,6 @@
 # WILQ Skill Coverage Audit
 
-Data: 2026-06-24 04:25 CEST.
+Data: 2026-06-24 04:13 CEST.
 
 Cel: jedna krótka mapa stanu 12 WILQ skillów po najnowszych evalach. Pełne
 przebiegi zostają w `docs/evals/skill-eval-ledger.md`; tutaj trzymamy tylko
@@ -20,7 +20,7 @@ decyzję produktową: co działa, co jest review-only, co blokuje demo.
 | `wilq-custom-segments` | `.local-lab/evals/codex-skill/20260623T160335Z/wilq-custom-segments/result.json` | 4 | ready / review-only | Uses real Ads `source_terms`, `review_priority`, `review_score` and `review_reason`. | Audience size, targeting applied, ROAS and campaign-performance claims remain blocked until forecast/apply contracts exist. |
 | `wilq-ga4-analyst` | `.local-lab/evals/codex-skill/20260623T141114Z/wilq-ga4-analyst/result.json` | 4 | ready / review-only | GA4 decision samples expose active users, sessions, engagement and measurement-vs-quality decisions. | Conversion readiness, ROAS/revenue and tracking-fixed claims remain blocked. |
 | `wilq-demand-gen-operator` | `.local-lab/evals/codex-skill/20260623T153134Z/wilq-demand-gen-operator/result.json` | 4 | blocked correctly | Detects that no Demand Gen launch/migration/creative evidence exists; validates readiness review only. | Need actual Demand Gen campaign/ad/creative/landing/migration rows before recommendations. |
-| `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260623T151121Z/wilq-ahrefs-gap-finder/result.json` | 4 | ready / stale review | Ahrefs authority and gap records are usable as review-only SEO context. | Freshness is stale; no traffic uplift or authority improvement claims. |
+| `wilq-ahrefs-gap-finder` | `.local-lab/evals/codex-skill/20260624T021206Z/wilq-ahrefs-gap-finder/result.json` | 4 | ready / stale review / scoped lineage | Ahrefs authority and 8 typed gap records are usable as review-only SEO context; eval keeps top-level source connectors scoped to Ahrefs only. | Freshness is stale; no traffic uplift or authority improvement claims. |
 | `wilq-social-publisher` | `.local-lab/evals/codex-skill/20260623T152228Z/wilq-social-publisher/result.json` | 4 | draft-ready / publish blocked | Converts WILQ evidence into LinkedIn/Facebook draft candidates and validates draft ActionObjects. | Publishing remains blocked by permissions and publish safety/audit requirements. |
 
 ## Product Readout
@@ -36,8 +36,8 @@ decyzję produktową: co działa, co jest review-only, co blokuje demo.
   `wilq-daily-command` -> `/merchant` -> `/content-planner` -> `/ads-doctor` -> optional `/ga4`.
 - The next product slice should move from skill proof to remaining API/source
   value. Ads optimizer context is review-ready but apply remains blocked; best
-  candidates are Merchant deepening, Ahrefs granular evidence or the semantic
-  skill-reference audit.
+  candidates are Merchant deepening, Ahrefs freshness/cross-source joins or the
+  semantic skill-reference audit.
 
 ## Guardrail
 

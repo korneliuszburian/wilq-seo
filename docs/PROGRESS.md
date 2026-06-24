@@ -48,6 +48,12 @@ Stan produktu:
   decision, safe next step, blocked-claims handling, workflow-specific
   interpretation and evidence-backed reasoning. Live proof:
   `.local-lab/evals/codex-skill/20260623T191904Z/wilq-daily-command/result.json`.
+- Ahrefs gap-finder eval now proves scoped lineage for `/ahrefs`: artifact
+  `.local-lab/evals/codex-skill/20260624T021206Z/wilq-ahrefs-gap-finder/result.json`
+  returns only `source_connectors=["ahrefs"]`, sees 8 typed stale gap records,
+  keeps `action_count=0`, and blocks traffic uplift / authority improvement
+  claims. Ahrefs granular records are no longer an active source gap; freshness
+  and safe cross-source joins remain.
 - Content/GSC inventory matching no longer marks current Ekologus URLs as
   missing when wide WordPress inventory pushes public sitemap URLs past the old
   slice boundary. Live HTTP proof after stack restart:
@@ -155,8 +161,8 @@ Stan produktu:
   are ready for review-only decisions; Merchant product-performance join is
   blocked by state-only/zero performance product rows, not by missing GA4/Ads
   read contracts. The nearest source gaps are Merchant before-after price
-  history/performance windows, Ahrefs granular gaps, Keyword Planner approval/
-  forecast and cross-source decision joins.
+  history/performance windows, Ahrefs freshness/cross-source joins, Keyword
+  Planner approval/forecast and cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
   stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,
   `total_revenue` and `transactions` with landing/source/campaign dimensions.
@@ -239,8 +245,8 @@ Stan produktu:
    - Missing: Localo tasks, write/apply contracts and uplift claims. Keep
      Localo tasks blocked unless a side-effect-free read exists.
    - Source-contract queue: Merchant before-after price history/performance
-     windows, Ahrefs granular gap enrichment, Keyword Planner approval/forecast
-     and cross-source decision joins.
+     windows, Ahrefs freshness/cross-source joins, Keyword Planner approval/
+     forecast and cross-source decision joins.
    - Ads remaining gaps are not OAuth: optimizer review is ready/read-only,
      Keyword Planner is blocked by developer token approval, change history
      currently has no rows in the selected window, and apply/audit contracts
