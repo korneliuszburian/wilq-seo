@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from time import monotonic
@@ -92,6 +93,21 @@ AHREFS_RELEVANT_TERMS = (
     "beczka",
     "sorbent",
 )
+CONTENT_SIGNAL_STOPWORDS = {
+    "api",
+    "blog",
+    "com",
+    "dev",
+    "html",
+    "http",
+    "https",
+    "page",
+    "pages",
+    "pl",
+    "proudsite",
+    "shop",
+    "www",
+}
 DEFAULT_TACTICAL_QUEUE_CACHE_SECONDS = 30.0
 _cached_tactical_queue: TacticalQueueCacheEntry | None = None
 
@@ -108,6 +124,18 @@ class WordPressMatch:
     confidence: WordPressMatchConfidence
     requested_url_key: str
     requested_path_key: str
+
+
+@dataclass(frozen=True)
+class ContentSignal:
+    label: str
+    tokens: frozenset[str]
+
+
+@dataclass(frozen=True)
+class AhrefsContentConfirmation:
+    gsc_overlap_terms: tuple[str, ...]
+    wordpress_overlap_urls: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -176,11 +204,23 @@ def _build_tactical_queue(
     action_ids_by_connector = _tactical_action_ids_by_connector()
     wordpress_index = _wordpress_content_index(facts)
     gsc_page_counts = _gsc_page_counts(facts)
+    gsc_signals = _content_signals(
+        facts,
+        source_connector="google_search_console",
+        dimension_keys=("query", "page"),
+        label_keys=("query", "page"),
+    )
+    wordpress_signals = _content_signals(
+        facts,
+        source_connector_prefix="wordpress",
+        dimension_keys=("content_url", "title", "slug", "path"),
+        label_keys=("content_url",),
+    )
     items = [
         *_gsc_content_items(facts, action_ids_by_connector, wordpress_index, gsc_page_counts),
         *_ga4_quality_items(facts, action_ids_by_connector, wordpress_index),
         *_merchant_feed_items(facts, action_ids_by_connector),
-        *_ahrefs_gap_items(facts, action_ids_by_connector),
+        *_ahrefs_gap_items(facts, action_ids_by_connector, gsc_signals, wordpress_signals),
     ]
     items = _balanced_tactical_items(items, limit=TACTICAL_QUEUE_LIMIT)
     return TacticalQueueResponse(
@@ -683,6 +723,8 @@ def _merchant_feed_items(
 def _ahrefs_gap_items(
     facts: list[MetricFact],
     action_ids_by_connector: dict[str, list[str]],
+    gsc_signals: tuple[ContentSignal, ...],
+    wordpress_signals: tuple[ContentSignal, ...],
 ) -> list[TacticalQueueItem]:
     gap_groups = _group_ahrefs_gap_facts(facts)
     items: list[TacticalQueueItem] = []
@@ -691,6 +733,14 @@ def _ahrefs_gap_items(
         if _is_ahrefs_off_topic(keyword, source_url, target_url, competitor_domain):
             continue
         topic = _ahrefs_topic(keyword, source_url, target_url, competitor_domain)
+        confirmation = _ahrefs_content_confirmation(
+            keyword,
+            source_url,
+            target_url,
+            competitor_domain,
+            gsc_signals,
+            wordpress_signals,
+        )
         priority = _ahrefs_gap_priority(gap_type, topic, competitor_domain, index)
         items.append(
             TacticalQueueItem(
@@ -710,6 +760,14 @@ def _ahrefs_gap_items(
                     "source_url": source_url,
                     "target_url": target_url,
                     "competitor_domain": competitor_domain,
+                    "gsc_demand": "present" if confirmation.gsc_overlap_terms else "missing",
+                    "wordpress_inventory_match": (
+                        "present" if confirmation.wordpress_overlap_urls else "missing"
+                    ),
+                    "gsc_overlap_terms": ", ".join(confirmation.gsc_overlap_terms),
+                    "wordpress_overlap_urls": ", ".join(
+                        confirmation.wordpress_overlap_urls
+                    ),
                 },
                 diagnosis=_ahrefs_gap_diagnosis(
                     gap_type,
@@ -718,12 +776,9 @@ def _ahrefs_gap_items(
                     target_url,
                     competitor_domain,
                     group_facts,
+                    confirmation,
                 ),
-                next_step=(
-                    "Połącz rekord Ahrefs z GSC i WordPress inventory, potem wybierz "
-                    "refresh, merge, create albo block. Nie traktuj Ahrefs jako "
-                    "samodzielnej obietnicy ruchu."
-                ),
+                next_step=_ahrefs_gap_next_step(topic, confirmation),
                 blocked_claims=[
                     "traffic uplift",
                     "authority improvement",
@@ -755,6 +810,23 @@ def _group_ahrefs_gap_facts(facts: list[MetricFact]) -> dict[tuple[str, ...], li
             continue
         grouped.setdefault(key, []).append(fact)
     return dict(sorted(grouped.items(), key=lambda item: _ahrefs_group_sort_key(item)))
+
+
+def _ahrefs_content_confirmation(
+    keyword: str,
+    source_url: str,
+    target_url: str,
+    competitor_domain: str,
+    gsc_signals: tuple[ContentSignal, ...],
+    wordpress_signals: tuple[ContentSignal, ...],
+) -> AhrefsContentConfirmation:
+    tokens = _content_tokens_from_text(
+        " ".join((keyword, source_url, target_url, competitor_domain))
+    )
+    return AhrefsContentConfirmation(
+        gsc_overlap_terms=_matching_signal_labels(tokens, gsc_signals),
+        wordpress_overlap_urls=_matching_signal_labels(tokens, wordpress_signals),
+    )
 
 
 def _ahrefs_group_sort_key(item: tuple[tuple[str, ...], list[MetricFact]]) -> tuple[int, str]:
@@ -829,6 +901,7 @@ def _ahrefs_gap_diagnosis(
     target_url: str,
     competitor_domain: str,
     facts: list[MetricFact],
+    confirmation: AhrefsContentConfirmation,
 ) -> str:
     context = ", ".join(
         part
@@ -840,10 +913,39 @@ def _ahrefs_gap_diagnosis(
         if part is not None
     )
     context_text = f" Kontekst: {context}." if context else ""
+    confirmation_text = _ahrefs_confirmation_text(confirmation)
     return (
         f"Ahrefs wskazuje rekord `{gap_type}` dla tematu `{topic}`. "
         f"Fakty: {_ahrefs_fact_summary(facts)}.{context_text} "
-        "To jest sygnał do review contentu, nie samodzielna rekomendacja SEO."
+        f"{confirmation_text} To jest sygnał do review contentu, "
+        "nie samodzielna rekomendacja SEO."
+    )
+
+
+def _ahrefs_confirmation_text(confirmation: AhrefsContentConfirmation) -> str:
+    if confirmation.gsc_overlap_terms and confirmation.wordpress_overlap_urls:
+        return "GSC i WordPress potwierdzają overlap tematu."
+    if confirmation.gsc_overlap_terms:
+        return "GSC potwierdza overlap tematu; WordPress wymaga sprawdzenia."
+    if confirmation.wordpress_overlap_urls:
+        return "WordPress potwierdza overlap tematu; GSC demand wymaga sprawdzenia."
+    return "Brak overlapu z GSC/WordPress w bieżącym evidence."
+
+
+def _ahrefs_gap_next_step(
+    topic: str,
+    confirmation: AhrefsContentConfirmation,
+) -> str:
+    if confirmation.gsc_overlap_terms and confirmation.wordpress_overlap_urls:
+        return (
+            f"Zweryfikuj `{topic}` na podstawie GSC i WordPress overlap, potem "
+            "wybierz refresh, merge, create albo block. Nie traktuj Ahrefs jako "
+            "samodzielnej obietnicy ruchu."
+        )
+    return (
+        f"Sprawdź ręcznie `{topic}` w GSC i WordPress inventory, potem wybierz "
+        "refresh, merge, create albo block. Bez overlapu nie twórz briefu tylko "
+        "z Ahrefs."
     )
 
 
@@ -869,6 +971,61 @@ def _normalize_ahrefs_text(value: str) -> str:
         {"ą": "a", "ć": "c", "ę": "e", "ł": "l", "ń": "n", "ó": "o", "ś": "s", "ź": "z", "ż": "z"}
     )
     return value.lower().translate(replacements)
+
+
+def _content_signals(
+    facts: list[MetricFact],
+    *,
+    dimension_keys: tuple[str, ...],
+    label_keys: tuple[str, ...],
+    source_connector: str | None = None,
+    source_connector_prefix: str | None = None,
+) -> tuple[ContentSignal, ...]:
+    signal_tokens: dict[str, set[str]] = {}
+    for fact in facts:
+        if source_connector is not None and fact.source_connector != source_connector:
+            continue
+        if source_connector_prefix is not None and not fact.source_connector.startswith(
+            source_connector_prefix
+        ):
+            continue
+        label = _first_dimension_value(fact, label_keys)
+        if not label:
+            continue
+        tokens: set[str] = set()
+        for key in dimension_keys:
+            tokens.update(_content_tokens_from_text(fact.dimensions.get(key, "")))
+        if tokens:
+            signal_tokens.setdefault(label, set()).update(tokens)
+    return tuple(
+        ContentSignal(label=label, tokens=frozenset(tokens))
+        for label, tokens in signal_tokens.items()
+    )
+
+
+def _first_dimension_value(fact: MetricFact, keys: tuple[str, ...]) -> str | None:
+    for key in keys:
+        value = fact.dimensions.get(key)
+        if value:
+            return value
+    return None
+
+
+def _matching_signal_labels(
+    tokens: set[str],
+    signals: tuple[ContentSignal, ...],
+    *,
+    limit: int = 4,
+) -> tuple[str, ...]:
+    return tuple(_unique(signal.label for signal in signals if tokens & signal.tokens)[:limit])
+
+
+def _content_tokens_from_text(text: str) -> set[str]:
+    return {
+        token
+        for token in re.split(r"[^a-z0-9]+", _normalize_ahrefs_text(text))
+        if len(token) > 2 and token not in CONTENT_SIGNAL_STOPWORDS
+    }
 
 
 def _normalized_domain(value: str) -> str:

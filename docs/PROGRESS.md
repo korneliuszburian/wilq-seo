@@ -54,9 +54,11 @@ Stan produktu:
   keeps `action_count=0`, and blocks traffic uplift / authority improvement
   claims. `/api/marketing/tactical-queue` now also promotes review-only Ahrefs
   gap records into `domain=content` tactical items with
-  `act_prepare_content_refresh_queue`, evidence IDs and blocked traffic/
-  authority/ranking claims. Ahrefs remaining work is freshness and safe
-  cross-source confirmation with GSC/WordPress before stronger decisions.
+  `act_prepare_content_refresh_queue`, evidence IDs, GSC/WordPress
+  confirmation fields and blocked traffic/authority/ranking claims. Runtime
+  proof after stack restart shows `beczka` as WordPress-present but GSC-missing,
+  so WILQ does not pretend Ahrefs alone proves demand. Ahrefs remaining work is
+  freshness and stronger cross-source scoring before stronger decisions.
 - Content/GSC inventory matching no longer marks current Ekologus URLs as
   missing when wide WordPress inventory pushes public sitemap URLs past the old
   slice boundary. Live HTTP proof after stack restart:
@@ -164,7 +166,7 @@ Stan produktu:
   are ready for review-only decisions; Merchant product-performance join is
   blocked by state-only/zero performance product rows, not by missing GA4/Ads
   read contracts. The nearest source gaps are Merchant before-after price
-  history/performance windows, Ahrefs freshness/cross-source confirmation,
+  history/performance windows, Ahrefs freshness/stronger cross-source scoring,
   Keyword Planner approval/forecast and cross-source decision joins.
 - GA4 conversion/ecommerce read contract is now live. The GA4 Data API request
   stores `key_events`, `ecommerce_purchases`, `purchase_revenue`,

@@ -266,6 +266,22 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
                     "page": "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/",
                 },
             ),
+            VendorMetricFact(
+                name="clicks",
+                value=2,
+                dimensions={
+                    "query": "audyt środowiskowy",
+                    "page": "https://www.ekologus.pl/audyt-srodowiskowy/",
+                },
+            ),
+            VendorMetricFact(
+                name="impressions",
+                value=88,
+                dimensions={
+                    "query": "audyt środowiskowy",
+                    "page": "https://www.ekologus.pl/audyt-srodowiskowy/",
+                },
+            ),
         ],
         "refresh_google_analytics_4_action_test": [
             VendorMetricFact(
@@ -309,6 +325,20 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
                     "status": "publish",
                     "modified_gmt": "2026-06-15T10:00:00",
                 },
+            ),
+            VendorMetricFact(
+                name="content_object_seen",
+                value=1,
+                dimensions={
+                    "connector_id": "wordpress_ekologus",
+                    "site_kind": "primary",
+                    "content_type": "pages",
+                    "object_id": "84",
+                    "content_url": "https://www.ekologus.pl/audyt-srodowiskowy/",
+                    "title": "Audyt środowiskowy",
+                    "status": "publish",
+                    "modified_gmt": "2026-06-16T10:00:00",
+                },
             )
         ],
         "refresh_ahrefs_action_test": [
@@ -320,6 +350,16 @@ def seed_action_candidate_metric_facts(tmp_path: Path, monkeypatch: pytest.Monke
                     "keyword": "audyt środowiskowy",
                     "competitor_domain": "denios.pl",
                     "source_url": "https://www.denios.pl/audyt-srodowiskowy/",
+                },
+            ),
+            VendorMetricFact(
+                name="ahrefs_top_page_gap_count",
+                value=1,
+                dimensions={
+                    "gap_type": "top_page_gap",
+                    "keyword": "beczka",
+                    "competitor_domain": "denios.pl",
+                    "source_url": "https://www.denios.pl/beczki/",
                 },
             ),
             VendorMetricFact(
@@ -2971,6 +3011,27 @@ def test_marketing_tactical_queue_uses_dimensioned_metric_facts(
         and item["dimensions"].get("gap_type") == "content_gap"
         for item in ahrefs_items
     )
+    ahrefs_audit_item = next(
+        item
+        for item in ahrefs_items
+        if item["dimensions"].get("keyword") == "audyt środowiskowy"
+    )
+    assert ahrefs_audit_item["dimensions"]["gsc_demand"] == "present"
+    assert ahrefs_audit_item["dimensions"]["wordpress_inventory_match"] == "present"
+    assert "audyt środowiskowy" in ahrefs_audit_item["dimensions"]["gsc_overlap_terms"]
+    assert (
+        "https://www.ekologus.pl/audyt-srodowiskowy/"
+        in ahrefs_audit_item["dimensions"]["wordpress_overlap_urls"]
+    )
+    assert "GSC" in ahrefs_audit_item["next_step"]
+    assert "WordPress" in ahrefs_audit_item["next_step"]
+    ahrefs_beczka_item = next(
+        item for item in ahrefs_items if item["dimensions"].get("keyword") == "beczka"
+    )
+    assert ahrefs_beczka_item["dimensions"]["gsc_demand"] == "missing"
+    assert ahrefs_beczka_item["dimensions"]["wordpress_inventory_match"] == "missing"
+    assert ahrefs_beczka_item["dimensions"]["gsc_overlap_terms"] == ""
+    assert ahrefs_beczka_item["dimensions"]["wordpress_overlap_urls"] == ""
     assert all(item["domain"] == "content" for item in ahrefs_items)
     assert all("traffic uplift" in item["blocked_claims"] for item in ahrefs_items)
     assert all(

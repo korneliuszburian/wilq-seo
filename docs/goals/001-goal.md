@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:25 CEST.
+Last updated: 2026-06-24 04:31 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -64,9 +64,10 @@ leaving it pending. Ahrefs gap-finder eval now proves scoped lineage for
 uses only top-level `source_connectors=["ahrefs"]`, sees 8 typed stale gap
 records and keeps traffic uplift / authority improvement blocked. Ahrefs gap
 records now also feed `/api/marketing/tactical-queue` as review-only
-`domain=content` tactical items with `act_prepare_content_refresh_queue`;
-remaining Ahrefs work is freshness and GSC/WordPress confirmation, not raw
-gap visibility.
+`domain=content` tactical items with `act_prepare_content_refresh_queue`,
+GSC/WordPress confirmation fields and no uplift/ranking claims; remaining
+Ahrefs work is freshness and stronger cross-source scoring, not raw gap
+visibility.
 
 ## Current Stack Map
 
@@ -240,10 +241,10 @@ Finish these before claiming the Ekologus demo is done:
         new tasks.
      2. Merchant deepening: add historical price snapshots, before/after
         performance windows and richer read-only previews.
-     3. Ahrefs/content-gap enrichment should now focus on freshness and safe
-        cross-source confirmation with GSC/WordPress, because typed Ahrefs gap
-        records already exist and tactical queue now exposes review-only
-        content candidates.
+     3. Ahrefs/content-gap enrichment should now focus on freshness and stronger
+        cross-source scoring, because typed Ahrefs gap records already exist
+        and tactical queue exposes review-only content candidates with
+        GSC/WordPress confirmation fields.
      4. Return to Ads only when Keyword Planner approval changes, change rows
         appear, or apply/audit contracts are the active slice.
 
