@@ -485,6 +485,13 @@ Skills are operator workflows over WILQ API. They are not the product brain.
   wasted budget/budget scaling/recommendation apply/targeting apply/negative
   keyword apply claims blocked without human review, confirmation and
   apply/audit contract.
+- `ready`: The Merchant messy-prompt runtime proof passed. Artifact:
+  `.local-lab/evals/codex-skill/20260624T210800Z/wilq-merchant-feed-operator/result.json`.
+  Result: `operator_usefulness_score=5`, all `decision_quality` booleans true,
+  `act_review_merchant_feed_issues` validated, `decision_queue` used as the
+  review scale, reported issue occurrences not treated as unique SKUs, sample
+  product IDs not treated as a complete product queue, and product ROAS/revenue
+  recovery/price impact/approval restored/feed write claims blocked.
 - `task`: Add decision-quality rubrics that check usefulness, prioritization,
   blocked-claim handling and safe next steps, not only output shape.
 - `task`: Add a human usefulness rubric after marketer UAT: "Czy wiem co

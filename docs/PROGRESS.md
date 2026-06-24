@@ -97,6 +97,11 @@ Stan produktu:
   `.local-lab/evals/codex-skill/20260624T210410Z/wilq-ads-doctor/result.json`,
   `operator_usefulness_score=5`, four review ActionObjects validated and
   CPA/ROAS/wasted-budget/apply claims still blocked.
+- The Merchant messy-prompt runtime proof passed: artifact
+  `.local-lab/evals/codex-skill/20260624T210800Z/wilq-merchant-feed-operator/result.json`,
+  `operator_usefulness_score=5`, `decision_queue` used as review scale,
+  reported occurrences not treated as unique SKU count and feed/approval/
+  revenue/price-impact claims still blocked.
 - Content strategist eval hardening now requires the current
   `operator_summary.target_site_migration_map`, mapping-review gate markers and
   blocked staging/ranking outputs, so the eval cannot pass on generic
