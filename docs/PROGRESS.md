@@ -41,6 +41,22 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Skill/reference semantic audit slice moved forward on 2026-06-24. Current
+  `scripts/skill_hygiene_check.py` passed and semantic pass found no broad
+  reference-as-workaround pattern. Two references were underdocumented rather
+  than wrong: `wilq-campaign-builder` now names typed `ads_diagnostics` and
+  `content_landing_context`, while `wilq-social-publisher` now names typed
+  `social_draft_context`. Suspicious product finding fixed in API layer:
+  `ekologus.dev.proudsite.pl` is excluded from social draft evidence/candidate
+  inputs because the dev site is a later target context, not source evidence for
+  current social insights. Proof: social API pytest subset returned 2 passed,
+  managed stack restart refreshed the API, `wilq-social-publisher` and
+  `wilq-campaign-builder` smokes passed, live social context-pack returned only
+  `https://www.ekologus.pl/` as content URL, and skill hygiene plus
+  `git diff --check` passed. Next checklist item: continue Final A-Z with
+  remaining content usefulness/target-site adaptation and then expert/knowledge
+  rule audit; do not reopen this social fix unless dev-site URLs reappear in
+  source-evidence candidate inputs.
 - Content skill eval hardening slice completed on 2026-06-24 10:01 CEST.
   `wilq-content-strategist` no longer only checks that
   `content_brief_preview` exists. The skill smoke now requires compacted

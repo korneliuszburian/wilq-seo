@@ -897,3 +897,16 @@ pytest, managed stack restart, content strategist smoke and non-interactive
 Continue from skill/reference semantic audit and remaining content usefulness
 gaps; do not reopen the rich brief eval unless the content preview contract
 changes.
+
+2026-06-24 skill/reference semantic checkpoint: the hygiene checker passed and
+manual semantic pass found no broad skill-reference workaround pattern. Two
+references were tightened to name existing typed context-pack fields rather than
+invent behavior: `wilq-campaign-builder` uses `ads_diagnostics` plus
+`content_landing_context`, and `wilq-social-publisher` uses
+`social_draft_context`. Confirmed API-layer drift fixed: social draft
+ActionObjects now exclude `ekologus.dev.proudsite.pl` inventory rows from
+candidate inputs/evidence, because the dev site is a later target context, not
+current source evidence. Focused proof passed: social API pytest subset, managed
+stack restart, social/campaign skill smokes, live social context-pack URL check,
+skill hygiene and `git diff --check`. Continue from remaining content
+usefulness/target-site adaptation, then expert/knowledge rule audit.

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from typing import Any, Literal, cast
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from wilq.actions.content_refresh import (
@@ -1518,8 +1519,11 @@ def _metric_fact_sort_time(fact: MetricFact) -> str:
 
 def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObject]:
     actions: dict[str, ActionObject] = {}
+    social_source_facts = [
+        fact for fact in social_facts if _is_social_candidate_metric(fact)
+    ]
     social_metrics = _prioritize_action_metrics(
-        social_facts,
+        social_source_facts,
         required_names={
             "clicks",
             "impressions",
@@ -1537,8 +1541,8 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
     )
     common_payload = {
         "mode": "prepare_only",
-        "source_connectors": _unique(fact.source_connector for fact in social_facts),
-        "source_metric_names": _unique(fact.name for fact in social_facts),
+        "source_connectors": _unique(fact.source_connector for fact in social_source_facts),
+        "source_metric_names": _unique(fact.name for fact in social_source_facts),
         "draft_constraints": [
             "use_only_wilq_evidence",
             "write_in_polish",
@@ -1591,6 +1595,18 @@ def _social_draft_actions(social_facts: list[MetricFact]) -> dict[str, ActionObj
         )
         actions[action.id] = action
     return actions
+
+
+def _is_social_candidate_metric(fact: MetricFact) -> bool:
+    if fact.name != "content_object_seen":
+        return True
+    content_url = fact.dimensions.get("content_url")
+    if not isinstance(content_url, str) or not content_url:
+        return True
+    host = urlparse(content_url).netloc.lower()
+    if not host:
+        return True
+    return "dev.proudsite.pl" not in host
 
 
 def _social_candidate_inputs(facts: list[MetricFact]) -> list[dict[str, object]]:

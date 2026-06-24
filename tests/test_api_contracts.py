@@ -20,7 +20,7 @@ from wilq.actions.google_ads.change_history import CHANGE_HISTORY_IMPACT_ACTION_
 from wilq.actions.google_ads.keyword_planner import KEYWORD_PLANNER_ACCESS_ACTION_ID
 from wilq.actions.google_ads.search_term_ngrams import SEARCH_TERM_NGRAM_ACTION_ID
 from wilq.actions.localo.visibility import LOCALO_VISIBILITY_REVIEW_ACTION_ID
-from wilq.actions.service import apply_action
+from wilq.actions.service import _social_draft_actions, apply_action
 from wilq.briefing.ads_diagnostics import (
     ADS_METRIC_FACT_LIMIT,
     _custom_segment_review_reason,
@@ -14125,6 +14125,45 @@ def test_social_context_pack_exposes_review_only_draft_context(
         "draft_constraints"
     ]
     assert "post published" in social_context["blocked_claims"]
+
+
+def test_social_draft_actions_exclude_dev_site_inventory_inputs() -> None:
+    actions = _social_draft_actions(
+        [
+            MetricFact(
+                name="clicks",
+                value=4,
+                period="connector_refresh",
+                source_connector="google_search_console",
+                evidence_id="ev_gsc_social_candidate",
+                dimensions={
+                    "query": "ekologus bielsko",
+                    "page": "https://www.ekologus.pl/",
+                },
+            ),
+            MetricFact(
+                name="content_object_seen",
+                value=1,
+                period="connector_refresh",
+                source_connector="wordpress_ekologus",
+                evidence_id="ev_wordpress_dev_site_candidate",
+                dimensions={
+                    "content_url": "https://ekologus.dev.proudsite.pl/",
+                    "site_kind": "primary",
+                    "status": "publish",
+                },
+            ),
+        ]
+    )
+
+    linkedin_action = actions["act_prepare_linkedin_social_drafts"]
+    candidate_inputs = linkedin_action.payload["candidate_inputs"]
+    serialized_inputs = json.dumps(candidate_inputs, ensure_ascii=False)
+
+    assert candidate_inputs
+    assert "ev_gsc_social_candidate" in linkedin_action.evidence_ids
+    assert "ev_wordpress_dev_site_candidate" not in linkedin_action.evidence_ids
+    assert "ekologus.dev.proudsite.pl" not in serialized_inputs
 
 
 def test_codex_context_pack_scopes_content_strategist_payload() -> None:
