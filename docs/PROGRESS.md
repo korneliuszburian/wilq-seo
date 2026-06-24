@@ -231,6 +231,10 @@ Stan produktu:
   Live proof still blocks canonical review, duplicate/cannibalization check,
   WordPress write, API mutation and human confirmation. Proof:
   `.local-lab/proof/content-mapping-recording/live-review-recording-readiness.json`.
+- Core pre-demo gate passed after content mapping review recording/readiness
+  changes: managed stack status, API health, live contract smoke, shared live
+  schemas, dashboard route smoke 13/13 and core skill smokes. Proof:
+  `.local-lab/proof/pre-demo-gate-after-mapping-review.txt`.
 
 ## Active Gaps
 

@@ -161,6 +161,11 @@ Active demo work is narrow and depth-first.
   fixes. Command: `rtk scripts/pre_demo_gate.sh --core-skills`; coverage:
   local stack status, API health, live contract smoke, shared schemas live
   contracts, dashboard API-backed route smoke 13/13 and core skill smokes.
+- `ready`: Pre-demo gate passed again after target-site mapping review
+  recording/readiness hardening. Proof:
+  `.local-lab/proof/pre-demo-gate-after-mapping-review.txt`; coverage:
+  managed stack status, API health, live contract smoke, shared schemas live
+  contracts, dashboard API-backed route smoke 13/13 and core skill smokes.
 - `ready`: Content, Ads, Merchant, GA4 and Localo adversarial evals have fresh
   2026-06-24 proof artifacts.
 
@@ -564,6 +569,8 @@ Use these rules before every implementation slice:
   `.local-lab/proof/dashboard/content-mapping-recording/action-detail-mapping-recording.txt`.
 - [x] Split post-recording draft readiness from generic target mapping missing:
   `.local-lab/proof/content-mapping-recording/live-review-recording-readiness.json`.
+- [x] Rerun core pre-demo gate after content mapping review changes:
+  `.local-lab/proof/pre-demo-gate-after-mapping-review.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
