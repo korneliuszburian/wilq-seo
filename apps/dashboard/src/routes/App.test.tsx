@@ -6316,7 +6316,8 @@ describe("WILQ dashboard", () => {
 
   it("knowledge route renders compiled cards and playbooks", async () => {
     renderApp("/knowledge");
-    await waitFor(() => expect(screen.getByText("Mapa wiedzy do decyzji")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Ads daily check")).toBeInTheDocument());
+    expect(screen.getByText("Mapa wiedzy do decyzji")).toBeInTheDocument();
     expect(screen.getByText("Ads daily check")).toBeInTheDocument();
     expect(screen.getByText("Skill: dostępny")).toBeInTheDocument();
     expect(screen.getByText("Karty wiedzy: 1")).toBeInTheDocument();
@@ -6336,6 +6337,35 @@ describe("WILQ dashboard", () => {
     expect(screen.queryByText("Connector Refresh Runs")).not.toBeInTheDocument();
     expect(screen.queryByText("Expert Rules")).not.toBeInTheDocument();
     expect(screen.queryByText("Connector Status")).not.toBeInTheDocument();
+  });
+
+  it("knowledge route shows its layout while the operating map is still loading", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/api/knowledge/cards")) {
+          return Promise.resolve(Response.json(knowledgeCards));
+        }
+        if (url.endsWith("/api/knowledge/playbooks")) {
+          return Promise.resolve(Response.json(playbooks));
+        }
+        if (url.endsWith("/api/knowledge/operating-map")) {
+          return new Promise<Response>(() => {});
+        }
+        return Promise.resolve(Response.json({}));
+      })
+    );
+
+    renderApp("/knowledge");
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Baza wiedzy WILQ" })).toBeInTheDocument()
+    );
+    expect(screen.getByText("Mapa wiedzy do decyzji")).toBeInTheDocument();
+    expect(screen.getByText("Karty źródłowe")).toBeInTheDocument();
+    expect(screen.getByText("Playbooki maszynowe")).toBeInTheDocument();
+    expect(screen.getAllByText("Ładowanie stanu WILQ API").length).toBeGreaterThan(0);
   });
 
   it("merchant route renders dedicated feed diagnostics", async () => {

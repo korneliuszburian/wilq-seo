@@ -41,6 +41,15 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Dashboard route loading now avoids blank marketer routes for `/opportunities`
+  and `/knowledge`: primary headers/sections render before secondary
+  registries finish loading, while ActionObject/evidence/knowledge subsections
+  keep their own loading/error states. Focused proof:
+  `pnpm --filter @wilq/dashboard exec vitest run src/routes/OpportunitiesRoute.test.tsx`,
+  `pnpm --filter @wilq/dashboard exec vitest run src/routes/App.test.tsx -t "knowledge route"`,
+  dashboard lint/typecheck, and `agent-browser` runtime checks showing
+  `/opportunities` and `/knowledge` render `main` + `h1` quickly and then
+  final decision/knowledge content.
 - Goal and progress were compacted on 2026-06-23 to remove ready/done task
   noise from active recovery docs. Historical proof remains in git history and
   `docs/progress/archive/`.

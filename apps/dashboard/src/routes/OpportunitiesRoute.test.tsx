@@ -137,4 +137,31 @@ describe("Opportunities route", () => {
     expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
     expect(screen.queryByText("Evidence użyte przez opportunities")).not.toBeInTheDocument();
   });
+
+  it("shows the primary decision queue while secondary registries are still loading", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/api/opportunities")) {
+          return Promise.resolve(Response.json(opportunities));
+        }
+        if (url.endsWith("/api/actions") || url.endsWith("/api/evidence")) {
+          return new Promise<Response>(() => {});
+        }
+        return Promise.resolve(Response.json({}));
+      })
+    );
+
+    renderOpportunities();
+
+    await waitFor(() =>
+      expect(screen.getByText("Przejrzyj kolejki Ads do oceny bez apply")).toBeInTheDocument()
+    );
+    expect(screen.getByRole("heading", { name: "Szanse i decyzje" })).toBeInTheDocument();
+    expect(screen.getByText("Kolejka decyzji z WILQ API")).toBeInTheDocument();
+    expect(screen.getByText("Powiązane ActionObjecty")).toBeInTheDocument();
+    expect(screen.getByText("Dowody użyte przez karty")).toBeInTheDocument();
+    expect(screen.getAllByText("Ładowanie stanu WILQ API").length).toBeGreaterThan(0);
+  });
 });

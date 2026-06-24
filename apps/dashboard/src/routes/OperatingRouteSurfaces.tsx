@@ -7,7 +7,7 @@ import {
   getWorkflowRuns,
   getWorkflows
 } from "../lib/api";
-import { LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { LinkedTraceLine } from "../components/TraceLine";
 import { ActionList, EvidenceList, OpportunityList } from "./RegistryPanels";
 import { WorkflowRegistryList, WorkflowRunList } from "./WorkflowPanels";
@@ -17,8 +17,7 @@ export function OpportunitiesSurface() {
   const actions = useQuery({ queryKey: ["actions"], queryFn: getActions });
   const evidence = useQuery({ queryKey: ["evidence"], queryFn: getEvidence });
 
-  if (opportunities.isLoading || actions.isLoading || evidence.isLoading) return <LoadingBand />;
-  if (opportunities.error || actions.error || evidence.error) return <ErrorState />;
+  if (opportunities.error) return <ErrorState />;
 
   const items = opportunities.data ?? [];
   const evidenceIds = new Set(items.flatMap((item) => item.evidence_ids));
@@ -37,32 +36,46 @@ export function OpportunitiesSurface() {
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <MetricTile label="Decyzje" value={items.length} />
-          <MetricTile label="Aktywne" value={liveItems.length} />
-          <MetricTile label="Dowody" value={evidenceIds.size} />
+          <MetricTile label="Decyzje" value={opportunities.isLoading ? "..." : items.length} />
+          <MetricTile label="Aktywne" value={opportunities.isLoading ? "..." : liveItems.length} />
+          <MetricTile label="Dowody" value={opportunities.isLoading ? "..." : evidenceIds.size} />
         </div>
       </div>
 
       <div className="grid gap-8">
         <section>
           <SectionHeading title="Kolejka decyzji z WILQ API" />
-          <OpportunityList opportunities={items} />
+          {opportunities.isLoading ? <LoadingBand /> : <OpportunityList opportunities={items} />}
         </section>
         <section>
           <SectionHeading title="Powiązane ActionObjecty" />
-          <ActionList
-            actions={(actions.data ?? []).filter(
-              (action) =>
-                actionEvidenceIds.size === 0 ||
-                action.evidence_ids.some((id) => evidenceIds.has(id))
-            )}
-          />
+          {actions.isLoading ? (
+            <LoadingBand />
+          ) : actions.error ? (
+            <InlineErrorState message="Nie udało się pobrać powiązanych ActionObjectów." />
+          ) : (
+            <ActionList
+              actions={(actions.data ?? []).filter(
+                (action) =>
+                  actionEvidenceIds.size === 0 ||
+                  action.evidence_ids.some((id) => evidenceIds.has(id))
+              )}
+            />
+          )}
         </section>
         <section>
           <SectionHeading title="Dowody użyte przez karty" />
-          <EvidenceList
-            evidenceItems={(evidence.data ?? []).filter((item) => evidenceIds.has(item.id)).slice(0, 12)}
-          />
+          {evidence.isLoading ? (
+            <LoadingBand />
+          ) : evidence.error ? (
+            <InlineErrorState message="Nie udało się pobrać dowodów dla kart." />
+          ) : (
+            <EvidenceList
+              evidenceItems={(evidence.data ?? [])
+                .filter((item) => evidenceIds.has(item.id))
+                .slice(0, 12)}
+            />
+          )}
         </section>
       </div>
     </main>
@@ -207,4 +220,8 @@ function ErrorState() {
       </div>
     </main>
   );
+}
+
+function InlineErrorState({ message }: { message: string }) {
+  return <BlockerNotice message={message} />;
 }

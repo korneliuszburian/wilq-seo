@@ -15,7 +15,7 @@ import {
   getWorkflowRuns,
   getWorkflows
 } from "../lib/api";
-import { LoadingBand, MetricTile } from "../components/OperatorPrimitives";
+import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import {
   KnowledgeCardList,
   KnowledgeOperatingMapPanel,
@@ -94,11 +94,6 @@ export function GenericSurface({ routeName }: { routeName: string }) {
   });
   const isWorkflowLoading = isWorkflowRoute && (workflows.isLoading || workflowRuns.isLoading);
   const hasWorkflowError = isWorkflowRoute && (workflows.error || workflowRuns.error);
-  const isKnowledgeLoading =
-    isKnowledgeRoute && (knowledgeMap.isLoading || knowledgeCards.isLoading || playbooks.isLoading);
-  const hasKnowledgeError =
-    isKnowledgeRoute && (knowledgeMap.error || knowledgeCards.error || playbooks.error);
-
   if (
     connectors.isLoading ||
     connectorRefreshRuns.isLoading ||
@@ -106,8 +101,7 @@ export function GenericSurface({ routeName }: { routeName: string }) {
     actions.isLoading ||
     evidence.isLoading ||
     expertRules.isLoading ||
-    isWorkflowLoading ||
-    isKnowledgeLoading
+    isWorkflowLoading
   ) {
     return <LoadingBand />;
   }
@@ -118,8 +112,7 @@ export function GenericSurface({ routeName }: { routeName: string }) {
     actions.error ||
     evidence.error ||
     expertRules.error ||
-    hasWorkflowError ||
-    hasKnowledgeError
+    hasWorkflowError
   ) {
     return <ErrorState />;
   }
@@ -180,26 +173,44 @@ export function GenericSurface({ routeName }: { routeName: string }) {
                 <MetricTile label="Reguły" value={knowledgeMap.data?.expert_rule_count ?? 0} />
               </div>
               <SectionHeading title="Mapa wiedzy do decyzji" />
-              <KnowledgeOperatingMapPanel
-                map={
-                  knowledgeMap.data ?? {
-                    generated_at: "",
-                    source_card_count: 0,
-                    playbook_count: 0,
-                    expert_rule_count: 0,
-                    binding_count: 0,
-                    bindings: []
+              {knowledgeMap.isLoading ? (
+                <LoadingBand />
+              ) : knowledgeMap.error ? (
+                <InlineErrorState message="Nie udało się pobrać mapy wiedzy do decyzji." />
+              ) : (
+                <KnowledgeOperatingMapPanel
+                  map={
+                    knowledgeMap.data ?? {
+                      generated_at: "",
+                      source_card_count: 0,
+                      playbook_count: 0,
+                      expert_rule_count: 0,
+                      binding_count: 0,
+                      bindings: []
+                    }
                   }
-                }
-              />
+                />
+              )}
             </section>
             <section>
               <SectionHeading title="Karty źródłowe" />
-              <KnowledgeCardList cards={knowledgeCards.data ?? []} />
+              {knowledgeCards.isLoading ? (
+                <LoadingBand />
+              ) : knowledgeCards.error ? (
+                <InlineErrorState message="Nie udało się pobrać kart wiedzy." />
+              ) : (
+                <KnowledgeCardList cards={knowledgeCards.data ?? []} />
+              )}
             </section>
             <section>
               <SectionHeading title="Playbooki maszynowe" />
-              <PlaybookList playbooks={playbooks.data ?? []} />
+              {playbooks.isLoading ? (
+                <LoadingBand />
+              ) : playbooks.error ? (
+                <InlineErrorState message="Nie udało się pobrać playbooków wiedzy." />
+              ) : (
+                <PlaybookList playbooks={playbooks.data ?? []} />
+              )}
             </section>
           </>
         ) : null}
@@ -272,4 +283,8 @@ function ErrorState() {
       </div>
     </main>
   );
+}
+
+function InlineErrorState({ message }: { message: string }) {
+  return <BlockerNotice message={message} />;
 }

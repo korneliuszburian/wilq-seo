@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 05:36 CEST.
+Last updated: 2026-06-24 05:50 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -89,6 +89,12 @@ Live proof `jobrun_configured_vendor_read_refresh_262817b0e1` completed with
 `/merchant` live route now renders the Merchant diagnostics again after shared
 schema accepted API `decision_type=review_price_impact_readiness`; this was a
 frontend contract drift, not an API or route-mapping failure.
+Dashboard drilldown loading is less blank for marketer routes:
+`/opportunities` and `/knowledge` now render their primary heading/sections
+before secondary registries finish, with ActionObject/evidence/knowledge
+subsections handling their own loading/error states. Focused proof: targeted
+route tests, dashboard lint/typecheck and `agent-browser` checks for quick
+`main` + `h1` visibility plus final route content.
 
 ## Current Stack Map
 
