@@ -84,6 +84,12 @@ Stan produktu:
   `docs/goals/archive/bdos-deferred-backlog.md`. Do not lose those tasks, but
   do not paste the whole backlog back into active Goal 001; promote one
   evidence-backed slice at a time.
+- Live sanity check on 2026-06-24: `/api/dashboard/command-center` returns 4
+  daily decisions across Merchant, Content, GA4 and Ads with 18 evidence IDs
+  and 7 action IDs; `/api/content/diagnostics` has live data, 10 query/page
+  rows and 11 inventory matches, but 0 tactical items. This confirms the next
+  product slice is content-generation decision/brief pipeline, not premature
+  dev-site adaptation.
 - Skill eval schema/harness now requires `decision_quality`: actionable
   decision, safe next step, blocked-claims handling, workflow-specific
   interpretation and evidence-backed reasoning. Live proof:
