@@ -128,7 +128,9 @@ Still incomplete:
 - [x] Run final pre-demo gate after the next material code/eval slice. Proof:
   `scripts/pre_demo_gate.sh --core-skills` passed after the content
   duplicate/canonical gate change.
-- [ ] Produce a short marketer UAT script and record the result.
+- [x] Produce a short marketer UAT script:
+  `docs/handoffs/2026-06-24-marketer-uat-script.md`.
+- [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
 queue unless they are needed as proof for the next step.

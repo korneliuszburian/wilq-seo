@@ -73,6 +73,11 @@ Stan produktu:
   `scripts/pre_demo_gate.sh --core-skills` completed managed stack status, API
   health, live contract smoke, shared live schemas, dashboard API-backed route
   smoke 13/13 and sequential core skill smokes.
+- Short marketer UAT script is ready at
+  `docs/handoffs/2026-06-24-marketer-uat-script.md`. It tests whether a marketer
+  can move through Command Center -> Merchant -> Content Planner -> Ads Doctor
+  -> GA4, understand blockers and identify the next safe step. The real UAT
+  result is not collected yet.
 - Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
   stack was ready, browser snapshots for `/command-center`, `/merchant`,
   `/content-planner`, `/ads-doctor`, `/ga4` and
