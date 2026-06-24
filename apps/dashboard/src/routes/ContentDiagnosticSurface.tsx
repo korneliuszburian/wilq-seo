@@ -607,6 +607,18 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
             Docelowo: {shortPath(decision.target_site_url)}
           </span>
         ) : null}
+        {decision.target_site_migration_candidate_url ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Migracja: {shortPath(decision.target_site_migration_candidate_url)}
+          </span>
+        ) : null}
+        {decision.target_site_migration_status ? (
+          <span className="rounded border border-line bg-white px-2 py-1">
+            Mapowanie: {contentTargetSiteMigrationStatusLabel(
+              decision.target_site_migration_status
+            )}
+          </span>
+        ) : null}
         {decision.inventory_gate_status ? (
           <span className="rounded border border-line bg-white px-2 py-1">
             Inventory gate: {contentGateStatusLabel(decision.inventory_gate_status)}
@@ -626,6 +638,11 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
       {decision.content_gate_summary ? (
         <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
           {decision.content_gate_summary}
+        </p>
+      ) : null}
+      {decision.target_site_migration_summary ? (
+        <p className="mt-2 rounded border border-line bg-white px-3 py-2 text-xs text-slate-700">
+          {decision.target_site_migration_summary}
         </p>
       ) : null}
       {decision.ahrefs_candidate_rows.length > 0 ? (
@@ -909,6 +926,16 @@ function contentTargetSiteStatusLabel(value: string) {
     current_site_match: "bieżąca strona",
     target_site_alias_match: "dopasowanie do nowej strony",
     needs_inventory_match: "wymaga dopasowania inventory"
+  };
+  return labels[value] ?? value;
+}
+
+function contentTargetSiteMigrationStatusLabel(value: string) {
+  const labels: Record<string, string> = {
+    confirmed_target_inventory: "target potwierdzony",
+    needs_review: "wymaga mapowania",
+    blocked_missing_inventory: "blokada inventory",
+    not_applicable: "nie dotyczy"
   };
   return labels[value] ?? value;
 }

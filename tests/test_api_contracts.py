@@ -1442,6 +1442,11 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert decision["target_site_url"] == target_site_url
     assert decision["target_site_host"] == "ekologus.dev.proudsite.pl"
     assert decision["target_site_adaptation_status"] == "target_site_alias_match"
+    assert decision["target_site_migration_candidate_url"] == target_site_url
+    assert decision["target_site_migration_status"] == "confirmed_target_inventory"
+    assert "Inventory potwierdza URL na target site" in decision[
+        "target_site_migration_summary"
+    ]
     assert decision["inventory_gate_status"] == "confirmed_target_inventory"
     assert decision["canonical_gate_status"] == "needs_target_canonical_review"
     assert decision["duplicate_gate_status"] == "refresh_or_merge_required"
@@ -11587,10 +11592,12 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         in {"target_site_alias_match", "needs_inventory_match"}
         or decision.get("inventory_gate_status") == "blocked_missing_inventory"
         or decision.get("canonical_gate_status") == "needs_target_canonical_review"
+        or decision.get("target_site_migration_status")
+        in {"needs_review", "blocked_missing_inventory"}
     )
     assert (
         operator_summary["target_site_mapping_status"]
-        == "current_site_inventory_confirmed"
+        == "target_site_mapping_review_needed"
     )
     assert "refresh/merge" in operator_summary["decision_type_labels"]
     assert "act_prepare_content_refresh_queue" in operator_summary["action_ids"]
@@ -11636,6 +11643,14 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     )
     assert first_decision["target_site_host"] == "www.ekologus.pl"
     assert first_decision["target_site_adaptation_status"] == "current_site_match"
+    assert first_decision["target_site_migration_candidate_url"] == (
+        "https://ekologus.dev.proudsite.pl/"
+        "europejski-zielony-lad-co-to-takiego/"
+    )
+    assert first_decision["target_site_migration_status"] == "needs_review"
+    assert "Wymagane ręczne mapowanie" in first_decision[
+        "target_site_migration_summary"
+    ]
     assert first_decision["inventory_gate_status"] == "confirmed_current_inventory"
     assert first_decision["canonical_gate_status"] == "current_url_confirmed"
     assert first_decision["duplicate_gate_status"] == "refresh_or_merge_required"

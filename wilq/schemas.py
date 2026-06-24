@@ -2185,6 +2185,9 @@ class ContentDecisionItem(BaseModel):
     target_site_url: str | None = None
     target_site_host: str | None = None
     target_site_adaptation_status: str | None = None
+    target_site_migration_candidate_url: str | None = None
+    target_site_migration_status: str | None = None
+    target_site_migration_summary: str | None = None
     inventory_gate_status: str | None = None
     canonical_gate_status: str | None = None
     duplicate_gate_status: str | None = None

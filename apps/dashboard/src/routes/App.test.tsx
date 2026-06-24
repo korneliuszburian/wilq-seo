@@ -4365,8 +4365,8 @@ const contentDiagnostics = {
     target_site_host: "ekologus.dev.proudsite.pl",
     target_site_alias_match_count: 0,
     current_site_match_count: 1,
-    target_site_mapping_review_count: 0,
-    target_site_mapping_status: "current_site_inventory_confirmed",
+    target_site_mapping_review_count: 1,
+    target_site_mapping_status: "target_site_mapping_review_needed",
     decision_type_labels: ["review luk Ahrefs", "refresh/merge"],
     source_connectors: ["ahrefs", "google_search_console", "wordpress_ekologus"],
     evidence_ids: [
@@ -4411,6 +4411,20 @@ const contentDiagnostics = {
       wordpress_match: "found",
       wordpress_match_confidence: "exact_url",
       wordpress_content_url: "https://www.ekologus.pl/bdo/",
+      source_url: "https://www.ekologus.pl/bdo/",
+      source_site_host: "www.ekologus.pl",
+      target_site_url: "https://www.ekologus.pl/bdo/",
+      target_site_host: "www.ekologus.pl",
+      target_site_adaptation_status: "current_site_match",
+      target_site_migration_candidate_url: "https://ekologus.dev.proudsite.pl/bdo/",
+      target_site_migration_status: "needs_review",
+      target_site_migration_summary:
+        "WILQ wskazuje kandydata old-to-new na target site, ale inventory go nie potwierdza w tej decyzji. Wymagane ręczne mapowanie przed draftem albo stagingiem.",
+      inventory_gate_status: "confirmed_current_inventory",
+      canonical_gate_status: "current_url_confirmed",
+      duplicate_gate_status: "refresh_or_merge_required",
+      content_gate_summary:
+        "Inventory potwierdza istniejący URL. WILQ traktuje to jako refresh/merge, nie nowy artykuł; create pozostaje zablokowane przed kontrolą duplikacji.",
       source_connectors: ["google_search_console", "wordpress_ekologus"],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       metric_facts: [metricFacts[5]],
@@ -6718,7 +6732,9 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText(/Nowa strona: target: ekologus\.dev\.proudsite\.pl/)
     ).toBeInTheDocument();
-    expect(screen.getByText(/status: potwierdzono obecną stronę/)).toBeInTheDocument();
+    expect(screen.getByText(/status: wymaga mapowania/)).toBeInTheDocument();
+    expect(screen.getByText("Migracja: /bdo/")).toBeInTheDocument();
+    expect(screen.getByText("Mapowanie: wymaga mapowania")).toBeInTheDocument();
     expect(screen.queryByText("Dopasowania WP")).not.toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia Content")).toBeInTheDocument();
     expect(screen.queryByText("WordPress: inventory protection")).not.toBeInTheDocument();

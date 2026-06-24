@@ -40,6 +40,13 @@ PRIMARY_CONTENT_CONNECTORS = ("google_search_console", "wordpress_ekologus")
 CONTENT_METRIC_FACT_LIMIT = 300
 CONTENT_GSC_METRIC_FACT_LIMIT = 1200
 CONTENT_WORDPRESS_METRIC_FACT_LIMIT = 1200
+CONTENT_TARGET_SITE_HOST = "ekologus.dev.proudsite.pl"
+CONTENT_TARGET_SITE_SCHEME = "https"
+CONTENT_SOURCE_SITE_HOSTS = {
+    "www.ekologus.pl",
+    "ekologus.pl",
+    "sklep.ekologus.pl",
+}
 GSC_CONTENT_KNOWLEDGE_CARD_IDS = (
     "card_gsc_seo_content_playbook",
     "card_wordpress_content_refresh_playbook",
@@ -296,6 +303,7 @@ def _operator_summary(
         in {"target_site_alias_match", "needs_inventory_match"}
         or decision.inventory_gate_status == "blocked_missing_inventory"
         or decision.canonical_gate_status == "needs_target_canonical_review"
+        or decision.target_site_migration_status in {"needs_review", "blocked_missing_inventory"}
     )
     return ContentOperatorSummary(
         title="Co marketer ma zrobić teraz z treściami",
@@ -355,7 +363,7 @@ def _content_operator_target_site_host(
     for decision in decisions:
         if decision.target_site_host and decision.target_site_host != decision.source_site_host:
             return decision.target_site_host
-    return "ekologus.dev.proudsite.pl" if decisions else None
+    return CONTENT_TARGET_SITE_HOST if decisions else None
 
 
 def _content_operator_target_site_mapping_status(
@@ -886,13 +894,82 @@ def _content_target_site_context(
         status = "target_site_alias_match"
     else:
         status = "current_site_match"
+    migration_candidate_url = _content_target_site_migration_candidate_url(
+        source_url=source_url,
+        target_site_url=target_site_url,
+        target_site_adaptation_status=status,
+    )
+    migration_status = _content_target_site_migration_status(
+        target_site_adaptation_status=status,
+        migration_candidate_url=migration_candidate_url,
+    )
     return {
         "source_url": source_url,
         "source_site_host": source_host,
         "target_site_url": target_site_url,
         "target_site_host": target_host,
         "target_site_adaptation_status": status,
+        "target_site_migration_candidate_url": migration_candidate_url,
+        "target_site_migration_status": migration_status,
+        "target_site_migration_summary": _content_target_site_migration_summary(
+            migration_status,
+            migration_candidate_url,
+        ),
     }
+
+
+def _content_target_site_migration_candidate_url(
+    *,
+    source_url: str,
+    target_site_url: str | None,
+    target_site_adaptation_status: str,
+) -> str | None:
+    if target_site_adaptation_status == "target_site_alias_match":
+        return target_site_url
+    parsed = urlparse(source_url)
+    source_host = parsed.netloc.lower()
+    if source_host not in CONTENT_SOURCE_SITE_HOSTS:
+        return None
+    path = parsed.path or "/"
+    query = f"?{parsed.query}" if parsed.query else ""
+    return f"{CONTENT_TARGET_SITE_SCHEME}://{CONTENT_TARGET_SITE_HOST}{path}{query}"
+
+
+def _content_target_site_migration_status(
+    *,
+    target_site_adaptation_status: str,
+    migration_candidate_url: str | None,
+) -> str:
+    if target_site_adaptation_status == "target_site_alias_match":
+        return "confirmed_target_inventory"
+    if target_site_adaptation_status == "needs_inventory_match":
+        return "blocked_missing_inventory"
+    if migration_candidate_url:
+        return "needs_review"
+    return "not_applicable"
+
+
+def _content_target_site_migration_summary(
+    migration_status: str,
+    migration_candidate_url: str | None,
+) -> str:
+    if migration_status == "confirmed_target_inventory":
+        return (
+            "Inventory potwierdza URL na target site; przed draftem nadal sprawdź "
+            "canonical, duplikaty i review."
+        )
+    if migration_status == "needs_review" and migration_candidate_url:
+        return (
+            "WILQ wskazuje kandydata old-to-new na target site, ale inventory go "
+            "nie potwierdza w tej decyzji. Wymagane ręczne mapowanie przed draftem "
+            "albo stagingiem."
+        )
+    if migration_status == "blocked_missing_inventory":
+        return (
+            "Brak potwierdzenia inventory. Nie twórz draftu ani nowej strony przed "
+            "kontrolą sitemap, canonical i duplikatów."
+        )
+    return "Brak kandydata migracji na target site dla tej decyzji."
 
 
 def _content_gate_status(
