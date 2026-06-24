@@ -11,6 +11,9 @@ from typing import Any
 SKILL_NAME = "wilq-merchant-feed-operator"
 MERCHANT_FEED_ACTION_ID = "act_review_merchant_feed_issues"
 MERCHANT_FEED_PREVIEW_CONTRACT = "merchant_feed_issue_review_preview_v1"
+MERCHANT_PRICE_IMPACT_DECISION_ID = "merchant_decision_review_price_impact_readiness"
+MERCHANT_PRICE_IMPACT_DECISION_TYPE = "review_price_impact_readiness"
+MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT = "merchant_price_impact_readiness_preview_v1"
 REQUIRED_CONNECTORS = ["google_merchant_center"]
 REQUIRED_CONTEXT_KEYS = {
     "strict_instruction",
@@ -20,6 +23,13 @@ REQUIRED_CONTEXT_KEYS = {
     "active_action_objects",
     "merchant_diagnostics",
 }
+
+
+def find_decision(decisions: list[dict[str, Any]], decision_id: str) -> dict[str, Any] | None:
+    for decision in decisions:
+        if decision.get("id") == decision_id:
+            return decision
+    return None
 
 
 def request_json(api_base: str, method: str, path: str, body: dict[str, Any] | None = None) -> Any:
@@ -168,7 +178,7 @@ def main() -> int:
     if price_preview:
         if (
             price_preview[0].get("preview_contract")
-            != "merchant_price_impact_readiness_preview_v1"
+            != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT
         ):
             raise SystemExit("Merchant price impact preview contract mismatch")
         if price_preview[0].get("apply_allowed") is not False:
@@ -182,6 +192,7 @@ def main() -> int:
                 raise SystemExit("Merchant price impact preview must expose has_price_change")
     issue_clusters = merchant_diagnostics.get("issue_clusters") or []
     decision_queue = merchant_diagnostics.get("decision_queue") or []
+    packed_decision_queue = packed_merchant.get("decision_queue") or []
     unknowns = merchant_diagnostics.get("unknowns") or []
     freshness_assessment = merchant_diagnostics.get("freshness_assessment") or {}
     operator_summary = merchant_diagnostics.get("operator_summary") or {}
@@ -216,6 +227,38 @@ def main() -> int:
     for decision in decision_queue:
         if decision.get("count_semantics") != "reported_issue_occurrences":
             raise SystemExit("Merchant decisions must expose reported issue count semantics")
+    if price_impact_readiness.get("products_with_current_price", 0) > 0 or price_preview:
+        for surface_name, decisions in (
+            ("Merchant diagnostics", decision_queue),
+            ("Context pack merchant_diagnostics", packed_decision_queue),
+        ):
+            price_decision = find_decision(decisions, MERCHANT_PRICE_IMPACT_DECISION_ID)
+            if price_decision is None:
+                raise SystemExit(
+                    f"{surface_name} must expose {MERCHANT_PRICE_IMPACT_DECISION_ID}"
+                )
+            if price_decision.get("decision_type") != MERCHANT_PRICE_IMPACT_DECISION_TYPE:
+                raise SystemExit(
+                    f"{surface_name} price decision must use "
+                    f"{MERCHANT_PRICE_IMPACT_DECISION_TYPE}"
+                )
+            if price_decision.get("status") != price_status:
+                raise SystemExit(
+                    f"{surface_name} price decision status must match price readiness"
+                )
+            decision_preview = price_decision.get("payload_preview") or []
+            if not decision_preview:
+                raise SystemExit(f"{surface_name} price decision must expose payload_preview")
+            if (
+                decision_preview[0].get("preview_contract")
+                != MERCHANT_PRICE_IMPACT_PREVIEW_CONTRACT
+            ):
+                raise SystemExit(f"{surface_name} price decision preview contract mismatch")
+            decision_claims = set(price_decision.get("blocked_claims") or [])
+            if not {"price change impact", "product ROAS", "feed write"}.issubset(
+                decision_claims
+            ):
+                raise SystemExit(f"{surface_name} price decision must block price claims")
     merchant_action = next(
         (
             action

@@ -101,9 +101,10 @@ Stan produktu:
   windows, so price-impact stays blocked with missing read contracts instead of
   pretending to measure price impact. `wilq-merchant-feed-operator` now consumes
   that typed contract: its deterministic smoke verifies endpoint/context-pack
-  consistency for `price_impact_readiness`, required missing read contracts,
-  review-only preview flags and blocked product ROAS/profitability/price-impact
-  claims. Metric facts now also expose `previous_evidence_id` and
+  consistency for `price_impact_readiness`, the
+  `review_price_impact_readiness` decision queue item, required missing read
+  contracts, review-only preview flags and blocked product ROAS/profitability/
+  price-impact claims. Metric facts now also expose `previous_evidence_id` and
   `previous_collected_at`, and Merchant price preview rows expose current and
   previous price snapshot timestamps, `has_price_change`, changed-price count
   and unchanged-history count. Live proof still shows 3 current Ads prices, 0
@@ -112,10 +113,10 @@ Stan produktu:
   `decision_queue` as `review_price_impact_readiness` when current product
   prices exist, so dashboard and skills can show missing price history and
   performance windows as a visible blocked review decision with
-  `merchant_price_impact_readiness_preview_v1`. Merchant `product_performance_readiness` now also exposes
-  `missing_read_contracts`, so dashboard and skills can distinguish state-only
-  Ads joins from missing Ads/GA4 product performance contracts without deriving
-  that in prompt prose.
+  `merchant_price_impact_readiness_preview_v1`. Merchant
+  `product_performance_readiness` now also exposes `missing_read_contracts`, so
+  dashboard and skills can distinguish state-only Ads joins from missing Ads/GA4
+  product performance contracts without deriving that in prompt prose.
 - Localo diagnostics now expose live aggregate facts and typed
   `read_contract_statuses`. Live HTTP proof after managed stack restart:
   `refresh_localo_a1b33cd17835` returned `live_data_available=true`,

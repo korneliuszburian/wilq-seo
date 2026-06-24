@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:49 CEST.
+Last updated: 2026-06-24 04:55 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -78,7 +78,9 @@ Merchant price-impact readiness is now also promoted into
 `decision_queue` as `decision_type=review_price_impact_readiness` whenever
 current product prices exist, so dashboard and skills can show the missing
 price-history/performance contracts as a visible blocked review decision
-instead of hiding them only in a top-level readiness object.
+instead of hiding them only in a top-level readiness object. The Merchant skill
+smoke now requires that same decision in both `/api/merchant/diagnostics` and
+skill-scoped context-pack before the skill path is trusted.
 
 ## Current Stack Map
 

@@ -25,6 +25,36 @@ uv run python .agents/skills/<skill>/scripts/smoke_skill_contract.py --api-base 
 scripts/codex_skill_eval.sh --skill <skill> --api-base http://127.0.0.1:8000
 ```
 
+## 2026-06-24 - wilq-merchant-feed-operator price-impact decision smoke
+
+Purpose:
+
+- Prove that Merchant price-impact readiness is not only a top-level diagnostic
+  object, but also a visible `decision_queue` item for dashboard and Codex
+  workflows.
+- Keep price-impact, product ROAS and feed write claims blocked until WILQ has
+  price history/change events and product performance windows.
+
+Commands:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py::test_route_specific_skill_smokes_expose_marketing_brief_items -q
+uv run ruff check .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run mypy .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py tests/test_codex_skill_eval_cases.py
+uv run python .agents/skills/wilq-merchant-feed-operator/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+```
+
+Result:
+
+- Focused pytest, ruff, mypy and deterministic smoke passed.
+- Smoke now requires `merchant_decision_review_price_impact_readiness` with
+  `decision_type=review_price_impact_readiness` in both
+  `/api/merchant/diagnostics` and skill-scoped context-pack when current product
+  prices or price preview exist.
+- The price decision must carry `merchant_price_impact_readiness_preview_v1`,
+  match the readiness status and block `price change impact`, `product ROAS`
+  and `feed write`.
+
 ## 2026-06-24 - wilq-ahrefs-gap-finder scoped lineage eval
 
 Purpose:

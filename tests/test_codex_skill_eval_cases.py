@@ -499,6 +499,9 @@ def test_route_specific_skill_smokes_expose_marketing_brief_items() -> None:
     )
     assert "context_pack_action_status" in merchant_smoke_script
     assert "context_pack_validation_status" in merchant_smoke_script
+    assert "review_price_impact_readiness" in merchant_smoke_script
+    assert "merchant_decision_review_price_impact_readiness" in merchant_smoke_script
+    assert "merchant_price_impact_readiness_preview_v1" in merchant_smoke_script
     merchant_validation_call = (
         'request_json(args.api_base, "POST", f"/api/actions/{quoted_action}/validate")'
     )
