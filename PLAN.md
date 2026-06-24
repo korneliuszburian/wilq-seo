@@ -156,6 +156,11 @@ Active demo work is narrow and depth-first.
   `/merchant`, `/content-planner`, `/ads-doctor`, `/ga4`.
 - `ready`: Pre-demo gate passed after current hardening; rerun only after a
   material API/dashboard/skill slice.
+- `ready`: Pre-demo gate passed again after the content migration inventory
+  contract, content skill smoke hardening and dashboard UAT navigation/CTA
+  fixes. Command: `rtk scripts/pre_demo_gate.sh --core-skills`; coverage:
+  local stack status, API health, live contract smoke, shared schemas live
+  contracts, dashboard API-backed route smoke 13/13 and core skill smokes.
 - `ready`: Content, Ads, Merchant, GA4 and Localo adversarial evals have fresh
   2026-06-24 proof artifacts.
 

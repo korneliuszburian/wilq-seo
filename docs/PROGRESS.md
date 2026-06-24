@@ -165,6 +165,11 @@ Stan produktu:
   `Merchant`, `Content`, `Ads Doctor` and `GA4` before registry/admin routes.
   Browser proof:
   `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-nav.txt`.
+- Pre-demo gate passed after the content migration inventory contract, content
+  skill smoke hardening and dashboard UAT navigation/CTA fixes:
+  `rtk scripts/pre_demo_gate.sh --core-skills`. Coverage included local stack
+  status, API health, live contract smoke, shared schemas live contracts,
+  dashboard API-backed route smoke 13/13 and core skill smokes.
 
 ## Active Gaps
 
