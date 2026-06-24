@@ -75,6 +75,11 @@ Stan produktu:
   ActionObject" plus payload item count, without raw action IDs on the first
   screen. Live/browser proof:
   `.local-lab/proof/content-mapping-review-handoff/`.
+- `scripts/export_content_mapping_review_packet.py` now exports the live
+  mapping review packet as JSON or Markdown for the marketer/operator. Proof:
+  `.local-lab/proof/content-mapping-review-packet/`. This is review-only:
+  mapping still requires human input and does not unlock staging, publish or
+  uplift claims.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and

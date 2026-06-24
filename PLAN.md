@@ -284,6 +284,16 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   and `.local-lab/proof/content-mapping-review-handoff/content-planner-browser.png`.
   This makes the next operator action explicit while preserving review-only
   state and all publish/uplift blocks.
+- `ready`: `scripts/export_content_mapping_review_packet.py` exports the live
+  Content Planner mapping review inputs as a review-only JSON or Markdown
+  packet for the marketer/operator. The packet contains the four current
+  old-to-new review rows, source URLs, candidate target URLs, allowed outcomes,
+  review endpoint, payload templates, fields to fill before POST and blocked
+  outputs. It does not confirm mapping, write to WordPress, publish or claim
+  uplift. Proof:
+  `.local-lab/proof/content-mapping-review-packet/mapping-review-packet.json`
+  and
+  `.local-lab/proof/content-mapping-review-packet/mapping-review-packet.md`.
 - `ready`: Existing `/api/actions/act_prepare_content_refresh_queue/review`
   now records target-site mapping review through structured `AuditEvent.details`
   instead of unsafe free-text summary parsing. The reviewed WordPress draft
@@ -686,6 +696,11 @@ Use these rules before every implementation slice:
   `.local-lab/proof/content-mapping-review/action-mapping-review-contract.json`
   and
   `.local-lab/proof/content-mapping-review/content-strategist-contract-smoke.json`.
+- [x] Export the live target-site mapping review packet for the marketer as
+  JSON and Markdown. Proof:
+  `.local-lab/proof/content-mapping-review-packet/mapping-review-packet.json`
+  and
+  `.local-lab/proof/content-mapping-review-packet/mapping-review-packet.md`.
 - [x] Record a review-only target-site mapping decision through the existing
   Action review audit path and surface it in reviewed draft preview. Proof:
   `.local-lab/proof/content-mapping-recording/live-review-recording.json` and
