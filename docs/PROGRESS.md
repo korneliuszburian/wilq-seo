@@ -71,6 +71,10 @@ Stan produktu:
 - Goal and progress were compacted on 2026-06-23 to remove ready/done task
   noise from active recovery docs. Historical proof remains in git history and
   `docs/progress/archive/`.
+- Goal 001 was reshaped on 2026-06-24 as a Codex Goal completion contract:
+  outcome, verification surface, constraints, boundaries, iteration policy and
+  blocked stop condition. Use it to decide the next slice by evidence and demo
+  value, not by percentage estimates or a growing backlog.
 - Skill eval schema/harness now requires `decision_quality`: actionable
   decision, safe next step, blocked-claims handling, workflow-specific
   interpretation and evidence-backed reasoning. Live proof:

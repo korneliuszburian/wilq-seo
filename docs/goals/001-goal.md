@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 07:03 CEST.
+Last updated: 2026-06-24 07:18 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -29,19 +29,48 @@ Before adding a task, remove, replace or archive outdated/done text that no
 longer changes the next decision. These docs are recovery maps, not append-only
 logs.
 
-## Product Target
+## Goal Completion Contract
 
-Build WILQ as an API-first Marketing Operating System for Ekologus:
+Treat this file as the active Goal contract, not a backlog transcript. A Codex
+Goal is done only when the outcome below is verified by evidence while
+preserving the constraints and boundaries.
 
-- WILQ API is the system brain.
-- Dashboard, Codex skills, hooks, workflows, expert rules, opportunities and
-  ActionObjects must use the same typed WILQ API contracts.
-- The Polish marketer must see decisions, evidence, blocked claims and safe
-  next actions, not connector status dumps or raw payloads.
-- Codex skills are operator workflows over WILQ API, not prompt packs.
-- No recommendation without evidence IDs, source connectors and clear claim
-  boundaries.
-- No write/apply without validated ActionObject, preview, confirmation and audit.
+**Outcome:** build WILQ as an API-first Marketing Operating System for
+Ekologus, with the strongest current demo centered on the Polish marketer's
+daily decisions and content work for the new site
+`http://ekologus.dev.proudsite.pl/`.
+
+**Verification surface:** the demo is ready when the marketer can open the
+dashboard, follow the daily plan, inspect Ads/Merchant/Content/GA4/Localo
+decisions, copy/run the matching Codex skill prompt, and receive Polish
+evidence-backed recommendations with safe next actions and blocked claims.
+Proof must come from typed WILQ API endpoints, targeted route/browser checks,
+focused tests/smokes and skill eval artifacts, not screenshots or prose alone.
+
+**Constraints:** WILQ API remains the system brain; dashboard, skills, hooks,
+workflows, expert rules, opportunities and ActionObjects use the same typed API
+contracts. No recommendation without evidence IDs, source connectors and clear
+claim boundaries. No write/apply without validated ActionObject, preview,
+confirmation and audit. Operator-facing copy is Polish with Polish diacritics;
+API paths, IDs, enum values and schema fields stay unchanged.
+
+**Boundaries:** go deep on Ekologus before multi-client/agency abstractions.
+Use current `ekologus.pl`, `sklep.ekologus.pl`, GSC, GA4, Ahrefs, Ads,
+Merchant, Localo and WordPress evidence as source context. Treat
+`ekologus.dev.proudsite.pl` as the new-site target context, not as a substitute
+for evidence. Do not move product behavior into skill references or dashboard
+copy; implement typed API/schema/view-model/rule/eval contracts first.
+
+**Iteration policy:** after every slice, compare the current evidence with this
+contract, update only the smallest useful recovery docs, run focused checks
+matched to touched files, then choose the next highest-value task for the demo.
+Prefer content-demo usefulness, source-contract gaps and decision quality over
+technical status polish.
+
+**Blocked stop condition:** if a required vendor/API contract, permission,
+data source, test surface or safe write path is unavailable, stop that claim
+with: missing contract, evidence gathered, blocked claims, what remains safe to
+show, and the exact input or implementation needed to unblock it.
 
 ## Current Product State
 
@@ -568,26 +597,31 @@ Finish these before claiming the Ekologus demo is done:
 
 ## Immediate Next Tasks
 
-1. Work in this order unless live proof shows a stronger blocker:
-   content demo for `ekologus.dev.proudsite.pl` -> source contracts -> decision
-   API/view-model -> ActionObject safety -> Codex skill/eval quality ->
-   knowledge compiler -> dashboard usefulness/performance -> release/live-test
-   hardening.
-2. Next concrete slice should be one of:
-   - Content target workflow for `http://ekologus.dev.proudsite.pl/`: map old
-     evidence into new-site briefs and `refresh/merge/create/block` decisions.
-   - Merchant deepening beyond current product samples: performance joins,
-     historical price snapshots, before/after proof or safer product preview
-     boundaries.
-   - A concrete semantic reference cleanup only if fresh audit proof shows a
-     reference carrying product behavior without a typed API contract.
-   - Dashboard performance/shared daily view-model if command-center latency or
-     duplicate aggregation blocks demo speed.
+1. Next highest-value slice: content target workflow for
+   `http://ekologus.dev.proudsite.pl/`. It must map old evidence into new-site
+   Polish briefs and `refresh/merge/create/block` decisions, verified by
+   `/api/content/diagnostics`, `/api/marketing/tactical-queue`, the
+   dashboard content route and `wilq-content-strategist` smoke/eval.
+2. If content workflow is blocked, take the next slice that increases demo
+   truthfulness or marketer usefulness:
+   - Merchant historical price/performance proof and safer product previews.
+   - Localo `local_tasks` only if a side-effect-free read contract exists.
+   - Ads Keyword Planner/change-impact/apply contracts only when source
+     approval or change rows exist.
+   - Semantic skill-reference cleanup only with fresh proof that a reference is
+     carrying product behavior without a typed API field.
+   - Dashboard performance/shared data-boundary work only with fresh latency or
+     duplicate-aggregation evidence.
+3. Do not advance a slice by prose alone. Each slice needs a concrete API,
+   dashboard, skill, eval or docs proof matched to the changed surface.
 
 ## Stop Condition
 
 Goal 001 is not done until the Ekologus marketer can open the dashboard, follow
 the daily plan, inspect Ads/Merchant/Content/GA4/Localo decisions, copy/run the
 matching Codex skill prompt, and receive Polish evidence-backed recommendations
-with safe next actions and blocked claims. The demo must prove real API
-evidence, not static artifacts, prompt-only reasoning or mock data.
+with safe next actions and blocked claims. The strongest near-term finish line
+is a solid Ekologus demo, not full BDOS-class production automation. The demo
+must prove real API evidence, not static artifacts, prompt-only reasoning or
+mock data. Full production is a later goal that adds multi-client support,
+write/apply safety, alerts, agency operations and long-term knowledge memory.
