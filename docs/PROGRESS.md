@@ -108,6 +108,9 @@ Stan produktu:
   ActionObject preview path. After managed stack restart, live diagnostics show
   1 active content decision with inventory title/canonical while the overall
   mapping status remains `target_site_mapping_review_needed`.
+- Content preview cards now show the old-to-new migration candidate URL and
+  mapping status in the same target-site summary helper used by reviewed draft
+  previews, so marketer review sees the proposed dev-site URL before staging.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;

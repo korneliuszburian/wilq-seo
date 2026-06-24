@@ -150,6 +150,8 @@ type ContentBriefPreviewItem = {
   target_site_host?: string | null;
   source_site_host?: string | null;
   target_site_adaptation_status?: string | null;
+  target_site_migration_candidate_url?: string | null;
+  target_site_migration_status?: string | null;
   target_site_review_requirements?: string[];
   target_site_inventory_content_type?: string | null;
   target_site_inventory_status?: string | null;
@@ -1063,6 +1065,8 @@ function contentTargetSiteValues(
     | "target_site_host"
     | "target_site_url"
     | "target_site_adaptation_status"
+    | "target_site_migration_candidate_url"
+    | "target_site_migration_status"
   >
 ) {
   const values: string[] = [];
@@ -1076,6 +1080,12 @@ function contentTargetSiteValues(
   }
   if (preview.target_site_url) {
     values.push(shortPath(preview.target_site_url));
+  }
+  if (preview.target_site_migration_candidate_url) {
+    values.push(`migracja: ${shortPath(preview.target_site_migration_candidate_url)}`);
+  }
+  if (preview.target_site_migration_status) {
+    values.push(contentTargetSiteMigrationStatusLabel(preview.target_site_migration_status));
   }
   return values;
 }
