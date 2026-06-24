@@ -258,10 +258,19 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   the older generic target-mapping blocker. This shows progress while still
   requiring canonical review, duplicate/cannibalization check, no WordPress
   write, API mutation false and human confirmation.
-- `task`: Use the audited mapping review record as the input for the next
-  draft/staging readiness gate; do not unlock staging/publish until target
-  mapping, canonical, duplicate/cannibalization, legal/factual and human checks
-  all pass through typed contracts.
+- `ready`: Reviewed WordPress draft previews now expose
+  `content_draft_readiness_review_v1`, a review-only contract for canonical,
+  duplicate/cannibalization, legal/factual and human readiness decisions. The
+  existing Action review audit path stores these decisions in structured
+  `AuditEvent.details`, and Content Planner, Action detail and
+  content-strategist context-pack surface the recorded outcomes while keeping
+  `apply_allowed=false`, `api_mutation_ready=false`, staging, publish and
+  revenue/ranking uplift claims blocked. Proof:
+  `.local-lab/proof/content-draft-readiness/live-draft-readiness-review.json`,
+  `.local-lab/proof/content-draft-readiness/content-strategist-smoke.json`,
+  `.local-lab/proof/dashboard/content-draft-readiness/action-detail-draft-readiness-full.txt`
+  and
+  `.local-lab/proof/dashboard/content-draft-readiness/content-planner-draft-readiness.txt`.
 - `ready`: Content ActionObject payload, reviewed draft preview and
   content-strategist context-pack preserve target-site migration candidate,
   status and summary fields. Current old-site rows are `needs_review`, so draft
@@ -569,6 +578,15 @@ Use these rules before every implementation slice:
   `.local-lab/proof/dashboard/content-mapping-recording/action-detail-mapping-recording.txt`.
 - [x] Split post-recording draft readiness from generic target mapping missing:
   `.local-lab/proof/content-mapping-recording/live-review-recording-readiness.json`.
+- [x] Add review-only draft readiness contract and audited canonical/duplicate/
+  legal/human review record. Proof:
+  `.local-lab/proof/content-draft-readiness/live-draft-readiness-review.json`,
+  `.local-lab/proof/content-draft-readiness/content-strategist-smoke.json`,
+  `.local-lab/proof/dashboard/content-draft-readiness/action-detail-draft-readiness-full.txt`
+  and
+  `.local-lab/proof/dashboard/content-draft-readiness/content-planner-draft-readiness.txt`.
+- [x] Rerun core pre-demo gate after draft-readiness review changes:
+  `.local-lab/proof/pre-demo-gate-after-draft-readiness.txt`.
 - [x] Rerun core pre-demo gate after content mapping review changes:
   `.local-lab/proof/pre-demo-gate-after-mapping-review.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.

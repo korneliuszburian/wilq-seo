@@ -169,6 +169,7 @@ def content_payload_with_reviewed_wordpress_draft_previews(
         **_reviewed_candidate_mapping_reviews(summary_list),
         **_reviewed_candidate_mapping_reviews_from_details(detail_list),
     }
+    draft_readiness_reviews = _reviewed_candidate_draft_readiness_from_details(detail_list)
     if not reviewed_candidate_ids:
         return enriched_payload
     brief_previews = [
@@ -180,6 +181,9 @@ def content_payload_with_reviewed_wordpress_draft_previews(
         _wordpress_draft_payload_preview(
             item,
             mapping_review=mapping_reviews.get(str(item.get("candidate_id") or "")),
+            draft_readiness_review=draft_readiness_reviews.get(
+                str(item.get("candidate_id") or "")
+            ),
         )
         for item in brief_previews
         if isinstance(item.get("candidate_id"), str)
@@ -380,6 +384,30 @@ def _reviewed_candidate_mapping_reviews_from_details(
     return mapping_reviews
 
 
+def _reviewed_candidate_draft_readiness_from_details(
+    review_event_details: Iterable[Mapping[str, Any]],
+) -> dict[str, dict[str, str]]:
+    draft_reviews: dict[str, dict[str, str]] = {}
+    for details in review_event_details:
+        review = details.get("content_draft_readiness_review")
+        if not isinstance(review, Mapping):
+            continue
+        candidate_id = review.get("candidate")
+        if not isinstance(candidate_id, str) or not candidate_id:
+            continue
+        draft_reviews[candidate_id] = {
+            "draft_readiness_outcome": str(review.get("draft_readiness_outcome") or ""),
+            "canonical_review_outcome": str(review.get("canonical_review_outcome") or ""),
+            "duplicate_review_outcome": str(review.get("duplicate_review_outcome") or ""),
+            "legal_factual_review_outcome": str(
+                review.get("legal_factual_review_outcome") or ""
+            ),
+            "human_review_outcome": str(review.get("human_review_outcome") or ""),
+            "draft_readiness_notes": str(review.get("draft_readiness_notes") or ""),
+        }
+    return draft_reviews
+
+
 def _review_summary_token(summary: str, key: str) -> str:
     marker = f"{key}:"
     if marker not in summary:
@@ -392,6 +420,7 @@ def _wordpress_draft_payload_preview(
     preview: dict[str, Any],
     *,
     mapping_review: dict[str, str] | None = None,
+    draft_readiness_review: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     topic = str(preview.get("topic") or "Brief treści")
     mode = str(preview.get("mode") or "review")
@@ -558,6 +587,25 @@ def _wordpress_draft_payload_preview(
         "draft_generation_contract": _draft_generation_contract(
             draft_generation_status=draft_generation_status,
             draft_blockers=draft_blockers,
+        ),
+        "draft_readiness_review_contract": _draft_readiness_review_contract(),
+        "draft_readiness_review_recorded_outcome": (
+            (draft_readiness_review or {}).get("draft_readiness_outcome") or None
+        ),
+        "canonical_review_recorded_outcome": (
+            (draft_readiness_review or {}).get("canonical_review_outcome") or None
+        ),
+        "duplicate_review_recorded_outcome": (
+            (draft_readiness_review or {}).get("duplicate_review_outcome") or None
+        ),
+        "legal_factual_review_recorded_outcome": (
+            (draft_readiness_review or {}).get("legal_factual_review_outcome") or None
+        ),
+        "human_review_recorded_outcome": (
+            (draft_readiness_review or {}).get("human_review_outcome") or None
+        ),
+        "draft_readiness_review_notes": (
+            (draft_readiness_review or {}).get("draft_readiness_notes") or None
         ),
         "draft_payload": {
             "post_status": "draft",
@@ -733,6 +781,37 @@ def _draft_generation_contract(
             "ranking_guarantee",
             "lead_or_revenue_uplift_claim",
             "legal_compliance_guarantee",
+        ],
+    }
+
+
+def _draft_readiness_review_contract() -> dict[str, Any]:
+    return {
+        "contract_version": "content_draft_readiness_review_v1",
+        "scope": "review_only",
+        "allowed_outcomes": [
+            "approve_outline_for_editorial_review",
+            "needs_canonical_fix",
+            "needs_duplicate_resolution",
+            "needs_legal_review",
+            "reject_until_source_evidence",
+        ],
+        "required_fields": [
+            "candidate_id",
+            "canonical_review_outcome",
+            "duplicate_review_outcome",
+            "legal_factual_review_outcome",
+            "human_review_outcome",
+            "reviewed_by",
+            "notes",
+        ],
+        "blocked_outputs": [
+            "wordpress_staging_write",
+            "wordpress_publish",
+            "publish_ready_claim",
+            "duplicate_free_claim_without_review",
+            "legal_compliance_guarantee",
+            "ranking_or_lead_uplift_claim",
         ],
     }
 

@@ -1937,6 +1937,12 @@ def test_content_brief_candidate_review_persists_audit_event(
                 "mapping_outcome:confirm_alternative_candidate",
                 f"selected_target_url:{selected_target_url}",
                 "mapping_notes:operator wybral target do dalszego review",
+                "draft_readiness_outcome:needs_duplicate_resolution",
+                "canonical_review_outcome:canonical_needs_target_confirmation",
+                "duplicate_review_outcome:merge_required_before_draft",
+                "legal_factual_review_outcome:needs_expert_review",
+                "human_review_outcome:prepare_only_review_recorded",
+                "draft_readiness_notes:canonical i duplikaty wymagaja dalszego review",
             ],
             "blockers": [
                 "payload_apply_allowed_false",
@@ -1960,6 +1966,15 @@ def test_content_brief_candidate_review_persists_audit_event(
         "mapping_outcome": "confirm_alternative_candidate",
         "selected_target_url": selected_target_url,
         "mapping_notes": "operator wybral target do dalszego review",
+    }
+    assert result["audit_event"]["details"]["content_draft_readiness_review"] == {
+        "candidate": candidate_id,
+        "draft_readiness_outcome": "needs_duplicate_resolution",
+        "canonical_review_outcome": "canonical_needs_target_confirmation",
+        "duplicate_review_outcome": "merge_required_before_draft",
+        "legal_factual_review_outcome": "needs_expert_review",
+        "human_review_outcome": "prepare_only_review_recorded",
+        "draft_readiness_notes": "canonical i duplikaty wymagaja dalszego review",
     }
     assert "Ten zapis nie wykonuje apply" in result["audit_event"]["summary"]
 
@@ -1996,6 +2011,24 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["target_site_mapping_review_selected_url"] == selected_target_url
     assert draft_preview["target_site_mapping_review_notes"] == (
         "operator wybral target do dalszego review"
+    )
+    assert (
+        draft_preview["draft_readiness_review_recorded_outcome"]
+        == "needs_duplicate_resolution"
+    )
+    assert (
+        draft_preview["canonical_review_recorded_outcome"]
+        == "canonical_needs_target_confirmation"
+    )
+    assert (
+        draft_preview["duplicate_review_recorded_outcome"]
+        == "merge_required_before_draft"
+    )
+    assert draft_preview["legal_factual_review_recorded_outcome"] == "needs_expert_review"
+    assert draft_preview["human_review_recorded_outcome"] == "prepare_only_review_recorded"
+    assert (
+        draft_preview["draft_readiness_review_notes"]
+        == "canonical i duplikaty wymagaja dalszego review"
     )
     assert draft_preview["draft_generation_status"] in {
         "blocked_pending_target_mapping",
@@ -2036,6 +2069,12 @@ def test_content_brief_candidate_review_persists_audit_event(
         "requires_passed_gates"
     ]
     assert "publish_ready_claim" in draft_contract["forbidden_outputs"]
+    readiness_contract = draft_preview["draft_readiness_review_contract"]
+    assert readiness_contract["contract_version"] == "content_draft_readiness_review_v1"
+    assert readiness_contract["scope"] == "review_only"
+    assert "needs_duplicate_resolution" in readiness_contract["allowed_outcomes"]
+    assert "canonical_review_outcome" in readiness_contract["required_fields"]
+    assert "wordpress_staging_write" in readiness_contract["blocked_outputs"]
     assert draft_preview["draft_payload"]["post_status"] == "draft"
     assert draft_preview["draft_payload"]["post_title"]
     assert "human_confirm_before_wordpress_write" in draft_preview[

@@ -2194,6 +2194,11 @@ def _action_review_details(request: ActionReviewRequest) -> dict[str, Any]:
     mapping_review = _mapping_review_details_from_checked_items(request.checked_items)
     if mapping_review:
         details["target_site_mapping_review"] = mapping_review
+    draft_readiness_review = _draft_readiness_review_details_from_checked_items(
+        request.checked_items
+    )
+    if draft_readiness_review:
+        details["content_draft_readiness_review"] = draft_readiness_review
     return details
 
 
@@ -2206,6 +2211,30 @@ def _mapping_review_details_from_checked_items(
         "mapping_outcome",
         "selected_target_url",
         "mapping_notes",
+    }
+    for item in checked_items:
+        if ":" not in item:
+            continue
+        key, value = item.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        if key in allowed_keys and value:
+            tokens[key] = value
+    return tokens
+
+
+def _draft_readiness_review_details_from_checked_items(
+    checked_items: list[str],
+) -> dict[str, str]:
+    tokens: dict[str, str] = {}
+    allowed_keys = {
+        "candidate",
+        "draft_readiness_outcome",
+        "canonical_review_outcome",
+        "duplicate_review_outcome",
+        "legal_factual_review_outcome",
+        "human_review_outcome",
+        "draft_readiness_notes",
     }
     for item in checked_items:
         if ":" not in item:

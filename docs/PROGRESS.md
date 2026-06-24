@@ -235,17 +235,33 @@ Stan produktu:
   changes: managed stack status, API health, live contract smoke, shared live
   schemas, dashboard route smoke 13/13 and core skill smokes. Proof:
   `.local-lab/proof/pre-demo-gate-after-mapping-review.txt`.
+- Reviewed draft previews now expose
+  `content_draft_readiness_review_v1` for canonical, duplicate/cannibalization,
+  legal/factual and human review decisions. The existing Action review audit
+  path stores these decisions in structured `AuditEvent.details`; Content
+  Planner, Action detail and content-strategist context-pack show the recorded
+  outcomes while keeping `apply_allowed=false`, `api_mutation_ready=false`,
+  staging, publish and uplift claims blocked. Proof:
+  `.local-lab/proof/content-draft-readiness/live-draft-readiness-review.json`,
+  `.local-lab/proof/content-draft-readiness/content-strategist-smoke.json`,
+  `.local-lab/proof/dashboard/content-draft-readiness/action-detail-draft-readiness-full.txt`
+  and
+  `.local-lab/proof/dashboard/content-draft-readiness/content-planner-draft-readiness.txt`.
+- Core pre-demo gate passed after draft-readiness review recording: managed
+  stack status, API health, live contract smoke, shared live schemas, dashboard
+  route smoke 13/13 and core skill smokes. Proof:
+  `.local-lab/proof/pre-demo-gate-after-draft-readiness.txt`.
 
 ## Active Gaps
 
 - Real marketer UAT has not been collected. Simulated operator UAT says the
   core path is useful, but it does not prove that the marketer saves time or
   knows what to do without explanation.
-- Content workflow still lacks reviewed old-to-new mapping decisions, staging
-  handoff, publishing and post-publication measurement loop for
-  `ekologus.dev.proudsite.pl`. Exact missing candidates, alternative dev-site
-  URLs and typed mapping-review decisions are now exposed; they do not confirm
-  mapping or resolve draft/staging/publish readiness.
+- Content workflow still lacks a full real old-to-new mapping for all active
+  decisions, staging handoff, publishing and post-publication measurement loop
+  for `ekologus.dev.proudsite.pl`. Mapping and draft-readiness review decisions
+  can now be recorded and audited, but they do not confirm the whole migration
+  map or unlock draft/staging/publish readiness.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
@@ -262,12 +278,11 @@ Stan produktu:
 2. If demo UX is the next priority, change one confirmed blocker at a time
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.
-3. If content depth is next, continue from the existing source/target,
-   duplicate/canonical, ActionObject migration status, target-site review
-   requirements, typed intent, alternative candidate URLs, mapping-review
-   statuses, the review-only mapping contract and audited mapping record
-   toward canonical/duplicate/legal/human review gates before any draft/staging
-   readiness claim.
+3. If content depth is next, continue from audited mapping and draft-readiness
+   review records toward a complete per-URL migration map, staging handoff
+   ActionObject preview, and post-publication measurement loop. Do not unlock
+   staging, publish or uplift claims without typed preview, human confirmation
+   and audit.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

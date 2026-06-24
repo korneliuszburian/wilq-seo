@@ -457,6 +457,19 @@ type WordPressDraftPayloadPreviewItem = {
     output_must_include?: string[];
     forbidden_outputs?: string[];
   };
+  draft_readiness_review_contract?: {
+    contract_version?: string;
+    scope?: string;
+    allowed_outcomes?: string[];
+    required_fields?: string[];
+    blocked_outputs?: string[];
+  };
+  draft_readiness_review_recorded_outcome?: string | null;
+  canonical_review_recorded_outcome?: string | null;
+  duplicate_review_recorded_outcome?: string | null;
+  legal_factual_review_recorded_outcome?: string | null;
+  human_review_recorded_outcome?: string | null;
+  draft_readiness_review_notes?: string | null;
   draft_payload: {
     post_status?: string;
     post_title?: string;
@@ -533,6 +546,16 @@ function WordPressDraftPayloadPreviewCard({
         <TraceLine
           label="Kontrakt draftu"
           values={contentDraftContractValues(preview.draft_generation_contract)}
+          empty="brak"
+        />
+        <TraceLine
+          label="Review readiness"
+          values={contentDraftReadinessReviewValues(preview)}
+          empty="brak zapisu"
+        />
+        <TraceLine
+          label="Kontrakt review"
+          values={contentDraftReadinessContractValues(preview.draft_readiness_review_contract)}
           empty="brak"
         />
         <TraceLine
@@ -1290,6 +1313,40 @@ function contentDraftContractValues(
     contract.allowed_output_kind ? `output: ${contentDraftOutputKindLabel(contract.allowed_output_kind)}` : "",
     ...(contract.requires_passed_gates ?? []).slice(0, 3).map((value) => `gate: ${value}`),
     ...(contract.forbidden_outputs ?? []).slice(0, 3).map((value) => `zakaz: ${value}`)
+  ].filter((value) => value.trim().length > 0);
+}
+
+function contentDraftReadinessReviewValues(
+  item: WordPressDraftPayloadPreviewItem
+): string[] {
+  return [
+    item.draft_readiness_review_recorded_outcome
+      ? `draft: ${item.draft_readiness_review_recorded_outcome}`
+      : "",
+    item.canonical_review_recorded_outcome
+      ? `canonical: ${item.canonical_review_recorded_outcome}`
+      : "",
+    item.duplicate_review_recorded_outcome
+      ? `duplikaty: ${item.duplicate_review_recorded_outcome}`
+      : "",
+    item.legal_factual_review_recorded_outcome
+      ? `legal/fakty: ${item.legal_factual_review_recorded_outcome}`
+      : "",
+    item.human_review_recorded_outcome ? `człowiek: ${item.human_review_recorded_outcome}` : "",
+    item.draft_readiness_review_notes ? `notatka: ${item.draft_readiness_review_notes}` : ""
+  ].filter((value) => value.trim().length > 0);
+}
+
+function contentDraftReadinessContractValues(
+  contract: WordPressDraftPayloadPreviewItem["draft_readiness_review_contract"]
+): string[] {
+  if (!contract) return [];
+  return [
+    contract.contract_version ? `contract: ${contract.contract_version}` : "",
+    contract.scope ? `zakres: ${contract.scope}` : "",
+    ...(contract.allowed_outcomes ?? []).slice(0, 3).map((value) => `outcome: ${value}`),
+    ...(contract.required_fields ?? []).slice(0, 4).map((value) => `wymaga: ${value}`),
+    ...(contract.blocked_outputs ?? []).slice(0, 4).map((value) => `blokuje: ${value}`)
   ].filter((value) => value.trim().length > 0);
 }
 

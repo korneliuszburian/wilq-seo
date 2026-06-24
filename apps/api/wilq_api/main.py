@@ -2878,6 +2878,13 @@ def _compact_wordpress_draft_payload_preview_for_context(
         "draft_generation_status",
         "draft_blockers",
         "draft_generation_contract",
+        "draft_readiness_review_contract",
+        "draft_readiness_review_recorded_outcome",
+        "canonical_review_recorded_outcome",
+        "duplicate_review_recorded_outcome",
+        "legal_factual_review_recorded_outcome",
+        "human_review_recorded_outcome",
+        "draft_readiness_review_notes",
         "required_validation",
         "blocked_claims",
         "source_connectors",
@@ -2915,6 +2922,17 @@ def _compact_wordpress_draft_payload_preview_for_context(
                 if isinstance(value, list):
                     draft_generation_contract[key] = value[:limit]
                     draft_generation_contract[f"{key}_total"] = len(value)
+        draft_readiness_contract = compact_item.get("draft_readiness_review_contract")
+        if isinstance(draft_readiness_contract, dict):
+            for key, limit in (
+                ("allowed_outcomes", 5),
+                ("required_fields", 7),
+                ("blocked_outputs", 6),
+            ):
+                value = draft_readiness_contract.get(key)
+                if isinstance(value, list):
+                    draft_readiness_contract[key] = value[:limit]
+                    draft_readiness_contract[f"{key}_total"] = len(value)
         draft_payload = item.get("draft_payload")
         if isinstance(draft_payload, dict):
             compact_item["draft_payload"] = {

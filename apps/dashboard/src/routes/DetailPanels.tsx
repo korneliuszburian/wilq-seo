@@ -723,9 +723,22 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
           Zapis review mapowania:{" "}
           {stringValue(item.target_site_mapping_review_recorded_outcome, "brak")}
           {item.target_site_mapping_review_selected_url
-            ? ` -> ${stringValue(item.target_site_mapping_review_selected_url)}`
+            ? ` -> ${stringValue(item.target_site_mapping_review_selected_url, "")}`
             : ""}
         </div>
+        <div>
+          Review readiness:{" "}
+          {[
+            stringValue(item.draft_readiness_review_recorded_outcome, ""),
+            stringValue(item.canonical_review_recorded_outcome, ""),
+            stringValue(item.duplicate_review_recorded_outcome, ""),
+            stringValue(item.legal_factual_review_recorded_outcome, ""),
+            stringValue(item.human_review_recorded_outcome, "")
+          ]
+            .filter(Boolean)
+            .join(", ") || "brak zapisu"}
+        </div>
+        <div>Notatka readiness: {stringValue(item.draft_readiness_review_notes, "brak")}</div>
         <div>
           Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
           {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
