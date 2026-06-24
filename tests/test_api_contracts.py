@@ -12064,6 +12064,35 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         if decision.get("target_site_migration_candidate_inventory_status")
         == "missing_target_inventory"
     )
+    migration_map = operator_summary["target_site_migration_map"]
+    expected_migration_decisions = [
+        decision
+        for decision in payload["decision_queue"]
+        if decision.get("target_site_migration_candidate_url")
+        or decision.get("target_site_mapping_review_status")
+        or decision.get("target_site_mapping_review_candidate_urls")
+    ][:8]
+    assert [item["decision_id"] for item in migration_map] == [
+        decision["id"] for decision in expected_migration_decisions
+    ]
+    assert migration_map
+    assert migration_map[0]["source_url"] == (
+        expected_migration_decisions[0].get("source_url")
+        or expected_migration_decisions[0].get("page")
+    )
+    assert migration_map[0]["migration_candidate_url"] == (
+        expected_migration_decisions[0]["target_site_migration_candidate_url"]
+    )
+    assert migration_map[0]["candidate_inventory_status"] == (
+        expected_migration_decisions[0][
+            "target_site_migration_candidate_inventory_status"
+        ]
+    )
+    assert migration_map[0]["mapping_review_status"] == (
+        expected_migration_decisions[0]["target_site_mapping_review_status"]
+    )
+    assert migration_map[0]["next_required_gate"] == "target_site_mapping_review"
+    assert "wordpress_publish" in migration_map[0]["blocked_outputs"]
     assert (
         operator_summary["target_site_mapping_status"]
         == "target_site_mapping_review_needed"

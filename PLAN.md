@@ -345,6 +345,16 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   draft path without implying staging write, publish, production write or
   uplift readiness. Proof:
   `.local-lab/proof/command-center-staging-action/live-command-center-content-decision.json`.
+- `ready`: Content operator summary now exposes a first-class read-only
+  `target_site_migration_map` for the active old-to-new review queue. The map
+  is derived from `decision_queue`, includes source URL, migration candidate,
+  candidate inventory status, mapping-review status, next required gate,
+  evidence/source connectors and blocked outputs, and is shown in Content
+  Planner as "Mapa migracji do review". It does not confirm migration or unlock
+  staging, publish or uplift. Proof:
+  `.local-lab/proof/dashboard/content-migration-map-summary/live-summary.json`
+  and
+  `.local-lab/proof/dashboard/content-migration-map-summary/content-planner-body.txt`.
 - `ready`: `wilq-daily-command` context-pack stayed under the 180000-byte smoke
   budget after staging action exposure by compacting latest audit events to
   trace fields and recording `evidence_summaries_limit=40`. Proof:
@@ -654,6 +664,12 @@ Use these rules before every implementation slice:
   `.local-lab/proof/pre-demo-gate-after-staging-handoff.txt`.
 - [x] Rerun core pre-demo gate after content mapping review changes:
   `.local-lab/proof/pre-demo-gate-after-mapping-review.txt`.
+- [x] Add read-only `target_site_migration_map` to content operator summary and
+  show it in Content Planner. Proof:
+  `.local-lab/proof/dashboard/content-migration-map-summary/live-summary.json`,
+  `.local-lab/proof/dashboard/content-migration-map-summary/content-planner-body.txt`
+  and
+  `.local-lab/proof/dashboard/content-migration-map-summary/content-strategist-smoke.json`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

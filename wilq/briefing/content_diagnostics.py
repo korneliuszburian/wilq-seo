@@ -347,6 +347,9 @@ def _operator_summary(
         ),
         target_site_confirmed_candidate_inventory_count=confirmed_candidate_inventory_count,
         target_site_missing_candidate_inventory_count=missing_candidate_inventory_count,
+        target_site_migration_map=_content_operator_target_site_migration_map(
+            decisions
+        ),
         decision_type_labels=_unique(
             _content_decision_type_summary_label(decision.decision_type)
             for decision in decisions
@@ -366,6 +369,67 @@ def _operator_summary(
             claim for section in sections for claim in section.blocked_claims
         ),
     )
+
+
+def _content_operator_target_site_migration_map(
+    decisions: list[ContentDecisionItem],
+) -> list[dict[str, object]]:
+    migration_decisions = [
+        decision
+        for decision in decisions
+        if decision.target_site_migration_candidate_url
+        or decision.target_site_mapping_review_status
+        or decision.target_site_mapping_review_candidate_urls
+    ]
+    return [
+        {
+            "decision_id": decision.id,
+            "title": decision.title,
+            "source_url": decision.source_url or decision.page,
+            "target_site_host": CONTENT_TARGET_SITE_HOST,
+            "migration_candidate_url": decision.target_site_migration_candidate_url,
+            "candidate_inventory_status": (
+                decision.target_site_migration_candidate_inventory_status
+            ),
+            "mapping_review_status": decision.target_site_mapping_review_status,
+            "mapping_review_candidate_urls": decision.target_site_mapping_review_candidate_urls,
+            "canonical_gate_status": decision.canonical_gate_status,
+            "duplicate_gate_status": decision.duplicate_gate_status,
+            "next_required_gate": _content_operator_target_site_next_gate(decision),
+            "status_summary": _content_operator_target_site_map_summary(decision),
+            "source_connectors": decision.source_connectors,
+            "evidence_ids": decision.evidence_ids,
+            "blocked_outputs": [
+                "wordpress_staging_write",
+                "wordpress_publish",
+                "ranking_or_lead_uplift_claim",
+            ],
+        }
+        for decision in migration_decisions[:8]
+    ]
+
+
+def _content_operator_target_site_next_gate(decision: ContentDecisionItem) -> str:
+    review_status = decision.target_site_mapping_review_status or ""
+    if review_status in {"manual_mapping_required", "review_alternative_candidates"}:
+        return "target_site_mapping_review"
+    if decision.canonical_gate_status not in {None, "current_url_confirmed"}:
+        return "target_site_canonical_review"
+    if decision.duplicate_gate_status not in {None, "refresh_or_merge_required"}:
+        return "duplicate_or_cannibalization_check"
+    if review_status == "confirm_exact_candidate":
+        return "target_site_canonical_review"
+    return "target_site_mapping_review"
+
+
+def _content_operator_target_site_map_summary(decision: ContentDecisionItem) -> str:
+    if decision.target_site_mapping_review_summary:
+        return decision.target_site_mapping_review_summary
+    if decision.target_site_migration_candidate_inventory_summary:
+        return decision.target_site_migration_candidate_inventory_summary
+    if decision.target_site_migration_summary:
+        return decision.target_site_migration_summary
+    return "Wymagane review mapowania target-site przed draftem albo stagingiem."
 
 
 def _content_operator_target_site_host(

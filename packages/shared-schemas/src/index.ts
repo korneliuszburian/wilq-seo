@@ -1839,6 +1839,27 @@ export const ContentOperatorSummarySchema = z.object({
   target_site_mapping_status: z.string().nullable().optional(),
   target_site_confirmed_candidate_inventory_count: z.number().default(0),
   target_site_missing_candidate_inventory_count: z.number().default(0),
+  target_site_migration_map: z
+    .array(
+      z.object({
+        decision_id: z.string(),
+        title: z.string(),
+        source_url: z.string().nullable().optional(),
+        target_site_host: z.string().nullable().optional(),
+        migration_candidate_url: z.string().nullable().optional(),
+        candidate_inventory_status: z.string().nullable().optional(),
+        mapping_review_status: z.string().nullable().optional(),
+        mapping_review_candidate_urls: z.array(z.string()).default([]),
+        canonical_gate_status: z.string().nullable().optional(),
+        duplicate_gate_status: z.string().nullable().optional(),
+        next_required_gate: z.string(),
+        status_summary: z.string(),
+        source_connectors: z.array(z.string()).default([]),
+        evidence_ids: z.array(z.string()).default([]),
+        blocked_outputs: z.array(z.string()).default([])
+      })
+    )
+    .default([]),
   decision_type_labels: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),

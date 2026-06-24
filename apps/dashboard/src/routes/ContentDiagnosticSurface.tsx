@@ -690,6 +690,32 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
                 )}`
               ]}
             />
+            {summary.target_site_migration_map.length > 0 ? (
+              <div className="rounded border border-line bg-white px-3 py-2">
+                <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+                  Mapa migracji do review
+                </div>
+                <div className="mt-2 grid gap-2">
+                  {summary.target_site_migration_map.slice(0, 4).map((item) => (
+                    <div key={item.decision_id} className="grid gap-1 text-xs text-slate-700">
+                      <div className="font-medium text-ink">{item.title}</div>
+                      <div>
+                        {item.source_url ? shortPath(item.source_url) : "brak source URL"} {"->"}{" "}
+                        {item.migration_candidate_url
+                          ? shortPath(item.migration_candidate_url)
+                          : "brak target URL"}
+                      </div>
+                      <div className="text-slate-500">
+                        {item.mapping_review_status
+                          ? mappingReviewStatusLabel(item.mapping_review_status)
+                          : "review mapowania"}{" "}
+                        · {contentNextGateLabel(item.next_required_gate)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <TraceLine
               label="Dowody"
               values={[formatContentEvidenceCount(summary.evidence_ids.length)]}
@@ -1307,6 +1333,15 @@ function mappingReviewStatusLabel(value: string) {
     not_applicable: "nie dotyczy"
   };
   return labels[value] ?? value;
+}
+
+function contentNextGateLabel(value: string) {
+  const labels: Record<string, string> = {
+    target_site_mapping_review: "następnie: mapowanie targetu",
+    target_site_canonical_review: "następnie: canonical",
+    duplicate_or_cannibalization_check: "następnie: duplikaty"
+  };
+  return labels[value] ?? `następnie: ${value}`;
 }
 
 function contentDraftGateValues(

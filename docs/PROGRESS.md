@@ -305,19 +305,28 @@ Stan produktu:
   and keeps review-only/blocked-claim wording, giving the marketer a starting
   order without unlocking optimizer/apply claims. Proof:
   `.local-lab/proof/dashboard/ads-start-here/ads-doctor-start-here.txt`.
+- Content operator summary now exposes a first-class read-only
+  `target_site_migration_map` for the active old-to-new queue and Content
+  Planner renders it as "Mapa migracji do review". Live proof shows 4 mapped
+  review rows, all still blocking staging, publish and uplift until mapping/
+  canonical/duplicate/human gates pass. Proof:
+  `.local-lab/proof/dashboard/content-migration-map-summary/live-summary.json`,
+  `.local-lab/proof/dashboard/content-migration-map-summary/content-planner-body.txt`
+  and
+  `.local-lab/proof/dashboard/content-migration-map-summary/content-strategist-smoke.json`.
 
 ## Active Gaps
 
 - Real marketer UAT has not been collected. Simulated operator UAT says the
   core path is useful, but it does not prove that the marketer saves time or
   knows what to do without explanation.
-- Content workflow still lacks a full real old-to-new mapping for all active
-  decisions, publishing and post-publication measurement loop for
+- Content workflow now has a read-only old-to-new migration map for the active
+  decisions, but it still lacks confirmed human mapping for every row,
+  publishing and post-publication measurement loop for
   `ekologus.dev.proudsite.pl`. Mapping and draft-readiness review decisions can
-  now be recorded and audited, staging handoff has a blocked preview contract,
-  and Command Center now exposes the review-only staging draft ActionObject, but
-  this does not confirm the whole migration map or unlock draft/staging/publish
-  readiness.
+  be recorded and audited, staging handoff has a blocked preview contract, and
+  Command Center exposes the review-only staging draft ActionObject, but this
+  does not unlock draft/staging/publish readiness.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
@@ -337,11 +346,12 @@ Stan produktu:
 3. If demo UX is the next priority, change one confirmed blocker at a time
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.
-4. If content depth is next, continue from audited mapping, draft-readiness and
-   blocked staging-handoff previews plus the review-only staging draft
-   ActionObject toward a complete per-URL migration map or post-publication
-   measurement design. Do not unlock staging, publish or uplift claims without
-   typed preview, human confirmation and audit.
+4. If content depth is next, continue from the read-only migration map,
+   audited mapping, draft-readiness and blocked staging-handoff previews plus
+   the review-only staging draft ActionObject toward confirmed human mapping
+   for every row or post-publication measurement design. Do not unlock staging,
+   publish or uplift claims without typed preview, human confirmation and
+   audit.
 5. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

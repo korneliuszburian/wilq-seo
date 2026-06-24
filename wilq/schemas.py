@@ -2222,6 +2222,24 @@ class ContentDecisionItem(BaseModel):
     risk: ActionRisk = ActionRisk.low
 
 
+class ContentTargetSiteMigrationMapItem(BaseModel):
+    decision_id: str
+    title: str
+    source_url: str | None = None
+    target_site_host: str | None = None
+    migration_candidate_url: str | None = None
+    candidate_inventory_status: str | None = None
+    mapping_review_status: str | None = None
+    mapping_review_candidate_urls: list[str] = Field(default_factory=list)
+    canonical_gate_status: str | None = None
+    duplicate_gate_status: str | None = None
+    next_required_gate: str
+    status_summary: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    blocked_outputs: list[str] = Field(default_factory=list)
+
+
 class ContentOperatorSummary(BaseModel):
     id: Literal["content_operator_summary"] = "content_operator_summary"
     title: str
@@ -2237,6 +2255,9 @@ class ContentOperatorSummary(BaseModel):
     target_site_mapping_status: str | None = None
     target_site_confirmed_candidate_inventory_count: int = 0
     target_site_missing_candidate_inventory_count: int = 0
+    target_site_migration_map: list[ContentTargetSiteMigrationMapItem] = Field(
+        default_factory=list
+    )
     decision_type_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
