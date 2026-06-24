@@ -41,6 +41,18 @@ Stan produktu:
 
 ## Latest Important Facts
 
+- Pre-demo gate slice completed on 2026-06-24. Added
+  `scripts/pre_demo_gate.sh` as the small demo readiness gate for the managed
+  local stack. It checks stack status, API health, live contract smoke, shared
+  live schemas, the API-backed dashboard route smoke and sequential core WILQ
+  skill smokes. Full proof passed with `--core-skills`:
+  `.local-lab/pre-demo-gate.log` shows live contract smoke completed, shared
+  schemas 10 passed, dashboard API-backed route smoke 13 passed and
+  `Pre-demo gate passed.`. Follow-up after log readability patch also passed:
+  `.local-lab/pre-demo-gate-core-skills.log` shows stack/API/live smoke plus
+  seven core skill smokes and `Pre-demo gate passed.`. Next checklist item:
+  continue Final A-Z from task extraction / remaining-task map cleanup; do not
+  run full `scripts/verify.sh` unless a broad-risk change needs it.
 - Expert/knowledge audit slice continued on 2026-06-24 for non-content domain
   diagnostics. Confirmed live finding: `/api/merchant/diagnostics`,
   `/api/ga4/diagnostics`, `/api/localo/diagnostics` and

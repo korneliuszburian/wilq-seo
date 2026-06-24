@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 11:02 CEST.
+Last updated: 2026-06-24 11:18 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -180,6 +180,12 @@ live schema smoke warm rerun and sequential skill smokes for Merchant, GA4,
 Localo and Ahrefs. Parallel context-pack-heavy skill smokes can still hit the
 20s script timeout, so pre-demo gates should run those sequentially or with an
 explicit performance slice.
+Small pre-demo gate now exists as `scripts/pre_demo_gate.sh`. It checks the
+managed stack, API health, live contract smoke, shared live schemas,
+API-backed dashboard route smoke and sequential WILQ skill smokes without
+running the full broad `scripts/verify.sh`. Full proof on 2026-06-24 passed
+with core skills in `.local-lab/pre-demo-gate.log`; follow-up proof after log
+readability patch passed in `.local-lab/pre-demo-gate-core-skills.log`.
 Daily Command wording/eval now treats Localo as outside the daily task list only
 when it is outside typed `command_center.daily_decisions`, not because Localo
 evidence is absent
@@ -708,9 +714,11 @@ Finish these before claiming the Ekologus demo is done:
      2. Remove brittle release assertions against live metric values such as
         exact clicks, costs, revenue, reviews, rankings or issue counts. Keep
         those exact numbers only in fixtures or proof notes.
-     3. Define the pre-demo gate: targeted API tests, targeted dashboard route
-        tests, touched skill smoke/eval, secret redaction check and one browser
-        walkthrough of the strong demo path.
+     3. Keep `scripts/pre_demo_gate.sh` as the small demo readiness gate:
+        managed stack status, API health, live contract smoke, shared live
+        schemas, dashboard API-backed route smoke and sequential core/all WILQ
+        skill smokes. Add secret redaction and browser walkthrough checks only
+        when the current slice touches those surfaces.
      4. Define the production gate separately: full `scripts/verify.sh`, API
         health, dashboard build, skill smokes/evals, security gate and live
         read-only connector checks.
