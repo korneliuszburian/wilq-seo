@@ -767,6 +767,13 @@ Run this checklist before claiming percent completion, "solid demo ready",
 must be a compact task map: `ready`, `suspicious`, `task`, `blocked`,
 `deferred` or `obsolete`. Do not leave findings only in chat.
 
+**Continuation rule:** after every audit slice, update `docs/PROGRESS.md` with
+the last completed checklist item, the next item to run, suspicious findings and
+the verification command/result. After context loss, read that progress entry
+and continue from the next unchecked item. Do not restart the A-Z audit from the
+top unless the managed stack or source state changed enough to invalidate prior
+proof.
+
 1. **Repo/API inventory**
    - Read `docs/goals/001-goal.md`, `docs/PROGRESS.md`,
      `docs/evals/skill-coverage-audit.md` and the relevant source files before
