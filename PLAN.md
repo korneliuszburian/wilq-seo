@@ -162,9 +162,17 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
 - `ready`: Current-site content decisions expose old-to-new candidate URLs for
   `ekologus.dev.proudsite.pl` and mark them `needs_review` before draft or
   staging work.
-- `hardening`: Continue the dev-site inventory/read contract toward real
-  template or section, title/H1 and canonical facts when the vendor read exposes
-  them. Do not infer those fields from URL-only inventory.
+- `ready`: WordPress vendor reads now enrich REST/public-sitemap inventory with
+  safe page metadata fields `title_or_h1` and `canonical_url` when available,
+  using a short metadata timeout and without storing full HTML bodies. The
+  fields flow through content diagnostics, ActionObject previews, reviewed draft
+  previews, dashboard cards, shared schemas and content-strategist context-pack.
+  Proof: focused API/dashboard/shared-schema tests and
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
+- `blocked`: Current live content decisions still need explicit old-to-new
+  mapping review for `ekologus.dev.proudsite.pl`; the latest read-only
+  WordPress run has inventory metadata facts, but `/api/content/diagnostics`
+  still reports `target_site_mapping_review_needed` for the active queue.
 - `ready`: Content decisions, content ActionObject previews, reviewed draft
   previews, dashboard cards and content-strategist context-pack now expose the
   WordPress inventory facts WILQ actually has for target URLs:

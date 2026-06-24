@@ -1421,6 +1421,8 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
                     "status": "indexed",
                     "inventory_source": "public_sitemap",
                     "modified_gmt": "2026-06-20T08:15:00+00:00",
+                    "title_or_h1": "BDO - co musi wiedzieć przedsiębiorca?",
+                    "canonical_url": target_site_url,
                 },
             )
         ],
@@ -1452,14 +1454,18 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert decision["target_site_inventory_status"] == "indexed"
     assert decision["target_site_inventory_source"] == "public_sitemap"
     assert decision["target_site_inventory_modified_gmt"] == "2026-06-20T08:15:00+00:00"
-    assert decision["target_site_inventory_missing_fields"] == [
-        "title_or_h1",
-        "canonical_url",
-    ]
+    assert decision["target_site_inventory_title_or_h1"] == (
+        "BDO - co musi wiedzieć przedsiębiorca?"
+    )
+    assert decision["target_site_inventory_canonical_url"] == target_site_url
+    assert decision["target_site_inventory_missing_fields"] == []
     assert "Inventory potwierdza target URL" in decision[
         "target_site_inventory_summary"
     ]
-    assert "title_or_h1" in decision["target_site_inventory_summary"]
+    assert "title_or_h1=BDO - co musi wiedzieć przedsiębiorca?" in decision[
+        "target_site_inventory_summary"
+    ]
+    assert "canonical_url=" in decision["target_site_inventory_summary"]
     assert decision["inventory_gate_status"] == "confirmed_target_inventory"
     assert decision["canonical_gate_status"] == "needs_target_canonical_review"
     assert decision["duplicate_gate_status"] == "refresh_or_merge_required"
@@ -1501,10 +1507,11 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert preview["target_site_inventory_status"] == "indexed"
     assert preview["target_site_inventory_source"] == "public_sitemap"
     assert preview["target_site_inventory_modified_gmt"] == "2026-06-20T08:15:00+00:00"
-    assert preview["target_site_inventory_missing_fields"] == [
-        "title_or_h1",
-        "canonical_url",
-    ]
+    assert preview["target_site_inventory_title_or_h1"] == (
+        "BDO - co musi wiedzieć przedsiębiorca?"
+    )
+    assert preview["target_site_inventory_canonical_url"] == target_site_url
+    assert preview["target_site_inventory_missing_fields"] == []
     assert "Inventory potwierdza target URL" in preview[
         "target_site_inventory_summary"
     ]
@@ -13404,7 +13411,10 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         if request.url.path == "/wp-json/wp/v2/posts":
             assert request.headers["authorization"].startswith("Basic ")
             assert request.url.params["per_page"] == "100"
-            assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug"
+            assert (
+                request.url.params["_fields"]
+                == "id,status,modified_gmt,date_gmt,link,slug,title"
+            )
             return httpx.Response(
                 200,
                 headers={"X-WP-Total": "12"},
@@ -13414,13 +13424,17 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                         "status": "publish",
                         "modified_gmt": "2026-06-15T10:00:00",
                         "link": "https://ekologus.test/blog/remediacja/",
+                        "title": {"rendered": "Remediacja środowiska"},
                     }
                 ],
             )
         if request.url.path == "/wp-json/wp/v2/pages":
             assert request.headers["authorization"].startswith("Basic ")
             assert request.url.params["per_page"] == "100"
-            assert request.url.params["_fields"] == "id,status,modified_gmt,date_gmt,link,slug"
+            assert (
+                request.url.params["_fields"]
+                == "id,status,modified_gmt,date_gmt,link,slug,title"
+            )
             return httpx.Response(
                 200,
                 headers={"X-WP-Total": "4"},
@@ -13430,6 +13444,7 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
                         "status": "publish",
                         "modified_gmt": "2026-06-16T10:00:00",
                         "link": "https://ekologus.test/oferta/",
+                        "title": {"rendered": "Oferta Ekologus"},
                     }
                 ],
             )
@@ -13498,6 +13513,8 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "content_url": "https://ekologus.test/blog/remediacja/",
         "status": "publish",
         "modified_gmt": "2026-06-15T10:00:00",
+        "title_or_h1": "Remediacja środowiska",
+        "canonical_url": "",
         "inventory_source": "wordpress_rest",
     }
     sitemap_fact = next(
@@ -13515,6 +13532,8 @@ def test_wordpress_vendor_read_uses_rest_content_inventory(
         "content_url": "https://ekologus.test/europejski-zielony-lad-co-to-takiego/",
         "status": "indexed",
         "modified_gmt": "2026-06-16T12:00:00+00:00",
+        "title_or_h1": "",
+        "canonical_url": "",
         "inventory_source": "sitemap",
     }
     assert any(fact.name == "sitemap_url_count" for fact in result.metric_facts)
@@ -13565,6 +13584,18 @@ def test_wordpress_vendor_read_adds_public_production_sitemap_inventory(
                         "</urlset>"
                     ),
                 )
+            if request.url.path == "/bdo-co-musi-wiedziec-przedsiebiorca/":
+                return httpx.Response(
+                    200,
+                    headers={"content-type": "text/html; charset=utf-8"},
+                    text=(
+                        "<html><head>"
+                        "<title>BDO - co musi wiedzieć przedsiębiorca?</title>"
+                        '<link rel="canonical" href="https://www.ekologus.pl/'
+                        'bdo-co-musi-wiedziec-przedsiebiorca/" />'
+                        "</head><body><h1>BDO dla przedsiębiorcy</h1></body></html>"
+                    ),
+                )
         return httpx.Response(404)
 
     result = refresh_wordpress_content_inventory(
@@ -13582,6 +13613,12 @@ def test_wordpress_vendor_read_adds_public_production_sitemap_inventory(
         and fact.dimensions.get("inventory_source") == "public_sitemap"
     )
     assert public_sitemap_fact.dimensions["content_url"] == (
+        "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
+    )
+    assert public_sitemap_fact.dimensions["title_or_h1"] == (
+        "BDO - co musi wiedzieć przedsiębiorca?"
+    )
+    assert public_sitemap_fact.dimensions["canonical_url"] == (
         "https://www.ekologus.pl/bdo-co-musi-wiedziec-przedsiebiorca/"
     )
     assert any(fact.name == "public_sitemap_url_count" for fact in result.metric_facts)

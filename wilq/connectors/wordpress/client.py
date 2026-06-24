@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from html import unescape
+from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import urljoin
 
@@ -37,10 +39,13 @@ WORDPRESS_CONNECTORS = {
 
 WORDPRESS_CONTENT_TYPES = ("posts", "pages")
 WORDPRESS_CONTENT_PER_PAGE = 100
-WORDPRESS_READ_FIELDS = "id,status,modified_gmt,date_gmt,link,slug"
+WORDPRESS_READ_FIELDS = "id,status,modified_gmt,date_gmt,link,slug,title"
 WORDPRESS_SITEMAP_PATHS = ("wp-sitemap.xml", "sitemap_index.xml", "sitemap.xml")
 WORDPRESS_SITEMAP_CHILD_LIMIT = 20
 WORDPRESS_SITEMAP_URL_LIMIT = 500
+WORDPRESS_METADATA_FETCH_LIMIT = 50
+WORDPRESS_METADATA_MAX_BYTES = 200_000
+WORDPRESS_METADATA_TIMEOUT_SECONDS = 3.0
 
 
 @dataclass(frozen=True)
@@ -217,6 +222,8 @@ def _fetch_content_inventory(
                         "content_url": item.get("content_url", ""),
                         "status": item.get("status", ""),
                         "modified_gmt": item.get("modified_gmt", ""),
+                        "title_or_h1": item.get("title_or_h1", ""),
+                        "canonical_url": item.get("canonical_url", ""),
                         "inventory_source": "wordpress_rest",
                     },
                 )
@@ -234,6 +241,8 @@ def _fetch_content_inventory(
                     "content_url": item.get("content_url", ""),
                     "status": "indexed",
                     "modified_gmt": item.get("modified_gmt", ""),
+                    "title_or_h1": item.get("title_or_h1", ""),
+                    "canonical_url": item.get("canonical_url", ""),
                     "inventory_source": "sitemap",
                 },
             )
@@ -251,6 +260,8 @@ def _fetch_content_inventory(
                     "content_url": item.get("content_url", ""),
                     "status": "indexed",
                     "modified_gmt": item.get("modified_gmt", ""),
+                    "title_or_h1": item.get("title_or_h1", ""),
+                    "canonical_url": item.get("canonical_url", ""),
                     "inventory_source": "public_sitemap",
                 },
             )
@@ -290,17 +301,20 @@ def _fetch_public_sitemap_objects(
     if not public_url or _normalize_base_url(public_url) == _normalize_base_url(base_url):
         return []
     base_hosts = {_host(base_url or "")}
-    public_objects = _fetch_sitemap_objects(client, public_url)
-    return [
+    public_objects = _fetch_sitemap_objects(client, public_url, enrich_metadata=False)
+    filtered_objects = [
         item
         for item in public_objects
         if _host(item.get("content_url", "")) not in base_hosts
     ]
+    return _enrich_sitemap_objects_with_page_metadata(client, filtered_objects)
 
 
 def _fetch_sitemap_objects(
     client: httpx.Client,
     base_url: str,
+    *,
+    enrich_metadata: bool = True,
 ) -> list[dict[str, str]]:
     for sitemap_path in WORDPRESS_SITEMAP_PATHS:
         try:
@@ -312,8 +326,50 @@ def _fetch_sitemap_objects(
             continue
         sitemap_objects = _sitemap_objects_from_xml(client, response.text)
         if sitemap_objects:
-            return sitemap_objects[:WORDPRESS_SITEMAP_URL_LIMIT]
+            limited_objects = sitemap_objects[:WORDPRESS_SITEMAP_URL_LIMIT]
+            if not enrich_metadata:
+                return limited_objects
+            return _enrich_sitemap_objects_with_page_metadata(client, limited_objects)
     return []
+
+
+def _enrich_sitemap_objects_with_page_metadata(
+    client: httpx.Client,
+    objects: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    enriched: list[dict[str, str]] = []
+    for index, item in enumerate(objects):
+        if index >= WORDPRESS_METADATA_FETCH_LIMIT:
+            enriched.append(item)
+            continue
+        metadata = _fetch_public_page_metadata(client, item.get("content_url", ""))
+        enriched.append({**item, **metadata} if metadata else item)
+    return enriched
+
+
+def _fetch_public_page_metadata(client: httpx.Client, url: str) -> dict[str, str]:
+    if not url:
+        return {}
+    try:
+        response = client.get(url, timeout=WORDPRESS_METADATA_TIMEOUT_SECONDS)
+        response.raise_for_status()
+    except httpx.HTTPError:
+        return {}
+    content_type = response.headers.get("content-type", "")
+    if content_type and "html" not in content_type.lower():
+        return {}
+    parser = _HtmlMetadataParser()
+    parser.feed(response.text[:WORDPRESS_METADATA_MAX_BYTES])
+    title_or_h1 = _clean_metadata_text(parser.title or parser.h1)
+    canonical_url = _clean_metadata_text(parser.canonical_url)
+    return {
+        key: value
+        for key, value in {
+            "title_or_h1": title_or_h1,
+            "canonical_url": canonical_url,
+        }.items()
+        if value
+    }
 
 
 def _sitemap_objects_from_xml(client: httpx.Client, xml_text: str) -> list[dict[str, str]]:
@@ -472,6 +528,63 @@ def _content_objects(payload: Any) -> list[dict[str, str]]:
                 "content_url": content_url,
                 "status": status if isinstance(status, str) else "",
                 "modified_gmt": modified if isinstance(modified, str) else "",
+                "title_or_h1": _wordpress_title(item.get("title")),
+                "canonical_url": "",
             }
         )
     return objects
+
+
+def _wordpress_title(value: Any) -> str:
+    if not isinstance(value, dict):
+        return ""
+    rendered = value.get("rendered")
+    if not isinstance(rendered, str):
+        return ""
+    return _clean_metadata_text(rendered)
+
+
+def _clean_metadata_text(value: str | None) -> str:
+    if not value:
+        return ""
+    return " ".join(unescape(value).split())
+
+
+class _HtmlMetadataParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.title = ""
+        self.h1 = ""
+        self.canonical_url = ""
+        self._capture: str | None = None
+        self._chunks: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr_map = {key.lower(): value or "" for key, value in attrs}
+        normalized_tag = tag.lower()
+        if normalized_tag == "link" and not self.canonical_url:
+            rel_values = attr_map.get("rel", "").lower().split()
+            href = attr_map.get("href", "")
+            if "canonical" in rel_values and href:
+                self.canonical_url = href
+        if normalized_tag == "title" and not self.title:
+            self._capture = "title"
+            self._chunks = []
+        elif normalized_tag == "h1" and not self.h1:
+            self._capture = "h1"
+            self._chunks = []
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._capture != tag.lower():
+            return
+        text = _clean_metadata_text("".join(self._chunks))
+        if self._capture == "title" and text:
+            self.title = text
+        elif self._capture == "h1" and text:
+            self.h1 = text
+        self._capture = None
+        self._chunks = []
+
+    def handle_data(self, data: str) -> None:
+        if self._capture:
+            self._chunks.append(data)

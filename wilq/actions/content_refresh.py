@@ -359,6 +359,16 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         )
         if isinstance(preview.get("target_site_inventory_modified_gmt"), str)
         else None,
+        "target_site_inventory_title_or_h1": preview.get(
+            "target_site_inventory_title_or_h1"
+        )
+        if isinstance(preview.get("target_site_inventory_title_or_h1"), str)
+        else None,
+        "target_site_inventory_canonical_url": preview.get(
+            "target_site_inventory_canonical_url"
+        )
+        if isinstance(preview.get("target_site_inventory_canonical_url"), str)
+        else None,
         "target_site_inventory_missing_fields": [
             item
             for item in preview.get("target_site_inventory_missing_fields", [])
@@ -742,6 +752,8 @@ def _wordpress_inventory_details_by_path(
                 "status": fact.dimensions.get("status", ""),
                 "inventory_source": fact.dimensions.get("inventory_source", ""),
                 "modified_gmt": fact.dimensions.get("modified_gmt", ""),
+                "title_or_h1": fact.dimensions.get("title_or_h1", ""),
+                "canonical_url": fact.dimensions.get("canonical_url", ""),
             },
         )
     return details_by_path
@@ -826,17 +838,25 @@ def _target_site_inventory_context(
         for field in ("content_type", "status", "inventory_source", "modified_gmt")
         if not inventory_details.get(field)
     ]
-    missing.extend(["title_or_h1", "canonical_url"])
+    missing.extend(
+        field
+        for field in ("title_or_h1", "canonical_url")
+        if not inventory_details.get(field)
+    )
     content_type = inventory_details.get("content_type") or None
     status = inventory_details.get("status") or None
     inventory_source = inventory_details.get("inventory_source") or None
     modified_gmt = inventory_details.get("modified_gmt") or None
+    title_or_h1 = inventory_details.get("title_or_h1") or None
+    canonical_url = inventory_details.get("canonical_url") or None
     known_parts = _unique(
         [
             f"type={content_type}" if content_type else "",
             f"status={status}" if status else "",
             f"source={inventory_source}" if inventory_source else "",
             f"modified_gmt={modified_gmt}" if modified_gmt else "",
+            f"title_or_h1={title_or_h1}" if title_or_h1 else "",
+            f"canonical_url={canonical_url}" if canonical_url else "",
         ]
     )
     summary = "Inventory potwierdza target URL"
@@ -851,6 +871,8 @@ def _target_site_inventory_context(
         "target_site_inventory_status": status,
         "target_site_inventory_source": inventory_source,
         "target_site_inventory_modified_gmt": modified_gmt,
+        "target_site_inventory_title_or_h1": title_or_h1,
+        "target_site_inventory_canonical_url": canonical_url,
         "target_site_inventory_missing_fields": missing,
         "target_site_inventory_summary": summary,
     }

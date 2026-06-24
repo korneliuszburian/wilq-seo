@@ -1775,6 +1775,8 @@ export const ContentDecisionItemSchema = z.object({
   target_site_inventory_status: z.string().nullable().optional(),
   target_site_inventory_source: z.string().nullable().optional(),
   target_site_inventory_modified_gmt: z.string().nullable().optional(),
+  target_site_inventory_title_or_h1: z.string().nullable().optional(),
+  target_site_inventory_canonical_url: z.string().nullable().optional(),
   target_site_inventory_missing_fields: z.array(z.string()).default([]),
   target_site_inventory_summary: z.string().nullable().optional(),
   inventory_gate_status: z.string().nullable().optional(),

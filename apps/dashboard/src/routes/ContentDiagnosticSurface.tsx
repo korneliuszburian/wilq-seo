@@ -155,6 +155,8 @@ type ContentBriefPreviewItem = {
   target_site_inventory_status?: string | null;
   target_site_inventory_source?: string | null;
   target_site_inventory_modified_gmt?: string | null;
+  target_site_inventory_title_or_h1?: string | null;
+  target_site_inventory_canonical_url?: string | null;
   target_site_inventory_missing_fields?: string[];
   target_site_inventory_summary?: string | null;
   inventory_gate_status?: string | null;
@@ -416,6 +418,8 @@ type WordPressDraftPayloadPreviewItem = {
   target_site_inventory_status?: string | null;
   target_site_inventory_source?: string | null;
   target_site_inventory_modified_gmt?: string | null;
+  target_site_inventory_title_or_h1?: string | null;
+  target_site_inventory_canonical_url?: string | null;
   target_site_inventory_missing_fields?: string[];
   target_site_inventory_summary?: string | null;
   inventory_gate_status?: string | null;
@@ -768,6 +772,20 @@ function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
           {decision.target_site_inventory_summary}
         </p>
       ) : null}
+      {decision.target_site_inventory_title_or_h1 || decision.target_site_inventory_canonical_url ? (
+        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+          {decision.target_site_inventory_title_or_h1 ? (
+            <span className="rounded border border-line bg-white px-2 py-1">
+              Tytuł/H1: {decision.target_site_inventory_title_or_h1}
+            </span>
+          ) : null}
+          {decision.target_site_inventory_canonical_url ? (
+            <span className="rounded border border-line bg-white px-2 py-1">
+              Canonical: {shortPath(decision.target_site_inventory_canonical_url)}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {decision.ahrefs_candidate_rows.length > 0 ? (
         <div className="mt-3 rounded-md border border-line bg-white p-3">
           <h4 className="text-sm font-semibold text-ink">Kandydaci Ahrefs do review</h4>
@@ -1069,6 +1087,8 @@ function contentTargetInventoryValues(
     | "target_site_inventory_status"
     | "target_site_inventory_source"
     | "target_site_inventory_modified_gmt"
+    | "target_site_inventory_title_or_h1"
+    | "target_site_inventory_canonical_url"
     | "target_site_inventory_summary"
   >
 ) {
@@ -1084,6 +1104,12 @@ function contentTargetInventoryValues(
   }
   if (preview.target_site_inventory_modified_gmt) {
     values.push(`modified: ${preview.target_site_inventory_modified_gmt}`);
+  }
+  if (preview.target_site_inventory_title_or_h1) {
+    values.push(`tytuł/H1: ${preview.target_site_inventory_title_or_h1}`);
+  }
+  if (preview.target_site_inventory_canonical_url) {
+    values.push(`canonical: ${shortPath(preview.target_site_inventory_canonical_url)}`);
   }
   if (!values.length && preview.target_site_inventory_summary) {
     values.push(preview.target_site_inventory_summary);

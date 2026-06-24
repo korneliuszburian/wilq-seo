@@ -364,11 +364,14 @@ def validate_content_action_preview(
         if "target_site_inventory_summary" not in gsc_preview:
             raise SystemExit("GSC content brief preview lacks target_site_inventory_summary")
         inventory_missing = gsc_preview.get("target_site_inventory_missing_fields")
-        if not isinstance(inventory_missing, list) or "canonical_url" not in set(
-            inventory_missing
-        ):
+        canonical_url = str(gsc_preview.get("target_site_inventory_canonical_url") or "")
+        canonical_missing = (
+            isinstance(inventory_missing, list)
+            and "canonical_url" in set(inventory_missing)
+        )
+        if not canonical_missing and not canonical_url:
             raise SystemExit(
-                "GSC content brief preview target_site_inventory_missing_fields must include canonical_url"
+                "GSC content brief preview must expose canonical_url or mark it missing"
             )
     return [
         {
@@ -400,6 +403,12 @@ def validate_content_action_preview(
             "target_site_inventory_missing_fields": (
                 preview.get("target_site_inventory_missing_fields") or []
             )[:6],
+            "target_site_inventory_title_or_h1": preview.get(
+                "target_site_inventory_title_or_h1"
+            ),
+            "target_site_inventory_canonical_url": preview.get(
+                "target_site_inventory_canonical_url"
+            ),
             "evidence_ids": (preview.get("evidence_ids") or [])[:5],
         }
         for preview in previews[:3]

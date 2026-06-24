@@ -90,6 +90,19 @@ Stan produktu:
 - Reviewed WordPress draft previews now expose `content_draft_generation_v1`:
   allowed output kind, required gates, required draft elements and forbidden
   outputs. Current live candidates remain outline-only until gates pass.
+- WordPress content inventory now captures safe page metadata when available:
+  `title_or_h1` and `canonical_url` from REST/public sitemap HTML metadata,
+  with short metadata timeout and no full HTML body persistence. These fields
+  flow through content diagnostics, ActionObject previews, reviewed draft
+  previews, dashboard cards, shared schemas and the content-strategist
+  context-pack. Focused API/dashboard/shared-schema tests passed; smoke proof:
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
+- Live read-only proof: `refresh_wordpress_ekologus_357e83863713` completed
+  after the connector change and the local metric store contains 116
+  `content_object_seen` facts with `title_or_h1` or `canonical_url`. Active
+  `/api/content/diagnostics` still reports
+  `target_site_mapping_review_needed`, so the remaining blocker is old-to-new
+  target mapping, not lack of inventory metadata support.
 - Fresh non-interactive skill eval proofs from 2026-06-24:
   content target-site boundary score 4
   `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
@@ -126,9 +139,9 @@ Stan produktu:
 - Real marketer UAT has not been collected. Browser/smoke/eval proof does not
   prove that the marketer saves time or knows what to do without explanation.
 - Content workflow still lacks confirmed old-to-new mapping against full
-  dev-site inventory, real target title/H1/canonical facts, staging handoff,
-  publishing and post-publication measurement loop for
-  `ekologus.dev.proudsite.pl`.
+  dev-site inventory, staging handoff, publishing and post-publication
+  measurement loop for `ekologus.dev.proudsite.pl`. Target metadata support is
+  implemented, but active decisions only use it when the target URL is mapped.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
