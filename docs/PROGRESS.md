@@ -44,6 +44,14 @@ Stan produktu:
 - Full overnight execution map was added on 2026-06-24 in `PLAN.md`. Use it as
   the canonical self-contained plan for unattended continuation and `/goal`
   reset; keep this file as the short recovery ledger.
+- Content target-site adversarial eval was verified through real
+  non-interactive Codex on 2026-06-24. Proof:
+  `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`.
+  Result passed with `operator_usefulness_score=4`, API usage, Polish output,
+  evidence IDs, source connectors, canonical/duplicate/target-context wording
+  and blocked claims for `ekologus.dev.proudsite.pl source evidence`,
+  WordPress publish, duplicate-free guarantee, ranking guarantee, lead uplift
+  and revenue impact. This is guardrail proof, not marketer UAT.
 - Marketer demo walkthrough hardening completed on 2026-06-24. Live managed
   stack was ready, browser snapshots for `/command-center`, `/merchant`,
   `/content-planner`, `/ads-doctor`, `/ga4` and
@@ -103,9 +111,10 @@ Stan produktu:
    - Current status: content decisions and ActionObject previews expose useful
      source/target and H1/H2/FAQ/CTA/source-fact fields, but full staging
      handoff, publishing and post-publication measurement remain deferred.
-   - Next risk to test: whether live content diagnostics and non-interactive
-     skill output satisfy the new target-site eval contract, not just the static
-     case definition.
+   - Verified now: live content diagnostics and non-interactive skill output
+     satisfy the target-site boundary eval contract.
+   - Next risk to test: duplicate/canonical gating for target-site content
+     before draft/staging work.
 
 2. **Marketer UAT and route usefulness**
    - Browser proof shows the narrow demo path is usable, but no real marketer
@@ -141,11 +150,10 @@ Stan produktu:
 
 ## Next Best Queue
 
-1. Run one adversarial eval slice for overclaims that matters to the demo:
-   either execute the updated content target-site case through non-interactive
-   Codex, or pick Ads no CPA/ROAS without targets, Merchant
-   occurrences-not-unique-products, GA4 `(not set)` measurement blocker or
-   Localo access-not-ranking. Pick the smallest one with current proof.
+1. Run the next adversarial eval slice for overclaims that matters to the demo:
+   pick Ads no CPA/ROAS without targets, Merchant occurrences-not-unique-
+   products, GA4 `(not set)` measurement blocker or Localo access-not-ranking.
+   Pick the smallest one with current proof.
 2. If demo UX is the next priority, change only one confirmed blocker at a time:
    likely nav label `ActionObjecty` -> marketer-friendly wording, or hide raw
    drilldown IDs behind technical details.

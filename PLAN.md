@@ -109,8 +109,12 @@ Still incomplete:
 - [x] Browser-walk the narrow demo path and save snapshots under
   `.local-lab/proof/dashboard/marketer-demo-walkthrough/`.
 - [x] Clean Action detail marketer-facing copy from proof-run/dry-run wording.
-- [ ] Verify the latest target-site adversarial content eval through the real
-  non-interactive Codex harness.
+- [x] Verify the latest target-site adversarial content eval through the real
+  non-interactive Codex harness. Proof:
+  `.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json`;
+  passed with `operator_usefulness_score=4`, API evidence, source connectors,
+  canonical/duplicate/target-context wording and blocked publish/ranking/lead/
+  revenue/duplicate-free/source-evidence overclaims.
 - [ ] Add or verify the next highest-risk adversarial overclaim eval.
 - [ ] Add or verify a target-site duplicate/canonical gate for content.
 - [ ] Run final pre-demo gate after the next material code/eval slice.
@@ -210,7 +214,7 @@ Files likely involved:
 
 Focused verification examples:
 
-    rtk uv run pytest tests/test_codex_skill_eval_cases.py -k content
+    rtk uv run pytest tests/test_codex_skill_eval_cases.py -q
     rtk scripts/codex_skill_eval.sh --skill wilq-content-strategist
     rtk git diff --check
 
@@ -390,6 +394,12 @@ unless explicitly promoted:
   prove marketer usefulness or full BDOS.
 - `docs/PROGRESS.md` can become too long quickly. Keep it as a recovery ledger;
   keep the fuller plan here.
+- `pytest -k content` did not match any test names in
+  `tests/test_codex_skill_eval_cases.py`, so it is not valid proof. Use the
+  full focused file or an explicit matching test selector.
+- The 2026-06-24 content strategist non-interactive eval passed the target-site
+  boundary with usefulness score 4, not 5. Treat it as a guardrail proof, not
+  marketer UAT or proof of a complete draft/staging workflow.
 
 ## Decision Log
 

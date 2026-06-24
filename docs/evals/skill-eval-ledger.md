@@ -5381,3 +5381,50 @@ Product finding:
   brief while the Codex skill received a thinner one. The context-pack compactor
   now preserves the fields in compact form, so dashboard and skill share the
   same review-safe content brief contract.
+
+## 2026-06-24 - wilq-content-strategist target-site boundary proof
+
+Purpose:
+
+- Verify the updated adversarial content eval against the real non-interactive
+  Codex harness, not only static eval case definitions.
+- Keep `ekologus.dev.proudsite.pl` as target context/adaptation target, not
+  historical source evidence.
+- Keep WordPress publish, duplicate-free guarantee, ranking guarantee, lead
+  uplift and revenue impact blocked without validated write/apply evidence.
+
+Focused proof:
+
+```bash
+uv run pytest tests/test_codex_skill_eval_cases.py -q
+uv run python .agents/skills/wilq-content-strategist/scripts/smoke_skill_contract.py --api-base http://127.0.0.1:8000
+CODEX_SKILL_EVAL_IGNORE_USER_CONFIG=1 CODEX_SKILL_EVAL_TIMEOUT=300 \
+  scripts/codex_skill_eval.sh --skill wilq-content-strategist --api-base http://127.0.0.1:8000
+```
+
+Passing artifact:
+
+```txt
+.local-lab/evals/codex-skill/20260624T125302Z/wilq-content-strategist/result.json
+```
+
+Result:
+
+- `language=pl-PL`
+- `api_used=true`
+- `source_connectors` include GSC, GA4, Ahrefs and WordPress inventory.
+- `operator_usefulness_score=4`; this is guardrail proof, not marketer UAT.
+- Recommendations mention `source_url`, `target_site_url`,
+  `target_site_adaptation_status`, `target context`, `canonical` and
+  `duplicate`.
+- Blocked terms include `ekologus.dev.proudsite.pl source evidence`,
+  WordPress publish, duplicate-free guarantee, ranking guarantee, lead uplift
+  and revenue impact.
+- `decision_quality` booleans all passed.
+
+Product finding:
+
+- The content skill now passes the real non-interactive target-site boundary
+  case while preserving evidence-backed refresh/merge guidance. The next content
+  depth risk is the actual duplicate/canonical gate before draft or staging
+  handoff, not this boundary wording.
