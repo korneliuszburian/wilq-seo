@@ -2953,6 +2953,11 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
             "action_type": "wordpress_content_refresh",
             "metric_names": {"content_object_count", "clicks", "domain_rating"},
         },
+        "act_prepare_wordpress_staging_draft": {
+            "connector": "wordpress_ekologus",
+            "action_type": "wordpress_staging_draft_apply",
+            "metric_names": {"content_object_count", "clicks", "domain_rating"},
+        },
         "act_prepare_linkedin_social_drafts": {
             "connector": "linkedin",
             "action_type": "linkedin_post_candidate",
@@ -3024,6 +3029,34 @@ def test_metric_backed_prepare_actions_are_evidence_grounded(
                 content_payload["content_brief_preview"],
                 ensure_ascii=False,
             )
+        if action_id == "act_prepare_wordpress_staging_draft":
+            staging_payload = action["payload"]
+            assert staging_payload["preview_contract"] == (
+                "wordpress_staging_draft_apply_preview_v1"
+            )
+            assert staging_payload["depends_on_action_id"] == (
+                "act_prepare_content_refresh_queue"
+            )
+            assert "content_draft_readiness_review_v1" in staging_payload[
+                "required_input_contracts"
+            ]
+            assert staging_payload["apply_allowed"] is False
+            assert staging_payload["api_mutation_ready"] is False
+            assert "wordpress_staging_payload_preview" in staging_payload[
+                "required_validation"
+            ]
+            assert "wordpress_publish" in staging_payload["blocked_claims"]
+            assert len(staging_payload["payload_preview"]) >= 1
+            first_staging_preview = staging_payload["payload_preview"][0]
+            assert first_staging_preview["preview_contract"] == (
+                "wordpress_staging_draft_apply_preview_v1"
+            )
+            assert first_staging_preview["operation_type"] == (
+                "staging_draft_handoff_review"
+            )
+            assert first_staging_preview["apply_allowed"] is False
+            assert first_staging_preview["api_mutation_ready"] is False
+            assert first_staging_preview["selected_target_url"]
             assert ahrefs_preview["mode"] == "review"
             assert ahrefs_preview["topic"] == "audyt środowiskowy"
             assert ahrefs_preview["gsc_demand"] == "unknown"

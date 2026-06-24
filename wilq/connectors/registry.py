@@ -150,7 +150,11 @@ CONNECTOR_DEFINITIONS: tuple[ConnectorDefinition, ...] = (
         ),
         True,
         True,
-        ("wordpress_content_refresh", "wordpress_draft_update"),
+        (
+            "wordpress_content_refresh",
+            "wordpress_draft_update",
+            "wordpress_staging_draft_apply",
+        ),
         "WordPress REST API rate limits depend on hosting.",
         "No direct API cost expected.",
         "Content writes can publish client-facing changes.",

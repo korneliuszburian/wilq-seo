@@ -135,7 +135,8 @@ type PayloadPreviewItem = {
     | "keywordPlannerAccess"
     | "adsBusinessGuardrail"
     | "contentBrief"
-    | "wordpressDraft";
+    | "wordpressDraft"
+    | "wordpressStagingDraft";
   item: Record<string, unknown>;
 };
 
@@ -240,6 +241,9 @@ function PayloadPreviewCard({ previewItem }: { previewItem: PayloadPreviewItem }
   if (previewItem.kind === "wordpressDraft") {
     return <WordPressDraftPreviewCard item={previewItem.item} />;
   }
+  if (previewItem.kind === "wordpressStagingDraft") {
+    return <WordPressStagingDraftPreviewCard item={previewItem.item} />;
+  }
   return <GenericPayloadPreviewCard item={previewItem.item} />;
 }
 
@@ -262,6 +266,41 @@ function GenericPayloadPreviewCard({ item }: { item: Record<string, unknown> }) 
         </div>
         <PreviewValues label="Przykładowe produkty" values={asStringArray(item.sample_product_ids)} />
         <PreviewValues label="Tytuły próbek" values={asStringArray(item.sample_titles)} />
+      </div>
+    </article>
+  );
+}
+
+function WordPressStagingDraftPreviewCard({ item }: { item: Record<string, unknown> }) {
+  return (
+    <article className="rounded-md border border-line bg-slate-50 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-ink">Staging draft do review</h3>
+          <p className="mt-1 break-words text-xs text-slate-500">
+            {stringValue(item.selected_target_url, stringValue(item.source_url, "brak URL"))}
+          </p>
+        </div>
+        <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
+      </div>
+      <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
+        <div>Kandydat: {stringValue(item.candidate_id, "brak")}</div>
+        <div>Temat: {stringValue(item.topic, "brak")}</div>
+        <div>Źródło: {stringValue(item.source_url, "brak")}</div>
+        <div>Target: {stringValue(item.selected_target_url, "brak")}</div>
+        <div>Mapowanie: {stringValue(item.mapping_review_status, "brak")}</div>
+        <div>Canonical: {stringValue(item.canonical_gate_status, "brak")}</div>
+        <div>Duplikaty: {stringValue(item.duplicate_gate_status, "brak")}</div>
+        <div>Staging: {stringValue(item.staging_handoff_status, "zablokowany")}</div>
+        <div>
+          Następny kontrakt: {stringValue(item.required_next_action_contract, "brak")}
+        </div>
+        <PreviewValues label="Walidacje" values={asStringArray(item.required_validation)} />
+        <PreviewValues label="Blokady" values={asStringArray(item.blocked_claims)} />
+        <div>
+          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
+          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+        </div>
       </div>
     </article>
   );
@@ -788,7 +827,8 @@ function payloadPreviewKindOrder(kind: PayloadPreviewItem["kind"]) {
   if (kind === "adsBusinessGuardrail") return 10;
   if (kind === "contentBrief") return 11;
   if (kind === "wordpressDraft") return 12;
-  return 12;
+  if (kind === "wordpressStagingDraft") return 13;
+  return 13;
 }
 
 function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewItem["kind"] {
@@ -827,6 +867,12 @@ function payloadPreviewItemKind(item: Record<string, unknown>): PayloadPreviewIt
     stringValue(item.preview_contract, "") === "local_visibility_review_preview_v1"
   ) {
     return "localVisibility";
+  }
+  if (
+    stringValue(item.operation_type, "") === "staging_draft_handoff_review" ||
+    stringValue(item.preview_contract, "") === "wordpress_staging_draft_apply_preview_v1"
+  ) {
+    return "wordpressStagingDraft";
   }
   return "generic";
 }

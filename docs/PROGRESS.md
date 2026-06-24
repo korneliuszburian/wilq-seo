@@ -263,6 +263,21 @@ Stan produktu:
   status, API health, live contract smoke, shared live schemas, dashboard route
   smoke 13/13 and core skill smokes. Proof:
   `.local-lab/proof/pre-demo-gate-after-staging-handoff.txt`.
+- WILQ now generates dynamic `act_prepare_wordpress_staging_draft` from content
+  metric facts. The ActionObject uses
+  `preview_contract=wordpress_staging_draft_apply_preview_v1`, depends on
+  `act_prepare_content_refresh_queue`, validates through the WordPress connector
+  registry and exposes review-only staging draft preview rows while keeping
+  `apply_allowed=false` and `api_mutation_ready=false`. Action detail now uses a
+  dedicated "Staging draft do review" card instead of the generic Merchant-style
+  fallback. Proof:
+  `.local-lab/proof/content-staging-action/live-staging-action.json`,
+  `.local-lab/proof/content-staging-action/content-strategist-smoke.json` and
+  `.local-lab/proof/dashboard/content-staging-action/action-detail-staging-action.txt`.
+- Core pre-demo gate passed after the staging draft ActionObject: managed stack
+  status, API health, live contract smoke, shared live schemas, dashboard route
+  smoke 13/13 and core skill smokes. Proof:
+  `.local-lab/proof/pre-demo-gate-after-staging-action.txt`.
 
 ## Active Gaps
 
@@ -272,9 +287,9 @@ Stan produktu:
 - Content workflow still lacks a full real old-to-new mapping for all active
   decisions, staging handoff, publishing and post-publication measurement loop
   for `ekologus.dev.proudsite.pl`. Mapping and draft-readiness review decisions
-  can now be recorded and audited, and staging handoff has a blocked preview
-  contract, but this does not confirm the whole migration map or unlock
-  draft/staging/publish readiness.
+  can now be recorded and audited, staging handoff has a blocked preview
+  contract and a review-only ActionObject, but this does not confirm the whole
+  migration map or unlock draft/staging/publish readiness.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
@@ -292,10 +307,10 @@ Stan produktu:
    from browser/UAT evidence. Do not repeat the completed action-copy cleanup
    unless a fresh route proof finds a remaining marketer-facing leak.
 3. If content depth is next, continue from audited mapping, draft-readiness and
-   blocked staging-handoff previews toward a complete per-URL migration map or
-   a separate review-only `wordpress_staging_draft_apply_v1` ActionObject. Do
-   not unlock staging, publish or uplift claims without typed preview, human
-   confirmation and audit.
+   blocked staging-handoff previews plus the review-only staging draft
+   ActionObject toward a complete per-URL migration map or post-publication
+   measurement design. Do not unlock staging, publish or uplift claims without
+   typed preview, human confirmation and audit.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

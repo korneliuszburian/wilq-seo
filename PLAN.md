@@ -326,6 +326,18 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   complete reviewed old-to-new URL map for active content decisions or a
   separate `wordpress_staging_draft_apply_v1` ActionObject that remains
   prepare/review-only until all gates, human confirmation and audit are present.
+- `ready`: WILQ now generates dynamic
+  `act_prepare_wordpress_staging_draft` from content metric facts. The
+  ActionObject uses `action_type=wordpress_staging_draft_apply`,
+  `preview_contract=wordpress_staging_draft_apply_preview_v1`, depends on
+  `act_prepare_content_refresh_queue`, exposes review-only staging draft
+  preview rows with selected target URLs, validates through the WordPress
+  connector registry, and stays `apply_allowed=false` /
+  `api_mutation_ready=false`. Action detail has a dedicated "Staging draft do
+  review" card instead of the generic Merchant-style fallback. Proof:
+  `.local-lab/proof/content-staging-action/live-staging-action.json`,
+  `.local-lab/proof/content-staging-action/content-strategist-smoke.json` and
+  `.local-lab/proof/dashboard/content-staging-action/action-detail-staging-action.txt`.
 - `deferred_bdos`: Post-publication measurement loop is after staging handoff:
   compare GSC/GA4 windows, detect refresh/merge/kill follow-ups and feed the
   result back into knowledge cards.
@@ -606,6 +618,13 @@ Use these rules before every implementation slice:
   `.local-lab/proof/content-staging-handoff/live-staging-handoff-preview.json`,
   `.local-lab/proof/content-staging-handoff/content-strategist-smoke.json` and
   `.local-lab/proof/dashboard/content-staging-handoff/content-planner-staging-handoff.txt`.
+- [x] Add dynamic review-only WordPress staging draft ActionObject and dedicated
+  dashboard preview card. Proof:
+  `.local-lab/proof/content-staging-action/live-staging-action.json`,
+  `.local-lab/proof/content-staging-action/content-strategist-smoke.json` and
+  `.local-lab/proof/dashboard/content-staging-action/action-detail-staging-action.txt`.
+- [x] Rerun core pre-demo gate after staging draft ActionObject:
+  `.local-lab/proof/pre-demo-gate-after-staging-action.txt`.
 - [x] Rerun core pre-demo gate after staging handoff preview:
   `.local-lab/proof/pre-demo-gate-after-staging-handoff.txt`.
 - [x] Rerun core pre-demo gate after content mapping review changes:
