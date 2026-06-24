@@ -178,6 +178,10 @@ Stan produktu:
   `target_site_mapping_status=target_site_mapping_review_needed`. Browser
   proof:
   `.local-lab/proof/dashboard/content-migration-map/content-planner-candidate-counts.txt`.
+- `wilq-content-strategist` smoke now validates the operator-summary migration
+  candidate inventory counts against `decision_queue`, so the aggregate cannot
+  drift from per-decision target inventory status. Fresh proof:
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
 
 ## Active Gaps
 

@@ -86,6 +86,7 @@ def main() -> int:
         raise SystemExit("Context pack content_diagnostics decision_queue differs from endpoint")
     decision_queue = content_diagnostics.get("decision_queue", [])
     validate_content_decision_queue(content_diagnostics)
+    validate_content_operator_summary(content_diagnostics)
     require_content_preview = bool(
         content_diagnostics.get("live_data_available") and decision_queue
     )
@@ -162,6 +163,7 @@ def main() -> int:
                     "query_page_count": content_diagnostics.get("query_page_count"),
                     "matched_inventory_count": content_diagnostics.get("matched_inventory_count"),
                     "blocker_count": content_diagnostics.get("blocker_count"),
+                    "operator_summary": content_diagnostics.get("operator_summary", {}),
                     "decision_queue": decision_queue,
                     "decision_types": [
                         item.get("decision_type")
@@ -253,6 +255,37 @@ def validate_content_decision_queue(content_diagnostics: dict[str, Any]) -> None
             raise SystemExit("Content planning decision lacks content ActionObject ID")
         if not decision.get("blocked_claims"):
             raise SystemExit("Content decision_queue item lacks blocked claims")
+
+
+def validate_content_operator_summary(content_diagnostics: dict[str, Any]) -> None:
+    summary = content_diagnostics.get("operator_summary")
+    if not isinstance(summary, dict):
+        raise SystemExit("Content diagnostics lacks operator_summary")
+    decisions = [
+        item
+        for item in content_diagnostics.get("decision_queue", [])
+        if isinstance(item, dict)
+    ]
+    expected_confirmed = sum(
+        1
+        for decision in decisions
+        if decision.get("target_site_migration_candidate_inventory_status")
+        == "confirmed_target_inventory"
+    )
+    expected_missing = sum(
+        1
+        for decision in decisions
+        if decision.get("target_site_migration_candidate_inventory_status")
+        == "missing_target_inventory"
+    )
+    if summary.get("target_site_confirmed_candidate_inventory_count") != expected_confirmed:
+        raise SystemExit(
+            "Content operator_summary confirmed candidate inventory count differs from decision_queue"
+        )
+    if summary.get("target_site_missing_candidate_inventory_count") != expected_missing:
+        raise SystemExit(
+            "Content operator_summary missing candidate inventory count differs from decision_queue"
+        )
 
 
 def validate_content_action_preview(

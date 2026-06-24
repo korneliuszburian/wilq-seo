@@ -209,6 +209,9 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   `target_site_migration_candidate_inventory_status` and summary fields in the
   content brief preview, so context-pack or ActionObject regressions cannot pass
   with only the older migration status.
+- `ready`: The `wilq-content-strategist` smoke contract now also validates
+  operator-summary migration candidate inventory counts against the
+  per-decision queue.
 - `ready`: Content decisions, content ActionObject previews, reviewed draft
   previews, dashboard cards and content-strategist context-pack now expose the
   WordPress inventory facts WILQ actually has for target URLs:
@@ -488,6 +491,9 @@ Use these rules before every implementation slice:
 - [x] Add content operator-summary counts for confirmed vs missing old-to-new
   target migration candidates. Browser proof:
   `.local-lab/proof/dashboard/content-migration-map/content-planner-candidate-counts.txt`.
+- [x] Harden content skill smoke for the operator-summary migration candidate
+  inventory counts. Proof:
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
