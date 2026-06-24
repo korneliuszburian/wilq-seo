@@ -248,6 +248,11 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   `apply_allowed=false`, `api_mutation_ready=false` and target/canonical/
   duplicate blockers active. Live proof recorded a BDO alternative mapping and
   showed it in Action detail without staging or publish.
+- `ready`: After a mapping review is recorded, reviewed draft previews now use
+  `blocked_pending_canonical_duplicate_review_after_mapping_record` instead of
+  the older generic target-mapping blocker. This shows progress while still
+  requiring canonical review, duplicate/cannibalization check, no WordPress
+  write, API mutation false and human confirmation.
 - `task`: Use the audited mapping review record as the input for the next
   draft/staging readiness gate; do not unlock staging/publish until target
   mapping, canonical, duplicate/cannibalization, legal/factual and human checks
@@ -557,6 +562,8 @@ Use these rules before every implementation slice:
   Action review audit path and surface it in reviewed draft preview. Proof:
   `.local-lab/proof/content-mapping-recording/live-review-recording.json` and
   `.local-lab/proof/dashboard/content-mapping-recording/action-detail-mapping-recording.txt`.
+- [x] Split post-recording draft readiness from generic target mapping missing:
+  `.local-lab/proof/content-mapping-recording/live-review-recording-readiness.json`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

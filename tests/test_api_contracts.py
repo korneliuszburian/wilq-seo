@@ -2000,13 +2000,20 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["draft_generation_status"] in {
         "blocked_pending_target_mapping",
         "blocked_pending_canonical_duplicate_review",
+        "blocked_pending_canonical_duplicate_review_after_mapping_record",
         "blocked_missing_target_inventory",
         "ready_for_review",
     }
+    assert draft_preview["draft_generation_status"] == (
+        "blocked_pending_canonical_duplicate_review_after_mapping_record"
+    )
+    assert "target_site_mapping_recorded_review_only" in draft_preview["draft_blockers"]
     assert "human_confirm_before_wordpress_write" in draft_preview["draft_blockers"]
     if draft_preview["target_site_migration_status"] == "needs_review":
-        assert draft_preview["draft_generation_status"] == "blocked_pending_target_mapping"
-        assert "target_site_inventory_mapping_review" in draft_preview["draft_blockers"]
+        assert draft_preview["draft_generation_status"] in {
+            "blocked_pending_target_mapping",
+            "blocked_pending_canonical_duplicate_review_after_mapping_record",
+        }
     if draft_preview["target_site_migration_status"] == "confirmed_target_inventory":
         assert draft_preview["draft_generation_status"] == (
             "blocked_pending_canonical_duplicate_review"
@@ -2148,6 +2155,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["draft_generation_status"] in {
         "blocked_pending_target_mapping",
         "blocked_pending_canonical_duplicate_review",
+        "blocked_pending_canonical_duplicate_review_after_mapping_record",
         "blocked_missing_target_inventory",
         "ready_for_review",
     }

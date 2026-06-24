@@ -226,6 +226,11 @@ Stan produktu:
   Proof:
   `.local-lab/proof/content-mapping-recording/live-review-recording.json` and
   `.local-lab/proof/dashboard/content-mapping-recording/action-detail-mapping-recording.txt`.
+- Reviewed draft previews now distinguish recorded mapping review from missing
+  mapping by using `blocked_pending_canonical_duplicate_review_after_mapping_record`.
+  Live proof still blocks canonical review, duplicate/cannibalization check,
+  WordPress write, API mutation and human confirmation. Proof:
+  `.local-lab/proof/content-mapping-recording/live-review-recording-readiness.json`.
 
 ## Active Gaps
 
@@ -257,7 +262,8 @@ Stan produktu:
    duplicate/canonical, ActionObject migration status, target-site review
    requirements, typed intent, alternative candidate URLs, mapping-review
    statuses, the review-only mapping contract and audited mapping record
-   toward the next draft/staging readiness gate without publish/apply claims.
+   toward canonical/duplicate/legal/human review gates before any draft/staging
+   readiness claim.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

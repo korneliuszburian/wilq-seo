@@ -432,6 +432,7 @@ def _wordpress_draft_payload_preview(
         migration_status,
         canonical_gate_status=canonical_gate_status,
         duplicate_gate_status=duplicate_gate_status,
+        mapping_review_outcome=(mapping_review or {}).get("mapping_outcome"),
     )
     draft_blockers = _draft_blockers(draft_generation_status)
     candidate_id = str(preview["candidate_id"])
@@ -615,7 +616,12 @@ def _draft_generation_status(
     *,
     canonical_gate_status: str | None,
     duplicate_gate_status: str | None,
+    mapping_review_outcome: str | None = None,
 ) -> str:
+    mapping_recorded = mapping_review_outcome in {
+        "confirm_exact_candidate",
+        "confirm_alternative_candidate",
+    }
     if migration_status == "confirmed_target_inventory":
         if canonical_gate_status in {
             "needs_target_canonical_review",
@@ -629,6 +635,8 @@ def _draft_generation_status(
             return "blocked_pending_canonical_duplicate_review"
         return "ready_for_review"
     if migration_status == "needs_review":
+        if mapping_recorded:
+            return "blocked_pending_canonical_duplicate_review_after_mapping_record"
         return "blocked_pending_target_mapping"
     if migration_status == "blocked_missing_inventory":
         return "blocked_missing_target_inventory"
@@ -656,6 +664,13 @@ def _draft_blockers(draft_generation_status: str) -> list[str]:
         ]
     if draft_generation_status == "blocked_pending_canonical_duplicate_review":
         return [
+            "target_site_canonical_review",
+            "duplicate_or_cannibalization_check",
+            *blockers,
+        ]
+    if draft_generation_status == "blocked_pending_canonical_duplicate_review_after_mapping_record":
+        return [
+            "target_site_mapping_recorded_review_only",
             "target_site_canonical_review",
             "duplicate_or_cannibalization_check",
             *blockers,
