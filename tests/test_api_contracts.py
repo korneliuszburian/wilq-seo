@@ -1486,6 +1486,13 @@ def test_content_brief_preview_marks_dev_site_as_target_context(
     assert diagnostics["operator_summary"]["current_site_match_count"] == 0
     assert diagnostics["operator_summary"]["target_site_mapping_review_count"] == 1
     assert (
+        diagnostics["operator_summary"][
+            "target_site_confirmed_candidate_inventory_count"
+        ]
+        == 1
+    )
+    assert diagnostics["operator_summary"]["target_site_missing_candidate_inventory_count"] == 0
+    assert (
         diagnostics["operator_summary"]["target_site_mapping_status"]
         == "target_site_inventory_confirmed"
     )
@@ -11750,6 +11757,18 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         or decision.get("canonical_gate_status") == "needs_target_canonical_review"
         or decision.get("target_site_migration_status")
         in {"needs_review", "blocked_missing_inventory"}
+    )
+    assert operator_summary["target_site_confirmed_candidate_inventory_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("target_site_migration_candidate_inventory_status")
+        == "confirmed_target_inventory"
+    )
+    assert operator_summary["target_site_missing_candidate_inventory_count"] == sum(
+        1
+        for decision in payload["decision_queue"]
+        if decision.get("target_site_migration_candidate_inventory_status")
+        == "missing_target_inventory"
     )
     assert (
         operator_summary["target_site_mapping_status"]

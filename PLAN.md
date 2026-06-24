@@ -199,6 +199,12 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   Live proof: top old-site candidates such as Zielony Lad, BDO, operat
   wodnoprawny and remediacja produce `missing_target_inventory`, so the
   blocker is explicit target inventory mapping rather than missing metadata.
+- `ready`: Content operator summary now aggregates target migration candidate
+  inventory truth. Live proof after stack restart:
+  `target_site_mapping_review_count=4`,
+  `target_site_confirmed_candidate_inventory_count=0`,
+  `target_site_missing_candidate_inventory_count=4`. Browser proof:
+  `.local-lab/proof/dashboard/content-migration-map/content-planner-candidate-counts.txt`.
 - `ready`: The `wilq-content-strategist` smoke contract now requires
   `target_site_migration_candidate_inventory_status` and summary fields in the
   content brief preview, so context-pack or ActionObject regressions cannot pass
@@ -479,6 +485,9 @@ Use these rules before every implementation slice:
   `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-cta.txt`.
 - [x] Add core domain links to the global dashboard navigation. Browser proof:
   `.local-lab/proof/dashboard/marketer-uat-20260624/01-command-center-after-nav.txt`.
+- [x] Add content operator-summary counts for confirmed vs missing old-to-new
+  target migration candidates. Browser proof:
+  `.local-lab/proof/dashboard/content-migration-map/content-planner-candidate-counts.txt`.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active

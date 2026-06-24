@@ -305,6 +305,18 @@ def _operator_summary(
         or decision.canonical_gate_status == "needs_target_canonical_review"
         or decision.target_site_migration_status in {"needs_review", "blocked_missing_inventory"}
     )
+    confirmed_candidate_inventory_count = sum(
+        1
+        for decision in decisions
+        if decision.target_site_migration_candidate_inventory_status
+        == "confirmed_target_inventory"
+    )
+    missing_candidate_inventory_count = sum(
+        1
+        for decision in decisions
+        if decision.target_site_migration_candidate_inventory_status
+        == "missing_target_inventory"
+    )
     return ContentOperatorSummary(
         title="Co marketer ma zrobić teraz z treściami",
         summary=(
@@ -333,6 +345,8 @@ def _operator_summary(
             current_site_match_count=current_site_match_count,
             mapping_review_count=target_site_mapping_review_count,
         ),
+        target_site_confirmed_candidate_inventory_count=confirmed_candidate_inventory_count,
+        target_site_missing_candidate_inventory_count=missing_candidate_inventory_count,
         decision_type_labels=_unique(
             _content_decision_type_summary_label(decision.decision_type)
             for decision in decisions

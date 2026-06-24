@@ -1832,6 +1832,8 @@ export const ContentOperatorSummarySchema = z.object({
   current_site_match_count: z.number(),
   target_site_mapping_review_count: z.number(),
   target_site_mapping_status: z.string().nullable().optional(),
+  target_site_confirmed_candidate_inventory_count: z.number().default(0),
+  target_site_missing_candidate_inventory_count: z.number().default(0),
   decision_type_labels: z.array(z.string()),
   source_connectors: z.array(z.string()),
   evidence_ids: z.array(z.string()),

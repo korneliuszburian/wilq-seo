@@ -2229,6 +2229,8 @@ class ContentOperatorSummary(BaseModel):
     current_site_match_count: int = 0
     target_site_mapping_review_count: int = 0
     target_site_mapping_status: str | None = None
+    target_site_confirmed_candidate_inventory_count: int = 0
+    target_site_missing_candidate_inventory_count: int = 0
     decision_type_labels: list[str] = Field(default_factory=list)
     source_connectors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

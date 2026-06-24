@@ -622,6 +622,8 @@ function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) 
                 `alias targetu: ${summary.target_site_alias_match_count}`,
                 `obecny URL: ${summary.current_site_match_count}`,
                 `do mapowania: ${summary.target_site_mapping_review_count}`,
+                `kandydat potwierdzony: ${summary.target_site_confirmed_candidate_inventory_count}`,
+                `kandydat niepotwierdzony: ${summary.target_site_missing_candidate_inventory_count}`,
                 `status: ${contentTargetSiteMappingStatusLabel(
                   summary.target_site_mapping_status
                 )}`

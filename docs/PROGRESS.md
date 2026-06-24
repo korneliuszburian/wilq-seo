@@ -170,6 +170,14 @@ Stan produktu:
   `rtk scripts/pre_demo_gate.sh --core-skills`. Coverage included local stack
   status, API health, live contract smoke, shared schemas live contracts,
   dashboard API-backed route smoke 13/13 and core skill smokes.
+- Content operator summary now aggregates old-to-new migration candidate
+  inventory truth: live `/api/content/diagnostics` after stack restart reports
+  `target_site_mapping_review_count=4`,
+  `target_site_confirmed_candidate_inventory_count=0`,
+  `target_site_missing_candidate_inventory_count=4` and
+  `target_site_mapping_status=target_site_mapping_review_needed`. Browser
+  proof:
+  `.local-lab/proof/dashboard/content-migration-map/content-planner-candidate-counts.txt`.
 
 ## Active Gaps
 
@@ -180,7 +188,8 @@ Stan produktu:
   dev-site inventory, staging handoff, publishing and post-publication
   measurement loop for `ekologus.dev.proudsite.pl`. Target metadata and
   migration candidate inventory status support are implemented, and active live
-  candidates are currently flagged `missing_target_inventory`.
+  candidates are currently aggregated as 0 confirmed and 4 missing target
+  inventory candidates.
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
