@@ -179,6 +179,11 @@ def build_merchant_diagnostics(
         product_performance_readiness,
         action_ids,
     )
+    decision_queue = _merchant_decisions_with_price_impact_review(
+        decision_queue,
+        price_impact_readiness,
+        action_ids,
+    )
     return MerchantDiagnosticsResponse(
         strict_instruction=STRICT_BRIEF_INSTRUCTION,
         connector=connector,
@@ -1689,6 +1694,59 @@ def _merchant_decisions_with_product_state_review(
         return decisions
     merged = [product_state_decision, *decisions]
     return sorted(merged, key=lambda decision: (decision.priority, decision.id))
+
+
+def _merchant_decisions_with_price_impact_review(
+    decisions: list[MerchantDecisionItem],
+    price_impact_readiness: MerchantPriceImpactReadiness,
+    action_ids: list[str],
+) -> list[MerchantDecisionItem]:
+    price_decision = _merchant_price_impact_review_decision(
+        price_impact_readiness,
+        action_ids,
+    )
+    if price_decision is None:
+        return decisions
+    merged = [price_decision, *decisions]
+    return sorted(merged, key=lambda decision: (decision.priority, decision.id))
+
+
+def _merchant_price_impact_review_decision(
+    price_impact_readiness: MerchantPriceImpactReadiness,
+    action_ids: list[str],
+) -> MerchantDecisionItem | None:
+    if price_impact_readiness.products_with_current_price == 0:
+        return None
+    return MerchantDecisionItem(
+        id="merchant_decision_review_price_impact_readiness",
+        decision_type="review_price_impact_readiness",
+        status=price_impact_readiness.status,
+        title="Merchant: sprawdź gotowość analizy wpływu ceny",
+        summary=price_impact_readiness.summary,
+        priority=22,
+        metric_tiles=_clean_merchant_metric_tiles(
+            {
+                "ceny bieżące": price_impact_readiness.products_with_current_price,
+                "historia ceny": price_impact_readiness.products_with_previous_price,
+                "zmiany ceny": price_impact_readiness.products_with_price_change,
+                "performance": (
+                    price_impact_readiness.products_with_performance_metrics
+                ),
+            }
+        ),
+        payload_preview=price_impact_readiness.payload_preview,
+        source_connectors=price_impact_readiness.source_connectors,
+        evidence_ids=price_impact_readiness.evidence_ids,
+        action_ids=action_ids,
+        blocked_claims=price_impact_readiness.blocked_claims,
+        rationale=(
+            "To jest decyzja gotowości price-impact. WILQ może pokazać bieżące "
+            "ceny, historię ceny i brakujące kontrakty, ale nie może oceniać "
+            "wpływu ceny bez zdarzenia zmiany ceny oraz okna performance."
+        ),
+        next_step=price_impact_readiness.next_step,
+        risk=ActionRisk.medium,
+    )
 
 
 def _merchant_product_state_review_decision(

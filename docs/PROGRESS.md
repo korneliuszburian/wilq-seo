@@ -108,7 +108,11 @@ Stan produktu:
   previous price snapshot timestamps, `has_price_change`, changed-price count
   and unchanged-history count. Live proof still shows 3 current Ads prices, 0
   previous price snapshots, 0 changed prices and 0 performance windows, so
-  impact claims remain blocked. Merchant `product_performance_readiness` now also exposes
+  impact claims remain blocked. Merchant now also promotes that readiness into
+  `decision_queue` as `review_price_impact_readiness` when current product
+  prices exist, so dashboard and skills can show missing price history and
+  performance windows as a visible blocked review decision with
+  `merchant_price_impact_readiness_preview_v1`. Merchant `product_performance_readiness` now also exposes
   `missing_read_contracts`, so dashboard and skills can distinguish state-only
   Ads joins from missing Ads/GA4 product performance contracts without deriving
   that in prompt prose.

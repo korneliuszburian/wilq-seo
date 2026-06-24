@@ -10862,6 +10862,24 @@ def test_merchant_diagnostics_promotes_ads_product_state_review_decision(
     assert price_preview["products"][0]["has_price_change"] is True
     assert price_preview["products"][0]["price_delta_micros"] == 3450000
     assert price_preview["products"][0]["has_product_performance_metrics"] is False
+    price_decision = next(
+        item
+        for item in payload["decision_queue"]
+        if item["id"] == "merchant_decision_review_price_impact_readiness"
+    )
+    assert price_decision["decision_type"] == "review_price_impact_readiness"
+    assert price_decision["status"] == "blocked"
+    assert price_decision["metric_tiles"] == {
+        "ceny bieżące": 1,
+        "historia ceny": 1,
+        "zmiany ceny": 1,
+        "performance": 0,
+    }
+    assert price_decision["payload_preview"] == price_readiness["payload_preview"]
+    assert price_decision["source_connectors"] == price_readiness["source_connectors"]
+    assert price_decision["evidence_ids"] == price_readiness["evidence_ids"]
+    assert price_decision["blocked_claims"] == price_readiness["blocked_claims"]
+    assert price_decision["risk"] == "medium"
     readiness = payload["product_performance_readiness"]
     assert readiness["status"] == "blocked"
     assert readiness["missing_read_contracts"] == [

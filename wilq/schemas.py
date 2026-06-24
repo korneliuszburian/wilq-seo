@@ -1916,6 +1916,7 @@ class MerchantDecisionItem(BaseModel):
         "review_issue_cluster",
         "review_feed_status",
         "review_product_state_mapping",
+        "review_price_impact_readiness",
         "block_until_vendor_read",
     ]
     status: Literal["ready", "blocked", "missing"]

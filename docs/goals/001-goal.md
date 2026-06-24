@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 04:44 CEST.
+Last updated: 2026-06-24 04:49 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -74,6 +74,11 @@ of making the brief repeat its own metric-store read after Command Center has
 already built the daily base. Focused proof: daily runtime API contract test,
 ruff, mypy and live warm-cache checks for `/api/dashboard/command-center`,
 `/api/marketing/brief` and `/api/marketing/tactical-queue`.
+Merchant price-impact readiness is now also promoted into
+`decision_queue` as `decision_type=review_price_impact_readiness` whenever
+current product prices exist, so dashboard and skills can show the missing
+price-history/performance contracts as a visible blocked review decision
+instead of hiding them only in a top-level readiness object.
 
 ## Current Stack Map
 
@@ -218,13 +223,17 @@ Finish these before claiming the Ekologus demo is done:
      `merchant_price_impact_readiness_preview_v1`; live proof sees 3 current
      Ads prices, 0 previous price snapshots and 0 matching product performance
      windows, so price-impact remains blocked with explicit missing read
-     contracts. Price preview rows now expose current/previous price snapshot
-     timestamps, previous evidence IDs, `has_price_change`, and changed-vs-
-     unchanged price-history counters when metric history exists. A second
-     identical price snapshot is history, not a price-change event. Remaining
-     Merchant work is actual historical price snapshots with real price
-     changes, before/after performance windows and richer read-only previews
-     where vendor APIs expose safe details. Do not claim approval restoration, revenue
+     contracts. The same readiness is also visible as a blocked
+     `review_price_impact_readiness` decision when current prices exist, with
+     `merchant_price_impact_readiness_preview_v1` and blocked price-impact/
+     product ROAS/feed-write claims. Price preview rows now expose current/
+     previous price snapshot timestamps, previous evidence IDs,
+     `has_price_change`, and changed-vs-unchanged price-history counters when
+     metric history exists. A second identical price snapshot is history, not a
+     price-change event. Remaining Merchant work is actual historical price
+     snapshots with real price changes, before/after performance windows and
+     richer read-only previews where vendor APIs expose safe details. Do not
+     claim approval restoration, revenue
      recovery, product ROAS, price impact or unique SKU fixes from aggregate
      issue counts, state-only rows, supplemental-feed candidates or current
      prices alone.
