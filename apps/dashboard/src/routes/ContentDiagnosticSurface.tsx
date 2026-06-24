@@ -172,6 +172,7 @@ type ContentBriefPreviewItem = {
   gsc_demand?: string | null;
   metric_snapshot: Record<string, string | number | boolean | null>;
   brief_goal: string;
+  intent?: string | null;
   content_angle?: string | null;
   audience?: string | null;
   key_objections?: string[];
@@ -285,6 +286,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{preview.brief_goal}</p>
       <div className="mt-3 grid gap-2 rounded-md border border-line bg-white p-3 text-xs leading-5 text-slate-600">
+        {preview.intent ? <div>Intencja: {preview.intent}</div> : null}
         {preview.content_angle ? <div>Kąt treści: {preview.content_angle}</div> : null}
         {preview.audience ? <div>Odbiorca: {preview.audience}</div> : null}
         {preview.h1_direction ? <div>H1: {preview.h1_direction}</div> : null}
@@ -408,6 +410,7 @@ type WordPressDraftPayloadPreviewItem = {
   operation_type: string;
   post_status: string;
   topic: string;
+  intent?: string | null;
   target_url?: string | null;
   source_url?: string | null;
   target_site_url?: string | null;
@@ -485,6 +488,9 @@ function WordPressDraftPayloadPreviewCard({
         {preview.draft_payload.post_excerpt_direction ??
           "Szkic payloadu do review. Nie publikuje i nie wykonuje apply."}
       </p>
+      {preview.intent ? (
+        <p className="mt-2 text-xs text-slate-600">Intencja draftu: {preview.intent}</p>
+      ) : null}
       {preview.target_url ? (
         <p className="mt-2 text-xs text-slate-600">URL: {shortPath(preview.target_url)}</p>
       ) : null}

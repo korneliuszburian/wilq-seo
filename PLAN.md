@@ -252,6 +252,13 @@ must be built as a typed WILQ pipeline, not a prompt-only drafting trick.
   candidates stay `outline_only_until_gates_pass` until mapping,
   canonical/duplicate, legal/factual and human checks pass. Proof:
   `.local-lab/proof/content-draft-contract/content-strategist-smoke.json`.
+- `ready`: Content brief previews, reviewed WordPress draft previews,
+  Action detail cards and the content-strategist context-pack now expose typed
+  `intent`. This closes the explicit goal requirement that the content workflow
+  show intent alongside source facts, audience, H1/H2/FAQ/CTA, missing evidence
+  and forbidden claims. Proof:
+  `.local-lab/proof/dashboard/content-intent/action-content-intent.txt` and
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
 - `blocked`: WordPress/staging handoff remains blocked until there is a typed
   staging ActionObject with preview, human confirmation, audit and no automatic
   publish.
@@ -494,6 +501,11 @@ Use these rules before every implementation slice:
 - [x] Harden content skill smoke for the operator-summary migration candidate
   inventory counts. Proof:
   `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
+- [x] Expose typed content intent through content brief previews, reviewed
+  WordPress draft previews, the content-strategist context-pack and Action
+  detail cards. Proof:
+  `.local-lab/proof/dashboard/content-intent/action-content-intent.txt`;
+  focused API tests, dashboard route tests and content-strategist smoke passed.
 - [ ] Run marketer UAT or explicitly defer it with owner decision.
 
 Update this list after each slice. Do not keep done/outdated tasks in the active
@@ -554,6 +566,9 @@ Acceptance:
 - The agent can state the next unchecked item from `Progress`.
 - If stack is needed, API and dashboard are managed and ready, or the blocker
   is recorded.
+- The agent must not replay completed checks unless the current dirty files
+  touch the same proof surface. Continue from the first unchecked `Progress`
+  item or from a fresh blocker proven by API/browser/eval evidence.
 
 ## Milestone 1: Adversarial Eval Hardening
 
@@ -807,6 +822,11 @@ unless explicitly promoted:
   product risk is overclaiming from partial data, not lack of route count.
 - 2026-06-24: Do not fix product logic in skill references. Reason: WILQ API is
   the system brain; skills should consume contracts, not invent behavior.
+- 2026-06-24: Keep `PLAN.md` as the full overnight ExecPlan and
+  `docs/PROGRESS.md` as the short recovery ledger. Reason: official Codex
+  planning guidance treats execution plans as self-contained living documents,
+  while Goals should remain compact completion contracts with evidence-based
+  stop conditions.
 
 ## Outcomes And Retrospective
 

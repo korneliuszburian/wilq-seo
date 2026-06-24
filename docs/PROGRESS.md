@@ -182,6 +182,13 @@ Stan produktu:
   candidate inventory counts against `decision_queue`, so the aggregate cannot
   drift from per-decision target inventory status. Fresh proof:
   `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
+- Content brief previews, reviewed WordPress draft previews, the
+  content-strategist context-pack and Action detail cards now expose typed
+  `intent`, so the content workflow no longer loses one of the explicit goal
+  fields between API, dashboard and skill context. Browser proof:
+  `.local-lab/proof/dashboard/content-intent/action-content-intent.txt`;
+  smoke proof:
+  `.local-lab/proof/content-target-metadata/content-strategist-smoke.json`.
 
 ## Active Gaps
 
@@ -212,8 +219,8 @@ Stan produktu:
    unless a fresh route proof finds a remaining marketer-facing leak.
 3. If content depth is next, continue from the existing source/target,
    duplicate/canonical, ActionObject migration status and target-site review
-   requirements toward confirmed dev-site inventory mapping and draft/staging
-   handoff, without publish/apply claims.
+   requirements plus typed intent toward confirmed dev-site inventory mapping
+   and draft/staging handoff, without publish/apply claims.
 4. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

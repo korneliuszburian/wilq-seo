@@ -327,6 +327,7 @@ def validate_content_action_preview(
     if "ranking guarantee" not in set(first_preview.get("blocked_claims") or []):
         raise SystemExit("Content brief preview must block ranking guarantee claims")
     required_string_fields = [
+        "intent",
         "content_angle",
         "audience",
         "h1_direction",
@@ -430,6 +431,7 @@ def validate_content_action_preview(
             "topic": preview.get("topic"),
             "source_type": preview.get("source_type"),
             "content_angle": preview.get("content_angle"),
+            "intent": preview.get("intent"),
             "audience": preview.get("audience"),
             "h1_direction": preview.get("h1_direction"),
             "seo_title_direction": preview.get("seo_title_direction"),

@@ -649,6 +649,7 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>WordPress: {stringValue(item.wordpress_inventory_match, "brak")}</div>
         <div>Opcje: {asStringArray(item.decision_options).join(", ") || "brak"}</div>
         <div>Cel briefu: {stringValue(item.brief_goal, "brak")}</div>
+        <div>Intencja: {stringValue(item.intent, "brak")}</div>
         <div>Kąt treści: {stringValue(item.content_angle, "brak")}</div>
         <div>Odbiorca: {stringValue(item.audience, "brak")}</div>
         <div>H1: {stringValue(item.h1_direction, "brak")}</div>
@@ -692,6 +693,7 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
         <div>Temat: {stringValue(item.topic, "brak")}</div>
+        <div>Intencja: {stringValue(item.intent, "brak")}</div>
         <div>Status wpisu: {stringValue(item.post_status, stringValue(draftPayload.post_status, "brak"))}</div>
         <div>Tytuł draftu: {stringValue(draftPayload.post_title, "brak")}</div>
         <div>Strona docelowa: {contentTargetSiteValue(item)}</div>

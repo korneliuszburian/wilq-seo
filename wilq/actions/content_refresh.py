@@ -236,6 +236,7 @@ def _gsc_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[str
                 "decision_options": decision_options,
                 "metric_snapshot": _gsc_metric_snapshot(page_facts),
                 "brief_goal": _gsc_brief_goal(wordpress_match, primary_query),
+                "intent": _content_intent(primary_query, wordpress_match),
                 "content_angle": _content_angle(primary_query, wordpress_match),
                 "audience": _content_audience(primary_query),
                 "key_objections": _key_objections(primary_query),
@@ -335,6 +336,7 @@ def _wordpress_draft_payload_preview(preview: dict[str, Any]) -> dict[str, Any]:
         "operation_type": _wordpress_draft_operation(mode),
         "post_status": "draft",
         "topic": topic,
+        "intent": preview.get("intent") if isinstance(preview.get("intent"), str) else None,
         "target_url": target_url,
         "source_url": source_url,
         "target_site_url": target_site_url,
@@ -697,6 +699,7 @@ def _ahrefs_content_brief_previews(metric_facts: list[MetricFact]) -> list[dict[
                     "Zweryfikuj temat z Ahrefs przeciw GSC i WordPress, zanim "
                     "powstanie brief. To jest kandydat do review, nie decyzja create."
                 ),
+                "intent": _ahrefs_content_intent(topic),
                 "content_angle": _ahrefs_content_angle(topic),
                 "audience": _content_audience(topic),
                 "key_objections": _key_objections(topic),
@@ -1107,10 +1110,49 @@ def _content_angle(topic: str, wordpress_match: bool) -> str:
     )
 
 
+def _content_intent(topic: str, wordpress_match: bool) -> str:
+    normalized = _normalize_text(topic)
+    if "bdo" in normalized:
+        base = (
+            "informacyjno-konsultacyjna: użytkownik chce szybko zrozumieć "
+            "obowiązek BDO i sprawdzić, czy potrzebuje wsparcia eksperta"
+        )
+    elif "zielony lad" in normalized or "esg" in normalized:
+        base = (
+            "edukacyjno-regulacyjna: użytkownik szuka prostego wyjaśnienia "
+            "regulacji i konsekwencji dla firmy"
+        )
+    elif "operat" in normalized or "pozwolen" in normalized:
+        base = (
+            "konsultacyjna: użytkownik chce ustalić wymagania formalne i "
+            "kolejny krok postępowania"
+        )
+    elif "odpad" in normalized or "beczk" in normalized or "sorbent" in normalized:
+        base = (
+            "produktowo-procesowa: użytkownik sprawdza rozwiązanie lub proces "
+            "dla bezpiecznej gospodarki odpadami"
+        )
+    else:
+        base = (
+            "do potwierdzenia: WILQ ma sygnał popytu, ale ekspert musi "
+            "doprecyzować intencję przed pisaniem"
+        )
+    if wordpress_match:
+        return f"{base}; tryb refresh/merge istniejącej strony"
+    return f"{base}; tryb create zablokowany do kontroli inventory i duplikatów"
+
+
 def _ahrefs_content_angle(topic: str) -> str:
     return (
         f"Potraktuj `{topic}` jako inspirację konkurencyjną do review, nie jako gotowy "
         "temat publikacji, dopóki GSC i WordPress nie potwierdzą sensu biznesowego."
+    )
+
+
+def _ahrefs_content_intent(topic: str) -> str:
+    return (
+        f"konkurencyjny sygnał do review: `{topic}` wymaga potwierdzenia "
+        "popytu w GSC, dopasowania WordPress i braku duplikacji przed briefem"
     )
 
 

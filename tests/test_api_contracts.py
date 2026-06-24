@@ -1663,6 +1663,7 @@ def test_content_action_preview_keeps_dimensioned_decisions_after_newer_aggregat
     assert previews[0]["preview_contract"] == "content_brief_preview_v1"
     assert previews[0]["candidate_id"].startswith("content_brief_gsc_")
     assert previews[0]["evidence_ids"]
+    assert previews[0]["intent"]
     assert previews[0]["content_angle"]
     assert previews[0]["audience"]
     assert previews[0]["key_objections"]
@@ -1814,6 +1815,7 @@ def test_content_brief_candidate_review_persists_audit_event(
     assert draft_preview["preview_contract"] == "wordpress_draft_payload_preview_v1"
     assert draft_preview["source_preview_contract"] == "content_brief_preview_v1"
     assert draft_preview["candidate_id"] == candidate_id
+    assert draft_preview["intent"]
     assert draft_preview["post_status"] == "draft"
     assert draft_preview["mutation_allowed"] is False
     assert draft_preview["apply_allowed"] is False
@@ -1926,6 +1928,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
         for item in payload["content_brief_preview"]
         if item["candidate_id"] == candidate_id
     )
+    assert brief_preview["intent"]
     assert brief_preview["content_angle"]
     assert brief_preview["audience"]
     assert brief_preview["h1_direction"]
@@ -1959,6 +1962,7 @@ def test_content_strategist_context_pack_preserves_reviewed_draft_preview(
     assert draft_preview["preview_contract"] == "wordpress_draft_payload_preview_v1"
     assert draft_preview["source_preview_contract"] == "content_brief_preview_v1"
     assert draft_preview["candidate_id"] == candidate_id
+    assert draft_preview["intent"]
     assert draft_preview["post_status"] == "draft"
     assert "target_site_adaptation_status" in draft_preview
     assert "target_site_migration_candidate_url" in draft_preview
