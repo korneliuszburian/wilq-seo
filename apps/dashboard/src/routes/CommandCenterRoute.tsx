@@ -127,6 +127,16 @@ function sourceList(item: DailyDecision) {
   return marketerConnectorLabels(item.source_connectors).join(", ");
 }
 
+function decisionFreshnessLabel(item: DailyDecision) {
+  const labels: Record<string, string> = {
+    fresh: "świeże",
+    stale: "do odświeżenia",
+    unknown: "nieznana",
+    missing: "brak danych"
+  };
+  return labels[item.freshness?.state ?? "unknown"] ?? "nieznana";
+}
+
 function decisionCopy(item: DailyDecision): DecisionCopy {
   if (item.id === "decision_review_merchant_feed_issues") {
     const products = metricDisplay(item, "produkty");
@@ -274,6 +284,7 @@ function DailyDecisionBoard({ data }: { data: CommandCenterResponse }) {
             ) : null}
             <div className="mt-3 grid gap-2 text-xs text-slate-600">
               <TraceLine label="Źródła danych" values={marketerConnectorLabels(item.source_connectors)} />
+              <TraceLine label="Świeżość źródeł" values={[decisionFreshnessLabel(item)]} />
               <TraceLine label="Dowody w API" values={[evidenceCountSummary(item.evidence_ids.length)]} />
               <TraceLine label="Akcje do walidacji" values={[actionValidationSummary(item.action_ids.length)]} />
               <TraceLine label="Czego nie twierdzimy" values={marketerBlockedClaimLabels(item.blocked_claims)} />

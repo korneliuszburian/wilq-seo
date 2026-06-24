@@ -183,9 +183,11 @@ Stan produktu:
   decision view-model. Live `/api/dashboard/command-center` returns Merchant,
   Content, GA4 and Ads daily decisions with Polish Codex prompts, evidence IDs,
   ActionObject IDs and blocked claims; raw sections are empty on the first
-  screen. Daily decisions now also carry stable `domain` identifiers:
-  `merchant`, `content`, `ga4` and `google_ads`; `scripts/live_contract_smoke.py`
-  asserts the field exists without checking changing live metric values.
+  screen. Daily decisions now also carry stable `domain` identifiers and typed
+  `freshness` state derived from latest source `vendor_read` with
+  connector-freshness fallback; `scripts/live_contract_smoke.py` asserts these
+  fields exist without checking changing live metric values. Live proof on
+  2026-06-24 returned Merchant/GA4/Ads fresh and Content stale.
 - Skill coverage table: `docs/evals/skill-coverage-audit.md`. Current state:
   12/12 skills have non-interactive eval artifacts; base API/evidence/Polish
   output/safety checks are covered.
@@ -223,7 +225,8 @@ Stan produktu:
    - Do not push decisions into prompt/reference prose; implement typed
      API/schema/view-model first.
    - Shared `daily_decisions` are now the canonical first-screen view-model.
-     They expose stable `domain` identifiers for Merchant, Content, GA4 and Ads.
+     They expose stable `domain` identifiers and typed `freshness` state for
+     Merchant, Content, GA4 and Ads.
      Next decision/API work should harden stable domain queues and explicit
      ready/stale/blocked semantics. Avoid showing connector readiness as a
      marketing decision.

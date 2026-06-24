@@ -2599,6 +2599,9 @@ class DailyDecision(BaseModel):
     id: str
     title: str
     domain: str = "wilq"
+    freshness: FreshnessState = Field(
+        default_factory=lambda: FreshnessState(state="unknown")
+    )
     route: str
     status: Literal["ready", "blocked"]
     priority: int = Field(ge=1, le=100)

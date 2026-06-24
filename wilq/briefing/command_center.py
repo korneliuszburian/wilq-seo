@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from wilq.actions.google_ads.business_context import ADS_BUSINESS_CONTEXT_ACTION_ID
@@ -27,15 +28,18 @@ from wilq.schemas import (
     CommandCenterActionPlanItem,
     CommandCenterBriefItem,
     CommandCenterResponse,
+    ConnectorRefreshMode,
     ConnectorRefreshRun,
     ConnectorRefreshStatus,
     ConnectorStatus,
     ConnectorSummary,
     DailyDecision,
+    FreshnessState,
     MetricFact,
     OpportunityDomain,
     TacticalQueueItem,
     TacticalQueueResponse,
+    utc_now,
 )
 from wilq.storage.local_state import local_state_store
 from wilq.storage.metric_store import metric_store
@@ -60,6 +64,7 @@ LOCALO_PROBE_METRIC_NAMES = {
     "mcp_initialize_status",
     "pkce_s256_supported",
 }
+DAILY_DECISION_FRESH_AFTER_HOURS = 48
 PRIMARY_DAILY_PLAN_IDS = {
     "plan_review_merchant_feed_issues",
     "plan_prepare_content_refresh_queue",
@@ -106,7 +111,12 @@ def build_command_center_response(
         primary_next_step=primary_next_step,
         blocker_count=blocker_count,
         tactical_item_count=len(tactical_queue.items),
-        daily_decisions=build_daily_decisions(action_plan, operator_brief),
+        daily_decisions=build_daily_decisions(
+            action_plan,
+            operator_brief,
+            connectors=connectors,
+            refresh_runs=refresh_runs,
+        ),
         operator_brief=operator_brief,
         demo_script=[],
         action_plan=action_plan,
@@ -305,13 +315,23 @@ def build_command_center_action_plan(
 def build_daily_decisions(
     action_plan: list[CommandCenterActionPlanItem],
     operator_brief: list[CommandCenterBriefItem],
+    connectors: list[ConnectorStatus] | None = None,
+    refresh_runs: list[ConnectorRefreshRun] | None = None,
 ) -> list[DailyDecision]:
     brief_by_plan_id = _brief_items_by_plan_id(operator_brief)
+    freshness_by_connector = _daily_decision_freshness_by_connector(
+        connectors or [],
+        refresh_runs or [],
+    )
     return [
         DailyDecision(
             id=plan_item.id.replace("plan_", "decision_", 1),
             title=plan_item.title,
             domain=_daily_decision_domain(plan_item.category),
+            freshness=_combined_decision_freshness(
+                plan_item.source_connectors,
+                freshness_by_connector,
+            ),
             route=plan_item.route,
             status=plan_item.status,
             priority=plan_item.priority,
@@ -345,6 +365,79 @@ def _daily_decision_domain(category: str) -> str:
         "Google Ads": "google_ads",
         "Localo": "localo",
     }.get(category, "wilq")
+
+
+def _daily_decision_freshness_by_connector(
+    connectors: list[ConnectorStatus],
+    refresh_runs: list[ConnectorRefreshRun],
+) -> dict[str, FreshnessState]:
+    freshness_by_connector = {connector.id: connector.freshness for connector in connectors}
+    latest_vendor_reads: dict[str, ConnectorRefreshRun] = {}
+    for run in refresh_runs:
+        if run.mode != ConnectorRefreshMode.vendor_read:
+            continue
+        if run.status != ConnectorRefreshStatus.completed:
+            continue
+        if run.completed_at is None:
+            continue
+        current = latest_vendor_reads.get(run.connector_id)
+        if current is None or _as_utc(run.completed_at) > _as_utc(
+            current.completed_at or datetime.min.replace(tzinfo=UTC)
+        ):
+            latest_vendor_reads[run.connector_id] = run
+    for connector_id, run in latest_vendor_reads.items():
+        completed_at = _as_utc(run.completed_at or run.started_at)
+        age = utc_now() - completed_at
+        state: Literal["fresh", "stale"] = (
+            "fresh"
+            if age <= timedelta(hours=DAILY_DECISION_FRESH_AFTER_HOURS)
+            else "stale"
+        )
+        freshness_by_connector[connector_id] = FreshnessState(
+            state=state,
+            last_success_at=completed_at,
+            notes=(
+                f"Ostatni vendor_read: {completed_at.isoformat()}. "
+                f"Próg świeżości: {DAILY_DECISION_FRESH_AFTER_HOURS}h."
+            ),
+        )
+    return freshness_by_connector
+
+
+def _combined_decision_freshness(
+    source_connectors: list[str],
+    freshness_by_connector: dict[str, FreshnessState],
+) -> FreshnessState:
+    if not source_connectors:
+        return FreshnessState(state="unknown", notes="Brak źródeł danych w decyzji.")
+    states = [
+        freshness_by_connector.get(
+            connector_id,
+            FreshnessState(state="unknown", notes="Brak statusu świeżości źródła."),
+        )
+        for connector_id in source_connectors
+    ]
+    state_priority = {"fresh": 0, "unknown": 1, "stale": 2, "missing": 3}
+    combined_state = max(
+        (state.state for state in states),
+        key=lambda value: state_priority.get(value, 1),
+    )
+    last_success_values = [state.last_success_at for state in states if state.last_success_at]
+    notes = ", ".join(
+        f"{connector_id}={state.state}"
+        for connector_id, state in zip(source_connectors, states, strict=False)
+    )
+    return FreshnessState(
+        state=combined_state,
+        last_success_at=min(last_success_values) if last_success_values else None,
+        notes=f"Świeżość źródeł decyzji: {notes}.",
+    )
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _brief_items_by_plan_id(

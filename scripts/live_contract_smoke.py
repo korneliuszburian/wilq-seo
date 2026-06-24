@@ -102,9 +102,12 @@ def _check_decision_shape(
     label: str,
     errors: list[str],
 ) -> None:
-    for key in ("id", "title", "domain", "status"):
+    for key in ("id", "title", "domain", "freshness", "status"):
         if not decision.get(key):
             errors.append(f"{label}.{key} must be present")
+    freshness = decision.get("freshness") or {}
+    if freshness.get("state") not in {"fresh", "stale", "unknown", "missing"}:
+        errors.append(f"{label}.freshness.state must be present")
     if decision.get("status") not in {"ready", "blocked"}:
         errors.append(f"{label}.status must be ready or blocked")
     _require_nonempty_list(decision, "evidence_ids", f"{label}.evidence_ids", errors)

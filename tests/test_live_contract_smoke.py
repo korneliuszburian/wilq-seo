@@ -24,6 +24,8 @@ def _payloads_with_metric_value(value: int) -> dict[str, Any]:
                 {
                     "id": "decision_review_ads",
                     "title": "Przejrzyj Ads",
+                    "domain": "google_ads",
+                    "freshness": {"state": "fresh"},
                     "status": "ready",
                     "evidence_ids": ["ev_refresh_refresh_google_ads_123"],
                     "source_connectors": ["google_ads"],

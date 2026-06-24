@@ -1,6 +1,6 @@
 # Goal 001 - WILQ Marketing OS Active Goal
 
-Last updated: 2026-06-24 02:21 CEST.
+Last updated: 2026-06-24 02:27 CEST.
 
 This is the only active goal file. Keep it short and current. Do not append a
 chronological work log here. Completed slices belong in git history,
@@ -235,8 +235,10 @@ Finish these before claiming the Ekologus demo is done:
      implement it in typed API/schema/view-model first, then make the UI/skill
      consume it.
    - Current Command Center `daily_decisions` expose stable `domain`
-     identifiers (`merchant`, `content`, `ga4`, `google_ads`) and live smoke
-     asserts the field exists.
+     identifiers (`merchant`, `content`, `ga4`, `google_ads`) and typed
+     `freshness` state derived from latest source `vendor_read` with
+     connector-freshness fallback. Live smoke asserts both fields exist without
+     checking changing live metric values.
    - Add decision/view-model slices:
      1. Domain-specific decision queues for Ads, Merchant, Content, GA4 and
         Localo with stable fields: `why_it_matters`, `operator_action`,

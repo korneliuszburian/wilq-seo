@@ -26,6 +26,7 @@ const commandCenterFixture: CommandCenterResponse = {
       id: "decision_review_merchant_feed_issues",
       title: "Przejrzyj kolejkę problemów Merchant Center",
       domain: "merchant",
+      freshness: { state: "fresh" },
       route: "/merchant",
       status: "ready",
       priority: 10,
@@ -54,6 +55,7 @@ const commandCenterFixture: CommandCenterResponse = {
       id: "decision_prepare_content_refresh_queue",
       title: "Przejrzyj kolejkę SEO z GSC i WordPress",
       domain: "content",
+      freshness: { state: "fresh" },
       route: "/content-planner",
       status: "ready",
       priority: 12,
@@ -153,6 +155,7 @@ describe("CommandCenter route", () => {
     expect(screen.getByText("Codex: feed Merchant")).toBeInTheDocument();
     expect(screen.getByText("Codex: strategia treści")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Kopiuj prompt" })).toHaveLength(2);
+    expect(screen.getAllByText(/Świeżość źródeł: świeże/)).toHaveLength(2);
     expect(screen.queryByText("Prompt do Codex")).not.toBeInTheDocument();
     expect(screen.queryByText(/Użyj skilla wilq-merchant-feed-operator/)).not.toBeInTheDocument();
     expect(screen.getByText("Źródła i ograniczenia")).toBeInTheDocument();

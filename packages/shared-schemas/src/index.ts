@@ -14,6 +14,13 @@ export const ConnectorStatusSchema = z.object({
   supported_actions: z.array(z.string())
 });
 
+export const FreshnessStateSchema = z.object({
+  state: z.enum(["fresh", "stale", "unknown", "missing"]),
+  last_success_at: z.string().nullable().optional(),
+  checked_at: z.string().nullable().optional(),
+  notes: z.string().nullable().optional()
+});
+
 export const MetricFactSchema = z.object({
   name: z.string(),
   value: z.union([z.string(), z.number()]),
@@ -2279,6 +2286,7 @@ export const DailyDecisionSchema = z.object({
   id: z.string(),
   title: z.string(),
   domain: z.string().default("wilq"),
+  freshness: FreshnessStateSchema.default({ state: "unknown" }),
   route: z.string(),
   status: z.enum(["ready", "blocked"]),
   priority: z.number(),

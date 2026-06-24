@@ -3547,6 +3547,8 @@ def test_command_center_exposes_polish_operator_brief(
     }
     merchant_decision = decisions_by_id["decision_review_merchant_feed_issues"]
     assert merchant_decision["domain"] == "merchant"
+    assert merchant_decision["freshness"]["state"] in {"fresh", "stale", "unknown", "missing"}
+    assert "Świeżość źródeł decyzji" in merchant_decision["freshness"]["notes"]
     assert merchant_decision["co_widzimy"].startswith("Merchant Center ma")
     assert merchant_decision["metric_tiles"]["produkty"] == 10900
     assert merchant_decision["metric_tiles"]["zgłoszenia"] == 3
@@ -3602,6 +3604,7 @@ def test_command_center_exposes_polish_operator_brief(
         {
             "id": item["id"],
             "domain": item["domain"],
+            "freshness_state": item["freshness"]["state"],
             "route": item["route"],
             "status": item["status"],
             "source_connectors": item["source_connectors"],
@@ -3615,6 +3618,7 @@ def test_command_center_exposes_polish_operator_brief(
         {
             "id": item["id"],
             "domain": item["domain"],
+            "freshness_state": item["freshness"]["state"],
             "route": item["route"],
             "status": item["status"],
             "source_connectors": item["source_connectors"],
