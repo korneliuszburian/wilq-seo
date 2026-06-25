@@ -870,6 +870,11 @@ Do not implement these before Ekologus works deeply:
   `.local-lab/proof/condensation-browser-audit-20260625/` and summarized
   concrete route-condensation tasks in
   `docs/handoffs/2026-06-25-condensation-browser-audit.md`.
+- [x] First dashboard condensation implementation shipped for Ads Doctor: a
+  live primary decision panel before the diagnostic wall, with safe next step,
+  evidence/source summary, blocked claims, missing inputs and measurement plan.
+  Browser proof:
+  `.local-lab/proof/ads-condensed-decision-panel-20260625/`.
 - [ ] Run or explicitly defer real marketer UAT from current `PLAN.md`.
 - [ ] Close or mark blocked current `PLAN.md`.
 - [ ] Start Milestone C only after current demo closure/deferral is explicit.
@@ -884,6 +889,9 @@ Do not implement these before Ekologus works deeply:
   "WILQ is the marketer".
 - The largest current human proof gap is still marketer UAT or explicit owner
   deferral.
+- Ads Doctor needed implementation, not just planning: the route was formally
+  correct but too dense, so the first condensation slice moves the decision,
+  blockers and measurement plan ahead of the raw diagnostic wall.
 
 ## Decision Log
 

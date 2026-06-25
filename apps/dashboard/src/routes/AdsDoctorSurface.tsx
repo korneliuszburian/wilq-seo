@@ -129,6 +129,7 @@ export function AdsDoctorSurface() {
 
       {data.blocked_handoff ? <AdsBlockedHandoffPanel handoff={data.blocked_handoff} /> : null}
 
+      <AdsCondensedDecisionPanel data={data} currencyCode={currencyCode} />
       <AdsMarketSnapshot data={data} currencyCode={currencyCode} />
       <AdsOperatorSummary data={data} />
 
@@ -141,6 +142,108 @@ export function AdsDoctorSurface() {
       ) : null}
 
     </main>
+  );
+}
+
+function AdsCondensedDecisionPanel({
+  data,
+  currencyCode
+}: {
+  data: AdsDiagnosticsResponse;
+  currencyCode: string | undefined;
+}) {
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const primaryDecision =
+    summary.top_decision_ids
+      .map((decisionId) => decisionsById.get(decisionId))
+      .find((decision): decision is AdsDecisionItem => Boolean(decision)) ??
+    data.decision_queue[0];
+  const blockedClaims = primaryDecision
+    ? primaryDecision.blocked_claims.map(adsBlockedClaimLabel)
+    : summary.blocked_claims.map(adsBlockedClaimLabel);
+  const missingInputs = primaryDecision
+    ? primaryDecision.missing_read_contracts.map(adsMissingReadContractLabel)
+    : summary.missing_read_contracts.map(adsMissingReadContractLabel);
+  const evidenceCount = primaryDecision?.evidence_ids.length ?? summary.evidence_ids.length;
+  const actionCount = primaryDecision?.action_ids.length ?? summary.action_ids.length;
+  const sourceConnectors = primaryDecision?.source_connectors ?? summary.source_connectors;
+
+  return (
+    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-action">
+            Decyzja skondensowana
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+            {primaryDecision
+              ? `Pierwszy krok: ${adsDecisionTypeLabel(primaryDecision.decision_type)}`
+              : "Najpierw sprawdź Ads"}
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+            {primaryDecision
+              ? adsDecisionSummary(primaryDecision)
+              : "WILQ ma odczyt Google Ads i pokazuje, co można sprawdzić bez udawania optymalizatora."}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          <MetricTile label="Kliknięcia" value={adsNumber(summary.total_clicks)} />
+          <MetricTile label="Koszt" value={adsCost(summary.total_cost_micros, currencyCode)} />
+          <MetricTile label="Konwersje" value={adsNumber(summary.total_conversions)} />
+          <MetricTile label="Akcje" value={formatActionObjectCount(actionCount)} />
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {primaryDecision
+              ? adsDecisionRationale(primaryDecision)
+              : "Ads ma live evidence, ale decyzje budżetowe i wdrożeniowe nadal wymagają targetów, walidacji i audytu."}
+          </p>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
+          <p className="mt-2 text-sm font-medium leading-6 text-ink">
+            {primaryDecision
+              ? adsDecisionNextStep(primaryDecision)
+              : "Przejrzyj kolejkę Ads i wybierz jedną akcję do walidacji bez apply."}
+          </p>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
+          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+            <TraceLine label="Dowody" values={[formatTraceIdCount(evidenceCount)]} />
+            <TraceLine label="Źródła" values={sourceConnectors} />
+            <TraceLine
+              label="Stan danych"
+              values={[
+                data.live_data_available ? "metryki Ads dostępne" : "brak metryk Ads",
+                data.latest_refresh
+                  ? `ostatni odczyt: ${adsRefreshStatusLabel(data.latest_refresh.status)}`
+                  : "brak odczytu"
+              ]}
+            />
+          </div>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Czego WILQ nie powie</h3>
+          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+            <TraceLine label="Zablokowane claimy" values={blockedClaims.slice(0, 6)} />
+            <TraceLine label="Brakujące wejścia" values={missingInputs.slice(0, 6)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-md border border-line bg-white p-3">
+        <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          {adsCondensedMeasurementPlan(primaryDecision)}
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -2288,6 +2391,31 @@ function adsDecisionNextStep(decision: AdsDecisionItem) {
       "Zacznij od haseł z największym kosztem. Wykluczenia przygotuj tylko po ocenie intencji, historii 90 dni i walidacji akcji WILQ."
   };
   return steps[decision.decision_type] ?? decision.next_step;
+}
+
+function adsCondensedMeasurementPlan(decision: AdsDecisionItem | undefined) {
+  if (!decision) {
+    return "Po walidacji akcji WILQ zapisz pre/post window check. Bez okna pomiarowego WILQ nie ocenia sukcesu ani porażki.";
+  }
+  if (decision.decision_type === "review_campaign_activity") {
+    return "Po review kampanii zapisz baseline kosztu, kliknięć, konwersji i wartości konwersji. Dopiero osobne okno pre/post oraz historia zmian pozwolą mówić o efekcie.";
+  }
+  if (decision.decision_type === "review_campaign_triage") {
+    return "Po przejściu kolejki kampanii zapisz, które kampanie wymagają ręcznej decyzji. Efekt sprawdzimy dopiero przez pre/post window, historię zmian i ponowny odczyt Ads.";
+  }
+  if (decision.decision_type === "review_search_terms") {
+    return "Po review search terms zapisz kandydatów i blokady. Dopiero po potwierdzonej zmianie oraz pre/post window można oceniać wpływ na koszt, konwersje lub utratę ruchu.";
+  }
+  if (
+    decision.decision_type === "review_negative_keyword_safety" ||
+    decision.decision_type === "review_search_term_ngrams"
+  ) {
+    return "Po walidacji wykluczeń sprawdź pre/post search terms, koszt i konwersje. Bez impact sanity check WILQ nie claimuje oszczędności ani braku utraty konwersji.";
+  }
+  if (decision.decision_type === "review_recommendations") {
+    return "Po review rekomendacji zapisz, które rekomendacje odrzucono albo skierowano do walidacji. Efekt można ocenić dopiero po audycie zmiany i porównaniu metryk w kolejnym oknie.";
+  }
+  return "Po decyzji zapisz ActionObject review, baseline i impact-check. Brak okna pomiarowego oznacza brak claimu o poprawie wyniku.";
 }
 
 function adsDecisionStatusLabel(status: string) {

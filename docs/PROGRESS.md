@@ -112,6 +112,13 @@ Stan produktu:
   Command Center is the right start, GA4 is the reference condensation pattern,
   Merchant and Content need selected-first/detail-later structure, and Ads
   Doctor remains the biggest overload at 61,885 text chars and 54 headings.
+- Ads Doctor now has the first implemented condensation slice: a live
+  dashboard panel before the diagnostic wall that shows the primary Ads
+  decision, why it matters, safe next action, evidence/source summary, blocked
+  claims, missing inputs and measurement plan. Proof:
+  `.local-lab/proof/ads-condensed-decision-panel-20260625/`. Focused checks:
+  `rtk pnpm --dir apps/dashboard typecheck` and
+  `rtk pnpm --filter @wilq/dashboard test -- AdsDoctorSurface`.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -178,10 +185,10 @@ Stan produktu:
    `.local-lab/proof/marketer-uat-packet/`: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record the filled result through
    `scripts/record_marketer_uat_result.py`.
-2. If demo UX is the next priority, use the condensation browser audit: add a
-   true top Ads decision panel before the diagnostic wall, and add a single
-   selected Content decision panel before full drilldown. Change one blocker at
-   a time.
+2. If demo UX is the next priority, continue the condensation browser audit
+   from Content or Merchant. Ads Doctor already has the first condensed
+   decision panel; next likely slice is a single selected Content decision
+   panel before full drilldown. Change one blocker at a time.
 3. Do not repeat completed action-copy cleanup or add new evals unless fresh
    route proof finds a specific marketer-facing leak.
 4. If content depth is next, continue from the review handoff packet toward

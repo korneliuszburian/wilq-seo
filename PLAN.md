@@ -550,14 +550,13 @@ after the first decision layer is clear.
   headings, 43 card/section surfaces and about 22 viewport heights. Move
   "Najpierw sprawdz w Ads" above the full ready/blocked matrix and make it the
   primary first-screen surface.
-- `task`: Fresh condensation browser audit on 2026-06-25 confirms Ads Doctor is
-  still the main overload after the start strip: 61,885 text chars, 201
-  snapshot lines, 54 headings and 90 interactive refs. Add a true condensed
-  decision panel before the diagnostic wall: one primary Ads decision, why it
-  matters, safe next action, blocked claims, missing inputs, evidence summary
-  and measurement/impact plan. Proof:
+- `ready`: Ads Doctor now has a true condensed decision panel before the
+  diagnostic wall. It renders one primary Ads decision, why it matters, safe
+  next action, evidence/source summary, blocked claims, missing inputs and a
+  measurement/impact plan. Browser proof captured the panel in the live
+  dashboard before the long "Aktualny odczyt Ads" section. Proof:
   `docs/handoffs/2026-06-25-condensation-browser-audit.md` and
-  `.local-lab/proof/condensation-browser-audit-20260625/`.
+  `.local-lab/proof/ads-condensed-decision-panel-20260625/`.
 - `task`: Browser audit shows Content Planner is the strongest route but
   overloaded: 43k body chars and about 14 viewport heights. Add a top
   "Dzisiejszy brief do review" panel for one selected BDO/Zielony Lad decision
