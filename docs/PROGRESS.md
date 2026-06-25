@@ -93,6 +93,12 @@ Stan produktu:
   rejects placeholders and turns marketer fail/confusion/new tasks into
   classified task candidates. Focused proof:
   `rtk uv run pytest tests/test_marketer_uat_packet.py tests/test_marketer_uat_result.py -q`.
+- `agent-browser` marketer audit on 2026-06-25 captured real browser proof for
+  Command Center, Merchant, Content Planner, Ads Doctor and GA4. Handoff:
+  `docs/handoffs/2026-06-25-browser-marketer-audit.md`; proof:
+  `.local-lab/proof/browser-marketer-audit-20260625/`. Main finding: Command
+  Center is usable, GA4 is clearest, Merchant is useful but deep, Content is
+  high-value but overloaded, Ads Doctor is too dense for unassisted demo.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -159,12 +165,11 @@ Stan produktu:
    `.local-lab/proof/marketer-uat-packet/`: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record the filled result through
    `scripts/record_marketer_uat_result.py`.
-2. If demo UX is the next priority, verify with the real marketer whether the
-   Ads "Najpierw sprawdź" strip is enough. Collapse lower-priority action cards
-   only if human feedback or fresh browser proof still shows confusion.
-3. If demo UX is the next priority, change one confirmed blocker at a time
-   from browser/UAT evidence. Do not repeat the completed action-copy cleanup
-   unless a fresh route proof finds a remaining marketer-facing leak.
+2. If demo UX is the next priority, use the browser audit: move Ads "Najpierw
+   sprawdź w Ads" above the dense readiness matrix, and add a single selected
+   Content decision panel before full drilldown. Change one blocker at a time.
+3. Do not repeat completed action-copy cleanup or add new evals unless fresh
+   route proof finds a specific marketer-facing leak.
 4. If content depth is next, continue from the review handoff packet toward
    confirmed human mapping for every row, then audited draft-readiness. Do not
    unlock staging, publish or uplift claims without typed preview, human

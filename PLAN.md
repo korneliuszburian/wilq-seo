@@ -545,6 +545,21 @@ after the first decision layer is clear.
   toggle on Action detail instead of first-screen debug language.
 - `task`: Keep route cards action-oriented: "what happened", "what to do next",
   "what claim is blocked", "where to click".
+- `task`: Browser audit `docs/handoffs/2026-06-25-browser-marketer-audit.md`
+  shows Ads Doctor is too dense for unassisted demo: 60k body chars, 29
+  headings, 43 card/section surfaces and about 22 viewport heights. Move
+  "Najpierw sprawdz w Ads" above the full ready/blocked matrix and make it the
+  primary first-screen surface.
+- `task`: Browser audit shows Content Planner is the strongest route but
+  overloaded: 43k body chars and about 14 viewport heights. Add a top
+  "Dzisiejszy brief do review" panel for one selected BDO/Zielony Lad decision
+  and collapse Ahrefs/migration/staging/measurement drilldowns below details.
+- `task`: Browser audit shows Merchant is useful but deep. Collapse
+  contract/payload/proof blocks behind technical details after the first
+  decision queue item.
+- `task`: Browser audit shows GA4 is the clearest route, but `(not set)` rows
+  repeat row metric tiles and raw values such as `0.019608`. Group measurement
+  issues first and format engagement as percentages.
 - `task`: Add a core-domain quick switcher or improve Command Center links if
   marketer UAT shows navigation confusion.
 - `hardening`: Do not redesign the visual system broadly before UAT. Fix one
