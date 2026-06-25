@@ -11,6 +11,7 @@ import {
 import { ActionPayloadPreviewToggle } from "../components/ActionPayloadPreviewToggle";
 import { BlockerNotice, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
+import { marketerOperatorCopy } from "./marketingLabels";
 
 export function ConnectorGrid({ connectors }: { connectors: ConnectorStatus[] }) {
   return (
@@ -183,14 +184,16 @@ export function ActionList({ actions }: { actions: ActionObject[] }) {
         <article key={action.id} className="rounded-md border border-line bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold">{action.title}</h3>
+              <h3 className="text-sm font-semibold">{marketerOperatorCopy(action.title)}</h3>
               <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
                 {action.connector} / {action.mode}
               </p>
             </div>
             <StatusBadge value={action.status} />
           </div>
-          <p className="mt-3 text-sm leading-6 text-slate-700">{action.human_diagnosis}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-700">
+            {marketerOperatorCopy(action.human_diagnosis)}
+          </p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <StatusBadge value={action.validation_status} />
             <StatusBadge value={action.risk} />

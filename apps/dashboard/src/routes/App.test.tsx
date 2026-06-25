@@ -153,7 +153,7 @@ const actions = [
       last_mutation_audit_actor: "operator_local_dashboard",
       last_mutation_audit_at: "2026-06-17T10:03:00Z",
       last_mutation_audit_summary:
-        "Mutation blocked before any vendor API call. Blockers: Vendor mutation adapter is not implemented for this ActionObject.",
+        "Zmiana zablokowana przed wywołaniem zewnętrznego systemu. Blockers: Vendor mutation adapter is not implemented for this ActionObject.",
       last_mutation_attempted: false,
       last_mutation_adapter: null,
       last_mutation_audit_event_id: "audit_act_review_merchant_feed_issues_apply_test",
@@ -917,7 +917,7 @@ const adsDiagnostics = {
           proposed_budget_amount_micros: 42000000,
           proposed_budget_delta_micros: 12000000,
           reason:
-            "Review-only podgląd CampaignBudgetOperation z Google recommended budget.",
+            "Podgląd do przeglądu CampaignBudgetOperation z Google recommended budget.",
           evidence_ids: ["ev_refresh_refresh_google_ads_test"],
           source_metric_names: [
             "budget_amount_micros",
@@ -1052,7 +1052,7 @@ const adsDiagnostics = {
         current_budget_amount_micros: 30000000,
         proposed_budget_amount_micros: 42000000,
         proposed_budget_delta_micros: 12000000,
-        reason: "Review-only podgląd CampaignBudgetOperation z Google recommended budget.",
+        reason: "Podgląd do przeglądu CampaignBudgetOperation z Google recommended budget.",
         evidence_ids: ["ev_refresh_refresh_google_ads_test"],
         source_metric_names: [
           "budget_amount_micros",
@@ -2038,7 +2038,7 @@ const adsDiagnostics = {
     candidates: [
       {
         id: "ads_custom_segment_123",
-        name: "Search terms: Ekologus Search",
+        name: "Zapytania użytkowników: Ekologus Search",
         intent: "search_term_interest",
         review_priority: "wysokie",
         review_score: 65,
@@ -2101,7 +2101,7 @@ const adsDiagnostics = {
         validation_status: "pending_validation",
         payload_preview: {
           id: "preview_ads_custom_segment_123",
-          custom_segment_name: "Search terms: Ekologus Search",
+          custom_segment_name: "Zapytania użytkowników: Ekologus Search",
           member_type: "KEYWORD",
           source_terms: ["bdo rejestracja"],
           campaign_id: "123",
@@ -2168,7 +2168,7 @@ const adsDiagnostics = {
     payload_preview: [
       {
         id: "preview_ads_custom_segment_123",
-        custom_segment_name: "Search terms: Ekologus Search",
+        custom_segment_name: "Zapytania użytkowników: Ekologus Search",
         member_type: "KEYWORD",
         source_terms: ["bdo rejestracja"],
         campaign_id: "123",
@@ -2208,7 +2208,7 @@ const adsDiagnostics = {
         {
           id: "forecast_ads_custom_segment_123",
           candidate_id: "ads_custom_segment_123",
-          custom_segment_name: "Search terms: Ekologus Search",
+          custom_segment_name: "Zapytania użytkowników: Ekologus Search",
           status: "missing_forecast",
           forecast_available: false,
           audience_size: null,
@@ -3322,7 +3322,7 @@ const adsDiagnostics = {
       custom_segment_candidates: [
         {
           id: "ads_custom_segment_123",
-          name: "Search terms: Ekologus Search",
+          name: "Zapytania użytkowników: Ekologus Search",
           intent: "search_term_interest",
           review_priority: "wysokie",
           review_score: 65,
@@ -3367,7 +3367,7 @@ const adsDiagnostics = {
           validation_status: "pending_validation",
           payload_preview: {
             id: "preview_ads_custom_segment_123",
-            custom_segment_name: "Search terms: Ekologus Search",
+            custom_segment_name: "Zapytania użytkowników: Ekologus Search",
             member_type: "KEYWORD",
             source_terms: ["bdo rejestracja"],
             campaign_id: "123",
@@ -3407,7 +3407,7 @@ const adsDiagnostics = {
       custom_segment_payload_preview: [
         {
           id: "preview_ads_custom_segment_123",
-          custom_segment_name: "Search terms: Ekologus Search",
+          custom_segment_name: "Zapytania użytkowników: Ekologus Search",
           member_type: "KEYWORD",
           source_terms: ["bdo rejestracja"],
           campaign_id: "123",
@@ -3465,7 +3465,7 @@ const adsDiagnostics = {
         {
           id: "forecast_ads_custom_segment_123",
           candidate_id: "ads_custom_segment_123",
-          custom_segment_name: "Search terms: Ekologus Search",
+          custom_segment_name: "Zapytania użytkowników: Ekologus Search",
           status: "missing_forecast",
           forecast_available: false,
           audience_size: null,
@@ -3546,7 +3546,7 @@ const adsDiagnostics = {
       id: "ads_campaign_overview",
       title: "Aktywność kampanii Google Ads",
       status: "ready",
-      summary: "Metric facts: clicks=107, impressions=2783.",
+      summary: "Metryki z dowodami: clicks=107, impressions=2783.",
       diagnosis: "Są live campaign rows, ale CPA/ROAS wymagają osobnego read contract.",
       next_step: "Sprawdź kampanie bez claimów CPA/ROAS.",
       source_connectors: ["google_ads"],
@@ -6050,7 +6050,7 @@ function mockFetch() {
               event_type: "action_impact_check_completed",
               actor: "operator_local_dashboard",
               created_at: "2026-06-17T10:02:00Z",
-              summary: "Impact sanity check completed without vendor mutations.",
+              summary: "Sprawdzenie efektu completed without vendor mutations.",
               evidence_ids: ["ev_refresh_merchant_feed"],
               redacted: true
             },
@@ -6065,7 +6065,7 @@ function mockFetch() {
               last_impact_check_status: "checked",
               last_impact_checked_by: "operator_local_dashboard",
               last_impact_checked_at: "2026-06-17T10:02:00Z",
-              last_impact_check_summary: "Impact sanity check completed without vendor mutations."
+              last_impact_check_summary: "Sprawdzenie efektu completed without vendor mutations."
             }
           })
         );
@@ -6215,7 +6215,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Do walidacji")).toBeInTheDocument();
     expect(screen.getByText("Odnow Google Ads OAuth refresh token")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Otwórz akcję" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("button", { name: "Pokaż payload techniczny" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "Pokaż dane techniczne akcji" }).length).toBeGreaterThan(0);
     expect(screen.queryByText(/"action_type"/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Dowody: 1 ID").length).toBeGreaterThan(0);
     expect(screen.queryByText("ev_1")).not.toBeInTheDocument();
@@ -6374,9 +6374,9 @@ describe("WILQ dashboard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Co marketer może przygotować teraz")).toBeInTheDocument();
     expect(screen.getByText("Dowody i ograniczenia segmentów")).toBeInTheDocument();
-    expect(screen.getAllByText("Search terms: Ekologus Search").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Zapytania użytkowników: Ekologus Search").length).toBeGreaterThan(0);
     const customSegmentCards = screen
-      .getAllByText("Search terms: Ekologus Search")
+      .getAllByText("Zapytania użytkowników: Ekologus Search")
       .map((title) => title.closest("article"))
       .filter((card): card is HTMLElement => card !== null);
     expect(customSegmentCards.length).toBeGreaterThan(1);
@@ -6561,37 +6561,37 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Przygotuj kolejkę przeglądu feedu Merchant Center")
     ).toBeInTheDocument();
-    expect(screen.getByText(/Apply zablokowany/)).toBeInTheDocument();
+    expect(screen.getByText(/Wykonanie:/)).toBeInTheDocument();
     expect(screen.getByText("Warunki przeglądu")).toBeInTheDocument();
     expect(screen.getByText("czeka na walidację")).toBeInTheDocument();
     expect(screen.getByText(/wymagana walidacja akcji/)).toBeInTheDocument();
-    expect(screen.getByText(/payload nie pozwala na apply/)).toBeInTheDocument();
-    expect(screen.getByText("Ostatni mutation audit")).toBeInTheDocument();
-    expect(screen.getByText(/Mutation blocked before any vendor API call/)).toBeInTheDocument();
-    expect(screen.getByText(/brak adaptera mutacji vendorowej/)).toBeInTheDocument();
-    expect(screen.getByText("Wynik review człowieka")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Zapisz review" }));
+    expect(screen.getByText(/podgląd zmian nie pozwala na wykonanie/)).toBeInTheDocument();
+    expect(screen.getByText("Ostatni audyt zmiany")).toBeInTheDocument();
+    expect(screen.getByText(/Zmiana zablokowana przed wywołaniem zewnętrznego systemu/)).toBeInTheDocument();
+    expect(screen.getByText(/brak adaptera zmian w zewnętrznym systemie/)).toBeInTheDocument();
+    expect(screen.getByText("Wynik przeglądu człowieka")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz przegląd" }));
     await waitFor(() =>
-      expect(screen.getByText("Zapisano audit event: human_review_approved_for_prepare")).toBeInTheDocument()
+      expect(screen.getByText("Zapisano zdarzenie audytu: human_review_approved_for_prepare")).toBeInTheDocument()
     );
     expect(screen.getByText("Podgląd zmian")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Generuj podgląd" }));
-    await waitFor(() => expect(screen.getByText("Audit event: action_preview_generated")).toBeInTheDocument());
-    expect(screen.getByText(/Tryb bez mutacji: tak; mutacje:\s*zablokowane/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Zdarzenie audytu: action_preview_generated")).toBeInTheDocument());
+    expect(screen.getByText(/Tryb bez zmian: tak; zmiany:\s*zablokowane/)).toBeInTheDocument();
     expect(screen.getByText("Jawne potwierdzenie podglądu")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Potwierdź podgląd" }));
-    await waitFor(() => expect(screen.getByText("Audit event: action_apply_confirmed")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Zdarzenie audytu: action_apply_confirmed")).toBeInTheDocument());
     expect(screen.getByText("Potwierdzenie:")).toBeInTheDocument();
     expect(screen.getByText("confirmed")).toBeInTheDocument();
-    expect(screen.getByText(/Apply nadal: zablokowany/)).toBeInTheDocument();
-    expect(screen.getByText("Impact sanity check")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Sprawdź impact" }));
+    expect(screen.getByText(/Wykonanie nadal: zablokowane/)).toBeInTheDocument();
+    expect(screen.getByText("Sprawdzenie efektu")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Sprawdź efekt" }));
     await waitFor(() =>
-      expect(screen.getByText("Audit event: action_impact_check_completed")).toBeInTheDocument()
+      expect(screen.getByText("Zdarzenie audytu: action_impact_check_completed")).toBeInTheDocument()
     );
-    expect(screen.getByText("Impact check:")).toBeInTheDocument();
+    expect(screen.getByText("Sprawdzenie efektu:")).toBeInTheDocument();
     expect(screen.getByText("checked")).toBeInTheDocument();
-    expect(screen.getByText("Metric facts: 2")).toBeInTheDocument();
+    expect(screen.getByText("Metryki z dowodami: 2")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Waliduj" }));
     await waitFor(() => expect(screen.getByText("Wynik:")).toBeInTheDocument());
     expect(screen.getByText("valid")).toBeInTheDocument();
@@ -6841,7 +6841,6 @@ describe("WILQ dashboard", () => {
         screen.getByText(/Zapisano review: human_review_approved_for_prepare/)
       ).toBeInTheDocument()
     );
-    expect(screen.getByText(/Apply nadal: zablokowane/)).toBeInTheDocument();
     expect(
       screen.getByText("Przygotuj kolejkę odświeżenia treści ekologus.pl")
     ).toBeInTheDocument();

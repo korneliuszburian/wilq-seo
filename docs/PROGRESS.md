@@ -190,11 +190,11 @@ Stan produktu:
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
-- Dashboard may still have technical language in shared lower sections. Fresh
-  Merchant browser proof shows the first screen is cleaned up, but the global
-  action-focus/detail layer can still expose `apply`/raw blocked-claim wording.
-  Treat that as a shared action-copy hardening task, not as a Merchant
-  first-screen blocker.
+- Shared action-focus/detail copy has been hardened in `/actions` and action
+  detail panels: marketer-facing copy now says `Akcje do walidacji`,
+  `podgląd zmian`, `Wykonanie` and `Dane techniczne akcji`, while raw data stays
+  behind the technical toggle. Browser proof:
+  `.local-lab/proof/action-copy-polish-20260625/actions.final3.text.txt`.
 
 ## Next Best Queue
 
@@ -202,12 +202,10 @@ Stan produktu:
    `.local-lab/proof/marketer-uat-packet/`: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record the filled result through
    `scripts/record_marketer_uat_result.py`.
-2. If demo UX is the next priority, harden shared action-focus/detail copy that
-   still leaks technical `apply`/raw blocked-claim wording in lower sections.
-   Ads Doctor, Content Planner and Merchant already have first condensed
-   decision panels. Change one blocker at a time.
-3. Do not repeat completed first-screen condensation or add new evals unless fresh
-   route proof finds a specific marketer-facing leak.
+2. Do not repeat completed first-screen condensation or shared action-copy
+   hardening unless fresh browser proof finds a specific marketer-facing leak.
+3. Do not add new evals unless fresh route proof finds a specific
+   marketer-facing leak.
 4. If content depth is next, continue from the review handoff packet toward
    confirmed human mapping for every row, then audited draft-readiness. Do not
    unlock staging, publish or uplift claims without typed preview, human

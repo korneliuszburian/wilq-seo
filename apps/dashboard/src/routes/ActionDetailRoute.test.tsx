@@ -114,7 +114,7 @@ const adsActionFixture: ActionObject = {
         proposed_budget_amount_micros: null,
         proposed_budget_delta_micros: null,
         reason:
-          "Review-only podgląd CampaignBudgetOperation. Google Ads nie zwrócił recommended budget.",
+          "Podgląd do przeglądu CampaignBudgetOperation. Google Ads nie zwrócił recommended budget.",
         evidence_ids: ["ev_refresh_google_ads"],
         required_validation: [
           "review_campaign_activity",
@@ -846,17 +846,13 @@ describe("Action detail route", () => {
   it("renders the selected ActionObject detail", async () => {
     renderActionDetail();
     await waitFor(() =>
-      expect(
-        screen.getByRole("heading", {
-          name: "Przygotuj kolejkę przeglądu feedu Merchant Center"
-        })
-      ).toBeInTheDocument()
+      expect(screen.getAllByText("Podgląd do przeglądu").length).toBeGreaterThan(0)
     );
-    expect(screen.getAllByText("Review-only podgląd").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Podgląd do przeglądu").length).toBeGreaterThan(0);
     expect(screen.getByText("availability_updated / n:availability")).toBeInTheDocument();
     expect(screen.getAllByText(/online~pl~PL~SKU-001/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Sorbent chemiczny 10 kg/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders Google Ads budget payload preview without requiring raw JSON", async () => {
@@ -868,13 +864,13 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Budżet kampanii do review")).toBeInTheDocument();
+    expect(screen.getByText("Budżet kampanii do przeglądu")).toBeInTheDocument();
     expect(screen.getByText("CampaignBudgetOperation")).toBeInTheDocument();
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
     expect(screen.getByText(/Obecny budżet: 10 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Propozycja: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Safety: blocked/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Bezpieczeństwo: blocked/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders Google Ads recommendation payload preview without requiring raw JSON", async () => {
@@ -886,14 +882,14 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Rekomendacja Google Ads do review")).toBeInTheDocument();
+    expect(screen.getByText("Rekomendacja Google Ads do przeglądu")).toBeInTheDocument();
     expect(screen.getByText("ApplyRecommendationOperation")).toBeInTheDocument();
     expect(screen.getByText(/Typ: DISPLAY_EXPANSION_OPT_IN/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: 23848569273/)).toBeInTheDocument();
     expect(screen.getByText(/Budżet kampanii: 15587163334/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_recommendation_type/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: recommendation apply/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: wdrożenie rekomendacji/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders custom segment payload preview without requiring raw JSON", async () => {
@@ -905,15 +901,15 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Custom segment do review")).toBeInTheDocument();
+    expect(screen.getByText("Segment odbiorców do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Nazwa: WILQ search-term intent review/)).toBeInTheDocument();
     expect(screen.getByText(/Typ członków: KEYWORD/)).toBeInTheDocument();
     expect(screen.getByText(/Hasła źródłowe: alba czeladź/)).toBeInTheDocument();
-    expect(screen.getByText(/Kampania do review: Kompendium PPWR/)).toBeInTheDocument();
-    expect(screen.getByText(/Safety: blocked/)).toBeInTheDocument();
+    expect(screen.getByText(/Kampania do sprawdzenia: Kompendium PPWR/)).toBeInTheDocument();
+    expect(screen.getByText(/Bezpieczeństwo: blocked/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: forecast_or_audience_size/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: audience size/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: rozmiar odbiorców/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders negative keyword payload preview without requiring raw JSON", async () => {
@@ -925,7 +921,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Wykluczenie słowa do review")).toBeInTheDocument();
+    expect(screen.getByText("Wykluczenie słowa do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Hasło: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Wykluczenie: alba czeladź/)).toBeInTheDocument();
     expect(screen.getByText(/Dopasowanie: EXACT/)).toBeInTheDocument();
@@ -933,8 +929,8 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Kampania: Kompendium PPWR/)).toBeInTheDocument();
     expect(screen.getByText(/Grupa reklam: Grupa reklam 1/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_search_term_context/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: negative keyword apply/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: wdrożenie wykluczeń/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders search-term n-gram preview without requiring raw JSON", async () => {
@@ -946,18 +942,18 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("N-gram search terms do review")).toBeInTheDocument();
+    expect(screen.getByText("Temat zapytań do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/N-gram: asekol/)).toBeInTheDocument();
     expect(screen.getByText(/Rozmiar: 1/)).toBeInTheDocument();
-    expect(screen.getByText(/Search terms: 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Zapytania użytkowników: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Przykłady: asekol pl organizacja odzysku/)).toBeInTheDocument();
     expect(screen.getByText(/Kliknięcia: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Wyświetlenia: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Koszt: 24,17 PLN/)).toBeInTheDocument();
     expect(screen.getByText(/Konwersje: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: human_intent_review/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: search-term waste/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: marnowanie budżetu na zapytaniach/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders Demand Gen readiness preview without requiring raw JSON", async () => {
@@ -969,15 +965,15 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Demand Gen readiness do review")).toBeInTheDocument();
+    expect(screen.getByText("Gotowość Demand Gen do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Kampanie ocenione: 20/)).toBeInTheDocument();
     expect(screen.getByText(/Kanały: PERFORMANCE_MAX=8, SEARCH=10, UNKNOWN=2/)).toBeInTheDocument();
     expect(screen.getByText(/Kampanie Demand Gen: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Kreacje\/assets: 0/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: demand_gen_landing_quality_by_campaign/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_ads_campaign_channel_context/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: Demand Gen launch recommendation/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: Demand Gen launch recommendation/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders GA4 tracking-quality preview without requiring raw JSON", async () => {
@@ -989,7 +985,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("GA4 jakość pomiaru do review")).toBeInTheDocument();
+    expect(screen.getByText("Jakość pomiaru GA4 do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Landing: \//)).toBeInTheDocument();
     expect(screen.getByText(/Źródło: google \/ cpc/)).toBeInTheDocument();
     expect(screen.getByText(/Kampania: \(2026\) Ekologus Ogólna/)).toBeInTheDocument();
@@ -998,8 +994,8 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Engagement rate: 76,62%/)).toBeInTheDocument();
     expect(screen.getByText(/Eventy: 1190/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_landing_page_dimension/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: conversion rate/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: współczynnik konwersji/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders Localo visibility preview without requiring raw JSON", async () => {
@@ -1011,7 +1007,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Localo widoczność lokalna do review")).toBeInTheDocument();
+    expect(screen.getByText("Widoczność lokalna do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Widoczność: 53,174/)).toBeInTheDocument();
     expect(screen.getByText(/Zmiana widoczności: 69,57%/)).toBeInTheDocument();
     expect(screen.getByText(/Średnia pozycja grid: 3,263/)).toBeInTheDocument();
@@ -1019,11 +1015,11 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Aktywne miejsca: 4/)).toBeInTheDocument();
     expect(screen.getByText(/Ocena: 4,75/)).toBeInTheDocument();
     expect(screen.getByText(/Opinie: 798/)).toBeInTheDocument();
-    expect(screen.getByText(/Reply rate: 81,33%/)).toBeInTheDocument();
+    expect(screen.getByText(/Odsetek odpowiedzi na opinie: 81,33%/)).toBeInTheDocument();
     expect(screen.getByText(/Dozwolone kontrakty: local_rankings/)).toBeInTheDocument();
     expect(screen.getByText(/Braki: gbp_visibility/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: GBP performance/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: wynik Google Business Profile/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders social draft evidence inputs without requiring raw JSON", async () => {
@@ -1044,8 +1040,8 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Wartość: 14/)).toBeInTheDocument();
     expect(screen.getByText(/Wymiary: affected_attribute=n:availability/)).toBeInTheDocument();
     expect(screen.getAllByText(/Ograniczenia: use_only_wilq_evidence/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Blokady: ROAS/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Publikacja zablokowana/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Czego nie wolno twierdzić: ROAS/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Publikacja:/).length).toBeGreaterThan(0);
   });
 
   it("renders Keyword Planner access blocker without requiring raw JSON", async () => {
@@ -1057,7 +1053,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Keyword Planner access do odblokowania")).toBeInTheDocument();
+    expect(screen.getByText("Dostęp do Keyword Plannera do odblokowania")).toBeInTheDocument();
     expect(screen.getByText(/Blokowane API: Keyword Planner/)).toBeInTheDocument();
     expect(screen.getByText(/Powód: api_code=403/)).toBeInTheDocument();
     expect(
@@ -1065,8 +1061,8 @@ describe("Action detail route", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Kroki: Sprawdź status Google Ads API developer token/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: confirm_developer_token_approval/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: audience size/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: rozmiar odbiorców/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders Ads target guardrail preview without requiring raw JSON", async () => {
@@ -1078,7 +1074,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Guardrail Ads do review")).toBeInTheDocument();
+    expect(screen.getByText("Zasady bezpieczeństwa Ads do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
     expect(screen.getByText(/Cel biznesowy: wstępny review jakości leadów/)).toBeInTheDocument();
     expect(screen.getByText(/Cel budżetu: wstępnie chronić obecny budżet/)).toBeInTheDocument();
@@ -1088,8 +1084,8 @@ describe("Action detail route", () => {
     expect(screen.getByText(/Opcje targetu: WILQ_ADS_TARGET_ROAS/)).toBeInTheDocument();
     expect(screen.getByText(/Po potwierdzeniu: target_kpi_review/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_profit_margin_model/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: target KPI verdict before confirmation/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: target KPI verdict before confirmation/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders Ads strategy review guardrail preview without requiring raw JSON", async () => {
@@ -1101,13 +1097,13 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getByText("Guardrail Ads do review")).toBeInTheDocument();
+    expect(screen.getByText("Zasady bezpieczeństwa Ads do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Marża: 30%/)).toBeInTheDocument();
-    expect(screen.getByText(/Ostatni review strategii: brak/)).toBeInTheDocument();
-    expect(screen.getByText(/Bramki review: human_strategy_review/)).toBeInTheDocument();
+    expect(screen.getByText(/Ostatni przegląd strategii: brak/)).toBeInTheDocument();
+    expect(screen.getByText(/Warunki przeglądu: human_strategy_review/)).toBeInTheDocument();
     expect(screen.getByText(/Walidacje: review_profit_margin_model/)).toBeInTheDocument();
-    expect(screen.getByText(/Blokady: profitability verdict/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Czego nie wolno twierdzić: profitability verdict/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 
   it("renders content brief and WordPress draft preview without requiring raw JSON", async () => {
@@ -1119,7 +1115,7 @@ describe("Action detail route", () => {
         })
       ).toBeInTheDocument()
     );
-    expect(screen.getAllByText("Brief treści do review").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Brief treści do przeglądu").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Temat: bdo co to/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Tryb: inventory_check/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Kliknięcia: 4/)).toBeInTheDocument();
@@ -1132,8 +1128,8 @@ describe("Action detail route", () => {
     expect(screen.getByText(/FAQ: Co to jest BDO\?, Kto musi mieć BDO\?/)).toBeInTheDocument();
     expect(screen.getByText(/Brakujące dowody: brak potwierdzonego kanonicznego URL/)).toBeInTheDocument();
     expect(screen.getAllByText(/Walidacje: wordpress_inventory_check/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Draft WordPress do review")).toBeInTheDocument();
+    expect(screen.getByText("Szkic WordPress do przeglądu")).toBeInTheDocument();
     expect(screen.getByText(/Tytuł draftu: Brief: bdo co to/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Apply zablokowany/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Wykonanie:/).length).toBeGreaterThan(0);
   });
 });

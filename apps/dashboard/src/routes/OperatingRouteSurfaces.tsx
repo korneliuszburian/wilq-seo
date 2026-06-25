@@ -14,6 +14,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine } from "../components/TraceLine";
 import { ActionList, EvidenceList, OpportunityList } from "./RegistryPanels";
 import { WorkflowRegistryList, WorkflowRunList } from "./WorkflowPanels";
+import { marketerOperatorCopy } from "./marketingLabels";
 
 const DEMO_ACTION_PRIORITY = [
   "act_review_merchant_feed_issues",
@@ -116,8 +117,8 @@ export function ActionsSurface() {
           <h1 className="text-2xl font-semibold tracking-normal">Akcje do walidacji</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             Kolejka bezpiecznych kandydatów działań z WILQ API. Każda karta ma
-            dowody, tryb, ryzyko, status walidacji i podgląd payloadu.
-            Apply pozostaje zablokowany bez walidacji, jawnej zgody i audytu.
+            dowody, tryb, ryzyko, status walidacji i podgląd zmian.
+            Wykonanie pozostaje zablokowane bez walidacji, jawnej zgody i audytu.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -155,7 +156,7 @@ function getDemoFocusActions(actions: ActionObject[]) {
 function ActionDemoFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
     return (
-      <BlockerNotice message="Brak priorytetowych akcji demo w /api/actions. Pełna lista niżej nadal pokazuje dostępne kandydaty review." />
+      <BlockerNotice message="Brak priorytetowych akcji demo w /api/actions. Pełna lista niżej nadal pokazuje dostępne kandydaty do przeglądu." />
     );
   }
 
@@ -165,20 +166,22 @@ function ActionDemoFocus({ actions }: { actions: ActionObject[] }) {
         <article key={action.id} className="rounded-md border border-action/30 bg-action/5 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold">{action.title}</h3>
+              <h3 className="text-sm font-semibold">{marketerOperatorCopy(action.title)}</h3>
               <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
                 {action.domain} / {action.connector} / {action.mode}
               </p>
             </div>
             <StatusBadge value={action.validation_status} />
           </div>
-          <p className="mt-3 text-sm leading-6 text-slate-700">{action.recommended_reason}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-700">
+            {marketerOperatorCopy(action.recommended_reason)}
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <StatusBadge value={action.status} />
             <StatusBadge value={action.risk} />
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <LinkedTraceLine label="Dowody" values={action.evidence_ids.slice(0, 4)} kind="evidence" />
+            <div>Dowody: {formatEvidenceCount(action.evidence_ids.length)}</div>
             <div>Metryki: {action.metrics.length}</div>
           </div>
           <Link
@@ -192,6 +195,11 @@ function ActionDemoFocus({ actions }: { actions: ActionObject[] }) {
       ))}
     </div>
   );
+}
+
+function formatEvidenceCount(count: number) {
+  if (count === 0) return "brak";
+  return `${count} ID`;
 }
 
 export function WorkflowsSurface() {

@@ -889,8 +889,12 @@ Do not implement these before Ekologus works deeply:
   Polish (`akcja do walidacji`, `podgląd zmian`, `ręczny przegląd`) instead of
   `ActionObject review`/`payload preview` phrasing. Browser proof:
   `.local-lab/proof/merchant-selected-decision-panel-20260625/`.
-- [ ] Harden the shared action-focus/detail copy that still exposes technical
-  `apply`/raw blocked-claim wording in lower dashboard sections.
+- [x] Harden the shared action-focus/detail copy that still exposed technical
+  `apply`/raw blocked-claim wording in lower dashboard sections. Shared action
+  cards, action detail panels and `/actions` now use marketer-facing Polish
+  (`Akcje do walidacji`, `podgląd zmian`, `Wykonanie`, `Dane techniczne akcji`)
+  while raw payloads stay behind a technical toggle. Browser proof:
+  `.local-lab/proof/action-copy-polish-20260625/actions.final3.text.txt`.
 - [ ] Run or explicitly defer real marketer UAT from current `PLAN.md`.
 - [ ] Close or mark blocked current `PLAN.md`.
 - [ ] Start Milestone C only after current demo closure/deferral is explicit.

@@ -26,12 +26,12 @@ import { MetricFactChips } from "../components/MetricFactChips";
 import { BlockerNotice } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
-import { adsBlockedClaimLabel, adsMissingReadContractLabel } from "./marketingLabels";
+import { adsMissingReadContractLabel, marketerBlockedClaimLabelText } from "./marketingLabels";
 
 export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
   if (actions.length === 0) {
     return (
-      <BlockerNotice message="Brak akcji dla tego workflow. WILQ może pokazać evidence, ale nie powinien sugerować wykonania bez payload preview." />
+      <BlockerNotice message="Brak akcji dla tego workflow. WILQ może pokazać dowody, ale nie powinien sugerować wykonania bez podglądu zmian." />
     );
   }
 
@@ -57,8 +57,8 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             </div>
             {action.mode !== "apply" ? (
               <div className="mt-3 rounded-md border border-wait/30 bg-wait/10 p-3 text-xs leading-5 text-wait">
-                Apply zablokowany: ta akcja jest w trybie przygotowania.
-                Najpierw walidacja, podgląd payloadu i jawna zgoda operatora.
+                Wykonanie zablokowane: ta akcja jest w trybie przygotowania.
+                Najpierw walidacja, podgląd zmian i jawna zgoda operatora.
               </div>
             ) : null}
             <ActionReviewGatePanel action={action} />
@@ -72,7 +72,7 @@ export function ActionObjectFocus({ actions }: { actions: ActionObject[] }) {
             <ActionValidationControls action={action} />
             <ActionPayloadPreviewToggle
               payload={action.payload}
-              intro="Domyślnie schowany, żeby karta pokazywała decyzję i bramki review."
+              intro="Domyślnie schowany, żeby karta pokazywała decyzję i warunki przeglądu."
             />
           </article>
         ))}
@@ -94,7 +94,7 @@ export function ActionPreviewControls({ action }: { action: ActionObject }) {
             Podgląd zmian
           </div>
           <p className="mt-1 leading-5 text-slate-600">
-            Generuje podgląd payloadu i zapis audytu bez mutacji vendorów.
+            Generuje podgląd zmian i zapis audytu bez zmian w zewnętrznych systemach.
           </p>
         </div>
         <button
@@ -127,7 +127,7 @@ function ActionPreviewResultPanel({
   error: string | null;
 }) {
   if (error) {
-    return <div className="mt-3 text-xs leading-5 text-risk">Preview zablokowany: {error}</div>;
+    return <div className="mt-3 text-xs leading-5 text-risk">Podgląd zablokowany: {error}</div>;
   }
   if (!result) {
     return null;
@@ -138,7 +138,7 @@ function ActionPreviewResultPanel({
         Podgląd: <span className="font-semibold">{result.status}</span>
       </div>
       <div>
-        Tryb bez mutacji: {result.dry_run ? "tak" : "nie"}; mutacje:{" "}
+        Tryb bez zmian: {result.dry_run ? "tak" : "nie"}; zmiany:{" "}
         {result.mutation_allowed ? "dopuszczone" : "zablokowane"}
       </div>
       <div>
@@ -146,7 +146,7 @@ function ActionPreviewResultPanel({
         {result.omitted_items > 0 ? `, pominięto ${result.omitted_items}` : ""}
       </div>
       <TraceLine label="Blokady podglądu" values={result.blockers.map(actionGateLabel)} empty="brak" />
-      <div>Audit event: {result.audit_event.event_type}</div>
+      <div>Zdarzenie audytu: {result.audit_event.event_type}</div>
     </div>
   );
 }
@@ -178,7 +178,7 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<ActionReviewOutcome>("approved_for_prepare");
   const [notes, setNotes] = useState(
-    "Review operatora: zapisuję decyzję bez uruchamiania apply."
+    "Przegląd operatora: zapisuję decyzję bez uruchamiania wykonania."
   );
   const reviewMutation = useMutation({
     mutationFn: () =>
@@ -205,13 +205,13 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="font-semibold uppercase tracking-normal text-slate-600">
-            Wynik review człowieka
+            Wynik przeglądu człowieka
           </div>
           <p className="mt-1 leading-5 text-slate-600">
-            Zapisuje lokalny audit event. Nie wykonuje apply ani mutacji vendorów.
+            Zapisuje lokalne zdarzenie audytu. Nie wykonuje zmian w zewnętrznych systemach.
           </p>
         </div>
-        <StatusBadge value={lastReviewLabel ?? "brak review"} />
+        <StatusBadge value={lastReviewLabel ?? "brak przeglądu"} />
       </div>
       {action.review_gate.last_review_summary ? (
         <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">
@@ -237,7 +237,7 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
           </select>
         </label>
         <label className="grid gap-1">
-          <span className="font-medium text-slate-600">Notatka review</span>
+          <span className="font-medium text-slate-600">Notatka przeglądu</span>
           <textarea
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
@@ -256,17 +256,17 @@ export function ActionHumanReviewControls({ action }: { action: ActionObject }) 
             ) : (
               <ClipboardCheck aria-hidden="true" size={15} />
             )}
-            {reviewMutation.isPending ? "Zapisuję" : "Zapisz review"}
+            {reviewMutation.isPending ? "Zapisuję" : "Zapisz przegląd"}
           </button>
         </div>
       </div>
       {reviewMutation.data ? (
         <div className="mt-2 text-slate-600">
-          Zapisano audit event: {reviewMutation.data.audit_event.event_type}
+          Zapisano zdarzenie audytu: {reviewMutation.data.audit_event.event_type}
         </div>
       ) : null}
       {reviewMutation.error instanceof Error ? (
-        <div className="mt-2 text-risk">Błąd review: {reviewMutation.error.message}</div>
+        <div className="mt-2 text-risk">Błąd przeglądu: {reviewMutation.error.message}</div>
       ) : null}
     </div>
   );
@@ -281,7 +281,7 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           <div className="font-semibold uppercase tracking-normal text-slate-600">
             Warunki przeglądu
           </div>
-          <p className="mt-1 leading-5 text-slate-600">{gate.summary}</p>
+          <p className="mt-1 leading-5 text-slate-600">{actionOperatorCopy(gate.summary)}</p>
         </div>
         <StatusBadge value={actionReviewGateStatusLabel(gate.status)} />
       </div>
@@ -292,14 +292,14 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
           empty="brak"
         />
         <TraceLine
-          label="Blokady apply"
+          label="Blokady wykonania"
           values={gate.apply_blockers.slice(0, 8).map(actionGateLabel)}
           empty="brak"
         />
       </div>
       <div className="mt-2 text-slate-600">
         Potwierdzenie człowieka: {gate.confirmation_required ? "wymagane" : "niewymagane"}.
-        Apply: {gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
+        Wykonanie: {gate.apply_allowed ? "dopuszczone przez kontrakt" : "zablokowane"}.
       </div>
       {gate.last_confirmation_summary ? (
         <p className="mt-2 rounded-md border border-line bg-white p-2 text-slate-600">
@@ -308,16 +308,16 @@ export function ActionReviewGatePanel({ action }: { action: ActionObject }) {
       ) : null}
       {gate.last_mutation_audit_summary ? (
         <div className="mt-2 rounded-md border border-risk/30 bg-white p-2 text-slate-600">
-          <div className="font-semibold text-risk">Ostatni mutation audit</div>
-          <p className="mt-1 leading-5">{gate.last_mutation_audit_summary}</p>
+          <div className="font-semibold text-risk">Ostatni audyt zmiany</div>
+          <p className="mt-1 leading-5">{actionOperatorCopy(gate.last_mutation_audit_summary)}</p>
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             <div>Status: {actionMutationAuditStatusLabel(gate.last_mutation_audit_status)}</div>
-            <div>Próba mutacji: {gate.last_mutation_attempted ? "tak" : "nie"}</div>
+            <div>Próba zmiany: {gate.last_mutation_attempted ? "tak" : "nie"}</div>
             <div>Adapter: {gate.last_mutation_adapter ?? "brak"}</div>
-            <div>Audit event: {gate.last_mutation_audit_event_id ?? "brak"}</div>
+            <div>Zdarzenie audytu: {gate.last_mutation_audit_event_id ?? "brak"}</div>
           </div>
           <TraceLine
-            label="Blockery mutacji"
+            label="Blokady zmiany"
             values={(gate.last_mutation_blockers ?? []).slice(0, 8).map(actionGateLabel)}
             empty="brak"
           />
@@ -339,34 +339,56 @@ function actionMutationAuditStatusLabel(value?: string | null) {
 function actionReviewGateStatusLabel(value: string) {
   const labels: Record<string, string> = {
     pending_validation: "czeka na walidację",
-    validated_prepare_only: "zwalidowane do review",
+    validated_prepare_only: "zwalidowane do przeglądu",
     ready_to_apply: "gotowe do potwierdzenia",
-    blocked_apply: "apply zablokowany"
+    blocked_apply: "wykonanie zablokowane"
   };
   return labels[value] ?? value;
 }
 
 function actionGateLabel(value: string) {
   if (value.startsWith("blocked_claim:")) {
-    return `claim zablokowany: ${adsBlockedClaimLabel(value.replace("blocked_claim:", ""))}`;
+    return `nie wolno twierdzić: ${marketerBlockedClaimLabelText(value.replace("blocked_claim:", ""))}`;
   }
   const labels: Record<string, string> = {
-    action_mode_prepare_only: "tryb prepare-only",
+    action_mode_prepare_only: "tryb przygotowania bez wykonania",
     action_validation_required: "wymagana walidacja akcji",
-    payload_apply_allowed_false: "payload nie pozwala na apply",
-    destructive_actions_blocked: "destructive actions zablokowane",
-    preview_acknowledgement_required: "wymagane potwierdzenie preview",
+    payload_apply_allowed_false: "podgląd zmian nie pozwala na wykonanie",
+    destructive_actions_blocked: "destrukcyjne zmiany zablokowane",
+    preview_acknowledgement_required: "wymagane potwierdzenie podglądu",
     dry_run_preview_required: "wymagany wcześniejszy podgląd zmian",
     action_confirmation_required: "wymagane potwierdzenie podglądu",
-    metric_facts_required: "wymagane metric facts",
-    evidence_ids_required: "wymagane evidence IDs",
-    impact_sanity_check_required: "wymagany impact sanity check",
-    vendor_mutation_adapter_required: "brak adaptera mutacji vendorowej",
+    metric_facts_required: "wymagane metryki z dowodami",
+    evidence_ids_required: "wymagane ID dowodów",
+    impact_sanity_check_required: "wymagane sprawdzenie efektu",
+    vendor_mutation_adapter_required: "brak adaptera zmian w zewnętrznym systemie",
     validate_action_object: "walidacja akcji",
-    human_review_before_apply: "review człowieka przed apply",
-    human_confirm_before_apply: "potwierdzenie człowieka przed apply"
+    human_review_before_apply: "przegląd człowieka przed wykonaniem",
+    human_confirm_before_apply: "potwierdzenie człowieka przed wykonaniem"
   };
   return labels[value] ?? adsMissingReadContractLabel(value);
+}
+
+function actionOperatorCopy(value: string) {
+  return value
+    .replace(/\bActionObject\b/g, "akcja do walidacji")
+    .replace(/\bapply\b/gi, "wykonanie")
+    .replace(/\bpayload preview\b/gi, "podgląd zmian")
+    .replace(/\bpodgląd payloadu\b/gi, "podgląd zmian")
+    .replace(/\breview\b/gi, "przegląd")
+    .replace(/\bvendorów\b/gi, "zewnętrznych systemów")
+    .replace(/\bvendor mutations\b/gi, "zmian w zewnętrznych systemach")
+    .replace(/\bmutacji vendorów\b/gi, "zmian w zewnętrznych systemach")
+    .replace(/\bmutacje vendorów\b/gi, "zmiany w zewnętrznych systemach")
+    .replace(/\bmutacji\b/gi, "zmian")
+    .replace(/\bmutacja\b/gi, "zmiana")
+    .replace(/\bmutation\b/gi, "zmiana")
+    .replace(/\bAudit event\b/g, "Zdarzenie audytu")
+    .replace(/\baudit event\b/g, "zdarzenie audytu")
+    .replace(/\bimpact sanity check\b/gi, "sprawdzenie efektu")
+    .replace(/\bpre\/post window check\b/gi, "sprawdzenie okna przed i po zmianie")
+    .replace(/\bmetric facts\b/gi, "metryki z dowodami")
+    .replace(/\bevidence IDs\b/gi, "ID dowodów");
 }
 
 export function ActionValidationControls({ action }: { action: ActionObject }) {
@@ -382,7 +404,7 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
     mutationFn: () =>
       confirmAction(action.id, {
         confirmed_by: "operator_local_dashboard",
-        notes: "Operator potwierdza preview. Ten krok nie uruchamia apply.",
+        notes: "Operator potwierdza podgląd. Ten krok nie uruchamia wykonania.",
         preview_acknowledged: true
       }),
     onSuccess: () => {
@@ -400,8 +422,8 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
             Walidacja akcji
           </div>
           <p className="mt-1 text-xs leading-5 text-slate-600">
-            Walidacja sprawdza payload, connector, evidence IDs i tryb działania. Nie wykonuje
-            apply.
+            Walidacja sprawdza dane akcji, źródło, ID dowodów i tryb działania. Nie wykonuje
+            zmian.
           </p>
         </div>
         <button
@@ -427,8 +449,8 @@ export function ActionValidationControls({ action }: { action: ActionObject }) {
           Jawne potwierdzenie podglądu
         </div>
         <p className="mt-1 text-xs leading-5 text-slate-600">
-          Potwierdzenie wymaga wcześniejszego podglądu zmian. Zapisuje lokalny audit event,
-          ale nie wykonuje apply ani mutacji vendorów.
+          Potwierdzenie wymaga wcześniejszego podglądu zmian. Zapisuje lokalne zdarzenie audytu,
+          ale nie wykonuje zmian w zewnętrznych systemach.
         </p>
         <button
           type="button"
@@ -500,9 +522,9 @@ function ActionConfirmResultPanel({
         Potwierdzenie: <span className="font-semibold">{result.status}</span>
       </div>
       <TraceLine label="Blokady potwierdzenia" values={result.blockers.map(actionGateLabel)} empty="brak" />
-      <div>Audit event: {result.audit_event.event_type}</div>
+      <div>Zdarzenie audytu: {result.audit_event.event_type}</div>
       <div>
-        Apply nadal: {result.review_gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
+        Wykonanie nadal: {result.review_gate.apply_allowed ? "dopuszczone przez kontrakt" : "zablokowane"}.
       </div>
     </div>
   );
@@ -514,7 +536,7 @@ function ActionImpactCheckControls({ action }: { action: ActionObject }) {
     mutationFn: () =>
       impactCheckAction(action.id, {
         checked_by: "operator_local_dashboard",
-        notes: "Operator sprawdza sanity impact window przed jakimkolwiek apply.",
+        notes: "Operator sprawdza okno efektu przed jakimkolwiek wykonaniem.",
         pre_window_days: 7,
         post_window_days: 7
       }),
@@ -529,11 +551,11 @@ function ActionImpactCheckControls({ action }: { action: ActionObject }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="font-semibold uppercase tracking-normal text-slate-600">
-            Impact sanity check
+            Sprawdzenie efektu
           </div>
           <p className="mt-1 leading-5 text-slate-600">
-            Zapisuje pre/post window check na podstawie metryk ActionObjecta. Nie ocenia
-            wzrostu i nie wykonuje apply.
+            Zapisuje okno przed i po zmianie na podstawie metryk akcji. Nie ocenia
+            wzrostu i nie wykonuje zmian.
           </p>
         </div>
         <button
@@ -547,12 +569,12 @@ function ActionImpactCheckControls({ action }: { action: ActionObject }) {
           ) : (
             <ShieldAlert aria-hidden="true" size={15} />
           )}
-          {impactMutation.isPending ? "Sprawdzam" : "Sprawdź impact"}
+          {impactMutation.isPending ? "Sprawdzam" : "Sprawdź efekt"}
         </button>
       </div>
       {action.review_gate.last_impact_check_summary ? (
         <p className="mt-2 rounded-md border border-line bg-slate-50 p-2 leading-5 text-slate-600">
-          Ostatni impact check: {action.review_gate.last_impact_check_summary}
+          Ostatnie sprawdzenie efektu: {actionOperatorCopy(action.review_gate.last_impact_check_summary)}
         </p>
       ) : null}
       <ActionImpactCheckResultPanel
@@ -571,7 +593,7 @@ function ActionImpactCheckResultPanel({
   error: string | null;
 }) {
   if (error) {
-    return <div className="mt-3 text-xs leading-5 text-risk">Impact check zablokowany: {error}</div>;
+    return <div className="mt-3 text-xs leading-5 text-risk">Sprawdzenie efektu zablokowane: {error}</div>;
   }
   if (!result) {
     return null;
@@ -579,17 +601,17 @@ function ActionImpactCheckResultPanel({
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-700">
       <div>
-        Impact check: <span className="font-semibold">{result.status}</span>
+        Sprawdzenie efektu: <span className="font-semibold">{result.status}</span>
       </div>
       <div>
         Okna: {result.pre_window_days} dni przed / {result.post_window_days} dni po.
       </div>
-      <div>Metric facts: {result.metric_fact_count}</div>
+      <div>Metryki z dowodami: {result.metric_fact_count}</div>
       <TraceLine label="Źródła" values={result.source_connectors} empty="brak" />
-      <TraceLine label="Blokady impact" values={result.blockers.map(actionGateLabel)} empty="brak" />
-      <div>Audit event: {result.audit_event.event_type}</div>
+      <TraceLine label="Blokady sprawdzenia efektu" values={result.blockers.map(actionGateLabel)} empty="brak" />
+      <div>Zdarzenie audytu: {result.audit_event.event_type}</div>
       <div>
-        Apply nadal: {result.review_gate.apply_allowed ? "dopuszczony przez kontrakt" : "zablokowany"}.
+        Wykonanie nadal: {result.review_gate.apply_allowed ? "dopuszczone przez kontrakt" : "zablokowane"}.
       </div>
     </div>
   );
@@ -606,9 +628,9 @@ function SectionHeading({ title }: { title: string }) {
 export function actionAuditEventLabel(eventType: string) {
   const labels: Record<string, string> = {
     action_preview_generated: "Podgląd zmian wygenerowany",
-    human_review_approved_for_prepare: "Review operatora zapisany",
+    human_review_approved_for_prepare: "Przegląd operatora zapisany",
     action_apply_confirmed: "Podgląd potwierdzony",
-    action_impact_check_completed: "Impact sanity check zapisany"
+    action_impact_check_completed: "Sprawdzenie efektu zapisane"
   };
   return labels[eventType] ?? eventType;
 }
@@ -618,13 +640,13 @@ export function actionAuditSummaryLabel(eventType: string, summary: string) {
     eventType === "human_review_approved_for_prepare" &&
     /\bGoal 001\b|live proof|context-pack draft preview/i.test(summary)
   ) {
-    return "Review operatora zapisany. Apply i mutacje vendorów pozostają zablokowane.";
+    return "Przegląd operatora zapisany. Wykonanie i zmiany w zewnętrznych systemach pozostają zablokowane.";
   }
   if (eventType === "action_preview_generated" && summary.startsWith("Dry-run preview generated:")) {
     return summary
       .replace("Dry-run preview generated:", "Podgląd zmian wygenerowany:")
-      .replace("mutation_allowed=false", "mutacje=zablokowane")
-      .replace("This did not execute vendor mutations.", "Nie wykonano mutacji vendorów.");
+      .replace("mutation_allowed=false", "zmiany=zablokowane")
+      .replace("This did not execute vendor mutations.", "Nie wykonano zmian w zewnętrznych systemach.");
   }
   return summary;
 }

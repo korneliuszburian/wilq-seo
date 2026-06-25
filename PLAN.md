@@ -578,10 +578,12 @@ after the first decision layer is clear.
   `approval` or `price-impact`. Proof:
   `docs/handoffs/2026-06-25-merchant-selected-decision-panel.md` and
   `.local-lab/proof/merchant-selected-decision-panel-20260625/`.
-- `hardening`: Merchant still exposes a lower global action-focus block with
-  technical `apply`/raw blocked-claim wording. Keep this as a focused
-  dashboard-copy task for `ActionObjectFocus`/action detail, not as a reason to
-  reopen the Merchant first-screen condensation slice.
+- `ready`: Shared action-focus/detail copy now uses marketer-facing Polish
+  instead of technical `apply`/raw blocked-claim wording in the `/actions`
+  flow. Raw action data remains available behind the "Dane techniczne akcji"
+  toggle. Proof:
+  `docs/handoffs/2026-06-25-action-copy-polish-proof.md` and
+  `.local-lab/proof/action-copy-polish-20260625/actions.final3.text.txt`.
 - `task`: Browser audit shows GA4 is the clearest route, but `(not set)` rows
   repeat row metric tiles and raw values such as `0.019608`. Group measurement
   issues first and format engagement as percentages.
@@ -724,6 +726,9 @@ Use these rules before every implementation slice:
   `ActionObjecty` copy with marketer-facing action wording while preserving
   technical IDs and routes. Proof:
   `.local-lab/proof/dashboard/action-labels/actions-route-snapshot.txt`.
+- [x] Harden shared action-focus/detail copy from `ActionObject`/`apply`/
+  `payload preview` wording to marketer-facing action language. Browser proof:
+  `.local-lab/proof/action-copy-polish-20260625/actions.final3.text.txt`.
 - [x] Expose content target-site mapping truth in typed API, shared schema and
   Content Planner operator summary. Proof: live API returns
   `target_site_host=ekologus.dev.proudsite.pl`,

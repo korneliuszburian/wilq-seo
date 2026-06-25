@@ -19,6 +19,7 @@ import {
   actionAuditEventLabel,
   actionAuditSummaryLabel
 } from "./ActionObjectPanels";
+import { marketerBlockedClaimLabels } from "./marketingLabels";
 
 export function ActionDetailSurface({ actionId }: { actionId: string }) {
   const action = useQuery({
@@ -68,10 +69,10 @@ function ActionDetail({ action }: { action: ActionObject }) {
         <ActionValidationControls action={action} />
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Podgląd payloadu" />
+        <SectionHeading title="Podgląd zmian" />
         <ActionPayloadPreviewSummary action={action} />
         <details className="rounded-md border border-line bg-slate-50 p-3 text-xs text-slate-700">
-          <summary className="cursor-pointer font-medium text-ink">Pokaż payload techniczny</summary>
+          <summary className="cursor-pointer font-medium text-ink">Pokaż dane techniczne akcji</summary>
           <pre className="mt-3 max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
             {JSON.stringify(action.payload, null, 2)}
           </pre>
@@ -252,7 +253,7 @@ function GenericPayloadPreviewCard({ item }: { item: Record<string, unknown> }) 
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Review-only podgląd</h3>
+          <h3 className="text-sm font-semibold text-ink">Podgląd do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {previewIssueLabel(item)}
           </p>
@@ -260,10 +261,7 @@ function GenericPayloadPreviewCard({ item }: { item: Record<string, unknown> }) 
         <StatusBadge value={item.apply_allowed === true ? "ready" : "blocked"} />
       </div>
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <ExecutionStateLine item={item} />
         <PreviewValues label="Przykładowe produkty" values={asStringArray(item.sample_product_ids)} />
         <PreviewValues label="Tytuły próbek" values={asStringArray(item.sample_titles)} />
       </div>
@@ -276,7 +274,7 @@ function WordPressStagingDraftPreviewCard({ item }: { item: Record<string, unkno
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Staging draft do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Szkic stagingowy do przeglądu</h3>
           <p className="mt-1 break-words text-xs text-slate-500">
             {stringValue(item.selected_target_url, stringValue(item.source_url, "brak URL"))}
           </p>
@@ -287,7 +285,7 @@ function WordPressStagingDraftPreviewCard({ item }: { item: Record<string, unkno
         <div>Kandydat: {stringValue(item.candidate_id, "brak")}</div>
         <div>Temat: {stringValue(item.topic, "brak")}</div>
         <div>Źródło: {stringValue(item.source_url, "brak")}</div>
-        <div>Target: {stringValue(item.selected_target_url, "brak")}</div>
+        <div>Adres podglądu: {stringValue(item.selected_target_url, "brak")}</div>
         <div>Mapowanie: {stringValue(item.mapping_review_status, "brak")}</div>
         <div>Canonical: {stringValue(item.canonical_gate_status, "brak")}</div>
         <div>Duplikaty: {stringValue(item.duplicate_gate_status, "brak")}</div>
@@ -299,11 +297,8 @@ function WordPressStagingDraftPreviewCard({ item }: { item: Record<string, unkno
           Następny kontrakt: {stringValue(item.required_next_action_contract, "brak")}
         </div>
         <PreviewValues label="Walidacje" values={asStringArray(item.required_validation)} />
-        <PreviewValues label="Blokady" values={asStringArray(item.blocked_claims)} />
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <PreviewValues label="Czego nie wolno twierdzić" values={blockedClaimValues(item.blocked_claims)} />
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -314,7 +309,7 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Wykluczenie słowa do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Wykluczenie słowa do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.match_type, "match type")}
           </p>
@@ -331,11 +326,8 @@ function NegativeKeywordPayloadPreviewCard({ item }: { item: Record<string, unkn
           Grupa reklam: {stringValue(item.ad_group_name, stringValue(item.ad_group_id, "brak"))}
         </div>
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -346,7 +338,7 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">N-gram search terms do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Temat zapytań do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.operation_type, "SearchTermNgramReview")}
           </p>
@@ -356,7 +348,7 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
       <div className="mt-3 grid gap-1.5 text-xs text-slate-700">
         <div>N-gram: {stringValue(item.ngram, "brak")}</div>
         <div>Rozmiar: {formatNumber(item.ngram_size)}</div>
-        <div>Search terms: {formatNumber(item.source_search_term_count)}</div>
+        <div>Zapytania użytkowników: {formatNumber(item.source_search_term_count)}</div>
         <PreviewValues label="Przykłady" values={asStringArray(item.sample_search_terms)} />
         <div>Kliknięcia: {formatNumber(item.clicks)}</div>
         <div>Wyświetlenia: {formatNumber(item.impressions)}</div>
@@ -364,11 +356,8 @@ function SearchTermNgramPreviewCard({ item }: { item: Record<string, unknown> })
         <div>Konwersje: {formatNumber(item.conversions)}</div>
         <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -383,7 +372,7 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Custom segment do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Segment odbiorców do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.member_type, "KEYWORD")}
           </p>
@@ -395,19 +384,16 @@ function CustomSegmentPayloadPreviewCard({ item }: { item: Record<string, unknow
         <div>Typ członków: {stringValue(item.member_type, "brak")}</div>
         <PreviewValues label="Hasła źródłowe" values={asStringArray(item.source_terms)} />
         <div>
-          Kampania do review:{" "}
+          Kampania do sprawdzenia:{" "}
           {targetingPreview
             ? stringValue(targetingPreview.campaign_name, stringValue(targetingPreview.campaign_id, "brak"))
             : "brak"}
         </div>
-        <div>Safety: {stringValue(safetyReview.status, "brak")}</div>
+        <div>Bezpieczeństwo: {stringValue(safetyReview.status, "brak")}</div>
         <PreviewValues label="Braki" values={asStringArray(safetyReview.missing_requirements)} />
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -418,7 +404,7 @@ function RecommendationPayloadPreviewCard({ item }: { item: Record<string, unkno
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Rekomendacja Google Ads do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Rekomendacja Google Ads do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.operation_type, "ApplyRecommendationOperation")}
           </p>
@@ -430,11 +416,8 @@ function RecommendationPayloadPreviewCard({ item }: { item: Record<string, unkno
         <div>Kampania: {stringValue(item.campaign_id, "brak")}</div>
         <div>Budżet kampanii: {stringValue(item.campaign_budget_id, "brak")}</div>
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -445,7 +428,7 @@ function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Budżet kampanii do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Budżet kampanii do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.operation_type, "CampaignBudgetOperation")}
           </p>
@@ -456,11 +439,8 @@ function BudgetPayloadPreviewCard({ item }: { item: Record<string, unknown> }) {
         <div>Kampania: {stringValue(item.campaign_name, stringValue(item.campaign_id, "brak"))}</div>
         <div>Obecny budżet: {formatMicrosAsPln(item.current_budget_amount_micros)}</div>
         <div>Propozycja: {formatMicrosAsPln(item.proposed_budget_amount_micros)}</div>
-        <div>Safety: {budgetSafetyStatus(item)}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Bezpieczeństwo: {budgetSafetyStatus(item)}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -472,7 +452,7 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Demand Gen readiness do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Gotowość Demand Gen do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.operation_type, "DemandGenReadinessReview")}
           </p>
@@ -485,14 +465,11 @@ function DemandGenReadinessPreviewCard({ item }: { item: Record<string, unknown>
         <div>Kampanie Demand Gen: {formatNumber(item.demand_gen_campaign_row_count)}</div>
         <div>Grupy reklam Demand Gen: {formatNumber(item.demand_gen_ad_group_ad_row_count)}</div>
         <div>Kreacje/assets: {formatNumber(item.demand_gen_creative_asset_row_count)}</div>
-        <div>Landing quality rows: {formatNumber(item.demand_gen_landing_quality_row_count)}</div>
+        <div>Wiersze jakości landingów: {formatNumber(item.demand_gen_landing_quality_row_count)}</div>
         <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -504,7 +481,7 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">GA4 jakość pomiaru do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Jakość pomiaru GA4 do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.operation_type, "tracking_quality_review")}
           </p>
@@ -522,11 +499,8 @@ function Ga4TrackingQualityPreviewCard({ item }: { item: Record<string, unknown>
         <div>Wyświetlenia stron: {formatNumber(metricSnapshot.screen_page_views)}</div>
         <PreviewValues label="Braki wymiarów" values={asStringArray(item.tracking_dimension_gaps)} />
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -538,7 +512,7 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Localo widoczność lokalna do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Widoczność lokalna do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.operation_type, "local_visibility_review")}
           </p>
@@ -553,15 +527,12 @@ function LocalVisibilityPreviewCard({ item }: { item: Record<string, unknown> })
         <div>Aktywne miejsca: {formatNumber(metricSnapshot.localo_active_place_count)}</div>
         <div>Ocena: {formatNumber(metricSnapshot.localo_avg_rating)}</div>
         <div>Opinie: {formatNumber(metricSnapshot.localo_reviews_count)}</div>
-        <div>Reply rate: {formatPercent(metricSnapshot.localo_review_reply_rate)}</div>
+        <div>Odsetek odpowiedzi na opinie: {formatPercent(metricSnapshot.localo_review_reply_rate)}</div>
         <PreviewValues label="Dozwolone kontrakty" values={asStringArray(item.allowed_contracts)} />
         <PreviewValues label="Braki" values={asStringArray(item.missing_read_contracts)} />
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ")}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -586,11 +557,8 @@ function SocialDraftInputPreviewCard({ item }: { item: Record<string, unknown> }
         <div>Wartość: {formatMetricValue(item.value)}</div>
         <div>Wymiary: {formatDimensions(dimensions)}</div>
         <PreviewValues label="Ograniczenia" values={asStringArray(item.draft_constraints)} />
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
-        <div>
-          Publikacja zablokowana: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <PublicationStateLine item={item} />
       </div>
     </article>
   );
@@ -602,7 +570,7 @@ function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknow
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-ink">
-            Keyword Planner access do odblokowania
+            Dostęp do Keyword Plannera do odblokowania
           </h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.mode, "prepare_only")}
@@ -619,11 +587,8 @@ function KeywordPlannerAccessPreviewCard({ item }: { item: Record<string, unknow
         />
         <PreviewValues label="Kroki" values={asStringArray(item.helper_steps)} />
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -636,7 +601,7 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Guardrail Ads do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Zasady bezpieczeństwa Ads do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.action_type, "ads_business_guardrail")}
           </p>
@@ -659,14 +624,11 @@ function AdsBusinessGuardrailPreviewCard({ item }: { item: Record<string, unknow
           label="Po potwierdzeniu"
           values={asStringArray(item.allowed_uses_after_confirmation)}
         />
-        <PreviewValues label="Bramki review" values={asStringArray(item.operator_review_gates)} />
-        <div>Ostatni review strategii: {strategyReviewSummary(item.latest_strategy_review)}</div>
+        <PreviewValues label="Warunki przeglądu" values={asStringArray(item.operator_review_gates)} />
+        <div>Ostatni przegląd strategii: {strategyReviewSummary(item.latest_strategy_review)}</div>
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 4).join(", ")}</div>
-        <div>Blokady: {asStringArray(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
-        <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
-        </div>
+        <div>Czego nie wolno twierdzić: {blockedClaimValues(item.blocked_claims).slice(0, 4).join(", ") || "brak"}</div>
+        <ExecutionStateLine item={item} />
       </div>
     </article>
   );
@@ -678,7 +640,7 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Brief treści do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Brief treści do przeglądu</h3>
           <p className="mt-1 break-words text-xs text-slate-500">
             {stringValue(item.target_url, stringValue(item.source_url, "brak URL"))}
           </p>
@@ -704,9 +666,9 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
           {asStringArray(item.target_site_alternative_candidate_urls).slice(0, 3).join(", ") ||
             stringValue(item.target_site_alternative_candidate_summary, "brak")}
         </div>
-        <div>Review mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
+        <div>Przegląd mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
         <div>
-          URL-e do review:{" "}
+          URL-e do sprawdzenia:{" "}
           {asStringArray(item.target_site_mapping_review_candidate_urls).slice(0, 3).join(", ") ||
             stringValue(item.target_site_mapping_review_summary, "brak")}
         </div>
@@ -723,8 +685,8 @@ function ContentBriefPreviewCard({ item }: { item: Record<string, unknown> }) {
         </div>
         <div>Walidacje: {asStringArray(item.required_validation).slice(0, 3).join(", ")}</div>
         <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; publikacja:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+          Publikacja: {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}; wykonanie:{" "}
+          {item.apply_allowed === true ? "dopuszczone" : "zablokowane"}
         </div>
       </div>
     </article>
@@ -737,7 +699,7 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
     <article className="rounded-md border border-line bg-slate-50 p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold text-ink">Draft WordPress do review</h3>
+          <h3 className="text-sm font-semibold text-ink">Szkic WordPress do przeglądu</h3>
           <p className="mt-1 text-xs uppercase tracking-normal text-slate-500">
             {stringValue(item.operation_type, "wordpress_draft_review")}
           </p>
@@ -755,21 +717,21 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
           {asStringArray(item.target_site_alternative_candidate_urls).slice(0, 3).join(", ") ||
             stringValue(item.target_site_alternative_candidate_summary, "brak")}
         </div>
-        <div>Review mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
+        <div>Przegląd mapowania: {stringValue(item.target_site_mapping_review_status, "brak")}</div>
         <div>
-          URL-e do review:{" "}
+          URL-e do sprawdzenia:{" "}
           {asStringArray(item.target_site_mapping_review_candidate_urls).slice(0, 3).join(", ") ||
             stringValue(item.target_site_mapping_review_summary, "brak")}
         </div>
         <div>
-          Zapis review mapowania:{" "}
+          Zapis przeglądu mapowania:{" "}
           {stringValue(item.target_site_mapping_review_recorded_outcome, "brak")}
           {item.target_site_mapping_review_selected_url
             ? ` -> ${stringValue(item.target_site_mapping_review_selected_url, "")}`
             : ""}
         </div>
         <div>
-          Review readiness:{" "}
+          Gotowość po przeglądzie:{" "}
           {[
             stringValue(item.draft_readiness_review_recorded_outcome, ""),
             stringValue(item.canonical_review_recorded_outcome, ""),
@@ -780,7 +742,7 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
             .filter(Boolean)
             .join(", ") || "brak zapisu"}
         </div>
-        <div>Notatka readiness: {stringValue(item.draft_readiness_review_notes, "brak")}</div>
+        <div>Notatka gotowości: {stringValue(item.draft_readiness_review_notes, "brak")}</div>
         <div>Staging handoff: {stringValue(item.staging_handoff_status, "zablokowany")}</div>
         <div>
           Blokady stagingu: {asStringArray(item.staging_handoff_blockers).slice(0, 5).join(", ") || "brak"}
@@ -789,8 +751,8 @@ function WordPressDraftPreviewCard({ item }: { item: Record<string, unknown> }) 
           Pomiar po publikacji: {postPublicationMeasurementValue(item.post_publication_measurement_plan)}
         </div>
         <div>
-          Apply zablokowany: {item.apply_allowed === true ? "nie" : "tak"}; mutacja API:{" "}
-          {item.api_mutation_ready === true ? "gotowa" : "zablokowana"}
+          Wykonanie: {item.apply_allowed === true ? "dopuszczone" : "zablokowane"}; zapis do API:{" "}
+          {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
         </div>
       </div>
     </article>
@@ -897,6 +859,28 @@ function PreviewValues({ label, values }: { label: string; values: string[] }) {
       {values.length > 4 ? ` +${values.length - 4}` : ""}
     </div>
   );
+}
+
+function ExecutionStateLine({ item }: { item: Record<string, unknown> }) {
+  return (
+    <div>
+      Wykonanie: {item.apply_allowed === true ? "dopuszczone" : "zablokowane"}; zapis do API:{" "}
+      {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
+    </div>
+  );
+}
+
+function PublicationStateLine({ item }: { item: Record<string, unknown> }) {
+  return (
+    <div>
+      Publikacja: {item.apply_allowed === true ? "dopuszczona" : "zablokowana"}; zapis do API:{" "}
+      {item.api_mutation_ready === true ? "gotowy" : "zablokowany"}
+    </div>
+  );
+}
+
+function blockedClaimValues(value: unknown) {
+  return marketerBlockedClaimLabels(asStringArray(value));
 }
 
 function previewIssueLabel(item: Record<string, unknown>) {
@@ -1068,9 +1052,9 @@ function OpportunityDetail({ opportunity }: { opportunity: Opportunity }) {
         </div>
       </section>
       <section className="mt-6 rounded-md border border-line bg-white p-4">
-        <SectionHeading title="Surowe metryki" />
+        <SectionHeading title="Metryki techniczne" />
         {opportunity.metrics.length === 0 ? (
-          <p className="text-sm text-slate-600">Brak realnych metric facts.</p>
+          <p className="text-sm text-slate-600">Brak realnych metryk z dowodami.</p>
         ) : (
           <pre className="max-h-96 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-100">
             {JSON.stringify(opportunity.metrics, null, 2)}

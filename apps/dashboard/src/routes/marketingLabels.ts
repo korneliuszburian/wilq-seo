@@ -155,3 +155,59 @@ function marketerBlockedClaimLabel(value: string) {
   };
   return labels[value] ?? value;
 }
+
+export function marketerBlockedClaimLabelText(value: string) {
+  return marketerBlockedClaimLabel(value);
+}
+
+export function marketerOperatorCopy(value: string) {
+  return value
+    .replace(/\bActionObject review\b/gi, "przegląd akcji")
+    .replace(/\bActionObjecty\b/g, "akcje do walidacji")
+    .replace(/\bActionObject\b/g, "akcja do walidacji")
+    .replace(/\bpayload preview\b/gi, "podgląd zmian")
+    .replace(/\bpodgląd payloadu\b/gi, "podgląd zmian")
+    .replace(/\bpayloady\b/gi, "dane akcji")
+    .replace(/\bpayloadu\b/gi, "danych akcji")
+    .replace(/\bpayload\b/gi, "dane akcji")
+    .replace(/\breview-only\b/gi, "tylko do przeglądu")
+    .replace(/\breview-safe\b/gi, "bezpieczne do przeglądu")
+    .replace(/\breview\b/gi, "przegląd")
+    .replace(/\bApply\b/g, "Wykonanie")
+    .replace(/\bapply\b/g, "wykonanie")
+    .replace(/\bwrite\b/gi, "zapisu")
+    .replace(/\bvendorów\b/gi, "zewnętrznych systemów")
+    .replace(/\bvendor\b/gi, "zewnętrzny system")
+    .replace(/\bmutation audit\b/gi, "audyt zmiany")
+    .replace(/\bmutation\b/gi, "zmiana")
+    .replace(/\bmutacji\b/gi, "zmian")
+    .replace(/\bmetric facts\b/gi, "metryki z dowodami")
+    .replace(/\bimpact sanity check\b/gi, "sprawdzenie wpływu")
+    .replace(/\bcontent queue\b/gi, "kolejkę treści")
+    .replace(/\bprepare-only queue\b/gi, "kolejkę tylko do przygotowania")
+    .replace(/\bqueue refresh\/create\/merge\/block\b/gi, "kolejkę: odśwież, utwórz, scal albo zablokuj")
+    .replace(/\bqueue\b/gi, "kolejkę")
+    .replace(/\blaunch\b/gi, "uruchomienie")
+    .replace(/\bassetów\b/gi, "zasobów")
+    .replace(/\blanding quality\b/gi, "jakości landing page")
+    .replace(/\blanding\/source\/campaign breakdown\b/gi, "rozbicie landing page, źródeł i kampanii")
+    .replace(/\bstaging handoff\b/gi, "przekazanie do wersji roboczej")
+    .replace(/\bstaging\b/gi, "wersję roboczą")
+    .replace(/\bclaimów\b/gi, "twierdzeń")
+    .replace(/\bclaimować\b/gi, "twierdzić")
+    .replace(/\bpause\b/gi, "pauzy")
+    .replace(/\bbudget scaling\b/gi, "skalowania budżetu")
+    .replace(/\bbieżącym evidence\b/gi, "bieżących dowodach")
+    .replace(/\bevidence\b/gi, "dowody")
+    .replace(/\bGSC demand\b/g, "popytu z GSC")
+    .replace(/\binventory\b/gi, "istniejących treści")
+    .replace(/\bcontent\b/gi, "treści")
+    .replaceAll("/treści-planner", "/content-planner")
+    .replace(/\bRMF\/compliance\b/g, "ryzyka i zgodności")
+    .replace(/\bwstępnego przegląd\b/g, "wstępnego przeglądu")
+    .replace(/\bwaliduj akcja do walidacji\b/g, "waliduj akcję do walidacji")
+    .replaceAll("claimować", "twierdzić")
+    .replaceAll("issue clusters", "grupy problemów")
+    .replaceAll("refresh/merge", "odświeżenie albo scalenie")
+    .replaceAll("draftu", "szkicu");
+}
