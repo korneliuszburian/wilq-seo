@@ -550,16 +550,39 @@ after the first decision layer is clear.
   headings, 43 card/section surfaces and about 22 viewport heights. Move
   "Najpierw sprawdz w Ads" above the full ready/blocked matrix and make it the
   primary first-screen surface.
+- `task`: Fresh condensation browser audit on 2026-06-25 confirms Ads Doctor is
+  still the main overload after the start strip: 61,885 text chars, 201
+  snapshot lines, 54 headings and 90 interactive refs. Add a true condensed
+  decision panel before the diagnostic wall: one primary Ads decision, why it
+  matters, safe next action, blocked claims, missing inputs, evidence summary
+  and measurement/impact plan. Proof:
+  `docs/handoffs/2026-06-25-condensation-browser-audit.md` and
+  `.local-lab/proof/condensation-browser-audit-20260625/`.
 - `task`: Browser audit shows Content Planner is the strongest route but
   overloaded: 43k body chars and about 14 viewport heights. Add a top
   "Dzisiejszy brief do review" panel for one selected BDO/Zielony Lad decision
   and collapse Ahrefs/migration/staging/measurement drilldowns below details.
+- `task`: Fresh condensation browser audit shows current Content Planner proof
+  is smaller than the earlier audit but still needs a selected decision first:
+  16,723 text chars, 76 snapshot lines, 21 headings and 42 interactive refs.
+  Start with one selected content review item containing source evidence,
+  target mapping state, H1/H2/FAQ/CTA direction, missing evidence, blocked
+  claims and mapping review action.
 - `task`: Browser audit shows Merchant is useful but deep. Collapse
   contract/payload/proof blocks behind technical details after the first
   decision queue item.
+- `task`: Fresh condensation browser audit shows Merchant has a good first
+  queue item, but repeats contract/payload/apply-blocked sections too early:
+  19,388 text chars, 59 snapshot lines, 21 headings and 32 interactive refs.
+  Keep counts and first issue visible; move repeated review payload/proof detail
+  into a technical drawer.
 - `task`: Browser audit shows GA4 is the clearest route, but `(not set)` rows
   repeat row metric tiles and raw values such as `0.019608`. Group measurement
   issues first and format engagement as percentages.
+- `ready`: Fresh condensation browser audit shows GA4 is currently the best
+  diagnostic pattern: measurement issue first, why it matters, safe next step,
+  blocked claims, evidence summary and readable engagement percentage. Use GA4
+  as the reference pattern for Ads/Merchant/Content condensation.
 - `task`: Add a core-domain quick switcher or improve Command Center links if
   marketer UAT shows navigation confusion.
 - `hardening`: Do not redesign the visual system broadly before UAT. Fix one

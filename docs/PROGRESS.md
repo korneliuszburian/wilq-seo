@@ -105,6 +105,13 @@ Stan produktu:
   `.local-lab/proof/browser-marketer-audit-20260625/`. Main finding: Command
   Center is usable, GA4 is clearest, Merchant is useful but deep, Content is
   high-value but overloaded, Ads Doctor is too dense for unassisted demo.
+- Fresh condensation browser audit on 2026-06-25 captured current API-backed
+  route text/snapshots after starting the local stack. Handoff:
+  `docs/handoffs/2026-06-25-condensation-browser-audit.md`; proof:
+  `.local-lab/proof/condensation-browser-audit-20260625/`. Main finding:
+  Command Center is the right start, GA4 is the reference condensation pattern,
+  Merchant and Content need selected-first/detail-later structure, and Ads
+  Doctor remains the biggest overload at 61,885 text chars and 54 headings.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -171,9 +178,10 @@ Stan produktu:
    `.local-lab/proof/marketer-uat-packet/`: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record the filled result through
    `scripts/record_marketer_uat_result.py`.
-2. If demo UX is the next priority, use the browser audit: move Ads "Najpierw
-   sprawdź w Ads" above the dense readiness matrix, and add a single selected
-   Content decision panel before full drilldown. Change one blocker at a time.
+2. If demo UX is the next priority, use the condensation browser audit: add a
+   true top Ads decision panel before the diagnostic wall, and add a single
+   selected Content decision panel before full drilldown. Change one blocker at
+   a time.
 3. Do not repeat completed action-copy cleanup or add new evals unless fresh
    route proof finds a specific marketer-facing leak.
 4. If content depth is next, continue from the review handoff packet toward

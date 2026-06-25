@@ -865,6 +865,11 @@ Do not implement these before Ekologus works deeply:
 - [x] Long-range product plan is now separated into this `PLANS.md`.
 - [x] Naming policy is explicit: WILQ system, Wilku operator persona, Ekologus
   first workspace/client.
+- [x] Fresh `agent-browser` self-audit for the condensation layer captured
+  current API-backed route text/snapshots under
+  `.local-lab/proof/condensation-browser-audit-20260625/` and summarized
+  concrete route-condensation tasks in
+  `docs/handoffs/2026-06-25-condensation-browser-audit.md`.
 - [ ] Run or explicitly defer real marketer UAT from current `PLAN.md`.
 - [ ] Close or mark blocked current `PLAN.md`.
 - [ ] Start Milestone C only after current demo closure/deferral is explicit.
