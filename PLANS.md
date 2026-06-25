@@ -875,6 +875,13 @@ Do not implement these before Ekologus works deeply:
   evidence/source summary, blocked claims, missing inputs and measurement plan.
   Browser proof:
   `.local-lab/proof/ads-condensed-decision-panel-20260625/`.
+- [x] Second dashboard condensation implementation shipped for Content Planner:
+  a selected-first content review panel before the full drilldown, including
+  live WILQ API metrics, source evidence, target mapping, H1/H2/FAQ/CTA
+  direction, blocked claims, missing inputs and measurement plan. It explicitly
+  separates old-site source-of-truth inventory from dev-site preview/design
+  context. Browser proof:
+  `.local-lab/proof/content-selected-decision-panel-20260625/`.
 - [ ] Run or explicitly defer real marketer UAT from current `PLAN.md`.
 - [ ] Close or mark blocked current `PLAN.md`.
 - [ ] Start Milestone C only after current demo closure/deferral is explicit.
@@ -892,6 +899,9 @@ Do not implement these before Ekologus works deeply:
 - Ads Doctor needed implementation, not just planning: the route was formally
   correct but too dense, so the first condensation slice moves the decision,
   blockers and measurement plan ahead of the raw diagnostic wall.
+- Content semantics needed first-screen product language: `ekologus.pl` and
+  `sklep.ekologus.pl` are source-of-truth inventory, while
+  `ekologus.dev.proudsite.pl` is preview/design context for mapping.
 
 ## Decision Log
 

@@ -561,12 +561,15 @@ after the first decision layer is clear.
   overloaded: 43k body chars and about 14 viewport heights. Add a top
   "Dzisiejszy brief do review" panel for one selected BDO/Zielony Lad decision
   and collapse Ahrefs/migration/staging/measurement drilldowns below details.
-- `task`: Fresh condensation browser audit shows current Content Planner proof
-  is smaller than the earlier audit but still needs a selected decision first:
-  16,723 text chars, 76 snapshot lines, 21 headings and 42 interactive refs.
-  Start with one selected content review item containing source evidence,
-  target mapping state, H1/H2/FAQ/CTA direction, missing evidence, blocked
-  claims and mapping review action.
+- `ready`: Content Planner now has a selected-first "Dzisiejszy brief do
+  review" panel before the full drilldown. It shows one content review item,
+  current WILQ API metrics, source evidence, target mapping state, H1/H2/FAQ/CTA
+  direction, blocked claims, missing inputs and measurement plan. The panel
+  explicitly states that `ekologus.pl` and `sklep.ekologus.pl` are the source of
+  truth/inventory, while `ekologus.dev.proudsite.pl` is preview/design context,
+  not historical metric evidence. Proof:
+  `docs/handoffs/2026-06-25-content-selected-decision-panel.md` and
+  `.local-lab/proof/content-selected-decision-panel-20260625/`.
 - `task`: Browser audit shows Merchant is useful but deep. Collapse
   contract/payload/proof blocks behind technical details after the first
   decision queue item.

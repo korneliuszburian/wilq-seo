@@ -91,6 +91,8 @@ export function ContentDiagnosticSurface({ title }: { title: string }) {
         <TraceLine label="Ostatnie odczyty" values={latestStatuses} />
       </section>
 
+      <ContentSelectedDecisionPanel data={data} actions={routeActions} />
+
       <ContentOperatorSummary data={data} />
 
       <ContentBriefPreviewPanel actions={routeActions} />
@@ -198,6 +200,7 @@ type ContentBriefPreviewItem = {
   forbidden_claims?: string[];
   required_validation: string[];
   blocked_claims: string[];
+  source_connectors?: string[];
   evidence_ids: string[];
   apply_allowed: boolean;
   api_mutation_ready: boolean;
@@ -638,6 +641,189 @@ function contentBriefReviewRequest(preview: ContentBriefPreviewItem): ActionRevi
       ...preview.blocked_claims.slice(0, 5).map((claim) => `blocked_claim:${claim}`)
     ])
   };
+}
+
+function ContentSelectedDecisionPanel({
+  data,
+  actions
+}: {
+  data: ContentDiagnosticsResponse;
+  actions: ActionObject[];
+}) {
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const primaryDecision =
+    summary.top_decision_ids
+      .map((decisionId) => decisionsById.get(decisionId))
+      .find((decision): decision is ContentDecisionItem => Boolean(decision)) ??
+    data.decision_queue[0];
+  const migrationItem = primaryDecision
+    ? summary.target_site_migration_map.find((item) => item.decision_id === primaryDecision.id)
+    : undefined;
+  const mappingReviewInput = primaryDecision
+    ? summary.target_site_mapping_review_inputs.find((item) => item.decision_id === primaryDecision.id)
+    : undefined;
+  const previews = contentBriefPreviewItemsFromActions(actions);
+  const primaryPreview = contentPrimaryBriefPreview(primaryDecision, migrationItem, previews);
+  const blockedClaims = uniqueValues([
+    ...(primaryPreview?.blocked_claims ?? []),
+    ...(primaryDecision?.blocked_claims ?? []),
+    ...(migrationItem?.blocked_outputs ?? []),
+    ...(mappingReviewInput?.blocked_outputs ?? [])
+  ]);
+  const missingInputs = uniqueValues([
+    ...(primaryPreview?.publication_blockers ?? []),
+    ...(primaryPreview?.required_validation ?? []),
+    ...(mappingReviewInput?.required_checked_items ?? [])
+  ]);
+  const evidenceIds = uniqueValues([
+    ...(primaryPreview?.evidence_ids ?? []),
+    ...(primaryDecision?.evidence_ids ?? []),
+    ...(migrationItem?.evidence_ids ?? [])
+  ]);
+  const sourceConnectors = uniqueValues([
+    ...(primaryPreview?.source_connectors ?? []),
+    ...(primaryDecision?.source_connectors ?? []),
+    ...(migrationItem?.source_connectors ?? [])
+  ]);
+
+  if (!primaryDecision) {
+    return (
+      <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+        <h2 className="text-base font-semibold tracking-normal text-ink">
+          Dzisiejszy brief do review
+        </h2>
+        <BlockerNotice message="Brak decyzji contentowych. Najpierw odśwież GSC, WordPress i Ahrefs przez WILQ API." />
+      </section>
+    );
+  }
+
+  return (
+    <section className="mb-6 rounded-md border border-action/30 bg-action/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-action">
+            Dzisiejszy brief do review
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
+            Wybrany temat do przeniesienia lub odświeżenia
+          </h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
+            {contentDecisionTitle(primaryDecision)}.{" "}
+            {primaryPreview?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
+          {contentSelectedMetricTiles(primaryDecision, primaryPreview).map(([label, value]) => (
+            <MetricTile key={label} label={label} value={value} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{primaryDecision.rationale}</p>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
+          <p className="mt-2 text-sm font-medium leading-6 text-ink">
+            {mappingReviewInput?.review_notes_prompt ?? primaryDecision.next_step}
+          </p>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Kierunek treści</h3>
+          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+            <TraceLine
+              label="H1"
+              values={primaryPreview?.h1_direction ? [primaryPreview.h1_direction] : []}
+              empty="do doprecyzowania w briefie"
+            />
+            <TraceLine
+              label="H2"
+              values={primaryPreview?.h2_direction?.slice(0, 3) ?? []}
+              empty="do doprecyzowania w briefie"
+            />
+            <TraceLine
+              label="FAQ"
+              values={primaryPreview?.faq_direction?.slice(0, 3) ?? []}
+              empty="do doprecyzowania w briefie"
+            />
+            <TraceLine
+              label="Wezwanie do działania"
+              values={primaryPreview?.cta_direction ? [primaryPreview.cta_direction] : []}
+              empty="do doprecyzowania w briefie"
+            />
+          </div>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Target i mapowanie</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            `ekologus.pl` i `sklep.ekologus.pl` są źródłem prawdy oraz inventory treści.
+            `ekologus.dev.proudsite.pl` jest preview/design contextem dla przyszłego
+            mapowania, nie źródłem historycznych metryk.
+          </p>
+          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+            <TraceLine
+              label="Źródło"
+              values={[primaryDecision.source_url ?? primaryDecision.page ?? ""].filter(Boolean).map(shortPath)}
+            />
+            <TraceLine
+              label="Preview"
+              values={[
+                migrationItem?.migration_candidate_url ??
+                  primaryPreview?.target_site_migration_candidate_url ??
+                  primaryPreview?.target_site_url ??
+                  ""
+              ].filter(Boolean).map(shortPath)}
+              empty="brak targetu"
+            />
+            <TraceLine
+              label="Review"
+              values={[
+                migrationItem?.mapping_review_status
+                  ? mappingReviewStatusLabel(migrationItem.mapping_review_status)
+                  : "",
+                primaryDecision.target_site_mapping_review_status
+                  ? mappingReviewStatusLabel(primaryDecision.target_site_mapping_review_status)
+                  : "",
+                migrationItem?.next_required_gate ? contentNextGateLabel(migrationItem.next_required_gate) : ""
+              ].filter(Boolean)}
+            />
+          </div>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
+          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+            <TraceLine label="Dowody" values={[formatContentEvidenceCount(evidenceIds.length)]} />
+            <TraceLine label="Źródła" values={sourceConnectors} />
+            <TraceLine
+              label="Fakty"
+              values={primaryPreview?.source_facts?.slice(0, 4) ?? []}
+              empty="zobacz szczegóły niżej"
+            />
+          </div>
+        </div>
+        <div className="rounded-md border border-line bg-white p-3">
+          <h3 className="text-sm font-semibold text-ink">Czego WILQ nie zrobi teraz</h3>
+          <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
+            <TraceLine
+              label="Blokady"
+              values={contentBlockedClaimLabels(blockedClaims).slice(0, 6)}
+            />
+            <TraceLine label="Brakuje" values={missingInputs.slice(0, 6)} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-md border border-line bg-white p-3">
+        <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          {contentSelectedMeasurementPlan(primaryPreview)}
+        </p>
+      </div>
+    </section>
+  );
 }
 
 function ContentOperatorSummary({ data }: { data: ContentDiagnosticsResponse }) {
@@ -1148,6 +1334,72 @@ function contentBriefPreviewItemsFromActions(actions: ActionObject[]): ContentBr
       .filter(isContentBriefPreviewItem)
       .map((row) => ({ ...row, action_id: action.id }));
   });
+}
+
+function contentPrimaryBriefPreview(
+  decision: ContentDecisionItem | undefined,
+  migrationItem:
+    | ContentDiagnosticsResponse["operator_summary"]["target_site_migration_map"][number]
+    | undefined,
+  previews: ContentBriefPreviewItem[]
+) {
+  if (!decision) return previews[0];
+  return (
+    previews.find((preview) => preview.candidate_id === migrationItem?.candidate_id) ??
+    previews.find(
+      (preview) =>
+        Boolean(preview.source_url) &&
+        (preview.source_url === decision.source_url ||
+          preview.source_url === decision.page ||
+          preview.source_url === decision.wordpress_content_url)
+    ) ??
+    previews.find(
+      (preview) =>
+        Boolean(preview.target_site_migration_candidate_url) &&
+        preview.target_site_migration_candidate_url ===
+          decision.target_site_migration_candidate_url
+    ) ??
+    previews[0]
+  );
+}
+
+function contentSelectedMetricTiles(
+  decision: ContentDecisionItem,
+  preview: ContentBriefPreviewItem | undefined
+): Array<[string, string | number]> {
+  const snapshot = preview?.metric_snapshot ?? {};
+  const rawRows: Array<[string, string | number]> = [
+    ["Zapytania", contentMetricSnapshotValue(snapshot, "queries")],
+    ["Kliknięcia", contentMetricSnapshotValue(snapshot, "clicks")],
+    ["Wyświetlenia", contentMetricSnapshotValue(snapshot, "impressions")],
+    ["CTR", contentMetricSnapshotValue(snapshot, "ctr")]
+  ];
+  const rows = rawRows.filter(
+    (row): row is [string, string | number] => row[1] !== "brak"
+  );
+  if (rows.length) return rows;
+  return Object.entries(decision.metric_tiles)
+    .slice(0, 4)
+    .map(([label, value]): [string, string | number] => [label, value]);
+}
+
+function contentMetricSnapshotValue(
+  snapshot: Record<string, string | number | boolean | null>,
+  key: string
+) {
+  if (!(key in snapshot)) return "brak";
+  return contentBriefMetricValue(key, snapshot[key]);
+}
+
+function contentSelectedMeasurementPlan(preview: ContentBriefPreviewItem | undefined) {
+  if (!preview) {
+    return "Najpierw zapisz review mapowania i briefu. Bez zatwierdzonego mapowania, publikacji oraz danych follow-up WILQ nie ocenia sukcesu ani porażki.";
+  }
+  return [
+    "Po review zapisz decyzję mapowania i baseline z GSC/WordPress.",
+    "Po ewentualnym draft/staging/publish potrzebne są follow-up windows w GSC/GA4.",
+    "Do tego czasu WILQ blokuje claimy o pozycjach, ruchu, leadach i revenue."
+  ].join(" ");
 }
 
 function wordpressDraftPayloadPreviewItemsFromActions(

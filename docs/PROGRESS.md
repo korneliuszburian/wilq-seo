@@ -119,6 +119,14 @@ Stan produktu:
   `.local-lab/proof/ads-condensed-decision-panel-20260625/`. Focused checks:
   `rtk pnpm --dir apps/dashboard typecheck` and
   `rtk pnpm --filter @wilq/dashboard test -- AdsDoctorSurface`.
+- Content Planner now has a selected-first "Dzisiejszy brief do review" panel.
+  It condenses one content decision into current WILQ API metrics, H1/H2/FAQ/CTA
+  direction, source evidence, target mapping state, blocked claims, missing
+  inputs and measurement plan. It also states the domain rule explicitly:
+  `ekologus.pl`/`sklep.ekologus.pl` are source-of-truth inventory, while
+  `ekologus.dev.proudsite.pl` is preview/design context. Proof:
+  `docs/handoffs/2026-06-25-content-selected-decision-panel.md` and
+  `.local-lab/proof/content-selected-decision-panel-20260625/`.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -186,9 +194,8 @@ Stan produktu:
    Content Planner -> Ads Doctor -> GA4, then record the filled result through
    `scripts/record_marketer_uat_result.py`.
 2. If demo UX is the next priority, continue the condensation browser audit
-   from Content or Merchant. Ads Doctor already has the first condensed
-   decision panel; next likely slice is a single selected Content decision
-   panel before full drilldown. Change one blocker at a time.
+   from Merchant. Ads Doctor and Content Planner already have first condensed
+   decision panels. Change one blocker at a time.
 3. Do not repeat completed action-copy cleanup or add new evals unless fresh
    route proof finds a specific marketer-facing leak.
 4. If content depth is next, continue from the review handoff packet toward
