@@ -120,6 +120,9 @@ These are not complete yet and must not be implied as ready:
 - WordPress draft handoff with draft-only apply and audit;
 - post-publication measurement loop;
 - API-owned Marketing Priority view-model for Command Center copy and CTAs;
+- full information condensation layer that turns raw evidence, connector state,
+  diagnostics, skill outputs, knowledge cards and browser findings into one
+  marketer-useful decision surface;
 - knowledge compiler v2 with source registry, freshness, confidence and
   workspace namespace;
 - dashboard product cleanup that hides raw IDs/payloads behind technical
@@ -147,6 +150,11 @@ These are not complete yet and must not be implied as ready:
   drawers.
 - Client-specific service, claim and tone rules live in workspace/profile/card
   layers, not reusable core defaults.
+- Every marketer-facing surface must answer: what is happening, why it matters,
+  what to do next, what is blocked, what evidence supports it and what would
+  prove the result later.
+- Browser proof through `agent-browser` is mandatory for UX/value claims about
+  dashboard routes. Route tests alone do not prove marketer usefulness.
 
 ## URL Semantics To Introduce
 
@@ -162,6 +170,78 @@ fields:
 - `target_site_host`: compatibility alias for target host.
 - `target_site_migration_candidate_url`: compatibility alias for mapping
   candidate.
+
+## Information Condensation Layer
+
+Objective:
+
+- Condense WILQ's raw facts into a marketer-useful operating view instead of
+  exposing every connector, evidence ID, diagnostic field and technical blocker
+  on first contact.
+
+The condensation layer must combine:
+
+- WILQ API diagnostics and metrics fetched live when marketing metrics are
+  discussed;
+- connector status, freshness and missing credential state;
+- evidence IDs and source connectors;
+- ActionObject readiness, validation, preview, review and audit state;
+- skill outputs and eval findings;
+- knowledge cards, expert rules, claim policies and service map context;
+- browser audit findings from `agent-browser`;
+- real marketer UAT findings when available.
+
+Output contract:
+
+- `decision`: the plain Polish decision or blocker;
+- `why_it_matters`: business/marketing impact in marketer language;
+- `evidence_summary`: short evidence rollup with source connectors and evidence
+  IDs available in detail;
+- `safe_next_action`: the next review/action the marketer can safely take;
+- `blocked_claims`: what WILQ refuses to say or do;
+- `missing_inputs`: exact human/vendor/API inputs needed to unblock;
+- `confidence`: confidence based on freshness, source coverage, review state and
+  measurement availability;
+- `measurement_plan`: how WILQ will later verify whether the action helped.
+
+Rules:
+
+- Do not hide blockers. Condense them into a useful decision.
+- Do not remove traceability. Move IDs and raw payloads into technical drawers.
+- Do not infer marketing metrics from docs, browser text or stale artifacts.
+  Fetch current WILQ API context for marketing metrics.
+- Do not treat a skill eval score as marketer value. Use it as guardrail proof.
+- Do not treat browser screenshots as product completion. Use them to identify
+  clutter, confusion, dead ends and unclear next actions.
+
+## Browser Self-Audit Requirement
+
+Every UX/value claim about the dashboard must be tested through `agent-browser`
+against the local dashboard when the stack is available.
+
+Required route path:
+
+- `/command-center`
+- `/merchant`
+- `/content-planner`
+- `/ads-doctor`
+- `/ga4`
+
+For each route, capture:
+
+- page text or snapshot;
+- screenshot, preferably full-page when density matters;
+- count of visible sections/cards/headings if clutter is suspected;
+- the first marketer-visible decision;
+- the next clickable action;
+- confusing labels, raw IDs, debug payloads or duplicated information;
+- what should be condensed, collapsed, renamed or moved into a technical drawer.
+
+Proof storage:
+
+- Store browser proof under `.local-lab/proof/`.
+- Summarize findings in a handoff under `docs/handoffs/`.
+- Convert confirmed UX findings into `PLAN.md` or `PLANS.md` tasks.
 
 ## Execution Order
 
@@ -182,7 +262,7 @@ fields:
 15. Milestone O: Measurement loop.
 16. Milestone P: Marketing Priority Engine.
 17. Milestone Q: Knowledge compiler v2.
-18. Milestone R: Dashboard for Wilku.
+18. Milestone R: Information condensation and dashboard for Wilku.
 19. Milestone S: Safe write/apply expansion.
 20. Milestone T: Final verification suite.
 
@@ -650,30 +730,44 @@ Verification:
 - Rule-to-decision lineage tests.
 - Stale-card behavior tests.
 
-## Milestone R - Dashboard For Wilku
+## Milestone R - Information Condensation And Dashboard For Wilku
 
 Objective:
 
-- Make dashboard a cockpit, not a registry.
+- Make dashboard a condensed marketer cockpit, not a registry or raw diagnostic
+  dump.
 
 Tasks:
 
+- Define the marketer-facing condensation view-model.
+- Pull WILQ API context for marketing metrics instead of relying on docs,
+  screenshots or stale artifacts.
+- Convert raw diagnostics into: decision, why it matters, evidence summary,
+  safe next action, blocker, missing input, confidence and measurement plan.
 - Keep domain nav first.
 - Move raw IDs/payloads into technical drawers.
 - Show for every decision: what to do, why, blocker, safe action and later
   measurement.
+- Use `agent-browser` to walk the core route path and judge the UI like a
+  marketer practicing AI engineering: remove or collapse information that does
+  not help the next decision.
 - Run UAT with Wilku/marketer.
 
 Acceptance:
 
 - Wilku can choose next action without developer narration.
 - Core path has no raw-debug or ActionObject-first language on first screen.
+- Dense routes such as Ads Doctor and Content Planner have a condensed first
+  screen with detail drawers for traceability.
+- Browser findings are either fixed, converted into tasks or explicitly
+  deferred.
 
 Verification:
 
 - Marketer UAT.
 - Dashboard e2e checks.
-- Browser proof as supporting evidence, not sole proof.
+- `agent-browser` snapshots/screenshots/text extraction for the core route path.
+- Browser proof as value/UX evidence, not the sole completion proof.
 
 ## Milestone S - Safe Write/Apply Expansion
 
@@ -895,6 +989,18 @@ Safety invariants:
 - Existing content is preserve-first.
 - SDK generation returns typed artifacts or typed refusal, not loose prose.
 - Dashboard speaks marketer language, with technical drawer for raw details.
+- Build a full information condensation layer so raw diagnostics, metrics,
+  evidence, skill findings, knowledge cards and browser/UAT findings become a
+  useful marketer decision surface.
+- For marketing metrics, fetch current WILQ API context. Do not infer metrics
+  from docs, browser text or stale artifacts.
+- Use `agent-browser` to inspect the dashboard yourself on the core path:
+  `/command-center -> /merchant -> /content-planner -> /ads-doctor -> /ga4`.
+  Capture proof under `.local-lab/proof/`, summarize findings in
+  `docs/handoffs/`, and convert clutter/confusion into tasks.
+- Judge every route from Wilku's perspective: what is the decision, why does it
+  matter, what should I do next, what is blocked, what evidence supports it,
+  and what information is noise.
 
 Execution order:
 
