@@ -22,7 +22,7 @@ Pełne archiwa:
 
 ## Current Readout
 
-Data: 2026-06-24
+Data: 2026-06-25
 
 Stan produktu:
 
@@ -41,8 +41,14 @@ Stan produktu:
 
 ## Latest Important Facts
 
-- `PLAN.md` is the canonical self-contained ExecPlan and `/goal` reset prompt.
-  Keep this file as the short recovery ledger only.
+- `PLAN.md` remains the canonical self-contained ExecPlan and `/goal` reset
+  prompt for the current Ekologus demo. `PLANS.md` is now the broader living
+  ExecPlan for moving from the review-first demo cockpit toward the final
+  ClientWorkspace-ready WILQ Marketing Operating System. Keep this file as the
+  short recovery ledger only.
+- Naming is now explicit: WILQ is the system/product, Wilku is the human
+  marketer/operator persona, and Ekologus is the first depth-first
+  workspace/client.
 - Solid Ekologus demo gate passed on 2026-06-24 with
   `scripts/pre_demo_gate.sh --core-skills`: managed stack status, API health,
   live contract smoke, shared live schemas, dashboard route smoke 13/13 and

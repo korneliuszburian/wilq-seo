@@ -2,7 +2,7 @@
 
 ## Project identity
 
-This repository builds WILQ Marketing Operating System for Ekologus. WILQ is the marketer. Codex Desktop/CLI is the primary operator runtime.
+This repository builds WILQ Marketing Operating System for Ekologus. WILQ is the system/product, Wilku is the human marketer/operator persona, and Ekologus is the first depth-first workspace/client. Codex Desktop/CLI is the primary operator runtime.
 
 ## Recovery index
 
