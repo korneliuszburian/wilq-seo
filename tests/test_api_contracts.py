@@ -11879,6 +11879,12 @@ def test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence(
     assert "blokada do czasu odczytu vendor_read" in (
         diagnostics.operator_summary.decision_type_labels
     )
+    assert diagnostics.marketer_decision is not None
+    assert diagnostics.marketer_decision.technical_decision_id == decision.id
+    assert diagnostics.marketer_decision.status == "blocked"
+    assert "GSC" in diagnostics.marketer_decision.decision
+    assert "automatyczna publikacja" in diagnostics.marketer_decision.blocked_claims
+    assert all("_" not in value for value in diagnostics.marketer_decision.missing_inputs)
 
 
 def test_content_diagnostics_exposes_query_page_inventory_queue(
@@ -12177,6 +12183,25 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
     assert "lead uplift" in operator_summary["blocked_claims"]
     assert operator_summary["summary"]
     assert operator_summary["next_step"]
+    marketer_decision = payload["marketer_decision"]
+    assert marketer_decision["technical_decision_id"] == payload["decision_queue"][0]["id"]
+    assert marketer_decision["decision"]
+    assert marketer_decision["why_it_matters"]
+    assert marketer_decision["safe_next_action"]
+    assert marketer_decision["evidence_summary"]
+    assert marketer_decision["source_connectors"]
+    assert marketer_decision["evidence_ids"]
+    assert marketer_decision["measurement_plan"]
+    if marketer_decision["source_public_url"]:
+        assert marketer_decision["source_public_url"].startswith("https://www.ekologus.pl/")
+    if marketer_decision["final_canonical_url"]:
+        assert "ekologus.dev.proudsite.pl" not in marketer_decision["final_canonical_url"]
+    assert not any("_" in value for value in marketer_decision["missing_inputs"])
+    assert not any(
+        "ActionObject" in value
+        for value in marketer_decision.values()
+        if isinstance(value, str)
+    )
     first_decision = next(
         decision
         for decision in payload["decision_queue"]

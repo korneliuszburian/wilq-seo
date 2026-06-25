@@ -601,13 +601,22 @@ after the first decision layer is clear.
   Handoff/proof:
   `docs/handoffs/2026-06-25-content-label-registry-proof.md` and
   `.local-lab/proof/content-label-registry-20260625/content-planner.after-restart.text.txt`.
-- `task`: Fresh browser proof after the label-registry slice still shows
-  Content Planner leaking API/backend prose such as `inventory`,
-  `target_site_*`, `draft/staging`, `review`, `payload`, `ActionObject` and raw
-  blocker keys outside a technical drawer. Do not patch these with UI-side text
-  replacement; add a typed Content condensation view-model/API contract that
+- `ready`: Content diagnostics now expose a backend-owned
+  `marketer_decision` view-model on `/api/content/diagnostics`, mirrored in the
+  shared frontend schema and rendered by the top Content Planner panel. It
   returns marketer-ready `decision`, `why_it_matters`, `safe_next_action`,
-  `missing_inputs`, `blocked_claims` and `measurement_plan`.
+  `missing_inputs`, `blocked_claims`, evidence/source summary,
+  source/final/preview URL semantics and `measurement_plan` without React-side
+  string replacement. Focused tests:
+  `rtk uv run pytest tests/test_api_contracts.py::test_content_diagnostics_blocks_until_vendor_read_when_no_content_evidence tests/test_api_contracts.py::test_content_diagnostics_exposes_query_page_inventory_queue -q`,
+  `rtk pnpm --dir apps/dashboard typecheck`, and
+  `rtk pnpm --filter @wilq/dashboard test -- ContentDiagnosticSurface --testTimeout=15000`.
+  Browser proof:
+  `.local-lab/proof/content-marketer-decision-20260625/content-planner.full-text.txt`.
+- `task`: Lower Content Planner drilldowns still expose technical trace
+  language such as `inventory`, mapping/staging wording, raw action IDs and
+  backend blocker terms. Do not patch these with UI-side text replacement; add
+  typed drilldown view-models or move raw details behind a technical mode.
 - `task`: Browser audit shows GA4 is the clearest route, but `(not set)` rows
   repeat row metric tiles and raw values such as `0.019608`. Group measurement
   issues first and format engagement as percentages.

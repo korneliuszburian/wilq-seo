@@ -1888,6 +1888,26 @@ export const ContentOperatorSummarySchema = z.object({
   blocked_claims: z.array(z.string())
 });
 
+export const ContentMarketerDecisionSchema = z.object({
+  id: z.string(),
+  technical_decision_id: z.string(),
+  status: z.enum(["ready", "blocked"]),
+  decision: z.string(),
+  mode_label: z.string(),
+  why_it_matters: z.string(),
+  safe_next_action: z.string(),
+  blocked_claims: z.array(z.string()).default([]),
+  missing_inputs: z.array(z.string()).default([]),
+  evidence_summary: z.string(),
+  source_connectors: z.array(z.string()).default([]),
+  evidence_ids: z.array(z.string()).default([]),
+  measurement_plan: z.string(),
+  source_public_url: z.string().nullable().optional(),
+  preview_url: z.string().nullable().optional(),
+  intended_final_url: z.string().nullable().optional(),
+  final_canonical_url: z.string().nullable().optional()
+});
+
 export const ContentDiagnosticsResponseSchema = z.object({
   generated_at: z.string().nullable().optional(),
   language: z.literal("pl-PL"),
@@ -1898,6 +1918,7 @@ export const ContentDiagnosticsResponseSchema = z.object({
   query_page_count: z.number(),
   matched_inventory_count: z.number(),
   operator_summary: ContentOperatorSummarySchema,
+  marketer_decision: ContentMarketerDecisionSchema.nullable().optional(),
   decision_queue: z.array(ContentDecisionItemSchema),
   sections: z.array(ContentDiagnosticSectionSchema),
   evidence_ids: z.array(z.string()),

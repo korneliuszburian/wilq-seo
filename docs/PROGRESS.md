@@ -206,6 +206,16 @@ Stan produktu:
   Content Planner jargon from API/backend summaries and composed detail rows,
   so the next correct fix is a typed Content condensation view-model/API
   contract.
+- Content diagnostics now expose a typed `marketer_decision` view-model from
+  `/api/content/diagnostics`, mirrored in shared schemas and rendered by the
+  top Content Planner panel. This backend-owned condensation answers decision,
+  why it matters, safe next action, missing inputs, blocked claims, evidence,
+  source/final/preview URL semantics and measurement plan without React-side
+  string replacement. Browser proof:
+  `.local-lab/proof/content-marketer-decision-20260625/content-planner.full-text.txt`.
+  Lower Content Planner drilldowns still expose technical trace language, so
+  the next UX slice should either add typed drilldown view-models or move those
+  details behind a technical mode.
 
 ## Next Best Queue
 
@@ -218,15 +228,15 @@ Stan produktu:
 3. Do not patch marketer-facing leaks through UI-side string replacement or
    hardcoded route copy. Add a typed view-model/shared label contract and tests
    first.
-4. For Content Planner, continue by adding a typed Content condensation
-   view-model/API contract for visible decisions and blockers. Do not keep
-   cleaning copied backend prose inside React.
+4. For Content Planner, continue below the top panel: either add typed
+   drilldown view-models or move raw inventory/mapping/draft details behind a
+   technical mode. Do not keep cleaning copied backend prose inside React.
 5. Do not add new evals unless fresh route proof finds a specific
    marketer-facing leak.
 6. If content depth is next, continue from the review handoff packet toward
    confirmed human mapping for every row, then audited draft-readiness. Do not
    unlock staging, publish or uplift claims without typed preview, human
    confirmation and audit.
-5. Do not re-add ready/done surfaces as active tasks. If a completed area looks
+7. Do not re-add ready/done surfaces as active tasks. If a completed area looks
    wrong, reopen it only with fresh API/browser proof and a focused failing
    check.

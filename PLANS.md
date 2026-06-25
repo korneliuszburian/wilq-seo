@@ -925,6 +925,13 @@ Do not implement these before Ekologus works deeply:
   hardcoding. Verification:
   `rtk pnpm --dir apps/dashboard typecheck` and
   `rtk pnpm --filter @wilq/dashboard test -- ContentDiagnosticSurface --testTimeout=15000`.
+- [x] Add the first typed Content condensation API contract:
+  `/api/content/diagnostics` now includes `marketer_decision`, mirrored in
+  shared schemas and rendered by the top Content Planner panel. It condenses
+  raw decisions into marketer-ready decision, rationale, safe next action,
+  missing inputs, blocked claims, evidence/source summary, URL semantics and
+  measurement plan without React-side string replacement. Proof:
+  `.local-lab/proof/content-marketer-decision-20260625/content-planner.full-text.txt`.
 - [ ] Run or explicitly defer real marketer UAT from current `PLAN.md`.
 - [ ] Close or mark blocked current `PLAN.md`.
 - [ ] Start Milestone C only after current demo closure/deferral is explicit.
@@ -950,6 +957,10 @@ Do not implement these before Ekologus works deeply:
   detail rows (`target_site_*`, `inventory`, `draft/staging`, raw blocker
   keys). The next correct fix is a typed Content condensation view-model/API
   contract, not UI-side string replacement.
+- The first typed Content condensation contract fixes the top decision panel,
+  but lower Content Planner drilldowns still expose trace/debug language. Next
+  work should add typed drilldown view-models or put raw details behind a
+  technical mode, not add more component-local label dictionaries.
 
 ## Decision Log
 

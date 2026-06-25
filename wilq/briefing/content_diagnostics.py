@@ -22,6 +22,7 @@ from wilq.schemas import (
     ContentDecisionItem,
     ContentDiagnosticSection,
     ContentDiagnosticsResponse,
+    ContentMarketerDecision,
     ContentOperatorSummary,
     MetricFact,
     OpportunityDomain,
@@ -257,6 +258,7 @@ def build_content_diagnostics(
         query_page_count=_query_page_count(content_tactical_items),
         matched_inventory_count=_matched_inventory_count(content_tactical_items),
         operator_summary=_operator_summary(decision_queue, sections, action_ids),
+        marketer_decision=_content_marketer_decision(decision_queue, sections),
         decision_queue=decision_queue,
         sections=sections,
         evidence_ids=_unique(
@@ -371,6 +373,220 @@ def _operator_summary(
         blocked_claims=_unique(
             claim for section in sections for claim in section.blocked_claims
         ),
+    )
+
+
+def _content_marketer_decision(
+    decisions: list[ContentDecisionItem],
+    sections: list[ContentDiagnosticSection],
+) -> ContentMarketerDecision | None:
+    if not decisions:
+        return None
+    decision = decisions[0]
+    missing_inputs = _content_marketer_missing_inputs(decision)
+    blocked_claims = _content_marketer_blocked_claims(
+        [
+            *decision.blocked_claims,
+            *(claim for section in sections for claim in section.blocked_claims),
+        ]
+    )
+    source_public_url = decision.source_url or decision.page
+    preview_url = decision.target_site_migration_candidate_url or (
+        decision.target_site_url
+        if _content_url_host(decision.target_site_url) == CONTENT_TARGET_SITE_HOST
+        else None
+    )
+    intended_final_url = (
+        decision.wordpress_content_url
+        if _content_url_host(decision.wordpress_content_url) in CONTENT_SOURCE_SITE_HOSTS
+        else source_public_url
+    )
+    final_canonical_url = (
+        decision.target_site_inventory_canonical_url
+        if _content_url_host(decision.target_site_inventory_canonical_url)
+        in CONTENT_SOURCE_SITE_HOSTS
+        else intended_final_url
+    )
+    return ContentMarketerDecision(
+        id=f"marketer_{decision.id}",
+        technical_decision_id=decision.id,
+        status=decision.status,
+        decision=_content_marketer_decision_text(decision),
+        mode_label=_content_marketer_mode_label(decision.decision_type),
+        why_it_matters=_content_marketer_why(decision),
+        safe_next_action=_content_marketer_next_action(decision),
+        blocked_claims=blocked_claims,
+        missing_inputs=missing_inputs,
+        evidence_summary=_content_marketer_evidence_summary(decision),
+        source_connectors=decision.source_connectors,
+        evidence_ids=decision.evidence_ids,
+        measurement_plan=_content_marketer_measurement_plan(decision),
+        source_public_url=source_public_url,
+        preview_url=preview_url,
+        intended_final_url=intended_final_url,
+        final_canonical_url=final_canonical_url,
+    )
+
+
+def _content_marketer_decision_text(decision: ContentDecisionItem) -> str:
+    if decision.decision_type == "block_until_vendor_read":
+        return (
+            "Nie podejmuj decyzji contentowej, dopóki WILQ nie ma świeżych "
+            "danych z GSC i WordPress."
+        )
+    if decision.decision_type == "refresh_or_merge":
+        return (
+            "Zachowaj istniejącą treść i przygotuj odświeżenie albo scalenie, "
+            "zamiast pisać nowy tekst od zera."
+        )
+    if decision.decision_type == "merge_create_after_inventory_check":
+        return (
+            "Najpierw sprawdź, czy temat nie dubluje istniejącej treści; "
+            "dopiero potem wybierz scalenie albo nową stronę."
+        )
+    if decision.decision_type == "inventory_check_before_create":
+        return (
+            "Nie pisz jeszcze nowej treści; najpierw potwierdź, czy temat "
+            "nie istnieje już w WordPress."
+        )
+    if decision.decision_type == "block_as_tracking_not_content":
+        return "To wygląda jak problem pomiaru GA4, nie zadanie do pisania treści."
+    return (
+        "Sprawdź lukę contentową z Ahrefs tylko jako input do review, "
+        "nie jako samodzielny powód do publikacji."
+    )
+
+
+def _content_marketer_mode_label(decision_type: ContentDecisionType) -> str:
+    labels: dict[ContentDecisionType, str] = {
+        "block_until_vendor_read": "blokada danych",
+        "refresh_or_merge": "zachować i odświeżyć",
+        "merge_create_after_inventory_check": "sprawdzić duplikację",
+        "inventory_check_before_create": "sprawdzić istniejącą treść",
+        "block_as_tracking_not_content": "naprawić pomiar",
+        "review_ahrefs_gap_records": "sprawdzić lukę",
+    }
+    return labels[decision_type]
+
+
+def _content_marketer_why(decision: ContentDecisionItem) -> str:
+    if decision.decision_type == "refresh_or_merge":
+        query = f" dla zapytania `{decision.primary_query}`" if decision.primary_query else ""
+        return (
+            f"WordPress potwierdza istniejący URL{query}, więc bezpieczniej wzmocnić "
+            "obecną treść niż tworzyć konkurującą stronę."
+        )
+    if decision.decision_type in {
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+    }:
+        return (
+            "GSC pokazuje popyt, ale WILQ nie ma pełnego potwierdzenia, że temat "
+            "nie istnieje już w treściach. Pisanie bez tej kontroli grozi duplikacją."
+        )
+    if decision.decision_type == "block_as_tracking_not_content":
+        return (
+            "Braki w wymiarach GA4 mogą fałszować ocenę landing page, więc najpierw "
+            "trzeba poprawić pomiar."
+        )
+    if decision.decision_type == "review_ahrefs_gap_records":
+        return (
+            "Ahrefs może wskazać temat do sprawdzenia, ale sam gap konkurencji nie "
+            "wystarcza do decyzji o nowej publikacji bez GSC i inventory."
+        )
+    return (
+        "Brakuje podstawowych danych z GSC lub WordPress, więc WILQ może pokazać "
+        "tylko blocker, nie rekomendację."
+    )
+
+
+def _content_marketer_next_action(decision: ContentDecisionItem) -> str:
+    if decision.decision_type == "refresh_or_merge":
+        return (
+            "Przejrzyj wskazany URL, zachowaj sekcje nadal aktualne, wypisz braki "
+            "w H1/H2/FAQ/CTA i dopiero potem przygotuj brief do sprawdzenia."
+        )
+    if decision.decision_type in {
+        "merge_create_after_inventory_check",
+        "inventory_check_before_create",
+    }:
+        return (
+            "Potwierdź istniejący URL, kanoniczny adres i ryzyko duplikacji. Jeśli "
+            "kontrola przejdzie, WILQ może przygotować brief; jeśli nie, temat zostaje zablokowany."
+        )
+    if decision.decision_type == "block_as_tracking_not_content":
+        return "Napraw lub potwierdź tracking GA4, a potem wróć do oceny treści."
+    if decision.decision_type == "review_ahrefs_gap_records":
+        return (
+            "Porównaj gap z GSC i WordPress; traktuj go jako inspirację "
+            "do review, nie gotową decyzję."
+        )
+    return "Uruchom read-only odczyt GSC i WordPress, potem odśwież Content Planner."
+
+
+def _content_marketer_missing_inputs(decision: ContentDecisionItem) -> list[str]:
+    values: list[str] = []
+    if decision.wordpress_match == "missing":
+        values.append("potwierdzenie, czy temat istnieje już w WordPress")
+    if decision.inventory_gate_status and decision.inventory_gate_status not in {
+        "confirmed_current_inventory",
+        "confirmed_target_inventory",
+        "not_applicable",
+    }:
+        values.append("kontrola spisu treści i istniejącego URL")
+    if decision.canonical_gate_status and decision.canonical_gate_status not in {
+        "current_url_confirmed",
+        "not_applicable",
+    }:
+        values.append("potwierdzony adres kanoniczny na ekologus.pl")
+    if decision.duplicate_gate_status and decision.duplicate_gate_status not in {
+        "refresh_or_merge_required",
+        "not_applicable",
+    }:
+        values.append("kontrola duplikacji i kanibalizacji")
+    if decision.target_site_mapping_review_status in {
+        "manual_mapping_required",
+        "review_alternative_candidates",
+        "confirm_exact_candidate",
+    }:
+        values.append("potwierdzenie miejsca w podglądzie projektu")
+    if not decision.evidence_ids:
+        values.append("dowód źródłowy z WILQ API")
+    return _unique(values) or ["brak dodatkowych danych przed review"]
+
+
+def _content_marketer_blocked_claims(claims: Iterable[str]) -> list[str]:
+    labels = {
+        "auto publish": "automatyczna publikacja",
+        "content recommendation": "rekomendacja bez danych źródłowych",
+        "lead uplift": "obietnica wzrostu leadów",
+        "ranking uplift": "obietnica wzrostu pozycji",
+        "conversion uplift": "obietnica wzrostu konwersji",
+        "wordpress_publish": "publikacja w WordPress bez review",
+        "wordpress_write": "zapis do WordPress bez potwierdzenia",
+        "staging_ready_claim": "twierdzenie, że szkic jest gotowy do wdrożenia",
+    }
+    return _unique(labels.get(claim, claim.replace("_", " ")) for claim in claims)
+
+
+def _content_marketer_evidence_summary(decision: ContentDecisionItem) -> str:
+    connector_count = len(decision.source_connectors)
+    evidence_count = len(decision.evidence_ids)
+    if decision.primary_query:
+        return (
+            f"Decyzja opiera się na {evidence_count} dowodach z {connector_count} źródeł; "
+            f"główne zapytanie: {decision.primary_query}."
+        )
+    return f"Decyzja opiera się na {evidence_count} dowodach z {connector_count} źródeł."
+
+
+def _content_marketer_measurement_plan(decision: ContentDecisionItem) -> str:
+    url = decision.wordpress_content_url or decision.source_url or decision.page
+    url_part = f" dla {url}" if url else ""
+    return (
+        f"Po publikacji lub odświeżeniu porównaj GSC i GA4 przed/po{url_part}. "
+        "Bez okna pomiarowego WILQ nie może twierdzić, że zmiana poprawiła "
+        "pozycje, leady albo konwersje."
     )
 
 

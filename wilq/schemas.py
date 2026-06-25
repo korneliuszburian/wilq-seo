@@ -2286,6 +2286,26 @@ class ContentOperatorSummary(BaseModel):
     blocked_claims: list[str] = Field(default_factory=list)
 
 
+class ContentMarketerDecision(BaseModel):
+    id: str
+    technical_decision_id: str
+    status: Literal["ready", "blocked"]
+    decision: str
+    mode_label: str
+    why_it_matters: str
+    safe_next_action: str
+    blocked_claims: list[str] = Field(default_factory=list)
+    missing_inputs: list[str] = Field(default_factory=list)
+    evidence_summary: str
+    source_connectors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    measurement_plan: str
+    source_public_url: str | None = None
+    preview_url: str | None = None
+    intended_final_url: str | None = None
+    final_canonical_url: str | None = None
+
+
 class ContentDiagnosticsResponse(BaseModel):
     generated_at: datetime = Field(default_factory=utc_now)
     language: Literal["pl-PL"] = "pl-PL"
@@ -2296,6 +2316,7 @@ class ContentDiagnosticsResponse(BaseModel):
     query_page_count: int = 0
     matched_inventory_count: int = 0
     operator_summary: ContentOperatorSummary
+    marketer_decision: ContentMarketerDecision | None = None
     decision_queue: list[ContentDecisionItem] = Field(default_factory=list)
     sections: list[ContentDiagnosticSection] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

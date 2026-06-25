@@ -715,6 +715,14 @@ function ContentSelectedDecisionPanel({
     ...(primaryDecision?.source_connectors ?? []),
     ...(migrationItem?.source_connectors ?? [])
   ]);
+  const marketerDecision = data.marketer_decision;
+  const panelBlockedClaims = marketerDecision?.blocked_claims ?? contentBlockedClaimLabels(blockedClaims);
+  const panelMissingInputs = marketerDecision?.missing_inputs ?? missingInputs;
+  const panelEvidenceSummary =
+    marketerDecision?.evidence_summary ?? formatContentEvidenceCount(evidenceIds.length);
+  const panelSourceConnectors = marketerDecision?.source_connectors ?? sourceConnectors;
+  const panelMeasurementPlan =
+    marketerDecision?.measurement_plan ?? contentSelectedMeasurementPlan(primaryPreview);
 
   if (!primaryDecision) {
     return (
@@ -732,13 +740,12 @@ function ContentSelectedDecisionPanel({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-normal text-action">
-            Dzisiejszy brief do review
+            {marketerDecision?.mode_label ?? "Dzisiejszy brief do review"}
           </div>
           <h2 className="mt-1 text-lg font-semibold tracking-normal text-ink">
-            Wybrany temat do przeniesienia lub odświeżenia
+            {marketerDecision?.decision ?? "Wybrany temat do przeniesienia lub odświeżenia"}
           </h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">
-            {contentDecisionTitle(primaryDecision)}.{" "}
             {primaryPreview?.content_angle ?? primaryDecision.summary ?? primaryDecision.rationale}
           </p>
         </div>
@@ -752,12 +759,16 @@ function ContentSelectedDecisionPanel({
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-700">{primaryDecision.rationale}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {marketerDecision?.why_it_matters ?? primaryDecision.rationale}
+          </p>
         </div>
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
           <p className="mt-2 text-sm font-medium leading-6 text-ink">
-            {mappingReviewInput?.review_notes_prompt ?? primaryDecision.next_step}
+            {marketerDecision?.safe_next_action ??
+              mappingReviewInput?.review_notes_prompt ??
+              primaryDecision.next_step}
           </p>
         </div>
         <div className="rounded-md border border-line bg-white p-3">
@@ -786,21 +797,28 @@ function ContentSelectedDecisionPanel({
           </div>
         </div>
         <div className="rounded-md border border-line bg-white p-3">
-          <h3 className="text-sm font-semibold text-ink">Target i mapowanie</h3>
+          <h3 className="text-sm font-semibold text-ink">Adresy i podgląd</h3>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            `ekologus.pl` i `sklep.ekologus.pl` są źródłem prawdy oraz inventory treści.
-            `ekologus.dev.proudsite.pl` jest preview/design contextem dla przyszłego
-            mapowania, nie źródłem historycznych metryk.
+            `ekologus.pl` i `sklep.ekologus.pl` są źródłem prawdy. Dev host jest
+            tylko podglądem projektu, nie docelowym adresem SEO.
           </p>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
             <TraceLine
               label="Źródło"
-              values={[primaryDecision.source_url ?? primaryDecision.page ?? ""].filter(Boolean).map(shortPath)}
+              values={[
+                marketerDecision?.source_public_url ??
+                  primaryDecision.source_url ??
+                  primaryDecision.page ??
+                  ""
+              ]
+                .filter(Boolean)
+                .map(shortPath)}
             />
             <TraceLine
-              label="Preview"
+              label="Podgląd"
               values={[
-                migrationItem?.migration_candidate_url ??
+                marketerDecision?.preview_url ??
+                  migrationItem?.migration_candidate_url ??
                   primaryPreview?.target_site_migration_candidate_url ??
                   primaryPreview?.target_site_url ??
                   ""
@@ -808,24 +826,23 @@ function ContentSelectedDecisionPanel({
               empty="brak targetu"
             />
             <TraceLine
-              label="Review"
+              label="Docelowo"
               values={[
-                migrationItem?.mapping_review_status
-                  ? mappingReviewStatusLabel(migrationItem.mapping_review_status)
-                  : "",
-                primaryDecision.target_site_mapping_review_status
-                  ? mappingReviewStatusLabel(primaryDecision.target_site_mapping_review_status)
-                  : "",
-                migrationItem?.next_required_gate ? contentNextGateLabel(migrationItem.next_required_gate) : ""
-              ].filter(Boolean)}
+                marketerDecision?.final_canonical_url ??
+                  marketerDecision?.intended_final_url ??
+                  ""
+              ]
+                .filter(Boolean)
+                .map(shortPath)}
+              empty="do potwierdzenia"
             />
           </div>
         </div>
         <div className="rounded-md border border-line bg-white p-3">
           <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
-            <TraceLine label="Dowody" values={[formatContentEvidenceCount(evidenceIds.length)]} />
-            <TraceLine label="Źródła" values={sourceConnectors} />
+            <TraceLine label="Dowody" values={[panelEvidenceSummary]} />
+            <TraceLine label="Źródła" values={panelSourceConnectors} />
             <TraceLine
               label="Fakty"
               values={primaryPreview?.source_facts?.slice(0, 4) ?? []}
@@ -838,9 +855,9 @@ function ContentSelectedDecisionPanel({
           <div className="mt-2 grid gap-1 text-xs leading-5 text-slate-600">
             <TraceLine
               label="Blokady"
-              values={contentBlockedClaimLabels(blockedClaims).slice(0, 6)}
+              values={panelBlockedClaims.slice(0, 6)}
             />
-            <TraceLine label="Brakuje" values={missingInputs.slice(0, 6)} />
+            <TraceLine label="Brakuje" values={panelMissingInputs.slice(0, 6)} />
           </div>
         </div>
       </div>
@@ -848,7 +865,7 @@ function ContentSelectedDecisionPanel({
       <div className="mt-3 rounded-md border border-line bg-white p-3">
         <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
         <p className="mt-2 text-sm leading-6 text-slate-700">
-          {contentSelectedMeasurementPlan(primaryPreview)}
+          {panelMeasurementPlan}
         </p>
       </div>
     </section>
