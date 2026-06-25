@@ -6525,10 +6525,10 @@ describe("WILQ dashboard", () => {
       screen.getByText(/Obecny odczyt: merchant_aggregate_product_statuses/)
     ).toBeInTheDocument();
     expect(screen.getByText("Join produktów z Ads/GA4")).toBeInTheDocument();
-    expect(screen.getByText("join performance zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("łączenie z Ads/GA4 zablokowane")).toBeInTheDocument();
     expect(screen.getByText(/google_ads_shopping_product_performance/)).toBeInTheDocument();
     expect(screen.getByText("Wpływ ceny produktu")).toBeInTheDocument();
-    expect(screen.getByText("price impact zablokowany")).toBeInTheDocument();
+    expect(screen.getByText("wpływ ceny zablokowany")).toBeInTheDocument();
     expect(screen.getByText("Zmiany ceny")).toBeInTheDocument();
     expect(screen.getByText("Bez zmiany")).toBeInTheDocument();
     expect(screen.getAllByText(/google_ads_shopping_product_price_history/).length).toBeGreaterThan(0);
@@ -6537,8 +6537,8 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("metryki feedu dostępne")).toBeInTheDocument();
     expect(screen.getByText("Dowody")).toBeInTheDocument();
     expect(screen.getByText(/Przykładowe produkty służą tylko do ręcznego/)).toBeInTheDocument();
-    expect(screen.getByText("Przykładowe produkty do review")).toBeInTheDocument();
-    expect(screen.getByText(/najpierw przygotuj podgląd payloadu/)).toBeInTheDocument();
+    expect(screen.getByText("Przykładowe produkty do sprawdzenia")).toBeInTheDocument();
+    expect(screen.getByText(/najpierw przygotuj podgląd zmian/)).toBeInTheDocument();
     expect(screen.getAllByText(/produkt zatwierdzony ponownie/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/automatic feed edit/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Waliduj akcję" })).toHaveAttribute(

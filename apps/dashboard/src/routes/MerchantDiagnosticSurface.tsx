@@ -102,6 +102,8 @@ export function MerchantDiagnosticSurface() {
         </div>
       </section>
 
+      <MerchantSelectedDecisionPanel data={data} />
+
       <MerchantOperatorSummary data={data} />
 
       <MerchantProductSampleReadiness data={data} />
@@ -131,7 +133,7 @@ export function MerchantDiagnosticSurface() {
             </h2>
             <p className="mt-1 text-sm leading-6 text-slate-600">
               Merchant Center pozostaje w trybie przeglądu i przygotowania. WILQ może pokazać
-              kolejkę problemów, dowody i podgląd payloadu, ale nie może zmienić feedu,
+              kolejkę problemów, dowody i podgląd zmian, ale nie może zmienić feedu,
               obiecać ponownego zatwierdzenia produktu ani wykonać zmiany bez walidacji i audytu.
             </p>
           </div>
@@ -167,6 +169,191 @@ function merchantFreshnessLabel(status: MerchantDiagnosticsResponse["freshness_a
   return "odczyt zablokowany";
 }
 
+function MerchantSelectedDecisionPanel({ data }: { data: MerchantDiagnosticsResponse }) {
+  const summary = data.operator_summary;
+  const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
+  const primaryDecision =
+    summary.top_decision_ids
+      .map((decisionId) => decisionsById.get(decisionId))
+      .find((decision): decision is MerchantDecisionItem => Boolean(decision)) ??
+    data.decision_queue[0];
+  if (!primaryDecision) {
+    return (
+      <section className="mb-6 rounded-md border border-line bg-white p-4">
+        <BlockerNotice message="Brak decyzji Merchant w WILQ API. Nie pokazujemy feedowych rekomendacji bez decision_queue." />
+      </section>
+    );
+  }
+
+  const firstPreview = primaryDecision.payload_preview[0];
+  const requiredValidation = merchantUnknownArray(firstPreview?.required_validation)
+    .map(merchantString)
+    .filter((value): value is string => Boolean(value));
+  const sampleUnavailableReason = merchantString(firstPreview?.sample_unavailable_reason);
+  const measurementPlan = merchantMerchantMeasurementPlan(primaryDecision);
+  const reportedIssueCount =
+    primaryDecision.issue_count ??
+    merchantMetricTileValue(primaryDecision, "raporty razem") ??
+    primaryDecision.product_count ??
+    "brak";
+  const maxReportCount =
+    primaryDecision.product_count ??
+    merchantMetricTileValue(primaryDecision, "max zgłoszeń") ??
+    "brak";
+  const contextCount =
+    merchantMetricTileValue(primaryDecision, "konteksty") ??
+    (primaryDecision.issue_cluster_ids.length || null) ??
+    "brak";
+
+  return (
+    <section className="mb-6 rounded-md border border-line bg-white p-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-normal text-slate-500">
+            Problem feedu do sprawdzenia
+          </div>
+          <h2 className="mt-1 text-lg font-semibold tracking-normal">
+            Pierwszy problem Merchant do sprawdzenia
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+            {primaryDecision.title}. To jest skrót pierwszej decyzji z kolejki Merchant:
+            najpierw ręczny przegląd problemu, potem podgląd zmian i dopiero później
+            ewentualna walidowana zmiana. Szczegóły techniczne zostają niżej.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+          <MetricTile label="Wszystkie zgłoszenia" value={summary.reported_issue_occurrences} />
+          <MetricTile label="Raporty tej decyzji" value={reportedIssueCount} />
+          <MetricTile label="Najwięcej w raporcie" value={maxReportCount} />
+          <MetricTile label="Konteksty" value={contextCount} />
+        </div>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Dlaczego to ma znaczenie</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            WILQ zgrupował ten problem jako jedną decyzję operatorską, żeby marketer
+            nie przeglądał osobno powtarzalnych raportów Merchant. Najpierw sprawdzamy
+            typ problemu, atrybut, kraj i kontekst raportowania.
+          </p>
+          <TraceLine
+            label="Zakres"
+            values={[
+              primaryDecision.issue_type,
+              primaryDecision.affected_attribute,
+              primaryDecision.country
+            ].filter((value): value is string => Boolean(value))}
+            empty="brak zakresu"
+          />
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Bezpieczny następny krok</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Otwórz akcję do walidacji, sprawdź dowody i przygotuj podgląd zmian.
+            Bez potwierdzenia operatora WILQ nie zmienia feedu ani danych produktu.
+          </p>
+          <TraceLine label="Akcje" values={primaryDecision.action_ids} empty="brak akcji" />
+          {primaryDecision.action_ids[0] ? (
+            <a
+              href={`/actions/${primaryDecision.action_ids[0]}`}
+              className="mt-3 inline-flex h-9 items-center rounded-md border border-line bg-white px-3 text-sm font-medium text-ink hover:bg-slate-100"
+            >
+              Przejdź do walidacji
+            </a>
+          ) : null}
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Co oznaczają liczby</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Zgłoszenia w raportach nie są liczbą unikalnych produktów ani SKU. Ten panel
+            pokazuje kolejkę sprawdzenia Merchant, a nie gotową listę zmian w feedzie.
+          </p>
+          <TraceLine
+            label="Źródło decyzji"
+            values={[summary.decision_source, summary.drilldown_source]}
+            empty="brak"
+          />
+          <TraceLine label="Znaczenie liczników" values={[summary.count_semantics]} />
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Dowody i źródła</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Decyzja pochodzi z aktualnego WILQ API i jest oparta o Merchant evidence,
+            nie o ręczny opis ani screenshot.
+          </p>
+          <TraceLine label="Źródła" values={primaryDecision.source_connectors} empty="brak" />
+          <LinkedTraceLine
+            label="Dowody"
+            values={primaryDecision.evidence_ids.slice(0, 4)}
+            kind="evidence"
+          />
+          {data.latest_refresh ? (
+            <TraceLine
+              label="Ostatni odczyt"
+              values={[merchantRefreshStatusLabel(data.latest_refresh.status)]}
+            />
+          ) : null}
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Czego WILQ nie zrobi teraz</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            Nie ma zapisu do feedu ani automatycznej naprawy zatwierdzenia produktu.
+            Najpierw ręczny przegląd, podgląd zmian, zgoda operatora i audyt.
+          </p>
+          <TraceLine
+            label="Zablokowane claimy"
+            values={merchantBlockedClaimLabels([
+              ...summary.blocked_claims,
+              ...primaryDecision.blocked_claims
+            ])}
+          />
+          <TraceLine
+            label="Brakujące wejścia"
+            values={sampleUnavailableReason ? [sampleUnavailableReason] : requiredValidation}
+            empty="brak"
+          />
+        </div>
+
+        <div className="rounded-md border border-line bg-slate-50 p-3">
+          <h3 className="text-sm font-semibold text-ink">Jak później sprawdzimy efekt</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-700">{measurementPlan}</p>
+          <TraceLine
+            label="Warunki pomiaru"
+            values={[
+              "ponowny odczyt Merchant",
+              "audit zmiany",
+              "porównanie statusów problemu",
+              "brak revenue/ROAS claimów bez danych po zmianie"
+            ]}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function merchantMetricTileValue(decision: MerchantDecisionItem, key: string) {
+  const value = decision.metric_tiles?.[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) return value;
+  return null;
+}
+
+function merchantMerchantMeasurementPlan(decision: MerchantDecisionItem) {
+  if (decision.decision_type === "review_product_state_mapping") {
+    return "Po ręcznym przeglądzie porównamy kolejne odczyty Merchant i stan produktów w Ads dla tych samych produktów. Bez pełnego okna po zmianie WILQ nie będzie claimował ROAS, przychodu ani wpływu naprawy.";
+  }
+  if (decision.decision_type === "review_feed_status") {
+    return "Po zatwierdzonym działaniu sprawdzimy kolejny odczyt Merchant: status feedu, liczbę zgłoszeń i czy problem nadal występuje w tych samych kontekstach raportowania.";
+  }
+  return "Po ręcznym przeglądzie i ewentualnie zatwierdzonym podglądzie zmian sprawdzimy kolejny odczyt Merchant: czy ten sam typ problemu, atrybut i kontekst raportowania nadal występują. Nie claimujemy odzyskanego zatwierdzenia ani wpływu na przychód bez audytu i danych po zmianie.";
+}
+
 function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }) {
   const summary = data.operator_summary;
   const decisionsById = new Map(data.decision_queue.map((decision) => [decision.id, decision]));
@@ -200,7 +387,7 @@ function MerchantOperatorSummary({ data }: { data: MerchantDiagnosticsResponse }
             {summary.title}
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            {summary.summary}
+            {merchantOperatorCopy(summary.summary)}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -387,9 +574,11 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
             Gotowość próbek produktów
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            {readiness.summary}
+            {merchantOperatorCopy(readiness.summary)}
           </p>
-          <p className="mt-2 text-sm font-medium text-ink">{readiness.next_step}</p>
+          <p className="mt-2 text-sm font-medium text-ink">
+            {merchantOperatorCopy(readiness.next_step)}
+          </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs">
           <MetricTile label="Status" value={statusLabel} />
@@ -424,7 +613,7 @@ function MerchantProductSampleReadiness({ data }: { data: MerchantDiagnosticsRes
 function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosticsResponse }) {
   const readiness = data.product_performance_readiness;
   const statusLabel =
-    readiness.status === "ready" ? "join performance dostępny" : "join performance zablokowany";
+    readiness.status === "ready" ? "łączenie z Ads/GA4 dostępne" : "łączenie z Ads/GA4 zablokowane";
   const visibleRows = readiness.performance_rows.slice(0, 4);
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
@@ -434,9 +623,11 @@ function MerchantProductPerformanceReadiness({ data }: { data: MerchantDiagnosti
             Join produktów z Ads/GA4
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-            {readiness.summary}
+            {merchantOperatorCopy(readiness.summary)}
           </p>
-          <p className="mt-2 text-sm font-medium text-ink">{readiness.next_step}</p>
+          <p className="mt-2 text-sm font-medium text-ink">
+            {merchantOperatorCopy(readiness.next_step)}
+          </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center text-xs">
           <MetricTile label="Status" value={statusLabel} />
@@ -528,7 +719,7 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
   const preview = readiness.payload_preview[0];
   const previewProducts = merchantUnknownArray(preview?.products);
   const statusLabel =
-    readiness.status === "ready" ? "price impact gotowy do review" : "price impact zablokowany";
+    readiness.status === "ready" ? "wpływ ceny gotowy do sprawdzenia" : "wpływ ceny zablokowany";
   return (
     <section className="mb-6 rounded-md border border-line bg-white p-4">
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -567,7 +758,7 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
       </div>
       {preview ? (
         <div className="mt-3 rounded border border-line bg-slate-50 p-2 text-xs text-slate-600">
-          <p className="font-medium text-ink">Podgląd price-impact</p>
+          <p className="font-medium text-ink">Podgląd wpływu ceny</p>
           <TraceLine
             label="Kontrakt"
             values={[merchantString(preview.preview_contract) ?? "brak"]}
@@ -581,7 +772,7 @@ function MerchantPriceImpactReadiness({ data }: { data: MerchantDiagnosticsRespo
             ]}
           />
           <TraceLine
-            label="Apply/API"
+            label="Zapis/API"
             values={[
               `apply=${merchantBooleanLabel(preview.apply_allowed)}`,
               `api=${merchantBooleanLabel(preview.api_mutation_ready)}`
@@ -607,10 +798,16 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
         <StatusBadge value={decision.risk} />
       </div>
       {decision.summary ? (
-        <p className="mt-2 text-sm leading-6 text-slate-700">{decision.summary}</p>
+        <p className="mt-2 text-sm leading-6 text-slate-700">
+          {merchantOperatorCopy(decision.summary)}
+        </p>
       ) : null}
-      <p className="mt-2 text-sm leading-6 text-slate-700">{decision.rationale}</p>
-      <p className="mt-2 text-sm font-medium text-ink">{decision.next_step}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-700">
+        {merchantOperatorCopy(decision.rationale)}
+      </p>
+      <p className="mt-2 text-sm font-medium text-ink">
+        {merchantOperatorCopy(decision.next_step)}
+      </p>
       {Object.keys(decision.metric_tiles ?? {}).length > 0 ? (
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {Object.entries(decision.metric_tiles).map(([label, value]) => (
@@ -641,7 +838,7 @@ function MerchantDecisionCard({ decision }: { decision: MerchantDecisionItem }) 
       <div className="mt-2 grid gap-1.5 text-xs text-slate-600">
         {decision.sample_product_ids.length || decision.sample_titles.length ? (
           <div className="rounded border border-line bg-white p-2">
-            <p className="font-medium text-ink">Przykładowe produkty do review</p>
+            <p className="font-medium text-ink">Przykładowe produkty do sprawdzenia</p>
             <TraceLine
               label="ID produktów"
               values={decision.sample_product_ids.slice(0, 6)}
@@ -687,7 +884,7 @@ function MerchantDecisionPreview({
   if (!previews.length) return null;
   return (
     <div className="rounded border border-line bg-white p-2">
-      <p className="font-medium text-ink">Podgląd review</p>
+      <p className="font-medium text-ink">Podgląd sprawdzenia</p>
       <div className="mt-1 grid gap-1.5">
         {previews.map((preview, index) => {
           const candidates = merchantUnknownArray(preview.candidates);
@@ -711,7 +908,7 @@ function MerchantDecisionPreview({
                 ]}
               />
               <TraceLine
-                label="Apply/API"
+                label="Zapis/API"
                 values={[
                   `apply=${merchantBooleanLabel(preview.apply_allowed)}`,
                   `api=${merchantBooleanLabel(preview.api_mutation_ready)}`
@@ -738,6 +935,24 @@ function merchantUnknownArray(value: unknown): unknown[] {
 
 function merchantString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
+}
+
+function merchantOperatorCopy(value: string) {
+  return value
+    .replaceAll("ActionObject review", "akcję do walidacji")
+    .replaceAll("payload preview", "podgląd zmian")
+    .replaceAll("podgląd payloadu", "podgląd zmian")
+    .replaceAll("review-only", "tylko do przeglądu")
+    .replaceAll("review", "przegląd")
+    .replaceAll("triage", "sprawdzenia")
+    .replaceAll("Price impact", "Wpływ ceny")
+    .replaceAll("price-impact", "wpływ ceny")
+    .replaceAll("performance window", "okno pomiaru")
+    .replaceAll("State-only rows", "Wiersze ze statusem")
+    .replaceAll("approval", "zatwierdzenia")
+    .replaceAll("revenue", "przychód")
+    .replaceAll("apply", "zapis")
+    .replaceAll("Primary feed", "Główny feed");
 }
 
 function merchantBooleanLabel(value: unknown) {

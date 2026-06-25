@@ -882,6 +882,15 @@ Do not implement these before Ekologus works deeply:
   separates old-site source-of-truth inventory from dev-site preview/design
   context. Browser proof:
   `.local-lab/proof/content-selected-decision-panel-20260625/`.
+- [x] Third dashboard condensation implementation shipped for Merchant: a
+  selected-first feed issue panel before the full drilldown, including safe
+  validation step, count semantics, evidence/source summary, blocked claims,
+  missing inputs and measurement plan. First-screen copy now uses marketer
+  Polish (`akcja do walidacji`, `podgląd zmian`, `ręczny przegląd`) instead of
+  `ActionObject review`/`payload preview` phrasing. Browser proof:
+  `.local-lab/proof/merchant-selected-decision-panel-20260625/`.
+- [ ] Harden the shared action-focus/detail copy that still exposes technical
+  `apply`/raw blocked-claim wording in lower dashboard sections.
 - [ ] Run or explicitly defer real marketer UAT from current `PLAN.md`.
 - [ ] Close or mark blocked current `PLAN.md`.
 - [ ] Start Milestone C only after current demo closure/deferral is explicit.

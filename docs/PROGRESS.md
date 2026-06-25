@@ -127,6 +127,14 @@ Stan produktu:
   `ekologus.dev.proudsite.pl` is preview/design context. Proof:
   `docs/handoffs/2026-06-25-content-selected-decision-panel.md` and
   `.local-lab/proof/content-selected-decision-panel-20260625/`.
+- Merchant now has a selected-first "Problem feedu do sprawdzenia" panel before
+  the full drilldown. It explains the first issue, count semantics
+  (`reported_issue_occurrences` is not unique SKU count), safe validation step,
+  evidence/source summary, blocked claims, missing inputs and measurement plan.
+  First-screen copy avoids `ActionObject review`, `payload preview`, `feed
+  write`, `approval` and `price-impact` phrasing. Proof:
+  `docs/handoffs/2026-06-25-merchant-selected-decision-panel.md` and
+  `.local-lab/proof/merchant-selected-decision-panel-20260625/`.
 - Fresh 2026-06-24 adversarial skill evals exist for content, Ads, Merchant,
   GA4 and Localo. They prove overclaim blocking for target-site boundaries,
   CPA/ROAS/wasted budget, Merchant occurrence semantics, GA4 `(not set)` and
@@ -182,10 +190,11 @@ Stan produktu:
 - Source contracts still block deeper claims: Ads optimizer/apply, Merchant
   feed repair/product ROAS/price impact, GA4 attribution/performance verdicts,
   Localo tasks/write/uplift and full BDOS/agency-grade automation.
-- Dashboard may still have technical language in secondary routes, fixtures and
-  deep drilldowns. The core demo route smoke no longer exposes the known
-  `ActionObjecty`/raw-debug blocker; change remaining copy only with browser
-  proof that it blocks demo comprehension.
+- Dashboard may still have technical language in shared lower sections. Fresh
+  Merchant browser proof shows the first screen is cleaned up, but the global
+  action-focus/detail layer can still expose `apply`/raw blocked-claim wording.
+  Treat that as a shared action-copy hardening task, not as a Merchant
+  first-screen blocker.
 
 ## Next Best Queue
 
@@ -193,10 +202,11 @@ Stan produktu:
    `.local-lab/proof/marketer-uat-packet/`: Command Center -> Merchant ->
    Content Planner -> Ads Doctor -> GA4, then record the filled result through
    `scripts/record_marketer_uat_result.py`.
-2. If demo UX is the next priority, continue the condensation browser audit
-   from Merchant. Ads Doctor and Content Planner already have first condensed
+2. If demo UX is the next priority, harden shared action-focus/detail copy that
+   still leaks technical `apply`/raw blocked-claim wording in lower sections.
+   Ads Doctor, Content Planner and Merchant already have first condensed
    decision panels. Change one blocker at a time.
-3. Do not repeat completed action-copy cleanup or add new evals unless fresh
+3. Do not repeat completed first-screen condensation or add new evals unless fresh
    route proof finds a specific marketer-facing leak.
 4. If content depth is next, continue from the review handoff packet toward
    confirmed human mapping for every row, then audited draft-readiness. Do not

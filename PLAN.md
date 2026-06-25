@@ -570,14 +570,18 @@ after the first decision layer is clear.
   not historical metric evidence. Proof:
   `docs/handoffs/2026-06-25-content-selected-decision-panel.md` and
   `.local-lab/proof/content-selected-decision-panel-20260625/`.
-- `task`: Browser audit shows Merchant is useful but deep. Collapse
-  contract/payload/proof blocks behind technical details after the first
-  decision queue item.
-- `task`: Fresh condensation browser audit shows Merchant has a good first
-  queue item, but repeats contract/payload/apply-blocked sections too early:
-  19,388 text chars, 59 snapshot lines, 21 headings and 32 interactive refs.
-  Keep counts and first issue visible; move repeated review payload/proof detail
-  into a technical drawer.
+- `ready`: Merchant now has a selected-first "Problem feedu do sprawdzenia"
+  panel before the full drilldown. It shows the first Merchant issue, why it
+  matters, the safe validation step, count semantics, evidence/source summary,
+  blocked claims, missing inputs and measurement plan. The first-screen copy no
+  longer says `ActionObject review`, `payload preview`, `feed write`,
+  `approval` or `price-impact`. Proof:
+  `docs/handoffs/2026-06-25-merchant-selected-decision-panel.md` and
+  `.local-lab/proof/merchant-selected-decision-panel-20260625/`.
+- `hardening`: Merchant still exposes a lower global action-focus block with
+  technical `apply`/raw blocked-claim wording. Keep this as a focused
+  dashboard-copy task for `ActionObjectFocus`/action detail, not as a reason to
+  reopen the Merchant first-screen condensation slice.
 - `task`: Browser audit shows GA4 is the clearest route, but `(not set)` rows
   repeat row metric tiles and raw values such as `0.019608`. Group measurement
   issues first and format engagement as percentages.
