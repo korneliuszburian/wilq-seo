@@ -148,6 +148,13 @@ These are not complete yet and must not be implied as ready:
   contracts, not prompt-side workarounds.
 - Dashboard speaks marketer language first; technical traces go into detail
   drawers.
+- Marketer-facing copy must come from typed API/view-model contracts or a
+  central, domain-owned label registry with tests. Do not fix jargon by adding
+  ad hoc label maps, `replaceAll` translators, enum remappers or hardcoded
+  copy patches inside route components.
+- React route components should compose and render view-models. They must not
+  invent product semantics, rewrite backend summaries, or maintain parallel
+  business dictionaries.
 - Client-specific service, claim and tone rules live in workspace/profile/card
   layers, not reusable core defaults.
 - Every marketer-facing surface must answer: what is happening, why it matters,
@@ -208,6 +215,13 @@ Rules:
 
 - Do not hide blockers. Condense them into a useful decision.
 - Do not remove traceability. Move IDs and raw payloads into technical drawers.
+- Do not build the condensation layer as UI-side text replacement. The correct
+  implementation surface is typed API/schema/view-model/expert-rule output plus
+  focused tests. UI-only translation helpers are temporary debt and should be
+  rejected unless they are generated from a shared domain label registry.
+- Do not create per-route hardcoded dictionaries for business concepts such as
+  final URL, preview URL, content mode, blocker reason, human review state or
+  measurement state. Add the missing typed field or shared label contract first.
 - Do not infer marketing metrics from docs, browser text or stale artifacts.
   Fetch current WILQ API context for marketing metrics.
 - Do not treat a skill eval score as marketer value. Use it as guardrail proof.
@@ -740,6 +754,9 @@ Objective:
 Tasks:
 
 - Define the marketer-facing condensation view-model.
+- Define where marketer-facing wording is owned for each domain: API
+  view-model field, shared schema enum label, or central domain label registry.
+  Route-local string replacement is explicitly out of scope.
 - Pull WILQ API context for marketing metrics instead of relying on docs,
   screenshots or stale artifacts.
 - Convert raw diagnostics into: decision, why it matters, evidence summary,
@@ -757,6 +774,11 @@ Acceptance:
 
 - Wilku can choose next action without developer narration.
 - Core path has no raw-debug or ActionObject-first language on first screen.
+- The implementation does not rely on component-local jargon translation,
+  `replaceAll` cleanup, duplicated enum dictionaries or hardcoded route copy for
+  product semantics.
+- Any remaining English/technical identifier on the first screen is either an
+  intentional product trace key inside a technical drawer or a failing task.
 - Dense routes such as Ads Doctor and Content Planner have a condensed first
   screen with detail drawers for traceability.
 - Browser findings are either fixed, converted into tasks or explicitly

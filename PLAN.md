@@ -537,6 +537,13 @@ Skills are operator workflows over WILQ API. They are not the product brain.
 Dashboard is the marketer cockpit. Registry and debug details are allowed only
 after the first decision layer is clear.
 
+- `rule`: Do not fix marketer-facing jargon with component-local string
+  replacement, route-specific enum dictionaries, `replaceAll` translators or
+  hardcoded copy patches. If a route needs cleaner wording, add or correct the
+  typed API/view-model/shared label contract first, then render that contract.
+- `rule`: React route components may compose panels and render typed
+  view-models. They must not become the place where product semantics are
+  invented, translated or repaired.
 - `ready`: Marketer-facing action wording now avoids `ActionObjecty` on the
   core runtime routes and route smoke surfaces while preserving route names,
   IDs and technical traceability. Fresh proof:
@@ -903,6 +910,8 @@ Do not:
 - invent marketing metrics;
 - treat screenshots as the only product proof;
 - repair business logic in skill references or dashboard copy;
+- repair marketer language through UI-side string replacement, local label
+  maps or route-specific hardcoding instead of typed API/view-model contracts;
 - hide missing credentials or stale data;
 - claim apply, publish, feed repair, Ads optimization, ROAS, revenue recovery,
   approval recovery, local uplift or ranking gain without typed evidence and

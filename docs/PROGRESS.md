@@ -195,6 +195,10 @@ Stan produktu:
   `podgląd zmian`, `Wykonanie` and `Dane techniczne akcji`, while raw data stays
   behind the technical toggle. Browser proof:
   `.local-lab/proof/action-copy-polish-20260625/actions.final3.text.txt`.
+- Product-language hardening must not be implemented as component-local
+  `replaceAll`, route-specific enum dictionaries or ad hoc label maps. If the
+  dashboard exposes jargon, fix the typed API/view-model/shared label contract
+  first; React routes should render that contract, not repair product meaning.
 
 ## Next Best Queue
 
@@ -204,9 +208,12 @@ Stan produktu:
    `scripts/record_marketer_uat_result.py`.
 2. Do not repeat completed first-screen condensation or shared action-copy
    hardening unless fresh browser proof finds a specific marketer-facing leak.
-3. Do not add new evals unless fresh route proof finds a specific
+3. Do not patch marketer-facing leaks through UI-side string replacement or
+   hardcoded route copy. Add a typed view-model/shared label contract and tests
+   first.
+4. Do not add new evals unless fresh route proof finds a specific
    marketer-facing leak.
-4. If content depth is next, continue from the review handoff packet toward
+5. If content depth is next, continue from the review handoff packet toward
    confirmed human mapping for every row, then audited draft-readiness. Do not
    unlock staging, publish or uplift claims without typed preview, human
    confirmation and audit.
