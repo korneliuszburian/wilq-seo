@@ -591,6 +591,23 @@ after the first decision layer is clear.
   toggle. Proof:
   `docs/handoffs/2026-06-25-action-copy-polish-proof.md` and
   `.local-lab/proof/action-copy-polish-20260625/actions.final3.text.txt`.
+- `ready`: Content Planner no longer owns its pure domain label dictionaries
+  inside `ContentDiagnosticSurface.tsx`. Content labels and metric formatting
+  now live in `apps/dashboard/src/lib/contentLabels.ts` with focused tests, so
+  future wording changes have one domain-owned surface instead of route-local
+  hardcoding. Verification:
+  `rtk pnpm --dir apps/dashboard typecheck` and
+  `rtk pnpm --filter @wilq/dashboard test -- ContentDiagnosticSurface --testTimeout=15000`.
+  Handoff/proof:
+  `docs/handoffs/2026-06-25-content-label-registry-proof.md` and
+  `.local-lab/proof/content-label-registry-20260625/content-planner.after-restart.text.txt`.
+- `task`: Fresh browser proof after the label-registry slice still shows
+  Content Planner leaking API/backend prose such as `inventory`,
+  `target_site_*`, `draft/staging`, `review`, `payload`, `ActionObject` and raw
+  blocker keys outside a technical drawer. Do not patch these with UI-side text
+  replacement; add a typed Content condensation view-model/API contract that
+  returns marketer-ready `decision`, `why_it_matters`, `safe_next_action`,
+  `missing_inputs`, `blocked_claims` and `measurement_plan`.
 - `task`: Browser audit shows GA4 is the clearest route, but `(not set)` rows
   repeat row metric tiles and raw values such as `0.019608`. Group measurement
   issues first and format engagement as percentages.

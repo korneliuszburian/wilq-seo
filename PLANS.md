@@ -917,6 +917,14 @@ Do not implement these before Ekologus works deeply:
   (`Akcje do walidacji`, `podgląd zmian`, `Wykonanie`, `Dane techniczne akcji`)
   while raw payloads stay behind a technical toggle. Browser proof:
   `.local-lab/proof/action-copy-polish-20260625/actions.final3.text.txt`.
+- [x] Move Content Planner pure domain labels and metric formatting out of
+  `ContentDiagnosticSurface.tsx` into the central
+  `apps/dashboard/src/lib/contentLabels.ts` registry with focused tests. This
+  removes route-local label dictionaries as a product-copy mechanism; future
+  copy work must happen through a domain-owned contract surface, not route
+  hardcoding. Verification:
+  `rtk pnpm --dir apps/dashboard typecheck` and
+  `rtk pnpm --filter @wilq/dashboard test -- ContentDiagnosticSurface --testTimeout=15000`.
 - [ ] Run or explicitly defer real marketer UAT from current `PLAN.md`.
 - [ ] Close or mark blocked current `PLAN.md`.
 - [ ] Start Milestone C only after current demo closure/deferral is explicit.
@@ -937,6 +945,11 @@ Do not implement these before Ekologus works deeply:
 - Content semantics needed first-screen product language: `ekologus.pl` and
   `sklep.ekologus.pl` are source-of-truth inventory, while
   `ekologus.dev.proudsite.pl` is preview/design context for mapping.
+- Browser proof after the content label-registry slice still shows major
+  Content Planner jargon from API/backend summaries and composed payload
+  detail rows (`target_site_*`, `inventory`, `draft/staging`, raw blocker
+  keys). The next correct fix is a typed Content condensation view-model/API
+  contract, not UI-side string replacement.
 
 ## Decision Log
 

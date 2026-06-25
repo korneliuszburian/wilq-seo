@@ -199,6 +199,13 @@ Stan produktu:
   `replaceAll`, route-specific enum dictionaries or ad hoc label maps. If the
   dashboard exposes jargon, fix the typed API/view-model/shared label contract
   first; React routes should render that contract, not repair product meaning.
+- Content Planner pure domain labels and metric formatting have been moved from
+  `ContentDiagnosticSurface.tsx` into
+  `apps/dashboard/src/lib/contentLabels.ts` with focused tests. This is a
+  structural cleanup, not full UX completion: fresh browser proof still shows
+  Content Planner jargon from API/backend summaries and composed detail rows,
+  so the next correct fix is a typed Content condensation view-model/API
+  contract.
 
 ## Next Best Queue
 
@@ -211,9 +218,12 @@ Stan produktu:
 3. Do not patch marketer-facing leaks through UI-side string replacement or
    hardcoded route copy. Add a typed view-model/shared label contract and tests
    first.
-4. Do not add new evals unless fresh route proof finds a specific
+4. For Content Planner, continue by adding a typed Content condensation
+   view-model/API contract for visible decisions and blockers. Do not keep
+   cleaning copied backend prose inside React.
+5. Do not add new evals unless fresh route proof finds a specific
    marketer-facing leak.
-5. If content depth is next, continue from the review handoff packet toward
+6. If content depth is next, continue from the review handoff packet toward
    confirmed human mapping for every row, then audited draft-readiness. Do not
    unlock staging, publish or uplift claims without typed preview, human
    confirmation and audit.

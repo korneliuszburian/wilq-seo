@@ -6813,14 +6813,14 @@ describe("WILQ dashboard", () => {
     expect(
       screen.getByText("Ahrefs: zweryfikuj luki SEO przed briefem contentowym")
     ).toBeInTheDocument();
-    expect(screen.getByText("review luk Ahrefs")).toBeInTheDocument();
+    expect(screen.getByText("sprawdzenie luk Ahrefs")).toBeInTheDocument();
     expect(screen.getByText("Kandydaci Ahrefs do review")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText("Podgląd briefów do review")).toBeInTheDocument()
     );
     expect(screen.getByText("Co WILQ może przygotować bez publikacji")).toBeInTheDocument();
-    expect(screen.getByText("GSC query/page / refresh")).toBeInTheDocument();
-    expect(screen.getByText("Ahrefs review / review")).toBeInTheDocument();
+    expect(screen.getByText("Google Search Console / odświeżenie")).toBeInTheDocument();
+    expect(screen.getByText("Ahrefs do sprawdzenia / sprawdzenie")).toBeInTheDocument();
     expect(screen.getByText(/Kąt treści: Odśwież istniejącą treść/)).toBeInTheDocument();
     expect(screen.getByText(/Odbiorca: Decydent środowiskowy/)).toBeInTheDocument();
     expect(screen.getByText(/CTA: CTA do rozmowy/)).toBeInTheDocument();
@@ -6834,7 +6834,7 @@ describe("WILQ dashboard", () => {
     expect(screen.getByText("Payload draftu po review")).toBeInTheDocument();
     expect(screen.getByText("Co WILQ może przygotować jako szkic WordPress")).toBeInTheDocument();
     expect(screen.getByText("Refresh: zielony ład")).toBeInTheDocument();
-    expect(screen.getByText("draft istniejącej treści / draft")).toBeInTheDocument();
+    expect(screen.getByText("wersja robocza istniejącej treści / draft")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Zapisz review briefu" })[0]);
     await waitFor(() =>
       expect(

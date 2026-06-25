@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { formatContentMetricValue } from "./ContentDiagnosticSurface";
+import {
+  contentBriefModeLabel,
+  contentDraftGenerationStatusLabel,
+  contentTargetSiteMappingStatusLabel,
+  contentTargetSiteStatusLabel,
+  formatContentMetricValue
+} from "../lib/contentLabels";
 
 describe("formatContentMetricValue", () => {
   it("formats marketer-facing SEO metric values without raw float noise", () => {
@@ -9,5 +15,16 @@ describe("formatContentMetricValue", () => {
     expect(formatContentMetricValue("clicks", 123)).toBe("123");
     expect(formatContentMetricValue("impressions", 4429)).toBe("4429");
     expect(formatContentMetricValue("wordpress_match", true)).toBe("tak");
+  });
+
+  it("keeps content domain labels in the shared registry instead of route-local copy", () => {
+    expect(contentBriefModeLabel("refresh")).toBe("odświeżenie");
+    expect(contentTargetSiteStatusLabel("current_site_match")).toBe("bieżąca strona");
+    expect(contentTargetSiteMappingStatusLabel("current_site_inventory_confirmed")).toBe(
+      "potwierdzono obecną stronę"
+    );
+    expect(contentDraftGenerationStatusLabel("blocked_until_content_review")).toBe(
+      "zablokowany do sprawdzenia treści"
+    );
   });
 });

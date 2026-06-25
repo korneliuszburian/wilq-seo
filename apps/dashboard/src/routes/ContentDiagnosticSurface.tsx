@@ -9,6 +9,35 @@ import {
   getContentDiagnostics,
   reviewAction
 } from "../lib/api";
+import {
+  candidateInventoryStatusLabel,
+  contentAhrefsGapTypeLabel,
+  contentAhrefsReasonLabel,
+  contentAhrefsRelevanceLabel,
+  contentBlockedClaimLabels,
+  contentBriefModeLabel,
+  contentBriefSourceLabel,
+  contentConnectorStatusLabel,
+  contentDecisionTypeLabel,
+  contentDraftGenerationStatusLabel,
+  contentDraftOperationLabel,
+  contentDraftOutputKindLabel,
+  contentGateStatusLabel,
+  contentMetricFactLabel,
+  contentNextGateLabel,
+  contentPostPublicationMeasurementStatusLabel,
+  contentPublicationReadinessLabel,
+  contentRefreshStatusLabel,
+  contentSectionLabel,
+  contentStagingHandoffStatusLabel,
+  contentTargetSiteMappingStatusLabel,
+  contentTargetSiteMigrationStatusLabel,
+  contentTargetSiteStatusLabel,
+  formatContentMetricValue,
+  mappingReviewStatusLabel,
+  wordpressMatchConfidenceLabel,
+  wordpressMatchLabel
+} from "../lib/contentLabels";
 import { BlockerNotice, LoadingBand, MetricTile } from "../components/OperatorPrimitives";
 import { StatusBadge } from "../components/StatusBadge";
 import { LinkedTraceLine, TraceLine } from "../components/TraceLine";
@@ -987,19 +1016,6 @@ function contentAhrefsWordPressOverlapCount(data: ContentDiagnosticsResponse) {
   return typeof value === "number" ? value : 0;
 }
 
-function contentTargetSiteMappingStatusLabel(status?: string | null) {
-  if (status === "target_site_inventory_confirmed") {
-    return "inventory targetu potwierdzone";
-  }
-  if (status === "target_site_mapping_review_needed") {
-    return "wymaga mapowania";
-  }
-  if (status === "current_site_inventory_confirmed") {
-    return "potwierdzono obecną stronę";
-  }
-  return "brak mapowania targetu";
-}
-
 function ContentDecisionCard({ decision }: { decision: ContentDecisionItem }) {
   return (
     <article className="rounded-md border border-line bg-slate-50 p-3">
@@ -1276,38 +1292,6 @@ function ContentMetricTiles({ facts }: { facts: ContentMetricFact[] }) {
   );
 }
 
-function contentMetricFactLabel(metricName: string) {
-  const labels: Record<string, string> = {
-    ahrefs_content_gap_count: "Luki Ahrefs",
-    average_position: "Pozycja",
-    clicks: "Kliknięcia",
-    content_object_count: "Obiekty WP",
-    ctr: "CTR",
-    impressions: "Wyświetlenia",
-    pages_total: "Strony WP",
-    posts_total: "Wpisy WP"
-  };
-  return labels[metricName] ?? metricName;
-}
-
-export function formatContentMetricValue(
-  metricName: string,
-  value: string | number | boolean | null
-) {
-  if (typeof value === "boolean") return value ? "tak" : "nie";
-  if (value === null) return "brak";
-  const numericValue = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(numericValue)) return value;
-  if (metricName === "ctr" || metricName === "engagement_rate") {
-    return `${formatNumber(numericValue * 100, 2)}%`;
-  }
-  if (metricName === "average_position") {
-    return formatNumber(numericValue, 2);
-  }
-  if (Number.isInteger(numericValue)) return numericValue.toLocaleString("pl-PL");
-  return formatNumber(numericValue, 2);
-}
-
 function formatContentEvidenceCount(count: number) {
   if (count === 0) return "brak";
   if (count === 1) return "1 ID";
@@ -1452,52 +1436,6 @@ function isWordPressDraftPayloadPreviewItem(
 }
 
 
-function contentBriefSourceLabel(value: string) {
-  const labels: Record<string, string> = {
-    gsc_query_page: "GSC query/page",
-    ahrefs_gap_review: "Ahrefs review"
-  };
-  return labels[value] ?? value;
-}
-
-function contentBriefModeLabel(value: string) {
-  const labels: Record<string, string> = {
-    refresh: "refresh",
-    inventory_check: "sprawdzenie inventory",
-    review: "review",
-    merge: "merge",
-    create: "create",
-    block: "block"
-  };
-  return labels[value] ?? value;
-}
-
-function contentDraftOperationLabel(value: string) {
-  const labels: Record<string, string> = {
-    prepare_existing_content_draft: "draft istniejącej treści",
-    prepare_new_content_draft_review: "draft nowej treści do review"
-  };
-  return labels[value] ?? value;
-}
-
-function contentDraftGenerationStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    ready_for_review: "gotowy tylko do review",
-    blocked_pending_target_mapping: "zablokowany do mapowania targetu",
-    blocked_pending_canonical_duplicate_review: "zablokowany do canonical i duplikatów",
-    blocked_missing_target_inventory: "zablokowany bez inventory targetu",
-    blocked_until_content_review: "zablokowany do review treści"
-  };
-  return labels[value] ?? value;
-}
-
-function contentPublicationReadinessLabel(value: string) {
-  const labels: Record<string, string> = {
-    blocked_until_review: "zablokowane do review"
-  };
-  return labels[value] ?? value;
-}
-
 function contentTargetSiteValues(
   preview: Pick<
     ContentBriefPreviewItem | WordPressDraftPayloadPreviewItem,
@@ -1601,53 +1539,6 @@ function contentTargetInventoryValues(
   return values;
 }
 
-function contentTargetSiteStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    current_site_match: "bieżąca strona",
-    target_site_alias_match: "dopasowanie do nowej strony",
-    needs_inventory_match: "wymaga dopasowania inventory"
-  };
-  return labels[value] ?? value;
-}
-
-function contentTargetSiteMigrationStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirmed_target_inventory: "target potwierdzony",
-    needs_review: "wymaga mapowania",
-    blocked_missing_inventory: "blokada inventory",
-    not_applicable: "nie dotyczy"
-  };
-  return labels[value] ?? value;
-}
-
-function candidateInventoryStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirmed_target_inventory: "kandydat w inventory",
-    missing_target_inventory: "kandydat niepotwierdzony",
-    not_applicable: "brak kandydata"
-  };
-  return labels[value] ?? value;
-}
-
-function mappingReviewStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirm_exact_candidate: "potwierdź exact candidate",
-    review_alternative_candidates: "przejrzyj alternatywy",
-    manual_mapping_required: "wymagane ręczne mapowanie",
-    not_applicable: "nie dotyczy"
-  };
-  return labels[value] ?? value;
-}
-
-function contentNextGateLabel(value: string) {
-  const labels: Record<string, string> = {
-    target_site_mapping_review: "następnie: mapowanie targetu",
-    target_site_canonical_review: "następnie: canonical",
-    duplicate_or_cannibalization_check: "następnie: duplikaty"
-  };
-  return labels[value] ?? `następnie: ${value}`;
-}
-
 function contentDraftGateValues(
   item: Pick<
     ContentBriefPreviewItem,
@@ -1749,159 +1640,8 @@ function contentPostPublicationMeasurementValues(
   ].filter((value) => value.trim().length > 0);
 }
 
-function contentPostPublicationMeasurementStatusLabel(value: string): string {
-  const labels: Record<string, string> = {
-    blocked_until_publish_and_followup_data:
-      "zablokowany do publikacji i danych po publikacji"
-  };
-  return labels[value] ?? value;
-}
-
-function contentStagingHandoffStatusLabel(value: string): string {
-  const labels: Record<string, string> = {
-    blocked_until_draft_gates_pass: "zablokowany do przejścia bramek draftu",
-    blocked_until_draft_readiness_review: "zablokowany do review gotowości draftu",
-    blocked_until_staging_action_contract: "zablokowany do osobnego kontraktu staging"
-  };
-  return labels[value] ?? value;
-}
-
-function contentDraftOutputKindLabel(value: string): string {
-  const labels: Record<string, string> = {
-    outline_only_until_gates_pass: "tylko outline do czasu gate review",
-    reviewable_polish_draft_preview: "polski draft tylko do review"
-  };
-  return labels[value] ?? value;
-}
-
-function contentGateStatusLabel(value: string) {
-  const labels: Record<string, string> = {
-    confirmed_current_inventory: "potwierdzone na obecnej stronie",
-    confirmed_target_inventory: "potwierdzone na stronie docelowej",
-    missing_inventory_match: "brak potwierdzenia inventory",
-    current_url_confirmed: "obecny URL potwierdzony",
-    needs_target_canonical_review: "sprawdź canonical na nowej stronie",
-    blocked_until_mapping_review: "blokada do mapowania URL",
-    blocked_until_inventory_review: "blokada do kontroli inventory",
-    refresh_or_merge_required: "refresh/merge zamiast nowego artykułu",
-    manual_merge_or_create_review: "ręcznie wybierz merge/create",
-    create_blocked_until_duplicate_check: "create zablokowane do kontroli",
-    not_applicable: "nie dotyczy"
-  };
-  return labels[value] ?? value;
-}
-
 function contentBriefMetricValue(metricName: string, value: string | number | boolean | null) {
   return formatContentMetricValue(metricName, value);
-}
-
-function formatNumber(value: number, fractionDigits: number) {
-  return value.toLocaleString("pl-PL", {
-    maximumFractionDigits: fractionDigits,
-    minimumFractionDigits: 0
-  });
-}
-
-function contentDecisionTypeLabel(decisionType: ContentDecisionItem["decision_type"]) {
-  if (decisionType === "block_until_vendor_read") return "blokada do czasu odczytu";
-  if (decisionType === "refresh_or_merge") return "odświeżenie albo scalenie";
-  if (decisionType === "merge_create_after_inventory_check") {
-    return "scalenie lub utworzenie po kontroli inventory";
-  }
-  if (decisionType === "inventory_check_before_create") return "kontrola inventory przed briefem";
-  if (decisionType === "review_ahrefs_gap_records") return "review luk Ahrefs";
-  return "blokada zadania contentowego";
-}
-
-function contentAhrefsGapTypeLabel(value: string) {
-  const labels: Record<string, string> = {
-    content_gap: "content gap",
-    organic_keyword_gap: "keyword gap",
-    top_page_gap: "top page",
-    backlink_gap: "backlink gap",
-    competitor_page: "strona konkurencji"
-  };
-  return labels[value] ?? value;
-}
-
-function contentAhrefsRelevanceLabel(value: string) {
-  const labels: Record<string, string> = {
-    relevant: "pasuje",
-    review: "do sprawdzenia",
-    off_topic: "off-topic"
-  };
-  return labels[value] ?? value;
-}
-
-function contentAhrefsReasonLabel(value: string) {
-  const labels: Record<string, string> = {
-    ekologus_domain_term: "pasuje do zakresu Ekologus",
-    relevant_competitor_domain: "istotny konkurent",
-    gsc_overlap: "pokrywa się z GSC",
-    wordpress_inventory_overlap: "pokrywa się z WordPress",
-    content_candidate: "kandydat contentowy",
-    backlink_review_only: "tylko review backlinkowe",
-    off_topic_phrase: "fraza off-topic",
-    off_topic_competitor_domain: "konkurent off-topic",
-    broad_backlink_domain: "szeroki backlink"
-  };
-  return labels[value] ?? value;
-}
-
-function contentSectionLabel(sectionId: string) {
-  if (sectionId === "content_query_page_matrix") return "Zapytania i URL-e z GSC";
-  if (sectionId === "content_inventory_match") return "Dopasowanie WordPress";
-  if (sectionId === "content_action_safety") return "Bezpieczeństwo akcji";
-  return sectionId;
-}
-
-function contentConnectorStatusLabel(status: string) {
-  if (status === "configured") return "dostęp skonfigurowany";
-  if (status === "missing_credentials") return "brakuje credentiali";
-  if (status === "disabled") return "źródło wyłączone";
-  return `status: ${status}`;
-}
-
-function contentRefreshStatusLabel(status: string) {
-  if (status === "completed") return "zakończony";
-  if (status === "blocked") return "zablokowany";
-  if (status === "failed") return "błąd";
-  if (status === "running") return "w toku";
-  return status;
-}
-
-function wordpressMatchLabel(value: string) {
-  if (value === "found") return "potwierdzony";
-  if (value === "missing") return "brak potwierdzenia";
-  return value;
-}
-
-function wordpressMatchConfidenceLabel(value: string) {
-  if (value === "exact_url") return "dokładny URL";
-  if (value === "host_alias_sitemap") return "alias hosta z sitemap";
-  if (value === "path_fallback") return "dopasowanie ścieżki";
-  if (value === "missing") return "brak dopasowania";
-  return value;
-}
-
-function contentBlockedClaimLabels(claims: string[]) {
-  const labels: Record<string, string> = {
-    "auto publish": "automatyczna publikacja",
-    "content rewrite": "rewrite treści bez dowodu",
-    "conversion uplift": "wzrost konwersji",
-    "duplicate avoidance": "uniknięcie duplikacji",
-    "duplicate-free guarantee": "gwarancja braku duplikatów",
-    "lead uplift": "wzrost leadów",
-    "merge plan": "plan scalenia",
-    "new article without inventory check": "nowy artykuł bez kontroli inventory",
-    "ranking guarantee": "gwarancja pozycji",
-    "ranking win": "wygrana pozycji",
-    "refresh plan": "plan odświeżenia",
-    "revenue impact": "wpływ na przychód",
-    "ROAS": "ROAS",
-    "wordpress write": "zapis do WordPress"
-  };
-  return uniqueValues(claims.map((claim) => labels[claim] ?? claim));
 }
 
 function uniqueValues(values: string[]) {
