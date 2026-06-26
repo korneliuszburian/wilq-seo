@@ -304,7 +304,8 @@ function ContentPreflightPanel({
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
             WILQ najpierw sprawdza, czy bezpieczny kierunek to zachowanie,
             odświeżenie, scalenie, utworzenie czy blokada. Szkic i WordPress
-            pozostają zablokowane, dopóki nie przejdą brief, claimy i decyzja człowieka.
+            pozostają zablokowane, dopóki nie przejdą brief, ryzykowne obietnice
+            i decyzja człowieka.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 text-center text-xs md:grid-cols-4">
@@ -389,7 +390,7 @@ function ContentSafetyGatePanel({ data }: { data: ContentDiagnosticsResponse }) 
           </div>
         </div>
         <TraceLine
-          label="Zablokowane claimy"
+          label="Nie wolno twierdzić"
           values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
       </section>
@@ -594,7 +595,7 @@ function ContentBriefPreviewCard({ preview }: { preview: ContentBriefPreviewItem
           values={preview.required_validation.slice(0, 4).map(contentContractValueLabel)}
         />
         <TraceLine
-          label="Zakazane claimy"
+          label="Nie wolno obiecać"
           values={contentBlockedClaimLabels(
             (preview.forbidden_claims ?? preview.blocked_claims).slice(0, 4)
           )}
@@ -810,7 +811,7 @@ function WordPressDraftPayloadPreviewCard({
           values={preview.required_validation.slice(0, 4).map(contentContractValueLabel)}
         />
         <TraceLine
-          label="Blokady claimów"
+          label="Nie wolno obiecać"
           values={contentBlockedClaimLabels(preview.blocked_claims.slice(0, 4))}
         />
         <TraceLine
@@ -1305,7 +1306,7 @@ function ContentDiagnosticProof({ data }: { data: ContentDiagnosticsResponse }) 
         <TraceLine label="Źródła" values={connectorLabelsFromStatuses(sourceConnectors, data.connectors)} />
         <TraceLine label="Akcje" values={[formatContentActionCount(data.action_ids.length)]} />
         <TraceLine
-          label="Zablokowane claimy"
+          label="Nie wolno twierdzić"
           values={contentBlockedClaimLabels(data.sections.flatMap((section) => section.blocked_claims))}
         />
       </div>
@@ -1369,7 +1370,7 @@ function contentPreflightModeSentence(item: ContentPreflightItem) {
     return "WILQ wskazuje scalenie albo decyzję o połączeniu tematów przed pisaniem.";
   }
   if (item.recommended_mode === "create") {
-    return "WILQ dopuszcza nową treść, ale szkic nadal wymaga briefu, claimów i decyzji człowieka.";
+    return "WILQ dopuszcza nową treść, ale szkic nadal wymaga briefu, sprawdzenia ryzykownych obietnic i decyzji człowieka.";
   }
   return "WILQ blokuje pisanie. Najpierw trzeba uzupełnić brakujące dane albo rozwiązać ryzyko.";
 }

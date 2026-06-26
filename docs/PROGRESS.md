@@ -634,14 +634,41 @@ Date: 2026-06-26
   - `rtk pnpm --dir apps/dashboard typecheck` passed.
   - `rtk uv run python scripts/marketer_language_guard.py` passed.
   - `rtk git diff --check` passed.
+- Content preflight language cleanup:
+  - Browser proof showed `sales brief`, `claimy`, `claimów`, `revenue` and
+    `lead uplift` leaking into Content Planner text.
+  - The producing API/action sources now say `brief`, `ryzykowne obietnice`,
+    `obietnica przychodu` and `wzrost leadów` instead of Polglish wording.
+  - Content Planner labels now say `Nie wolno twierdzić` / `Nie wolno obiecać`
+    instead of `Zablokowane claimy`.
+  - `scripts/marketer_language_guard.py` now blocks `sales brief`,
+    `claim review`, `revenue albo lead uplift`, `revenue/lead uplift` and
+    `Overlap:` in active scanned sources.
+  - Live `/api/content/preflight` after stack restart returned refresh-first
+    preflight for `https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/`
+    with `preview_url=null`, `draft_allowed=false`,
+    `wordpress_draft_allowed=false`, 4 evidence IDs and 2 source connectors.
+  - Browser proof:
+    `.local-lab/proof/20260626-content-preflight-language-clean/browser/content-planner-snapshot.txt`
+    shows `Czy można pisać?`, `brief odświeżenia`, `ryzykownych obietnic` and
+    `Wspólne zapytania`; scan found no `sales brief`, `claimy`, `claimów`,
+    `claim review`, `revenue albo lead uplift`, `revenue/lead uplift`,
+    `Overlap:`, `target_site`, `migration-map`, `mapping-review`, `Dry-run`,
+    `ActionObjecty`, `payload` or `WILQ API`.
+  - `rtk uv run python scripts/marketer_language_guard.py` passed.
+  - `rtk uv run pytest tests/test_api_contracts.py -q -k "content_preflight or content_action_preview or content_draft" --maxfail=1`
+    passed: 2 tests.
+  - Focused `App.test.tsx -t "content route"` passed: 2 tests.
+  - `rtk pnpm --dir apps/dashboard typecheck` passed.
+  - `rtk uv run python -m py_compile wilq/briefing/content_diagnostics.py wilq/actions/content_refresh.py scripts/marketer_language_guard.py`
+    passed.
+  - `rtk git diff --check` passed.
 - Ledger condensation:
   - `docs/PROGRESS.md` was reduced back to a short recovery ledger.
   - `rtk git diff --check` passed after the latest cleanup slices.
 
 ## Active Gaps
 
-- The worktree is very dirty. Treat current git status as mixed prior work plus
-  the current cleanup goal; do not claim the full diff belongs to one step.
 - `PLAN.md` and `docs/goals/001-goal.md` intentionally contain forbidden wording
   examples as policy. They are not active UI/API copy.
 - Some internal contract names are still technical. If they reach the marketer
@@ -660,9 +687,9 @@ Date: 2026-06-26
   was checked.
 - Real marketer UAT or explicit owner deferral is still required before claiming
   usefulness as proven.
-- Final WILQ is still incomplete. Major missing layers include content preflight,
-  richer content inventory, duplicate/canonical checks, sales brief, claim
-  ledger, human review flow, WordPress draft handoff, measurement loop,
+- Final WILQ is still incomplete. Major missing layers include richer content
+  inventory, duplicate/canonical checks, sales brief, claim ledger, human
+  review flow, WordPress draft handoff, measurement loop,
   workspace/profile contracts and safe write expansion.
 
 ## Next Step

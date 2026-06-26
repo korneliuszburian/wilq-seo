@@ -289,6 +289,26 @@ FORBIDDEN_PHRASES = (
         "awarię connectora",
         "Use awarię źródła danych.",
     ),
+    ForbiddenPhrase(
+        "sales brief",
+        "Use brief or brief sprzedażowy in marketer-facing copy.",
+    ),
+    ForbiddenPhrase(
+        "claim review",
+        "Use sprawdzenie ryzykownych obietnic.",
+    ),
+    ForbiddenPhrase(
+        "revenue albo lead uplift",
+        "Use plain Polish: przychód / wzrost leadów, and only as blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "revenue/lead uplift",
+        "Use plain Polish: przychód / wzrost leadów, and only as blocked claims.",
+    ),
+    ForbiddenPhrase(
+        "Overlap:",
+        "Use Wspólne sygnały or Wspólne zapytania.",
+    ),
 )
 
 

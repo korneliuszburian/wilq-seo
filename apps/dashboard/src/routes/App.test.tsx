@@ -4486,7 +4486,7 @@ const contentDiagnostics = {
           metric_value: 1,
           evidence_ids: ["ev_refresh_ahrefs_gap_records"],
           next_step:
-            "Zweryfikuj `audyt środowiskowy` z GSC i spisem treści WordPress, potem zdecyduj: odświeżenie, scalenie, utworzenie albo blokada. Overlap: GSC: audyt środowiskowy; WP: 1 URL."
+            "Zweryfikuj `audyt środowiskowy` z GSC i spisem treści WordPress, potem zdecyduj: odświeżenie, scalenie, utworzenie albo blokada. Wspólne sygnały: GSC: audyt środowiskowy; WP: 1 URL."
         }
       ],
       action_ids: ["act_prepare_content_refresh_queue"],
@@ -4574,7 +4574,7 @@ const contentPreflight = {
     missing_inputs: [],
     evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
     source_connectors: ["google_search_console", "wordpress_ekologus"],
-    next_step: "Przygotuj sales brief odświeżenia dopiero po sprawdzeniu claimów."
+    next_step: "Przygotuj brief odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
   },
   items: [
     {
@@ -4601,7 +4601,7 @@ const contentPreflight = {
       missing_inputs: [],
       evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],
       source_connectors: ["google_search_console", "wordpress_ekologus"],
-      next_step: "Przygotuj sales brief odświeżenia dopiero po sprawdzeniu claimów."
+      next_step: "Przygotuj brief odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
     }
   ],
   evidence_ids: ["ev_refresh_gsc", "ev_refresh_wordpress_inventory"],

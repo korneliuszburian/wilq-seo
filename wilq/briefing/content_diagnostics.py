@@ -289,9 +289,9 @@ def build_content_preflight(
     primary_item = next((item for item in items if item.status != "blocked"), None)
     return ContentPreflightResponse(
         strict_instruction=(
-            "ContentPreflight jest bramką przed briefem i szkicem. "
-            "Nie wolno pisać ani przygotowywać szkicu bez wyniku preflight, "
-            "sales brief, claim review i sprawdzenia przez człowieka."
+            "Bramka pisania działa przed briefem i szkicem. Nie wolno pisać "
+            "ani przygotowywać szkicu bez wyniku bramki pisania, briefu, "
+            "sprawdzenia ryzykownych obietnic i decyzji człowieka."
         ),
         primary_item=primary_item or (items[0] if items else None),
         items=items,
@@ -484,7 +484,7 @@ def _content_preflight_similar_urls(decision: ContentDecisionItem) -> list[str]:
 
 def _content_preflight_query_overlap(decision: ContentDecisionItem) -> str:
     if decision.query_count <= 0:
-        return "Brak potwierdzonego overlapu zapytań."
+        return "Brak potwierdzonych wspólnych zapytań."
     primary = f"; główne zapytanie: {decision.primary_query}" if decision.primary_query else ""
     return f"{decision.query_count} zapytań z GSC{primary}."
 
@@ -497,7 +497,7 @@ def _content_preflight_next_step(
     if status == "blocked":
         return decision.next_step
     if recommended_mode == "refresh":
-        return "Przygotuj sales brief odświeżenia dopiero po sprawdzeniu claimów."
+        return "Przygotuj brief odświeżenia dopiero po sprawdzeniu ryzykownych obietnic."
     if recommended_mode == "merge":
         return "Najpierw sprawdź duplikaty i zdecyduj, które sekcje scalić."
     return decision.next_step
@@ -1544,7 +1544,7 @@ def _ahrefs_candidate_next_step(score: AhrefsGapFactScore, topic: str) -> str:
         overlap_labels.append(f"GSC: {', '.join(score.gsc_overlap_terms[:2])}")
     if score.wordpress_overlap_urls:
         overlap_labels.append(f"WP: {len(score.wordpress_overlap_urls)} URL")
-    overlap_context = f" Overlap: {'; '.join(overlap_labels)}." if overlap_labels else ""
+    overlap_context = f" Wspólne sygnały: {'; '.join(overlap_labels)}." if overlap_labels else ""
     if score.status == "relevant":
         return (
             f"Zweryfikuj `{topic}` z GSC i spisem treści WordPress, potem zdecyduj: "

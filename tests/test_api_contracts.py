@@ -12368,7 +12368,7 @@ def test_content_diagnostics_exposes_query_page_inventory_queue(
         "https://www.ekologus.pl/europejski-zielony-lad-co-to-takiego/"
     ]
     assert "1 zapytań z GSC" in preflight_item["query_overlap_summary"]
-    assert "sprawdzeniu claimów" in preflight_item["next_step"]
+    assert "sprawdzeniu ryzykownych obietnic" in preflight_item["next_step"]
     ahrefs_decision = next(
         decision
         for decision in payload["decision_queue"]

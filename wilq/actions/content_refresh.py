@@ -1084,7 +1084,7 @@ def _gsc_brief_goal(wordpress_match: bool, primary_query: str) -> str:
     if wordpress_match:
         return (
             f"Przygotuj brief odświeżenia albo scalenia istniejącej treści pod temat "
-            f"`{primary_query}`: title, H1/H2, braki w sekcjach, CTA i ryzyka claimów."
+            f"`{primary_query}`: title, H1/H2, braki w sekcjach, CTA i ryzykowne obietnice."
         )
     return (
         f"Sprawdź spis treści i duplikaty przed briefem dla `{primary_query}`. "
@@ -1206,7 +1206,7 @@ def _meta_description_direction(topic: str, wordpress_match: bool) -> str:
     if wordpress_match:
         return (
             f"Meta description ma streścić odpowiedź na `{topic}` i kierować do "
-            "konsultacji Ekologus bez claimów wyniku."
+            "konsultacji Ekologus bez obietnicy wyniku."
         )
     return (
         f"Meta description dla `{topic}` dopiero po potwierdzeniu inventory, "
@@ -1266,7 +1266,7 @@ def _cta_direction(topic: str) -> str:
     if "bdo" in normalized:
         return "CTA do konsultacji lub weryfikacji obowiązków BDO, bez obietnicy uniknięcia kar."
     if "zielony lad" in normalized or "esg" in normalized:
-        return "CTA do rozmowy o wpływie regulacji na firmę, bez claimów revenue albo lead uplift."
+        return "CTA do rozmowy o wpływie regulacji na firmę, bez obietnicy przychodu ani wzrostu leadów."
     return "CTA do kontaktu z ekspertem Ekologus po ręcznym potwierdzeniu intencji tematu."
 
 
@@ -1371,7 +1371,7 @@ def _brief_outline(topic: str, wordpress_match: bool) -> list[dict[str, str]]:
         },
         {
             "section": "cta",
-            "instruction": "Dopasuj CTA do usługi Ekologus, ale bez claimów revenue/lead uplift.",
+            "instruction": "Dopasuj CTA do usługi Ekologus, ale bez obietnicy przychodu ani wzrostu leadów.",
         },
     ]
 
